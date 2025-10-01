@@ -1,71 +1,102 @@
-"""Base Agent - Foundation for all agents in the system"""
-import json
-import os
+from typing import Dict, List, Any, Optional
 from datetime import datetime
-from typing import Dict, Any, Optional
-from core.llm_client import get_llm_client
+import json
 
 class BaseAgent:
-    """Simple base class for all agents - vibe coding style"""
-
-    def __init__(self, name: str, graph=None, llm_client=None):
-        self.name = name
-        self.graph = graph
-        self.llm = llm_client or get_llm_client()  # Use provided or get singleton
-        self.memory = []
-        self.vibe = "helpful"  # Each agent has a vibe
-        self.use_real_llm = os.getenv('ANTHROPIC_API_KEY') is not None
-
-    def think(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Basic thinking pattern - just ask the LLM"""
-        prompt = self.get_prompt(context)
-
-        # Use real LLM if available, otherwise mock
-        if self.use_real_llm:
-            response = self.llm.complete(prompt, parse_json=True)
-            # Ensure response is a dict
-            if isinstance(response, str):
-                response = {"response": response}
-        else:
-            response = self._mock_llm_response(prompt, context)
-
-        # Remember what we did
-        self.remember(context, response)
-
-        return response
-
-    def get_prompt(self, context: Dict[str, Any]) -> str:
-        """Get the prompt for this agent - override in subclasses"""
-        return f"""
-        You are {self.name}.
-        Context: {json.dumps(context, indent=2)}
-        What should we do?
-        """
-
-    def remember(self, context: Dict[str, Any], response: Dict[str, Any]):
-        """Store memory of decisions"""
-        self.memory.append({
-            "timestamp": datetime.now().isoformat(),
-            "context": context,
-            "response": response
-        })
-        # Keep last 100 memories only
-        if len(self.memory) > 100:
-            self.memory = self.memory[-100:]
-
-    def _mock_llm_response(self, prompt: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Mock LLM response for testing - will be replaced with real LLM"""
+    """Base class for all specialized agents"""
+    
+    def __init__(self, graph, name: str = None, focus_areas: List[str] = None):
+        self.graph = graph  # Shared knowledge graph
+        self.name = name or self.__class__.__name__
+        self.focus_areas = focus_areas or []
+        self.memory = []  # Agent-specific memory
+        
+    def analyze(self, query: str) -> Dict:
+        """Base analysis method - override in subclasses"""
+        # Find relevant nodes
+        relevant_nodes = self._find_relevant_nodes(query)
+        
+        # Trace connections
+        insights = []
+        for node_id in relevant_nodes:
+            connections = self.graph.trace_connections(node_id, max_depth=2)
+            if connections:
+                insights.append({
+                    'node': node_id,
+                    'connections': len(connections),
+                    'patterns': self._analyze_patterns(connections)
+                })
+        
         return {
-            "action": "thinking",
-            "thoughts": f"{self.name} is processing the request",
-            "decision": None
+            'agent': self.name,
+            'query': query,
+            'relevant_nodes': relevant_nodes,
+            'insights': insights,
+            'timestamp': datetime.now().isoformat()
         }
-
-    def vibe_check(self) -> str:
-        """How's this agent feeling?"""
-        if len(self.memory) == 0:
-            return "fresh and ready"
-        elif len(self.memory) > 50:
-            return "experienced and wise"
-        else:
-            return "learning and growing"
+    
+    def _find_relevant_nodes(self, query: str) -> List[str]:
+        """Find nodes relevant to the query"""
+        relevant = []
+        query_lower = query.lower()
+        keywords = query_lower.split()
+        
+        for node_id, node in self.graph.nodes.items():
+            # Check if node type matches focus areas
+            if node['type'] in self.focus_areas:
+                relevant.append(node_id)
+                continue
+            
+            # Check if query mentions node
+            node_text = f"{node_id} {node['type']} {json.dumps(node.get('data', {}))}".lower()
+            if any(keyword in node_text for keyword in keywords):
+                relevant.append(node_id)
+        
+        return list(set(relevant))[:20]  # Limit to 20 most relevant
+    
+    def _analyze_patterns(self, connections: List[List[Dict]]) -> Dict:
+        """Analyze patterns in connections"""
+        patterns = {
+            'strong_paths': 0,
+            'weak_paths': 0,
+            'cycles': 0,
+            'chains': 0
+        }
+        
+        for path in connections:
+            if not path:
+                continue
+                
+            # Calculate path strength
+            path_strength = 1.0
+            for edge in path:
+                path_strength *= edge.get('strength', 1.0)
+            
+            if path_strength > 0.6:
+                patterns['strong_paths'] += 1
+            else:
+                patterns['weak_paths'] += 1
+            
+            # Check for cycles
+            nodes_in_path = [edge['from'] for edge in path] + [path[-1]['to']] if path else []
+            if len(nodes_in_path) != len(set(nodes_in_path)):
+                patterns['cycles'] += 1
+            
+            # Count chains
+            if len(path) > 2:
+                patterns['chains'] += 1
+        
+        return patterns
+    
+    def forecast(self, target: str, horizon: str = '1d') -> Dict:
+        """Forecast using graph connections"""
+        return self.graph.forecast(target, horizon)
+    
+    def add_knowledge(self, node_type: str, data: Dict, node_id: str = None) -> str:
+        """Add knowledge to the graph"""
+        return self.graph.add_node(node_type, data, node_id)
+    
+    def connect_knowledge(self, from_id: str, to_id: str, 
+                          relationship: str, strength: float = 1.0) -> bool:
+        """Connect knowledge in the graph"""
+        return self.graph.connect(from_id, to_id, relationship, strength)
