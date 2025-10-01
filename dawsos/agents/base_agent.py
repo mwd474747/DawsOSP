@@ -4,12 +4,29 @@ import json
 
 class BaseAgent:
     """Base class for all specialized agents"""
-    
-    def __init__(self, graph, name: str = None, focus_areas: List[str] = None):
+
+    def __init__(self, graph, name: str = None, focus_areas: List[str] = None, llm_client=None):
         self.graph = graph  # Shared knowledge graph
         self.name = name or self.__class__.__name__
         self.focus_areas = focus_areas or []
         self.memory = []  # Agent-specific memory
+        self.llm_client = llm_client  # For LLM-based agents
+
+    def think(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Main processing method - called by runtime"""
+        # Default implementation - override in subclasses
+        user_input = context.get('user_input', context.get('request', ''))
+
+        # Try process method if it exists
+        if hasattr(self, 'process'):
+            return self.process(user_input)
+
+        # Otherwise use analyze
+        analysis = self.analyze(user_input)
+        return {
+            'response': str(analysis),
+            'data': analysis
+        }
         
     def analyze(self, query: str) -> Dict:
         """Base analysis method - override in subclasses"""

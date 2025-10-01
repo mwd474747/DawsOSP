@@ -230,21 +230,35 @@ def display_chat_interface():
                 st.write(message["content"])
             else:
                 if isinstance(message["content"], dict):
-                    # Display structured response
-                    if 'results' in message["content"]:
+                    # Display pattern-based responses
+                    if 'pattern' in message["content"]:
+                        st.caption(f"🔮 Pattern: {message['content'].get('pattern', 'Unknown')}")
+
+                    if 'formatted_response' in message["content"]:
+                        st.write(message["content"]['formatted_response'])
+                    elif 'results' in message["content"]:
                         for result in message["content"]['results']:
-                            if result.get('action') == 'explain':
-                                st.write(result.get('text', ''))
-                            elif result.get('action') == 'forecast':
-                                forecast = result.get('result', {})
-                                col1, col2, col3 = st.columns(3)
-                                col1.metric("Forecast", forecast.get('forecast', 'Unknown'))
-                                col2.metric("Confidence", f"{forecast.get('confidence', 0)*100:.1f}%")
-                                col3.metric("Signal", f"{forecast.get('signal_strength', 0):.2f}")
-                            elif result.get('action') == 'add_node':
-                                st.success(f"Added node: {result.get('node_id')}")
-                            elif result.get('action') == 'connect':
-                                st.info(f"Connected: {result.get('from')} to {result.get('to')}")
+                            if isinstance(result, dict):
+                                if result.get('action') == 'explain':
+                                    st.write(result.get('text', ''))
+                                elif result.get('action') == 'forecast':
+                                    forecast = result.get('result', {})
+                                    col1, col2, col3 = st.columns(3)
+                                    col1.metric("Forecast", forecast.get('forecast', 'Unknown'))
+                                    col2.metric("Confidence", f"{forecast.get('confidence', 0)*100:.1f}%")
+                                    col3.metric("Signal", f"{forecast.get('signal_strength', 0):.2f}")
+                                elif result.get('action') == 'add_node':
+                                    st.success(f"Added node: {result.get('node_id')}")
+                                elif result.get('action') == 'connect':
+                                    st.info(f"Connected: {result.get('from')} to {result.get('to')}")
+                                elif 'error' in result:
+                                    st.error(f"Error: {result['error']}")
+                                elif 'response' in result:
+                                    st.write(result['response'])
+                    elif 'friendly_response' in message["content"]:
+                        st.write(message["content"]['friendly_response'])
+                    else:
+                        st.json(message["content"])
                 else:
                     st.write(message["content"])
     
@@ -454,28 +468,64 @@ def main():
         st.markdown("### Quick Actions")
         
         if st.button("Analyze Macro Environment"):
-            response = st.session_state.agent_runtime.orchestrate("Show me macro analysis")
-            if 'formatted_response' in response:
-                st.info(response['formatted_response'][:500] + "..." if len(response.get('formatted_response', '')) > 500 else response.get('formatted_response', 'Processing...'))
+            # Add user message to chat
+            user_msg = "Show me macro analysis"
+            st.session_state.chat_history.append({"role": "user", "content": user_msg})
+
+            # Get response
+            response = st.session_state.agent_runtime.orchestrate(user_msg)
+
+            # Add assistant response to chat
+            st.session_state.chat_history.append({"role": "assistant", "content": response})
+
+            # Show brief feedback
             st.success("Analysis complete! Check the chat tab.")
+            st.rerun()
 
         if st.button("Detect Market Regime"):
-            response = st.session_state.agent_runtime.orchestrate("Detect the market regime")
-            if 'formatted_response' in response:
-                st.info(response['formatted_response'][:500] + "..." if len(response.get('formatted_response', '')) > 500 else response.get('formatted_response', 'Processing...'))
+            # Add user message to chat
+            user_msg = "Detect the market regime"
+            st.session_state.chat_history.append({"role": "user", "content": user_msg})
+
+            # Get response
+            response = st.session_state.agent_runtime.orchestrate(user_msg)
+
+            # Add assistant response to chat
+            st.session_state.chat_history.append({"role": "assistant", "content": response})
+
+            # Show brief feedback
             st.success("Regime detected! Check the chat tab.")
+            st.rerun()
 
         if st.button("Find Patterns"):
-            response = st.session_state.agent_runtime.orchestrate("Show sector performance")
-            if 'formatted_response' in response:
-                st.info(response['formatted_response'][:500] + "..." if len(response.get('formatted_response', '')) > 500 else response.get('formatted_response', 'Processing...'))
+            # Add user message to chat
+            user_msg = "Show sector performance"
+            st.session_state.chat_history.append({"role": "user", "content": user_msg})
+
+            # Get response
+            response = st.session_state.agent_runtime.orchestrate(user_msg)
+
+            # Add assistant response to chat
+            st.session_state.chat_history.append({"role": "assistant", "content": response})
+
+            # Show brief feedback
             st.success("Patterns discovered! Check the chat tab.")
+            st.rerun()
 
         if st.button("Hunt Relationships"):
-            response = st.session_state.agent_runtime.orchestrate("Find correlations for SPY")
-            if 'formatted_response' in response:
-                st.info(response['formatted_response'][:500] + "..." if len(response.get('formatted_response', '')) > 500 else response.get('formatted_response', 'Processing...'))
+            # Add user message to chat
+            user_msg = "Find correlations for SPY"
+            st.session_state.chat_history.append({"role": "user", "content": user_msg})
+
+            # Get response
+            response = st.session_state.agent_runtime.orchestrate(user_msg)
+
+            # Add assistant response to chat
+            st.session_state.chat_history.append({"role": "assistant", "content": response})
+
+            # Show brief feedback
             st.success("Relationships found! Check the chat tab.")
+            st.rerun()
         
         st.markdown("---")
 

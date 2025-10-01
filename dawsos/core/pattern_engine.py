@@ -198,9 +198,21 @@ class PatternEngine:
         if template:
             # Substitute variables in template
             for key, value in outputs.items():
+                # Extract the actual response from agent output
                 if isinstance(value, dict):
-                    for nested_key, nested_value in value.items():
-                        template = template.replace(f"{{{key}.{nested_key}}}", str(nested_value))
+                    # Check if this is an agent response with 'response' field
+                    if 'response' in value:
+                        template = template.replace(f"{{{key}}}", str(value['response']))
+                    elif 'friendly_response' in value:
+                        template = template.replace(f"{{{key}}}", str(value['friendly_response']))
+                    elif 'result' in value:
+                        template = template.replace(f"{{{key}}}", str(value['result']))
+                    else:
+                        # Handle nested references
+                        for nested_key, nested_value in value.items():
+                            template = template.replace(f"{{{key}.{nested_key}}}", str(nested_value))
+                        # Also replace the whole object reference
+                        template = template.replace(f"{{{key}}}", str(value))
                 else:
                     template = template.replace(f"{{{key}}}", str(value))
 
