@@ -66,6 +66,17 @@ def init_session_state():
     """Initialize session state variables"""
     if 'graph' not in st.session_state:
         st.session_state.graph = KnowledgeGraph()
+
+        # Seed with fundamental analysis knowledge
+        try:
+            import seed_knowledge_graph
+            seed_knowledge_graph.seed_buffett_framework(st.session_state.graph)
+            seed_knowledge_graph.seed_dalio_framework(st.session_state.graph)
+            seed_knowledge_graph.seed_financial_calculations(st.session_state.graph)
+            seed_knowledge_graph.seed_investment_examples(st.session_state.graph)
+        except Exception as e:
+            print(f"Note: Knowledge seeding skipped: {e}")
+
         # Try to load existing graph
         if os.path.exists('storage/graph.json'):
             st.session_state.graph.load('storage/graph.json')
@@ -236,6 +247,8 @@ def display_chat_interface():
 
                     if 'formatted_response' in message["content"]:
                         st.write(message["content"]['formatted_response'])
+                    elif 'response' in message["content"]:
+                        st.write(message["content"]['response'])
                     elif 'results' in message["content"]:
                         for result in message["content"]['results']:
                             if isinstance(result, dict):
@@ -284,6 +297,8 @@ def display_chat_interface():
 
                     if 'formatted_response' in response:
                         st.write(response['formatted_response'])
+                    elif 'response' in response:
+                        st.write(response['response'])
                     elif 'results' in response and response['results']:
                         # Display results from pattern execution
                         for i, result in enumerate(response['results']):
@@ -527,6 +542,43 @@ def main():
             st.success("Relationships found! Check the chat tab.")
             st.rerun()
         
+        st.markdown("---")
+
+        # Fundamental Analysis section
+        st.markdown("### Fundamental Analysis")
+
+        if st.button("🏰 Analyze Moat"):
+            user_msg = "Analyze economic moat for AAPL"
+            st.session_state.chat_history.append({"role": "user", "content": user_msg})
+            response = st.session_state.agent_runtime.orchestrate(user_msg)
+            st.session_state.chat_history.append({"role": "assistant", "content": response})
+            st.success("Moat analysis complete!")
+            st.rerun()
+
+        if st.button("✅ Buffett Checklist"):
+            user_msg = "Run Buffett checklist for MSFT"
+            st.session_state.chat_history.append({"role": "user", "content": user_msg})
+            response = st.session_state.agent_runtime.orchestrate(user_msg)
+            st.session_state.chat_history.append({"role": "assistant", "content": response})
+            st.success("Checklist complete!")
+            st.rerun()
+
+        if st.button("💰 Owner Earnings"):
+            user_msg = "Calculate owner earnings"
+            st.session_state.chat_history.append({"role": "user", "content": user_msg})
+            response = st.session_state.agent_runtime.orchestrate(user_msg)
+            st.session_state.chat_history.append({"role": "assistant", "content": response})
+            st.success("Calculation complete!")
+            st.rerun()
+
+        if st.button("🔄 Debt Cycle"):
+            user_msg = "Where are we in the debt cycle?"
+            st.session_state.chat_history.append({"role": "user", "content": user_msg})
+            response = st.session_state.agent_runtime.orchestrate(user_msg)
+            st.session_state.chat_history.append({"role": "assistant", "content": response})
+            st.success("Cycle analysis complete!")
+            st.rerun()
+
         st.markdown("---")
 
         # Pattern Browser
