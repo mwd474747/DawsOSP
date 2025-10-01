@@ -1,0 +1,38 @@
+{
+  "id": "macro_analysis",
+  "name": "Macro Economic Analysis",
+  "description": "Analyzes macroeconomic indicators and trends",
+  "triggers": ["macro", "economy", "gdp", "inflation", "unemployment", "fed", "rates"],
+  "entities": [],
+  "priority": 8,
+  "steps": [
+    {
+      "agent": "data_harvester",
+      "method": "process",
+      "params": {
+        "request": "Get latest GDP, CPI, unemployment, fed funds rate, 10Y yield data"
+      },
+      "output": "macro_data"
+    },
+    {
+      "agent": "pattern_spotter",
+      "method": "process",
+      "params": {
+        "data": "{macro_data}",
+        "analysis_type": "macro_trends"
+      },
+      "output": "macro_patterns"
+    },
+    {
+      "agent": "claude",
+      "method": "process",
+      "params": {
+        "user_input": "Analyze this macro data {macro_data} and patterns {macro_patterns}. Provide: 1) Economic cycle stage 2) Key trends 3) Risk factors 4) Investment implications"
+      },
+      "output": "macro_report"
+    }
+  ],
+  "response_type": "analysis",
+  "response_template": "{macro_report}",
+  "cache_ttl": 600
+}

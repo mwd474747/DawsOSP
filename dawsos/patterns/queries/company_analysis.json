@@ -1,0 +1,38 @@
+{
+  "id": "company_analysis",
+  "name": "Company Analysis",
+  "description": "Comprehensive analysis of a company's fundamentals and performance",
+  "triggers": ["analyze", "company", "fundamental", "earnings", "revenue", "valuation"],
+  "entities": ["SYMBOL"],
+  "priority": 8,
+  "steps": [
+    {
+      "agent": "data_harvester",
+      "method": "process",
+      "params": {
+        "request": "Get complete fundamentals for {SYMBOL}: financials, ratios, earnings, revenue"
+      },
+      "output": "company_data"
+    },
+    {
+      "agent": "data_digester",
+      "method": "process",
+      "params": {
+        "data": "{company_data}",
+        "data_type": "company_fundamentals"
+      },
+      "output": "digested_data"
+    },
+    {
+      "agent": "claude",
+      "method": "process",
+      "params": {
+        "user_input": "Analyze {SYMBOL} with data {digested_data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation assessment 3) Growth prospects 4) Risk factors 5) Investment recommendation"
+      },
+      "output": "analysis_report"
+    }
+  ],
+  "response_type": "analysis",
+  "response_template": "{analysis_report}",
+  "cache_ttl": 1800
+}

@@ -1,0 +1,42 @@
+{
+  "id": "create_alert",
+  "name": "Create Price Alert",
+  "description": "Sets up price or condition alerts for assets",
+  "triggers": ["alert", "notify", "watch", "monitor", "trigger"],
+  "entities": ["SYMBOL", "PRICE"],
+  "priority": 7,
+  "steps": [
+    {
+      "agent": "data_harvester",
+      "method": "process",
+      "params": {
+        "request": "Get current price for {SYMBOL}"
+      },
+      "output": "current_price"
+    },
+    {
+      "agent": "workflow_recorder",
+      "method": "process",
+      "params": {
+        "workflow": {
+          "type": "alert",
+          "symbol": "{SYMBOL}",
+          "condition": "{user_input}",
+          "current_price": "{current_price}"
+        }
+      },
+      "output": "alert_id"
+    },
+    {
+      "agent": "claude",
+      "method": "process",
+      "params": {
+        "user_input": "Alert created for {SYMBOL}. Current price: {current_price}. Alert details: {alert_id}"
+      },
+      "output": "confirmation"
+    }
+  ],
+  "response_type": "action",
+  "response_template": "{confirmation}",
+  "cache_ttl": 0
+}

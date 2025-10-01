@@ -15,6 +15,7 @@ from core.knowledge_graph import KnowledgeGraph
 from core.agent_runtime import AgentRuntime
 from core.relationships import Relationships
 from core.persistence import PersistenceManager
+from core.pattern_engine import PatternEngine
 
 # Agent imports
 from agents.graph_mind import GraphMind
@@ -100,7 +101,11 @@ def init_session_state():
         runtime.register_agent('refactor_elf', RefactorElf())
         runtime.register_agent('workflow_recorder', WorkflowRecorder())
         runtime.register_agent('workflow_player', WorkflowPlayer())
-        
+
+        # Initialize PatternEngine after agents are registered
+        runtime.pattern_engine = PatternEngine('patterns', runtime)
+        print(f"PatternEngine initialized with {len(runtime.pattern_engine.patterns)} patterns")
+
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
 
@@ -259,11 +264,32 @@ def display_chat_interface():
                 if 'error' in response:
                     st.error(f"Error: {response['error']}")
                 else:
+                    # Display pattern-based response
+                    if 'pattern' in response:
+                        st.caption(f"🔮 Pattern: {response.get('pattern', 'Unknown')}")
+
+                    if 'formatted_response' in response:
+                        st.write(response['formatted_response'])
+                    elif 'results' in response and response['results']:
+                        # Display results from pattern execution
+                        for i, result in enumerate(response['results']):
+                            if isinstance(result, dict):
+                                if 'error' in result:
+                                    st.error(f"Step {i+1} error: {result['error']}")
+                                elif 'response' in result:
+                                    st.write(result['response'])
+                                elif 'data' in result:
+                                    st.json(result['data'])
+                    elif 'friendly_response' in response:
+                        st.write(response['friendly_response'])
+                    else:
+                        st.json(response)
+
                     st.session_state.chat_history.append({"role": "assistant", "content": response})
-                    
+
                     # Save graph after changes
                     st.session_state.graph.save('storage/graph.json')
-                    
+
                     # Force rerun to update graph
                     st.rerun()
 
@@ -428,23 +454,68 @@ def main():
         st.markdown("### Quick Actions")
         
         if st.button("Analyze Macro Environment"):
-            response = st.session_state.agent_runtime.orchestrate("Analyze current macro environment")
+            response = st.session_state.agent_runtime.orchestrate("Show me macro analysis")
+            if 'formatted_response' in response:
+                st.info(response['formatted_response'][:500] + "..." if len(response.get('formatted_response', '')) > 500 else response.get('formatted_response', 'Processing...'))
             st.success("Analysis complete! Check the chat tab.")
 
         if st.button("Detect Market Regime"):
-            response = st.session_state.agent_runtime.orchestrate("What economic regime are we in?")
+            response = st.session_state.agent_runtime.orchestrate("Detect the market regime")
+            if 'formatted_response' in response:
+                st.info(response['formatted_response'][:500] + "..." if len(response.get('formatted_response', '')) > 500 else response.get('formatted_response', 'Processing...'))
             st.success("Regime detected! Check the chat tab.")
 
         if st.button("Find Patterns"):
-            response = st.session_state.agent_runtime.execute('pattern_spotter', {})
+            response = st.session_state.agent_runtime.orchestrate("Show sector performance")
+            if 'formatted_response' in response:
+                st.info(response['formatted_response'][:500] + "..." if len(response.get('formatted_response', '')) > 500 else response.get('formatted_response', 'Processing...'))
             st.success("Patterns discovered! Check the chat tab.")
 
         if st.button("Hunt Relationships"):
-            response = st.session_state.agent_runtime.execute('relationship_hunter', {})
+            response = st.session_state.agent_runtime.orchestrate("Find correlations for SPY")
+            if 'formatted_response' in response:
+                st.info(response['formatted_response'][:500] + "..." if len(response.get('formatted_response', '')) > 500 else response.get('formatted_response', 'Processing...'))
             st.success("Relationships found! Check the chat tab.")
         
         st.markdown("---")
-        
+
+        # Pattern Browser
+        st.markdown("### Available Patterns")
+        if hasattr(st.session_state.agent_runtime, 'pattern_engine'):
+            pattern_engine = st.session_state.agent_runtime.pattern_engine
+            pattern_categories = {
+                'Queries': [],
+                'Analysis': [],
+                'Actions': [],
+                'Workflows': [],
+                'UI': []
+            }
+
+            for pattern_id, pattern in pattern_engine.patterns.items():
+                if pattern_id == 'schema':
+                    continue
+
+                # Categorize patterns
+                if pattern_id in ['stock_price', 'market_regime', 'macro_analysis', 'company_analysis', 'sector_performance', 'correlation_finder']:
+                    pattern_categories['Queries'].append(pattern['name'])
+                elif pattern_id in ['technical_analysis', 'portfolio_analysis', 'earnings_analysis', 'risk_assessment', 'sentiment_analysis']:
+                    pattern_categories['Analysis'].append(pattern['name'])
+                elif pattern_id in ['add_to_graph', 'create_alert', 'generate_forecast', 'add_to_portfolio', 'export_data']:
+                    pattern_categories['Actions'].append(pattern['name'])
+                elif pattern_id in ['morning_briefing', 'deep_dive', 'opportunity_scan', 'portfolio_review']:
+                    pattern_categories['Workflows'].append(pattern['name'])
+                elif pattern_id in ['dashboard_update', 'watchlist_update', 'help_guide']:
+                    pattern_categories['UI'].append(pattern['name'])
+
+            with st.expander("📚 Pattern Library", expanded=False):
+                for category, patterns in pattern_categories.items():
+                    if patterns:
+                        st.caption(f"**{category}** ({len(patterns)})")
+                        for pattern_name in patterns:
+                            st.text(f"  • {pattern_name}")
+
+        st.markdown("---")
+
         # Graph controls
         st.markdown("### Graph Controls")
         

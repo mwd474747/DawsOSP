@@ -1,0 +1,38 @@
+{
+  "id": "market_regime",
+  "name": "Detect Market Regime",
+  "description": "Analyzes current market conditions and identifies the regime",
+  "triggers": ["regime", "market condition", "bull", "bear", "risk", "environment"],
+  "entities": [],
+  "priority": 9,
+  "steps": [
+    {
+      "agent": "data_harvester",
+      "method": "process",
+      "params": {
+        "request": "Get SPY VIX DXY TLT data"
+      },
+      "output": "market_data"
+    },
+    {
+      "agent": "pattern_spotter",
+      "method": "process",
+      "params": {
+        "data": "{market_data}",
+        "analysis_type": "regime"
+      },
+      "output": "regime_analysis"
+    },
+    {
+      "agent": "claude",
+      "method": "process",
+      "params": {
+        "user_input": "Based on this analysis {regime_analysis}, what is the current market regime? Provide: 1) Current regime (Risk-On/Risk-Off/Transitioning) 2) Key indicators 3) Confidence level 4) Recommendations"
+      },
+      "output": "regime_report"
+    }
+  ],
+  "response_type": "regime_analysis",
+  "response_template": "{regime_report}",
+  "cache_ttl": 300
+}

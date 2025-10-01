@@ -11,6 +11,7 @@ class AgentRuntime:
         self.agents = {}
         self.execution_history = []
         self.active_agents = []
+        self.pattern_engine = None  # Will be initialized after agents are registered
 
     def register_agent(self, name: str, agent: Any):
         """Register an agent with the runtime"""
@@ -72,7 +73,16 @@ class AgentRuntime:
 
     def orchestrate(self, user_input: str) -> Dict[str, Any]:
         """Main orchestration - Claude interprets, delegates to others"""
-        # Start with Claude
+        # Try pattern engine first
+        if self.pattern_engine:
+            pattern = self.pattern_engine.find_pattern(user_input)
+            if pattern:
+                # Execute the pattern
+                context = {'user_input': user_input}
+                result = self.pattern_engine.execute_pattern(pattern, context)
+                return result
+
+        # Fall back to Claude interpretation
         if 'claude' not in self.agents:
             return {"error": "Claude not available"}
 

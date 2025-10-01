@@ -1,0 +1,46 @@
+{
+  "id": "watchlist_update",
+  "name": "Watchlist Update",
+  "description": "Updates watchlist with current prices and changes",
+  "triggers": ["watchlist", "watch list", "tracked stocks"],
+  "entities": [],
+  "priority": 7,
+  "steps": [
+    {
+      "agent": "data_harvester",
+      "method": "process",
+      "params": {
+        "request": "Get watchlist from knowledge graph"
+      },
+      "output": "watchlist"
+    },
+    {
+      "agent": "data_harvester",
+      "method": "process",
+      "params": {
+        "request": "Get quotes for watchlist: {watchlist}"
+      },
+      "output": "watchlist_data"
+    },
+    {
+      "agent": "pattern_spotter",
+      "method": "process",
+      "params": {
+        "data": "{watchlist_data}",
+        "analysis_type": "quick_signals"
+      },
+      "output": "signals"
+    },
+    {
+      "agent": "claude",
+      "method": "process",
+      "params": {
+        "user_input": "Format watchlist with {watchlist_data} and signals {signals}. Show: Symbol, Price, Change%, Volume, Signal"
+      },
+      "output": "watchlist_display"
+    }
+  ],
+  "response_type": "ui_update",
+  "response_template": "{watchlist_display}",
+  "cache_ttl": 60
+}

@@ -1,0 +1,39 @@
+{
+  "id": "generate_forecast",
+  "name": "Generate Forecast",
+  "description": "Creates price or trend forecasts using multiple models",
+  "triggers": ["forecast", "predict", "projection", "target", "estimate"],
+  "entities": ["SYMBOL", "TIMEFRAME"],
+  "priority": 9,
+  "steps": [
+    {
+      "agent": "data_harvester",
+      "method": "process",
+      "params": {
+        "request": "Get historical data for {SYMBOL} - 2 years daily"
+      },
+      "output": "historical_data"
+    },
+    {
+      "agent": "forecast_dreamer",
+      "method": "process",
+      "params": {
+        "data": "{historical_data}",
+        "target": "{SYMBOL}",
+        "horizon": "{TIMEFRAME}"
+      },
+      "output": "forecast"
+    },
+    {
+      "agent": "claude",
+      "method": "process",
+      "params": {
+        "user_input": "Forecast for {SYMBOL}: {forecast}. Provide: 1) Price targets 2) Confidence levels 3) Key assumptions 4) Risk factors"
+      },
+      "output": "forecast_report"
+    }
+  ],
+  "response_type": "forecast",
+  "response_template": "{forecast_report}",
+  "cache_ttl": 3600
+}
