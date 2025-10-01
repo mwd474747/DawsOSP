@@ -1,0 +1,79 @@
+{
+    "workflows": [
+      {
+        "id": "workflow_macro_analysis",
+        "name": "Macro Environment Analysis",
+        "description": "Analyze current macroeconomic environment and regime",
+        "trigger": "analyze macro",
+        "steps": [
+          {
+            "action": "use_agent",
+            "agent": "MacroAgent",
+            "command": "analyze_economy()"
+          },
+          {
+            "action": "query",
+            "pattern": {
+              "type": "indicator"
+            }
+          },
+          {
+            "action": "trace",
+            "from": "FED_RATE",
+            "depth": 3
+          }
+        ],
+        "success_rate": 1.0,
+        "uses": 0,
+        "created": "2024-01-01T00:00:00"
+      },
+      {
+        "id": "workflow_inflation_impact",
+        "name": "Inflation Impact Analysis",
+        "description": "Trace inflation impacts across sectors",
+        "trigger": "inflation impact",
+        "steps": [
+          {
+            "action": "trace",
+            "from": "CPI",
+            "depth": 3
+          },
+          {
+            "action": "use_agent",
+            "agent": "MacroAgent",
+            "command": "trace_inflation_impact('all')"
+          }
+        ],
+        "success_rate": 1.0,
+        "uses": 0,
+        "created": "2024-01-01T00:00:00"
+      },
+      {
+        "id": "workflow_sector_forecast",
+        "name": "Sector Forecasting",
+        "description": "Forecast sector performance based on macro conditions",
+        "trigger": "forecast sectors",
+        "steps": [
+          {
+            "action": "forecast",
+            "target": "TECH_SECTOR"
+          },
+          {
+            "action": "forecast",
+            "target": "FINANCIALS_SECTOR"
+          },
+          {
+            "action": "forecast",
+            "target": "REAL_ESTATE_SECTOR"
+          }
+        ],
+        "success_rate": 1.0,
+        "uses": 0,
+        "created": "2024-01-01T00:00:00"
+      }
+    ],
+    "metadata": {
+      "total_workflows": 3,
+      "last_updated": "2024-01-01T00:00:00"
+    }
+  }

@@ -1,0 +1,285 @@
+{
+  "timestamp": "2025-10-01T15:34:20.646970",
+  "summary": {
+    "total_tests": 31,
+    "successful": 26,
+    "success_rate": 83.87096774193549,
+    "by_api": {
+      "FRED": {
+        "total": 10,
+        "success": 10
+      },
+      "FMP": {
+        "total": 10,
+        "success": 10
+      },
+      "Claude": {
+        "total": 5,
+        "success": 5
+      },
+      "NewsAPI": {
+        "total": 5,
+        "success": 0
+      },
+      "Combined": {
+        "total": 1,
+        "success": 1
+      }
+    }
+  },
+  "detailed_results": [
+    {
+      "api": "FRED",
+      "indicator": "GDP",
+      "name": "Gross Domestic Product",
+      "success": true,
+      "value": 30485.729,
+      "date": "2025-04-01"
+    },
+    {
+      "api": "FRED",
+      "indicator": "CPIAUCSL",
+      "name": "Consumer Price Index",
+      "success": true,
+      "value": 323.364,
+      "date": "2025-08-01"
+    },
+    {
+      "api": "FRED",
+      "indicator": "UNRATE",
+      "name": "Unemployment Rate",
+      "success": true,
+      "value": 4.3,
+      "date": "2025-08-01"
+    },
+    {
+      "api": "FRED",
+      "indicator": "DFF",
+      "name": "Federal Funds Rate",
+      "success": true,
+      "value": 4.09,
+      "date": "2025-09-29"
+    },
+    {
+      "api": "FRED",
+      "indicator": "DEXUSEU",
+      "name": "USD/EUR Exchange Rate",
+      "success": true,
+      "value": 1.1692,
+      "date": "2025-09-26"
+    },
+    {
+      "api": "FRED",
+      "indicator": "DGS10",
+      "name": "10-Year Treasury Rate",
+      "success": true,
+      "value": 4.15,
+      "date": "2025-09-29"
+    },
+    {
+      "api": "FRED",
+      "indicator": "HOUST",
+      "name": "Housing Starts",
+      "success": true,
+      "value": 1307.0,
+      "date": "2025-08-01"
+    },
+    {
+      "api": "FRED",
+      "indicator": "INDPRO",
+      "name": "Industrial Production Index",
+      "success": true,
+      "value": 103.9203,
+      "date": "2025-08-01"
+    },
+    {
+      "api": "FRED",
+      "indicator": "PAYEMS",
+      "name": "Nonfarm Payrolls",
+      "success": true,
+      "value": 159540.0,
+      "date": "2025-08-01"
+    },
+    {
+      "api": "FRED",
+      "indicator": "UMCSENT",
+      "name": "Consumer Sentiment",
+      "success": true,
+      "value": 58.2,
+      "date": "2025-08-01"
+    },
+    {
+      "api": "FMP",
+      "symbol": "AAPL",
+      "success": true,
+      "price": 256.05,
+      "change": 0.55767,
+      "volume": 30528991
+    },
+    {
+      "api": "FMP",
+      "symbol": "MSFT",
+      "success": true,
+      "price": 519.04,
+      "change": 0.21045,
+      "volume": 13171995
+    },
+    {
+      "api": "FMP",
+      "symbol": "GOOGL",
+      "success": true,
+      "price": 245.97,
+      "change": 1.18058,
+      "volume": 21996701
+    },
+    {
+      "api": "FMP",
+      "symbol": "AMZN",
+      "success": true,
+      "price": 220.765,
+      "change": 0.54425,
+      "volume": 31777169
+    },
+    {
+      "api": "FMP",
+      "symbol": "TSLA",
+      "success": true,
+      "price": 460.41,
+      "change": 3.52806,
+      "volume": 84249643
+    },
+    {
+      "api": "FMP",
+      "symbol": "NVDA",
+      "success": true,
+      "price": 187.2,
+      "change": 0.3323,
+      "volume": 138120176
+    },
+    {
+      "api": "FMP",
+      "symbol": "META",
+      "success": true,
+      "price": 719.1101,
+      "change": -2.07929,
+      "volume": 16760189
+    },
+    {
+      "api": "FMP",
+      "symbol": "SPY",
+      "success": true,
+      "price": 669.18,
+      "change": 0.45033,
+      "volume": 53962976
+    },
+    {
+      "api": "FMP",
+      "symbol": "QQQ",
+      "success": true,
+      "price": 603.68,
+      "change": 0.55133,
+      "volume": 37827513
+    },
+    {
+      "api": "FMP",
+      "symbol": "GLD",
+      "success": true,
+      "price": 355.695,
+      "change": 0.06329648,
+      "volume": 13286872
+    },
+    {
+      "api": "Claude",
+      "test": "Economic Analysis",
+      "success": true,
+      "response": {
+        "relationship": "Positive correlation",
+        "confidence": 4
+      }
+    },
+    {
+      "api": "Claude",
+      "test": "Market Prediction",
+      "success": true,
+      "response": {
+        "direction": "neutral",
+        "reasoning": "The economic indicators provided suggest a relatively stable economic environment. The GDP of $30,000 is a strong indicator of economic growth, while the CPI of 3.5% and unemployment rate of 4.3% are within normal ranges. These factors do not strongly indicate a significant market move in either direction, suggesting a neutral market outlook."
+      }
+    },
+    {
+      "api": "Claude",
+      "test": "Entity Extraction",
+      "success": true,
+      "response": {
+        "entities": [
+          {
+            "text": "Apple",
+            "type": "ORGANIZATION"
+          },
+          {
+            "text": "5%",
+            "type": "PERCENT"
+          }
+        ]
+      }
+    },
+    {
+      "api": "Claude",
+      "test": "Sentiment Analysis",
+      "success": true,
+      "response": {
+        "sentiment": "positive",
+        "confidence": 0.8
+      }
+    },
+    {
+      "api": "Claude",
+      "test": "Correlation Analysis",
+      "success": true,
+      "response": {
+        "correlation": 0.7,
+        "relationship_type": "Strong positive relationship"
+      }
+    },
+    {
+      "api": "NewsAPI",
+      "query": "Apple earnings",
+      "success": false,
+      "error": "'NewsCapability' object has no attribute 'search'"
+    },
+    {
+      "api": "NewsAPI",
+      "query": "Federal Reserve",
+      "success": false,
+      "error": "'NewsCapability' object has no attribute 'search'"
+    },
+    {
+      "api": "NewsAPI",
+      "query": "inflation",
+      "success": false,
+      "error": "'NewsCapability' object has no attribute 'search'"
+    },
+    {
+      "api": "NewsAPI",
+      "query": "stock market",
+      "success": false,
+      "error": "'NewsCapability' object has no attribute 'search'"
+    },
+    {
+      "api": "NewsAPI",
+      "query": "cryptocurrency",
+      "success": false,
+      "error": "'NewsCapability' object has no attribute 'search'"
+    },
+    {
+      "api": "Combined",
+      "test": "Full Pipeline",
+      "success": true,
+      "result": {
+        "market_condition": "bullish",
+        "confidence": 0.8,
+        "key_factor": "GDP"
+      }
+    }
+  ]
+}

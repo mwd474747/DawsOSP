@@ -1,0 +1,487 @@
+import streamlit as st
+import os
+import json
+import plotly.graph_objects as go
+import networkx as nx
+from datetime import datetime
+import pandas as pd
+
+# Load environment variables
+from load_env import load_env
+load_env()
+
+# Core imports
+from core.knowledge_graph import KnowledgeGraph
+from core.agent_runtime import AgentRuntime
+from core.relationships import Relationships
+from core.persistence import PersistenceManager
+
+# Agent imports
+from agents.graph_mind import GraphMind
+from agents.claude import Claude
+from agents.data_harvester import DataHarvester
+from agents.data_digester import DataDigester
+from agents.relationship_hunter import RelationshipHunter
+from agents.pattern_spotter import PatternSpotter
+from agents.forecast_dreamer import ForecastDreamer
+from agents.code_monkey import CodeMonkey
+from agents.structure_bot import StructureBot
+from agents.refactor_elf import RefactorElf
+from agents.workflow_recorder import WorkflowRecorder
+from agents.workflow_player import WorkflowPlayer
+
+# Capability imports
+from capabilities.fred import FREDCapability
+from capabilities.market_data import MarketDataCapability
+from capabilities.news import NewsCapability
+from capabilities.crypto import CryptoCapability
+from capabilities.fundamentals import FundamentalsCapability
+
+# Workflow imports
+from workflows.investment_workflows import InvestmentWorkflows
+from ui.workflows_tab import render_workflows_tab
+
+# Page config
+st.set_page_config(
+    page_title="DawsOS - Knowledge Graph Intelligence",
+    page_icon="",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom CSS for better UI
+st.markdown("""
+    <style>
+    .main {padding-top: 2rem;}
+    .stChatInput > div > div > input {font-size: 16px;}
+    .graph-container {background: #0e1117; border-radius: 10px; padding: 20px;}
+    .metric-card {background: #262730; border-radius: 8px; padding: 15px; margin: 10px 0;}
+    .pattern-badge {background: #00cc88; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px;}
+    .risk-badge {background: #ff4444; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px;}
+    </style>
+""", unsafe_allow_html=True)
+
+def init_session_state():
+    """Initialize session state variables"""
+    if 'graph' not in st.session_state:
+        st.session_state.graph = KnowledgeGraph()
+        # Try to load existing graph
+        if os.path.exists('storage/graph.json'):
+            st.session_state.graph.load('storage/graph.json')
+            
+    if 'agent_runtime' not in st.session_state:
+        # Initialize agent runtime
+        st.session_state.agent_runtime = AgentRuntime()
+
+        # Initialize capabilities first
+        caps = st.session_state.capabilities
+
+        # Register agents
+        runtime = st.session_state.agent_runtime
+        runtime.register_agent('graph_mind', GraphMind(st.session_state.graph))
+        runtime.register_agent('claude', Claude(st.session_state.graph))
+        runtime.register_agent('data_harvester', DataHarvester(st.session_state.graph, caps))
+        runtime.register_agent('data_digester', DataDigester(st.session_state.graph))
+        runtime.register_agent('relationship_hunter', RelationshipHunter(st.session_state.graph))
+        runtime.register_agent('pattern_spotter', PatternSpotter(st.session_state.graph))
+        runtime.register_agent('forecast_dreamer', ForecastDreamer(st.session_state.graph))
+        runtime.register_agent('code_monkey', CodeMonkey())
+        runtime.register_agent('structure_bot', StructureBot())
+        runtime.register_agent('refactor_elf', RefactorElf())
+        runtime.register_agent('workflow_recorder', WorkflowRecorder())
+        runtime.register_agent('workflow_player', WorkflowPlayer())
+        
+    if 'capabilities' not in st.session_state:
+        st.session_state.capabilities = {
+            'fred': FREDCapability(),
+            'market': MarketDataCapability(),
+            'news': NewsCapability(),
+            'crypto': CryptoCapability(),
+            'fundamentals': FundamentalsCapability()
+        }
+        
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+
+    if 'workflows' not in st.session_state:
+        st.session_state.workflows = InvestmentWorkflows(
+            st.session_state.agent_runtime,
+            st.session_state.graph
+        )
+        
+    if 'persistence' not in st.session_state:
+        st.session_state.persistence = PersistenceManager()
+
+def visualize_graph():
+    """Create interactive graph visualization"""
+    graph = st.session_state.graph
+    
+    # Create NetworkX graph
+    G = nx.DiGraph()
+    
+    # Add nodes
+    for node_id, node_data in graph.nodes.items():
+        G.add_node(node_id, **node_data)
+    
+    # Add edges
+    for edge in graph.edges:
+        G.add_edge(
+            edge['from'], 
+            edge['to'], 
+            weight=edge['strength'],
+            type=edge['type']
+        )
+    
+    # Generate layout
+    pos = nx.spring_layout(G, k=2, iterations=50)
+    
+    # Create Plotly figure
+    edge_trace = []
+    for edge in G.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_data = graph.edges[0]  # Get actual edge data
+        
+        # Color based on relationship type
+        edge_color = '#666'
+        if edge_data['type'] in ['causes', 'supports']:
+            edge_color = '#00cc88'
+        elif edge_data['type'] in ['pressures', 'weakens']:
+            edge_color = '#ff4444'
+            
+        edge_trace.append(go.Scatter(
+            x=[x0, x1, None],
+            y=[y0, y1, None],
+            mode='lines',
+            line=dict(width=edge_data.get('strength', 0.5) * 3, color=edge_color),
+            hoverinfo='none'
+        ))
+    
+    # Node trace
+    node_trace = go.Scatter(
+        x=[],
+        y=[],
+        mode='markers+text',
+        hoverinfo='text',
+        marker=dict(
+            size=[],
+            color=[],
+            colorscale='Viridis',
+            line_width=2
+        ),
+        text=[],
+        textposition="top center"
+    )
+    
+    for node in G.nodes():
+        x, y = pos[node]
+        node_trace['x'] += tuple([x])
+        node_trace['y'] += tuple([y])
+        node_trace['text'] += tuple([node])
+        
+        # Color by node type
+        node_data = graph.nodes[node]
+        if node_data['type'] == 'indicator':
+            color = '#3498db'
+        elif node_data['type'] == 'sector':
+            color = '#e74c3c'
+        elif node_data['type'] == 'stock':
+            color = '#f39c12'
+        else:
+            color = '#95a5a6'
+            
+        node_trace['marker']['color'] += tuple([color])
+        node_trace['marker']['size'] += tuple([20 + len(list(G.neighbors(node))) * 5])
+        
+        # Hover text
+        hover_text = f"{node}<br>Type: {node_data['type']}<br>Connections: {len(list(G.neighbors(node)))}"
+        node_trace['hoverinfo'] = 'text'
+    
+    # Create figure
+    fig = go.Figure(data=edge_trace + [node_trace])
+    
+    fig.update_layout(
+        showlegend=False,
+        hovermode='closest',
+        margin=dict(b=0,l=0,r=0,t=0),
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        height=500
+    )
+    
+    return fig
+
+def display_chat_interface():
+    """Main chat interface with Claude"""
+    st.markdown("### Chat with DawsOS")
+    
+    # Display chat history
+    for message in st.session_state.chat_history:
+        with st.chat_message(message["role"]):
+            if message["role"] == "user":
+                st.write(message["content"])
+            else:
+                if isinstance(message["content"], dict):
+                    # Display structured response
+                    if 'results' in message["content"]:
+                        for result in message["content"]['results']:
+                            if result.get('action') == 'explain':
+                                st.write(result.get('text', ''))
+                            elif result.get('action') == 'forecast':
+                                forecast = result.get('result', {})
+                                col1, col2, col3 = st.columns(3)
+                                col1.metric("Forecast", forecast.get('forecast', 'Unknown'))
+                                col2.metric("Confidence", f"{forecast.get('confidence', 0)*100:.1f}%")
+                                col3.metric("Signal", f"{forecast.get('signal_strength', 0):.2f}")
+                            elif result.get('action') == 'add_node':
+                                st.success(f"Added node: {result.get('node_id')}")
+                            elif result.get('action') == 'connect':
+                                st.info(f"Connected: {result.get('from')} to {result.get('to')}")
+                else:
+                    st.write(message["content"])
+    
+    # Chat input
+    user_input = st.chat_input("Ask anything about markets, economics, or stocks...")
+    
+    if user_input:
+        # Add user message
+        st.session_state.chat_history.append({"role": "user", "content": user_input})
+        
+        # Get response from agent system
+        with st.chat_message("assistant"):
+            with st.spinner("DawsOS is thinking..."):
+                response = st.session_state.agent_runtime.orchestrate(user_input)
+                
+                # Display response
+                if 'error' in response:
+                    st.error(f"Error: {response['error']}")
+                else:
+                    st.session_state.chat_history.append({"role": "assistant", "content": response})
+                    
+                    # Save graph after changes
+                    st.session_state.graph.save('storage/graph.json')
+                    
+                    # Force rerun to update graph
+                    st.rerun()
+
+def display_intelligence_dashboard():
+    """Display key metrics and insights"""
+    graph = st.session_state.graph
+    stats = graph.get_stats()
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Total Nodes", stats['total_nodes'])
+        st.caption("Knowledge entities")
+        
+    with col2:
+        st.metric("Total Edges", stats['total_edges'])
+        st.caption("Relationships")
+        
+    with col3:
+        st.metric("Patterns", len(graph.patterns))
+        st.caption("Discovered patterns")
+        
+    with col4:
+        avg_conn = stats.get('avg_connections', 0)
+        st.metric("Avg Connections", f"{avg_conn:.2f}")
+        st.caption("Network density")
+    
+    # Node type distribution
+    st.markdown("#### Node Distribution")
+    if stats['node_types']:
+        df_nodes = pd.DataFrame(
+            list(stats['node_types'].items()),
+            columns=['Type', 'Count']
+        )
+        st.bar_chart(df_nodes.set_index('Type'))
+    
+    # Recent patterns
+    st.markdown("#### Recent Patterns")
+    if graph.patterns:
+        for pattern_id, pattern in list(graph.patterns.items())[:5]:
+            with st.expander(f"{pattern.get('name', pattern_id)}"):
+                st.write(f"Type: {pattern.get('type')}")
+                st.write(f"Strength: {pattern.get('strength', 'N/A')}")
+                st.write(f"Discovered: {pattern.get('discovered', 'Unknown')}")
+
+def display_market_data():
+    """Display live market data"""
+    st.markdown("### Market Data")
+    
+    market = st.session_state.capabilities['market']
+    
+    # Quick quote lookup
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        symbol = st.text_input("Enter symbol:", value="AAPL")
+    with col2:
+        if st.button("Get Quote"):
+            quote = market.get_quote(symbol)
+            if 'error' not in quote:
+                st.success(f"Added {symbol} to graph")
+                # Add to graph
+                node_id = st.session_state.graph.add_node(
+                    'stock',
+                    {'ticker': symbol, 'price': quote['price']},
+                    node_id=symbol
+                )
+    
+    # Market movers
+    tab1, tab2, tab3 = st.tabs(["Gainers", "Losers", "Most Active"])
+    
+    with tab1:
+        gainers = market.get_market_movers('gainers')
+        if gainers and not any('error' in g for g in gainers):
+            df_gainers = pd.DataFrame(gainers[:10])
+            st.dataframe(df_gainers, hide_index=True)
+    
+    with tab2:
+        losers = market.get_market_movers('losers')
+        if losers and not any('error' in l for l in losers):
+            df_losers = pd.DataFrame(losers[:10])
+            st.dataframe(df_losers, hide_index=True)
+    
+    with tab3:
+        actives = market.get_market_movers('actives')
+        if actives and not any('error' in a for a in actives):
+            df_actives = pd.DataFrame(actives[:10])
+            st.dataframe(df_actives, hide_index=True)
+
+def display_economic_indicators():
+    """Display economic indicators"""
+    st.markdown("### Economic Indicators")
+    
+    fred = st.session_state.capabilities['fred']
+    
+    indicators = ['GDP', 'CPI', 'UNEMPLOYMENT', 'FED_RATE']
+    
+    cols = st.columns(len(indicators))
+    for i, indicator in enumerate(indicators):
+        with cols[i]:
+            data = fred.get_latest(indicator)
+            if data and 'error' not in data:
+                value = data.get('value', 0)
+                date = data.get('date', 'N/A')
+                st.metric(indicator, f"{value:.2f}", delta=None)
+                st.caption(f"As of {date}")
+
+def main():
+    """Main application"""
+    # Initialize
+    init_session_state()
+    
+    # Header
+    st.markdown("# DawsOS - Living Knowledge Graph Intelligence")
+    st.markdown("*Every interaction makes me smarter*")
+    
+    # Create tabs
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        "Chat",
+        "Knowledge Graph",
+        "Dashboard",
+        "Markets",
+        "Economy",
+        "Workflows"
+    ])
+    
+    with tab1:
+        display_chat_interface()
+    
+    with tab2:
+        st.markdown("### Living Knowledge Graph")
+        st.markdown("Watch the intelligence grow with each interaction")
+        
+        # Graph visualization
+        if st.session_state.graph.nodes:
+            fig = visualize_graph()
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Start chatting to build the knowledge graph!")
+        
+        # Graph stats
+        stats = st.session_state.graph.get_stats()
+        st.json(stats)
+    
+    with tab3:
+        display_intelligence_dashboard()
+    
+    with tab4:
+        display_market_data()
+    
+    with tab5:
+        display_economic_indicators()
+
+    with tab6:
+        render_workflows_tab(
+            st.session_state.workflows,
+            st.session_state.graph,
+            st.session_state.agent_runtime
+        )
+    
+    # Sidebar
+    with st.sidebar:
+        st.markdown("### Quick Actions")
+        
+        if st.button("Analyze Macro Environment"):
+            response = st.session_state.agent_runtime.orchestrate("Analyze current macro environment")
+            st.success("Analysis complete! Check the chat tab.")
+
+        if st.button("Detect Market Regime"):
+            response = st.session_state.agent_runtime.orchestrate("What economic regime are we in?")
+            st.success("Regime detected! Check the chat tab.")
+
+        if st.button("Find Patterns"):
+            response = st.session_state.agent_runtime.execute('pattern_spotter', {})
+            st.success("Patterns discovered! Check the chat tab.")
+
+        if st.button("Hunt Relationships"):
+            response = st.session_state.agent_runtime.execute('relationship_hunter', {})
+            st.success("Relationships found! Check the chat tab.")
+        
+        st.markdown("---")
+        
+        # Graph controls
+        st.markdown("### Graph Controls")
+        
+        if st.button("Save Graph"):
+            st.session_state.graph.save('storage/graph.json')
+            st.success("Graph saved!")
+            
+        if st.button("Load Graph"):
+            if st.session_state.graph.load('storage/graph.json'):
+                st.success("Graph loaded!")
+                st.rerun()
+                
+        if st.button("Clear Graph"):
+            if st.checkbox("Confirm clear"):
+                st.session_state.graph = KnowledgeGraph()
+                st.session_state.chat_history = []
+                st.success("Graph cleared!")
+                st.rerun()
+        
+        # API Status
+        st.markdown("---")
+        st.markdown("### API Status")
+        
+        # Check API keys
+        api_status = {
+            "Claude": "Active" if os.getenv('ANTHROPIC_API_KEY') else "Missing",
+            "FMP": "Active" if os.getenv('FMP_API_KEY') else "Missing",
+            "FRED": "Active",  # Free API
+            "News": "Warning",  # Needs key
+        }
+        
+        for api, status in api_status.items():
+            if status == "Active":
+                st.write(f"[Active] {api}")
+            elif status == "Missing":
+                st.write(f"[Missing] {api}")
+            else:
+                st.write(f"[Warning] {api}")
+
+if __name__ == "__main__":
+    main()

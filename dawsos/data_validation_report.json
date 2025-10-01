@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-10-01T15:37:51.347225",
+  "economic_indicators": {
+    "valid": 5,
+    "total": 5,
+    "percentage": 100.0
+  },
+  "stock_data": {
+    "valid": 5,
+    "total": 5,
+    "percentage": 100.0
+  },
+  "claude_api": {
+    "valid": 1,
+    "total": 3,
+    "percentage": 33.33333333333333
+  }
+}

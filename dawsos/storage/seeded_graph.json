@@ -1,0 +1,744 @@
+{
+  "version": 1,
+  "nodes": {
+    "ECONOMIC_REGIME": {
+      "id": "ECONOMIC_REGIME",
+      "type": "regime",
+      "data": {
+        "name": "ECONOMIC_REGIME",
+        "description": "Moderate growth, controlled inflation, normalized rates",
+        "importance": "PRIMARY",
+        "current_state": "GOLDILOCKS"
+      },
+      "created": "2025-10-01T15:43:49.712567",
+      "modified": "2025-10-01T15:43:49.712572",
+      "connections_in": [
+        "edge_fa0c6f3c",
+        "edge_2a8238f3",
+        "edge_8c83cc0b"
+      ],
+      "connections_out": [
+        "edge_08dce47e",
+        "edge_db00e870",
+        "edge_12ac0a71",
+        "edge_8b63e40e",
+        "edge_2e925f1d"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "GDP": {
+      "id": "GDP",
+      "type": "indicator",
+      "data": {
+        "value": 30485.729,
+        "date": "2025-04-01",
+        "series": "GDP"
+      },
+      "created": "2025-10-01T15:43:51.312584",
+      "modified": "2025-10-01T15:43:51.312596",
+      "connections_in": [],
+      "connections_out": [
+        "edge_fa0c6f3c"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "CPI": {
+      "id": "CPI",
+      "type": "indicator",
+      "data": {
+        "value": 323.364,
+        "date": "2025-08-01",
+        "series": "CPI"
+      },
+      "created": "2025-10-01T15:43:51.312757",
+      "modified": "2025-10-01T15:43:51.312762",
+      "connections_in": [],
+      "connections_out": [
+        "edge_2a8238f3"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "UNEMPLOYMENT": {
+      "id": "UNEMPLOYMENT",
+      "type": "indicator",
+      "data": {
+        "value": 4.3,
+        "date": "2025-08-01",
+        "series": "UNEMPLOYMENT"
+      },
+      "created": "2025-10-01T15:43:51.312816",
+      "modified": "2025-10-01T15:43:51.312820",
+      "connections_in": [],
+      "connections_out": [
+        "edge_49101533"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "FED_RATE": {
+      "id": "FED_RATE",
+      "type": "indicator",
+      "data": {
+        "value": 4.09,
+        "date": "2025-09-29",
+        "series": "FED_RATE"
+      },
+      "created": "2025-10-01T15:43:51.312831",
+      "modified": "2025-10-01T15:43:51.312835",
+      "connections_in": [
+        "edge_49101533"
+      ],
+      "connections_out": [
+        "edge_8c83cc0b",
+        "edge_c23d55a2"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "TREASURY_10Y": {
+      "id": "TREASURY_10Y",
+      "type": "indicator",
+      "data": {
+        "value": 4.15,
+        "date": "2025-09-29",
+        "series": "TREASURY_10Y"
+      },
+      "created": "2025-10-01T15:43:51.312869",
+      "modified": "2025-10-01T15:43:51.312872",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "RISK_SENTIMENT": {
+      "id": "RISK_SENTIMENT",
+      "type": "sentiment",
+      "data": {
+        "name": "RISK_SENTIMENT",
+        "current": "RISK_ON"
+      },
+      "created": "2025-10-01T15:43:51.312902",
+      "modified": "2025-10-01T15:43:51.312906",
+      "connections_in": [
+        "edge_c23d55a2"
+      ],
+      "connections_out": [
+        "edge_fbe923d8",
+        "edge_33d89983"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "SPY": {
+      "id": "SPY",
+      "type": "index",
+      "data": {
+        "symbol": "SPY",
+        "price": 668.86,
+        "change": 0.40229
+      },
+      "created": "2025-10-01T15:43:51.441230",
+      "modified": "2025-10-01T15:43:51.441236",
+      "connections_in": [
+        "edge_fbe923d8"
+      ],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "TECHNOLOGY": {
+      "id": "TECHNOLOGY",
+      "type": "sector",
+      "data": {
+        "name": "TECHNOLOGY",
+        "regime_fit": "GOLDILOCKS",
+        "symbols": [
+          "AAPL",
+          "MSFT",
+          "NVDA"
+        ]
+      },
+      "created": "2025-10-01T15:43:51.441296",
+      "modified": "2025-10-01T15:43:51.441297",
+      "connections_in": [
+        "edge_08dce47e",
+        "edge_33d89983"
+      ],
+      "connections_out": [
+        "edge_e808c145"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "AAPL": {
+      "id": "AAPL",
+      "type": "stock",
+      "data": {
+        "symbol": "AAPL",
+        "price": 255.525,
+        "pe": 35.2,
+        "market_cap": 3792090654750
+      },
+      "created": "2025-10-01T15:43:51.575884",
+      "modified": "2025-10-01T15:43:51.575889",
+      "connections_in": [
+        "edge_e808c145"
+      ],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "FINANCIALS": {
+      "id": "FINANCIALS",
+      "type": "sector",
+      "data": {
+        "name": "FINANCIALS",
+        "regime_fit": "GOLDILOCKS",
+        "symbols": [
+          "JPM",
+          "BAC",
+          "BRK.B"
+        ]
+      },
+      "created": "2025-10-01T15:43:51.575981",
+      "modified": "2025-10-01T15:43:51.575983",
+      "connections_in": [
+        "edge_db00e870"
+      ],
+      "connections_out": [
+        "edge_47d77b41"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "JPM": {
+      "id": "JPM",
+      "type": "stock",
+      "data": {
+        "symbol": "JPM",
+        "price": 311.1,
+        "pe": 15.97,
+        "market_cap": 855448423979
+      },
+      "created": "2025-10-01T15:43:51.697231",
+      "modified": "2025-10-01T15:43:51.697238",
+      "connections_in": [
+        "edge_47d77b41",
+        "edge_5a191de3"
+      ],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "JPM_VALUE": {
+      "id": "JPM_VALUE",
+      "type": "signal",
+      "data": {
+        "type": "VALUE",
+        "target": "JPM",
+        "reason": "P/E 15.97 < 20"
+      },
+      "created": "2025-10-01T15:43:51.697322",
+      "modified": "2025-10-01T15:43:51.697323",
+      "connections_in": [],
+      "connections_out": [
+        "edge_5a191de3"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "HEALTHCARE": {
+      "id": "HEALTHCARE",
+      "type": "sector",
+      "data": {
+        "name": "HEALTHCARE",
+        "regime_fit": "DEFENSIVE",
+        "symbols": [
+          "JNJ",
+          "UNH",
+          "PFE"
+        ]
+      },
+      "created": "2025-10-01T15:43:51.697352",
+      "modified": "2025-10-01T15:43:51.697353",
+      "connections_in": [
+        "edge_12ac0a71"
+      ],
+      "connections_out": [
+        "edge_c45f5eb1"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "JNJ": {
+      "id": "JNJ",
+      "type": "stock",
+      "data": {
+        "symbol": "JNJ",
+        "price": 186.24,
+        "pe": 19.73,
+        "market_cap": 448529031521
+      },
+      "created": "2025-10-01T15:43:51.820399",
+      "modified": "2025-10-01T15:43:51.820411",
+      "connections_in": [
+        "edge_c45f5eb1",
+        "edge_00dc8a93"
+      ],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "JNJ_VALUE": {
+      "id": "JNJ_VALUE",
+      "type": "signal",
+      "data": {
+        "type": "VALUE",
+        "target": "JNJ",
+        "reason": "P/E 19.73 < 20"
+      },
+      "created": "2025-10-01T15:43:51.820509",
+      "modified": "2025-10-01T15:43:51.820511",
+      "connections_in": [],
+      "connections_out": [
+        "edge_00dc8a93"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "CONSUMER_STAPLES": {
+      "id": "CONSUMER_STAPLES",
+      "type": "sector",
+      "data": {
+        "name": "CONSUMER_STAPLES",
+        "regime_fit": "DEFENSIVE",
+        "symbols": [
+          "PG",
+          "KO",
+          "WMT"
+        ]
+      },
+      "created": "2025-10-01T15:43:51.820545",
+      "modified": "2025-10-01T15:43:51.820547",
+      "connections_in": [
+        "edge_8b63e40e"
+      ],
+      "connections_out": [
+        "edge_a1aacfd4"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "PG": {
+      "id": "PG",
+      "type": "stock",
+      "data": {
+        "symbol": "PG",
+        "price": 153.33,
+        "pe": 23.37,
+        "market_cap": 359122902144
+      },
+      "created": "2025-10-01T15:43:51.942251",
+      "modified": "2025-10-01T15:43:51.942260",
+      "connections_in": [
+        "edge_a1aacfd4"
+      ],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "ENERGY": {
+      "id": "ENERGY",
+      "type": "sector",
+      "data": {
+        "name": "ENERGY",
+        "regime_fit": "INFLATION",
+        "symbols": [
+          "XOM",
+          "CVX"
+        ]
+      },
+      "created": "2025-10-01T15:43:51.942362",
+      "modified": "2025-10-01T15:43:51.942364",
+      "connections_in": [
+        "edge_2e925f1d"
+      ],
+      "connections_out": [
+        "edge_4c745729"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "XOM": {
+      "id": "XOM",
+      "type": "stock",
+      "data": {
+        "symbol": "XOM",
+        "price": 112.2451,
+        "pe": 16.56,
+        "market_cap": 478528588197
+      },
+      "created": "2025-10-01T15:43:52.067125",
+      "modified": "2025-10-01T15:43:52.067141",
+      "connections_in": [
+        "edge_4c745729",
+        "edge_f55dae32"
+      ],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "XOM_VALUE": {
+      "id": "XOM_VALUE",
+      "type": "signal",
+      "data": {
+        "type": "VALUE",
+        "target": "XOM",
+        "reason": "P/E 16.56 < 20"
+      },
+      "created": "2025-10-01T15:43:52.067260",
+      "modified": "2025-10-01T15:43:52.067264",
+      "connections_in": [],
+      "connections_out": [
+        "edge_f55dae32"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    }
+  },
+  "edges": [
+    {
+      "id": "edge_fa0c6f3c",
+      "from": "GDP",
+      "to": "ECONOMIC_REGIME",
+      "type": "indicates_growth",
+      "strength": 0.9,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.312708",
+      "activations": 0
+    },
+    {
+      "id": "edge_2a8238f3",
+      "from": "CPI",
+      "to": "ECONOMIC_REGIME",
+      "type": "indicates_inflation",
+      "strength": 0.85,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.312796",
+      "activations": 0
+    },
+    {
+      "id": "edge_8c83cc0b",
+      "from": "FED_RATE",
+      "to": "ECONOMIC_REGIME",
+      "type": "determines_liquidity",
+      "strength": 0.9,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.312856",
+      "activations": 0
+    },
+    {
+      "id": "edge_fbe923d8",
+      "from": "RISK_SENTIMENT",
+      "to": "SPY",
+      "type": "drives",
+      "strength": 0.8,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.441269",
+      "activations": 0
+    },
+    {
+      "id": "edge_08dce47e",
+      "from": "ECONOMIC_REGIME",
+      "to": "TECHNOLOGY",
+      "type": "favors",
+      "strength": 0.8,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.441312",
+      "activations": 0
+    },
+    {
+      "id": "edge_e808c145",
+      "from": "TECHNOLOGY",
+      "to": "AAPL",
+      "type": "contains",
+      "strength": 0.9,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.575956",
+      "activations": 0
+    },
+    {
+      "id": "edge_db00e870",
+      "from": "ECONOMIC_REGIME",
+      "to": "FINANCIALS",
+      "type": "favors",
+      "strength": 0.8,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.575993",
+      "activations": 0
+    },
+    {
+      "id": "edge_47d77b41",
+      "from": "FINANCIALS",
+      "to": "JPM",
+      "type": "contains",
+      "strength": 0.9,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.697298",
+      "activations": 0
+    },
+    {
+      "id": "edge_5a191de3",
+      "from": "JPM_VALUE",
+      "to": "JPM",
+      "type": "signals",
+      "strength": 0.7,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.697333",
+      "activations": 0
+    },
+    {
+      "id": "edge_12ac0a71",
+      "from": "ECONOMIC_REGIME",
+      "to": "HEALTHCARE",
+      "type": "favors",
+      "strength": 0.4,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.697362",
+      "activations": 0
+    },
+    {
+      "id": "edge_c45f5eb1",
+      "from": "HEALTHCARE",
+      "to": "JNJ",
+      "type": "contains",
+      "strength": 0.9,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.820479",
+      "activations": 0
+    },
+    {
+      "id": "edge_00dc8a93",
+      "from": "JNJ_VALUE",
+      "to": "JNJ",
+      "type": "signals",
+      "strength": 0.7,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.820525",
+      "activations": 0
+    },
+    {
+      "id": "edge_8b63e40e",
+      "from": "ECONOMIC_REGIME",
+      "to": "CONSUMER_STAPLES",
+      "type": "favors",
+      "strength": 0.4,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.820556",
+      "activations": 0
+    },
+    {
+      "id": "edge_a1aacfd4",
+      "from": "CONSUMER_STAPLES",
+      "to": "PG",
+      "type": "contains",
+      "strength": 0.9,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.942319",
+      "activations": 0
+    },
+    {
+      "id": "edge_2e925f1d",
+      "from": "ECONOMIC_REGIME",
+      "to": "ENERGY",
+      "type": "favors",
+      "strength": 0.4,
+      "metadata": {},
+      "created": "2025-10-01T15:43:51.942379",
+      "activations": 0
+    },
+    {
+      "id": "edge_4c745729",
+      "from": "ENERGY",
+      "to": "XOM",
+      "type": "contains",
+      "strength": 0.9,
+      "metadata": {},
+      "created": "2025-10-01T15:43:52.067219",
+      "activations": 0
+    },
+    {
+      "id": "edge_f55dae32",
+      "from": "XOM_VALUE",
+      "to": "XOM",
+      "type": "signals",
+      "strength": 0.7,
+      "metadata": {},
+      "created": "2025-10-01T15:43:52.067286",
+      "activations": 0
+    },
+    {
+      "id": "edge_c23d55a2",
+      "from": "FED_RATE",
+      "to": "RISK_SENTIMENT",
+      "type": "influences",
+      "strength": 0.0,
+      "metadata": {},
+      "created": "2025-10-01T15:43:52.067359",
+      "activations": 0
+    },
+    {
+      "id": "edge_33d89983",
+      "from": "RISK_SENTIMENT",
+      "to": "TECHNOLOGY",
+      "type": "favors",
+      "strength": 0.8,
+      "metadata": {},
+      "created": "2025-10-01T15:43:52.067417",
+      "activations": 0
+    },
+    {
+      "id": "edge_49101533",
+      "from": "UNEMPLOYMENT",
+      "to": "FED_RATE",
+      "type": "influences",
+      "strength": 0.0,
+      "metadata": {},
+      "created": "2025-10-01T15:43:52.067463",
+      "activations": 0
+    }
+  ],
+  "patterns": {
+    "FED_RATE_to_SPY": {
+      "type": "transitive",
+      "from": "FED_RATE",
+      "to": "SPY",
+      "via": "RISK_SENTIMENT",
+      "strength": 0.7,
+      "discovered": "2025-10-01T15:43:52.067381",
+      "activations": 0
+    },
+    "RISK_SENTIMENT_to_AAPL": {
+      "type": "transitive",
+      "from": "RISK_SENTIMENT",
+      "to": "AAPL",
+      "via": "TECHNOLOGY",
+      "strength": 0.7,
+      "discovered": "2025-10-01T15:43:52.067427",
+      "activations": 0
+    },
+    "UNEMPLOYMENT_to_ECONOMIC_REGIME": {
+      "type": "transitive",
+      "from": "UNEMPLOYMENT",
+      "to": "ECONOMIC_REGIME",
+      "via": "FED_RATE",
+      "strength": 0.7,
+      "discovered": "2025-10-01T15:43:52.067472",
+      "activations": 0
+    },
+    "UNEMPLOYMENT_to_RISK_SENTIMENT": {
+      "type": "transitive",
+      "from": "UNEMPLOYMENT",
+      "to": "RISK_SENTIMENT",
+      "via": "FED_RATE",
+      "strength": 0.7,
+      "discovered": "2025-10-01T15:43:52.067479",
+      "activations": 0
+    }
+  },
+  "forecasts": {},
+  "metadata": {
+    "last_saved": "2025-10-01T15:43:52.068308",
+    "stats": {
+      "total_nodes": 21,
+      "total_edges": 20,
+      "total_patterns": 4,
+      "node_types": {
+        "regime": 1,
+        "indicator": 5,
+        "sentiment": 1,
+        "index": 1,
+        "sector": 5,
+        "stock": 5,
+        "signal": 3
+      },
+      "edge_types": {
+        "indicates_growth": 1,
+        "indicates_inflation": 1,
+        "determines_liquidity": 1,
+        "drives": 1,
+        "favors": 6,
+        "contains": 5,
+        "signals": 3,
+        "influences": 2
+      },
+      "avg_connections": 0.9523809523809523
+    }
+  }
+}

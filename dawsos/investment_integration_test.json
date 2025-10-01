@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-10-01T15:47:01.398183",
+  "regime": "GOLDILOCKS",
+  "value_stocks": [
+    {
+      "symbol": "JPM",
+      "pe": 15.97,
+      "price": 311.1
+    },
+    {
+      "symbol": "JNJ",
+      "pe": 19.73,
+      "price": 186.24
+    },
+    {
+      "symbol": "XOM",
+      "pe": 16.56,
+      "price": 112.2451
+    }
+  ],
+  "success_metrics": {
+    "regime_awareness": true,
+    "value_discovery": true,
+    "pattern_detection": true,
+    "forecast_capability": true,
+    "multi_agent_coordination": true
+  },
+  "integration_success": true
+}
