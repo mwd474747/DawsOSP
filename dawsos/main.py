@@ -68,12 +68,22 @@ def init_session_state():
         # Try to load existing graph
         if os.path.exists('storage/graph.json'):
             st.session_state.graph.load('storage/graph.json')
-            
+
+    # Initialize capabilities FIRST (before agent_runtime that uses it)
+    if 'capabilities' not in st.session_state:
+        st.session_state.capabilities = {
+            'fred': FREDCapability(),
+            'market': MarketDataCapability(),
+            'news': NewsCapability(),
+            'crypto': CryptoCapability(),
+            'fundamentals': FundamentalsCapability()
+        }
+
     if 'agent_runtime' not in st.session_state:
         # Initialize agent runtime
         st.session_state.agent_runtime = AgentRuntime()
 
-        # Initialize capabilities first
+        # Now capabilities exists and can be used
         caps = st.session_state.capabilities
 
         # Register agents
@@ -90,15 +100,6 @@ def init_session_state():
         runtime.register_agent('refactor_elf', RefactorElf())
         runtime.register_agent('workflow_recorder', WorkflowRecorder())
         runtime.register_agent('workflow_player', WorkflowPlayer())
-        
-    if 'capabilities' not in st.session_state:
-        st.session_state.capabilities = {
-            'fred': FREDCapability(),
-            'market': MarketDataCapability(),
-            'news': NewsCapability(),
-            'crypto': CryptoCapability(),
-            'fundamentals': FundamentalsCapability()
-        }
         
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []

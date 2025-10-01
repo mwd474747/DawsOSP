@@ -1,0 +1,249 @@
+{
+    "version": 1,
+    "nodes": {
+      "FED_RATE": {
+        "id": "FED_RATE",
+        "type": "indicator",
+        "data": {
+          "name": "Federal Funds Rate",
+          "category": "monetary_policy",
+          "source": "FRED",
+          "frequency": "monthly"
+        },
+        "created": "2024-01-01T00:00:00",
+        "modified": "2024-01-01T00:00:00",
+        "connections_in": [],
+        "connections_out": ["edge_001", "edge_002", "edge_003"],
+        "metadata": {
+          "access_count": 0,
+          "last_accessed": null,
+          "confidence": 1.0
+        }
+      },
+      "CPI": {
+        "id": "CPI",
+        "type": "indicator",
+        "data": {
+          "name": "Consumer Price Index",
+          "category": "inflation",
+          "source": "FRED",
+          "frequency": "monthly"
+        },
+        "created": "2024-01-01T00:00:00",
+        "modified": "2024-01-01T00:00:00",
+        "connections_in": [],
+        "connections_out": ["edge_004"],
+        "metadata": {
+          "access_count": 0,
+          "last_accessed": null,
+          "confidence": 1.0
+        }
+      },
+      "TECH_SECTOR": {
+        "id": "TECH_SECTOR",
+        "type": "sector",
+        "data": {
+          "name": "Technology",
+          "index": "XLK",
+          "market_cap_weight": 0.28
+        },
+        "created": "2024-01-01T00:00:00",
+        "modified": "2024-01-01T00:00:00",
+        "connections_in": ["edge_001", "edge_005"],
+        "connections_out": [],
+        "metadata": {
+          "access_count": 0,
+          "last_accessed": null,
+          "confidence": 1.0
+        }
+      },
+      "FINANCIALS_SECTOR": {
+        "id": "FINANCIALS_SECTOR",
+        "type": "sector",
+        "data": {
+          "name": "Financials",
+          "index": "XLF",
+          "market_cap_weight": 0.13
+        },
+        "created": "2024-01-01T00:00:00",
+        "modified": "2024-01-01T00:00:00",
+        "connections_in": ["edge_002"],
+        "connections_out": [],
+        "metadata": {
+          "access_count": 0,
+          "last_accessed": null,
+          "confidence": 1.0
+        }
+      },
+      "REAL_ESTATE_SECTOR": {
+        "id": "REAL_ESTATE_SECTOR",
+        "type": "sector",
+        "data": {
+          "name": "Real Estate",
+          "index": "XLRE",
+          "market_cap_weight": 0.025
+        },
+        "created": "2024-01-01T00:00:00",
+        "modified": "2024-01-01T00:00:00",
+        "connections_in": ["edge_003"],
+        "connections_out": [],
+        "metadata": {
+          "access_count": 0,
+          "last_accessed": null,
+          "confidence": 1.0
+        }
+      },
+      "GDP": {
+        "id": "GDP",
+        "type": "indicator",
+        "data": {
+          "name": "Gross Domestic Product",
+          "category": "growth",
+          "source": "FRED",
+          "frequency": "quarterly"
+        },
+        "created": "2024-01-01T00:00:00",
+        "modified": "2024-01-01T00:00:00",
+        "connections_in": [],
+        "connections_out": ["edge_005", "edge_006"],
+        "metadata": {
+          "access_count": 0,
+          "last_accessed": null,
+          "confidence": 1.0
+        }
+      },
+      "CORPORATE_EARNINGS": {
+        "id": "CORPORATE_EARNINGS",
+        "type": "fundamental",
+        "data": {
+          "name": "S&P 500 Earnings",
+          "category": "earnings"
+        },
+        "created": "2024-01-01T00:00:00",
+        "modified": "2024-01-01T00:00:00",
+        "connections_in": ["edge_006"],
+        "connections_out": [],
+        "metadata": {
+          "access_count": 0,
+          "last_accessed": null,
+          "confidence": 1.0
+        }
+      }
+    },
+    "edges": [
+      {
+        "id": "edge_001",
+        "from": "FED_RATE",
+        "to": "TECH_SECTOR",
+        "type": "pressures",
+        "strength": 0.8,
+        "metadata": {
+          "reasoning": "Higher rates increase discount rate for growth stocks"
+        },
+        "created": "2024-01-01T00:00:00",
+        "activations": 0
+      },
+      {
+        "id": "edge_002",
+        "from": "FED_RATE",
+        "to": "FINANCIALS_SECTOR",
+        "type": "supports",
+        "strength": 0.6,
+        "metadata": {
+          "reasoning": "Banks benefit from higher net interest margins"
+        },
+        "created": "2024-01-01T00:00:00",
+        "activations": 0
+      },
+      {
+        "id": "edge_003",
+        "from": "FED_RATE",
+        "to": "REAL_ESTATE_SECTOR",
+        "type": "pressures",
+        "strength": 0.9,
+        "metadata": {
+          "reasoning": "Higher rates directly impact mortgage costs and property valuations"
+        },
+        "created": "2024-01-01T00:00:00",
+        "activations": 0
+      },
+      {
+        "id": "edge_004",
+        "from": "CPI",
+        "to": "FED_RATE",
+        "type": "causes",
+        "strength": 0.7,
+        "metadata": {
+          "reasoning": "Fed responds to inflation with rate changes"
+        },
+        "created": "2024-01-01T00:00:00",
+        "activations": 0
+      },
+      {
+        "id": "edge_005",
+        "from": "GDP",
+        "to": "TECH_SECTOR",
+        "type": "supports",
+        "strength": 0.7,
+        "metadata": {
+          "reasoning": "Economic growth drives tech spending"
+        },
+        "created": "2024-01-01T00:00:00",
+        "activations": 0
+      },
+      {
+        "id": "edge_006",
+        "from": "GDP",
+        "to": "CORPORATE_EARNINGS",
+        "type": "causes",
+        "strength": 0.8,
+        "metadata": {
+          "reasoning": "Economic growth drives corporate profits"
+        },
+        "created": "2024-01-01T00:00:00",
+        "activations": 0
+      }
+    ],
+    "patterns": {
+      "rate_cycle": {
+        "type": "cycle",
+        "name": "Interest Rate Cycle",
+        "nodes": ["CPI", "FED_RATE", "TECH_SECTOR", "GDP"],
+        "description": "Inflation → Rates → Growth Stocks → Economic Growth",
+        "strength": 0.7,
+        "discovered": "2024-01-01T00:00:00",
+        "activations": 0
+      },
+      "sector_rotation": {
+        "type": "pattern",
+        "name": "Sector Rotation",
+        "description": "Money flows between sectors based on rate environment",
+        "relationships": [
+          "FED_RATE→TECH_SECTOR (inverse)",
+          "FED_RATE→FINANCIALS_SECTOR (positive)"
+        ],
+        "discovered": "2024-01-01T00:00:00",
+        "activations": 0
+      }
+    },
+    "forecasts": {},
+    "metadata": {
+      "last_saved": "2024-01-01T00:00:00",
+      "stats": {
+        "total_nodes": 7,
+        "total_edges": 6,
+        "total_patterns": 2,
+        "node_types": {
+          "indicator": 3,
+          "sector": 3,
+          "fundamental": 1
+        },
+        "edge_types": {
+          "pressures": 2,
+          "supports": 2,
+          "causes": 2
+        },
+        "avg_connections": 0.86
+      }
+    }
+  }
