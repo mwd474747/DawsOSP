@@ -8,6 +8,7 @@ import json
 import re
 from typing import Dict, List, Any, Optional
 from pathlib import Path
+from core.logger import get_logger
 
 
 class PatternEngine:
@@ -24,12 +25,13 @@ class PatternEngine:
         self.pattern_dir = Path(pattern_dir)
         self.runtime = runtime
         self.patterns = {}
+        self.logger = get_logger('PatternEngine')
         self.load_patterns()
 
     def load_patterns(self) -> None:
         """Load all pattern files from the patterns directory"""
         if not self.pattern_dir.exists():
-            print(f"Creating pattern directory: {self.pattern_dir}")
+            self.logger.info(f"Creating pattern directory: {self.pattern_dir}")
             self.pattern_dir.mkdir(parents=True, exist_ok=True)
             return
 
@@ -40,9 +42,11 @@ class PatternEngine:
                     pattern = json.load(f)
                     pattern_id = pattern.get('id', pattern_file.stem)
                     self.patterns[pattern_id] = pattern
-                    print(f"Loaded pattern: {pattern_id}")
+                    self.logger.debug(f"Loaded pattern: {pattern_id}", file=str(pattern_file))
+            except json.JSONDecodeError as e:
+                self.logger.error(f"Invalid JSON in pattern file {pattern_file}", error=e)
             except Exception as e:
-                print(f"Error loading pattern {pattern_file}: {e}")
+                self.logger.error(f"Error loading pattern {pattern_file}", error=e)
 
     def find_pattern(self, user_input: str) -> Optional[Dict[str, Any]]:
         """
@@ -54,31 +58,45 @@ class PatternEngine:
         Returns:
             Matching pattern dict or None
         """
-        user_input_lower = user_input.lower()
-        best_match = None
-        best_score = 0
+        try:
+            user_input_lower = user_input.lower()
+            best_match = None
+            best_score = 0
 
-        for pattern_id, pattern in self.patterns.items():
-            # Check triggers
-            triggers = pattern.get('triggers', [])
-            score = 0
+            for pattern_id, pattern in self.patterns.items():
+                # Check triggers
+                triggers = pattern.get('triggers', [])
+                score = 0
 
-            for trigger in triggers:
-                if trigger.lower() in user_input_lower:
-                    score += 1
+                for trigger in triggers:
+                    if trigger.lower() in user_input_lower:
+                        score += 1
 
-            # Check for entity mentions
-            entities = pattern.get('entities', [])
-            for entity in entities:
-                # Look for stock symbols (e.g., AAPL, TSLA)
-                if re.search(r'\b' + entity + r'\b', user_input, re.IGNORECASE):
-                    score += 2  # Entity matches are worth more
+                # Check for entity mentions
+                entities = pattern.get('entities', [])
+                for entity in entities:
+                    # Look for stock symbols (e.g., AAPL, TSLA)
+                    if re.search(r'\b' + entity + r'\b', user_input, re.IGNORECASE):
+                        score += 2  # Entity matches are worth more
 
-            if score > best_score:
-                best_score = score
-                best_match = pattern
+                if score > best_score:
+                    best_score = score
+                    best_match = pattern
 
-        return best_match if best_score > 0 else None
+            if best_match:
+                self.logger.log_pattern_match(
+                    pattern_id=best_match.get('id', 'unknown'),
+                    confidence=best_score / 10.0,
+                    matched=True
+                )
+            else:
+                self.logger.debug(f"No pattern matched for: {user_input}")
+
+            return best_match if best_score > 0 else None
+
+        except Exception as e:
+            self.logger.error("Error finding pattern", error=e, user_input=user_input)
+            return None
 
     def execute_pattern(self, pattern: Dict[str, Any], context: Dict[str, Any] = None) -> Dict[str, Any]:
         """

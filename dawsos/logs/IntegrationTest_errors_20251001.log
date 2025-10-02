@@ -1,0 +1,6 @@
+2025-10-01 20:27:05,008 - IntegrationTest - ERROR - logger:error:100 - Exception fetching FRED data {"error_type": "TypeError", "error_message": "unsupported format string passed to NoneType.__format__", "indicator": "GDP"}
+2025-10-01 20:27:05,204 - IntegrationTest - ERROR - logger:error:100 - Exception fetching FRED data {"error_type": "TypeError", "error_message": "unsupported format string passed to NoneType.__format__", "indicator": "CPI"}
+2025-10-01 20:27:05,374 - IntegrationTest - ERROR - logger:error:100 - Exception fetching FRED data {"error_type": "TypeError", "error_message": "unsupported format string passed to NoneType.__format__", "indicator": "UNEMPLOYMENT"}
+2025-10-01 20:27:10,647 - IntegrationTest - ERROR - logger:error:100 - Exception fetching FRED data {"error_type": "TypeError", "error_message": "unsupported format string passed to NoneType.__format__", "indicator": "GDP"}
+2025-10-01 20:27:10,765 - IntegrationTest - ERROR - logger:error:100 - Exception fetching FRED data {"error_type": "TypeError", "error_message": "unsupported format string passed to NoneType.__format__", "indicator": "CPI"}
+2025-10-01 20:27:10,903 - IntegrationTest - ERROR - logger:error:100 - Exception fetching FRED data {"error_type": "TypeError", "error_message": "unsupported format string passed to NoneType.__format__", "indicator": "UNEMPLOYMENT"}

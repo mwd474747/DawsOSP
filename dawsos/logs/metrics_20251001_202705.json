@@ -1,0 +1,10 @@
+{
+  "api_calls": 4,
+  "pattern_matches": 0,
+  "errors": 3,
+  "warnings": 0,
+  "agent_executions": 2,
+  "cache_hits": 0,
+  "cache_misses": 0,
+  "cache_hit_rate": 0.0
+}
