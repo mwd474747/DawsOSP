@@ -125,14 +125,14 @@ class TrinityUIComponents:
                 # Use Trinity agents to generate real alerts
                 if self.runtime and 'data_harvester' in self.runtime.agents:
                     # Get monitoring data from data harvester
-                    monitoring_data = self.runtime.agents['data_harvester'].harvest_market_data(
-                        "monitoring_alerts", {}
+                    monitoring_data = self.runtime.agents['data_harvester'].process(
+                        "monitoring_alerts"
                     )
 
                     # Use pattern spotter to identify alert conditions
                     if 'pattern_spotter' in self.runtime.agents:
-                        alert_patterns = self.runtime.agents['pattern_spotter'].find_patterns(
-                            "alert_conditions", monitoring_data
+                        alert_patterns = self.runtime.agents['pattern_spotter'].process(
+                            "alert_conditions"
                         )
 
                         # Convert patterns to alerts

@@ -163,9 +163,8 @@ def render_governance_tab(runtime, graph):
         try:
             # Get governance alerts from pattern spotter
             if 'pattern_spotter' in runtime.agents:
-                alert_data = runtime.agents['pattern_spotter'].find_patterns(
-                    "governance_alerts",
-                    {'source': 'governance_monitoring'}
+                alert_data = runtime.agents['pattern_spotter'].process(
+                    "governance_alerts"
                 )
 
                 alerts = alert_data.get('patterns_found', [])
