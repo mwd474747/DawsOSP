@@ -134,7 +134,7 @@ def init_session_state():
         runtime.register_agent('workflow_recorder', WorkflowRecorder())
         runtime.register_agent('workflow_player', WorkflowPlayer())
         runtime.register_agent('ui_generator', UIGeneratorAgent(st.session_state.graph))
-        runtime.register_agent('financial_analyst', FinancialAnalyst())
+        runtime.register_agent('financial_analyst', FinancialAnalyst(st.session_state.graph))
         runtime.register_agent('governance_agent', GovernanceAgent(st.session_state.graph))
 
         # Initialize PatternEngine after agents are registered

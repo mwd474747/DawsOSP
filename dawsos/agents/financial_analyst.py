@@ -7,15 +7,33 @@ Leverages Trinity architecture to provide sophisticated financial analysis
 from typing import Dict, List, Any, Optional
 from .base_agent import BaseAgent
 import json
+from datetime import datetime
 from core.confidence_calculator import confidence_calculator
 
 
 class FinancialAnalyst(BaseAgent):
     """Agent specialized in financial analysis and DCF modeling"""
 
-    def __init__(self):
-        super().__init__("financial_analyst")
+    def __init__(self, graph=None, llm_client=None):
+        super().__init__(graph=graph, name="financial_analyst", llm_client=llm_client)
         self.capabilities_needed = ['market', 'enriched_data']
+
+    def _find_or_create_company_node(self, symbol: str, financial_data: Dict = None) -> str:
+        """Find existing company node or create a new one"""
+        # Search for existing company node
+        for node_id, node in self.graph.nodes.items():
+            if node['type'] == 'company' and node['data'].get('symbol') == symbol:
+                return node_id
+
+        # Create new company node
+        company_data = {
+            'symbol': symbol,
+            'name': financial_data.get('company_name', symbol) if financial_data else symbol,
+            'sector': financial_data.get('sector', 'Unknown') if financial_data else 'Unknown',
+            'created': datetime.now().isoformat()
+        }
+
+        return self.add_knowledge('company', company_data)
 
     def process_request(self, request: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """Process financial analysis requests"""
@@ -23,6 +41,20 @@ class FinancialAnalyst(BaseAgent):
             context = {}
 
         request_lower = request.lower()
+
+        # Store query node if this is a new analysis query
+        query_node_id = None
+        if self.graph and any(term in request_lower for term in ['analyze', 'calculate', 'evaluate']):
+            symbol = self._extract_symbol(request, context)
+            if symbol:
+                query_data = {
+                    'query': request,
+                    'symbol': symbol,
+                    'timestamp': datetime.now().isoformat(),
+                    'type': 'financial_analysis'
+                }
+                query_node_id = self.add_knowledge('analysis_query', query_data)
+                context['query_node_id'] = query_node_id
 
         # DCF Valuation
         if any(term in request_lower for term in ['dcf', 'discounted cash flow', 'intrinsic value']):
@@ -35,6 +67,10 @@ class FinancialAnalyst(BaseAgent):
         # Owner Earnings
         elif any(term in request_lower for term in ['owner earnings', 'buffett earnings']):
             return self._calculate_owner_earnings(request, context)
+
+        # Moat Analysis
+        elif any(term in request_lower for term in ['moat', 'competitive advantage', 'competitive position']):
+            return self._analyze_moat(request, context)
 
         # Free Cash Flow Analysis
         elif any(term in request_lower for term in ['free cash flow', 'fcf']):
@@ -90,6 +126,34 @@ class FinancialAnalyst(BaseAgent):
             )
             confidence = confidence_result['confidence']
 
+            # Store DCF analysis in knowledge graph
+            dcf_node_data = {
+                "symbol": symbol,
+                "intrinsic_value": round(intrinsic_value, 2),
+                "projected_fcf": projected_fcf,
+                "discount_rate": discount_rate,
+                "terminal_value": terminal_value,
+                "present_values": present_values,
+                "confidence": confidence,
+                "methodology": "Standard DCF using Trinity knowledge base",
+                "timestamp": datetime.now().isoformat()
+            }
+
+            # Add DCF result node to graph if graph is available
+            dcf_node_id = None
+            if self.graph:
+                dcf_node_id = self.add_knowledge('dcf_analysis', dcf_node_data)
+
+                # Find or create company node
+                company_node_id = self._find_or_create_company_node(symbol, financial_data)
+
+                # Connect DCF to company
+                self.connect_knowledge(dcf_node_id, company_node_id, 'analyzes', strength=confidence)
+
+                # If this was from a query, connect to query node
+                if context.get('query_node_id'):
+                    self.connect_knowledge(context['query_node_id'], dcf_node_id, 'resulted_in', strength=0.9)
+
             return {
                 "symbol": symbol,
                 "dcf_analysis": {
@@ -101,6 +165,7 @@ class FinancialAnalyst(BaseAgent):
                     "confidence": confidence,
                     "methodology": "Standard DCF using Trinity knowledge base"
                 },
+                "node_id": dcf_node_id,
                 "response": f"DCF analysis for {symbol} shows intrinsic value of ${intrinsic_value:.2f} with {confidence:.0%} confidence"
             }
 
@@ -149,6 +214,30 @@ class FinancialAnalyst(BaseAgent):
             else:
                 quality = "Poor"
 
+            # Store ROIC analysis in knowledge graph
+            roic_node_data = {
+                "symbol": symbol,
+                "roic": round(roic, 4),
+                "roic_percentage": round(roic * 100, 2),
+                "quality_assessment": quality,
+                "nopat": nopat,
+                "invested_capital": invested_capital,
+                "ebit": ebit,
+                "tax_rate": tax_rate,
+                "timestamp": datetime.now().isoformat()
+            }
+
+            # Add ROIC node to graph if graph is available
+            roic_node_id = None
+            if self.graph:
+                roic_node_id = self.add_knowledge('roic_analysis', roic_node_data)
+
+                # Find or create company node
+                company_node_id = self._find_or_create_company_node(symbol, financial_data)
+
+                # Connect ROIC to company
+                self.connect_knowledge(roic_node_id, company_node_id, 'analyzes', strength=0.9)
+
             return {
                 "symbol": symbol,
                 "roic_analysis": {
@@ -162,6 +251,7 @@ class FinancialAnalyst(BaseAgent):
                         "tax_rate": tax_rate
                     }
                 },
+                "node_id": roic_node_id,
                 "response": f"{symbol} ROIC: {roic*100:.2f}% - {quality} performance"
             }
 
@@ -196,6 +286,29 @@ class FinancialAnalyst(BaseAgent):
             # Calculate Owner Earnings
             owner_earnings = net_income + depreciation - maintenance_capex - working_capital_change
 
+            # Store Owner Earnings analysis in knowledge graph
+            owner_node_data = {
+                "symbol": symbol,
+                "owner_earnings": round(owner_earnings, 2),
+                "net_income": net_income,
+                "depreciation_amortization": depreciation,
+                "maintenance_capex": maintenance_capex,
+                "working_capital_change": working_capital_change,
+                "methodology": "Buffett Owner Earnings calculation",
+                "timestamp": datetime.now().isoformat()
+            }
+
+            # Add Owner Earnings node to graph if graph is available
+            owner_node_id = None
+            if self.graph:
+                owner_node_id = self.add_knowledge('owner_earnings', owner_node_data)
+
+                # Find or create company node
+                company_node_id = self._find_or_create_company_node(symbol, financial_data)
+
+                # Connect Owner Earnings to company
+                self.connect_knowledge(owner_node_id, company_node_id, 'analyzes', strength=0.85)
+
             return {
                 "symbol": symbol,
                 "owner_earnings_analysis": {
@@ -208,6 +321,7 @@ class FinancialAnalyst(BaseAgent):
                     },
                     "methodology": "Buffett Owner Earnings calculation"
                 },
+                "node_id": owner_node_id,
                 "response": f"{symbol} Owner Earnings: ${owner_earnings:,.0f} million"
             }
 
@@ -350,6 +464,99 @@ class FinancialAnalyst(BaseAgent):
                 data_quality=0.6,
                 analysis_type='dcf'
             )['confidence']
+
+    def _analyze_moat(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze economic moat (competitive advantage) for a company"""
+        try:
+            symbol = self._extract_symbol(request, context)
+            if not symbol:
+                return {"error": "No stock symbol found in request"}
+
+            # Get financial data for moat analysis
+            financial_data = self._get_company_financials(symbol)
+            if 'error' in financial_data:
+                return financial_data
+
+            # Calculate moat factors
+            moat_scores = {
+                'brand': 0,
+                'network_effects': 0,
+                'cost_advantages': 0,
+                'switching_costs': 0,
+                'intangible_assets': 0
+            }
+
+            # Brand moat (based on gross margin)
+            gross_margin = financial_data.get('gross_margin', 0)
+            if gross_margin > 0.5:  # >50% gross margin indicates pricing power
+                moat_scores['brand'] = min(10, gross_margin * 15)
+
+            # Network effects (for tech companies)
+            if financial_data.get('sector') in ['Technology', 'Communication Services']:
+                revenue_growth = financial_data.get('revenue_growth', 0)
+                if revenue_growth > 0.2:  # >20% growth
+                    moat_scores['network_effects'] = min(10, revenue_growth * 30)
+
+            # Cost advantages (based on operating margin)
+            operating_margin = financial_data.get('operating_margin', 0)
+            if operating_margin > 0.2:  # >20% operating margin
+                moat_scores['cost_advantages'] = min(10, operating_margin * 30)
+
+            # Switching costs (based on customer retention, approximated by recurring revenue)
+            if financial_data.get('recurring_revenue_pct', 0) > 0.7:
+                moat_scores['switching_costs'] = 8
+
+            # Calculate overall moat score
+            total_score = sum(moat_scores.values())
+            moat_rating = 'Wide' if total_score > 30 else 'Narrow' if total_score > 15 else 'None'
+
+            # Store moat analysis in knowledge graph
+            moat_node_data = {
+                'symbol': symbol,
+                'moat_rating': moat_rating,
+                'moat_score': total_score,
+                'brand_score': moat_scores['brand'],
+                'network_effects_score': moat_scores['network_effects'],
+                'cost_advantages_score': moat_scores['cost_advantages'],
+                'switching_costs_score': moat_scores['switching_costs'],
+                'intangible_assets_score': moat_scores['intangible_assets'],
+                'gross_margin': gross_margin,
+                'operating_margin': operating_margin,
+                'timestamp': datetime.now().isoformat()
+            }
+
+            # Add moat analysis node to graph if graph is available
+            moat_node_id = None
+            if self.graph:
+                moat_node_id = self.add_knowledge('moat_analysis', moat_node_data)
+
+                # Find or create company node
+                company_node_id = self._find_or_create_company_node(symbol, financial_data)
+
+                # Connect moat analysis to company
+                self.connect_knowledge(moat_node_id, company_node_id, 'analyzes', strength=0.9)
+
+                # If this was from a query, connect to query node
+                if context.get('query_node_id'):
+                    self.connect_knowledge(context['query_node_id'], moat_node_id, 'resulted_in', strength=0.95)
+
+            return {
+                "symbol": symbol,
+                "moat_analysis": {
+                    "moat_rating": moat_rating,
+                    "overall_score": total_score,
+                    "factors": moat_scores,
+                    "financial_evidence": {
+                        "gross_margin": f"{gross_margin:.1%}",
+                        "operating_margin": f"{operating_margin:.1%}"
+                    }
+                },
+                "node_id": moat_node_id,
+                "response": f"{symbol} has a {moat_rating} moat with score {total_score:.1f}/50"
+            }
+
+        except Exception as e:
+            return {"error": f"Moat analysis failed: {str(e)}"}
 
     def _analyze_free_cash_flow(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze free cash flow trends and quality"""

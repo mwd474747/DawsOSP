@@ -5,6 +5,7 @@ GovernanceAgent - Ultra-simple conversational data governance
 """
 
 from typing import Dict, List, Any, Optional
+from datetime import datetime
 from .base_agent import BaseAgent
 import json
 
@@ -18,12 +19,19 @@ class GovernanceAgent(BaseAgent):
         # Initialize graph governance if available
         self.graph_governance = None
         self.governance_hooks = None
+        self.agent_validator = None
+        self.compliance_enforcer = None
+
         if self.graph:
             try:
                 from core.graph_governance import GraphGovernance
                 from core.governance_hooks import GovernanceHooks
+                from core.agent_validator import AgentValidator, ComplianceEnforcer
+
                 self.graph_governance = GraphGovernance(self.graph)
                 self.governance_hooks = GovernanceHooks(self.graph_governance)
+                self.agent_validator = AgentValidator(self.graph)
+                self.compliance_enforcer = ComplianceEnforcer(self.agent_validator)
             except ImportError:
                 pass  # Graph governance not available yet
 
@@ -197,6 +205,8 @@ class GovernanceAgent(BaseAgent):
             return self._assess_security(request, context)
         elif action == 'performance_tuning':
             return self._tune_performance(request, context)
+        elif action == 'agent_compliance':
+            return self._validate_agent_compliance(request, context)
         else:
             return {
                 'status': 'completed',
@@ -325,6 +335,103 @@ class GovernanceAgent(BaseAgent):
             'optimizations_applied': ['Added JSON caching', 'Optimized pattern execution order'],
             'performance_improvement': '35% faster average response time'
         }
+
+    def _validate_agent_compliance(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate agent compliance with Trinity Architecture"""
+        if not self.agent_validator:
+            return {
+                'status': 'error',
+                'message': 'Agent validator not initialized'
+            }
+
+        # Get runtime from context or import
+        runtime = context.get('runtime') if context else None
+        if not runtime:
+            try:
+                from core.agent_runtime import AgentRuntime
+                runtime = AgentRuntime()
+            except:
+                return {
+                    'status': 'error',
+                    'message': 'Cannot access agent runtime for validation'
+                }
+
+        # Validate all agents
+        validation_results = self.agent_validator.validate_all_agents(runtime)
+
+        # Generate report
+        report = self.agent_validator.generate_compliance_report(validation_results)
+
+        # Store results in knowledge graph
+        if self.graph:
+            result_node = self.add_knowledge('agent_compliance_report', {
+                'timestamp': validation_results['timestamp'],
+                'overall_compliance': validation_results['overall_compliance'],
+                'total_agents': validation_results['total_agents'],
+                'compliant': validation_results['compliant'],
+                'non_compliant': validation_results['non_compliant'],
+                'report': report
+            })
+
+            # Connect to governance node
+            governance_node = self._find_or_create_governance_node()
+            if governance_node:
+                self.connect_knowledge(result_node, governance_node, 'validates', strength=0.9)
+
+        return {
+            'status': 'completed',
+            'action': 'agent_compliance',
+            'overall_compliance': validation_results['overall_compliance'],
+            'summary': {
+                'total_agents': validation_results['total_agents'],
+                'compliant': validation_results['compliant'],
+                'warnings': validation_results['warnings'],
+                'non_compliant': validation_results['non_compliant']
+            },
+            'report': report,
+            'node_id': result_node if self.graph else None,
+            'recommendations': self._generate_compliance_recommendations(validation_results)
+        }
+
+    def _find_or_create_governance_node(self) -> Optional[str]:
+        """Find or create the main governance node"""
+        if not self.graph:
+            return None
+
+        # Search for existing governance node
+        for node_id, node in self.graph.nodes.items():
+            if node['type'] == 'governance' and node['data'].get('primary'):
+                return node_id
+
+        # Create new governance node
+        return self.add_knowledge('governance', {
+            'primary': True,
+            'name': 'System Governance',
+            'created': datetime.now().isoformat()
+        })
+
+    def _generate_compliance_recommendations(self, validation_results: Dict[str, Any]) -> List[str]:
+        """Generate recommendations based on compliance results"""
+        recommendations = []
+
+        compliance = validation_results['overall_compliance']
+        if compliance < 0.5:
+            recommendations.append("CRITICAL: Most agents lack graph integration - implement store_result() methods")
+        elif compliance < 0.8:
+            recommendations.append("WARNING: Several agents not storing results - add knowledge graph usage")
+
+        if validation_results['non_compliant'] > 0:
+            recommendations.append(f"Fix {validation_results['non_compliant']} non-compliant agents immediately")
+
+        if validation_results['warnings'] > 0:
+            recommendations.append(f"Review {validation_results['warnings']} agents with warnings")
+
+        # Check for common issues
+        for agent_name, validation in validation_results.get('agents', {}).items():
+            if not validation.get('graph_integration', {}).get('stores_results'):
+                recommendations.append(f"{agent_name}: Add result storage using self.store_result()")
+
+        return recommendations
 
     def suggest_improvements(self, scope: str = 'all') -> Dict[str, Any]:
         """Analyze system and suggest improvements using graph governance"""

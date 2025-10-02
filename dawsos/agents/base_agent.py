@@ -1,6 +1,9 @@
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 class BaseAgent:
     """Base class for all specialized agents"""
@@ -111,9 +114,40 @@ class BaseAgent:
     
     def add_knowledge(self, node_type: str, data: Dict, node_id: str = None) -> str:
         """Add knowledge to the graph"""
+        if not self.graph:
+            logger.warning(f"{self.name}: Cannot add knowledge - no graph available")
+            return None
         return self.graph.add_node(node_type, data, node_id)
-    
-    def connect_knowledge(self, from_id: str, to_id: str, 
+
+    def connect_knowledge(self, from_id: str, to_id: str,
                           relationship: str, strength: float = 1.0) -> bool:
         """Connect knowledge in the graph"""
+        if not self.graph:
+            logger.warning(f"{self.name}: Cannot connect knowledge - no graph available")
+            return False
         return self.graph.connect(from_id, to_id, relationship, strength)
+
+    def store_result(self, result: Dict[str, Any], context: Dict[str, Any] = None) -> str:
+        """Automatically store agent results in the knowledge graph"""
+        if not self.graph or not result:
+            return None
+
+        # Create result node
+        node_data = {
+            'agent': self.name,
+            'result': result,
+            'timestamp': datetime.now().isoformat()
+        }
+
+        # Add context if provided
+        if context:
+            node_data['context'] = context
+
+        # Store in graph
+        node_id = self.add_knowledge(f'{self.name}_result', node_data)
+
+        # Connect to query node if present
+        if context and context.get('query_node_id'):
+            self.connect_knowledge(context['query_node_id'], node_id, 'resulted_in', strength=0.9)
+
+        return node_id
