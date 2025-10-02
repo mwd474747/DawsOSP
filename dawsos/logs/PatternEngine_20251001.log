@@ -443,3 +443,5 @@
 2025-10-01 22:13:03,397 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
 2025-10-01 22:13:03,397 - PatternEngine - INFO - logger:info:83 - Loaded 33 patterns successfully 
 2025-10-01 22:13:42,042 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: sector_performance {"pattern_id": "sector_performance", "confidence": 0.2, "matched": true}
+2025-10-01 22:22:15,506 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-01 22:22:15,506 - PatternEngine - INFO - logger:info:83 - Loaded 33 patterns successfully 

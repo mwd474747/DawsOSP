@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-01T22:20:14.405781",
+  "generated_at": "2025-10-01T22:22:16.065762",
   "checksums": {
     "patterns/sector_rotation.json": "09549da615b0a5752d5ed6b8e021d67b8a8cd8f22b2de7d7372327dc66fd4885",
     "patterns/comprehensive_analysis.json": "31081719076475effbb78759e5c7d88f0d031e79cef3c44ba3dfa99a8d8f8825",
@@ -51,7 +51,7 @@
     "agents/structure_bot.py": "5faa9b36b254ae67fe8ef1ca99b75a591a567dd4ee8e1c40a7b0a9927b13a287",
     "agents/equity_agent.py": "d32f66020683b3d9d5c631fc7cab79e01c8ed4a2b98fc83e3d0f6e8a72993a72",
     "agents/ui_generator.py": "7298f95c5fba34d3dd49ead8aa8ddee6e12f12f5fd5b8cc7770257b10afdab0c",
-    "agents/workflow_player.py": "9aaa81207e8a7428a5b535cc587e173f8d09676c776eeb99c05046ae22e642be",
+    "agents/workflow_player.py": "b418dfa8a4a99d96d866068b6a477f23c72e0e58900af5d7396ffada0bcc6d21",
     "agents/fundamentals.py": "3cbf656d54f8fab2a1e05f3f79fbb26c16e2a95a85bc4bc17d8cc3649b5c43cc",
     "agents/claude.py": "87923c741ebc520f0be696ecebf8ce5460ae22b3146d722169a59e31ab243673",
     "agents/pattern_spotter.py": "7a5ed54457ee64b6186f7bd042b7bc2c11b34ea75531db65403b99700dcf2272",
