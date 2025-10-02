@@ -117,7 +117,7 @@ def init_session_state():
         runtime.register_agent('claude', Claude(st.session_state.graph))
         runtime.register_agent('data_harvester', DataHarvester(st.session_state.graph, caps))
         runtime.register_agent('data_digester', DataDigester(st.session_state.graph))
-        runtime.register_agent('relationship_hunter', RelationshipHunter(st.session_state.graph))
+        runtime.register_agent('relationship_hunter', RelationshipHunter(st.session_state.graph, capabilities=caps))
         runtime.register_agent('pattern_spotter', PatternSpotter(st.session_state.graph))
         runtime.register_agent('forecast_dreamer', ForecastDreamer(st.session_state.graph))
         runtime.register_agent('code_monkey', CodeMonkey())

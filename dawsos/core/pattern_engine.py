@@ -26,7 +26,48 @@ class PatternEngine:
         self.runtime = runtime
         self.patterns = {}
         self.logger = get_logger('PatternEngine')
+        self.company_db = self._load_company_database()
         self.load_patterns()
+
+    def _load_company_database(self) -> Dict:
+        """Load the company database for symbol resolution"""
+        try:
+            company_db_path = Path('storage/knowledge/company_database.json')
+            if company_db_path.exists():
+                with open(company_db_path, 'r') as f:
+                    return json.load(f)
+        except Exception as e:
+            self.logger.warning(f"Could not load company database: {e}")
+        return {}
+
+    def resolve_company_to_symbol(self, text: str) -> str:
+        """Resolve company name or symbol to standard ticker symbol"""
+        if not self.company_db:
+            return text.upper()
+
+        text_lower = text.lower()
+
+        # Check aliases_to_symbol mapping first
+        aliases = self.company_db.get('aliases_to_symbol', {})
+        if text_lower in aliases:
+            return aliases[text_lower]
+
+        # Check if it's already a valid symbol
+        companies = self.company_db.get('companies', {})
+        text_upper = text.upper()
+        if text_upper in companies:
+            return text_upper
+
+        # Check company names and aliases
+        for symbol, info in companies.items():
+            if text_lower == info.get('name', '').lower():
+                return symbol
+            for alias in info.get('aliases', []):
+                if text_lower == alias.lower():
+                    return symbol
+
+        # If no match found, return uppercase version
+        return text.upper()
 
     def load_patterns(self) -> None:
         """Load all pattern files from the patterns directory"""
@@ -430,10 +471,46 @@ class PatternEngine:
 
                 # Extract stock symbols from user input
                 if '{SYMBOL}' in value:
-                    # Look for stock symbols in user input
-                    symbols = re.findall(r'\b[A-Z]{1,5}\b', context.get('user_input', ''))
+                    # Extract company name or symbol from user input
+                    user_input = context.get('user_input', '')
+
+                    # First try to find exact ticker symbols (uppercase 1-5 chars)
+                    symbols = re.findall(r'\b[A-Z]{1,5}\b', user_input)
                     if symbols:
-                        value = value.replace('{SYMBOL}', symbols[0])
+                        # Validate it's a known symbol
+                        symbol = symbols[0]
+                        if self.company_db.get('companies', {}).get(symbol):
+                            value = value.replace('{SYMBOL}', symbol)
+                        else:
+                            value = value.replace('{SYMBOL}', symbols[0])
+                    else:
+                        # Try to find company names in the input
+                        resolved_symbol = None
+                        user_input_lower = user_input.lower()
+
+                        # Check aliases first (most common way users refer to companies)
+                        for alias, symbol in self.company_db.get('aliases_to_symbol', {}).items():
+                            if alias in user_input_lower:
+                                resolved_symbol = symbol
+                                break
+
+                        # If no match, check company names
+                        if not resolved_symbol:
+                            for symbol, info in self.company_db.get('companies', {}).items():
+                                company_name = info.get('name', '').lower()
+                                if company_name and company_name in user_input_lower:
+                                    resolved_symbol = symbol
+                                    break
+                                # Check aliases in company info
+                                for alias in info.get('aliases', []):
+                                    if alias.lower() in user_input_lower:
+                                        resolved_symbol = symbol
+                                        break
+                                if resolved_symbol:
+                                    break
+
+                        if resolved_symbol:
+                            value = value.replace('{SYMBOL}', resolved_symbol)
 
                 resolved[key] = value
             else:

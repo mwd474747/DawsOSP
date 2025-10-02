@@ -5,9 +5,10 @@ from typing import Dict, Any, List, Tuple
 class RelationshipHunter(BaseAgent):
     """Hunts for relationships between nodes"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(self, graph, llm_client=None, capabilities=None):
         super().__init__("RelationshipHunter", graph, llm_client)
         self.vibe = "curious"
+        self.capabilities = capabilities or {}
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
         return f"""
@@ -34,23 +35,144 @@ class RelationshipHunter(BaseAgent):
 
     def process(self, context: Any) -> Dict[str, Any]:
         """Process method for compatibility with patterns"""
+        import numpy as np
+        from datetime import datetime, timedelta
+
         # Extract data from context
         if isinstance(context, dict):
             data = context.get('data', context)
             target = context.get('target', 'SPY')
+            capabilities = context.get('capabilities', {})
         else:
             data = {}
             target = 'SPY'
+            capabilities = {}
 
-        # Return mock correlations for testing
+        # Get market capability for fetching price data
+        market_cap = capabilities.get('market')
+        if not market_cap:
+            # If no capability passed, try to get from parent context
+            if hasattr(self, 'capabilities'):
+                market_cap = self.capabilities.get('market')
+
+        if not market_cap:
+            # Return basic correlations based on known relationships
+            return self._get_default_correlations(target)
+
+        # Symbols to check correlation against
+        symbols_to_check = ['QQQ', 'IWM', 'TLT', 'GLD', 'DXY', 'VXX', 'XLE', 'XLF', 'ARKK']
+        correlations = {}
+
+        # For now, use default correlations since historical data requires a different API endpoint
+        # TODO: Implement historical price fetching when API endpoint is available
+        return self._get_default_correlations(target)
+
+        # Future implementation when historical data is available:
+        # target_history = market_cap.get_historical(target, days=30)
+        # if 'error' in target_history or not target_history.get('prices'):
+        #     return self._get_default_correlations(target)
+        # ... calculate real correlations ...
+
+        # Categorize correlations
+        strong_positive = []
+        weak_positive = []
+        negative = []
+
+        for symbol, corr in correlations.items():
+            if corr > 0.7:
+                strong_positive.append(f'{symbol} ({corr:.2f})')
+            elif corr > 0.3:
+                weak_positive.append(f'{symbol} ({corr:.2f})')
+            elif corr < -0.3:
+                negative.append(f'{symbol} ({corr:.2f})')
+
+        # Generate summary
+        summary = self._generate_correlation_summary(target, correlations)
+
         return {
-            'response': f'Found correlations for {target}',
+            'response': f'Calculated correlations for {target}',
             'correlations': {
-                'strong_positive': ['QQQ (0.85)', 'IWM (0.78)'],
-                'weak_positive': ['TLT (0.35)', 'VXX (0.25)'],
-                'negative': ['DXY (-0.45)', 'GLD (-0.35)'],
-                'summary': f'{target} shows strong correlation with tech indices'
+                'strong_positive': strong_positive,
+                'weak_positive': weak_positive,
+                'negative': negative,
+                'summary': summary
             }
+        }
+
+    def _calculate_returns(self, prices: List[float]) -> List[float]:
+        """Calculate daily returns from price series"""
+        if len(prices) < 2:
+            return []
+        returns = []
+        for i in range(1, len(prices)):
+            if prices[i-1] != 0:
+                ret = (prices[i] - prices[i-1]) / prices[i-1]
+                returns.append(ret)
+        return returns
+
+    def _calculate_correlation(self, returns1: List[float], returns2: List[float]) -> float:
+        """Calculate Pearson correlation between two return series"""
+        import numpy as np
+        if not returns1 or not returns2 or len(returns1) != len(returns2):
+            return 0.0
+
+        try:
+            # Convert to numpy arrays
+            r1 = np.array(returns1)
+            r2 = np.array(returns2)
+
+            # Calculate correlation coefficient
+            corr_matrix = np.corrcoef(r1, r2)
+            correlation = corr_matrix[0, 1]
+
+            return round(correlation, 2) if not np.isnan(correlation) else 0.0
+        except:
+            return 0.0
+
+    def _generate_correlation_summary(self, target: str, correlations: Dict[str, float]) -> str:
+        """Generate summary of correlation findings"""
+        if not correlations:
+            return f"{target} correlation data unavailable"
+
+        # Find strongest correlations
+        strongest = max(correlations.items(), key=lambda x: abs(x[1]))
+
+        if abs(strongest[1]) > 0.7:
+            relation = "strong positive" if strongest[1] > 0 else "strong negative"
+            return f"{target} shows {relation} correlation with {strongest[0]}"
+        elif abs(strongest[1]) > 0.4:
+            relation = "moderate positive" if strongest[1] > 0 else "moderate negative"
+            return f"{target} has {relation} correlation with {strongest[0]}"
+        else:
+            return f"{target} shows weak correlations with tracked indices"
+
+    def _get_default_correlations(self, target: str) -> Dict[str, Any]:
+        """Return default correlations based on known relationships"""
+        known_correlations = {
+            'SPY': {
+                'strong_positive': ['QQQ (0.85)', 'IWM (0.78)'],
+                'weak_positive': ['TLT (0.35)'],
+                'negative': ['VXX (-0.65)', 'DXY (-0.35)'],
+                'summary': 'SPY typically correlates strongly with tech and small caps'
+            },
+            'QQQ': {
+                'strong_positive': ['SPY (0.85)', 'ARKK (0.75)'],
+                'weak_positive': ['IWM (0.55)'],
+                'negative': ['VXX (-0.70)', 'TLT (-0.30)'],
+                'summary': 'QQQ moves with growth and technology sectors'
+            }
+        }
+
+        default = known_correlations.get(target, {
+            'strong_positive': [],
+            'weak_positive': [],
+            'negative': [],
+            'summary': f'Correlation data for {target} requires market data access'
+        })
+
+        return {
+            'response': f'Correlations for {target} (estimated)',
+            'correlations': default
         }
 
     def hunt(self, node_id: str = None) -> List[Dict[str, Any]]:
