@@ -19,7 +19,16 @@
         "target": "portfolio",
         "data": "{portfolio_data}"
       },
-      "output": "correlation_matrix"
+      "output": "live_correlations"
+    },
+    {
+      "step": "get_sector_correlations",
+      "action": "enriched_lookup",
+      "params": {
+        "data_type": "sector_correlations",
+        "query": "correlation_matrix"
+      },
+      "output": "sector_correlation_matrix"
     },
     {
       "step": "get_market_conditions",
@@ -44,7 +53,8 @@
       "params": {
         "type": "concentration_risk",
         "portfolio": "{portfolio_data}",
-        "correlations": "{correlation_matrix}"
+        "correlations": "{live_correlations}",
+        "sector_correlations": "{sector_correlation_matrix.data}"
       },
       "output": "concentration_risk"
     },
@@ -64,10 +74,11 @@
         "market_risk": "{market_risk}",
         "concentration_risk": "{concentration_risk}",
         "risk_metrics": "{risk_metrics}",
-        "correlations": "{correlation_matrix}"
+        "live_correlations": "{live_correlations}",
+        "sector_correlations": "{sector_correlation_matrix.data}"
       },
       "output": "risk_summary"
     }
   ],
-  "response_template": "## Portfolio Risk Assessment\n\n### Risk Metrics\n- Beta: {risk_metrics.beta}\n- Sharpe Ratio: {risk_metrics.sharpe_ratio}\n- Max Drawdown: {risk_metrics.max_drawdown}%\n\n### Market Risk\n{market_risk.assessment}\n\n### Concentration Risk\n{concentration_risk.assessment}\n\n### Correlation Analysis\n{correlation_matrix.summary}\n\n### Risk Summary\n{risk_summary.overall_risk}\n\n### Recommendations\n{risk_summary.recommendations}"
+  "response_template": "## Portfolio Risk Assessment\n\n### Risk Metrics\n- Beta: {risk_metrics.beta}\n- Sharpe Ratio: {risk_metrics.sharpe_ratio}\n- Max Drawdown: {risk_metrics.max_drawdown}%\n\n### Market Risk\n{market_risk.assessment}\n\n### Concentration Risk\n{concentration_risk.assessment}\n\n### Correlation Analysis\nLive correlations: {live_correlations.summary}\nSector correlations from historical data provide additional context\n\n### Risk Summary\n{risk_summary.overall_risk}\n\n### Recommendations\n{risk_summary.recommendations}"
 }

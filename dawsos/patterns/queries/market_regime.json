@@ -24,10 +24,26 @@
       "output": "regime_analysis"
     },
     {
+      "action": "enriched_lookup",
+      "params": {
+        "data_type": "economic_cycles",
+        "query": "historical_phases"
+      },
+      "output": "historical_cycles"
+    },
+    {
+      "action": "enriched_lookup",
+      "params": {
+        "data_type": "economic_cycles",
+        "query": "cycle_indicators"
+      },
+      "output": "cycle_indicators"
+    },
+    {
       "agent": "claude",
       "method": "process",
       "params": {
-        "user_input": "Based on this analysis {regime_analysis}, what is the current market regime? Provide: 1) Current regime (Risk-On/Risk-Off/Transitioning) 2) Key indicators 3) Confidence level 4) Recommendations"
+        "user_input": "Based on current analysis {regime_analysis}, historical cycles {historical_cycles.data}, and cycle indicators {cycle_indicators.data}, determine: 1) Current market regime (Risk-On/Risk-Off/Transitioning) 2) Which historical period (from {historical_cycles.data}) most resembles current conditions 3) Key indicators and confidence level 4) Sector rotation recommendations based on regime"
       },
       "output": "regime_report"
     }

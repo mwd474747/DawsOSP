@@ -265,6 +265,31 @@ class PatternEngine:
                 'found': False
             }
 
+        elif action == "enriched_lookup":
+            # Look up enriched data from Phase 3 JSON files
+            data_type = params.get('data_type', '')
+            query = params.get('query', '')
+
+            # Load the enriched data
+            enriched_data = self.load_enriched_data(data_type)
+
+            if enriched_data:
+                # Extract specific query if provided
+                if query:
+                    result = self.extract_enriched_section(enriched_data, query, params)
+                    return result
+                else:
+                    return {
+                        'data': enriched_data,
+                        'found': True,
+                        'source': data_type
+                    }
+
+            return {
+                'data': f"Enriched data '{data_type}' not found",
+                'found': False
+            }
+
         elif action == "evaluate":
             # Evaluate criteria
             eval_type = params.get('type', '')
@@ -668,3 +693,111 @@ class PatternEngine:
     def get_pattern(self, pattern_id: str) -> Optional[Dict[str, Any]]:
         """Get a specific pattern by ID"""
         return self.patterns.get(pattern_id)
+
+    def load_enriched_data(self, data_type: str) -> Optional[Dict]:
+        """Load enriched data from Phase 3 JSON files"""
+        data_files = {
+            'sector_performance': 'storage/knowledge/sector_performance.json',
+            'economic_cycles': 'storage/knowledge/economic_cycles.json',
+            'sp500_companies': 'storage/knowledge/sp500_companies.json',
+            'sector_correlations': 'storage/knowledge/sector_correlations.json',
+            'relationships': 'storage/knowledge/relationship_mappings.json'
+        }
+
+        if data_type in data_files:
+            filepath = Path(data_files[data_type])
+            if filepath.exists():
+                try:
+                    with open(filepath, 'r') as f:
+                        return json.load(f)
+                except Exception as e:
+                    print(f"Error loading {data_type}: {e}")
+        return None
+
+    def extract_enriched_section(self, data: Dict, query: str, params: Dict) -> Dict:
+        """Extract specific section from enriched data based on query and params"""
+        try:
+            # Handle different query types
+            if query == 'cycle_performance':
+                phase = params.get('phase', '')
+                if 'sectors' in data:
+                    result = {}
+                    for sector, sector_data in data['sectors'].items():
+                        if 'performance_by_cycle' in sector_data and phase in sector_data['performance_by_cycle']:
+                            result[sector] = sector_data['performance_by_cycle'][phase]
+                    if result:
+                        return {
+                            'data': result,
+                            'found': True,
+                            'phase': phase
+                        }
+
+            elif query == 'historical_phases':
+                if 'economic_cycles' in data and 'historical_phases' in data['economic_cycles']:
+                    return {
+                        'data': data['economic_cycles']['historical_phases'],
+                        'found': True,
+                        'count': len(data['economic_cycles']['historical_phases'])
+                    }
+
+            elif query == 'sector_peers':
+                symbol = params.get('symbol', '')
+                sector = params.get('sector', '')
+                if 'sp500_companies' in data and sector in data['sp500_companies']:
+                    peers = []
+                    for tier in data['sp500_companies'][sector].values():
+                        if isinstance(tier, dict):
+                            peers.extend(list(tier.keys()))
+                    return {
+                        'data': peers,
+                        'found': True,
+                        'sector': sector,
+                        'count': len(peers)
+                    }
+
+            elif query == 'correlation_matrix':
+                if 'sector_correlations' in data and 'correlation_matrix' in data['sector_correlations']:
+                    return {
+                        'data': data['sector_correlations']['correlation_matrix'],
+                        'found': True
+                    }
+
+            elif query == 'supply_chain_relationships':
+                company = params.get('company', '')
+                if 'supply_chain_relationships' in data:
+                    for category in data['supply_chain_relationships'].values():
+                        if isinstance(category, dict) and company in category:
+                            return {
+                                'data': category[company],
+                                'found': True,
+                                'company': company
+                            }
+
+            elif query == 'rotation_strategies':
+                if 'rotation_strategies' in data:
+                    phase = params.get('current_phase', params.get('phase', ''))
+                    if phase and phase in data['rotation_strategies']:
+                        return {
+                            'data': data['rotation_strategies'][phase],
+                            'found': True,
+                            'phase': phase
+                        }
+                    return {
+                        'data': data['rotation_strategies'],
+                        'found': True
+                    }
+
+            # Default: return the requested query path if it exists
+            if query in data:
+                return {
+                    'data': data[query],
+                    'found': True
+                }
+
+        except Exception as e:
+            print(f"Error extracting enriched section: {e}")
+
+        return {
+            'data': f"Query '{query}' not found in enriched data",
+            'found': False
+        }
