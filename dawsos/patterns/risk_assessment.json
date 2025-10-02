@@ -1,0 +1,73 @@
+{
+  "id": "risk_assessment",
+  "name": "Portfolio Risk Assessment",
+  "description": "Comprehensive risk analysis for a portfolio or position",
+  "triggers": ["risk assessment", "portfolio risk", "analyze risk", "risk analysis"],
+  "workflow": [
+    {
+      "step": "get_portfolio_data",
+      "agent": "data_harvester",
+      "params": {
+        "request": "Get portfolio holdings {SYMBOLS}"
+      },
+      "output": "portfolio_data"
+    },
+    {
+      "step": "calculate_correlations",
+      "agent": "relationship_hunter",
+      "params": {
+        "target": "portfolio",
+        "data": "{portfolio_data}"
+      },
+      "output": "correlation_matrix"
+    },
+    {
+      "step": "get_market_conditions",
+      "agent": "data_harvester",
+      "params": {
+        "request": "Get VIX, credit spreads, yield curve"
+      },
+      "output": "market_conditions"
+    },
+    {
+      "step": "evaluate_market_risk",
+      "action": "evaluate",
+      "params": {
+        "type": "market_risk",
+        "data": "{market_conditions}"
+      },
+      "output": "market_risk"
+    },
+    {
+      "step": "evaluate_concentration_risk",
+      "action": "evaluate",
+      "params": {
+        "type": "concentration_risk",
+        "portfolio": "{portfolio_data}",
+        "correlations": "{correlation_matrix}"
+      },
+      "output": "concentration_risk"
+    },
+    {
+      "step": "calculate_metrics",
+      "action": "calculate",
+      "params": {
+        "formulas": ["beta", "sharpe_ratio", "max_drawdown"],
+        "data": "{portfolio_data}"
+      },
+      "output": "risk_metrics"
+    },
+    {
+      "step": "synthesize",
+      "action": "synthesize",
+      "params": {
+        "market_risk": "{market_risk}",
+        "concentration_risk": "{concentration_risk}",
+        "risk_metrics": "{risk_metrics}",
+        "correlations": "{correlation_matrix}"
+      },
+      "output": "risk_summary"
+    }
+  ],
+  "response_template": "## Portfolio Risk Assessment\n\n### Risk Metrics\n- Beta: {risk_metrics.beta}\n- Sharpe Ratio: {risk_metrics.sharpe_ratio}\n- Max Drawdown: {risk_metrics.max_drawdown}%\n\n### Market Risk\n{market_risk.assessment}\n\n### Concentration Risk\n{concentration_risk.assessment}\n\n### Correlation Analysis\n{correlation_matrix.summary}\n\n### Risk Summary\n{risk_summary.overall_risk}\n\n### Recommendations\n{risk_summary.recommendations}"
+}

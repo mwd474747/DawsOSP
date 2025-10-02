@@ -3,6 +3,7 @@ from typing import Dict, Any, List, Optional
 import json
 import os
 from datetime import datetime
+from core.agent_adapter import AgentAdapter, AgentRegistry
 
 class AgentRuntime:
     """Simple runtime for executing agents"""
@@ -12,10 +13,17 @@ class AgentRuntime:
         self.execution_history = []
         self.active_agents = []
         self.pattern_engine = None  # Will be initialized after agents are registered
+        self.agent_registry = AgentRegistry()  # New: Agent registry for capabilities
+        self.use_adapter = True  # Flag to enable/disable adapter usage
 
-    def register_agent(self, name: str, agent: Any):
+    def register_agent(self, name: str, agent: Any, capabilities: Optional[Dict] = None):
         """Register an agent with the runtime"""
         self.agents[name] = agent
+
+        # Also register with adapter if enabled
+        if self.use_adapter:
+            self.agent_registry.register(name, agent, capabilities)
+
         print(f"Registered agent: {name}")
 
     def execute(self, agent_name: str, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -23,14 +31,18 @@ class AgentRuntime:
         if agent_name not in self.agents:
             return {"error": f"Agent {agent_name} not found"}
 
-        agent = self.agents[agent_name]
-
         # Mark as active
         self.active_agents.append(agent_name)
 
         try:
-            # Execute agent
-            result = agent.think(context)
+            # Try to use adapter if available
+            if self.use_adapter and self.agent_registry.get_agent(agent_name):
+                adapter = self.agent_registry.get_agent(agent_name)
+                result = adapter.execute(context)
+            else:
+                # Fallback to direct execution for backward compatibility
+                agent = self.agents[agent_name]
+                result = agent.think(context)
 
             # Log execution
             self._log_execution(agent_name, context, result)
@@ -224,3 +236,39 @@ class AgentRuntime:
                 json.dump(state, f, indent=2)
         except Exception as e:
             print(f"Error saving runtime state: {e}")
+
+    def execute_by_capability(self, capability: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute using an agent with specific capability"""
+        if self.use_adapter:
+            return self.agent_registry.execute_by_capability(capability, context)
+
+        # Fallback: find agent by name pattern
+        capability_to_agent = {
+            'fetch_data': 'data_harvester',
+            'detect_patterns': 'pattern_spotter',
+            'find_correlations': 'relationship_hunter',
+            'forecast': 'forecast_dreamer',
+            'structure_data': 'data_digester'
+        }
+
+        agent_name = capability_to_agent.get(capability)
+        if agent_name and agent_name in self.agents:
+            return self.execute(agent_name, context)
+
+        return {'error': f'No agent found with capability: {capability}'}
+
+    def get_agent_capabilities(self) -> Dict[str, Any]:
+        """Get capabilities of all registered agents"""
+        if self.use_adapter:
+            return self.agent_registry.get_all_capabilities()
+
+        # Basic capability listing
+        capabilities = {}
+        for name, agent in self.agents.items():
+            capabilities[name] = {
+                'name': name,
+                'class': agent.__class__.__name__,
+                'has_graph': hasattr(agent, 'graph'),
+                'has_llm': hasattr(agent, 'llm_client')
+            }
+        return capabilities
