@@ -78,3 +78,32 @@
 2025-10-01 20:27:10,904 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: dalio_cycle {"pattern_id": "dalio_cycle", "confidence": 0.2, "matched": true}
 2025-10-01 20:27:10,904 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: correlation_finder {"pattern_id": "correlation_finder", "confidence": 0.1, "matched": true}
 2025-10-01 20:27:10,904 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: market_regime {"pattern_id": "market_regime", "confidence": 0.1, "matched": true}
+2025-10-01 20:35:51,716 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: schema {"file": "patterns/schema.json"}
+2025-10-01 20:35:51,717 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: watchlist_update {"file": "patterns/ui/watchlist_update.json"}
+2025-10-01 20:35:51,717 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: help_guide {"file": "patterns/ui/help_guide.json"}
+2025-10-01 20:35:51,717 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: dashboard_update {"file": "patterns/ui/dashboard_update.json"}
+2025-10-01 20:35:51,717 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: sentiment_analysis {"file": "patterns/analysis/sentiment_analysis.json"}
+2025-10-01 20:35:51,717 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: risk_assessment {"file": "patterns/analysis/risk_assessment.json"}
+2025-10-01 20:35:51,717 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: portfolio_analysis {"file": "patterns/analysis/portfolio_analysis.json"}
+2025-10-01 20:35:51,718 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: buffett_checklist {"file": "patterns/analysis/buffett_checklist.json"}
+2025-10-01 20:35:51,718 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: moat_analyzer {"file": "patterns/analysis/moat_analyzer.json"}
+2025-10-01 20:35:51,718 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: fundamental_analysis {"file": "patterns/analysis/fundamental_analysis.json"}
+2025-10-01 20:35:51,719 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: earnings_analysis {"file": "patterns/analysis/earnings_analysis.json"}
+2025-10-01 20:35:51,719 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: technical_analysis {"file": "patterns/analysis/technical_analysis.json"}
+2025-10-01 20:35:51,719 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: dalio_cycle {"file": "patterns/analysis/dalio_cycle.json"}
+2025-10-01 20:35:51,719 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: owner_earnings {"file": "patterns/analysis/owner_earnings.json"}
+2025-10-01 20:35:51,719 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: sector_performance {"file": "patterns/queries/sector_performance.json"}
+2025-10-01 20:35:51,720 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: market_regime {"file": "patterns/queries/market_regime.json"}
+2025-10-01 20:35:51,720 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: macro_analysis {"file": "patterns/queries/macro_analysis.json"}
+2025-10-01 20:35:51,720 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: correlation_finder {"file": "patterns/queries/correlation_finder.json"}
+2025-10-01 20:35:51,721 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: company_analysis {"file": "patterns/queries/company_analysis.json"}
+2025-10-01 20:35:51,721 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: stock_price {"file": "patterns/queries/stock_price.json"}
+2025-10-01 20:35:51,721 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: portfolio_review {"file": "patterns/workflows/portfolio_review.json"}
+2025-10-01 20:35:51,721 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: morning_briefing {"file": "patterns/workflows/morning_briefing.json"}
+2025-10-01 20:35:51,721 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: opportunity_scan {"file": "patterns/workflows/opportunity_scan.json"}
+2025-10-01 20:35:51,722 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: deep_dive {"file": "patterns/workflows/deep_dive.json"}
+2025-10-01 20:35:51,722 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: add_to_portfolio {"file": "patterns/actions/add_to_portfolio.json"}
+2025-10-01 20:35:51,722 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: generate_forecast {"file": "patterns/actions/generate_forecast.json"}
+2025-10-01 20:35:51,722 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: create_alert {"file": "patterns/actions/create_alert.json"}
+2025-10-01 20:35:51,722 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: export_data {"file": "patterns/actions/export_data.json"}
+2025-10-01 20:35:51,723 - PatternEngine - DEBUG - logger:debug:78 - Loaded pattern: add_to_graph {"file": "patterns/actions/add_to_graph.json"}

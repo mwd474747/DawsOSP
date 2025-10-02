@@ -74,12 +74,15 @@ class FredDataCapability:
                 observations = []
                 for obs in data.get('observations', []):
                     try:
+                        # Skip entries with "." which means no data
+                        if obs.get('value') == '.':
+                            continue
                         value = float(obs['value'])
                         observations.append({
                             'date': obs['date'],
                             'value': value
                         })
-                    except (ValueError, KeyError):
+                    except (ValueError, KeyError, TypeError):
                         continue
 
                 result = {
@@ -282,17 +285,22 @@ class FredDataCapability:
             }
 
         # Determine inflation regime
-        if cpi.get('value', 0) > 4:
-            regime = 'High Inflation'
-        elif cpi.get('value', 0) > 2.5:
-            regime = 'Above Target'
-        elif cpi.get('value', 0) > 1.5:
-            regime = 'On Target'
-        else:
-            regime = 'Below Target/Deflation Risk'
+        cpi_value = cpi.get('value') if cpi else None
+        if cpi_value is not None:
+            if cpi_value > 4:
+                regime = 'High Inflation'
+            elif cpi_value > 2.5:
+                regime = 'Above Target'
+            elif cpi_value > 1.5:
+                regime = 'On Target'
+            else:
+                regime = 'Below Target/Deflation Risk'
 
-        metrics['regime'] = regime
-        metrics['fed_action_likely'] = 'Hawkish' if cpi.get('value', 0) > 3 else 'Neutral' if cpi.get('value', 0) > 2 else 'Dovish'
+            metrics['regime'] = regime
+            metrics['fed_action_likely'] = 'Hawkish' if cpi_value > 3 else 'Neutral' if cpi_value > 2 else 'Dovish'
+        else:
+            metrics['regime'] = 'Unknown'
+            metrics['fed_action_likely'] = 'Unknown'
 
         return metrics
 

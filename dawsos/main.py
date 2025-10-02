@@ -68,19 +68,31 @@ def init_session_state():
     if 'graph' not in st.session_state:
         st.session_state.graph = KnowledgeGraph()
 
-        # Seed with fundamental analysis knowledge
-        try:
-            import seed_knowledge_graph
-            seed_knowledge_graph.seed_buffett_framework(st.session_state.graph)
-            seed_knowledge_graph.seed_dalio_framework(st.session_state.graph)
-            seed_knowledge_graph.seed_financial_calculations(st.session_state.graph)
-            seed_knowledge_graph.seed_investment_examples(st.session_state.graph)
-        except Exception as e:
-            print(f"Note: Knowledge seeding skipped: {e}")
-
-        # Try to load existing graph
+        # First, try to load existing graph
+        loaded_from_file = False
         if os.path.exists('storage/graph.json'):
-            st.session_state.graph.load('storage/graph.json')
+            try:
+                st.session_state.graph.load('storage/graph.json')
+                loaded_from_file = True
+                print(f"Loaded graph with {st.session_state.graph.get_stats()['total_nodes']} nodes from file")
+            except Exception as e:
+                print(f"Error loading graph: {e}")
+
+        # Then seed with fundamental analysis knowledge if not enough nodes
+        # This ensures we always have the base knowledge
+        if st.session_state.graph.get_stats()['total_nodes'] < 40:
+            try:
+                import seed_knowledge_graph
+                seed_knowledge_graph.seed_buffett_framework(st.session_state.graph)
+                seed_knowledge_graph.seed_dalio_framework(st.session_state.graph)
+                seed_knowledge_graph.seed_financial_calculations(st.session_state.graph)
+                seed_knowledge_graph.seed_investment_examples(st.session_state.graph)
+                print(f"Seeded knowledge graph to {st.session_state.graph.get_stats()['total_nodes']} nodes")
+
+                # Save the seeded graph for next time
+                st.session_state.graph.save('storage/graph.json')
+            except Exception as e:
+                print(f"Note: Knowledge seeding skipped: {e}")
 
     # Initialize capabilities FIRST (before agent_runtime that uses it)
     if 'capabilities' not in st.session_state:
@@ -457,10 +469,13 @@ def display_economic_indicators():
                 date = data.get('date', 'N/A')
 
                 # Format values appropriately
-                if indicator in ['GDP', 'CPI', 'UNEMPLOYMENT']:
-                    display_value = f"{value:.1f}%"
+                if value is not None:
+                    if indicator in ['GDP', 'CPI', 'UNEMPLOYMENT']:
+                        display_value = f"{value:.1f}%"
+                    else:
+                        display_value = f"{value:.2f}%"
                 else:
-                    display_value = f"{value:.2f}%"
+                    display_value = "N/A"
 
                 # Determine delta color
                 if indicator == 'UNEMPLOYMENT':
