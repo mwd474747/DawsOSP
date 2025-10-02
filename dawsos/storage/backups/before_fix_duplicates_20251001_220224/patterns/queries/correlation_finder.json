@@ -1,0 +1,38 @@
+{
+  "id": "correlation_finder",
+  "name": "Find Correlations",
+  "description": "Discovers correlations between assets, indicators, or economic variables",
+  "triggers": ["correlation", "correlate", "relationship", "related", "connected"],
+  "entities": ["SYMBOL"],
+  "priority": 7,
+  "steps": [
+    {
+      "agent": "data_harvester",
+      "method": "process",
+      "params": {
+        "request": "Get historical data for {SYMBOL} and major assets: SPY QQQ DXY GLD TLT VIX"
+      },
+      "output": "price_data"
+    },
+    {
+      "agent": "relationship_hunter",
+      "method": "process",
+      "params": {
+        "data": "{price_data}",
+        "target": "{SYMBOL}"
+      },
+      "output": "correlations"
+    },
+    {
+      "agent": "claude",
+      "method": "process",
+      "params": {
+        "user_input": "Analyze correlations for {SYMBOL}: {correlations}. Explain: 1) Strong correlations found 2) Inverse relationships 3) Trading implications 4) Hedge opportunities"
+      },
+      "output": "correlation_report"
+    }
+  ],
+  "response_type": "analysis",
+  "response_template": "{correlation_report}",
+  "cache_ttl": 1800
+}

@@ -1,0 +1,38 @@
+{
+  "id": "earnings_analysis",
+  "name": "Earnings Analysis",
+  "description": "Analyzes company earnings, guidance, and estimates",
+  "triggers": ["earnings", "eps", "revenue", "guidance", "beat", "miss"],
+  "entities": ["SYMBOL"],
+  "priority": 8,
+  "steps": [
+    {
+      "agent": "data_harvester",
+      "method": "process",
+      "params": {
+        "request": "Get {SYMBOL} earnings history, estimates, and guidance"
+      },
+      "output": "earnings_data"
+    },
+    {
+      "agent": "pattern_spotter",
+      "method": "process",
+      "params": {
+        "data": "{earnings_data}",
+        "analysis_type": "earnings_trend"
+      },
+      "output": "earnings_patterns"
+    },
+    {
+      "agent": "claude",
+      "method": "process",
+      "params": {
+        "user_input": "Analyze {SYMBOL} earnings {earnings_data} and trends {earnings_patterns}. Include: 1) Beat/miss history 2) Growth trajectory 3) Guidance analysis 4) Estimate revisions 5) Trading implications"
+      },
+      "output": "earnings_report"
+    }
+  ],
+  "response_type": "analysis",
+  "response_template": "{earnings_report}",
+  "cache_ttl": 1800
+}

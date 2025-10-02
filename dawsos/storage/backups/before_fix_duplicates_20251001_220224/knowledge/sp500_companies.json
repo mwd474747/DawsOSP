@@ -1,0 +1,239 @@
+{
+  "sp500_companies": {
+    "Technology": {
+      "mega_cap": {
+        "AAPL": {"name": "Apple Inc.", "market_cap": 3000, "pe": 30.5, "dividend_yield": 0.5, "beta": 1.25},
+        "MSFT": {"name": "Microsoft", "market_cap": 2800, "pe": 35.2, "dividend_yield": 0.8, "beta": 0.93},
+        "NVDA": {"name": "NVIDIA", "market_cap": 1200, "pe": 65.3, "dividend_yield": 0.02, "beta": 1.68},
+        "GOOGL": {"name": "Alphabet", "market_cap": 1700, "pe": 26.8, "dividend_yield": 0, "beta": 1.06}
+      },
+      "large_cap": {
+        "META": {"name": "Meta Platforms", "market_cap": 900, "pe": 28.5, "dividend_yield": 0, "beta": 1.29},
+        "AVGO": {"name": "Broadcom", "market_cap": 600, "pe": 28.3, "dividend_yield": 1.9, "beta": 1.15},
+        "ORCL": {"name": "Oracle", "market_cap": 300, "pe": 35.7, "dividend_yield": 1.6, "beta": 0.87},
+        "CRM": {"name": "Salesforce", "market_cap": 250, "pe": 95.2, "dividend_yield": 0, "beta": 1.22},
+        "CSCO": {"name": "Cisco", "market_cap": 200, "pe": 16.8, "dividend_yield": 3.1, "beta": 0.95},
+        "ADBE": {"name": "Adobe", "market_cap": 230, "pe": 45.3, "dividend_yield": 0, "beta": 1.18}
+      },
+      "mid_cap": {
+        "INTC": {"name": "Intel", "market_cap": 150, "pe": 15.2, "dividend_yield": 1.5, "beta": 0.62},
+        "AMD": {"name": "AMD", "market_cap": 220, "pe": 48.5, "dividend_yield": 0, "beta": 1.85},
+        "QCOM": {"name": "Qualcomm", "market_cap": 160, "pe": 22.3, "dividend_yield": 2.1, "beta": 1.25},
+        "TXN": {"name": "Texas Instruments", "market_cap": 150, "pe": 23.8, "dividend_yield": 2.8, "beta": 0.95}
+      }
+    },
+    "Financials": {
+      "mega_cap": {
+        "BRK.B": {"name": "Berkshire Hathaway", "market_cap": 780, "pe": 23.5, "dividend_yield": 0, "beta": 0.85},
+        "JPM": {"name": "JPMorgan Chase", "market_cap": 450, "pe": 10.2, "dividend_yield": 2.8, "beta": 1.08},
+        "V": {"name": "Visa", "market_cap": 480, "pe": 32.5, "dividend_yield": 0.7, "beta": 0.98},
+        "MA": {"name": "Mastercard", "market_cap": 380, "pe": 36.8, "dividend_yield": 0.5, "beta": 1.12}
+      },
+      "large_cap": {
+        "BAC": {"name": "Bank of America", "market_cap": 280, "pe": 11.5, "dividend_yield": 3.0, "beta": 1.35},
+        "WFC": {"name": "Wells Fargo", "market_cap": 180, "pe": 11.8, "dividend_yield": 3.1, "beta": 1.18},
+        "GS": {"name": "Goldman Sachs", "market_cap": 120, "pe": 12.3, "dividend_yield": 2.5, "beta": 1.42},
+        "MS": {"name": "Morgan Stanley", "market_cap": 140, "pe": 13.5, "dividend_yield": 3.8, "beta": 1.38},
+        "AXP": {"name": "American Express", "market_cap": 130, "pe": 18.2, "dividend_yield": 1.2, "beta": 1.15},
+        "SCHW": {"name": "Charles Schwab", "market_cap": 120, "pe": 22.5, "dividend_yield": 1.8, "beta": 1.28}
+      }
+    },
+    "Healthcare": {
+      "mega_cap": {
+        "UNH": {"name": "UnitedHealth", "market_cap": 500, "pe": 23.8, "dividend_yield": 1.3, "beta": 0.75},
+        "JNJ": {"name": "Johnson & Johnson", "market_cap": 380, "pe": 25.2, "dividend_yield": 3.0, "beta": 0.62},
+        "LLY": {"name": "Eli Lilly", "market_cap": 550, "pe": 58.3, "dividend_yield": 0.8, "beta": 0.45}
+      },
+      "large_cap": {
+        "PFE": {"name": "Pfizer", "market_cap": 160, "pe": 12.5, "dividend_yield": 5.8, "beta": 0.68},
+        "ABBV": {"name": "AbbVie", "market_cap": 280, "pe": 18.3, "dividend_yield": 3.6, "beta": 0.72},
+        "MRK": {"name": "Merck", "market_cap": 290, "pe": 24.5, "dividend_yield": 2.6, "beta": 0.48},
+        "TMO": {"name": "Thermo Fisher", "market_cap": 210, "pe": 28.3, "dividend_yield": 0.3, "beta": 0.95},
+        "ABT": {"name": "Abbott Labs", "market_cap": 180, "pe": 25.8, "dividend_yield": 1.9, "beta": 0.78},
+        "CVS": {"name": "CVS Health", "market_cap": 100, "pe": 15.2, "dividend_yield": 3.3, "beta": 0.85}
+      }
+    },
+    "Consumer Discretionary": {
+      "mega_cap": {
+        "AMZN": {"name": "Amazon", "market_cap": 1500, "pe": 48.5, "dividend_yield": 0, "beta": 1.32},
+        "TSLA": {"name": "Tesla", "market_cap": 800, "pe": 72.3, "dividend_yield": 0, "beta": 2.08}
+      },
+      "large_cap": {
+        "HD": {"name": "Home Depot", "market_cap": 350, "pe": 22.8, "dividend_yield": 2.4, "beta": 0.98},
+        "MCD": {"name": "McDonald's", "market_cap": 200, "pe": 25.3, "dividend_yield": 2.2, "beta": 0.65},
+        "NKE": {"name": "Nike", "market_cap": 160, "pe": 28.5, "dividend_yield": 1.4, "beta": 0.85},
+        "SBUX": {"name": "Starbucks", "market_cap": 110, "pe": 26.8, "dividend_yield": 2.1, "beta": 0.82},
+        "LOW": {"name": "Lowe's", "market_cap": 130, "pe": 18.5, "dividend_yield": 2.0, "beta": 1.15},
+        "TGT": {"name": "Target", "market_cap": 70, "pe": 16.3, "dividend_yield": 2.9, "beta": 0.92}
+      }
+    },
+    "Consumer Staples": {
+      "large_cap": {
+        "WMT": {"name": "Walmart", "market_cap": 420, "pe": 28.5, "dividend_yield": 1.4, "beta": 0.52},
+        "PG": {"name": "Procter & Gamble", "market_cap": 350, "pe": 25.2, "dividend_yield": 2.4, "beta": 0.45},
+        "KO": {"name": "Coca-Cola", "market_cap": 260, "pe": 24.8, "dividend_yield": 3.0, "beta": 0.62},
+        "PEP": {"name": "PepsiCo", "market_cap": 240, "pe": 26.3, "dividend_yield": 2.7, "beta": 0.58},
+        "COST": {"name": "Costco", "market_cap": 320, "pe": 42.5, "dividend_yield": 0.6, "beta": 0.68},
+        "PM": {"name": "Philip Morris", "market_cap": 150, "pe": 16.8, "dividend_yield": 5.2, "beta": 0.72},
+        "MDLZ": {"name": "Mondelez", "market_cap": 100, "pe": 22.3, "dividend_yield": 2.2, "beta": 0.65}
+      }
+    },
+    "Energy": {
+      "mega_cap": {
+        "XOM": {"name": "ExxonMobil", "market_cap": 400, "pe": 10.2, "dividend_yield": 3.3, "beta": 0.95}
+      },
+      "large_cap": {
+        "CVX": {"name": "Chevron", "market_cap": 280, "pe": 13.5, "dividend_yield": 3.6, "beta": 1.12},
+        "COP": {"name": "ConocoPhillips", "market_cap": 130, "pe": 12.8, "dividend_yield": 1.8, "beta": 1.35},
+        "SLB": {"name": "Schlumberger", "market_cap": 70, "pe": 18.5, "dividend_yield": 2.1, "beta": 1.42},
+        "EOG": {"name": "EOG Resources", "market_cap": 70, "pe": 11.2, "dividend_yield": 2.8, "beta": 1.28},
+        "PSX": {"name": "Phillips 66", "market_cap": 50, "pe": 12.3, "dividend_yield": 3.9, "beta": 1.18}
+      }
+    },
+    "Industrials": {
+      "large_cap": {
+        "BA": {"name": "Boeing", "market_cap": 130, "pe": -15.3, "dividend_yield": 0, "beta": 1.55},
+        "CAT": {"name": "Caterpillar", "market_cap": 150, "pe": 16.8, "dividend_yield": 2.0, "beta": 1.02},
+        "GE": {"name": "General Electric", "market_cap": 120, "pe": 25.3, "dividend_yield": 0.3, "beta": 1.08},
+        "HON": {"name": "Honeywell", "market_cap": 130, "pe": 24.5, "dividend_yield": 2.1, "beta": 1.15},
+        "UNP": {"name": "Union Pacific", "market_cap": 140, "pe": 21.8, "dividend_yield": 2.4, "beta": 1.05},
+        "LMT": {"name": "Lockheed Martin", "market_cap": 110, "pe": 18.3, "dividend_yield": 2.8, "beta": 0.85},
+        "RTX": {"name": "Raytheon", "market_cap": 130, "pe": 32.5, "dividend_yield": 2.3, "beta": 0.92},
+        "UPS": {"name": "UPS", "market_cap": 120, "pe": 15.8, "dividend_yield": 3.8, "beta": 1.12}
+      }
+    },
+    "Communication Services": {
+      "large_cap": {
+        "DIS": {"name": "Disney", "market_cap": 160, "pe": 38.5, "dividend_yield": 0, "beta": 1.25},
+        "CMCSA": {"name": "Comcast", "market_cap": 160, "pe": 11.8, "dividend_yield": 2.8, "beta": 0.95},
+        "VZ": {"name": "Verizon", "market_cap": 150, "pe": 8.5, "dividend_yield": 6.5, "beta": 0.45},
+        "T": {"name": "AT&T", "market_cap": 120, "pe": 7.2, "dividend_yield": 6.2, "beta": 0.68},
+        "NFLX": {"name": "Netflix", "market_cap": 190, "pe": 42.3, "dividend_yield": 0, "beta": 1.35},
+        "TMUS": {"name": "T-Mobile", "market_cap": 180, "pe": 22.5, "dividend_yield": 1.5, "beta": 0.58}
+      }
+    },
+    "Materials": {
+      "large_cap": {
+        "LIN": {"name": "Linde", "market_cap": 200, "pe": 28.5, "dividend_yield": 1.3, "beta": 0.92},
+        "APD": {"name": "Air Products", "market_cap": 65, "pe": 25.8, "dividend_yield": 2.5, "beta": 0.98},
+        "SHW": {"name": "Sherwin-Williams", "market_cap": 75, "pe": 32.3, "dividend_yield": 0.9, "beta": 1.05},
+        "FCX": {"name": "Freeport-McMoRan", "market_cap": 60, "pe": 28.5, "dividend_yield": 1.8, "beta": 1.82},
+        "NEM": {"name": "Newmont", "market_cap": 35, "pe": 18.5, "dividend_yield": 3.5, "beta": 0.38},
+        "DOW": {"name": "Dow Inc", "market_cap": 40, "pe": 12.8, "dividend_yield": 5.2, "beta": 1.35}
+      }
+    },
+    "Real Estate": {
+      "large_cap": {
+        "PLD": {"name": "Prologis", "market_cap": 120, "pe": 35.5, "dividend_yield": 2.8, "beta": 0.72},
+        "AMT": {"name": "American Tower", "market_cap": 100, "pe": 42.3, "dividend_yield": 3.2, "beta": 0.65},
+        "CCI": {"name": "Crown Castle", "market_cap": 60, "pe": 38.5, "dividend_yield": 5.8, "beta": 0.58},
+        "SPG": {"name": "Simon Property", "market_cap": 50, "pe": 18.2, "dividend_yield": 5.5, "beta": 1.35},
+        "PSA": {"name": "Public Storage", "market_cap": 55, "pe": 22.8, "dividend_yield": 3.9, "beta": 0.42},
+        "O": {"name": "Realty Income", "market_cap": 40, "pe": 48.5, "dividend_yield": 5.2, "beta": 0.68}
+      }
+    },
+    "Utilities": {
+      "large_cap": {
+        "NEE": {"name": "NextEra Energy", "market_cap": 150, "pe": 22.5, "dividend_yield": 2.8, "beta": 0.35},
+        "SO": {"name": "Southern Company", "market_cap": 80, "pe": 19.8, "dividend_yield": 3.9, "beta": 0.28},
+        "DUK": {"name": "Duke Energy", "market_cap": 75, "pe": 18.5, "dividend_yield": 4.1, "beta": 0.32},
+        "D": {"name": "Dominion Energy", "market_cap": 50, "pe": 22.3, "dividend_yield": 4.8, "beta": 0.38},
+        "AEP": {"name": "American Electric Power", "market_cap": 48, "pe": 18.2, "dividend_yield": 3.8, "beta": 0.35},
+        "SRE": {"name": "Sempra Energy", "market_cap": 48, "pe": 16.8, "dividend_yield": 3.2, "beta": 0.65}
+      }
+    }
+  },
+  "sector_statistics": {
+    "Technology": {
+      "count": 100,
+      "avg_pe": 35.2,
+      "avg_dividend": 0.8,
+      "avg_beta": 1.25,
+      "weight_in_sp500": 28.5
+    },
+    "Financials": {
+      "count": 65,
+      "avg_pe": 18.5,
+      "avg_dividend": 2.8,
+      "avg_beta": 1.15,
+      "weight_in_sp500": 12.8
+    },
+    "Healthcare": {
+      "count": 62,
+      "avg_pe": 22.5,
+      "avg_dividend": 2.2,
+      "avg_beta": 0.75,
+      "weight_in_sp500": 13.2
+    },
+    "Consumer Discretionary": {
+      "count": 55,
+      "avg_pe": 28.5,
+      "avg_dividend": 1.5,
+      "avg_beta": 1.05,
+      "weight_in_sp500": 10.5
+    },
+    "Consumer Staples": {
+      "count": 33,
+      "avg_pe": 22.8,
+      "avg_dividend": 2.8,
+      "avg_beta": 0.58,
+      "weight_in_sp500": 6.5
+    },
+    "Energy": {
+      "count": 23,
+      "avg_pe": 12.5,
+      "avg_dividend": 3.2,
+      "avg_beta": 1.18,
+      "weight_in_sp500": 4.2
+    },
+    "Industrials": {
+      "count": 72,
+      "avg_pe": 20.5,
+      "avg_dividend": 2.2,
+      "avg_beta": 1.05,
+      "weight_in_sp500": 8.2
+    },
+    "Communication Services": {
+      "count": 24,
+      "avg_pe": 25.8,
+      "avg_dividend": 1.8,
+      "avg_beta": 0.85,
+      "weight_in_sp500": 8.5
+    },
+    "Materials": {
+      "count": 28,
+      "avg_pe": 18.8,
+      "avg_dividend": 2.5,
+      "avg_beta": 1.05,
+      "weight_in_sp500": 2.5
+    },
+    "Real Estate": {
+      "count": 31,
+      "avg_pe": 32.5,
+      "avg_dividend": 4.2,
+      "avg_beta": 0.72,
+      "weight_in_sp500": 2.6
+    },
+    "Utilities": {
+      "count": 28,
+      "avg_pe": 18.5,
+      "avg_dividend": 3.8,
+      "avg_beta": 0.42,
+      "weight_in_sp500": 2.5
+    }
+  },
+  "market_cap_distribution": {
+    "mega_cap_1T_plus": ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA"],
+    "large_cap_200B_1T": ["META", "TSLA", "BRK.B", "UNH", "JNJ", "V", "JPM", "WMT", "PG", "MA"],
+    "mid_cap_50B_200B": 150,
+    "small_cap_under_50B": 335
+  },
+  "index_metrics": {
+    "total_companies": 503,
+    "total_market_cap_trillions": 40.5,
+    "average_pe": 23.5,
+    "average_dividend_yield": 1.8,
+    "average_beta": 0.98,
+    "median_market_cap_billions": 32.5
+  }
+}

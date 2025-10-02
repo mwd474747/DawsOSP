@@ -1,0 +1,38 @@
+{
+  "id": "dashboard_update",
+  "name": "Dashboard Update",
+  "description": "Updates dashboard with latest market data",
+  "triggers": ["refresh", "update dashboard", "latest data"],
+  "entities": [],
+  "priority": 7,
+  "steps": [
+    {
+      "agent": "data_harvester",
+      "method": "process",
+      "params": {
+        "request": "Get SPY QQQ DIA IWM VIX DXY BTC-USD"
+      },
+      "output": "market_data"
+    },
+    {
+      "agent": "pattern_spotter",
+      "method": "process",
+      "params": {
+        "data": "{market_data}",
+        "analysis_type": "quick_regime"
+      },
+      "output": "regime"
+    },
+    {
+      "agent": "claude",
+      "method": "process",
+      "params": {
+        "user_input": "Format dashboard update: Market data: {market_data}, Regime: {regime}"
+      },
+      "output": "dashboard_update"
+    }
+  ],
+  "response_type": "ui_update",
+  "response_template": "{dashboard_update}",
+  "cache_ttl": 60
+}

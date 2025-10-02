@@ -1,0 +1,46 @@
+{
+  "id": "portfolio_analysis",
+  "name": "Portfolio Analysis",
+  "description": "Analyzes portfolio composition, risk, and performance",
+  "triggers": ["portfolio", "holdings", "allocation", "diversification", "risk"],
+  "entities": [],
+  "priority": 8,
+  "steps": [
+    {
+      "agent": "data_harvester",
+      "method": "process",
+      "params": {
+        "request": "Get portfolio holdings from knowledge graph"
+      },
+      "output": "holdings"
+    },
+    {
+      "agent": "data_harvester",
+      "method": "process",
+      "params": {
+        "request": "Get current prices and fundamentals for portfolio: {holdings}"
+      },
+      "output": "portfolio_data"
+    },
+    {
+      "agent": "pattern_spotter",
+      "method": "process",
+      "params": {
+        "data": "{portfolio_data}",
+        "analysis_type": "portfolio_risk"
+      },
+      "output": "risk_metrics"
+    },
+    {
+      "agent": "claude",
+      "method": "process",
+      "params": {
+        "user_input": "Analyze portfolio with {holdings} and metrics {risk_metrics}. Provide: 1) Asset allocation 2) Risk assessment 3) Diversification score 4) Performance attribution 5) Rebalancing suggestions"
+      },
+      "output": "portfolio_report"
+    }
+  ],
+  "response_type": "analysis",
+  "response_template": "{portfolio_report}",
+  "cache_ttl": 600
+}

@@ -76,18 +76,69 @@ class PatternEngine:
             self.pattern_dir.mkdir(parents=True, exist_ok=True)
             return
 
+        loaded_count = 0
+        duplicate_count = 0
+        schema_count = 0
+        error_count = 0
+
         # Recursively load all JSON files
         for pattern_file in self.pattern_dir.rglob('*.json'):
             try:
+                # Skip schema files
+                if pattern_file.name == 'schema.json':
+                    schema_count += 1
+                    continue
+
                 with open(pattern_file, 'r') as f:
                     pattern = json.load(f)
+
+                    # Skip if it's a JSON schema
+                    if '$schema' in pattern:
+                        schema_count += 1
+                        continue
+
                     pattern_id = pattern.get('id', pattern_file.stem)
-                    self.patterns[pattern_id] = pattern
-                    self.logger.debug(f"Loaded pattern: {pattern_id}", file=str(pattern_file))
+
+                    # Check for duplicate IDs
+                    if pattern_id in self.patterns:
+                        duplicate_count += 1
+                        self.logger.warning(f"Duplicate pattern ID '{pattern_id}' found in {pattern_file}. Previous: {self.patterns[pattern_id].get('_source_file', 'unknown')}")
+                        # Use relative path as tiebreaker - prefer files in subdirectories
+                        current_depth = len(pattern_file.relative_to(self.pattern_dir).parts)
+                        existing_depth = len(Path(self.patterns[pattern_id].get('_source_file', pattern_file)).parts)
+
+                        if current_depth > existing_depth:
+                            # Current file is in a subdirectory, prefer it
+                            pattern['_source_file'] = str(pattern_file)
+                            self.patterns[pattern_id] = pattern
+                            loaded_count += 1
+                            print(f"Loaded pattern: {pattern_id} (replaced duplicate)")
+                        else:
+                            # Keep existing pattern
+                            continue
+                    else:
+                        # New pattern
+                        pattern['_source_file'] = str(pattern_file)
+                        self.patterns[pattern_id] = pattern
+                        loaded_count += 1
+                        print(f"Loaded pattern: {pattern_id}")
+
             except json.JSONDecodeError as e:
+                error_count += 1
                 self.logger.error(f"Invalid JSON in pattern file {pattern_file}", error=e)
             except Exception as e:
+                error_count += 1
                 self.logger.error(f"Error loading pattern {pattern_file}", error=e)
+
+        # Log summary
+        if duplicate_count > 0:
+            self.logger.warning(f"Found {duplicate_count} duplicate pattern IDs")
+        if schema_count > 0:
+            self.logger.info(f"Skipped {schema_count} schema files")
+        if error_count > 0:
+            self.logger.error(f"Failed to load {error_count} pattern files")
+
+        self.logger.info(f"Loaded {loaded_count} patterns successfully")
 
     def find_pattern(self, user_input: str) -> Optional[Dict[str, Any]]:
         """

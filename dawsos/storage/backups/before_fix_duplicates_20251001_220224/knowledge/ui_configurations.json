@@ -1,0 +1,232 @@
+{
+  "dashboard_widgets": {
+    "risk_radar": {
+      "position": [0, 0],
+      "size": [2, 2],
+      "data_source": "risk_assessment",
+      "refresh_seconds": 30,
+      "component_type": "risk_radar",
+      "style": "radar_chart"
+    },
+    "sector_performance": {
+      "position": [0, 2],
+      "size": [2, 1],
+      "data_source": "sector_rotation",
+      "refresh_seconds": 60,
+      "component_type": "dashboard_widget",
+      "style": "chart"
+    },
+    "portfolio_confidence": {
+      "position": [2, 0],
+      "size": [1, 1],
+      "data_source": "portfolio_analysis",
+      "refresh_seconds": 15,
+      "component_type": "confidence_meter",
+      "style": "default"
+    },
+    "market_alerts": {
+      "position": [2, 1],
+      "size": [1, 2],
+      "data_source": "alert_monitor",
+      "refresh_seconds": 5,
+      "component_type": "alert_feed",
+      "style": "default"
+    },
+    "top_opportunities": {
+      "position": [3, 0],
+      "size": [1, 1],
+      "data_source": "opportunity_scanner",
+      "refresh_seconds": 300,
+      "component_type": "pattern_browser",
+      "style": "opportunity_list"
+    },
+    "execution_trace": {
+      "position": [3, 1],
+      "size": [1, 2],
+      "data_source": "last_execution",
+      "refresh_seconds": 1,
+      "component_type": "thinking_trace",
+      "style": "flowchart"
+    }
+  },
+  "alert_thresholds": {
+    "portfolio_risk": {
+      "warning": 0.7,
+      "critical": 0.85,
+      "metric": "portfolio_volatility"
+    },
+    "sector_correlation": {
+      "warning": 0.8,
+      "critical": 0.9,
+      "metric": "average_correlation"
+    },
+    "pattern_confidence": {
+      "warning": 0.5,
+      "critical": 0.3,
+      "metric": "prediction_confidence"
+    },
+    "market_volatility": {
+      "warning": 0.25,
+      "critical": 0.4,
+      "metric": "vix_level"
+    },
+    "economic_indicator": {
+      "warning": -0.02,
+      "critical": -0.05,
+      "metric": "gdp_growth_rate"
+    }
+  },
+  "ui_themes": {
+    "dark_theme": {
+      "background": "#0e1117",
+      "secondary_bg": "#262730",
+      "card_bg": "#1a1a1a",
+      "text": "#ffffff",
+      "secondary_text": "#cccccc",
+      "accent": "#00cc88",
+      "warning": "#ffaa00",
+      "danger": "#ff4444",
+      "info": "#4488ff",
+      "border": "#444444"
+    },
+    "light_theme": {
+      "background": "#ffffff",
+      "secondary_bg": "#f5f5f5",
+      "card_bg": "#ffffff",
+      "text": "#000000",
+      "secondary_text": "#666666",
+      "accent": "#007766",
+      "warning": "#ff8800",
+      "danger": "#cc0000",
+      "info": "#0066cc",
+      "border": "#dddddd"
+    }
+  },
+  "component_styles": {
+    "confidence_meter": {
+      "high": {
+        "color": "#00cc88",
+        "animation": "pulse",
+        "threshold": 80
+      },
+      "medium": {
+        "color": "#ffaa00",
+        "animation": "none",
+        "threshold": 60
+      },
+      "low": {
+        "color": "#ff4444",
+        "animation": "blink",
+        "threshold": 0
+      }
+    },
+    "alert_severity": {
+      "critical": {
+        "icon": "🔴",
+        "color": "#ff4444",
+        "background": "#4c1a1a",
+        "priority": 1
+      },
+      "warning": {
+        "icon": "🟡",
+        "color": "#ffaa00",
+        "background": "#4c3a1a",
+        "priority": 2
+      },
+      "info": {
+        "icon": "🔵",
+        "color": "#4488ff",
+        "background": "#1a2a4c",
+        "priority": 3
+      }
+    },
+    "pattern_categories": {
+      "analysis": {
+        "color": "#00cc88",
+        "icon": "📊"
+      },
+      "queries": {
+        "color": "#4488ff",
+        "icon": "🔍"
+      },
+      "workflows": {
+        "color": "#ffaa00",
+        "icon": "⚡"
+      },
+      "actions": {
+        "color": "#ff6644",
+        "icon": "🎯"
+      }
+    }
+  },
+  "suggested_questions": {
+    "market_context": [
+      "What sectors should I rotate into?",
+      "How will Fed policy affect markets?",
+      "What's the current market regime?",
+      "Which stocks are undervalued today?"
+    ],
+    "portfolio_management": [
+      "Assess my portfolio risk",
+      "Find correlation opportunities",
+      "What are my top holdings doing?",
+      "Show me sector allocation"
+    ],
+    "analysis_deep_dive": [
+      "Analyze AAPL fundamentals",
+      "Compare MSFT to peers",
+      "What's driving tech sector?",
+      "Show me energy supply chain"
+    ],
+    "forecasting": [
+      "Predict next quarter earnings",
+      "Forecast sector rotation",
+      "Model recession scenario",
+      "Project Fed rate path"
+    ]
+  },
+  "layout_templates": {
+    "default_dashboard": {
+      "grid": "4x3",
+      "widgets": ["risk_radar", "sector_performance", "portfolio_confidence", "market_alerts", "top_opportunities", "execution_trace"]
+    },
+    "trading_focus": {
+      "grid": "3x3",
+      "widgets": ["market_alerts", "top_opportunities", "portfolio_confidence", "sector_performance", "execution_trace"]
+    },
+    "research_mode": {
+      "grid": "2x4",
+      "widgets": ["execution_trace", "pattern_browser", "sector_performance", "risk_radar"]
+    },
+    "monitoring_only": {
+      "grid": "2x2",
+      "widgets": ["market_alerts", "portfolio_confidence", "risk_radar", "sector_performance"]
+    }
+  },
+  "pattern_shortcuts": {
+    "quick_analysis": {
+      "pattern": "company_analysis",
+      "icon": "📊",
+      "description": "Analyze any company",
+      "default_params": {"include_peers": true}
+    },
+    "sector_check": {
+      "pattern": "sector_rotation",
+      "icon": "🔄",
+      "description": "Check sector rotation signals",
+      "default_params": {"timeframe": "3M"}
+    },
+    "risk_scan": {
+      "pattern": "risk_assessment",
+      "icon": "⚠️",
+      "description": "Assess portfolio risk",
+      "default_params": {"include_correlations": true}
+    },
+    "market_pulse": {
+      "pattern": "market_regime",
+      "icon": "📈",
+      "description": "Current market conditions",
+      "default_params": {"include_history": true}
+    }
+  }
+}

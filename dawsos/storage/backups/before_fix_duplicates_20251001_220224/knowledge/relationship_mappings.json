@@ -1,0 +1,324 @@
+{
+  "supply_chain_relationships": {
+    "technology_supply_chains": {
+      "AAPL": {
+        "suppliers": {
+          "chips": ["TSM", "QCOM", "AVGO", "SWKS"],
+          "displays": ["LG", "Samsung", "JDI"],
+          "assembly": ["Foxconn", "Pegatron"],
+          "memory": ["SK Hynix", "MU", "Samsung"]
+        },
+        "customers": ["consumers", "enterprise", "education"],
+        "dependencies": {
+          "critical": ["TSM", "Foxconn"],
+          "important": ["QCOM", "AVGO"],
+          "moderate": ["SWKS", "MU"]
+        },
+        "risk_factors": {
+          "geopolitical": "high",
+          "supplier_concentration": "high",
+          "logistics": "moderate"
+        }
+      },
+      "NVDA": {
+        "suppliers": {
+          "fabrication": ["TSM"],
+          "packaging": ["ASE", "Amkor"],
+          "substrates": ["Ibiden", "Shinko"]
+        },
+        "customers": ["AMZN", "MSFT", "GOOGL", "META", "TSLA"],
+        "dependencies": {
+          "critical": ["TSM"],
+          "important": ["ASML", "AMAT"],
+          "moderate": ["LRCX", "KLAC"]
+        }
+      },
+      "MSFT": {
+        "suppliers": {
+          "hardware": ["INTC", "AMD", "NVDA"],
+          "cloud_infrastructure": ["data_centers", "network_providers"],
+          "software": ["open_source", "third_party_vendors"]
+        },
+        "customers": ["enterprise", "government", "consumers", "developers"],
+        "partnerships": ["OpenAI", "SAP", "Oracle"]
+      }
+    },
+    "automotive_supply_chains": {
+      "TSLA": {
+        "suppliers": {
+          "batteries": ["Panasonic", "CATL", "LG Chem", "BYD"],
+          "chips": ["TSM", "Samsung", "STM"],
+          "raw_materials": ["lithium_miners", "cobalt_suppliers", "nickel_producers"]
+        },
+        "competitors": ["F", "GM", "STLA", "RIVN", "LCID"],
+        "infrastructure_dependencies": ["charging_networks", "grid_capacity"]
+      },
+      "F": {
+        "suppliers": {
+          "traditional": ["Magna", "Lear", "BorgWarner"],
+          "ev_transition": ["SK Innovation", "LG Chem"],
+          "chips": ["NXP", "INTC", "TXN"]
+        },
+        "dealer_network": "extensive",
+        "union_dependencies": "high"
+      }
+    },
+    "retail_supply_chains": {
+      "AMZN": {
+        "logistics": {
+          "shipping": ["UPS", "FDX", "USPS"],
+          "warehousing": ["robotics", "automation"],
+          "last_mile": ["contractors", "DSPs"]
+        },
+        "technology": {
+          "aws_infrastructure": ["data_centers", "networking"],
+          "devices": ["component_suppliers", "assemblers"]
+        },
+        "marketplace": {
+          "third_party_sellers": "millions",
+          "fulfillment": ["FBA", "seller_fulfilled"]
+        }
+      },
+      "WMT": {
+        "suppliers": {
+          "goods": ["P&G", "KO", "PEP", "Unilever", "Nestle"],
+          "technology": ["MSFT", "GOOGL", "Adobe"],
+          "logistics": ["trucking", "rail", "ocean_freight"]
+        },
+        "store_network": {
+          "supercenters": 3570,
+          "neighborhood_markets": 680,
+          "sams_clubs": 600
+        }
+      }
+    }
+  },
+  "sector_dependencies": {
+    "interest_rate_sensitive": {
+      "Real Estate": {
+        "sensitivity": "very_high",
+        "mechanism": "borrowing_costs",
+        "lag_months": 6,
+        "correlation": -0.72
+      },
+      "Utilities": {
+        "sensitivity": "high",
+        "mechanism": "debt_refinancing",
+        "lag_months": 12,
+        "correlation": -0.62
+      },
+      "Financials": {
+        "sensitivity": "complex",
+        "mechanism": "net_interest_margin",
+        "lag_months": 3,
+        "correlation": 0.52,
+        "note": "Banks benefit from higher rates initially"
+      },
+      "Technology": {
+        "sensitivity": "moderate",
+        "mechanism": "valuation_compression",
+        "lag_months": 1,
+        "correlation": -0.45
+      }
+    },
+    "commodity_dependencies": {
+      "Energy → Airlines": {
+        "relationship": "input_cost",
+        "sensitivity": "very_high",
+        "fuel_cost_impact": "30-40% of operating costs",
+        "correlation": -0.75,
+        "hedge_typical": "6-12 months"
+      },
+      "Energy → Chemicals": {
+        "relationship": "feedstock",
+        "sensitivity": "high",
+        "pass_through_ability": "moderate",
+        "correlation": 0.65
+      },
+      "Materials → Construction": {
+        "relationship": "input_cost",
+        "sensitivity": "high",
+        "steel_cement_impact": "significant",
+        "correlation": -0.55
+      },
+      "Agriculture → Food": {
+        "relationship": "raw_materials",
+        "sensitivity": "moderate",
+        "pass_through_lag": "3-6 months",
+        "correlation": -0.45
+      }
+    },
+    "technology_dependencies": {
+      "Semiconductors → Everything": {
+        "auto_industry": {
+          "chips_per_vehicle": 1500,
+          "shortage_impact": "production_halts",
+          "lead_time": "26+ weeks"
+        },
+        "consumer_electronics": {
+          "dependency": "total",
+          "shortage_impact": "delayed_launches"
+        },
+        "data_centers": {
+          "dependency": "critical",
+          "gpu_shortage_impact": "capacity_constraints"
+        }
+      },
+      "Cloud_Providers → SaaS": {
+        "AWS": ["SHOP", "NFLX", "LYFT", "PINS"],
+        "Azure": ["SAP", "Adobe", "ServiceNow"],
+        "GCP": ["SNAP", "Spotify", "Twitter"]
+      }
+    },
+    "consumer_dependencies": {
+      "Employment → Discretionary": {
+        "relationship": "spending_power",
+        "sensitivity": "high",
+        "lag_months": 2,
+        "first_affected": ["luxury", "travel", "dining"]
+      },
+      "Housing → Furniture/Appliances": {
+        "relationship": "derived_demand",
+        "new_home_sales_multiplier": 3.5,
+        "lag_months": 3
+      },
+      "Gas_Prices → Retail": {
+        "relationship": "disposable_income",
+        "sensitivity": "moderate",
+        "suburban_impact": "higher",
+        "urban_impact": "lower"
+      }
+    }
+  },
+  "competitive_dynamics": {
+    "platform_wars": {
+      "streaming": {
+        "leaders": ["NFLX", "DIS", "WBD", "PARA"],
+        "competition_intensity": "extreme",
+        "content_spend_billions": 50,
+        "churn_sensitivity": "high"
+      },
+      "cloud_computing": {
+        "leaders": ["AMZN", "MSFT", "GOOGL"],
+        "market_shares": [32, 23, 10],
+        "switching_costs": "very_high",
+        "competition_focus": "AI/ML services"
+      },
+      "payments": {
+        "traditional": ["V", "MA", "AXP"],
+        "fintech": ["SQ", "PYPL", "ADYEN"],
+        "competition_type": "complementary_and_competitive"
+      }
+    },
+    "industry_disruption": {
+      "EVs_vs_Traditional": {
+        "disruptors": ["TSLA", "RIVN", "LCID"],
+        "incumbents": ["F", "GM", "STLA", "TM"],
+        "market_share_shift_annual": 5
+      },
+      "Streaming_vs_Linear": {
+        "disruptors": ["NFLX", "streaming_services"],
+        "incumbents": ["cable_companies", "broadcast_networks"],
+        "cord_cutting_rate": 8
+      }
+    }
+  },
+  "regulatory_relationships": {
+    "Healthcare": {
+      "FDA_approvals": {
+        "impact": "binary_outcomes",
+        "affected": ["biotech", "pharma", "medical_devices"],
+        "average_approval_time": "12 months"
+      },
+      "Medicare_reimbursement": {
+        "impact": "revenue_directly",
+        "affected": ["hospitals", "insurers", "device_makers"]
+      }
+    },
+    "Financials": {
+      "Fed_policy": {
+        "impact": "systemic",
+        "stress_tests": ["big_banks"],
+        "capital_requirements": "increasing"
+      },
+      "CFPB": {
+        "impact": "consumer_lending",
+        "affected": ["credit_cards", "mortgages", "payday"]
+      }
+    },
+    "Technology": {
+      "antitrust": {
+        "scrutiny": "increasing",
+        "affected": ["GOOGL", "META", "AMZN", "AAPL"],
+        "potential_impact": "breakup_or_restrictions"
+      },
+      "data_privacy": {
+        "regulations": ["GDPR", "CCPA"],
+        "compliance_cost": "significant"
+      }
+    }
+  },
+  "macro_factor_impacts": {
+    "dollar_strength": {
+      "negative_impact": {
+        "multinationals": ["Tech", "Industrials", "Healthcare"],
+        "mechanism": "translation_effects",
+        "earnings_impact": "5-10% per 10% move"
+      },
+      "positive_impact": {
+        "importers": ["retailers", "consumer_companies"],
+        "mechanism": "lower_input_costs"
+      }
+    },
+    "inflation": {
+      "beneficiaries": {
+        "sectors": ["Energy", "Materials", "Real Estate"],
+        "companies_with_pricing_power": ["luxury", "essential_services"]
+      },
+      "victims": {
+        "sectors": ["Technology", "Consumer Discretionary"],
+        "high_labor_cost": ["restaurants", "retail"],
+        "long_duration_assets": ["growth_stocks", "bonds"]
+      }
+    },
+    "credit_conditions": {
+      "tight_credit_hurts": {
+        "sectors": ["Real Estate", "Small Cap", "High Yield"],
+        "mechanism": "financing_constraints"
+      },
+      "loose_credit_helps": {
+        "sectors": ["Financials", "Consumer Discretionary"],
+        "mechanism": "lending_growth_and_spending"
+      }
+    }
+  },
+  "network_effects": {
+    "social_networks": {
+      "META": {
+        "users_billions": 3.0,
+        "network_value": "exponential",
+        "switching_costs": "high",
+        "moat_strength": "very_strong"
+      }
+    },
+    "marketplaces": {
+      "AMZN": {
+        "sellers_millions": 6,
+        "prime_members_millions": 200,
+        "reinforcement": "buyers_attract_sellers_attract_buyers"
+      },
+      "ABNB": {
+        "hosts_millions": 4,
+        "guests_millions": 150,
+        "network_density": "global"
+      }
+    },
+    "payment_networks": {
+      "V_MA": {
+        "acceptance_points_millions": 100,
+        "cards_billions": 8,
+        "network_effect": "two_sided"
+      }
+    }
+  }
+}

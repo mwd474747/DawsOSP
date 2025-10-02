@@ -1,0 +1,39 @@
+{
+  "id": "export_data",
+  "name": "Export Data",
+  "description": "Exports data or analysis to various formats",
+  "triggers": ["export", "download", "save as", "generate report"],
+  "entities": ["FORMAT"],
+  "priority": 6,
+  "steps": [
+    {
+      "agent": "data_harvester",
+      "method": "process",
+      "params": {
+        "request": "Gather all relevant data from current context and graph"
+      },
+      "output": "export_data"
+    },
+    {
+      "agent": "code_monkey",
+      "method": "process",
+      "params": {
+        "task": "format_export",
+        "data": "{export_data}",
+        "format": "{FORMAT}"
+      },
+      "output": "formatted_export"
+    },
+    {
+      "agent": "claude",
+      "method": "process",
+      "params": {
+        "user_input": "Exported data in {FORMAT} format: {formatted_export}"
+      },
+      "output": "export_confirmation"
+    }
+  ],
+  "response_type": "action",
+  "response_template": "{export_confirmation}",
+  "cache_ttl": 0
+}

@@ -30,6 +30,7 @@ from agents.structure_bot import StructureBot
 from agents.refactor_elf import RefactorElf
 from agents.workflow_recorder import WorkflowRecorder
 from agents.workflow_player import WorkflowPlayer
+from agents.ui_generator import UIGeneratorAgent
 
 # Capability imports
 from capabilities.fred import FREDCapability
@@ -45,6 +46,7 @@ from ui.workflows_tab import render_workflows_tab
 
 # Trinity UI imports
 from ui.trinity_ui_components import get_trinity_ui
+from ui.data_integrity_tab import render_data_integrity_tab
 
 # Page config
 st.set_page_config(
@@ -128,6 +130,7 @@ def init_session_state():
         runtime.register_agent('refactor_elf', RefactorElf())
         runtime.register_agent('workflow_recorder', WorkflowRecorder())
         runtime.register_agent('workflow_player', WorkflowPlayer())
+        runtime.register_agent('ui_generator', UIGeneratorAgent(st.session_state.graph))
 
         # Initialize PatternEngine after agents are registered
         runtime.pattern_engine = PatternEngine('patterns', runtime)
@@ -506,14 +509,15 @@ def main():
     st.markdown("*Every interaction makes me smarter*")
     
     # Create tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
         "Chat",
         "Knowledge Graph",
         "Dashboard",
         "Markets",
         "Economy",
         "Workflows",
-        "Trinity UI"
+        "Trinity UI",
+        "Data Integrity"
     ])
     
     with tab1:
@@ -566,7 +570,11 @@ def main():
             st.markdown("- Knowledge-based content")
             st.markdown("- Agent-orchestrated components")
             st.markdown("- Real-time intelligence dashboard")
-    
+
+    with tab8:
+        # Data Integrity Tab - Real-time data monitoring and management
+        render_data_integrity_tab()
+
     # Sidebar
     with st.sidebar:
         st.markdown("### Quick Actions")
