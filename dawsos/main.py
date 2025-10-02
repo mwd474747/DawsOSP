@@ -47,6 +47,7 @@ from ui.workflows_tab import render_workflows_tab
 # Trinity UI imports
 from ui.trinity_ui_components import get_trinity_ui
 from ui.data_integrity_tab import render_data_integrity_tab
+from ui.trinity_dashboard_tabs import get_trinity_dashboard_tabs
 
 # Page config
 st.set_page_config(
@@ -520,39 +521,64 @@ def main():
         "Data Integrity"
     ])
     
+    # Initialize Trinity dashboard tabs
+    try:
+        trinity_tabs = get_trinity_dashboard_tabs(
+            st.session_state.agent_runtime.pattern_engine,
+            st.session_state.agent_runtime,
+            st.session_state.graph
+        )
+    except Exception as e:
+        st.error(f"Failed to initialize Trinity tabs: {str(e)}")
+        trinity_tabs = None
+
     with tab1:
-        display_chat_interface()
-    
-    with tab2:
-        st.markdown("### Living Knowledge Graph")
-        st.markdown("Watch the intelligence grow with each interaction")
-        
-        # Graph visualization
-        if st.session_state.graph.nodes:
-            fig = visualize_graph()
-            st.plotly_chart(fig, use_container_width=True)
+        if trinity_tabs:
+            trinity_tabs.render_trinity_chat_interface()
         else:
-            st.info("Start chatting to build the knowledge graph!")
-        
-        # Graph stats
-        stats = st.session_state.graph.get_stats()
-        st.json(stats)
-    
+            display_chat_interface()
+
+    with tab2:
+        if trinity_tabs:
+            trinity_tabs.render_trinity_knowledge_graph()
+        else:
+            # Fallback to original implementation
+            st.markdown("### Living Knowledge Graph")
+            if st.session_state.graph.nodes:
+                fig = visualize_graph()
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Start chatting to build the knowledge graph!")
+            stats = st.session_state.graph.get_stats()
+            st.json(stats)
+
     with tab3:
-        display_intelligence_dashboard()
-    
+        if trinity_tabs:
+            trinity_tabs.render_trinity_dashboard()
+        else:
+            display_intelligence_dashboard()
+
     with tab4:
-        display_market_data()
-    
+        if trinity_tabs:
+            trinity_tabs.render_trinity_markets()
+        else:
+            display_market_data()
+
     with tab5:
-        display_economic_indicators()
+        if trinity_tabs:
+            trinity_tabs.render_trinity_economy()
+        else:
+            display_economic_indicators()
 
     with tab6:
-        render_workflows_tab(
-            st.session_state.workflows,
-            st.session_state.graph,
-            st.session_state.agent_runtime
-        )
+        if trinity_tabs:
+            trinity_tabs.render_trinity_workflows()
+        else:
+            render_workflows_tab(
+                st.session_state.workflows,
+                st.session_state.graph,
+                st.session_state.agent_runtime
+            )
 
     with tab7:
         # Trinity UI Tab - Pattern-Knowledge-Agent powered interface
