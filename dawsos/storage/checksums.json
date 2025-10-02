@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-02T07:12:17.772660",
+  "generated_at": "2025-10-02T07:33:26.338937",
   "checksums": {
     "patterns/sector_rotation.json": "09549da615b0a5752d5ed6b8e021d67b8a8cd8f22b2de7d7372327dc66fd4885",
     "patterns/comprehensive_analysis.json": "31081719076475effbb78759e5c7d88f0d031e79cef3c44ba3dfa99a8d8f8825",
@@ -40,6 +40,7 @@
     "patterns/governance/governance_template.json": "dd8e3458135b1a68e0a7be7310706e95a05ad3eaa976dcf3aef491a4cc089fad",
     "patterns/governance/policy_validation.json": "b7f82d44fce33dc5d84f909e215a9429c449c27d121954df5362f6d91017ece0",
     "patterns/governance/data_quality_check.json": "93cf9a6fd7d09bf9e3f71d64a268946292284fbf90f9eea863118061ca5dd5c7",
+    "patterns/governance/audit_everything.json": "9f5bf447b48c43cb6400c7a58968b3525dad1257ee7e3af62f2079ce1a304bbd",
     "patterns/governance/compliance_audit.json": "51f1ab7942a1595772aabd3778fc8faa82ca73e7a47ca677f3cc396c7f6eb1f0",
     "patterns/governance/cost_optimization.json": "73936699313ecb1c1d3369876716fc46db5a46fd70710eba7a6d141d60b475ad",
     "storage/knowledge/buffett_framework.json": "d8bed5e05630ce9805d4f2a11a25b291f7bdcc246f2fa4842630c908dc01aeca",
