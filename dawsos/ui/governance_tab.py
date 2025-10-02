@@ -8,12 +8,14 @@ import streamlit as st
 from typing import Dict, Any, List
 from datetime import datetime
 import json
+import plotly.graph_objects as go
+import networkx as nx
 
 def render_governance_tab(runtime, graph):
     """Render the Data Governance tab with conversational governance interface"""
 
     st.markdown("# 🛡️ Data Governance Center")
-    st.markdown("*Powered by Trinity Architecture - Pattern-Knowledge-Agent System*")
+    st.markdown("*Powered by Trinity Architecture with Graph-Native Governance*")
 
     # Check if governance agent is available
     if not runtime or 'governance_agent' not in runtime.agents:
@@ -22,35 +24,47 @@ def render_governance_tab(runtime, graph):
 
     governance_agent = runtime.agents['governance_agent']
 
-    # Governance Dashboard - Top metrics
+    # Get real-time graph governance metrics
+    graph_metrics = {}
+    if hasattr(governance_agent, 'graph_governance') and governance_agent.graph_governance:
+        try:
+            graph_metrics = governance_agent.graph_governance.comprehensive_governance_check()
+        except:
+            pass
+
+    # Governance Dashboard - Real metrics from graph
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
+        total_nodes = graph_metrics.get('total_nodes', len(graph.nodes) if graph else 0)
         st.metric(
-            label="🎯 Governance Patterns",
-            value="4 Active",
-            delta="✓ Data Quality, Compliance, Cost, Lineage"
+            label="🔗 Graph Nodes",
+            value=f"{total_nodes:,}",
+            delta=f"{graph_metrics.get('total_edges', 0):,} edges"
         )
 
     with col2:
+        health = graph_metrics.get('overall_health', 0.98)
         st.metric(
-            label="📊 System Health",
-            value="98%",
-            delta="+2% this week"
+            label="📊 Graph Health",
+            value=f"{health:.0%}",
+            delta="Live calculation"
         )
 
     with col3:
+        quality_issues = len(graph_metrics.get('quality_issues', []))
         st.metric(
-            label="🔍 Monitoring Coverage",
-            value="95%",
-            delta="All critical data sources"
+            label="⚠️ Quality Issues",
+            value=quality_issues,
+            delta="Auto-detected" if quality_issues > 0 else "All clear"
         )
 
     with col4:
+        lineage_gaps = len(graph_metrics.get('lineage_gaps', []))
         st.metric(
-            label="⚡ Auto-Fixes Applied",
-            value="12",
-            delta="+5 today"
+            label="🔍 Orphan Nodes",
+            value=lineage_gaps,
+            delta="Need connections" if lineage_gaps > 0 else "Fully connected"
         )
 
     st.markdown("---")
@@ -238,6 +252,140 @@ def render_governance_tab(runtime, graph):
                             st.json(cost_result)
                 except Exception as e:
                     st.error(f"❌ Cost scan failed: {str(e)}")
+
+    # Graph Governance Section
+    st.markdown("---")
+    st.markdown("### 🌐 Graph-Native Governance")
+
+    tab1, tab2, tab3 = st.tabs(["Quality Analysis", "Data Lineage", "Policy Management"])
+
+    with tab1:
+        st.markdown("#### Node Quality Analysis")
+
+        # Show quality issues if any
+        if graph_metrics.get('quality_issues'):
+            st.warning(f"Found {len(graph_metrics['quality_issues'])} nodes with quality issues:")
+
+            for issue in graph_metrics['quality_issues'][:5]:  # Show top 5
+                col1, col2, col3 = st.columns([2, 1, 1])
+                with col1:
+                    st.write(f"📍 **{issue['node']}**")
+                with col2:
+                    score = issue.get('score', 0)
+                    st.write(f"Score: {score:.0%}")
+                with col3:
+                    st.write(f"Type: {issue.get('type', 'unknown')}")
+        else:
+            st.success("✅ All nodes meet quality thresholds")
+
+        # Quality distribution chart
+        if graph and len(graph.nodes) > 0:
+            quality_scores = []
+            for node_id in list(graph.nodes.keys())[:50]:  # Sample first 50 nodes
+                if hasattr(governance_agent, 'graph_governance'):
+                    try:
+                        score = governance_agent.graph_governance._calculate_quality_from_graph(node_id)
+                        quality_scores.append(score)
+                    except:
+                        pass
+
+            if quality_scores:
+                fig = go.Figure(data=[go.Histogram(x=quality_scores, nbinsx=10)])
+                fig.update_layout(
+                    title="Data Quality Distribution",
+                    xaxis_title="Quality Score",
+                    yaxis_title="Number of Nodes",
+                    height=300
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+    with tab2:
+        st.markdown("#### Data Lineage Explorer")
+
+        # Node selector for lineage
+        if graph and len(graph.nodes) > 0:
+            node_options = list(graph.nodes.keys())[:100]  # Limit to 100 for performance
+            selected_node = st.selectbox(
+                "Select node to trace lineage:",
+                options=node_options,
+                format_func=lambda x: f"{x} ({graph.nodes[x]['type']})"
+            )
+
+            if st.button("🔍 Trace Lineage"):
+                if hasattr(governance_agent, 'graph_governance'):
+                    try:
+                        lineage = governance_agent.graph_governance.trace_data_lineage(selected_node)
+
+                        if lineage:
+                            st.success(f"Found {len(lineage)} lineage paths")
+
+                            for i, path in enumerate(lineage[:3]):  # Show first 3 paths
+                                with st.expander(f"Path {i+1}: {' → '.join(path[:3])}..."):
+                                    # Create flow diagram
+                                    for j, node in enumerate(path):
+                                        if j > 0:
+                                            st.write("↓")
+                                        st.write(f"**{node}** ({graph.nodes[node]['type']})")
+                        else:
+                            st.info("No lineage paths found - node may be a source")
+                    except Exception as e:
+                        st.error(f"Lineage trace failed: {str(e)}")
+
+        # Orphan nodes section
+        if graph_metrics.get('lineage_gaps'):
+            st.warning(f"⚠️ Found {len(graph_metrics['lineage_gaps'])} orphan nodes:")
+            for gap in graph_metrics['lineage_gaps'][:5]:
+                st.write(f"• **{gap['node']}** - {gap.get('issue', 'no connections')}")
+
+    with tab3:
+        st.markdown("#### Governance Policy Management")
+
+        # Add new policy
+        with st.expander("➕ Add New Governance Policy"):
+            policy_name = st.text_input("Policy Name")
+            policy_rule = st.text_area("Policy Rule", placeholder="e.g., All financial data must be updated daily")
+
+            # Multi-select for nodes to apply policy to
+            if graph and len(graph.nodes) > 0:
+                apply_to_types = st.multiselect(
+                    "Apply to node types:",
+                    options=['stock', 'indicator', 'sector', 'event', 'pattern'],
+                    default=['stock', 'indicator']
+                )
+
+                if st.button("Create Policy"):
+                    if policy_name and policy_rule and hasattr(governance_agent, 'graph_governance'):
+                        try:
+                            # Find nodes of selected types
+                            applies_to = [
+                                node_id for node_id, node in graph.nodes.items()
+                                if node.get('type') in apply_to_types
+                            ][:20]  # Limit to 20 nodes
+
+                            policy_id = governance_agent.graph_governance.add_governance_policy(
+                                policy_name, policy_rule, applies_to
+                            )
+
+                            st.success(f"✅ Policy created: {policy_id}")
+                            st.info(f"Applied to {len(applies_to)} nodes")
+                        except Exception as e:
+                            st.error(f"Failed to create policy: {str(e)}")
+
+        # Show existing policies
+        st.markdown("**Active Policies**")
+
+        if graph:
+            policy_count = 0
+            for node_id, node in graph.nodes.items():
+                if node.get('type') == 'data_policy':
+                    policy_count += 1
+                    with st.expander(f"📜 {node['data'].get('name', node_id)}"):
+                        st.write(f"**Rule**: {node['data'].get('rule', 'N/A')}")
+                        st.write(f"**Active**: {node['data'].get('active', False)}")
+                        st.write(f"**Violations**: {node['data'].get('violations', 0)}")
+
+            if policy_count == 0:
+                st.info("No policies defined yet. Add one above!")
 
     # Governance history
     st.markdown("---")

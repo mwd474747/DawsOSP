@@ -15,6 +15,15 @@ class GovernanceAgent(BaseAgent):
         super().__init__("GovernanceAgent", graph, llm_client)
         self.vibe = "data steward with AI superpowers"
 
+        # Initialize graph governance if available
+        self.graph_governance = None
+        if self.graph:
+            try:
+                from core.graph_governance import GraphGovernance
+                self.graph_governance = GraphGovernance(self.graph)
+            except ImportError:
+                pass  # Graph governance not available yet
+
     def process_request(self, request: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """Process any governance request conversationally"""
         if context is None:
@@ -124,6 +133,24 @@ class GovernanceAgent(BaseAgent):
     def _execute_governance_action(self, action: str, request: str, context: Dict[str, Any], claude_response: Dict[str, Any]) -> Dict[str, Any]:
         """Execute the governance action using existing system capabilities"""
 
+        # Try graph-native governance first if available
+        if self.graph_governance:
+            try:
+                graph_result = self.graph_governance.auto_govern(request)
+                if graph_result and 'error' not in graph_result:
+                    # Enhance with Claude's insights
+                    return {
+                        'status': 'success',
+                        'action': action,
+                        'graph_governance': graph_result,
+                        'reasoning': claude_response.get('reasoning'),
+                        'priority': claude_response.get('priority'),
+                        'governance_report': self._format_graph_governance_report(graph_result),
+                        'next_actions': ['Review graph relationships', 'Update governance policies', 'Monitor data quality']
+                    }
+            except Exception as e:
+                print(f"Graph governance failed, falling back: {e}")
+
         if action == 'data_quality_check':
             return self._check_data_quality(request, context)
         elif action == 'compliance_audit':
@@ -144,6 +171,40 @@ class GovernanceAgent(BaseAgent):
                 'claude_recommendation': claude_response,
                 'next_steps': ['Review results', 'Implement recommendations', 'Schedule follow-up']
             }
+
+    def _format_graph_governance_report(self, graph_result: Dict[str, Any]) -> str:
+        """Format graph governance results into readable report"""
+        report = []
+
+        if 'action' in graph_result:
+            report.append(f"**Governance Action**: {graph_result['action']}")
+
+        if 'summary' in graph_result:
+            report.append(f"**Summary**: {graph_result['summary']}")
+
+        if 'results' in graph_result:
+            report.append("\n**Quality Analysis**:")
+            for result in graph_result.get('results', []):
+                if isinstance(result, dict):
+                    node = result.get('node', 'Unknown')
+                    quality = result.get('quality_score', 0)
+                    status = result.get('governance_status', 'unknown')
+                    report.append(f"- {node}: Quality {quality:.0%} - {status}")
+
+        if 'lineage' in graph_result:
+            report.append("\n**Data Lineage**:")
+            for node, paths in graph_result['lineage'].items():
+                report.append(f"- {node}: {len(paths)} lineage paths found")
+
+        if 'overall_health' in graph_result:
+            report.append(f"\n**System Health**: {graph_result['overall_health']:.0%}")
+
+        if 'quality_issues' in graph_result:
+            issues = graph_result['quality_issues']
+            if issues:
+                report.append(f"\n**Quality Issues Found**: {len(issues)}")
+
+        return "\n".join(report) if report else "Governance analysis complete"
 
     def _check_data_quality(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Check data quality using existing agents"""
