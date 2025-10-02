@@ -6,11 +6,12 @@ from typing import Dict, List, Any, Optional
 
 class ClaudeOrchestrator:
     """Claude's brain - interprets, decides, and orchestrates"""
-    
-    def __init__(self, graph, agents: Dict = None):
+
+    def __init__(self, graph, agents: Dict = None, executor=None):
         self.claude = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
         self.graph = graph
         self.agents = agents or {}
+        self.executor = executor  # Universal executor for Trinity compliance
         self.session_memory = []
         self.max_memory = 20
         
@@ -183,7 +184,18 @@ Respond with a JSON array of actions to take. Focus on building connections and 
             
         elif action_type == 'use_agent':
             agent_name = action.get('agent')
-            if agent_name in self.agents:
+            # Route through universal executor for Trinity compliance
+            if self.executor:
+                request = {
+                    'type': 'agent_direct',
+                    'agent': agent_name,
+                    'method': 'analyze',
+                    'context': {'command': action.get('command', '')}
+                }
+                agent_result = self.executor.execute(request)
+                return {'action': 'use_agent', 'agent': agent_name, 'result': agent_result}
+            elif agent_name in self.agents:
+                # Fallback to direct execution (legacy path)
                 agent_result = self.agents[agent_name].analyze(
                     action.get('command', '')
                 )

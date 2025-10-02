@@ -8,6 +8,7 @@ import json
 import re
 from typing import Dict, List, Any, Optional
 from pathlib import Path
+from datetime import datetime
 from core.logger import get_logger
 from core.confidence_calculator import confidence_calculator
 
@@ -323,11 +324,39 @@ class PatternEngine:
             }
 
         elif action == "enriched_lookup":
-            # Look up enriched data from Phase 3 JSON files
+            # Look up enriched data from Phase 3 JSON files or graph nodes
             data_type = params.get('data_type', '')
             query = params.get('query', '')
 
-            # Load the enriched data
+            # Special handling for graph node lookups
+            if data_type == "graph_nodes":
+                # Provide graph node access via enriched lookup
+                node_type = query  # query contains the node type
+                if self.graph:
+                    nodes = [
+                        {'id': nid, **ndata}
+                        for nid, ndata in self.graph.nodes.items()
+                        if ndata.get('type') == node_type
+                    ]
+                    return {
+                        'data': nodes,
+                        'found': len(nodes) > 0,
+                        'count': len(nodes),
+                        'type': node_type
+                    }
+                return {'data': [], 'found': False}
+
+            elif data_type == "graph_node":
+                # Get single node by ID
+                node_id = query
+                if self.graph and node_id in self.graph.nodes:
+                    return {
+                        'data': {'id': node_id, **self.graph.nodes[node_id]},
+                        'found': True
+                    }
+                return {'data': None, 'found': False}
+
+            # Standard enriched data lookup
             enriched_data = self.load_enriched_data(data_type)
 
             if enriched_data:
@@ -512,47 +541,6 @@ class PatternEngine:
             else:
                 return {"error": f"Agent {agent_name} not found"}
 
-        elif action == "enriched_lookup":
-            # Look up enriched data (similar to knowledge_lookup but for structured data)
-            data_type = params.get('data_type', '')
-            query = params.get('query', '')
-            filters = params.get('filters', {})
-
-            # Try to get enriched data from capabilities
-            if hasattr(self, 'capabilities') and 'enriched_data' in self.capabilities:
-                enriched_data = self.capabilities['enriched_data']
-
-                if data_type in enriched_data:
-                    data = enriched_data[data_type]
-
-                    # Apply filters if provided
-                    if filters and isinstance(data, dict):
-                        filtered_data = {}
-                        for key, value in data.items():
-                            match = True
-                            for filter_key, filter_value in filters.items():
-                                if filter_key in value and value[filter_key] != filter_value:
-                                    match = False
-                                    break
-                            if match:
-                                filtered_data[key] = value
-                        data = filtered_data
-
-                    return {
-                        'data': data,
-                        'found': True,
-                        'data_type': data_type,
-                        'query': query
-                    }
-
-            # Fallback: return structured placeholder
-            return {
-                'data': f"Enriched data lookup for '{data_type}' - analysis needed",
-                'found': False,
-                'data_type': data_type,
-                'query': query
-            }
-
         elif action == "fetch_financials":
             # Fetch financial data using data harvester
             symbol = params.get('symbol', context.get('symbol', 'AAPL'))
@@ -678,6 +666,161 @@ class PatternEngine:
                 'timestamp': context.get('timestamp', 'now'),
                 'confirmation': f"Added {quantity} shares of {symbol} to {portfolio_name} portfolio"
             }
+
+        # Meta-pattern actions for architecture alignment
+        elif action == "detect_execution_type":
+            # Detect if this is agent/pattern/ui/api call
+            request = params.get('request', {})
+            if isinstance(request, dict):
+                if 'agent_name' in request:
+                    return 'agent_direct'
+                elif 'pattern_id' in request or 'pattern' in request:
+                    return 'pattern'
+                elif 'ui_component' in request:
+                    return 'ui_action'
+                elif 'api' in request or 'endpoint' in request:
+                    return 'api_call'
+            # Check for legacy indicators
+            if any(indicator in str(request) for indicator in ['_direct', 'bypass', 'analyze', 'harvest']):
+                return 'legacy'
+            return 'unknown'
+
+        elif action == "fix_constructor_args":
+            # Fix agent constructor arguments on the fly
+            agent_name = params.get('agent')
+            if self.runtime and agent_name in self.runtime.agents:
+                agent = self.runtime.agents[agent_name]
+                if hasattr(agent, 'graph') and isinstance(agent.graph, str):
+                    # Graph is incorrectly a string, fix it
+                    if hasattr(self, 'graph'):
+                        agent.graph = self.graph
+                    agent.name = agent_name
+                    return {"fixed": True, "agent": agent_name, "issue": "constructor_args"}
+            return {"fixed": False, "agent": agent_name}
+
+        elif action == "execute_through_registry":
+            # Force execution through registry for Trinity compliance
+            agent_name = params.get('agent')
+            method = params.get('method', 'process')
+            context = params.get('context', {})
+
+            if not self.runtime:
+                return {"error": "Runtime not available"}
+
+            # Always use registry if available
+            if hasattr(self.runtime, 'agent_registry'):
+                return self.runtime.agent_registry.execute_with_tracking(
+                    agent_name, context
+                )
+            else:
+                return self.runtime.execute(agent_name, context)
+
+        elif action == "normalize_response":
+            # Ensure consistent response format across all agents
+            result = params.get('result', {})
+            agent_name = params.get('agent', 'unknown')
+            method = params.get('method', 'process')
+
+            if not isinstance(result, dict):
+                result = {'response': str(result)}
+
+            # Ensure required Trinity fields
+            if 'agent' not in result:
+                result['agent'] = agent_name
+            if 'timestamp' not in result:
+                result['timestamp'] = datetime.now().isoformat()
+            if 'method_used' not in result:
+                result['method_used'] = method
+            if 'compliant' not in result:
+                result['compliant'] = True
+
+            return result
+
+        elif action == "validate_agent":
+            # Validate agent exists and is properly configured
+            agent_name = params.get('agent')
+            if not self.runtime or agent_name not in self.runtime.agents:
+                return {"valid": False, "error": f"Agent {agent_name} not found"}
+
+            agent = self.runtime.agents[agent_name]
+            issues = []
+
+            # Check graph configuration
+            if not hasattr(agent, 'graph'):
+                issues.append("no_graph_attribute")
+            elif agent.graph is None:
+                issues.append("graph_is_none")
+            elif isinstance(agent.graph, str):
+                issues.append("graph_is_string")
+
+            return {
+                "valid": len(issues) == 0,
+                "agent": agent_name,
+                "issues": issues
+            }
+
+        elif action == "inject_capabilities":
+            # Inject required capabilities into context
+            agent_name = params.get('agent')
+            required = params.get('required', [])
+            context = params.get('context', {})
+
+            # Add capabilities to context
+            if hasattr(self, 'capabilities'):
+                for cap in required:
+                    if cap in self.capabilities:
+                        context[f'capability_{cap}'] = self.capabilities[cap]
+
+            return context
+
+        elif action == "scan_agents":
+            # Scan all registered agents
+            if not self.runtime:
+                return []
+
+            agents = []
+            for name, agent in self.runtime.agents.items():
+                agents.append({
+                    'name': name,
+                    'class': agent.__class__.__name__,
+                    'has_graph': hasattr(agent, 'graph'),
+                    'graph_valid': hasattr(agent, 'graph') and agent.graph is not None and not isinstance(agent.graph, str)
+                })
+            return agents
+
+        elif action == "check_constructor_compliance":
+            # Check if agents have correct constructor signatures
+            agents = params.get('agents', [])
+            issues = []
+
+            for agent_info in agents:
+                if not agent_info.get('graph_valid', True):
+                    issues.append({
+                        'agent': agent_info['name'],
+                        'issue': 'invalid_graph_configuration'
+                    })
+
+            return issues
+
+        elif action == "apply_fixes":
+            # Apply automatic fixes for detected issues
+            fixes = params.get('fixes', {})
+            auto_fix = params.get('auto_fix', False)
+
+            if not auto_fix:
+                return {"fixed_count": 0, "message": "Auto-fix disabled"}
+
+            fixed_count = 0
+            for issue_type, issue_list in fixes.items():
+                if issue_type == 'constructors':
+                    for issue in issue_list:
+                        if self.runtime and issue['agent'] in self.runtime.agents:
+                            agent = self.runtime.agents[issue['agent']]
+                            if hasattr(self, 'graph'):
+                                agent.graph = self.graph
+                                fixed_count += 1
+
+            return {"fixed_count": fixed_count, "fixes_applied": True}
 
         else:
             # Truly unknown action - provide detailed error with suggestions

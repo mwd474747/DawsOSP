@@ -16,6 +16,7 @@ from core.agent_runtime import AgentRuntime
 from core.relationships import Relationships
 from core.persistence import PersistenceManager
 from core.pattern_engine import PatternEngine
+from core.universal_executor import UniversalExecutor, get_executor
 
 # Agent imports
 from agents.graph_mind import GraphMind
@@ -140,6 +141,14 @@ def init_session_state():
         # Initialize PatternEngine after agents are registered
         runtime.pattern_engine = PatternEngine('patterns', runtime)
         print(f"PatternEngine initialized with {len(runtime.pattern_engine.patterns)} patterns")
+
+    # Initialize Universal Executor AFTER agent_runtime
+    if 'executor' not in st.session_state:
+        st.session_state.executor = UniversalExecutor(
+            st.session_state.graph,
+            st.session_state.agent_runtime.agent_registry
+        )
+        print("Universal Executor initialized - ALL execution now routes through Trinity path")
 
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
