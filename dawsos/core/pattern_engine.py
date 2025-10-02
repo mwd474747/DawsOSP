@@ -171,10 +171,39 @@ class PatternEngine:
             knowledge_file = params.get('knowledge_file', '')
             section = params.get('section', '')
 
-            # For now, return mock data - in production this would query the knowledge graph
+            # Query actual knowledge graph through any agent that has access
+            if self.runtime and hasattr(self.runtime, 'agents'):
+                for agent_name, agent in self.runtime.agents.items():
+                    if hasattr(agent, 'graph'):
+                        # Try to get knowledge from graph
+                        nodes = agent.graph.get_nodes_by_type(section)
+                        if nodes:
+                            # Format the knowledge data
+                            knowledge_data = {}
+                            for node_id, node_data in nodes.items():
+                                knowledge_data[node_id] = node_data.get('properties', {})
+
+                            return {
+                                'data': knowledge_data,
+                                'found': True,
+                                'count': len(nodes)
+                            }
+
+                        # Try to find by ID if section matches a node ID
+                        node = agent.graph.get_node(section)
+                        if node:
+                            return {
+                                'data': node.get('properties', {}),
+                                'found': True,
+                                'count': 1
+                            }
+
+                        break
+
+            # Fallback if no knowledge found
             return {
-                'data': f"Knowledge from {knowledge_file}:{section}",
-                'found': True
+                'data': f"Knowledge section '{section}' not found in graph",
+                'found': False
             }
 
         elif action == "evaluate":
