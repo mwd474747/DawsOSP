@@ -11,11 +11,13 @@ class LLMClient:
     def __init__(self):
         self.api_key = os.getenv('ANTHROPIC_API_KEY')
         if not self.api_key:
-            print("Warning: ANTHROPIC_API_KEY not set. Using mock mode.")
-            self.client = None
-        else:
-            self.client = Anthropic(api_key=self.api_key)
-            print("Claude API connected successfully!")
+            raise ValueError(
+                "ANTHROPIC_API_KEY environment variable is required for DawsOS to function. "
+                "Please set your API key in the .env file."
+            )
+
+        self.client = Anthropic(api_key=self.api_key)
+        print("Claude API connected successfully!")
 
         # Default settings
         self.model = "claude-3-haiku-20240307"  # Cheaper, faster model for agents
@@ -24,9 +26,6 @@ class LLMClient:
 
     def complete(self, prompt: str, parse_json: bool = False) -> Any:
         """Send prompt to Claude and get response"""
-        if not self.client:
-            # Mock mode
-            return self._mock_response(prompt)
 
         try:
             # Call Claude API
@@ -88,42 +87,6 @@ class LLMClient:
         # Return raw text if can't parse
         return {"response": text}
 
-    def _mock_response(self, prompt: str) -> Dict[str, Any]:
-        """Generate mock response when API not available"""
-        # Simple pattern matching for mock responses
-        prompt_lower = prompt.lower()
-
-        if 'intent' in prompt_lower or 'what do they want' in prompt_lower:
-            return {
-                "intent": "ADD_DATA",
-                "entities": ["AAPL"],
-                "action": "fetch_stock",
-                "response": "I'll help you with that!"
-            }
-        elif 'relationship' in prompt_lower:
-            return {
-                "exists": True,
-                "type": "correlates",
-                "strength": 0.7,
-                "confidence": 0.8
-            }
-        elif 'pattern' in prompt_lower:
-            return {
-                "pattern_type": "cycle",
-                "description": "Mock pattern detected",
-                "confidence": 0.6
-            }
-        elif 'forecast' in prompt_lower:
-            return {
-                "forecast": "bullish",
-                "confidence": 0.7,
-                "signal_strength": 0.5
-            }
-        else:
-            return {
-                "action": "thinking",
-                "response": "Mock response - set ANTHROPIC_API_KEY for real responses"
-            }
 
     def set_model(self, model: str):
         """Change the model (haiku, sonnet, opus)"""

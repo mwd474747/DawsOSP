@@ -63,15 +63,21 @@ class RelationshipHunter(BaseAgent):
         symbols_to_check = ['QQQ', 'IWM', 'TLT', 'GLD', 'DXY', 'VXX', 'XLE', 'XLF', 'ARKK']
         correlations = {}
 
-        # For now, use default correlations since historical data requires a different API endpoint
-        # TODO: Implement historical price fetching when API endpoint is available
-        return self._get_default_correlations(target)
+        # Get historical data for the target symbol
+        target_history = market_cap.get_historical(target, period='1M')
+        if not target_history or 'error' in target_history:
+            return self._get_default_correlations(target)
 
-        # Future implementation when historical data is available:
-        # target_history = market_cap.get_historical(target, days=30)
-        # if 'error' in target_history or not target_history.get('prices'):
-        #     return self._get_default_correlations(target)
-        # ... calculate real correlations ...
+        # Calculate real correlations using historical data
+        for symbol in symbols_to_check:
+            symbol_history = market_cap.get_historical(symbol, period='1M')
+            if symbol_history and 'error' not in symbol_history:
+                correlation = self._calculate_price_correlation(target_history, symbol_history)
+                correlations[symbol] = {
+                    'correlation': correlation,
+                    'strength': abs(correlation),
+                    'direction': 'positive' if correlation > 0 else 'negative'
+                }
 
         # Categorize correlations
         strong_positive = []
@@ -127,6 +133,31 @@ class RelationshipHunter(BaseAgent):
 
             return round(correlation, 2) if not np.isnan(correlation) else 0.0
         except:
+            return 0.0
+
+    def _calculate_price_correlation(self, history1: List[Dict], history2: List[Dict]) -> float:
+        """Calculate correlation between two historical price series"""
+        try:
+            # Extract prices and calculate returns
+            prices1 = [float(item.get('close', 0)) for item in history1 if item.get('close')]
+            prices2 = [float(item.get('close', 0)) for item in history2 if item.get('close')]
+
+            if len(prices1) < 2 or len(prices2) < 2:
+                return 0.0
+
+            # Calculate daily returns
+            returns1 = [(prices1[i] - prices1[i-1]) / prices1[i-1] for i in range(1, len(prices1))]
+            returns2 = [(prices2[i] - prices2[i-1]) / prices2[i-1] for i in range(1, len(prices2))]
+
+            # Use minimum length to align series
+            min_len = min(len(returns1), len(returns2))
+            if min_len < 5:  # Need at least 5 data points for meaningful correlation
+                return 0.0
+
+            return self._correlation(returns1[:min_len], returns2[:min_len])
+
+        except Exception as e:
+            print(f"Error calculating price correlation: {e}")
             return 0.0
 
     def _generate_correlation_summary(self, target: str, correlations: Dict[str, float]) -> str:

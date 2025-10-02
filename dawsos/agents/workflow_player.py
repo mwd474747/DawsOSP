@@ -151,19 +151,82 @@ class WorkflowPlayer(BaseAgent):
         return list(set(parameters))
 
     def _execute_step(self, step: Any, context: Dict[str, Any], parameters: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a single workflow step"""
-        # Fill in parameters
-        if isinstance(step, str):
-            for param, value in parameters.items():
-                step = step.replace(f'{{{param}}}', str(value))
+        """Execute a single workflow step using Pattern Engine"""
+        try:
+            # Fill in parameters in step
+            if isinstance(step, str):
+                for param, value in parameters.items():
+                    step = step.replace(f'{{{param}}}', str(value))
 
-        # In real implementation, would execute actual actions
-        # For now, return mock success
-        return {
-            "step": step,
-            "success": True,
-            "result": "Step executed"
-        }
+            # If step is a pattern reference or action, delegate to Pattern Engine
+            if isinstance(step, dict):
+                # Step is a structured action
+                if 'agent' in step and 'action' in step:
+                    # Get pattern engine from capabilities
+                    if 'pattern_engine' in self.capabilities:
+                        pattern_engine = self.capabilities['pattern_engine']
+                        # Execute the action through pattern engine
+                        result = pattern_engine._execute_action(step, context)
+                        return {
+                            "step": step,
+                            "success": True,
+                            "result": result
+                        }
+                    else:
+                        return {
+                            "step": step,
+                            "success": False,
+                            "error": "Pattern Engine not available"
+                        }
+
+                # Step is a pattern execution request
+                elif 'pattern' in step:
+                    if 'pattern_engine' in self.capabilities:
+                        pattern_engine = self.capabilities['pattern_engine']
+                        result = pattern_engine.execute_pattern(step['pattern'], parameters, context)
+                        return {
+                            "step": step,
+                            "success": True,
+                            "result": result
+                        }
+                    else:
+                        return {
+                            "step": step,
+                            "success": False,
+                            "error": "Pattern Engine not available"
+                        }
+
+            # For simple string steps, try to execute as agent requests
+            elif isinstance(step, str):
+                # Try to parse as agent action
+                if 'pattern_engine' in self.capabilities:
+                    pattern_engine = self.capabilities['pattern_engine']
+                    # Create an action from the string step
+                    action = {
+                        "action": "process_request",
+                        "agent": "claude",  # Default to Claude agent
+                        "request": step
+                    }
+                    result = pattern_engine._execute_action(action, context)
+                    return {
+                        "step": step,
+                        "success": True,
+                        "result": result
+                    }
+
+            # Fallback for unknown step types
+            return {
+                "step": step,
+                "success": False,
+                "error": f"Unknown step type: {type(step)}"
+            }
+
+        except Exception as e:
+            return {
+                "step": step,
+                "success": False,
+                "error": f"Execution failed: {str(e)}"
+            }
 
 class ContextMatcher(BaseAgent):
     """Sub-agent that matches contexts"""

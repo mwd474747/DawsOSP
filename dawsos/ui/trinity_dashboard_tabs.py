@@ -123,7 +123,12 @@ class TrinityDashboardTabs:
             # Pattern-enhanced stats
             stats = self.graph.get_stats()
             for key, value in stats.items():
-                st.metric(key.replace('_', ' ').title(), value)
+                # Handle dictionary values by showing count
+                if isinstance(value, dict):
+                    display_value = len(value)
+                    st.metric(key.replace('_', ' ').title(), display_value)
+                else:
+                    st.metric(key.replace('_', ' ').title(), value)
 
             # Pattern-driven graph operations
             st.markdown("#### 🔮 Pattern Operations")
