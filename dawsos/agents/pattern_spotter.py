@@ -230,10 +230,15 @@ class PatternSpotter(BaseAgent):
             if not economic_data:
                 return {'cycle_stage': 'Unknown', 'confidence': 0.0}
 
-            # Analyze growth vs inflation dynamics
-            gdp = economic_data.get('GDP', {}).get('value', 0)
-            cpi = economic_data.get('CPI', {}).get('value', 0)
-            unemployment = economic_data.get('Unemployment', {}).get('value', 0)
+            # Analyze growth vs inflation dynamics - handle both dict and direct value formats
+            gdp_data = economic_data.get('GDP', {})
+            cpi_data = economic_data.get('CPI', {})
+            unemployment_data = economic_data.get('Unemployment', {})
+
+            # Handle both nested dict and direct value formats
+            gdp = gdp_data.get('value', 0) if isinstance(gdp_data, dict) else gdp_data if isinstance(gdp_data, (int, float)) else 0
+            cpi = cpi_data.get('value', 0) if isinstance(cpi_data, dict) else cpi_data if isinstance(cpi_data, (int, float)) else 0
+            unemployment = unemployment_data.get('value', 0) if isinstance(unemployment_data, dict) else unemployment_data if isinstance(unemployment_data, (int, float)) else 0
 
             # Calculate cycle stage based on economic data
             if isinstance(gdp, (int, float)) and isinstance(cpi, (int, float)):
