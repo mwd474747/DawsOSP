@@ -2,15 +2,18 @@
   "id": "moat_analyzer",
   "name": "Economic Moat Analyzer",
   "trigger_phrases": [
+    "analyze economic moat",
     "analyze moat",
     "economic moat",
+    "moat analysis",
     "competitive advantage",
-    "moat analysis for {symbol}",
+    "moat for {symbol}",
     "competitive position"
   ],
+  "triggers": ["moat", "economic moat", "competitive advantage"],
   "description": "Deep analysis of a company's economic moat",
   "category": "analysis",
-  "priority": 85,
+  "priority": 95,
   "workflow": [
     {
       "step": "load_moat_framework",

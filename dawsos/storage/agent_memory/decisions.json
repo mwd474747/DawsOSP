@@ -1572,5 +1572,147 @@
       "friendly_response": "Processing: Show me the debt cycle position",
       "response": "I'll help you with: Show me the debt cycle position"
     }
+  },
+  {
+    "agent": "data_harvester",
+    "timestamp": "2025-10-01T19:50:12.560354",
+    "context": {
+      "request": "Get complete fundamentals for AAPL: financials, ratios, earnings, revenue"
+    },
+    "result": {
+      "response": "Fetched data for: Get complete fundamentals for AAPL: financials, ratios, earnings, revenue",
+      "data": {}
+    }
+  },
+  {
+    "agent": "claude",
+    "timestamp": "2025-10-01T19:50:12.564115",
+    "context": {
+      "user_input": "Analyze AAPL with data {digested_data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation assessment 3) Growth prospects 4) Risk factors 5) Investment recommendation"
+    },
+    "result": {
+      "intent": "QUERY",
+      "entities": [],
+      "action": "process",
+      "parameters": {},
+      "friendly_response": "Processing: Analyze AAPL with data {digested_data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation assessment 3) Growth prospects 4) Risk factors 5) Investment recommendation",
+      "response": "I'll help you with: Analyze AAPL with data {digested_data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation assessment 3) Growth prospects 4) Risk factors 5) Investment recommendation"
+    }
+  },
+  {
+    "agent": "data_harvester",
+    "timestamp": "2025-10-01T19:59:00.953190",
+    "context": {
+      "request": "Get complete fundamentals for AAPL: financials, ratios, earnings, revenue"
+    },
+    "result": {
+      "response": "Fetched data for: Get complete fundamentals for AAPL: financials, ratios, earnings, revenue",
+      "data": {}
+    }
+  },
+  {
+    "agent": "claude",
+    "timestamp": "2025-10-01T19:59:00.956168",
+    "context": {
+      "user_input": "Analyze AAPL with data {digested_data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation assessment 3) Growth prospects 4) Risk factors 5) Investment recommendation"
+    },
+    "result": {
+      "intent": "QUERY",
+      "entities": [],
+      "action": "process",
+      "parameters": {},
+      "friendly_response": "Processing: Analyze AAPL with data {digested_data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation assessment 3) Growth prospects 4) Risk factors 5) Investment recommendation",
+      "response": "I'll help you with: Analyze AAPL with data {digested_data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation assessment 3) Growth prospects 4) Risk factors 5) Investment recommendation"
+    }
+  },
+  {
+    "agent": "data_harvester",
+    "timestamp": "2025-10-01T19:59:20.639553",
+    "context": {
+      "request": "Get complete fundamentals for AAPL: financials, ratios, earnings, revenue"
+    },
+    "result": {
+      "response": "Fetched data for: Get complete fundamentals for AAPL: financials, ratios, earnings, revenue",
+      "data": {}
+    }
+  },
+  {
+    "agent": "claude",
+    "timestamp": "2025-10-01T19:59:20.642265",
+    "context": {
+      "user_input": "Analyze AAPL with data {digested_data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation assessment 3) Growth prospects 4) Risk factors 5) Investment recommendation"
+    },
+    "result": {
+      "intent": "QUERY",
+      "entities": [],
+      "action": "process",
+      "parameters": {},
+      "friendly_response": "Processing: Analyze AAPL with data {digested_data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation assessment 3) Growth prospects 4) Risk factors 5) Investment recommendation",
+      "response": "I'll help you with: Analyze AAPL with data {digested_data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation assessment 3) Growth prospects 4) Risk factors 5) Investment recommendation"
+    }
+  },
+  {
+    "agent": "data_harvester",
+    "timestamp": "2025-10-01T19:59:20.643235",
+    "context": {
+      "request": "Get complete fundamentals for MSFT: financials, ratios, earnings, revenue"
+    },
+    "result": {
+      "response": "Fetched data for: Get complete fundamentals for MSFT: financials, ratios, earnings, revenue",
+      "data": {}
+    }
+  },
+  {
+    "agent": "claude",
+    "timestamp": "2025-10-01T19:59:20.644124",
+    "context": {
+      "user_input": "Analyze MSFT with data {digested_data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation assessment 3) Growth prospects 4) Risk factors 5) Investment recommendation"
+    },
+    "result": {
+      "intent": "QUERY",
+      "entities": [],
+      "action": "process",
+      "parameters": {},
+      "friendly_response": "Processing: Analyze MSFT with data {digested_data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation assessment 3) Growth prospects 4) Risk factors 5) Investment recommendation",
+      "response": "I'll help you with: Analyze MSFT with data {digested_data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation assessment 3) Growth prospects 4) Risk factors 5) Investment recommendation"
+    }
+  },
+  {
+    "agent": "data_harvester",
+    "timestamp": "2025-10-01T20:05:45.928844",
+    "context": {
+      "request": "Get {SYMBOL} earnings history, estimates, and guidance"
+    },
+    "result": {
+      "response": "Fetched data for: Get {SYMBOL} earnings history, estimates, and guidance",
+      "data": {}
+    }
+  },
+  {
+    "agent": "pattern_spotter",
+    "timestamp": "2025-10-01T20:05:45.932156",
+    "context": {
+      "data": "{earnings_data}",
+      "analysis_type": "earnings_trend"
+    },
+    "result": {
+      "response": "Analyzed patterns for general",
+      "patterns": []
+    }
+  },
+  {
+    "agent": "claude",
+    "timestamp": "2025-10-01T20:05:45.934147",
+    "context": {
+      "user_input": "Analyze {SYMBOL} earnings {earnings_data} and trends {earnings_patterns}. Include: 1) Beat/miss history 2) Growth trajectory 3) Guidance analysis 4) Estimate revisions 5) Trading implications"
+    },
+    "result": {
+      "intent": "QUERY",
+      "entities": [],
+      "action": "process",
+      "parameters": {},
+      "friendly_response": "Processing: Analyze {SYMBOL} earnings {earnings_data} and trends {earnings_patterns}. Include: 1) Beat/miss history 2) Growth trajectory 3) Guidance analysis 4) Estimate revisions 5) Trading implications",
+      "response": "I'll help you with: Analyze {SYMBOL} earnings {earnings_data} and trends {earnings_patterns}. Include: 1) Beat/miss history 2) Growth trajectory 3) Guidance analysis 4) Estimate revisions 5) Trading implications"
+    }
   }
 ]
