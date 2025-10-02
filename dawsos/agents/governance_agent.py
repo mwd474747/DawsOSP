@@ -291,3 +291,69 @@ class GovernanceAgent(BaseAgent):
             'optimizations_applied': ['Added JSON caching', 'Optimized pattern execution order'],
             'performance_improvement': '35% faster average response time'
         }
+
+    def suggest_improvements(self, scope: str = 'all') -> Dict[str, Any]:
+        """Analyze system and suggest improvements using graph governance"""
+        improvements = []
+
+        if not self.graph_governance:
+            return {
+                'status': 'error',
+                'message': 'Graph governance not available',
+                'improvements': []
+            }
+
+        # Get comprehensive analysis
+        analysis = self.graph_governance.comprehensive_governance_check()
+
+        # Quality issues → Suggest data refresh
+        for issue in analysis.get('quality_issues', [])[:10]:  # Limit to 10
+            improvements.append({
+                'type': 'data_refresh',
+                'priority': 'high' if issue.get('score', 0) < 0.3 else 'medium',
+                'target': issue['node'],
+                'action': 'refresh_data',
+                'description': f"Refresh {issue.get('type', 'data')} node {issue['node']} (quality: {issue.get('score', 0):.0%})"
+            })
+
+        # Orphan nodes → Suggest connections
+        for gap in analysis.get('lineage_gaps', [])[:10]:  # Limit to 10
+            improvements.append({
+                'type': 'add_connection',
+                'priority': 'medium',
+                'target': gap['node'],
+                'action': 'find_connections',
+                'description': f"Connect orphan {gap.get('type', 'node')} node {gap['node']}"
+            })
+
+        # Add seed data suggestions if graph is sparse
+        if analysis.get('total_nodes', 0) < 10:
+            improvements.append({
+                'type': 'seed_data',
+                'priority': 'high',
+                'action': 'add_seed_data',
+                'description': 'Add initial market data for top stocks (AAPL, GOOGL, MSFT, AMZN, TSLA)'
+            })
+
+        # Pattern suggestions if few patterns executed
+        if hasattr(self.graph, 'nodes'):
+            pattern_nodes = [n for n, data in self.graph.nodes.items() if data.get('type') == 'pattern_execution']
+            if len(pattern_nodes) < 5:
+                improvements.append({
+                    'type': 'pattern_suggestion',
+                    'priority': 'low',
+                    'action': 'execute_patterns',
+                    'description': 'Run market analysis patterns to populate insights'
+                })
+
+        return {
+            'status': 'success',
+            'analysis_summary': {
+                'total_nodes': analysis.get('total_nodes', 0),
+                'quality_issues': len(analysis.get('quality_issues', [])),
+                'orphan_nodes': len(analysis.get('lineage_gaps', [])),
+                'overall_health': analysis.get('overall_health', 0)
+            },
+            'improvements': sorted(improvements, key=lambda x: {'high': 0, 'medium': 1, 'low': 2}.get(x['priority'], 3)),
+            'auto_fixable': len([i for i in improvements if i['priority'] == 'high'])
+        }

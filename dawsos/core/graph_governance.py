@@ -262,6 +262,72 @@ class GraphGovernance:
                 f"{compliant}/{len(results)} compliant")
 
 
+    def evolve_graph(self, auto_execute: bool = False) -> Dict[str, Any]:
+        """Graph evolves based on quality and usage patterns"""
+        evolution_actions = []
+
+        for node_id, node in self.graph.nodes.items():
+            quality = self._calculate_quality_from_graph(node_id)
+
+            # Weak nodes get marked for refresh
+            if quality < 0.3:
+                evolution_actions.append({
+                    'action': 'refresh_node',
+                    'target': node_id,
+                    'reason': f'Low quality score: {quality:.0%}',
+                    'priority': 'high'
+                })
+
+                if auto_execute:
+                    # Add governance event for auto-refresh
+                    self.graph.add_node('governance_event', {
+                        'action': 'refresh_required',
+                        'target': node_id,
+                        'quality_score': quality,
+                        'auto_execute': True,
+                        'timestamp': datetime.now().isoformat()
+                    })
+
+            # Strong nodes strengthen their connections
+            elif quality > 0.8:
+                for edge in self.graph.edges:
+                    if edge['from'] == node_id or edge['to'] == node_id:
+                        # Strengthen good relationships
+                        old_strength = edge.get('strength', 0.5)
+                        edge['strength'] = min(1.0, old_strength * 1.1)
+
+                        if old_strength != edge['strength']:
+                            evolution_actions.append({
+                                'action': 'strengthen_edge',
+                                'from': edge['from'],
+                                'to': edge['to'],
+                                'old_strength': old_strength,
+                                'new_strength': edge['strength']
+                            })
+
+        # Auto-prune very weak edges
+        original_edge_count = len(self.graph.edges)
+        self.graph.edges = [e for e in self.graph.edges if e.get('strength', 0.5) > 0.1]
+        pruned_count = original_edge_count - len(self.graph.edges)
+
+        if pruned_count > 0:
+            evolution_actions.append({
+                'action': 'prune_edges',
+                'count': pruned_count,
+                'reason': 'Strength below threshold (0.1)'
+            })
+
+        return {
+            'evolved': True,
+            'actions_taken': evolution_actions,
+            'summary': {
+                'nodes_flagged_for_refresh': len([a for a in evolution_actions if a.get('action') == 'refresh_node']),
+                'edges_strengthened': len([a for a in evolution_actions if a.get('action') == 'strengthen_edge']),
+                'edges_pruned': pruned_count
+            }
+        }
+
+
 def integrate_graph_governance(knowledge_graph) -> GraphGovernance:
     """Simple integration function"""
     return GraphGovernance(knowledge_graph)

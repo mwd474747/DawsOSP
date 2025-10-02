@@ -208,6 +208,60 @@ def render_governance_tab(runtime, graph):
         # Quick actions
         st.markdown("#### ⚡ Quick Actions")
 
+        # Add System Improvement button
+        if st.button("🎯 Auto-Improve System", use_container_width=True):
+            with st.spinner("Analyzing system for improvements..."):
+                try:
+                    # Get improvement suggestions
+                    suggestions = governance_agent.suggest_improvements()
+
+                    if suggestions['status'] == 'success':
+                        improvements = suggestions['improvements']
+
+                        if improvements:
+                            st.success(f"Found {len(improvements)} improvements!")
+
+                            # Store in session state for display
+                            st.session_state['system_improvements'] = suggestions
+
+                            # Auto-fix high priority issues
+                            high_priority = [i for i in improvements if i['priority'] == 'high']
+                            if high_priority:
+                                st.info(f"Auto-fixing {len(high_priority)} high-priority issues...")
+
+                                # Execute improvements
+                                for improvement in high_priority:
+                                    if improvement['type'] == 'data_refresh' and 'data_harvester' in runtime.agents:
+                                        runtime.agents['data_harvester'].process(
+                                            f"refresh data for {improvement['target']}"
+                                        )
+                                    elif improvement['type'] == 'add_connection' and 'relationship_hunter' in runtime.agents:
+                                        runtime.agents['relationship_hunter'].process(
+                                            f"find connections for {improvement['target']}"
+                                        )
+                                    elif improvement['type'] == 'seed_data' and 'data_harvester' in runtime.agents:
+                                        for symbol in ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA']:
+                                            runtime.agents['data_harvester'].process(
+                                                f"get stock data for {symbol}"
+                                            )
+
+                                st.success(f"✅ Fixed {len(high_priority)} high-priority issues!")
+                        else:
+                            st.success("✅ System is healthy - no improvements needed!")
+
+                        # Show analysis summary
+                        summary = suggestions.get('analysis_summary', {})
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.metric("Overall Health", f"{summary.get('overall_health', 0):.0%}")
+                        with col2:
+                            st.metric("Auto-Fixed", suggestions.get('auto_fixable', 0))
+                    else:
+                        st.warning("Could not analyze system")
+
+                except Exception as e:
+                    st.error(f"Improvement analysis failed: {str(e)}")
+
         if st.button("🔍 System Health Check", use_container_width=True):
             with st.spinner("Running system health check..."):
                 try:
@@ -386,6 +440,47 @@ def render_governance_tab(runtime, graph):
 
             if policy_count == 0:
                 st.info("No policies defined yet. Add one above!")
+
+    # System Improvements Section
+    if 'system_improvements' in st.session_state:
+        st.markdown("---")
+        st.markdown("### 🔧 System Improvement Suggestions")
+
+        suggestions = st.session_state['system_improvements']
+        improvements = suggestions.get('improvements', [])
+
+        if improvements:
+            # Group improvements by priority
+            high_priority = [i for i in improvements if i['priority'] == 'high']
+            medium_priority = [i for i in improvements if i['priority'] == 'medium']
+            low_priority = [i for i in improvements if i['priority'] == 'low']
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                if high_priority:
+                    st.markdown("#### 🔴 High Priority")
+                    for imp in high_priority[:5]:
+                        st.markdown(f"• {imp['description']}")
+
+            with col2:
+                if medium_priority:
+                    st.markdown("#### 🟡 Medium Priority")
+                    for imp in medium_priority[:5]:
+                        st.markdown(f"• {imp['description']}")
+
+            with col3:
+                if low_priority:
+                    st.markdown("#### 🟢 Low Priority")
+                    for imp in low_priority[:5]:
+                        st.markdown(f"• {imp['description']}")
+
+            # Clear suggestions button
+            if st.button("Clear Suggestions"):
+                del st.session_state['system_improvements']
+                st.rerun()
+        else:
+            st.info("No improvement suggestions available. Click 'Auto-Improve System' to analyze.")
 
     # Governance history
     st.markdown("---")

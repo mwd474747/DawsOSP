@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-01T23:25:29.092961",
+  "generated_at": "2025-10-01T23:33:19.436811",
   "checksums": {
     "patterns/sector_rotation.json": "09549da615b0a5752d5ed6b8e021d67b8a8cd8f22b2de7d7372327dc66fd4885",
     "patterns/comprehensive_analysis.json": "31081719076475effbb78759e5c7d88f0d031e79cef3c44ba3dfa99a8d8f8825",
@@ -31,6 +31,7 @@
     "patterns/workflows/morning_briefing.json": "b43916c4ce4a520193d2aa7cb2c8f64fed6887c7fb9fad882c87993f6a884200",
     "patterns/workflows/opportunity_scan.json": "c11ae325e7269956ab3503abdcf3af1d90241c265b52944da8be04c9ed376e06",
     "patterns/workflows/deep_dive.json": "a127b490f14a7bd2242cc70ae6995602d9fb4bd88a0d75ae8f8f64372ac61466",
+    "patterns/system/self_improve.json": "baa1d5cd40c47c5743eb6fafc2145494bc6f0d92e364808768a030832c984cc4",
     "patterns/actions/add_to_portfolio.json": "ce1a0802b33a5a86ac9bb4ea7e644d0be13990b2917629c598160201e7e6a9ce",
     "patterns/actions/generate_forecast.json": "db9582c34e3465c445efcc31cea3f59c7b95f0c205a1a0b34fed2b5960751d21",
     "patterns/actions/create_alert.json": "0a6effe9a810f9b59fef89d142a6098ec99e16ba7ca25de0e37004500f24a1bd",
@@ -72,7 +73,7 @@
     "agents/risk_agent.py": "6b203bbe2982b1dd27af4c7f9e4a31ac438297bbe37ec519d636aff7c05f03c6",
     "agents/data_harvester.py": "e88ae477cc10749a0fef073ecd4a17e7dee065711f295241d0acdd1a3eedd96e",
     "agents/code_monkey.py": "d291c18430d6dee80a6737fb85d562c85a310d8cf276682eeb6b5d338ef64fbf",
-    "agents/governance_agent.py": "fd6440e4982824d2d02b2e12bb61158bdaac446b316b944a207428684e3c300e",
+    "agents/governance_agent.py": "410c720ed592920d05840fe20bf7c9b242cd55a1052ded179e2bac15943f2166",
     "agents/relationship_hunter.py": "6485c0e481657c4ce9998d61c62ba3799052f8121205b37da271f435fd714ed4"
   }
 }
