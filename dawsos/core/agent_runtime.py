@@ -27,7 +27,7 @@ class AgentRuntime:
         print(f"Registered agent: {name}")
 
     def execute(self, agent_name: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a single agent"""
+        """Execute agent through unified adapter with automatic Trinity compliance"""
         if agent_name not in self.agents:
             return {"error": f"Agent {agent_name} not found"}
 
@@ -35,14 +35,8 @@ class AgentRuntime:
         self.active_agents.append(agent_name)
 
         try:
-            # Try to use adapter if available
-            if self.use_adapter and self.agent_registry.get_agent(agent_name):
-                adapter = self.agent_registry.get_agent(agent_name)
-                result = adapter.execute(context)
-            else:
-                # Fallback to direct execution for backward compatibility
-                agent = self.agents[agent_name]
-                result = agent.think(context)
+            # ALWAYS use registry for Trinity compliance
+            result = self.agent_registry.execute_with_tracking(agent_name, context)
 
             # Log execution
             self._log_execution(agent_name, context, result)
@@ -163,6 +157,10 @@ class AgentRuntime:
             "results": results,
             "friendly_response": claude_response.get('friendly_response', 'Done!')
         }
+
+    def get_compliance_metrics(self) -> Dict[str, Any]:
+        """Get Trinity Architecture compliance metrics for all agents"""
+        return self.agent_registry.get_compliance_metrics()
 
     def _log_execution(self, agent_name: str, context: Dict[str, Any], result: Dict[str, Any]):
         """Log agent execution"""

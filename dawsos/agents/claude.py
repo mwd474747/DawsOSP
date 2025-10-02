@@ -211,7 +211,12 @@ class Claude(BaseAgent):
             "content": intent_response.get("friendly_response", "Let me think about that...")
         })
 
-        return intent_response
+        # Store result in knowledge graph
+        result = intent_response
+        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+            node_id = self.store_result(result)
+            result['node_id'] = node_id
+        return result
 
     def _recent_history(self) -> str:
         """Get recent conversation context"""

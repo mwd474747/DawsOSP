@@ -6,8 +6,8 @@ import json
 class WorkflowPlayer(BaseAgent):
     """Replays successful workflows"""
 
-    def __init__(self, llm_client=None):
-        super().__init__("WorkflowPlayer", None, llm_client)
+    def __init__(self, graph=None, llm_client=None):
+        super().__init__("WorkflowPlayer", graph, llm_client)
         self.vibe = "efficient"
         self.loaded_workflows = {}
         self.load_workflows()
@@ -70,7 +70,12 @@ class WorkflowPlayer(BaseAgent):
     def play(self, workflow_id: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a workflow"""
         if workflow_id not in self.loaded_workflows:
-            return {"error": f"Workflow {workflow_id} not found"}
+        # Store result in knowledge graph
+        result = {"error": f"Workflow {workflow_id} not found"}
+        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+            node_id = self.store_result(result)
+            result['node_id'] = node_id
+        return result
 
         workflow = self.loaded_workflows[workflow_id]
 
@@ -83,7 +88,12 @@ class WorkflowPlayer(BaseAgent):
         adaptation = self.think(adaptation_context)
 
         if not adaptation.get('can_use', False):
-            return {"error": "Workflow not applicable to current context"}
+        # Store result in knowledge graph
+        result = {"error": "Workflow not applicable to current context"}
+        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+            node_id = self.store_result(result)
+            result['node_id'] = node_id
+        return result
 
         # Execute steps
         results = []
@@ -95,7 +105,12 @@ class WorkflowPlayer(BaseAgent):
             if isinstance(step_result, dict) and 'error' in step_result:
                 break
 
-        return {
+        # Store result in knowledge graph
+        result = {
+        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+            node_id = self.store_result(result)
+            result['node_id'] = node_id
+        return result
             "workflow_id": workflow_id,
             "executed": True,
             "results": results,

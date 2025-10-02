@@ -6,7 +6,7 @@ Leverages Trinity Architecture for intelligent data governance and monitoring
 
 import streamlit as st
 from typing import Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import plotly.graph_objects as go
 import networkx as nx
@@ -207,6 +207,45 @@ def render_governance_tab(runtime, graph):
         # Quick actions
         st.markdown("#### ⚡ Quick Actions")
 
+        # Add Agent Compliance Check button
+        if st.button("🤖 Check Agent Compliance", use_container_width=True):
+            with st.spinner("Validating all agents for Trinity Architecture compliance..."):
+                try:
+                    compliance_result = governance_agent.process_request(
+                        "agent_compliance",
+                        {'source': 'quick_action', 'runtime': runtime}
+                    )
+
+                    if compliance_result.get('status') == 'completed':
+                        overall = compliance_result.get('overall_compliance', 0)
+
+                        # Store in session state for detailed view
+                        st.session_state['latest_compliance'] = compliance_result
+
+                        # Show summary
+                        if overall >= 0.8:
+                            st.success(f"✅ Overall Compliance: {overall:.0%}")
+                        elif overall >= 0.5:
+                            st.warning(f"⚠️ Overall Compliance: {overall:.0%} - Needs improvement")
+                        else:
+                            st.error(f"❌ Overall Compliance: {overall:.0%} - Critical issues")
+
+                        # Show key recommendations
+                        recommendations = compliance_result.get('recommendations', [])
+                        if recommendations:
+                            st.markdown("**Top Recommendations:**")
+                            for rec in recommendations[:3]:
+                                st.write(f"• {rec}")
+                    elif compliance_result.get('status') == 'error':
+                        error_msg = compliance_result.get('message', 'Unknown error')
+                        st.error(f"Compliance check failed: {error_msg}")
+                        if "agent_validator.py" in error_msg:
+                            st.info("💡 Tip: Ensure agent_validator.py is in the core/ directory")
+                    else:
+                        st.error("Compliance check failed - unexpected response")
+                except Exception as e:
+                    st.error(f"❌ Compliance check failed: {str(e)}")
+
         # Add System Improvement button
         if st.button("🎯 Auto-Improve System", use_container_width=True):
             with st.spinner("Analyzing system for improvements..."):
@@ -310,7 +349,7 @@ def render_governance_tab(runtime, graph):
     st.markdown("---")
     st.markdown("### 🌐 Graph-Native Governance")
 
-    tab1, tab2, tab3 = st.tabs(["Quality Analysis", "Data Lineage", "Policy Management"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Quality Analysis", "Data Lineage", "Policy Management", "Agent Compliance", "System Oversight"])
 
     with tab1:
         st.markdown("#### Node Quality Analysis")
@@ -439,6 +478,294 @@ def render_governance_tab(runtime, graph):
 
             if policy_count == 0:
                 st.info("No policies defined yet. Add one above!")
+
+    with tab4:
+        st.markdown("#### 🤖 Agent Compliance Dashboard")
+        st.markdown("*Monitor and enforce Trinity Architecture compliance across all agents*")
+
+        # Get latest compliance results
+        compliance_data = st.session_state.get('latest_compliance', {})
+
+        if compliance_data and compliance_data.get('status') == 'completed':
+            # Overall compliance metrics
+            col1, col2, col3, col4 = st.columns(4)
+
+            summary = compliance_data.get('summary', {})
+            overall = compliance_data.get('overall_compliance', 0)
+
+            with col1:
+                color = "green" if overall >= 0.8 else "orange" if overall >= 0.5 else "red"
+                st.metric(
+                    label="📊 Overall Compliance",
+                    value=f"{overall:.0%}",
+                    delta="Trinity Architecture"
+                )
+
+            with col2:
+                st.metric(
+                    label="✅ Compliant Agents",
+                    value=summary.get('compliant', 0),
+                    delta=f"of {summary.get('total_agents', 0)}"
+                )
+
+            with col3:
+                st.metric(
+                    label="⚠️ Warnings",
+                    value=summary.get('warnings', 0),
+                    delta="Need review"
+                )
+
+            with col4:
+                st.metric(
+                    label="❌ Non-Compliant",
+                    value=summary.get('non_compliant', 0),
+                    delta="Critical" if summary.get('non_compliant', 0) > 0 else "None"
+                )
+
+            # Detailed compliance report
+            if 'report' in compliance_data:
+                with st.expander("📋 Detailed Compliance Report", expanded=True):
+                    st.markdown(compliance_data['report'])
+
+            # Recommendations
+            recommendations = compliance_data.get('recommendations', [])
+            if recommendations:
+                st.markdown("##### 🎯 Action Items")
+                for i, rec in enumerate(recommendations, 1):
+                    if "CRITICAL" in rec:
+                        st.error(f"{i}. {rec}")
+                    elif "WARNING" in rec:
+                        st.warning(f"{i}. {rec}")
+                    else:
+                        st.info(f"{i}. {rec}")
+
+            # Agent-specific issues
+            st.markdown("##### 📍 Agent-Specific Issues")
+
+            # Group agents by compliance level
+            agents_by_status = {"compliant": [], "warning": [], "non_compliant": []}
+
+            if 'agents' in compliance_data:
+                for agent_name, validation in compliance_data['agents'].items():
+                    score = validation.get('compliance_score', 0)
+                    if score >= 0.8:
+                        agents_by_status['compliant'].append((agent_name, score))
+                    elif score >= 0.5:
+                        agents_by_status['warning'].append((agent_name, score))
+                    else:
+                        agents_by_status['non_compliant'].append((agent_name, score))
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.markdown("**✅ Compliant**")
+                for agent, score in agents_by_status['compliant'][:5]:
+                    st.write(f"• {agent} ({score:.0%})")
+
+            with col2:
+                st.markdown("**⚠️ Needs Review**")
+                for agent, score in agents_by_status['warning'][:5]:
+                    st.write(f"• {agent} ({score:.0%})")
+
+            with col3:
+                st.markdown("**❌ Non-Compliant**")
+                for agent, score in agents_by_status['non_compliant'][:5]:
+                    st.write(f"• {agent} ({score:.0%})")
+
+        else:
+            st.info("👆 Click 'Check Agent Compliance' in Quick Actions to run compliance validation")
+
+            # Show Trinity Architecture principles
+            st.markdown("##### 📜 Trinity Architecture Compliance Rules")
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.markdown("**Knowledge (Data)**")
+                st.write("• All results must be stored")
+                st.write("• No logic in data files")
+                st.write("• Complete lineage tracking")
+
+            with col2:
+                st.markdown("**Patterns (Workflows)**")
+                st.write("• Orchestrate agents only")
+                st.write("• No data storage")
+                st.write("• Clear step definitions")
+
+            with col3:
+                st.markdown("**Agents (Actors)**")
+                st.write("• Must use graph methods")
+                st.write("• Store all computations")
+                st.write("• No persistent state")
+
+    with tab5:
+        st.markdown("#### 📊 System Oversight Dashboard")
+        st.markdown("*Real-time monitoring of system health, data flows, and governance metrics*")
+
+        # System health overview
+        col1, col2 = st.columns([2, 1])
+
+        with col1:
+            # Data flow visualization
+            st.markdown("##### 🔄 Data Flow Activity")
+
+            # Calculate recent activity metrics
+            if graph and hasattr(graph, 'nodes'):
+                # Group nodes by creation time (last 24 hours)
+                now = datetime.now()
+                recent_nodes = []
+
+                for node_id, node in graph.nodes.items():
+                    created = node.get('created', '')
+                    if created:
+                        try:
+                            node_time = datetime.fromisoformat(created)
+                            if (now - node_time) < timedelta(hours=24):
+                                recent_nodes.append((node_id, node))
+                        except:
+                            pass
+
+                # Create activity chart
+                if recent_nodes:
+                    # Group by hour
+                    hourly_counts = {}
+                    for node_id, node in recent_nodes:
+                        created = datetime.fromisoformat(node['created'])
+                        hour_key = created.strftime("%H:00")
+                        hourly_counts[hour_key] = hourly_counts.get(hour_key, 0) + 1
+
+                    # Create bar chart
+                    hours = sorted(hourly_counts.keys())
+                    counts = [hourly_counts[h] for h in hours]
+
+                    fig = go.Figure(data=[
+                        go.Bar(x=hours, y=counts, marker_color='lightblue')
+                    ])
+                    fig.update_layout(
+                        title="Node Creation Activity (Last 24 Hours)",
+                        xaxis_title="Hour",
+                        yaxis_title="Nodes Created",
+                        height=250
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+
+                    st.info(f"📈 {len(recent_nodes)} nodes created in last 24 hours")
+                else:
+                    st.info("📊 No recent activity. System may be idle.")
+
+        with col2:
+            # Governance metrics
+            st.markdown("##### 🎯 Governance Metrics")
+
+            # Calculate key metrics
+            if graph:
+                total_nodes = len(graph.nodes)
+                total_edges = len(graph.edges) if hasattr(graph, 'edges') else 0
+
+                # Node type distribution
+                node_types = {}
+                for node_id, node in graph.nodes.items():
+                    node_type = node.get('type', 'unknown')
+                    node_types[node_type] = node_types.get(node_type, 0) + 1
+
+                # Show top node types
+                st.markdown("**Node Distribution:**")
+                for node_type, count in sorted(node_types.items(), key=lambda x: x[1], reverse=True)[:5]:
+                    percentage = (count / total_nodes * 100) if total_nodes > 0 else 0
+                    st.write(f"• {node_type}: {count} ({percentage:.1f}%)")
+
+                # Connection density
+                if total_nodes > 0:
+                    density = total_edges / (total_nodes * (total_nodes - 1) / 2) if total_nodes > 1 else 0
+                    st.metric("Graph Density", f"{density:.2%}")
+
+        # Oversight alerts
+        st.markdown("##### 🚨 Oversight Alerts")
+
+        # Check for various system issues
+        alerts = []
+
+        # Check for orphan nodes
+        if graph_metrics.get('lineage_gaps'):
+            alerts.append({
+                'level': 'warning',
+                'message': f"{len(graph_metrics['lineage_gaps'])} orphan nodes detected",
+                'action': "Run 'fix_orphan_nodes.py' to reconnect"
+            })
+
+        # Check for stale data
+        if graph:
+            stale_count = 0
+            for node_id, node in graph.nodes.items():
+                modified = node.get('modified', '')
+                if modified:
+                    try:
+                        node_time = datetime.fromisoformat(modified)
+                        if (datetime.now() - node_time) > timedelta(days=7):
+                            stale_count += 1
+                    except:
+                        pass
+
+            if stale_count > 10:
+                alerts.append({
+                    'level': 'info',
+                    'message': f"{stale_count} nodes haven't been updated in 7+ days",
+                    'action': "Consider refreshing stale data"
+                })
+
+        # Check agent compliance
+        if compliance_data:
+            non_compliant = compliance_data.get('summary', {}).get('non_compliant', 0)
+            if non_compliant > 0:
+                alerts.append({
+                    'level': 'error',
+                    'message': f"{non_compliant} agents are non-compliant with Trinity Architecture",
+                    'action': "Update agents to use knowledge graph methods"
+                })
+
+        # Display alerts
+        if alerts:
+            for alert in alerts:
+                if alert['level'] == 'error':
+                    st.error(f"🔴 **{alert['message']}**\n\n*Action: {alert['action']}*")
+                elif alert['level'] == 'warning':
+                    st.warning(f"🟡 **{alert['message']}**\n\n*Action: {alert['action']}*")
+                else:
+                    st.info(f"🔵 **{alert['message']}**\n\n*Action: {alert['action']}*")
+        else:
+            st.success("✅ All systems operational - no alerts")
+
+        # System evolution tracking
+        st.markdown("##### 📈 System Evolution")
+
+        # Show growth metrics
+        if 'graph_growth_history' not in st.session_state:
+            st.session_state['graph_growth_history'] = []
+
+        # Add current snapshot
+        current_snapshot = {
+            'timestamp': datetime.now().isoformat(),
+            'nodes': len(graph.nodes) if graph else 0,
+            'edges': len(graph.edges) if graph and hasattr(graph, 'edges') else 0
+        }
+
+        # Keep last 20 snapshots
+        st.session_state['graph_growth_history'].append(current_snapshot)
+        st.session_state['graph_growth_history'] = st.session_state['graph_growth_history'][-20:]
+
+        if len(st.session_state['graph_growth_history']) > 1:
+            # Calculate growth rate
+            first = st.session_state['graph_growth_history'][0]
+            last = st.session_state['graph_growth_history'][-1]
+
+            node_growth = last['nodes'] - first['nodes']
+            edge_growth = last['edges'] - first['edges']
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Node Growth", f"+{node_growth}", "Since session start")
+            with col2:
+                st.metric("Edge Growth", f"+{edge_growth}", "Since session start")
 
     # System Improvements Section
     if 'system_improvements' in st.session_state:

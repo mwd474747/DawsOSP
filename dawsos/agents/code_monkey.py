@@ -6,8 +6,8 @@ import os
 class CodeMonkey(BaseAgent):
     """Simple code writer - keeps everything simple"""
 
-    def __init__(self, llm_client=None):
-        super().__init__("CodeMonkey", None, llm_client)
+    def __init__(self, graph=None, llm_client=None):
+        super().__init__("CodeMonkey", graph, llm_client)
         self.vibe = "eager to code"
         self.max_lines = 50  # Keep it simple!
 
@@ -93,8 +93,8 @@ class CodeMonkey(BaseAgent):
 class FunctionWriter(BaseAgent):
     """Sub-agent that writes individual functions"""
 
-    def __init__(self, llm_client=None):
-        super().__init__("FunctionWriter", None, llm_client)
+    def __init__(self, graph=None, llm_client=None):
+        super().__init__("FunctionWriter", graph, llm_client)
         self.vibe = "focused"
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
@@ -112,8 +112,8 @@ class FunctionWriter(BaseAgent):
 class ImportManager(BaseAgent):
     """Sub-agent that manages imports"""
 
-    def __init__(self, llm_client=None):
-        super().__init__("ImportManager", None, llm_client)
+    def __init__(self, graph=None, llm_client=None):
+        super().__init__("ImportManager", graph, llm_client)
         self.vibe = "organized"
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
@@ -130,8 +130,8 @@ class ImportManager(BaseAgent):
 class DocStringBot(BaseAgent):
     """Sub-agent that adds simple docstrings"""
 
-    def __init__(self, llm_client=None):
-        super().__init__("DocStringBot", None, llm_client)
+    def __init__(self, graph=None, llm_client=None):
+        super().__init__("DocStringBot", graph, llm_client)
         self.vibe = "helpful"
 
     def get_prompt(self, context: Dict[str, Any]) -> str:

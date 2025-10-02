@@ -40,6 +40,10 @@ class GovernanceAgent(BaseAgent):
         if context is None:
             context = {}
 
+        # Check for direct agent compliance request
+        if request.strip().lower() == 'agent_compliance':
+            return self._validate_agent_compliance(request, context)
+
         # Check if this is a pattern-based validation request
         if 'pattern_validation' in context or 'validate_with_pattern' in request.lower():
             return self.validate_with_pattern(request, context)
@@ -338,29 +342,68 @@ class GovernanceAgent(BaseAgent):
 
     def _validate_agent_compliance(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Validate agent compliance with Trinity Architecture"""
-        if not self.agent_validator:
-            return {
-                'status': 'error',
-                'message': 'Agent validator not initialized'
-            }
 
-        # Get runtime from context or import
-        runtime = context.get('runtime') if context else None
-        if not runtime:
+        # Ensure agent validator is initialized
+        if not self.agent_validator:
             try:
-                from core.agent_runtime import AgentRuntime
-                runtime = AgentRuntime()
-            except:
+                from core.agent_validator import AgentValidator, ComplianceEnforcer
+                self.agent_validator = AgentValidator(self.graph)
+                self.compliance_enforcer = ComplianceEnforcer(self.agent_validator)
+            except ImportError as e:
                 return {
                     'status': 'error',
-                    'message': 'Cannot access agent runtime for validation'
+                    'message': f'Agent validator not available: {str(e)}'
+                }
+
+        # Get runtime from context
+        runtime = context.get('runtime') if context else None
+        if not runtime:
+            # Try to get runtime from main
+            try:
+                import main
+                if hasattr(main, 'runtime'):
+                    runtime = main.runtime
+                else:
+                    # Create a minimal runtime for validation
+                    from core.agent_runtime import AgentRuntime
+                    runtime = AgentRuntime()
+                    # Register available agents
+                    import agents
+                    runtime._register_agents()
+            except Exception as e:
+                return {
+                    'status': 'error',
+                    'message': f'Cannot access agent runtime for validation: {str(e)}'
                 }
 
         # Validate all agents
-        validation_results = self.agent_validator.validate_all_agents(runtime)
+        try:
+            # Get static validation from agent validator
+            validation_results = self.agent_validator.validate_all_agents(runtime)
+
+            # Also get runtime execution metrics if available
+            if hasattr(runtime, 'get_compliance_metrics'):
+                runtime_metrics = runtime.get_compliance_metrics()
+                validation_results['runtime_metrics'] = runtime_metrics
+
+                # Merge runtime compliance data with static analysis
+                if 'agents' in runtime_metrics:
+                    for agent_name, metrics in runtime_metrics['agents'].items():
+                        if agent_name in validation_results.get('agents', {}):
+                            validation_results['agents'][agent_name]['runtime_compliance'] = metrics['compliance_rate']
+                            validation_results['agents'][agent_name]['executions'] = metrics['executions']
+                            validation_results['agents'][agent_name]['actual_stores'] = metrics['stored']
+        except Exception as e:
+            return {
+                'status': 'error',
+                'message': f'Validation failed: {str(e)}'
+            }
 
         # Generate report
-        report = self.agent_validator.generate_compliance_report(validation_results)
+        try:
+            report = self.agent_validator.generate_compliance_report(validation_results)
+        except Exception as e:
+            report = f"Report generation failed: {str(e)}"
 
         # Store results in knowledge graph
         if self.graph:

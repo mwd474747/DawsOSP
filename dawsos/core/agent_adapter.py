@@ -42,13 +42,13 @@ class AgentAdapter:
 
     def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Execute agent with consistent interface
+        Execute agent with consistent interface and automatic Trinity compliance
 
         Args:
             context: Execution context with user_input, data, etc.
 
         Returns:
-            Standardized response dictionary
+            Standardized response dictionary with automatic graph storage
         """
         # Inject capabilities if agent supports them
         if hasattr(self.agent, 'capabilities'):
@@ -88,6 +88,31 @@ class AgentAdapter:
                     result['agent'] = self.agent.__class__.__name__
                     result['method_used'] = method_name
                     result['timestamp'] = datetime.now().isoformat()
+
+                    # AUTO-STORE RESULT IN GRAPH (Trinity Compliance)
+                    if hasattr(self.agent, 'graph') and self.agent.graph:
+                        try:
+                            # Use store_result if available, otherwise add directly
+                            if hasattr(self.agent, 'store_result'):
+                                node_id = self.agent.store_result(result, context)
+                            elif hasattr(self.agent, 'add_knowledge'):
+                                node_id = self.agent.add_knowledge(
+                                    f'{self.agent.__class__.__name__.lower()}_result',
+                                    result
+                                )
+                            else:
+                                # Direct graph access
+                                node_id = self.agent.graph.add_node(
+                                    f'{self.agent.__class__.__name__.lower()}_result',
+                                    {'result': result, 'context': context, 'timestamp': result['timestamp']}
+                                )
+
+                            if node_id:
+                                result['node_id'] = node_id
+                                result['graph_stored'] = True
+                        except Exception:
+                            # Silent fail - don't break execution
+                            result['graph_stored'] = False
 
                     return result
 
@@ -138,12 +163,13 @@ class AgentAdapter:
 
 class AgentRegistry:
     """
-    Registry for managing agent capabilities and routing
+    Registry for managing agent capabilities and routing with Trinity compliance tracking
     """
 
     def __init__(self):
         self.agents = {}
         self.capabilities_map = {}
+        self.execution_metrics = {}  # Track compliance metrics
 
     def register(self, name: str, agent: Any, capabilities: Optional[Dict] = None):
         """Register an agent with optional capabilities"""
@@ -172,3 +198,60 @@ class AgentRegistry:
     def get_all_capabilities(self) -> Dict[str, Dict]:
         """Get capabilities of all registered agents"""
         return self.capabilities_map.copy()
+
+    def execute_with_tracking(self, agent_name: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute agent and track Trinity compliance"""
+        if agent_name not in self.agents:
+            return {'error': f'Agent {agent_name} not found'}
+
+        # Execute through adapter
+        result = self.agents[agent_name].execute(context)
+
+        # Track metrics
+        if agent_name not in self.execution_metrics:
+            self.execution_metrics[agent_name] = {
+                'total_executions': 0,
+                'graph_stored': 0,
+                'failures': 0
+            }
+
+        self.execution_metrics[agent_name]['total_executions'] += 1
+
+        if result.get('graph_stored'):
+            self.execution_metrics[agent_name]['graph_stored'] += 1
+        elif 'error' in result:
+            self.execution_metrics[agent_name]['failures'] += 1
+
+        return result
+
+    def get_compliance_metrics(self) -> Dict[str, Any]:
+        """Get Trinity Architecture compliance metrics for all agents"""
+        metrics = {
+            'agents': {},
+            'overall_compliance': 0,
+            'total_executions': 0,
+            'total_stored': 0
+        }
+
+        for agent_name, agent_metrics in self.execution_metrics.items():
+            total = agent_metrics['total_executions']
+            stored = agent_metrics['graph_stored']
+
+            compliance_rate = (stored / total * 100) if total > 0 else 0
+
+            metrics['agents'][agent_name] = {
+                'executions': total,
+                'stored': stored,
+                'compliance_rate': compliance_rate,
+                'failures': agent_metrics['failures']
+            }
+
+            metrics['total_executions'] += total
+            metrics['total_stored'] += stored
+
+        if metrics['total_executions'] > 0:
+            metrics['overall_compliance'] = (
+                metrics['total_stored'] / metrics['total_executions'] * 100
+            )
+
+        return metrics

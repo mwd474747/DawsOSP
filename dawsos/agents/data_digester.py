@@ -54,13 +54,23 @@ class DataDigester(BaseAgent):
                         strength=connection.get('strength', 0.5)
                     )
 
-            return {
+        # Store result in knowledge graph
+        result = {
+        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+            node_id = self.store_result(result)
+            result['node_id'] = node_id
+        return result
                 "status": "digested",
                 "node_id": node_id,
                 "connections_made": len(plan.get('connections', []))
             }
 
-        return {"status": "failed", "reason": "Could not digest data"}
+        # Store result in knowledge graph
+        result = {"status": "failed", "reason": "Could not digest data"}
+        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+            node_id = self.store_result(result)
+            result['node_id'] = node_id
+        return result
 
     def digest_market_data(self, quote: Dict[str, Any]) -> Dict[str, Any]:
         """Specifically digest market quotes"""

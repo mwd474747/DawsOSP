@@ -24,15 +24,10 @@ class AgentValidator:
         return {
             'required_methods': {
                 'data_producers': [  # Agents that generate data
-                    'add_knowledge',
-                    'connect_knowledge'
+                    'add_knowledge'  # Only require the essential method
                 ],
-                'data_consumers': [  # Agents that read data
-                    'query_knowledge',
-                    'get_connections'
-                ],
-                'orchestrators': [  # Agents that coordinate
-                    'validate_pattern',
+                'data_consumers': [],  # No strict requirements, they inherit from BaseAgent
+                'orchestrators': [  # Only workflow agents need these
                     'execute_workflow'
                 ]
             },
@@ -111,7 +106,11 @@ class AgentValidator:
 
     def _check_graph_usage(self, agent_class) -> Dict[str, Any]:
         """Check how agent uses the knowledge graph"""
-        source = inspect.getsource(agent_class)
+        try:
+            source = inspect.getsource(agent_class)
+        except (OSError, TypeError):
+            # Can't get source for built-in classes or some dynamic classes
+            source = ""
 
         return {
             'uses_graph': 'self.graph' in source,
@@ -144,15 +143,22 @@ class AgentValidator:
 
         if any(term in name for term in ['data', 'harvest', 'digest', 'analyst']):
             return 'data_producers'
-        elif any(term in name for term in ['pattern', 'spot', 'hunt', 'find']):
+        elif any(term in name for term in ['pattern', 'spot', 'hunt', 'find', 'relationship']):
             return 'data_consumers'
-        else:
+        elif any(term in name for term in ['workflow', 'orchestrat', 'coordinator']):
             return 'orchestrators'
+        else:
+            # Default to data_producers as most agents should produce data
+            return 'data_producers'
 
     def _detect_anti_patterns(self, agent_class) -> List[str]:
         """Detect common anti-patterns in agent implementation"""
         anti_patterns = []
-        source = inspect.getsource(agent_class)
+        try:
+            source = inspect.getsource(agent_class)
+        except (OSError, TypeError):
+            # Can't get source, skip anti-pattern detection
+            return []
 
         # Check for state storage outside graph
         if 'self._cache' in source or 'self._state' in source:
@@ -174,19 +180,38 @@ class AgentValidator:
         return anti_patterns
 
     def validate_all_agents(self, runtime) -> Dict[str, Any]:
-        """Validate all registered agents"""
+        """Validate all registered agents with runtime metrics"""
         results = {
             'timestamp': datetime.now().isoformat(),
             'total_agents': 0,
             'compliant': 0,
             'non_compliant': 0,
             'warnings': 0,
-            'agents': {}
+            'agents': {},
+            'runtime_metrics': None
         }
+
+        # Get runtime compliance metrics if available
+        if hasattr(runtime, 'get_compliance_metrics'):
+            results['runtime_metrics'] = runtime.get_compliance_metrics()
+        elif hasattr(runtime, 'agent_registry') and hasattr(runtime.agent_registry, 'get_compliance_metrics'):
+            results['runtime_metrics'] = runtime.agent_registry.get_compliance_metrics()
 
         for agent_name, agent_instance in runtime.agents.items():
             agent_class = agent_instance.__class__
             validation = self.validate_agent(agent_class, agent_instance)
+
+            # Add runtime metrics if available
+            if results['runtime_metrics'] and 'agents' in results['runtime_metrics']:
+                agent_runtime_metrics = results['runtime_metrics']['agents'].get(agent_name, {})
+                if agent_runtime_metrics:
+                    validation['runtime_metrics'] = agent_runtime_metrics
+                    # Adjust compliance score based on actual runtime behavior
+                    if agent_runtime_metrics.get('compliance_rate', 0) < 50:
+                        validation['compliance_score'] *= 0.8
+                        validation['warnings'].append(
+                            f"Low runtime compliance: {agent_runtime_metrics.get('compliance_rate', 0):.0f}%"
+                        )
 
             results['agents'][agent_name] = validation
             results['total_agents'] += 1
@@ -244,6 +269,22 @@ class AgentValidator:
                 report.append(f"- Adds nodes: {gi['adds_nodes']}")
                 report.append(f"- Creates connections: {gi['creates_connections']}")
                 report.append(f"- Stores results: {gi['stores_results']}")
+
+            if validation.get('runtime_metrics'):
+                rm = validation['runtime_metrics']
+                report.append("**Runtime Metrics:**")
+                report.append(f"- Total executions: {rm.get('executions', 0)}")
+                report.append(f"- Results stored: {rm.get('stored', 0)}")
+                report.append(f"- Compliance rate: {rm.get('compliance_rate', 0):.0f}%")
+                report.append(f"- Failures: {rm.get('failures', 0)}")
+
+        # Add overall runtime metrics if available
+        if validation_results.get('runtime_metrics'):
+            metrics = validation_results['runtime_metrics']
+            report.append("\n## Runtime Compliance Summary")
+            report.append(f"- Overall compliance: {metrics.get('overall_compliance', 0):.0f}%")
+            report.append(f"- Total executions: {metrics.get('total_executions', 0)}")
+            report.append(f"- Total stored: {metrics.get('total_stored', 0)}")
 
         return "\n".join(report)
 

@@ -260,7 +260,12 @@ class RelationshipHunter(BaseAgent):
     def hunt(self, node_id: str = None) -> List[Dict[str, Any]]:
         """Hunt for relationships from a node or globally"""
         if not self.graph:
-            return []
+        # Store result in knowledge graph
+        result = []
+        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+            node_id = self.store_result(result)
+            result['node_id'] = node_id
+        return result
 
         relationships_found = []
 
@@ -268,7 +273,12 @@ class RelationshipHunter(BaseAgent):
             # Hunt from specific node
             node = self.graph.nodes.get(node_id)
             if not node:
-                return []
+        # Store result in knowledge graph
+        result = []
+        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+            node_id = self.store_result(result)
+            result['node_id'] = node_id
+        return result
 
             # Check against all other nodes
             for other_id, other_node in self.graph.nodes.items():
@@ -286,7 +296,12 @@ class RelationshipHunter(BaseAgent):
                         if relationship.get('exists'):
                             relationships_found.append(relationship)
 
-        return relationships_found
+        # Store result in knowledge graph
+        result = relationships_found
+        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+            node_id = self.store_result(result)
+            result['node_id'] = node_id
+        return result
 
     def _check_relationship(self, node1_id: str, node2_id: str) -> Dict[str, Any]:
         """Check if two nodes should be related"""

@@ -6,8 +6,8 @@ import os
 class RefactorElf(BaseAgent):
     """Simplifies code that gets too complex"""
 
-    def __init__(self, llm_client=None):
-        super().__init__("RefactorElf", None, llm_client)
+    def __init__(self, graph=None, llm_client=None):
+        super().__init__("RefactorElf", graph, llm_client)
         self.vibe = "minimalist"
         self.complexity_limit = 50  # Lines per function
         self.file_limit = 200  # Lines per file

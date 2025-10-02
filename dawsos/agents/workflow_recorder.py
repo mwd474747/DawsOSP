@@ -7,8 +7,8 @@ import json
 class WorkflowRecorder(BaseAgent):
     """Records successful interaction patterns"""
 
-    def __init__(self, llm_client=None):
-        super().__init__("WorkflowRecorder", None, llm_client)
+    def __init__(self, graph=None, llm_client=None):
+        super().__init__("WorkflowRecorder", graph, llm_client)
         self.vibe = "studious"
         self.workflows = []
         self.patterns = {}
@@ -52,13 +52,23 @@ class WorkflowRecorder(BaseAgent):
             # Check if this forms a pattern
             self._identify_pattern(workflow)
 
-            return {
+        # Store result in knowledge graph
+        result = {
+        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+            node_id = self.store_result(result)
+            result['node_id'] = node_id
+        return result
                 "status": "recorded",
                 "workflow_id": workflow['id'],
                 "pattern": workflow.get('pattern_name')
             }
 
-        return {"status": "not_recorded", "reason": "Not significant enough"}
+        # Store result in knowledge graph
+        result = {"status": "not_recorded", "reason": "Not significant enough"}
+        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+            node_id = self.store_result(result)
+            result['node_id'] = node_id
+        return result
 
     def _create_workflow(self, interaction: Dict[str, Any], decision: Dict[str, Any]) -> Dict[str, Any]:
         """Create a workflow from an interaction"""

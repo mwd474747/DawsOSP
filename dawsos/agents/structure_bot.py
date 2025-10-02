@@ -6,8 +6,8 @@ import os
 class StructureBot(BaseAgent):
     """Keeps the codebase organized"""
 
-    def __init__(self, llm_client=None):
-        super().__init__("StructureBot", None, llm_client)
+    def __init__(self, graph=None, llm_client=None):
+        super().__init__("StructureBot", graph, llm_client)
         self.vibe = "organized"
         self.project_root = "/Users/mdawson/Dawson/DawsOSB/dawsos"
 

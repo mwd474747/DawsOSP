@@ -5,3 +5,7 @@
 2025-10-02 07:26:59,281 - PatternEngine - DEBUG - logger:debug:78 - No pattern matched for: Give me a market update for today 
 2025-10-02 07:31:32,546 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: macro_analysis {"pattern_id": "macro_analysis", "confidence": 0.475, "matched": true}
 2025-10-02 07:32:13,588 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: dalio_cycle {"pattern_id": "dalio_cycle", "confidence": 0.5, "matched": true}
+2025-10-02 07:48:24,599 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-02 07:48:24,600 - PatternEngine - INFO - logger:info:83 - Loaded 41 patterns successfully 
+2025-10-02 07:57:50,292 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-02 07:57:50,293 - PatternEngine - INFO - logger:info:83 - Loaded 41 patterns successfully 

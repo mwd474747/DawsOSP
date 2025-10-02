@@ -32,7 +32,12 @@ class DataHarvester(BaseAgent):
 
     def process(self, request: str) -> Dict[str, Any]:
         """Process method for compatibility"""
-        return self.harvest(request)
+        # Store result in knowledge graph
+        result = self.harvest(request)
+        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+            node_id = self.store_result(result)
+            result['node_id'] = node_id
+        return result
 
     def harvest(self, request: str) -> Dict[str, Any]:
         """Main harvest method - fetches requested data"""

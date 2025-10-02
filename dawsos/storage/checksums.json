@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-02T07:33:26.338937",
+  "generated_at": "2025-10-02T07:57:54.771935",
   "checksums": {
     "patterns/sector_rotation.json": "09549da615b0a5752d5ed6b8e021d67b8a8cd8f22b2de7d7372327dc66fd4885",
     "patterns/comprehensive_analysis.json": "31081719076475effbb78759e5c7d88f0d031e79cef3c44ba3dfa99a8d8f8825",
@@ -62,14 +62,14 @@
     "agents/claude.py": "e2dbe1210388886ffbdbd99d51ac07debe4e90defc549494aea7e45f60a466cc",
     "agents/pattern_spotter.py": "98fd8ed9ed629874e43ac099294de2ebebee62a8b22136c11904f7ecba38e538",
     "agents/workflow_recorder.py": "11244fc42c04a8cdbd7fd7cfe7385adbab01afeebffaea101edca3e059cd6a4b",
-    "agents/financial_analyst.py": "cad657537ba0699ea374bed1ca122d5403ac69de2d9ba5ebd3fe9ff44168480f",
-    "agents/base_agent.py": "c0f93cf6880fe9e673ded4e4f0e949f8374a1aa0ae87769a478aab3982af71e3",
+    "agents/financial_analyst.py": "b2dc342bbd7b7948d3e501e8a364f8fbe6e5f820a0b9ab7486a8187455ccdf1b",
+    "agents/base_agent.py": "340cee2437130283cb244086eabdc507609a5d431eb7185550f00c9fa85a7c0e",
     "agents/forecast_dreamer.py": "b4fdc2f571c6363654f48ca626ad471a50a98b90001a71bfad6df561687365ed",
     "agents/refactor_elf.py": "012382c1f4a69f190b9442fc35dab32b7fac0e2512daf4d6643f761b73730dbf",
     "agents/graph_mind.py": "90997788275c32fbd3c20dae906da092eee522a68eb9acc47309adc97675b31b",
     "agents/data_harvester.py": "e88ae477cc10749a0fef073ecd4a17e7dee065711f295241d0acdd1a3eedd96e",
     "agents/code_monkey.py": "d291c18430d6dee80a6737fb85d562c85a310d8cf276682eeb6b5d338ef64fbf",
-    "agents/governance_agent.py": "f164774369f6a00d10a5c5d149d32d8986d7b7d4bd5285f415237b280c314f86",
+    "agents/governance_agent.py": "d499c7b5eeedcc85e75e72179c0d07075d240facc746e90e85fd20f414f61d79",
     "agents/relationship_hunter.py": "6485c0e481657c4ce9998d61c62ba3799052f8121205b37da271f435fd714ed4"
   }
 }
