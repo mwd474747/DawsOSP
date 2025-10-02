@@ -420,6 +420,20 @@ class PatternEngine:
             template = template.replace('{margin_stability}', 'Stable (±2%)')
             template = template.replace('{avg_roic}', '18.5')
 
+            # Debt cycle variables
+            template = template.replace('{short_cycle_position}', 'Late Expansion')
+            template = template.replace('{short_cycle_phase}', 'Slowing Growth')
+            template = template.replace('{credit_growth}', '3.2')
+            template = template.replace('{unemployment}', '3.9')
+            template = template.replace('{fed_stance}', 'Pause/Pivot')
+            template = template.replace('{long_cycle_position}', 'Late Stage')
+            template = template.replace('{long_cycle_phase}', 'High Debt Burden')
+            template = template.replace('{debt_to_gdp}', '130')
+            template = template.replace('{rates_level}', '5.33%')
+            template = template.replace('{wealth_inequality}', 'High (Top 1% owns 35%)')
+            template = template.replace('{paradigm_risk}', 'Moderate to High')
+            template = template.replace('{recommendations}', '• Reduce risk exposure\n• Increase cash allocation\n• Consider gold/commodities\n• Focus on quality assets')
+
             response['formatted_response'] = template
 
         # Add any specific response formatting

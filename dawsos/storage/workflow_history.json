@@ -283,5 +283,113 @@
         }
       }
     ]
+  },
+  {
+    "workflow": "value_scan",
+    "timestamp": "2025-10-01T20:12:35.905741",
+    "steps": [
+      {
+        "step": 1,
+        "agent": "data_harvester",
+        "action": "fetch_fundamentals",
+        "result": {
+          "value_stocks": []
+        }
+      },
+      {
+        "step": 2,
+        "agent": "pattern_spotter",
+        "action": "apply_value_filters",
+        "result": {
+          "status": "completed",
+          "agent": "pattern_spotter",
+          "action": "apply_value_filters"
+        }
+      },
+      {
+        "step": 3,
+        "agent": "relationship_hunter",
+        "action": "check_regime_fit",
+        "result": {
+          "status": "completed",
+          "agent": "relationship_hunter",
+          "action": "check_regime_fit"
+        }
+      },
+      {
+        "step": 4,
+        "agent": "forecast_dreamer",
+        "action": "project_returns",
+        "result": {
+          "status": "completed",
+          "agent": "forecast_dreamer",
+          "action": "project_returns"
+        }
+      },
+      {
+        "step": 5,
+        "agent": "claude",
+        "action": "rank_opportunities",
+        "result": {
+          "status": "completed",
+          "agent": "claude",
+          "action": "rank_opportunities"
+        }
+      }
+    ]
+  },
+  {
+    "workflow": "value_scan",
+    "timestamp": "2025-10-01T20:13:16.244956",
+    "steps": [
+      {
+        "step": 1,
+        "agent": "data_harvester",
+        "action": "fetch_fundamentals",
+        "result": {
+          "value_stocks": []
+        }
+      },
+      {
+        "step": 2,
+        "agent": "pattern_spotter",
+        "action": "apply_value_filters",
+        "result": {
+          "status": "completed",
+          "agent": "pattern_spotter",
+          "action": "apply_value_filters"
+        }
+      },
+      {
+        "step": 3,
+        "agent": "relationship_hunter",
+        "action": "check_regime_fit",
+        "result": {
+          "status": "completed",
+          "agent": "relationship_hunter",
+          "action": "check_regime_fit"
+        }
+      },
+      {
+        "step": 4,
+        "agent": "forecast_dreamer",
+        "action": "project_returns",
+        "result": {
+          "status": "completed",
+          "agent": "forecast_dreamer",
+          "action": "project_returns"
+        }
+      },
+      {
+        "step": 5,
+        "agent": "claude",
+        "action": "rank_opportunities",
+        "result": {
+          "status": "completed",
+          "agent": "claude",
+          "action": "rank_opportunities"
+        }
+      }
+    ]
   }
 ]

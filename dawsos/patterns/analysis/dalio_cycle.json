@@ -2,15 +2,20 @@
   "id": "dalio_cycle",
   "name": "Dalio Cycle Analysis",
   "trigger_phrases": [
+    "where are we in the debt cycle",
     "debt cycle",
     "economic cycle",
     "dalio analysis",
     "cycle position",
-    "where are we in the cycle"
+    "where are we in the cycle",
+    "debt cycle position",
+    "current debt cycle",
+    "what is our position in the debt cycle"
   ],
+  "triggers": ["debt cycle", "economic cycle", "where are we", "cycle position", "dalio"],
   "description": "Analyze position in debt and economic cycles using Dalio framework",
   "category": "analysis",
-  "priority": 85,
+  "priority": 90,
   "workflow": [
     {
       "step": "load_dalio_framework",
