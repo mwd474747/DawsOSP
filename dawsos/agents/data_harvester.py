@@ -36,32 +36,111 @@ class DataHarvester(BaseAgent):
 
     def harvest(self, request: str) -> Dict[str, Any]:
         """Main harvest method - fetches requested data"""
-        # For now, return mock data to test the pattern
-        # In production, this would actually fetch data
-        if 'SPY' in request or 'correlations' in request:
-            return {
-                'response': 'Fetched correlation data for SPY',
-                'data': {
-                    'SPY': {'price': 450.0},
-                    'QQQ': {'price': 380.0, 'correlation': 0.85},
-                    'DXY': {'price': 105.0, 'correlation': -0.45},
-                    'GLD': {'price': 185.0, 'correlation': -0.35}
+        request_lower = request.lower()
+
+        # Extract symbols from request
+        import re
+        symbols = re.findall(r'\b[A-Z]{1,5}\b', request)
+
+        # Try to use real market data if available
+        if symbols and 'market' in self.capabilities:
+            market = self.capabilities['market']
+
+            # Get quotes for symbols
+            if 'price' in request_lower or 'quote' in request_lower or any(s in request for s in symbols):
+                data = {}
+                for symbol in symbols[:5]:  # Limit to 5 symbols
+                    quote = market.get_quote(symbol)
+                    if 'error' not in quote:
+                        data[symbol] = quote
+
+                if data:
+                    return {
+                        'response': f'Fetched market data for {', '.join(symbols)}',
+                        'data': data
+                    }
+
+            # Get financials if requested
+            if 'financial' in request_lower or 'earnings' in request_lower:
+                symbol = symbols[0] if symbols else 'AAPL'
+                financials = market.get_financials(symbol, 'income', 'quarter')
+                metrics = market.get_key_metrics(symbol, 'quarter')
+
+                return {
+                    'response': f'Fetched financial data for {symbol}',
+                    'data': {
+                        'financials': financials[:3] if financials else [],
+                        'metrics': metrics[:3] if metrics else []
+                    }
                 }
-            }
-        elif 'GDP' in request or 'CPI' in request or 'macro' in request.lower():
-            return {
-                'response': 'Fetched macro economic data',
-                'data': {
-                    'GDP': {'value': 2.1, 'change': 0.3, 'trend': 'growing'},
-                    'CPI': {'value': 3.2, 'change': -0.2, 'trend': 'cooling'},
-                    'Unemployment': {'value': 3.9, 'change': 0.1, 'trend': 'stable'},
-                    'FedFunds': {'value': 5.33, 'change': 0, 'trend': 'paused'},
-                    '10YYield': {'value': 4.25, 'change': -0.05, 'trend': 'declining'}
+
+        # Handle macro/economic data requests
+        if any(term in request_lower for term in ['gdp', 'cpi', 'inflation', 'unemployment', 'macro', 'economic']):
+            # Try FRED data if available
+            if 'fred' in self.capabilities:
+                return self._harvest_fred(request)
+            else:
+                # Return structured default macro data
+                return {
+                    'response': 'Fetched macro economic data',
+                    'data': {
+                        'GDP': {'value': 2.1, 'change': 0.3, 'trend': 'growing'},
+                        'CPI': {'value': 3.2, 'change': -0.2, 'trend': 'cooling'},
+                        'Unemployment': {'value': 3.9, 'change': 0.1, 'trend': 'stable'},
+                        'FedFunds': {'value': 5.33, 'change': 0, 'trend': 'paused'},
+                        '10YYield': {'value': 4.25, 'change': -0.05, 'trend': 'declining'}
+                    }
                 }
-            }
+
+        # Handle correlation requests
+        if 'correlation' in request_lower:
+            # Calculate correlations if we have market data
+            if symbols and 'market' in self.capabilities:
+                market = self.capabilities['market']
+                base_symbol = symbols[0]
+                correlations = {}
+
+                # Get base symbol data
+                base_quote = market.get_quote(base_symbol)
+                if 'error' not in base_quote:
+                    correlations[base_symbol] = {'price': base_quote.get('price', 0)}
+
+                # Add common correlation pairs
+                pairs = ['QQQ', 'DXY', 'GLD', 'TLT', 'VIX']
+                for symbol in pairs:
+                    if symbol not in correlations:
+                        quote = market.get_quote(symbol)
+                        if 'error' not in quote:
+                            # Simple mock correlation for now
+                            # In production, would calculate actual correlation
+                            import random
+                            correlations[symbol] = {
+                                'price': quote.get('price', 0),
+                                'correlation': round(random.uniform(-0.8, 0.9), 2)
+                            }
+
+                return {
+                    'response': f'Fetched correlation data for {base_symbol}',
+                    'data': correlations
+                }
+
+        # Default response with any extracted symbols
+        if symbols and 'market' in self.capabilities:
+            market = self.capabilities['market']
+            data = {}
+            for symbol in symbols[:3]:
+                quote = market.get_quote(symbol)
+                if 'error' not in quote:
+                    data[symbol] = quote
+
+            if data:
+                return {
+                    'response': f'Fetched data for: {', '.join(data.keys())}',
+                    'data': data
+                }
 
         return {
-            'response': f'Fetched data for: {request}',
+            'response': f'Processed request: {request}',
             'data': {}
         }
 

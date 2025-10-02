@@ -34,6 +34,7 @@ from agents.workflow_player import WorkflowPlayer
 # Capability imports
 from capabilities.fred import FREDCapability
 from capabilities.market_data import MarketDataCapability
+from capabilities.fred_data import FredDataCapability
 from capabilities.news import NewsCapability
 from capabilities.crypto import CryptoCapability
 from capabilities.fundamentals import FundamentalsCapability
@@ -84,7 +85,7 @@ def init_session_state():
     # Initialize capabilities FIRST (before agent_runtime that uses it)
     if 'capabilities' not in st.session_state:
         st.session_state.capabilities = {
-            'fred': FREDCapability(),
+            'fred': FredDataCapability(),  # Use our improved FRED capability
             'market': MarketDataCapability(),
             'news': NewsCapability(),
             'crypto': CryptoCapability(),
@@ -326,21 +327,45 @@ def display_intelligence_dashboard():
     """Display key metrics and insights"""
     graph = st.session_state.graph
     stats = graph.get_stats()
-    
+
+    # Display real market data at top
+    st.markdown("### 📊 Market Overview")
+
+    market = st.session_state.capabilities.get('market')
+    if market:
+        # Get major indices
+        indices = ['SPY', 'QQQ', 'DIA', 'IWM']
+        cols = st.columns(len(indices))
+
+        for i, symbol in enumerate(indices):
+            quote = market.get_quote(symbol)
+            if 'error' not in quote:
+                with cols[i]:
+                    change = quote.get('change_percent', 0)
+                    color = "green" if change >= 0 else "red"
+                    st.metric(
+                        symbol,
+                        f"${quote.get('price', 0):.2f}",
+                        f"{change:.2f}%",
+                        delta_color="normal" if change >= 0 else "inverse"
+                    )
+
+    st.markdown("### 🧠 Knowledge Graph Metrics")
+
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
         st.metric("Total Nodes", stats['total_nodes'])
         st.caption("Knowledge entities")
-        
+
     with col2:
         st.metric("Total Edges", stats['total_edges'])
         st.caption("Relationships")
-        
+
     with col3:
         st.metric("Patterns", len(graph.patterns))
         st.caption("Discovered patterns")
-        
+
     with col4:
         avg_conn = stats.get('avg_connections', 0)
         st.metric("Avg Connections", f"{avg_conn:.2f}")
@@ -408,22 +433,50 @@ def display_market_data():
             st.dataframe(df_actives, hide_index=True)
 
 def display_economic_indicators():
-    """Display economic indicators"""
-    st.markdown("### Economic Indicators")
-    
-    fred = st.session_state.capabilities['fred']
-    
-    indicators = ['GDP', 'CPI', 'UNEMPLOYMENT', 'FED_RATE']
-    
+    """Display economic indicators with real FRED data"""
+    st.markdown("### 📊 Economic Dashboard")
+
+    fred = st.session_state.capabilities.get('fred')
+    if not fred:
+        st.warning("Economic data not available - set FRED_API_KEY")
+        return
+
+    # Main economic indicators
+    st.markdown("#### Key Economic Indicators")
+
+    indicators = ['GDP', 'CPI', 'UNEMPLOYMENT', 'FED_FUNDS']
     cols = st.columns(len(indicators))
+
     for i, indicator in enumerate(indicators):
         with cols[i]:
             data = fred.get_latest(indicator)
             if data and 'error' not in data:
                 value = data.get('value', 0)
+                change = data.get('change', 0)
+                trend = data.get('trend', 'stable')
                 date = data.get('date', 'N/A')
-                st.metric(indicator, f"{value:.2f}", delta=None)
-                st.caption(f"As of {date}")
+
+                # Format values appropriately
+                if indicator in ['GDP', 'CPI', 'UNEMPLOYMENT']:
+                    display_value = f"{value:.1f}%"
+                else:
+                    display_value = f"{value:.2f}%"
+
+                # Determine delta color
+                if indicator == 'UNEMPLOYMENT':
+                    delta_color = "inverse"  # Lower is better
+                elif indicator == 'GDP':
+                    delta_color = "normal"   # Higher is better
+                else:
+                    delta_color = "off"      # Neutral
+
+                st.metric(
+                    indicator.replace('_', ' '),
+                    display_value,
+                    f"{change:+.2f}",
+                    delta_color=delta_color
+                )
+                st.caption(f"{trend.capitalize()} • {date}")
 
 def main():
     """Main application"""
