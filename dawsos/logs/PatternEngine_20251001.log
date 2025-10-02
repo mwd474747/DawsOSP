@@ -459,3 +459,12 @@
 2025-10-01 22:38:17,035 - PatternEngine - ERROR - logger:error:100 - Error getting macro economic data: 'AgentRuntime' object has no attribute 'get_agent' {"error_type": null, "error_message": null}
 2025-10-01 22:39:38,454 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
 2025-10-01 22:39:38,454 - PatternEngine - INFO - logger:info:83 - Loaded 34 patterns successfully 
+2025-10-01 22:39:59,539 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: earnings_analysis {"pattern_id": "earnings_analysis", "confidence": 0.1, "matched": true}
+2025-10-01 22:41:09,835 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-01 22:41:09,835 - PatternEngine - INFO - logger:info:83 - Loaded 34 patterns successfully 
+2025-10-01 22:42:20,034 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.2, "matched": true}
+2025-10-01 22:42:31,248 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-01 22:42:31,249 - PatternEngine - INFO - logger:info:83 - Loaded 34 patterns successfully 
+2025-10-01 22:45:24,618 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: earnings_analysis {"pattern_id": "earnings_analysis", "confidence": 0.1, "matched": true}
+2025-10-01 22:58:07,856 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-01 22:58:07,856 - PatternEngine - INFO - logger:info:83 - Loaded 38 patterns successfully 

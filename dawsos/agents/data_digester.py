@@ -164,20 +164,32 @@ class ConfidenceRater(BaseAgent):
         self.vibe = "skeptical"
 
     def rate(self, data: Dict[str, Any]) -> float:
-        """Rate confidence in data (0-1)"""
-        # Simple heuristics for now
-        confidence = 0.5
+        """Rate confidence in data using dynamic calculation"""
+        # Use dynamic confidence calculator
+        confidence_result = confidence_calculator.calculate_confidence(
+            data_quality=self._assess_source_quality(data),
+            num_data_points=len([k for k, v in data.items() if v is not None]),
+            correlation_strength=len(data.get('confirmed_by', [])) / 5.0,  # Normalize confirmations
+            analysis_type='data_validation',
+            timestamp=data.get('timestamp'),
+            data_source=data.get('source', 'unknown')
+        )
 
-        # Official sources get higher confidence
-        if data.get('source') in ['FRED', 'FMP', 'official']:
-            confidence += 0.3
+        return confidence_result['confidence']
 
-        # Recent data is more confident
-        if data.get('timestamp'):
-            confidence += 0.1
+    def _assess_source_quality(self, data: Dict[str, Any]) -> float:
+        """Assess quality of data source"""
+        source = data.get('source', '').lower()
 
-        # Multiple confirming sources
-        if data.get('confirmed_by'):
-            confidence += 0.1 * len(data['confirmed_by'])
-
-        return min(confidence, 1.0)
+        # Official/authoritative sources
+        if any(official in source for official in ['fred', 'fmp', 'official', 'government', 'sec']):
+            return 0.9
+        # Reliable financial sources
+        elif any(reliable in source for reliable in ['yahoo', 'bloomberg', 'reuters', 'morningstar']):
+            return 0.8
+        # Other known sources
+        elif any(known in source for known in ['api', 'database']):
+            return 0.7
+        # Unknown sources
+        else:
+            return 0.5

@@ -1,0 +1,56 @@
+{
+  "id": "governance_template",
+  "name": "Universal Governance Pattern Template",
+  "description": "Template for any governance task - just change the governance_type parameter",
+  "category": "governance",
+  "input_schema": {
+    "required": ["governance_type", "request"],
+    "optional": ["auto_fix", "priority_level", "compliance_framework"]
+  },
+  "workflow": [
+    {
+      "step": 1,
+      "description": "Understand governance request using Claude",
+      "action": "agent:claude",
+      "parameters": {
+        "task": "analyze_governance_request",
+        "governance_type": "{governance_type}",
+        "user_request": "{request}",
+        "context": "DawsOS financial intelligence platform"
+      }
+    },
+    {
+      "step": 2,
+      "description": "Gather relevant data for governance analysis",
+      "action": "agent:data_harvester",
+      "parameters": {
+        "task": "gather_governance_data",
+        "governance_type": "{governance_type}",
+        "scope": "system_wide"
+      }
+    },
+    {
+      "step": 3,
+      "description": "Spot patterns and anomalies in governance context",
+      "action": "agent:pattern_spotter",
+      "parameters": {
+        "task": "identify_governance_patterns",
+        "governance_type": "{governance_type}",
+        "data_source": "step_2_output"
+      }
+    },
+    {
+      "step": 4,
+      "description": "Execute governance action and provide recommendations",
+      "action": "agent:governance_agent",
+      "parameters": {
+        "governance_type": "{governance_type}",
+        "request": "{request}",
+        "auto_fix": "{auto_fix|false}",
+        "priority": "{priority_level|medium}",
+        "analysis_data": ["step_1_output", "step_2_output", "step_3_output"]
+      }
+    }
+  ],
+  "template": "**{governance_type} Governance Report**\n\n**Request**: {request}\n\n**Analysis Summary**:\n{step_1.summary}\n\n**Data Findings**:\n{step_2.findings}\n\n**Pattern Analysis**:\n{step_3.patterns_found}\n\n**Governance Action Results**:\n{step_4.status}\n\n**Recommendations**:\n{#step_4.recommendations}\n- {.}\n{/step_4.recommendations}\n\n**Next Steps**:\n{#step_4.next_actions}\n- {.}\n{/step_4.next_actions}\n\n*Governance powered by DawsOS Trinity Architecture*"
+}

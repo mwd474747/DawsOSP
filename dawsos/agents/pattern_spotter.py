@@ -42,24 +42,20 @@ class PatternSpotter(BaseAgent):
             analysis_type = 'general'
             data = {}
 
-        # Return mock patterns for macro trends
+        # Use real pattern detection algorithms for macro trends
         if analysis_type == 'macro_trends':
+            patterns = self._analyze_macro_trends(data)
             return {
-                'response': 'Identified macro economic patterns',
-                'patterns': {
-                    'cycle_stage': 'Late Cycle',
-                    'trend_strength': 0.65,
-                    'divergences': ['Growth slowing while inflation sticky'],
-                    'regime_shifts': ['Transitioning from growth to value'],
-                    'key_signals': ['Yield curve normalization', 'Dollar strength']
-                }
+                'response': 'Analyzed macro economic patterns using data-driven algorithms',
+                'patterns': patterns
             }
         elif analysis_type == 'regime' or analysis_type == 'quick_regime':
+            regime_analysis = self._detect_market_regime(data)
             return {
-                'response': 'Detected market regime',
-                'regime': 'Risk-On',
-                'confidence': 0.75,
-                'indicators': ['VIX low', 'Credit spreads tight', 'Equity momentum positive']
+                'response': 'Detected market regime using multi-factor analysis',
+                'regime': regime_analysis.get('regime', 'Unknown'),
+                'confidence': regime_analysis.get('confidence', 0.0),
+                'indicators': regime_analysis.get('indicators', [])
             }
 
         return {
@@ -225,6 +221,122 @@ class PatternSpotter(BaseAgent):
             self.graph.patterns[pattern_id] = pattern
 
         self.spotted_patterns.append(pattern)
+
+    def _analyze_macro_trends(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze macro economic trends using data-driven methods"""
+        try:
+            # Extract economic indicators from data
+            economic_data = data.get('economic', {})
+            if not economic_data:
+                return {'cycle_stage': 'Unknown', 'confidence': 0.0}
+
+            # Analyze growth vs inflation dynamics
+            gdp = economic_data.get('GDP', {}).get('value', 0)
+            cpi = economic_data.get('CPI', {}).get('value', 0)
+            unemployment = economic_data.get('Unemployment', {}).get('value', 0)
+
+            # Calculate cycle stage based on economic data
+            if isinstance(gdp, (int, float)) and isinstance(cpi, (int, float)):
+                if gdp > 2.5 and cpi < 3.0:
+                    cycle_stage = 'Early Cycle'
+                    trend_strength = 0.8
+                elif gdp > 2.0 and cpi > 3.0:
+                    cycle_stage = 'Mid Cycle'
+                    trend_strength = 0.7
+                elif gdp < 2.0 and cpi > 3.0:
+                    cycle_stage = 'Late Cycle'
+                    trend_strength = 0.6
+                else:
+                    cycle_stage = 'Recession Risk'
+                    trend_strength = 0.4
+            else:
+                cycle_stage = 'Data Insufficient'
+                trend_strength = 0.0
+
+            # Generate insights based on patterns
+            divergences = []
+            regime_shifts = []
+            key_signals = []
+
+            if isinstance(gdp, (int, float)) and isinstance(cpi, (int, float)):
+                if gdp < 1.5 and cpi > 4.0:
+                    divergences.append('Stagflation risk: Low growth with high inflation')
+                if unemployment < 4.0 and cpi > 3.5:
+                    divergences.append('Tight labor market driving inflation')
+
+            return {
+                'cycle_stage': cycle_stage,
+                'trend_strength': trend_strength,
+                'divergences': divergences,
+                'regime_shifts': regime_shifts,
+                'key_signals': key_signals,
+                'confidence': 0.8 if trend_strength > 0.5 else 0.4
+            }
+
+        except Exception as e:
+            print(f"Error in macro trend analysis: {e}")
+            return {'cycle_stage': 'Analysis Error', 'confidence': 0.0}
+
+    def _detect_market_regime(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Detect market regime using multi-factor analysis"""
+        try:
+            # Initialize regime indicators
+            risk_on_score = 0
+            total_indicators = 0
+
+            # Analyze VIX if available
+            if 'market' in data:
+                market_data = data['market']
+                if 'VIX' in market_data:
+                    vix = market_data['VIX']
+                    if isinstance(vix, (int, float)):
+                        if vix < 20:
+                            risk_on_score += 1
+                        total_indicators += 1
+
+            # Analyze economic indicators
+            if 'economic' in data:
+                economic_data = data['economic']
+
+                # Low unemployment is risk-on
+                unemployment = economic_data.get('Unemployment', {}).get('value')
+                if isinstance(unemployment, (int, float)) and unemployment < 5.0:
+                    risk_on_score += 1
+                total_indicators += 1
+
+                # Moderate inflation is risk-on
+                inflation = economic_data.get('CPI', {}).get('value')
+                if isinstance(inflation, (int, float)) and 2.0 <= inflation <= 4.0:
+                    risk_on_score += 1
+                total_indicators += 1
+
+            # Calculate confidence and regime
+            if total_indicators > 0:
+                confidence = risk_on_score / total_indicators
+                regime = 'Risk-On' if confidence > 0.6 else 'Risk-Off' if confidence < 0.4 else 'Neutral'
+            else:
+                confidence = 0.0
+                regime = 'Unknown'
+
+            # Generate indicator descriptions
+            indicators = []
+            if total_indicators > 0:
+                if risk_on_score > total_indicators * 0.6:
+                    indicators = ['Market optimism prevailing', 'Economic conditions supportive']
+                elif risk_on_score < total_indicators * 0.4:
+                    indicators = ['Risk aversion evident', 'Defensive positioning warranted']
+                else:
+                    indicators = ['Mixed signals', 'Regime transition possible']
+
+            return {
+                'regime': regime,
+                'confidence': confidence,
+                'indicators': indicators
+            }
+
+        except Exception as e:
+            print(f"Error in regime detection: {e}")
+            return {'regime': 'Analysis Error', 'confidence': 0.0, 'indicators': []}
 
 class SequenceTracker(BaseAgent):
     """Sub-agent that tracks event sequences"""

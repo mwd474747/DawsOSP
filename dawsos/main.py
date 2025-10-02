@@ -32,6 +32,7 @@ from agents.workflow_recorder import WorkflowRecorder
 from agents.workflow_player import WorkflowPlayer
 from agents.ui_generator import UIGeneratorAgent
 from agents.financial_analyst import FinancialAnalyst
+from agents.governance_agent import GovernanceAgent
 
 # Capability imports
 from capabilities.fred import FREDCapability
@@ -134,6 +135,7 @@ def init_session_state():
         runtime.register_agent('workflow_player', WorkflowPlayer())
         runtime.register_agent('ui_generator', UIGeneratorAgent(st.session_state.graph))
         runtime.register_agent('financial_analyst', FinancialAnalyst())
+        runtime.register_agent('governance_agent', GovernanceAgent(st.session_state.graph))
 
         # Initialize PatternEngine after agents are registered
         runtime.pattern_engine = PatternEngine('patterns', runtime)
@@ -512,7 +514,7 @@ def main():
     st.markdown("*Every interaction makes me smarter*")
     
     # Create tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
         "Chat",
         "Knowledge Graph",
         "Dashboard",
@@ -520,7 +522,8 @@ def main():
         "Economy",
         "Workflows",
         "Trinity UI",
-        "Data Integrity"
+        "Data Integrity",
+        "Data Governance"
     ])
     
     # Initialize Trinity dashboard tabs
@@ -602,6 +605,21 @@ def main():
     with tab8:
         # Data Integrity Tab - Real-time data monitoring and management
         render_data_integrity_tab()
+
+    with tab9:
+        # Data Governance Tab
+        from ui.governance_tab import render_governance_tab
+        try:
+            render_governance_tab(st.session_state.agent_runtime, st.session_state.graph)
+        except Exception as e:
+            st.error(f"Data Governance tab error: {str(e)}")
+            st.info("The Data Governance system provides conversational governance capabilities.")
+            st.markdown("### Features")
+            st.markdown("- 🛡️ Conversational governance interface")
+            st.markdown("- 📊 Real-time governance monitoring")
+            st.markdown("- 🎯 Data quality, compliance, and cost governance patterns")
+            st.markdown("- ⚡ Quick governance actions")
+            st.markdown("- 📚 Governance activity history")
 
     # Sidebar
     with st.sidebar:

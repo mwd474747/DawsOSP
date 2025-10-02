@@ -7,6 +7,7 @@ Leverages Trinity architecture to provide sophisticated financial analysis
 from typing import Dict, List, Any, Optional
 from .base_agent import BaseAgent
 import json
+from core.confidence_calculator import confidence_calculator
 
 
 class FinancialAnalyst(BaseAgent):
@@ -79,8 +80,15 @@ class FinancialAnalyst(BaseAgent):
             # Step 5: Sum NPV
             intrinsic_value = sum(present_values) + terminal_value
 
-            # Get confidence score based on data quality
-            confidence = self._calculate_confidence(financial_data, symbol)
+            # Calculate dynamic confidence using the new confidence calculator
+            confidence_result = confidence_calculator.calculate_dcf_confidence(
+                financial_data=financial_data,
+                projections=projected_fcf,
+                discount_rate=discount_rate,
+                symbol=symbol,
+                data_source='financial_api'
+            )
+            confidence = confidence_result['confidence']
 
             return {
                 "symbol": symbol,
@@ -319,17 +327,29 @@ class FinancialAnalyst(BaseAgent):
             calc_knowledge = self._get_calculation_knowledge()
             confidence_factors = calc_knowledge.get('valuation_methodologies', {}).get('confidence_factors', {})
 
-            # Base confidence on data quality
-            data_quality_score = confidence_factors.get('data_quality', {}).get('good', 0.85)
+            # Assess data quality based on available financial data
+            data_quality = self._assess_data_quality(financial_data)
 
-            # Adjust for business predictability (simplified)
-            # In production, would analyze business model and sector
-            business_predictability = 0.80  # Default moderate predictability
+            # Calculate business predictability based on sector and metrics
+            business_predictability = self._assess_business_predictability(financial_data, symbol)
 
-            return data_quality_score * business_predictability
+            # Use dynamic confidence calculator
+            confidence_result = confidence_calculator.calculate_confidence(
+                data_quality=data_quality,
+                model_accuracy=business_predictability,
+                historical_success_rate=confidence_factors.get('dcf_success_rate', 0.68),
+                num_data_points=len([k for k, v in financial_data.items() if v is not None]),
+                analysis_type='dcf'
+            )
+
+            return confidence_result['confidence']
 
         except Exception:
-            return 0.75  # 75% default confidence
+            # Fallback to dynamic calculation with defaults
+            return confidence_calculator.calculate_confidence(
+                data_quality=0.6,
+                analysis_type='dcf'
+            )['confidence']
 
     def _analyze_free_cash_flow(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze free cash flow trends and quality"""
@@ -388,4 +408,64 @@ class FinancialAnalyst(BaseAgent):
             if len(word) >= 1 and len(word) <= 5 and word.isalpha():
                 return word
 
+        return None
+
+    def _assess_data_quality(self, financial_data: Dict[str, Any]) -> float:
+        """Assess the quality of financial data"""
+        if not financial_data:
+            return 0.3
+
+        # Check for key financial metrics
+        required_fields = ['free_cash_flow', 'net_income', 'revenue', 'ebit']
+        present_fields = sum(1 for field in required_fields if financial_data.get(field) is not None)
+        completeness_score = present_fields / len(required_fields)
+
+        # Check for data consistency
+        consistency_score = 0.8  # Default good consistency
+        fcf = financial_data.get('free_cash_flow', 0)
+        net_income = financial_data.get('net_income', 0)
+
+        if fcf and net_income:
+            fcf_ratio = abs(fcf / net_income) if net_income != 0 else 0
+            if fcf_ratio > 3:  # Unusual FCF/NI ratio
+                consistency_score -= 0.2
+
+        # Calculate overall data quality
+        data_quality = (completeness_score * 0.6 + consistency_score * 0.4)
+        return min(1.0, max(0.0, data_quality))
+
+    def _assess_business_predictability(self, financial_data: Dict[str, Any], symbol: str) -> float:
+        """Assess business predictability based on financial metrics"""
+        predictability = 0.7  # Base predictability
+
+        # Higher predictability for stable metrics
+        roic = self._calculate_roic_internal(financial_data)
+        if roic and roic > 0.15:  # Strong ROIC suggests predictable business
+            predictability += 0.1
+        elif roic and roic < 0.05:  # Weak ROIC suggests unpredictable business
+            predictability -= 0.1
+
+        # Check debt levels (high debt = less predictable)
+        debt_equity = financial_data.get('debt_to_equity', 0.5)
+        if debt_equity > 1.0:  # High leverage
+            predictability -= 0.1
+        elif debt_equity < 0.3:  # Conservative leverage
+            predictability += 0.05
+
+        return min(1.0, max(0.3, predictability))
+
+    def _calculate_roic_internal(self, financial_data: Dict[str, Any]) -> Optional[float]:
+        """Internal ROIC calculation for predictability assessment"""
+        try:
+            ebit = financial_data.get('ebit', 0)
+            tax_rate = financial_data.get('tax_rate', 0.21)
+            invested_capital = (financial_data.get('working_capital', 0) +
+                              financial_data.get('property_plant_equipment', 0) +
+                              financial_data.get('goodwill', 0))
+
+            if invested_capital > 0:
+                nopat = ebit * (1 - tax_rate)
+                return nopat / invested_capital
+        except:
+            pass
         return None

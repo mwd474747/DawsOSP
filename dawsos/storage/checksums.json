@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-01T22:39:40.639467",
+  "generated_at": "2025-10-01T23:01:04.462267",
   "checksums": {
     "patterns/sector_rotation.json": "09549da615b0a5752d5ed6b8e021d67b8a8cd8f22b2de7d7372327dc66fd4885",
     "patterns/comprehensive_analysis.json": "31081719076475effbb78759e5c7d88f0d031e79cef3c44ba3dfa99a8d8f8825",
@@ -36,6 +36,10 @@
     "patterns/actions/create_alert.json": "0a6effe9a810f9b59fef89d142a6098ec99e16ba7ca25de0e37004500f24a1bd",
     "patterns/actions/export_data.json": "5bd87983a86bea4c263920064a65936fa66723d5dee3f31e455322b50a370601",
     "patterns/actions/add_to_graph.json": "3b6a406487ed2c7ed77e6dfd863e8ea11c926a27d88e17ee5c731ebbd0d2c2ac",
+    "patterns/governance/governance_template.json": "dd8e3458135b1a68e0a7be7310706e95a05ad3eaa976dcf3aef491a4cc089fad",
+    "patterns/governance/data_quality_check.json": "93cf9a6fd7d09bf9e3f71d64a268946292284fbf90f9eea863118061ca5dd5c7",
+    "patterns/governance/compliance_audit.json": "51f1ab7942a1595772aabd3778fc8faa82ca73e7a47ca677f3cc396c7f6eb1f0",
+    "patterns/governance/cost_optimization.json": "73936699313ecb1c1d3369876716fc46db5a46fd70710eba7a6d141d60b475ad",
     "storage/knowledge/buffett_framework.json": "d8bed5e05630ce9805d4f2a11a25b291f7bdcc246f2fa4842630c908dc01aeca",
     "storage/knowledge/ui_configurations.json": "89b100a48d5cca147f5911a0af21ef38ddda68a3e9e81fe5f6eca90278416cdb",
     "storage/knowledge/financial_calculations.json": "6c48292f783c42b7c5aa74c9877eb49cb50dcec4986750c64bb7eba141b08713",
@@ -55,7 +59,7 @@
     "agents/workflow_player.py": "b418dfa8a4a99d96d866068b6a477f23c72e0e58900af5d7396ffada0bcc6d21",
     "agents/fundamentals.py": "3cbf656d54f8fab2a1e05f3f79fbb26c16e2a95a85bc4bc17d8cc3649b5c43cc",
     "agents/claude.py": "87923c741ebc520f0be696ecebf8ce5460ae22b3146d722169a59e31ab243673",
-    "agents/pattern_spotter.py": "7a5ed54457ee64b6186f7bd042b7bc2c11b34ea75531db65403b99700dcf2272",
+    "agents/pattern_spotter.py": "96b37c7208015e145ad0c9f666be0dd3bc67774fbb52cea0048778acd9506459",
     "agents/workflow_recorder.py": "11244fc42c04a8cdbd7fd7cfe7385adbab01afeebffaea101edca3e059cd6a4b",
     "agents/financial_analyst.py": "e08f0fcd37a7ecfe5e22ed9e1387c881c647a5800bf67b2bdc7a48ad5c379ca3",
     "agents/base_agent.py": "c0f93cf6880fe9e673ded4e4f0e949f8374a1aa0ae87769a478aab3982af71e3",
@@ -66,8 +70,9 @@
     "agents/refactor_elf.py": "012382c1f4a69f190b9442fc35dab32b7fac0e2512daf4d6643f761b73730dbf",
     "agents/graph_mind.py": "627a445a14306bd71ff5c7da5a96f0b5415ddc96dc5b29d1f63aa6652c2783af",
     "agents/risk_agent.py": "6b203bbe2982b1dd27af4c7f9e4a31ac438297bbe37ec519d636aff7c05f03c6",
-    "agents/data_harvester.py": "928b6a2e38201f1cf95c9af7f1db9e6618714d818a8539b13236ea141d3972c8",
+    "agents/data_harvester.py": "39d89f1bf7b2323566c97155974cf8ed10b0713b7c168feaca9fa36d56b3f656",
     "agents/code_monkey.py": "d291c18430d6dee80a6737fb85d562c85a310d8cf276682eeb6b5d338ef64fbf",
+    "agents/governance_agent.py": "6b35e81c092aa2c54f387802b60177109cbcaea170cbf41ba6c3714f239cb9d9",
     "agents/relationship_hunter.py": "f308d5c0fe0148633f2875c32118c19c1e8dca074a000fae6befc2790136685f"
   }
 }

@@ -80,16 +80,37 @@ class DataHarvester(BaseAgent):
             if 'fred' in self.capabilities:
                 return self._harvest_fred(request)
             else:
-                # Return structured default macro data
+                # Try to use knowledge base for economic data as fallback
+                if hasattr(self, 'graph') and self.graph:
+                    try:
+                        economic_data = self.graph.query("SELECT * FROM economic_indicators ORDER BY date DESC LIMIT 1")
+                        if economic_data:
+                            latest_data = economic_data[0] if economic_data else {}
+                            return {
+                                'response': 'Fetched economic data from knowledge base',
+                                'data': {
+                                    'GDP': latest_data.get('gdp_growth', {'value': 'unavailable', 'trend': 'unknown'}),
+                                    'CPI': latest_data.get('inflation_rate', {'value': 'unavailable', 'trend': 'unknown'}),
+                                    'Unemployment': latest_data.get('unemployment_rate', {'value': 'unavailable', 'trend': 'unknown'}),
+                                    'FedFunds': latest_data.get('fed_funds_rate', {'value': 'unavailable', 'trend': 'unknown'}),
+                                    '10YYield': latest_data.get('ten_year_yield', {'value': 'unavailable', 'trend': 'unknown'})
+                                },
+                                'source': 'knowledge_base'
+                            }
+                    except Exception as e:
+                        print(f"Knowledge base query failed: {e}")
+
+                # Last resort: indicate data unavailable rather than fake data
                 return {
-                    'response': 'Fetched macro economic data',
+                    'response': 'Economic data source unavailable',
                     'data': {
-                        'GDP': {'value': 2.1, 'change': 0.3, 'trend': 'growing'},
-                        'CPI': {'value': 3.2, 'change': -0.2, 'trend': 'cooling'},
-                        'Unemployment': {'value': 3.9, 'change': 0.1, 'trend': 'stable'},
-                        'FedFunds': {'value': 5.33, 'change': 0, 'trend': 'paused'},
-                        '10YYield': {'value': 4.25, 'change': -0.05, 'trend': 'declining'}
-                    }
+                        'GDP': {'value': 'unavailable', 'trend': 'FRED API or knowledge base required'},
+                        'CPI': {'value': 'unavailable', 'trend': 'FRED API or knowledge base required'},
+                        'Unemployment': {'value': 'unavailable', 'trend': 'FRED API or knowledge base required'},
+                        'FedFunds': {'value': 'unavailable', 'trend': 'FRED API or knowledge base required'},
+                        '10YYield': {'value': 'unavailable', 'trend': 'FRED API or knowledge base required'}
+                    },
+                    'note': 'Configure FRED_API_KEY environment variable for real economic data'
                 }
 
         # Handle correlation requests

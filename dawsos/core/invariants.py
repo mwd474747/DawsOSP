@@ -2,6 +2,7 @@
 import re
 from datetime import datetime, timedelta
 from typing import Dict, Any, Tuple, List
+from core.confidence_calculator import confidence_calculator
 
 class GraphInvariants:
     """Immutable rules that protect graph integrity"""
@@ -216,18 +217,34 @@ class ErrorCorrection:
 
     @staticmethod
     def validate_forecast(forecast: Dict[str, Any]) -> Dict[str, Any]:
-        """Ensure forecasts make sense"""
-        # Confidence can't exceed data quality
-        if forecast.get('confidence', 0) > 0.9:
-            forecast['confidence'] = 0.9
-
-        # Need minimum influences for confidence
+        """Ensure forecasts make sense using dynamic confidence validation"""
+        # Calculate or validate confidence using dynamic system
         influences = forecast.get('influences', 0)
-        if influences < 3 and forecast.get('confidence', 0) > 0.5:
-            forecast['confidence'] = 0.5
+        data_quality = forecast.get('data_quality', 0.6)
+        signal_strength = forecast.get('signal_strength', 0.0)
 
-        # Ensure required fields
-        forecast.setdefault('confidence', 0.5)
+        # Use dynamic confidence calculator if confidence not provided or seems unrealistic
+        current_confidence = forecast.get('confidence', 0)
+        if current_confidence == 0 or current_confidence > 0.95:  # Too high is suspicious
+            # Calculate dynamic confidence
+            confidence_result = confidence_calculator.calculate_confidence(
+                data_quality=data_quality,
+                correlation_strength=signal_strength,
+                num_data_points=max(influences, 1),
+                analysis_type='forecast'
+            )
+            forecast['confidence'] = confidence_result['confidence']
+        else:
+            # Validate existing confidence against data quality
+            max_allowed_confidence = min(0.9, data_quality + 0.2)
+            if current_confidence > max_allowed_confidence:
+                forecast['confidence'] = max_allowed_confidence
+
+            # Need minimum influences for high confidence
+            if influences < 3 and current_confidence > 0.6:
+                forecast['confidence'] = min(current_confidence, 0.6)
+
+        # Ensure required fields with dynamic defaults
         forecast.setdefault('forecast', 'neutral')
         forecast.setdefault('signal_strength', 0.0)
 
