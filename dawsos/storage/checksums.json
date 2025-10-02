@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-01T23:45:58.570354",
+  "generated_at": "2025-10-01T23:57:40.118070",
   "checksums": {
     "patterns/sector_rotation.json": "09549da615b0a5752d5ed6b8e021d67b8a8cd8f22b2de7d7372327dc66fd4885",
     "patterns/comprehensive_analysis.json": "31081719076475effbb78759e5c7d88f0d031e79cef3c44ba3dfa99a8d8f8825",
@@ -38,6 +38,7 @@
     "patterns/actions/export_data.json": "5bd87983a86bea4c263920064a65936fa66723d5dee3f31e455322b50a370601",
     "patterns/actions/add_to_graph.json": "3b6a406487ed2c7ed77e6dfd863e8ea11c926a27d88e17ee5c731ebbd0d2c2ac",
     "patterns/governance/governance_template.json": "dd8e3458135b1a68e0a7be7310706e95a05ad3eaa976dcf3aef491a4cc089fad",
+    "patterns/governance/policy_validation.json": "b7f82d44fce33dc5d84f909e215a9429c449c27d121954df5362f6d91017ece0",
     "patterns/governance/data_quality_check.json": "93cf9a6fd7d09bf9e3f71d64a268946292284fbf90f9eea863118061ca5dd5c7",
     "patterns/governance/compliance_audit.json": "51f1ab7942a1595772aabd3778fc8faa82ca73e7a47ca677f3cc396c7f6eb1f0",
     "patterns/governance/cost_optimization.json": "73936699313ecb1c1d3369876716fc46db5a46fd70710eba7a6d141d60b475ad",
@@ -58,7 +59,7 @@
     "agents/ui_generator.py": "7298f95c5fba34d3dd49ead8aa8ddee6e12f12f5fd5b8cc7770257b10afdab0c",
     "agents/workflow_player.py": "b418dfa8a4a99d96d866068b6a477f23c72e0e58900af5d7396ffada0bcc6d21",
     "agents/claude.py": "e2dbe1210388886ffbdbd99d51ac07debe4e90defc549494aea7e45f60a466cc",
-    "agents/pattern_spotter.py": "f5fc6d9390922396a1c9e145afb27b4680899cbc893b83228c46c4665ba5bb3e",
+    "agents/pattern_spotter.py": "98fd8ed9ed629874e43ac099294de2ebebee62a8b22136c11904f7ecba38e538",
     "agents/workflow_recorder.py": "11244fc42c04a8cdbd7fd7cfe7385adbab01afeebffaea101edca3e059cd6a4b",
     "agents/financial_analyst.py": "cad657537ba0699ea374bed1ca122d5403ac69de2d9ba5ebd3fe9ff44168480f",
     "agents/base_agent.py": "c0f93cf6880fe9e673ded4e4f0e949f8374a1aa0ae87769a478aab3982af71e3",
@@ -67,7 +68,7 @@
     "agents/graph_mind.py": "90997788275c32fbd3c20dae906da092eee522a68eb9acc47309adc97675b31b",
     "agents/data_harvester.py": "e88ae477cc10749a0fef073ecd4a17e7dee065711f295241d0acdd1a3eedd96e",
     "agents/code_monkey.py": "d291c18430d6dee80a6737fb85d562c85a310d8cf276682eeb6b5d338ef64fbf",
-    "agents/governance_agent.py": "410c720ed592920d05840fe20bf7c9b242cd55a1052ded179e2bac15943f2166",
+    "agents/governance_agent.py": "f164774369f6a00d10a5c5d149d32d8986d7b7d4bd5285f415237b280c314f86",
     "agents/relationship_hunter.py": "6485c0e481657c4ce9998d61c62ba3799052f8121205b37da271f435fd714ed4"
   }
 }
