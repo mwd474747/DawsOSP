@@ -1,0 +1,185 @@
+{
+  "governance_policies": {
+    "data_quality": {
+      "freshness_policy": {
+        "name": "Data Freshness Check",
+        "description": "Ensure market data is current",
+        "rule": "Data older than 24 hours triggers refresh",
+        "threshold_hours": 24,
+        "applies_to": ["stock", "indicator", "market_data"],
+        "priority": "high",
+        "auto_remediate": true
+      },
+      "completeness_policy": {
+        "name": "Data Completeness Check",
+        "description": "Verify no critical fields are missing",
+        "rule": "All required fields must be populated",
+        "required_fields": {
+          "stock": ["symbol", "price", "volume", "timestamp"],
+          "indicator": ["value", "type", "timestamp"],
+          "pattern_execution": ["pattern_id", "result", "timestamp"]
+        },
+        "priority": "high",
+        "auto_remediate": false
+      },
+      "accuracy_policy": {
+        "name": "Data Accuracy Validation",
+        "description": "Validate data values are within reasonable ranges",
+        "rule": "Values must be within statistical norms",
+        "validation_rules": {
+          "price_change": {"min": -50, "max": 50, "unit": "percent"},
+          "volume": {"min": 0, "max": 1000000000},
+          "confidence_score": {"min": 0, "max": 1}
+        },
+        "priority": "medium",
+        "auto_remediate": false
+      }
+    },
+    "data_lineage": {
+      "source_tracking": {
+        "name": "Data Source Documentation",
+        "description": "Track origin of all data points",
+        "rule": "Every data node must have documented source",
+        "required_metadata": ["source_system", "ingestion_time", "transformation_applied"],
+        "priority": "medium",
+        "auto_remediate": false
+      },
+      "transformation_logging": {
+        "name": "Transformation Audit Trail",
+        "description": "Log all data transformations",
+        "rule": "Every transformation must be logged with before/after state",
+        "log_requirements": ["agent_name", "action", "timestamp", "changes"],
+        "priority": "low",
+        "auto_remediate": false
+      }
+    },
+    "access_control": {
+      "api_key_management": {
+        "name": "Secure API Key Storage",
+        "description": "Ensure API keys are not exposed",
+        "rule": "API keys must be in environment variables, not in code",
+        "scan_patterns": ["api_key", "secret", "token", "password"],
+        "priority": "critical",
+        "auto_remediate": false
+      },
+      "data_classification": {
+        "name": "Data Sensitivity Classification",
+        "description": "Classify data by sensitivity level",
+        "rule": "All data must be classified as public, internal, or confidential",
+        "classification_rules": {
+          "public": ["market_price", "volume", "public_indicators"],
+          "internal": ["pattern_results", "predictions", "analysis"],
+          "confidential": ["api_keys", "user_data", "proprietary_algorithms"]
+        },
+        "priority": "high",
+        "auto_remediate": false
+      }
+    },
+    "performance": {
+      "query_optimization": {
+        "name": "Graph Query Performance",
+        "description": "Monitor and optimize slow queries",
+        "rule": "Queries taking >1s should be optimized",
+        "threshold_ms": 1000,
+        "applies_to": ["knowledge_graph", "pattern_engine"],
+        "priority": "medium",
+        "auto_remediate": true
+      },
+      "cache_management": {
+        "name": "Intelligent Caching Policy",
+        "description": "Cache frequently accessed data",
+        "rule": "Data accessed >10 times/hour should be cached",
+        "cache_ttl_minutes": 60,
+        "applies_to": ["market_data", "pattern_results"],
+        "priority": "low",
+        "auto_remediate": true
+      }
+    },
+    "compliance": {
+      "data_retention": {
+        "name": "Data Retention Policy",
+        "description": "Manage data lifecycle and retention",
+        "rule": "Delete data according to retention schedule",
+        "retention_days": {
+          "market_data": 90,
+          "pattern_execution": 30,
+          "system_logs": 7,
+          "governance_events": 365
+        },
+        "priority": "medium",
+        "auto_remediate": true
+      },
+      "audit_logging": {
+        "name": "Comprehensive Audit Trail",
+        "description": "Log all significant system events",
+        "rule": "Critical operations must be logged",
+        "events_to_log": ["pattern_execution", "data_refresh", "policy_violation", "system_error"],
+        "priority": "high",
+        "auto_remediate": false
+      }
+    },
+    "self_improvement": {
+      "pattern_effectiveness": {
+        "name": "Pattern Success Tracking",
+        "description": "Monitor pattern execution success rates",
+        "rule": "Patterns with <50% success rate need review",
+        "success_threshold": 0.5,
+        "evaluation_window_days": 7,
+        "priority": "medium",
+        "auto_remediate": false
+      },
+      "graph_evolution": {
+        "name": "Knowledge Graph Self-Organization",
+        "description": "Allow graph to evolve based on quality metrics",
+        "rule": "Strengthen high-quality connections, prune weak ones",
+        "quality_threshold": 0.3,
+        "strength_threshold": 0.1,
+        "priority": "low",
+        "auto_remediate": true
+      }
+    }
+  },
+  "enforcement_levels": {
+    "critical": {
+      "description": "Immediate action required, system may be compromised",
+      "alert": true,
+      "block_operations": true,
+      "auto_remediate": false
+    },
+    "high": {
+      "description": "Important issue requiring prompt attention",
+      "alert": true,
+      "block_operations": false,
+      "auto_remediate": true
+    },
+    "medium": {
+      "description": "Issue should be addressed soon",
+      "alert": false,
+      "block_operations": false,
+      "auto_remediate": true
+    },
+    "low": {
+      "description": "Minor issue for future improvement",
+      "alert": false,
+      "block_operations": false,
+      "auto_remediate": true
+    }
+  },
+  "governance_metrics": {
+    "overall_health": {
+      "calculation": "weighted_average",
+      "weights": {
+        "data_quality": 0.3,
+        "data_lineage": 0.2,
+        "access_control": 0.2,
+        "performance": 0.15,
+        "compliance": 0.15
+      }
+    },
+    "reporting_schedule": {
+      "real_time": ["critical", "high"],
+      "daily": ["medium"],
+      "weekly": ["low"]
+    }
+  }
+}

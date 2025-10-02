@@ -17,10 +17,13 @@ class GovernanceAgent(BaseAgent):
 
         # Initialize graph governance if available
         self.graph_governance = None
+        self.governance_hooks = None
         if self.graph:
             try:
                 from core.graph_governance import GraphGovernance
+                from core.governance_hooks import GovernanceHooks
                 self.graph_governance = GraphGovernance(self.graph)
+                self.governance_hooks = GovernanceHooks(self.graph_governance)
             except ImportError:
                 pass  # Graph governance not available yet
 
@@ -28,6 +31,10 @@ class GovernanceAgent(BaseAgent):
         """Process any governance request conversationally"""
         if context is None:
             context = {}
+
+        # Check if this is a pattern-based validation request
+        if 'pattern_validation' in context or 'validate_with_pattern' in request.lower():
+            return self.validate_with_pattern(request, context)
 
         # Let Claude figure out what governance action is needed
         governance_prompt = f"""
@@ -136,13 +143,40 @@ class GovernanceAgent(BaseAgent):
         # Try graph-native governance first if available
         if self.graph_governance:
             try:
+                # Apply governance hooks for quality gates
+                if self.governance_hooks and context.get('target_node'):
+                    gov_check = self.governance_hooks.before_action(
+                        'GovernanceAgent',
+                        action,
+                        context['target_node']
+                    )
+                    if not gov_check.get('allowed', True):
+                        return {
+                            'status': 'blocked',
+                            'reason': gov_check.get('reason'),
+                            'suggestion': gov_check.get('suggestion')
+                        }
+
                 graph_result = self.graph_governance.auto_govern(request)
                 if graph_result and 'error' not in graph_result:
+                    # Track with governance hooks
+                    if self.governance_hooks and context.get('target_node'):
+                        self.governance_hooks.after_action(
+                            'GovernanceAgent',
+                            action,
+                            context.get('target_node'),
+                            graph_result
+                        )
+
+                    # Apply loaded policies for automated checks
+                    policy_violations = self._check_policy_violations(graph_result)
+
                     # Enhance with Claude's insights
                     return {
                         'status': 'success',
                         'action': action,
                         'graph_governance': graph_result,
+                        'policy_violations': policy_violations,
                         'reasoning': claude_response.get('reasoning'),
                         'priority': claude_response.get('priority'),
                         'governance_report': self._format_graph_governance_report(graph_result),
@@ -357,3 +391,84 @@ class GovernanceAgent(BaseAgent):
             'improvements': sorted(improvements, key=lambda x: {'high': 0, 'medium': 1, 'low': 2}.get(x['priority'], 3)),
             'auto_fixable': len([i for i in improvements if i['priority'] == 'high'])
         }
+
+    def _check_policy_violations(self, result: Dict[str, Any]) -> List[Dict]:
+        """Check results against loaded governance policies"""
+        violations = []
+        if not self.graph_governance or not self.graph_governance.policies:
+            return violations
+
+        policies = self.graph_governance.policies.get('governance_policies', {})
+
+        # Check each policy category
+        for category, category_policies in policies.items():
+            for policy_name, policy in category_policies.items():
+                if isinstance(policy, dict):
+                    # Check if any thresholds are violated
+                    if 'threshold' in policy and 'value' in result:
+                        if result['value'] < policy['threshold']:
+                            violations.append({
+                                'category': category,
+                                'policy': policy_name,
+                                'severity': policy.get('priority', 'medium'),
+                                'message': policy.get('rule', 'Threshold violated')
+                            })
+
+        return violations
+
+    def validate_with_pattern(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute validation using governance patterns"""
+        try:
+            # Load governance policies if not already loaded
+            if not self.graph_governance or not self.graph_governance.policies:
+                if self.graph_governance:
+                    self.graph_governance.policies = self.graph_governance._load_governance_policies()
+
+            # Get target nodes from context or graph
+            target_nodes = context.get('target_nodes', [])
+            if not target_nodes and self.graph:
+                # Get sample nodes for validation
+                target_nodes = list(self.graph.nodes.keys())[:10]
+
+            validation_results = {
+                'compliant_count': 0,
+                'violations': [],
+                'remediated': []
+            }
+
+            # Validate each node against policies
+            for node_id in target_nodes:
+                if self.graph_governance:
+                    gov_check = self.graph_governance.check_governance(node_id)
+
+                    if gov_check.get('violations'):
+                        validation_results['violations'].extend(gov_check['violations'])
+                    else:
+                        validation_results['compliant_count'] += 1
+
+                    # Auto-remediate if enabled
+                    if context.get('auto_remediate', True) and gov_check.get('violations'):
+                        for violation in gov_check['violations']:
+                            if violation.get('severity') in ['high', 'critical']:
+                                # Trigger data refresh for stale data
+                                if 'freshness' in violation.get('policy', '').lower():
+                                    self.graph.nodes[node_id]['modified'] = datetime.now().isoformat()
+                                    validation_results['remediated'].append({
+                                        'node': node_id,
+                                        'action': 'data_refresh',
+                                        'policy': violation['policy']
+                                    })
+
+            return {
+                'status': 'success',
+                'validation_type': 'pattern_based',
+                'results': validation_results,
+                'summary': f"Validated {len(target_nodes)} nodes: {validation_results['compliant_count']} compliant, {len(validation_results['violations'])} violations",
+                'remediation_count': len(validation_results['remediated'])
+            }
+
+        except Exception as e:
+            return {
+                'status': 'error',
+                'message': f'Pattern validation failed: {str(e)}'
+            }

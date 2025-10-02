@@ -475,3 +475,5 @@
 2025-10-01 23:32:38,036 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
 2025-10-01 23:32:38,036 - PatternEngine - INFO - logger:info:83 - Loaded 39 patterns successfully 
 2025-10-01 23:33:17,661 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: macro_analysis {"pattern_id": "macro_analysis", "confidence": 0.475, "matched": true}
+2025-10-01 23:45:57,900 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-01 23:45:57,900 - PatternEngine - INFO - logger:info:83 - Loaded 39 patterns successfully 

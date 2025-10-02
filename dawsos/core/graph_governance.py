@@ -15,6 +15,7 @@ class GraphGovernance:
     def __init__(self, knowledge_graph):
         self.graph = knowledge_graph
         self._init_governance_nodes()
+        self.policies = self._load_governance_policies()
 
     def _init_governance_nodes(self):
         """Initialize core governance node types in the graph"""
@@ -26,6 +27,18 @@ class GraphGovernance:
             'governance_alert'  # What needs attention
         ]
         # These types are simply used when creating nodes, no central registry needed
+
+    def _load_governance_policies(self) -> Dict[str, Any]:
+        """Load governance policies from configuration"""
+        try:
+            import os
+            policy_file = os.path.join(os.path.dirname(__file__), '..', 'knowledge', 'governance_policies.json')
+            if os.path.exists(policy_file):
+                with open(policy_file, 'r') as f:
+                    return json.load(f)
+        except Exception as e:
+            print(f"Could not load governance policies: {e}")
+        return {}
 
     def add_governance_policy(self, name: str, rule: str, applies_to: List[str]) -> str:
         """Add a simple governance policy that watches specific nodes"""
@@ -44,9 +57,43 @@ class GraphGovernance:
         return policy_id
 
     def check_governance(self, node_id: str) -> Dict[str, Any]:
-        """Simple governance check - what policies apply to this node?"""
+        """Enhanced governance check with loaded policies"""
         if node_id not in self.graph.nodes:
             return {'status': 'not_found'}
+
+        node = self.graph.nodes[node_id]
+        node_type = node.get('type', 'unknown')
+        violations = []
+
+        # Check against loaded policies
+        if self.policies.get('governance_policies'):
+            # Data Quality Checks
+            if 'data_quality' in self.policies['governance_policies']:
+                # Freshness check
+                freshness_policy = self.policies['governance_policies']['data_quality'].get('freshness_policy')
+                if freshness_policy and node_type in freshness_policy.get('applies_to', []):
+                    age_hours = (datetime.now() - datetime.fromisoformat(node['modified'])).total_seconds() / 3600
+                    if age_hours > freshness_policy.get('threshold_hours', 24):
+                        violations.append({
+                            'policy': 'Data Freshness',
+                            'severity': freshness_policy.get('priority', 'medium'),
+                            'message': f'Data is {age_hours:.1f} hours old'
+                        })
+
+                # Completeness check
+                completeness_policy = self.policies['governance_policies']['data_quality'].get('completeness_policy')
+                if completeness_policy and node_type in completeness_policy.get('required_fields', {}):
+                    required = completeness_policy['required_fields'][node_type]
+                    missing = [f for f in required if f not in node.get('data', {})]
+                    if missing:
+                        violations.append({
+                            'policy': 'Data Completeness',
+                            'severity': completeness_policy.get('priority', 'high'),
+                            'message': f'Missing fields: {missing}'
+                        })
+
+        # Calculate quality score
+        quality_score = self._calculate_quality_from_graph(node_id)
 
         # Find all policies governing this node
         policies = []
@@ -60,14 +107,13 @@ class GraphGovernance:
                         'active': policy['data']['active']
                     })
 
-        # Check data quality through relationships
-        quality_score = self._calculate_quality_from_graph(node_id)
-
         return {
             'node': node_id,
+            'node_type': node_type,
             'policies': policies,
             'quality_score': quality_score,
-            'governance_status': 'compliant' if quality_score > 0.7 else 'needs_attention'
+            'violations': violations,
+            'governance_status': 'compliant' if quality_score > 0.7 and not violations else 'needs_attention'
         }
 
     def _calculate_quality_from_graph(self, node_id: str) -> float:
