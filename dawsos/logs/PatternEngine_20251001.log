@@ -445,3 +445,17 @@
 2025-10-01 22:13:42,042 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: sector_performance {"pattern_id": "sector_performance", "confidence": 0.2, "matched": true}
 2025-10-01 22:22:15,506 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
 2025-10-01 22:22:15,506 - PatternEngine - INFO - logger:info:83 - Loaded 33 patterns successfully 
+2025-10-01 22:31:31,241 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-01 22:31:31,241 - PatternEngine - INFO - logger:info:83 - Loaded 34 patterns successfully 
+2025-10-01 22:37:43,046 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-01 22:37:43,046 - PatternEngine - INFO - logger:info:83 - Loaded 34 patterns successfully 
+2025-10-01 22:37:43,046 - PatternEngine - ERROR - logger:error:100 - Error getting moat analysis for AAPL: 'PatternEngine' object has no attribute 'agent_runtime' {"error_type": null, "error_message": null}
+2025-10-01 22:37:43,046 - PatternEngine - ERROR - logger:error:100 - Error getting financial metrics for AAPL: 'PatternEngine' object has no attribute 'agents' {"error_type": null, "error_message": null}
+2025-10-01 22:37:43,046 - PatternEngine - ERROR - logger:error:100 - Error getting macro economic data: 'PatternEngine' object has no attribute 'agents' {"error_type": null, "error_message": null}
+2025-10-01 22:38:17,035 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-01 22:38:17,035 - PatternEngine - INFO - logger:info:83 - Loaded 34 patterns successfully 
+2025-10-01 22:38:17,035 - PatternEngine - ERROR - logger:error:100 - Error getting moat analysis for AAPL: 'AgentRuntime' object has no attribute 'get_agent' {"error_type": null, "error_message": null}
+2025-10-01 22:38:17,035 - PatternEngine - ERROR - logger:error:100 - Error getting financial metrics for AAPL: 'AgentRuntime' object has no attribute 'get_agent' {"error_type": null, "error_message": null}
+2025-10-01 22:38:17,035 - PatternEngine - ERROR - logger:error:100 - Error getting macro economic data: 'AgentRuntime' object has no attribute 'get_agent' {"error_type": null, "error_message": null}
+2025-10-01 22:39:38,454 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-01 22:39:38,454 - PatternEngine - INFO - logger:info:83 - Loaded 34 patterns successfully 

@@ -31,6 +31,7 @@ from agents.refactor_elf import RefactorElf
 from agents.workflow_recorder import WorkflowRecorder
 from agents.workflow_player import WorkflowPlayer
 from agents.ui_generator import UIGeneratorAgent
+from agents.financial_analyst import FinancialAnalyst
 
 # Capability imports
 from capabilities.fred import FREDCapability
@@ -132,6 +133,7 @@ def init_session_state():
         runtime.register_agent('workflow_recorder', WorkflowRecorder())
         runtime.register_agent('workflow_player', WorkflowPlayer())
         runtime.register_agent('ui_generator', UIGeneratorAgent(st.session_state.graph))
+        runtime.register_agent('financial_analyst', FinancialAnalyst())
 
         # Initialize PatternEngine after agents are registered
         runtime.pattern_engine = PatternEngine('patterns', runtime)

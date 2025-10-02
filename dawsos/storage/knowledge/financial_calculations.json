@@ -382,5 +382,96 @@
       "Dalio: What paradigm are we in?",
       "Combined: Quality × Value × Cycle = Opportunity"
     ]
+  },
+  "dcf_models": {
+    "standard_dcf": {
+      "concept": "Discounted Cash Flow Valuation",
+      "formula": "NPV = Σ(FCF_t / (1 + r)^t) + Terminal_Value",
+      "required_inputs": ["free_cash_flows", "discount_rate", "growth_rate", "terminal_multiple"],
+      "calculation_steps": [
+        {
+          "step": 1,
+          "action": "project_cash_flows",
+          "method": "Use historical growth trends and analyst estimates",
+          "years": 5
+        },
+        {
+          "step": 2,
+          "action": "calculate_discount_factors",
+          "formula": "1 / (1 + WACC)^t",
+          "wacc_components": ["cost_of_equity", "cost_of_debt", "tax_rate"]
+        },
+        {
+          "step": 3,
+          "action": "compute_present_values",
+          "formula": "FCF_t * Discount_Factor_t"
+        },
+        {
+          "step": 4,
+          "action": "estimate_terminal_value",
+          "methods": {
+            "perpetual_growth": "FCF_final * (1 + g) / (WACC - g)",
+            "exit_multiple": "FCF_final * Terminal_Multiple"
+          }
+        },
+        {
+          "step": 5,
+          "action": "sum_npv",
+          "formula": "PV_Projections + PV_Terminal_Value"
+        }
+      ]
+    },
+    "buffett_owner_earnings_dcf": {
+      "concept": "DCF using Owner Earnings as base cash flow",
+      "formula": "NPV = Σ(Owner_Earnings_t / (1 + r)^t) + Terminal_Value",
+      "base_calculation": "Use buffett_calculations.owner_earnings",
+      "growth_assumptions": {
+        "conservative": 0.03,
+        "moderate": 0.06,
+        "aggressive": 0.10
+      }
+    }
+  },
+  "roic_calculation": {
+    "concept": "Return on Invested Capital",
+    "formula": "ROIC = NOPAT / Invested_Capital",
+    "components": {
+      "nopat": {
+        "formula": "EBIT * (1 - Tax_Rate)",
+        "alternative": "Operating_Income * (1 - Cash_Tax_Rate)"
+      },
+      "invested_capital": {
+        "formula": "Working_Capital + PPE + Goodwill + Intangibles",
+        "alternative": "Total_Assets - Cash - Non_Interest_Bearing_Liabilities"
+      }
+    },
+    "quality_thresholds": {
+      "excellent": 0.15,
+      "good": 0.12,
+      "average": 0.08,
+      "poor": 0.05
+    }
+  },
+  "valuation_methodologies": {
+    "methodology_selection": {
+      "growth_companies": ["dcf", "peg_ratio", "revenue_multiples"],
+      "mature_companies": ["dcf", "pe_ratio", "book_value"],
+      "cyclical_companies": ["normalized_earnings", "asset_based", "dcf"],
+      "asset_heavy": ["book_value", "replacement_cost", "liquidation_value"]
+    },
+    "confidence_factors": {
+      "data_quality": {
+        "excellent": 0.95,
+        "good": 0.85,
+        "fair": 0.70,
+        "poor": 0.50
+      },
+      "business_predictability": {
+        "utilities": 0.90,
+        "consumer_staples": 0.85,
+        "technology": 0.70,
+        "biotech": 0.50
+      }
+    }
   }
 }

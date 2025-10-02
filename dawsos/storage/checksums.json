@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-01T22:22:16.065762",
+  "generated_at": "2025-10-01T22:39:40.639467",
   "checksums": {
     "patterns/sector_rotation.json": "09549da615b0a5752d5ed6b8e021d67b8a8cd8f22b2de7d7372327dc66fd4885",
     "patterns/comprehensive_analysis.json": "31081719076475effbb78759e5c7d88f0d031e79cef3c44ba3dfa99a8d8f8825",
@@ -20,6 +20,7 @@
     "patterns/analysis/technical_analysis.json": "b886c41788958bf11d306e961090d56507b83ccd1ac948dff5275935c6a18596",
     "patterns/analysis/dalio_cycle.json": "210888149eb11cede2c12360bae9a4513f2a24ccef12ae8b16584b45b3c045f0",
     "patterns/analysis/owner_earnings.json": "56bad2725dec460c719fd9c5a39bcaabc51c127ab95ab5f3f3a54b6e139813a4",
+    "patterns/analysis/dcf_valuation.json": "e0a01ee92e1765c36819caf1ac78f16c2b1ff75c86794f2ca8107270564ff744",
     "patterns/queries/sector_performance.json": "0add5e914ba4cf4e7d23f0b0c16e2e67d0637fae71add4164866a8ba6abaf539",
     "patterns/queries/market_regime.json": "00d0478fa44cc8c9723c3177afd4d1e683457f61560851abcc9983d5df95dbb1",
     "patterns/queries/macro_analysis.json": "44db763dfd7a67886d710f8bfbb5669dd8af6269bbd6121de737e3effe268833",
@@ -37,7 +38,7 @@
     "patterns/actions/add_to_graph.json": "3b6a406487ed2c7ed77e6dfd863e8ea11c926a27d88e17ee5c731ebbd0d2c2ac",
     "storage/knowledge/buffett_framework.json": "d8bed5e05630ce9805d4f2a11a25b291f7bdcc246f2fa4842630c908dc01aeca",
     "storage/knowledge/ui_configurations.json": "89b100a48d5cca147f5911a0af21ef38ddda68a3e9e81fe5f6eca90278416cdb",
-    "storage/knowledge/financial_calculations.json": "9dd9c90584f50b248e87056ad5b5afb39d40bb0513ad2ac75f20236c13e41688",
+    "storage/knowledge/financial_calculations.json": "6c48292f783c42b7c5aa74c9877eb49cb50dcec4986750c64bb7eba141b08713",
     "storage/knowledge/sector_performance.json": "5deaf743b96ee22c934df67ef9b7a4be621990ceec644fd1a96b13113fff51fd",
     "storage/knowledge/agent_capabilities.json": "acac8d5100c5a816998622f18ccaa0867281336b00e704b3e73315fde729a4ec",
     "storage/knowledge/financial_formulas.json": "202a1b0201e122ae86f4e4301d1d6faa15f5669c5931c35583b1d1361622fcd9",
@@ -56,6 +57,7 @@
     "agents/claude.py": "87923c741ebc520f0be696ecebf8ce5460ae22b3146d722169a59e31ab243673",
     "agents/pattern_spotter.py": "7a5ed54457ee64b6186f7bd042b7bc2c11b34ea75531db65403b99700dcf2272",
     "agents/workflow_recorder.py": "11244fc42c04a8cdbd7fd7cfe7385adbab01afeebffaea101edca3e059cd6a4b",
+    "agents/financial_analyst.py": "e08f0fcd37a7ecfe5e22ed9e1387c881c647a5800bf67b2bdc7a48ad5c379ca3",
     "agents/base_agent.py": "c0f93cf6880fe9e673ded4e4f0e949f8374a1aa0ae87769a478aab3982af71e3",
     "agents/forecast_dreamer.py": "27a6803d1e7190440196cb0ba9a9df63a7bbd3304916565203a1f4a0f672da93",
     "agents/pattern_agent.py": "9215b48d2449eca9bfd8f7032c193c66003f87e8d34d12a5b922fe47f915733c",

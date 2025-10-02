@@ -1,0 +1,6 @@
+2025-10-01 22:37:43,046 - PatternEngine - ERROR - logger:error:100 - Error getting moat analysis for AAPL: 'PatternEngine' object has no attribute 'agent_runtime' {"error_type": null, "error_message": null}
+2025-10-01 22:37:43,046 - PatternEngine - ERROR - logger:error:100 - Error getting financial metrics for AAPL: 'PatternEngine' object has no attribute 'agents' {"error_type": null, "error_message": null}
+2025-10-01 22:37:43,046 - PatternEngine - ERROR - logger:error:100 - Error getting macro economic data: 'PatternEngine' object has no attribute 'agents' {"error_type": null, "error_message": null}
+2025-10-01 22:38:17,035 - PatternEngine - ERROR - logger:error:100 - Error getting moat analysis for AAPL: 'AgentRuntime' object has no attribute 'get_agent' {"error_type": null, "error_message": null}
+2025-10-01 22:38:17,035 - PatternEngine - ERROR - logger:error:100 - Error getting financial metrics for AAPL: 'AgentRuntime' object has no attribute 'get_agent' {"error_type": null, "error_message": null}
+2025-10-01 22:38:17,035 - PatternEngine - ERROR - logger:error:100 - Error getting macro economic data: 'AgentRuntime' object has no attribute 'get_agent' {"error_type": null, "error_message": null}
