@@ -701,7 +701,8 @@ class PatternEngine:
             'economic_cycles': 'storage/knowledge/economic_cycles.json',
             'sp500_companies': 'storage/knowledge/sp500_companies.json',
             'sector_correlations': 'storage/knowledge/sector_correlations.json',
-            'relationships': 'storage/knowledge/relationship_mappings.json'
+            'relationships': 'storage/knowledge/relationship_mappings.json',
+            'ui_configurations': 'storage/knowledge/ui_configurations.json'
         }
 
         if data_type in data_files:

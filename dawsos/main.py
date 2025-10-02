@@ -43,6 +43,9 @@ from capabilities.fundamentals import FundamentalsCapability
 from workflows.investment_workflows import InvestmentWorkflows
 from ui.workflows_tab import render_workflows_tab
 
+# Trinity UI imports
+from ui.trinity_ui_components import get_trinity_ui
+
 # Page config
 st.set_page_config(
     page_title="DawsOS - Knowledge Graph Intelligence",
@@ -503,13 +506,14 @@ def main():
     st.markdown("*Every interaction makes me smarter*")
     
     # Create tabs
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "Chat",
         "Knowledge Graph",
         "Dashboard",
         "Markets",
         "Economy",
-        "Workflows"
+        "Workflows",
+        "Trinity UI"
     ])
     
     with tab1:
@@ -545,6 +549,23 @@ def main():
             st.session_state.graph,
             st.session_state.agent_runtime
         )
+
+    with tab7:
+        # Trinity UI Tab - Pattern-Knowledge-Agent powered interface
+        try:
+            trinity_ui = get_trinity_ui(
+                pattern_engine=st.session_state.agent_runtime.pattern_engine,
+                runtime=st.session_state.agent_runtime
+            )
+            trinity_ui.render_trinity_dashboard()
+        except Exception as e:
+            st.error(f"Trinity UI Error: {str(e)}")
+            st.info("This is the new Trinity-powered UI system leveraging the Pattern-Knowledge-Agent architecture.")
+            st.markdown("### Features")
+            st.markdown("- Pattern-driven UI generation")
+            st.markdown("- Knowledge-based content")
+            st.markdown("- Agent-orchestrated components")
+            st.markdown("- Real-time intelligence dashboard")
     
     # Sidebar
     with st.sidebar:
