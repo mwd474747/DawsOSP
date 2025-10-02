@@ -12,7 +12,7 @@ class GovernanceAgent(BaseAgent):
     """The 80/20 governance solution - Claude orchestrates everything"""
 
     def __init__(self, graph=None, llm_client=None):
-        super().__init__("GovernanceAgent", graph, llm_client)
+        super().__init__(graph=graph, name="GovernanceAgent", llm_client=llm_client)
         self.vibe = "data steward with AI superpowers"
 
         # Initialize graph governance if available

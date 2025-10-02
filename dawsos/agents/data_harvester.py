@@ -6,7 +6,7 @@ class DataHarvester(BaseAgent):
     """Fetches data from various sources"""
 
     def __init__(self, graph, capabilities: Dict = None, llm_client=None):
-        super().__init__("DataHarvester", graph, llm_client)
+        super().__init__(graph=graph, name="DataHarvester", llm_client=llm_client)
         self.vibe = "hungry for data"
         self.capabilities = capabilities or {}
 

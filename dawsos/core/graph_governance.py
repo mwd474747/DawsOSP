@@ -18,18 +18,14 @@ class GraphGovernance:
 
     def _init_governance_nodes(self):
         """Initialize core governance node types in the graph"""
-        # Add governance as a node type (simple extension)
-        governance_types = [
+        # Define governance node types (but don't require a central registry)
+        self.governance_types = [
             'data_policy',      # What rules apply
             'quality_metric',   # How good is the data
             'lineage_trace',    # Where data flows
             'governance_alert'  # What needs attention
         ]
-
-        # These integrate seamlessly with existing node types
-        for gov_type in governance_types:
-            if gov_type not in self.graph.node_types:
-                self.graph.node_types.append(gov_type)
+        # These types are simply used when creating nodes, no central registry needed
 
     def add_governance_policy(self, name: str, rule: str, applies_to: List[str]) -> str:
         """Add a simple governance policy that watches specific nodes"""

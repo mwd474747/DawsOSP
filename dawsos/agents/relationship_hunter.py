@@ -6,7 +6,7 @@ class RelationshipHunter(BaseAgent):
     """Hunts for relationships between nodes"""
 
     def __init__(self, graph, llm_client=None, capabilities=None):
-        super().__init__("RelationshipHunter", graph, llm_client)
+        super().__init__(graph=graph, name="RelationshipHunter", llm_client=llm_client)
         self.vibe = "curious"
         self.capabilities = capabilities or {}
 

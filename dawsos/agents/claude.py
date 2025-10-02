@@ -6,7 +6,7 @@ class Claude(BaseAgent):
     """The conversational interface to the system"""
 
     def __init__(self, graph, llm_client=None):
-        super().__init__("Claude", graph, llm_client)
+        super().__init__(graph=graph, name="Claude", llm_client=llm_client)
         self.vibe = "friendly and curious"
         self.conversation_history = []
 

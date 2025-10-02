@@ -6,7 +6,7 @@ class GraphMind(BaseAgent):
     """The consciousness of the knowledge graph"""
 
     def __init__(self, graph, llm_client=None):
-        super().__init__("GraphMind", graph, llm_client)
+        super().__init__(graph=graph, name="GraphMind", llm_client=llm_client)
         self.vibe = "omniscient"
 
     def get_prompt(self, context: Dict[str, Any]) -> str:

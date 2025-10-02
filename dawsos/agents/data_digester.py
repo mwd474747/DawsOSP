@@ -7,7 +7,7 @@ class DataDigester(BaseAgent):
     """Turns raw data into knowledge graph nodes"""
 
     def __init__(self, graph, llm_client=None):
-        super().__init__("DataDigester", graph, llm_client)
+        super().__init__(graph=graph, name="DataDigester", llm_client=llm_client)
         self.vibe = "thoughtful"
 
     def get_prompt(self, context: Dict[str, Any]) -> str:

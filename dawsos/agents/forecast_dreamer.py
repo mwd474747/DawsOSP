@@ -7,7 +7,7 @@ class ForecastDreamer(BaseAgent):
     """Dreams up forecasts based on graph knowledge"""
 
     def __init__(self, graph, llm_client=None):
-        super().__init__("ForecastDreamer", graph, llm_client)
+        super().__init__(graph=graph, name="ForecastDreamer", llm_client=llm_client)
         self.vibe = "prophetic"
         self.predictions = []
 

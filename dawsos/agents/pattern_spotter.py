@@ -7,7 +7,7 @@ class PatternSpotter(BaseAgent):
     """Spots patterns in data and behavior"""
 
     def __init__(self, graph, llm_client=None):
-        super().__init__("PatternSpotter", graph, llm_client)
+        super().__init__(graph=graph, name="PatternSpotter", llm_client=llm_client)
         self.vibe = "observant"
         self.spotted_patterns = []
 
