@@ -68,6 +68,78 @@ def render_governance_tab(runtime, graph):
 
     st.markdown("---")
 
+    # System Telemetry Dashboard
+    st.markdown("### 📊 System Telemetry")
+    st.markdown("*Real-time execution metrics from Trinity Architecture*")
+
+    if hasattr(runtime, 'get_telemetry_summary'):
+        try:
+            telemetry = runtime.get_telemetry_summary()
+
+            if telemetry['total_executions'] > 0:
+                # Metrics Row 1: Key performance indicators
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    st.metric(
+                        label="🎯 Total Executions",
+                        value=f"{telemetry['total_executions']:,}",
+                        delta="Lifetime"
+                    )
+
+                with col2:
+                    success_rate = telemetry['success_rate']
+                    st.metric(
+                        label="✅ Success Rate",
+                        value=f"{success_rate:.1f}%",
+                        delta="Good" if success_rate >= 90 else "Needs attention"
+                    )
+
+                with col3:
+                    avg_duration = telemetry['avg_duration_ms']
+                    st.metric(
+                        label="⏱️ Avg Duration",
+                        value=f"{avg_duration:.0f}ms",
+                        delta="Fast" if avg_duration < 1000 else "Slow" if avg_duration > 5000 else "Normal"
+                    )
+
+                # Metrics Row 2: Agent and Pattern usage
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    st.markdown("**🤖 Top Agents**")
+                    agents = telemetry['executions_by_agent']
+                    if agents:
+                        # Show top 5 agents
+                        sorted_agents = sorted(agents.items(), key=lambda x: x[1], reverse=True)[:5]
+                        for agent, count in sorted_agents:
+                            st.text(f"  {agent}: {count} executions")
+                    else:
+                        st.text("  No agent data yet")
+
+                with col2:
+                    st.markdown("**📋 Top Patterns**")
+                    patterns = telemetry['executions_by_pattern']
+                    if patterns:
+                        # Show top 5 patterns
+                        sorted_patterns = sorted(patterns.items(), key=lambda x: x[1], reverse=True)[:5]
+                        for pattern, count in sorted_patterns:
+                            st.text(f"  {pattern}: {count} executions")
+                    else:
+                        st.text("  No pattern data yet")
+
+                # Last execution timestamp
+                if telemetry['last_execution_time']:
+                    st.caption(f"Last execution: {telemetry['last_execution_time']}")
+            else:
+                st.info("💡 No executions tracked yet. Execute patterns to see telemetry metrics.")
+        except Exception as e:
+            st.warning(f"Could not load telemetry: {str(e)}")
+    else:
+        st.warning("⚠️ Telemetry not available in runtime")
+
+    st.markdown("---")
+
     # Main governance interface
     col1, col2 = st.columns([2, 1])
 
