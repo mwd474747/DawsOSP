@@ -25,6 +25,17 @@ class AgentRuntime:
         self._strict_mode = os.getenv('TRINITY_STRICT_MODE', 'false').lower() == 'true'
         self.logger = logging.getLogger('AgentRuntime')
 
+        # Telemetry tracking
+        self.telemetry = []
+        self.telemetry_summary = {
+            'total_executions': 0,
+            'success_count': 0,
+            'total_duration_ms': 0.0,
+            'executions_by_agent': {},
+            'executions_by_pattern': {},
+            'last_execution_time': None
+        }
+
     def register_agent(self, name: str, agent: Any, capabilities: Optional[Dict] = None):
         """Register an agent with the runtime"""
         self._agents[name] = agent
@@ -154,6 +165,104 @@ class AgentRuntime:
                 json.dump(decisions, f, indent=2)
         except Exception as e:
             print(f"Error saving to agent memory: {e}")
+
+    def track_execution(self, metrics: Dict[str, Any]):
+        """
+        Track execution metrics for telemetry.
+        Called by PatternEngine's track_execution action.
+
+        Args:
+            metrics: Dictionary containing:
+                - success: bool
+                - error: Optional error message
+                - duration_ms: Execution duration in milliseconds
+                - timestamp: ISO format timestamp
+                - pattern_id: Pattern identifier
+                - agent_used: Agent name
+                - graph_stored: Whether data was stored in graph
+        """
+        # Append to telemetry list
+        self.telemetry.append(metrics)
+
+        # Keep last 1000 executions
+        if len(self.telemetry) > 1000:
+            self.telemetry = self.telemetry[-1000:]
+
+        # Update summary stats
+        self.telemetry_summary['total_executions'] += 1
+
+        if metrics.get('success', True):
+            self.telemetry_summary['success_count'] += 1
+
+        if metrics.get('duration_ms') is not None:
+            self.telemetry_summary['total_duration_ms'] += metrics['duration_ms']
+
+        # Track by agent
+        agent_name = metrics.get('agent_used')
+        if agent_name:
+            if agent_name not in self.telemetry_summary['executions_by_agent']:
+                self.telemetry_summary['executions_by_agent'][agent_name] = 0
+            self.telemetry_summary['executions_by_agent'][agent_name] += 1
+
+        # Track by pattern
+        pattern_id = metrics.get('pattern_id')
+        if pattern_id:
+            if pattern_id not in self.telemetry_summary['executions_by_pattern']:
+                self.telemetry_summary['executions_by_pattern'][pattern_id] = 0
+            self.telemetry_summary['executions_by_pattern'][pattern_id] += 1
+
+        # Update last execution time
+        self.telemetry_summary['last_execution_time'] = metrics.get('timestamp')
+
+        self.logger.debug(f"Telemetry tracked: {pattern_id} by {agent_name}")
+
+    def get_telemetry_summary(self) -> Dict[str, Any]:
+        """
+        Get aggregated telemetry summary.
+
+        Returns:
+            Dictionary containing:
+                - total_executions: Total number of executions tracked
+                - success_rate: Success percentage
+                - avg_duration_ms: Average execution duration
+                - executions_by_agent: Top 10 agents by execution count
+                - executions_by_pattern: Top 10 patterns by execution count
+                - last_execution_time: ISO timestamp of last execution
+        """
+        total = self.telemetry_summary['total_executions']
+        success_count = self.telemetry_summary['success_count']
+        total_duration = self.telemetry_summary['total_duration_ms']
+
+        # Calculate success rate
+        success_rate = (success_count / total * 100) if total > 0 else 0.0
+
+        # Calculate average duration
+        avg_duration_ms = (total_duration / total) if total > 0 else 0.0
+
+        # Get top 10 agents
+        agents_sorted = sorted(
+            self.telemetry_summary['executions_by_agent'].items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:10]
+        top_agents = dict(agents_sorted)
+
+        # Get top 10 patterns
+        patterns_sorted = sorted(
+            self.telemetry_summary['executions_by_pattern'].items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:10]
+        top_patterns = dict(patterns_sorted)
+
+        return {
+            'total_executions': total,
+            'success_rate': round(success_rate, 2),
+            'avg_duration_ms': round(avg_duration_ms, 2),
+            'executions_by_agent': top_agents,
+            'executions_by_pattern': top_patterns,
+            'last_execution_time': self.telemetry_summary['last_execution_time']
+        }
 
     def _rotate_decisions_file(self, memory_file: str):
         """Rotate decisions file when it gets too large"""
