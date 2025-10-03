@@ -1,8 +1,7 @@
 """Crypto capability - Cryptocurrency data integration"""
 import urllib.request
 import json
-from typing import Dict, List
-from datetime import datetime
+from typing import Dict
 
 class CryptoCapability:
     """Cryptocurrency market data"""

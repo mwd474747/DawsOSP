@@ -5,8 +5,7 @@ Test and demonstrate DawsOS data persistence mechanisms with backup rotation and
 import os
 import json
 import time
-import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime
 import shutil
 
 # Load environment
@@ -83,7 +82,7 @@ print(f"✅ GDP: {gdp2.get('value')} (took {time2:.3f}s)")
 print(f"⚡ Cache speedup: {time1/time2:.0f}x faster")
 
 # Show cache contents
-print(f"\nCache contents:")
+print("\nCache contents:")
 for key in fred.cache.keys():
     print(f"   - {key}: cached at {fred.cache[key]['time'].strftime('%H:%M:%S')}")
 
@@ -110,7 +109,7 @@ print(f"✅ History contains {len(history)} executions")
 # Show recent history
 if history:
     recent = history[-1]
-    print(f"\nMost recent execution:")
+    print("\nMost recent execution:")
     print(f"   Workflow: {recent['workflow']}")
     print(f"   Time: {recent['timestamp']}")
     print(f"   Steps: {len(recent.get('steps', []))}")
@@ -264,7 +263,7 @@ print(f"✅ Calculated checksum: {checksum1[:16]}...")
 print("\nTesting integrity verification...")
 integrity = test_persistence.verify_integrity(save_result['graph_path'])
 if integrity['valid']:
-    print(f"✅ Integrity check PASSED")
+    print("✅ Integrity check PASSED")
     print(f"   Checksum: {integrity['checksum'][:16]}...")
 else:
     print(f"❌ Integrity check FAILED: {integrity['error']}")
@@ -276,16 +275,16 @@ print("-" * 40)
 print("\nRestoring from backup...")
 graph_restore = KnowledgeGraph()
 restore_stats = test_persistence.restore_from_backup(save_result['backup_path'], graph_restore)
-print(f"✅ Restore complete")
+print("✅ Restore complete")
 print(f"   Nodes restored: {restore_stats['nodes_restored']}")
 print(f"   Edges restored: {restore_stats['edges_restored']}")
 
 # Verify data
 if 'BACKUP_TEST' in graph_restore.nodes:
-    print(f"✅ Data verification passed")
+    print("✅ Data verification passed")
     print(f"   Restored node: {graph_restore.nodes['BACKUP_TEST']['data']}")
 else:
-    print(f"❌ Data verification failed")
+    print("❌ Data verification failed")
 
 print("\n11. CORRUPTION DETECTION AND RECOVERY")
 print("-" * 40)
@@ -308,7 +307,7 @@ if not corrupt_integrity['valid']:
         print(f"   Expected: {corrupt_integrity['expected'][:16]}...")
         print(f"   Actual:   {corrupt_integrity['actual'][:16]}...")
 else:
-    print(f"❌ Failed to detect corruption")
+    print("❌ Failed to detect corruption")
 
 # Test automatic recovery
 print("\nTesting automatic recovery...")
@@ -325,11 +324,11 @@ if os.path.exists(main_graph_path):
 
     if recovery_result['success']:
         if recovery_result['source'] == 'backup_recovery':
-            print(f"✅ Automatic recovery SUCCESS")
+            print("✅ Automatic recovery SUCCESS")
             print(f"   Recovered from: {recovery_result['backup_used']}")
             print(f"   Nodes: {recovery_result['recovery_stats']['nodes_restored']}")
         else:
-            print(f"✅ Loaded from primary (no recovery needed)")
+            print("✅ Loaded from primary (no recovery needed)")
     else:
         print(f"❌ Recovery failed: {recovery_result.get('error', 'Unknown error')}")
 
@@ -359,7 +358,7 @@ print("\nTesting backup rotation (retention: 0 days)...")
 removed = test_persistence._rotate_backups(retention_days=0)
 backups_after = len(test_persistence.list_backups())
 
-print(f"✅ Rotation complete")
+print("✅ Rotation complete")
 print(f"   Backups removed: {removed}")
 print(f"   Backups remaining: {backups_after}")
 
@@ -372,7 +371,7 @@ if backups and 'metadata' in backups[0]:
     print("\nExample metadata format:")
     metadata = backups[0]['metadata']
     print(json.dumps(metadata, indent=2))
-    print(f"\n✅ Metadata fields:")
+    print("\n✅ Metadata fields:")
     for key in metadata.keys():
         print(f"   - {key}: {type(metadata[key]).__name__}")
 else:
@@ -403,7 +402,7 @@ if backups:
     # Restore from backup
     restore_stats = test_persistence.restore_from_backup(backups[0]['path'], modified_graph)
 
-    print(f"✅ Recovery statistics:")
+    print("✅ Recovery statistics:")
     print(f"   Nodes restored: {restore_stats['nodes_restored']}")
     print(f"   Edges restored: {restore_stats['edges_restored']}")
     print(f"   Nodes changed: {restore_stats['nodes_changed']}")

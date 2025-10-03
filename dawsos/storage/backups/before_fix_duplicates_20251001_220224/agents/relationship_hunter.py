@@ -35,8 +35,6 @@ class RelationshipHunter(BaseAgent):
 
     def process(self, context: Any) -> Dict[str, Any]:
         """Process method for compatibility with patterns"""
-        import numpy as np
-        from datetime import datetime, timedelta
 
         # Extract data from context
         if isinstance(context, dict):

@@ -5,9 +5,7 @@ Integration test for DawsOS - tests complete workflows
 from load_env import load_env
 load_env()
 
-import json
 import time
-from datetime import datetime
 from core.pattern_engine import PatternEngine
 from core.agent_runtime import AgentRuntime
 from core.knowledge_graph import KnowledgeGraph
@@ -96,14 +94,14 @@ def test_economic_moat_analysis(runtime):
                 print(f"     • Has rating: {has_rating}")
                 print(f"     • Response length: {len(content)} chars")
 
-                logger.info(f"Moat analysis completed", query=query, duration=duration)
+                logger.info("Moat analysis completed", query=query, duration=duration)
             else:
-                print(f"  ⚠️ Unexpected response format")
+                print("  ⚠️ Unexpected response format")
                 logger.warning(f"Unexpected response format for: {query}")
 
         except Exception as e:
             print(f"  ❌ Exception: {str(e)}")
-            logger.error(f"Exception in moat analysis", error=e, query=query)
+            logger.error("Exception in moat analysis", error=e, query=query)
 
 def test_debt_cycle_analysis(runtime):
     """Test debt cycle analysis workflow"""
@@ -133,14 +131,14 @@ def test_debt_cycle_analysis(runtime):
                 print(f"     • Has short-term cycle: {has_short}")
                 print(f"     • Has long-term cycle: {has_long}")
 
-                logger.info(f"Debt cycle analysis completed", query=query, duration=duration)
+                logger.info("Debt cycle analysis completed", query=query, duration=duration)
             else:
-                print(f"  ⚠️ No formatted response")
+                print("  ⚠️ No formatted response")
                 logger.warning(f"No formatted response for: {query}")
 
         except Exception as e:
             print(f"  ❌ Exception: {str(e)}")
-            logger.error(f"Exception in debt cycle analysis", error=e, query=query)
+            logger.error("Exception in debt cycle analysis", error=e, query=query)
 
 def test_market_data_fetching(capabilities):
     """Test market data capability"""
@@ -164,7 +162,7 @@ def test_market_data_fetching(capabilities):
 
             if 'error' in quote:
                 print(f"  ❌ Error: {quote['error']}")
-                logger.error(f"Failed to fetch quote", symbol=symbol, error=quote['error'])
+                logger.error("Failed to fetch quote", symbol=symbol, error=quote['error'])
             else:
                 price = quote.get('price', 0)
                 change = quote.get('change_percent', 0)
@@ -176,7 +174,7 @@ def test_market_data_fetching(capabilities):
 
         except Exception as e:
             print(f"  ❌ Exception: {str(e)}")
-            logger.error(f"Exception fetching market data", error=e, symbol=symbol)
+            logger.error("Exception fetching market data", error=e, symbol=symbol)
 
 def test_fred_data_fetching(capabilities):
     """Test FRED data capability"""
@@ -200,7 +198,7 @@ def test_fred_data_fetching(capabilities):
 
             if 'error' in data:
                 print(f"  ❌ Error: {data['error']}")
-                logger.error(f"Failed to fetch indicator", indicator=indicator, error=data['error'])
+                logger.error("Failed to fetch indicator", indicator=indicator, error=data['error'])
             else:
                 value = data.get('value', 0)
                 trend = data.get('trend', 'unknown')
@@ -213,7 +211,7 @@ def test_fred_data_fetching(capabilities):
 
         except Exception as e:
             print(f"  ❌ Exception: {str(e)}")
-            logger.error(f"Exception fetching FRED data", error=e, indicator=indicator)
+            logger.error("Exception fetching FRED data", error=e, indicator=indicator)
 
 def test_pattern_matching(runtime):
     """Test pattern matching accuracy"""
@@ -246,11 +244,11 @@ def test_pattern_matching(runtime):
             else:
                 print(f"  ❌ Wrong match: {actual_id}")
         else:
-            print(f"  ❌ No pattern matched")
+            print("  ❌ No pattern matched")
 
     accuracy = (correct_matches / len(test_cases)) * 100
     print(f"\nPattern matching accuracy: {accuracy:.1f}%")
-    logger.info(f"Pattern matching test completed", accuracy=accuracy)
+    logger.info("Pattern matching test completed", accuracy=accuracy)
 
 def test_data_harvester_integration(runtime):
     """Test DataHarvester with real capabilities"""
@@ -285,11 +283,11 @@ def test_data_harvester_integration(runtime):
 
                 logger.log_agent_execution('data_harvester', {'request': request}, result, duration)
             else:
-                print(f"  ⚠️ No data returned")
+                print("  ⚠️ No data returned")
 
         except Exception as e:
             print(f"  ❌ Exception: {str(e)}")
-            logger.error(f"DataHarvester exception", error=e, request=request)
+            logger.error("DataHarvester exception", error=e, request=request)
 
 # Main test execution
 def main():
@@ -319,7 +317,7 @@ def main():
 
     metrics = logger.get_metrics()
 
-    print(f"\nMetrics:")
+    print("\nMetrics:")
     print(f"  • API Calls: {metrics['api_calls']}")
     print(f"  • Pattern Matches: {metrics['pattern_matches']}")
     print(f"  • Agent Executions: {metrics['agent_executions']}")
@@ -329,7 +327,7 @@ def main():
 
     # Save metrics
     logger.write_metrics()
-    print(f"\nMetrics saved to logs/")
+    print("\nMetrics saved to logs/")
 
     if metrics['errors'] == 0:
         print("\n✅ All tests completed successfully!")

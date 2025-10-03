@@ -3,9 +3,6 @@
 Test the Pattern Engine implementation
 Phase 1 validation - ensuring the pattern system works
 """
-import os
-import json
-from pathlib import Path
 
 # Load environment
 from load_env import load_env
@@ -38,7 +35,7 @@ runtime.register_agent('data_harvester', DataHarvester(graph, caps))
 pattern_engine = PatternEngine('patterns', runtime)
 runtime.pattern_engine = pattern_engine
 
-print(f"\n✅ Pattern Engine initialized")
+print("\n✅ Pattern Engine initialized")
 print(f"   Patterns loaded: {len(pattern_engine.patterns)}")
 print(f"   Available patterns: {pattern_engine.get_pattern_list()}")
 

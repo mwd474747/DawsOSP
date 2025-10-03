@@ -7,7 +7,6 @@ GovernanceAgent - Ultra-simple conversational data governance
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 from .base_agent import BaseAgent
-import json
 
 class GovernanceAgent(BaseAgent):
     """The 80/20 governance solution - Claude orchestrates everything"""
@@ -490,7 +489,6 @@ class GovernanceAgent(BaseAgent):
                     from core.agent_runtime import AgentRuntime
                     runtime = AgentRuntime()
                     # Register available agents
-                    import agents
                     runtime._register_agents()
             except Exception as e:
                 return {

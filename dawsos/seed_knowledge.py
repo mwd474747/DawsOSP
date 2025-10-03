@@ -3,9 +3,6 @@
 Seed DawsOS with Buffett-Ackman-Dalio Investment Framework
 This creates the hierarchical knowledge structure without changing any code
 """
-import os
-import json
-from datetime import datetime
 
 # Load environment
 from load_env import load_env
@@ -47,7 +44,7 @@ regime = graph.add_node('regime', {
     'description': 'Master node - current economic conditions',
     'importance': 'PRIMARY'
 }, 'ECONOMIC_REGIME')
-print(f"✅ Created master node: ECONOMIC_REGIME")
+print("✅ Created master node: ECONOMIC_REGIME")
 
 # Add current economic indicators
 indicators = {
@@ -207,7 +204,7 @@ print(f"Node Types: {stats['node_types']}")
 
 # Save the seeded graph
 graph.save('storage/seeded_graph.json')
-print(f"\n💾 Seeded graph saved to storage/seeded_graph.json")
+print("\n💾 Seeded graph saved to storage/seeded_graph.json")
 
 print("\n🎯 ACTIONABLE INSIGHTS")
 print("-" * 80)
@@ -215,7 +212,7 @@ print("-" * 80)
 # Run a forecast on SPY based on regime
 if 'SPY' in graph.nodes:
     forecast = graph.forecast('SPY')
-    print(f"\nSPY Forecast based on regime:")
+    print("\nSPY Forecast based on regime:")
     print(f"  Direction: {forecast.get('forecast', 'Unknown')}")
     print(f"  Confidence: {forecast.get('confidence', 0):.1%}")
     print(f"  Key Drivers: {forecast.get('influences', 0)} influences detected")
@@ -225,7 +222,7 @@ value_signals = [node for node_id, node in graph.nodes.items()
                 if node['type'] == 'signal' and node['data'].get('type') == 'VALUE']
 
 if value_signals:
-    print(f"\n💎 Value Opportunities Found:")
+    print("\n💎 Value Opportunities Found:")
     for signal in value_signals:
         print(f"  • {signal['data'].get('target')}: {signal['data'].get('reason')}")
 

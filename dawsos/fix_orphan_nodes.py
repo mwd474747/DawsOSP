@@ -3,7 +3,6 @@
 Fix orphan nodes by reconnecting them to the knowledge graph
 """
 
-import json
 from core.knowledge_graph import KnowledgeGraph
 from capabilities.market_data import MarketDataCapability
 

@@ -1,6 +1,6 @@
 import urllib.request
 import json
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 class FundamentalsCapability:
     """Company fundamentals and financial data"""

@@ -116,7 +116,7 @@ class AgentAdapter:
 
                     return result
 
-                except Exception as e:
+                except Exception:
                     # Log error but continue trying other methods
                     continue
 

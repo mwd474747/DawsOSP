@@ -17,12 +17,11 @@ import tempfile
 import time
 from pathlib import Path
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from core.knowledge_loader import KnowledgeLoader, get_knowledge_loader
+from core.knowledge_loader import KnowledgeLoader
 from core.knowledge_graph import KnowledgeGraph
 
 

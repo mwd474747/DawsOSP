@@ -13,7 +13,7 @@ Every agent, pattern, UI action, and API call routes through here.
 
 import json
 import logging
-from typing import Dict, Any, Optional, TYPE_CHECKING
+from typing import Dict, Any, TYPE_CHECKING
 from pathlib import Path
 from datetime import datetime
 

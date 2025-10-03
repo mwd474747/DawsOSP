@@ -4,7 +4,7 @@ Governance Hooks - Creative integration patterns to make agents governance-aware
 Automatically improves graph effectiveness and outcome tracking
 """
 
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Callable
 from datetime import datetime
 import functools
 

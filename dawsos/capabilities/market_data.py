@@ -3,7 +3,7 @@ import urllib.request
 import urllib.parse
 import json
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 class MarketDataCapability:
     """Financial Modeling Prep API integration (Pro version)"""

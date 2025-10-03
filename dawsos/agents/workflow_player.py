@@ -1,6 +1,6 @@
 """WorkflowPlayer - Replays recorded workflows"""
 from agents.base_agent import BaseAgent
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 import json
 
 class WorkflowPlayer(BaseAgent):

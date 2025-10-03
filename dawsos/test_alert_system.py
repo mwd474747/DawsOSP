@@ -10,7 +10,7 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from core.alert_manager import AlertManager, AlertType, AlertSeverity
+from core.alert_manager import AlertManager
 from core.agent_runtime import AgentRuntime
 
 
@@ -89,7 +89,7 @@ def test_alert_conditions():
     assert result_1 == True, "Should trigger when price > 100"
     assert result_2 == False, "Should not trigger when price < 100"
 
-    print(f"  ✅ Condition evaluation working correctly")
+    print("  ✅ Condition evaluation working correctly")
     print(f"     - Test 1 (price=150): {result_1} (expected True)")
     print(f"     - Test 2 (price=50): {result_2} (expected False)")
     print()
@@ -123,7 +123,7 @@ def test_alert_triggering():
     assert event.alert_name == "Trigger Test Alert"
     assert not event.acknowledged
 
-    print(f"  ✅ Alert triggered successfully")
+    print("  ✅ Alert triggered successfully")
     print(f"     - Event ID: {event.event_id}")
     print(f"     - Message: {event.message}")
     print(f"     - Severity: {event.severity.value}")
@@ -137,7 +137,7 @@ def test_alert_triggering():
     updated_event = next(e for e in alert_manager.history if e.event_id == event.event_id)
     assert updated_event.acknowledged == True
 
-    print(f"  ✅ Alert acknowledged successfully")
+    print("  ✅ Alert acknowledged successfully")
     print()
 
     return alert_manager
@@ -178,7 +178,7 @@ def test_alert_persistence():
     assert loaded_alert is not None
     assert loaded_alert.name == alert_1.name
 
-    print(f"  ✅ Alert details preserved correctly")
+    print("  ✅ Alert details preserved correctly")
     print()
 
     return alert_manager_2
@@ -221,7 +221,7 @@ def test_alert_checking():
         for event in triggered:
             print(f"     - {event.alert_name}: {event.message}")
 
-    print(f"  ✅ Alert checking completed")
+    print("  ✅ Alert checking completed")
     print()
 
     return alert_manager
@@ -241,17 +241,17 @@ def test_alert_summary():
     # Get summary
     summary = alert_manager.get_alert_summary()
 
-    print(f"  📊 Alert Summary:")
+    print("  📊 Alert Summary:")
     print(f"     - Total Alerts: {summary['total_alerts']}")
     print(f"     - Active Alerts: {summary['active_alerts']}")
     print(f"     - Triggered Alerts: {summary['triggered_alerts']}")
-    print(f"     - Severity Breakdown:")
+    print("     - Severity Breakdown:")
     print(f"       • Info: {summary['severity_counts']['info']}")
     print(f"       • Warning: {summary['severity_counts']['warning']}")
     print(f"       • Critical: {summary['severity_counts']['critical']}")
     print(f"     - Unacknowledged Events: {summary['unacknowledged_events']}")
 
-    print(f"  ✅ Summary generated successfully")
+    print("  ✅ Summary generated successfully")
     print()
 
     return summary
@@ -334,7 +334,7 @@ def cleanup_test_data():
         shutil.rmtree(test_dir)
         print(f"  ✅ Removed {test_dir}")
     else:
-        print(f"  ℹ️  No test data to clean up")
+        print("  ℹ️  No test data to clean up")
 
     print()
 

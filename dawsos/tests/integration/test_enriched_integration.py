@@ -10,7 +10,6 @@ import json
 from pathlib import Path
 from core.pattern_engine import PatternEngine
 from core.agent_runtime import AgentRuntime
-from core.knowledge_graph import KnowledgeGraph
 
 print("=" * 80)
 print("TESTING ENRICHED DATA INTEGRATION")
@@ -130,7 +129,7 @@ if sp500_data:
     }
     result = pattern_engine.extract_enriched_section(sp500_data, 'sector_peers', test_params)
     if result.get('found'):
-        print(f"✅ Sector peers extraction successful")
+        print("✅ Sector peers extraction successful")
         print(f"   Found {result.get('count', 0)} peers in {test_params['sector']}")
     else:
         print("❌ Sector peers extraction failed")

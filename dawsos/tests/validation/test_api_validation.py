@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Comprehensive API validation tests for DawsOS"""
-import os
 import json
 from datetime import datetime
 import time
@@ -219,7 +218,7 @@ for query in news_queries:
                 'count': len(articles)
             })
         else:
-            print(f"   ❌ Error or no results")
+            print("   ❌ Error or no results")
             test_results.append({
                 'api': 'NewsAPI',
                 'query': query,
@@ -275,7 +274,7 @@ try:
             'result': analysis
         })
     else:
-        print(f"   ❌ Analysis failed")
+        print("   ❌ Analysis failed")
         test_results.append({
             'api': 'Combined',
             'test': 'Full Pipeline',
@@ -329,7 +328,7 @@ results_file = {
 
 with open('api_validation_results.json', 'w') as f:
     json.dump(results_file, f, indent=2, default=str)
-    print(f"\n💾 Detailed results saved to api_validation_results.json")
+    print("\n💾 Detailed results saved to api_validation_results.json")
 
 print("\n" + "=" * 80)
 print("VALIDATION COMPLETE")

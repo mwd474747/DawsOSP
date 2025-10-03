@@ -4,7 +4,7 @@ Retained for reference only. Use UniversalExecutor + PatternEngine +
 AgentRuntime for new development.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from core.agent_runtime import AgentRuntime
 
 

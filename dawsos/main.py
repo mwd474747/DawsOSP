@@ -1,9 +1,7 @@
 import streamlit as st
 import os
-import json
 import plotly.graph_objects as go
 import networkx as nx
-from datetime import datetime
 import pandas as pd
 
 # Load environment variables
@@ -13,7 +11,6 @@ load_env()
 # Core imports
 from core.knowledge_graph import KnowledgeGraph
 from core.agent_runtime import AgentRuntime
-from core.relationships import Relationships
 from core.persistence import PersistenceManager
 from core.pattern_engine import PatternEngine
 from core.universal_executor import UniversalExecutor
@@ -37,7 +34,6 @@ from agents.financial_analyst import FinancialAnalyst
 from agents.governance_agent import GovernanceAgent
 
 # Capability imports
-from capabilities.fred import FREDCapability
 from capabilities.market_data import MarketDataCapability
 from capabilities.fred_data import FredDataCapability
 from capabilities.news import NewsCapability

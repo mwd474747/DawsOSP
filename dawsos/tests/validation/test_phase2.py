@@ -19,8 +19,6 @@ from agents.claude import Claude
 from agents.data_harvester import DataHarvester
 from agents.pattern_spotter import PatternSpotter
 from agents.relationship_hunter import RelationshipHunter
-from agents.data_digester import DataDigester
-from agents.forecast_dreamer import ForecastDreamer
 
 print("=" * 80)
 print("PHASE 2 TEST SUITE: Agent Standardization")
@@ -122,7 +120,7 @@ for agent_name, context in test_queries:
     result = runtime.execute(agent_name, context)
 
     if 'error' not in result:
-        print(f"  ✅ Success")
+        print("  ✅ Success")
         if 'method_used' in result:
             print(f"     Method: {result['method_used']}")
     else:
@@ -132,7 +130,7 @@ for agent_name, context in test_queries:
 print("\nTesting capability-based execution:")
 result = runtime.execute_by_capability('fetch_data', {'request': 'Get market data'})
 if 'error' not in result:
-    print(f"  ✅ fetch_data capability executed")
+    print("  ✅ fetch_data capability executed")
 else:
     print(f"  ❌ Error: {result['error']}")
 
@@ -177,7 +175,7 @@ if capabilities_file.exists():
     with open(capabilities_file, 'r') as f:
         agent_caps = json.load(f)
 
-    print(f"✅ Agent capabilities loaded")
+    print("✅ Agent capabilities loaded")
     print(f"   Agents defined: {len(agent_caps.get('agent_registry', {}))}")
 
     # Check capability matrix

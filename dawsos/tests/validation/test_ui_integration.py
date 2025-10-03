@@ -2,9 +2,6 @@
 """
 Test Phase 3 UI Integration
 """
-import os
-import json
-from pathlib import Path
 
 # Load environment
 from load_env import load_env
@@ -49,7 +46,7 @@ runtime.register_agent('workflow_recorder', WorkflowRecorder(graph))
 pattern_engine = PatternEngine('patterns', runtime)
 runtime.pattern_engine = pattern_engine
 
-print(f"\n✅ System Initialized")
+print("\n✅ System Initialized")
 
 # Test UI button simulations
 print("\n" + "=" * 80)
@@ -82,14 +79,14 @@ for button_name, query in ui_tests:
         elif 'pattern' in response:
             print(f"   ✅ Pattern matched: {response['pattern']}")
             if 'formatted_response' in response:
-                print(f"   ✅ Has formatted response")
+                print("   ✅ Has formatted response")
             elif 'results' in response and response['results']:
                 print(f"   ✅ Has {len(response['results'])} results")
             successful_tests += 1
         else:
-            print(f"   ⚠️  No pattern matched, using fallback")
+            print("   ⚠️  No pattern matched, using fallback")
             if 'friendly_response' in response:
-                print(f"   ✅ Has friendly response")
+                print("   ✅ Has friendly response")
                 successful_tests += 1
             else:
                 failed_tests.append((button_name, "No pattern or fallback"))

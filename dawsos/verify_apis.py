@@ -6,8 +6,6 @@ from load_env import load_env
 load_env()
 
 import os
-import json
-from datetime import datetime
 from capabilities.market_data import MarketDataCapability
 from capabilities.fred_data import FredDataCapability
 
@@ -78,7 +76,7 @@ if gainers and not any('error' in g for g in gainers):
         change = float(change.replace('%', '')) if change.replace('%', '').replace('.', '').replace('-', '').isdigit() else 0
     print(f"  ✅ Top Gainer: {gainers[0]['symbol']} ({change:+.1f}%)")
 else:
-    print(f"  ❌ Market Movers Error")
+    print("  ❌ Market Movers Error")
 
 # Test FRED Data API
 print("\n3. Economic Data API (FRED):")
@@ -107,7 +105,7 @@ for indicator, name in indicators.items():
             print(f"     Trend: {data.get('trend', 'N/A')}")
             print(f"     Date: {data.get('date', 'N/A')}")
         else:
-            print(f"  ⚠️ No recent data available")
+            print("  ⚠️ No recent data available")
     else:
         error_msg = data.get('error', 'Unknown error') if data else 'No data returned'
         print(f"  ❌ Error: {error_msg}")

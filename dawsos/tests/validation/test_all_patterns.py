@@ -2,9 +2,6 @@
 """
 Test all patterns in Phase 2
 """
-import os
-import json
-from pathlib import Path
 
 # Load environment
 from load_env import load_env
@@ -49,7 +46,7 @@ runtime.register_agent('workflow_recorder', WorkflowRecorder(graph))
 pattern_engine = PatternEngine('patterns', runtime)
 runtime.pattern_engine = pattern_engine
 
-print(f"\n✅ Pattern Engine initialized")
+print("\n✅ Pattern Engine initialized")
 print(f"   Patterns loaded: {len(pattern_engine.patterns)}")
 
 # Count patterns by category
@@ -172,7 +169,7 @@ if test_pattern:
     if 'error' in result:
         print(f"❌ Execution failed: {result['error']}")
     else:
-        print(f"✅ Pattern executed successfully")
+        print("✅ Pattern executed successfully")
         print(f"   Steps completed: {len(result.get('results', []))}")
 
 print("\n" + "=" * 80)
@@ -189,7 +186,7 @@ print(f"   UI Patterns: {categories.get('ui', 0)}")
 
 print(f"\n✅ Pattern Matching: {matches}/{len(test_cases)} tests passed")
 print(f"✅ Structure Validation: {'PASSED' if not structure_errors else f'{len(structure_errors)} errors'}")
-print(f"✅ Sample Execution: PASSED")
+print("✅ Sample Execution: PASSED")
 
 print("\n📝 Key Features Now Working:")
 print("   • Market Regime Detection")

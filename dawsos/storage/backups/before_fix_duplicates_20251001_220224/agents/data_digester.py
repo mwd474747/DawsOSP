@@ -1,6 +1,6 @@
 """DataDigester - Processes raw data into graph nodes"""
 from agents.base_agent import BaseAgent
-from typing import Dict, Any, List
+from typing import Dict, Any
 from datetime import datetime
 
 class DataDigester(BaseAgent):

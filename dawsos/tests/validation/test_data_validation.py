@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Data validation tests - checking actual values from APIs"""
-import os
 from datetime import datetime
 import json
 
@@ -175,7 +174,7 @@ if aapl:
     # Apple has about 15.2B shares outstanding
     implied_shares = market_cap / price if price > 0 else 0
     if 14.5e9 < implied_shares < 16e9:
-        print(f"✅ AAPL market cap calculation - CONSISTENT")
+        print("✅ AAPL market cap calculation - CONSISTENT")
     else:
         print(f"⚠️  AAPL implied shares ({implied_shares/1e9:.1f}B) - CHECK DATA")
 
@@ -214,7 +213,7 @@ print(f"\n✨ Overall Validation: {overall_valid}/{overall_total} ({(overall_val
 # Save validation report
 with open('data_validation_report.json', 'w') as f:
     json.dump(summary, f, indent=2)
-    print(f"\n💾 Validation report saved to data_validation_report.json")
+    print("\n💾 Validation report saved to data_validation_report.json")
 
 if (overall_valid/overall_total) >= 0.8:
     print("\n🎉 DATA VALIDATION PASSED - System data is accurate and consistent!")

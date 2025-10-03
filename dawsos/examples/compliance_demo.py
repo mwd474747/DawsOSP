@@ -235,20 +235,20 @@ def demo_agent_access_monitoring(checker):
 
     # Authorized access
     result1 = checker.check_agent_access('agent_runtime', 'data_harvester')
-    print(f"\n  Access from 'agent_runtime':")
+    print("\n  Access from 'agent_runtime':")
     print(f"    Compliant: {result1['compliant']}")
     if result1['warning']:
         print(f"    Warning: {result1['warning']}")
 
     # Unauthorized access
     result2 = checker.check_agent_access('ui.dashboard', 'financial_analyst')
-    print(f"\n  Access from 'ui.dashboard':")
+    print("\n  Access from 'ui.dashboard':")
     print(f"    Compliant: {result2['compliant']}")
     if result2['warning']:
         print(f"    Warning: {result2['warning']}")
 
     result3 = checker.check_agent_access('random_module', 'claude')
-    print(f"\n  Access from 'random_module':")
+    print("\n  Access from 'random_module':")
     print(f"    Compliant: {result3['compliant']}")
     if result3['warning']:
         print(f"    Warning: {result3['warning']}")

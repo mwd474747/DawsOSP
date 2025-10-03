@@ -6,7 +6,6 @@ Leverages Trinity architecture to provide sophisticated financial analysis
 
 from typing import Dict, List, Any, Optional
 from .base_agent import BaseAgent
-import json
 from datetime import datetime
 from core.confidence_calculator import confidence_calculator
 

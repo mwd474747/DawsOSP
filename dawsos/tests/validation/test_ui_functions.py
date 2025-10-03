@@ -86,7 +86,7 @@ for button_name, query in quick_actions:
             if content and not ('{' in content and '}' in content):
                 print(f"   ✅ Response generated ({len(content)} chars)")
             else:
-                print(f"   ⚠️  Response has template variables")
+                print("   ⚠️  Response has template variables")
 
         results[button_name] = {
             'success': has_formatted or has_response,
@@ -116,15 +116,15 @@ for query in chat_queries:
 
         # Check if response would display properly in chat
         if 'formatted_response' in response:
-            print(f"   ✅ Would display: formatted_response")
+            print("   ✅ Would display: formatted_response")
         elif 'response' in response:
-            print(f"   ✅ Would display: direct response")
+            print("   ✅ Would display: direct response")
         elif 'friendly_response' in response:
-            print(f"   ✅ Would display: friendly_response")
+            print("   ✅ Would display: friendly_response")
         elif 'results' in response:
-            print(f"   ✅ Would display: results array")
+            print("   ✅ Would display: results array")
         else:
-            print(f"   ⚠️  Would display: JSON fallback")
+            print("   ⚠️  Would display: JSON fallback")
 
     except Exception as e:
         print(f"   ❌ Error: {str(e)}")
@@ -184,17 +184,17 @@ for button, result in results.items():
     status = "✅" if result.get('success') else "❌"
     print(f"   {status} {button}")
 
-print(f"\n📊 System Status:")
+print("\n📊 System Status:")
 print(f"   • Knowledge Graph: {stats['total_nodes']} nodes, {stats['total_edges']} edges")
 print(f"   • Patterns: {len(pattern_engine.patterns)} loaded")
 print(f"   • Agents: {len(runtime.agent_registry.agents)} active")
 
-print(f"\n🎯 UI Features Ready:")
-print(f"   ✅ Chat interface with formatted responses")
-print(f"   ✅ Quick Action buttons (including fundamentals)")
-print(f"   ✅ Knowledge graph visualization")
-print(f"   ✅ Pattern-based responses")
-print(f"   ✅ Market data integration")
-print(f"   ✅ Fundamental analysis tools")
+print("\n🎯 UI Features Ready:")
+print("   ✅ Chat interface with formatted responses")
+print("   ✅ Quick Action buttons (including fundamentals)")
+print("   ✅ Knowledge graph visualization")
+print("   ✅ Pattern-based responses")
+print("   ✅ Market data integration")
+print("   ✅ Fundamental analysis tools")
 
 print("\n✨ All UI functions configured and ready!")

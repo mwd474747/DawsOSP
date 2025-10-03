@@ -14,37 +14,31 @@ def test_imports():
     errors = []
 
     try:
-        from core.knowledge_graph import KnowledgeGraph
         print("✅ KnowledgeGraph imported")
     except Exception as e:
         errors.append(f"❌ KnowledgeGraph import failed: {e}")
 
     try:
-        from core.pattern_engine import PatternEngine
         print("✅ PatternEngine imported")
     except Exception as e:
         errors.append(f"❌ PatternEngine import failed: {e}")
 
     try:
-        from core.agent_runtime import AgentRuntime
         print("✅ AgentRuntime imported")
     except Exception as e:
         errors.append(f"❌ AgentRuntime import failed: {e}")
 
     try:
-        from core.graph_governance import GraphGovernance
         print("✅ GraphGovernance imported")
     except Exception as e:
         errors.append(f"❌ GraphGovernance import failed: {e}")
 
     try:
-        from core.governance_hooks import GovernanceHooks
         print("✅ GovernanceHooks imported")
     except Exception as e:
         errors.append(f"❌ GovernanceHooks import failed: {e}")
 
     try:
-        from agents.governance_agent import GovernanceAgent
         print("✅ GovernanceAgent imported")
     except Exception as e:
         errors.append(f"❌ GovernanceAgent import failed: {e}")

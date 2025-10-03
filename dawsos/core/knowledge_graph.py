@@ -1,7 +1,7 @@
 import json
 import os
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Any
+from datetime import datetime
+from typing import Dict, List, Optional, Any
 import uuid
 class KnowledgeGraph:
     """The living intelligence - stores all knowledge and relationships"""

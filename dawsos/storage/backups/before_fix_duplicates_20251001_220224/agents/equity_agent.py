@@ -1,6 +1,6 @@
 from agents.base_agent import BaseAgent
 from core.relationships import Relationships
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 class EquityAgent(BaseAgent):
     """Specialized agent for equity/stock analysis"""

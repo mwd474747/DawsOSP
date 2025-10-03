@@ -1,6 +1,6 @@
 """DataHarvester - Orchestrates data fetching from all sources"""
 from agents.base_agent import BaseAgent
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 class DataHarvester(BaseAgent):
     """Fetches data from various sources"""

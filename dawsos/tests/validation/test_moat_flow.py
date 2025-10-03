@@ -49,7 +49,7 @@ print("\n2. Testing UI Button Flow...")
 
 # This is exactly what happens when the button is clicked
 user_msg = "Analyze economic moat for AAPL"
-print(f"   User clicks: '🏰 Analyze Moat'")
+print("   User clicks: '🏰 Analyze Moat'")
 print(f"   Sends: '{user_msg}'")
 
 # Execute through orchestrate (same as UI)
@@ -155,7 +155,7 @@ for query in test_companies:
             else:
                 print(f"   ⚠️ Symbol {symbol} not in response")
     else:
-        print(f"   ❌ No pattern matched")
+        print("   ❌ No pattern matched")
 
 # Summary
 print("\n" + "=" * 80)
@@ -185,11 +185,11 @@ if 'AAPL' in response.get('formatted_response', ''):
 
 print(f"\n✅ Success Rate: {success_count}/{total_tests} ({success_count*100//total_tests}%)")
 
-print(f"\n📊 Flow Summary:")
-print(f"   1. Button Click → 'Analyze economic moat for AAPL'")
-print(f"   2. Pattern Match → moat_analyzer pattern")
-print(f"   3. Execute Workflow → 7 steps")
-print(f"   4. Format Response → Markdown template")
-print(f"   5. Display in Chat → Formatted moat analysis")
+print("\n📊 Flow Summary:")
+print("   1. Button Click → 'Analyze economic moat for AAPL'")
+print("   2. Pattern Match → moat_analyzer pattern")
+print("   3. Execute Workflow → 7 steps")
+print("   4. Format Response → Markdown template")
+print("   5. Display in Chat → Formatted moat analysis")
 
 print(f"\n✨ The economic moat analysis flow is {'WORKING' if success_count >= 6 else 'NEEDS FIXES'}!")

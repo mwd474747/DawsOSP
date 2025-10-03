@@ -1,7 +1,7 @@
 """LLM Client - Wrapper for Claude API"""
 import os
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from anthropic import Anthropic
 import re
 

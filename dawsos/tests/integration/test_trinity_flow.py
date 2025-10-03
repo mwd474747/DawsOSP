@@ -16,8 +16,7 @@ Validates:
 import pytest
 import sys
 from pathlib import Path
-from unittest.mock import Mock, MagicMock, patch
-from datetime import datetime
+from unittest.mock import Mock
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -29,7 +28,6 @@ from core.pattern_engine import PatternEngine
 from core.universal_executor import UniversalExecutor
 from agents.data_digester import DataDigester
 from agents.workflow_recorder import WorkflowRecorder
-from agents.data_harvester import DataHarvester
 
 
 class TestTrinityFullFlow:

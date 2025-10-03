@@ -3,8 +3,6 @@
 Comprehensive test to verify Phase 1 and 2 are working
 """
 import os
-import json
-from pathlib import Path
 
 # Load environment
 from load_env import load_env
@@ -49,7 +47,7 @@ runtime.register_agent('workflow_recorder', WorkflowRecorder(graph))
 pattern_engine = PatternEngine('patterns', runtime)
 runtime.pattern_engine = pattern_engine
 
-print(f"\n✅ System Initialized")
+print("\n✅ System Initialized")
 print(f"   Agents registered: {len(runtime.agent_registry.agents)}")
 print(f"   Patterns loaded: {len(pattern_engine.patterns)}")
 

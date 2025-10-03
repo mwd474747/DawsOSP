@@ -2,7 +2,7 @@ import os
 import urllib.request
 import json
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 class FredDataCapability:
     """Federal Reserve Economic Data (FRED) API integration"""

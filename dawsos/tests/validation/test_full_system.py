@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """Comprehensive DawsOS System Test Suite"""
 import os
-import sys
 import json
 from datetime import datetime
-import time
 
 # Load environment
 from load_env import load_env
@@ -14,7 +12,6 @@ load_env()
 from core.knowledge_graph import KnowledgeGraph
 from core.agent_runtime import AgentRuntime
 from core.persistence import PersistenceManager
-from core.llm_client import get_llm_client
 
 # Import agents
 from agents.claude import Claude
@@ -362,14 +359,14 @@ print(f"📊 Success Rate: {(successful/total)*100:.1f}%")
 # Show failed tests
 failed = [t for t in test_results['tests'] if not t.get('success')]
 if failed:
-    print(f"\n❌ Failed Tests:")
+    print("\n❌ Failed Tests:")
     for test in failed:
         print(f"   - {test['test']}")
 
 # Save test results
 with open('test_results.json', 'w') as f:
     json.dump(test_results, f, indent=2, default=str)
-    print(f"\n💾 Full results saved to test_results.json")
+    print("\n💾 Full results saved to test_results.json")
 
 print("\n" + "=" * 80)
 print("SYSTEM CAPABILITIES VERIFIED")
@@ -388,7 +385,7 @@ print("""
 
 # Final graph stats
 stats = graph.get_stats()
-print(f"Final Graph State:")
+print("Final Graph State:")
 print(f"  Nodes: {stats['total_nodes']}")
 print(f"  Edges: {stats['total_edges']}")
 print(f"  Patterns: {stats['total_patterns']}")

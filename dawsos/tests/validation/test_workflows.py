@@ -2,8 +2,6 @@
 """
 Test the investment workflows integration
 """
-import os
-import json
 from datetime import datetime
 
 # Load environment
@@ -80,9 +78,9 @@ for step in result['steps']:
         regime = step['result'].get('regime', 'Unknown')
         print(f"📊 Current Regime: {regime}")
     elif step['action'] == 'fetch_overnight_moves':
-        print(f"📈 Market Data: Fetched")
+        print("📈 Market Data: Fetched")
     elif step['action'] == 'day_outlook':
-        print(f"🔮 Outlook: Generated")
+        print("🔮 Outlook: Generated")
 
 workflows.save_workflow_result(result)
 
@@ -115,11 +113,11 @@ print(f"\n✅ Completed {len(result['steps'])} steps")
 for step in result['steps']:
     if step['action'] == 'identify_regime':
         regime_data = step['result']
-        print(f"\n📍 Regime Analysis:")
+        print("\n📍 Regime Analysis:")
         print(f"   State: {regime_data.get('regime', 'Unknown')}")
         print(f"   Confidence: {regime_data.get('confidence', 0):.0%}")
     elif step['action'] == 'regime_implications':
-        print(f"   Implications: Analyzed")
+        print("   Implications: Analyzed")
 
 workflows.save_workflow_result(result)
 
@@ -134,7 +132,7 @@ print(f"\n✅ Completed {len(result['steps'])} steps")
 for step in result['steps']:
     if step['action'] == 'predict_sector_performance':
         sectors = step['result']
-        print(f"\n📊 Sector Recommendations:")
+        print("\n📊 Sector Recommendations:")
         for sector, data in sectors.items():
             print(f"   - {sector}: {data['forecast']} ({data['confidence']:.0%})")
 
@@ -175,7 +173,7 @@ print("=" * 80)
 history = workflows.get_workflow_history()
 today_count = len([h for h in history if datetime.fromisoformat(h['timestamp']).date() == datetime.now().date()])
 
-print(f"\n📊 Statistics:")
+print("\n📊 Statistics:")
 print(f"   Workflows Available: {len(workflows.workflows)}")
 print(f"   Executions Today: {today_count}")
 print(f"   Total History: {len(history)} executions")
@@ -188,5 +186,5 @@ print("   - Regime-aware investment analysis")
 print("   - Value discovery using Buffett criteria")
 print("   - Sector rotation based on economic conditions")
 
-print(f"\n💾 History saved to storage/workflow_history.json")
+print("\n💾 History saved to storage/workflow_history.json")
 print("🎉 Workflow integration successful!")

@@ -107,7 +107,7 @@ def print_analysis_summary(results):
         for pattern in results['non_compliant']:
             print(f"\n  Pattern: {pattern['id']}")
             print(f"  File: {pattern['file']}")
-            print(f"  Violations:")
+            print("  Violations:")
 
             for v in pattern['result']['violations']:
                 print(f"    - [{v['severity'].upper()}] {v['type']}: {v['message']}")
@@ -121,7 +121,7 @@ def print_analysis_summary(results):
         for pattern in results['warnings']:
             print(f"\n  Pattern: {pattern['id']}")
             print(f"  File: {pattern['file']}")
-            print(f"  Warnings:")
+            print("  Warnings:")
 
             for v in pattern['result']['violations']:
                 if v['severity'] == 'warning':

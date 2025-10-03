@@ -66,7 +66,7 @@ for query, expected in test_queries:
         print(f"      Category: {pattern.get('category', 'N/A')}")
         print(f"      Priority: {pattern.get('priority', 'N/A')}")
     else:
-        print(f"   ❌ No pattern matched")
+        print("   ❌ No pattern matched")
 
 # Test knowledge graph queries
 print("\n3. Testing knowledge graph integration...")
@@ -132,12 +132,12 @@ for query in test_execution:
                 first_line = content.split('\n')[0]
                 print(f"   Preview: {first_line[:80]}...")
             else:
-                print(f"   ⚠️  Response has template variables")
+                print("   ⚠️  Response has template variables")
 
         if 'response' in response:
             content = response['response']
             if content:
-                print(f"   ✅ Direct response available")
+                print("   ✅ Direct response available")
 
     except Exception as e:
         print(f"   ❌ Error: {str(e)}")

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Test script for API connections"""
 import os
-import sys
 
 # Load environment variables
 from load_env import load_env
@@ -57,12 +56,12 @@ print(f"User input: {test_input}")
 print(f"Claude response: {result}")
 
 if result.get('intent'):
-    print(f"✅ Agent system working!")
+    print("✅ Agent system working!")
     print(f"  - Intent: {result.get('intent')}")
     print(f"  - Entities: {result.get('entities')}")
     print(f"  - Response: {result.get('friendly_response')}")
 else:
-    print(f"❌ Agent system not fully functional")
+    print("❌ Agent system not fully functional")
 
 print("\n" + "-" * 50)
 print("Testing data capabilities...")
@@ -75,7 +74,7 @@ gdp = fred.get_latest('GDP')
 if gdp and 'error' not in gdp:
     print(f"✅ FRED API working: Latest GDP = {gdp.get('value')}")
 else:
-    print(f"❌ FRED API failed")
+    print("❌ FRED API failed")
 
 print("\n" + "-" * 50)
 print("\nTo set API keys, run:")

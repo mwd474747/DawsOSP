@@ -10,7 +10,6 @@ Tests Trinity Architecture compliance validation:
 
 import unittest
 import os
-from datetime import datetime
 from core.compliance_checker import ComplianceChecker, ComplianceViolation, get_compliance_checker
 from core.agent_adapter import AgentRegistry
 

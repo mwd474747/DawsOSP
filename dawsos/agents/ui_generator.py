@@ -6,9 +6,7 @@ Leverages the Trinity architecture to generate intelligent, data-driven UI compo
 
 import streamlit as st
 import plotly.graph_objects as go
-import plotly.express as px
-import pandas as pd
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 import json
 from datetime import datetime
 
@@ -117,7 +115,7 @@ class UIGeneratorAgent:
             for factor in factors:
                 factor_name = factor.get('name', 'Factor')
                 factor_value = factor.get('value', 0)
-                factors_html += f"<div style='display: flex; justify-content: space-between; font-size: 12px; margin: 3px 0;'>"
+                factors_html += "<div style='display: flex; justify-content: space-between; font-size: 12px; margin: 3px 0;'>"
                 factors_html += f"<span style='color: #ccc;'>{factor_name}</span>"
                 factors_html += f"<span style='color: #fff;'>{factor_value}%</span></div>"
             factors_html += "</div>"
@@ -160,7 +158,7 @@ class UIGeneratorAgent:
             categories[category].append(pattern)
 
         for category, category_patterns in categories.items():
-            html += f"<div style='margin-bottom: 20px;'>"
+            html += "<div style='margin-bottom: 20px;'>"
             html += f"<h4 style='color: #00cc88; margin-bottom: 10px;'>▼ {category} ({len(category_patterns)})</h4>"
 
             for pattern in category_patterns:

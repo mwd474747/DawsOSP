@@ -68,7 +68,7 @@ if len(list(graph.nodes.keys())) >= 2:
     graph.connect(nodes[0], test_node1, 'test_relationship')
     stats_after_connect = graph.get_stats()
     print(f"   After adding edge: {stats_after_connect['total_edges']} edges")
-    print(f"   ✅ Connections update dynamically")
+    print("   ✅ Connections update dynamically")
 
 # Test 2: Dashboard Tab - Live Statistics
 print("\n3. Testing Dashboard Tab (Live Statistics)...")
@@ -79,7 +79,7 @@ print(f"   • Total Nodes: {stats_after_connect['total_nodes']} (live)")
 print(f"   • Total Edges: {stats_after_connect['total_edges']} (live)")
 print(f"   • Node Types: {len(stats_after_connect['node_types'])} types")
 print(f"   • Avg Connections: {stats_after_connect['avg_connections']:.2f}")
-print(f"   ✅ Dashboard pulls live data from session_state.graph")
+print("   ✅ Dashboard pulls live data from session_state.graph")
 
 # Test 3: Markets Tab - Real-time Data
 print("\n4. Testing Markets Tab (Real-time Data)...")
@@ -109,7 +109,7 @@ if losers and not any('error' in l for l in losers):
     change_key = 'changePercent' if 'changePercent' in loser else 'change'
     print(f"   ✅ Top loser: {loser.get('symbol', 'N/A')} {loser.get(change_key, 'N/A')}%")
 
-print(f"   ✅ Markets tab pulls live data from capabilities['market']")
+print("   ✅ Markets tab pulls live data from capabilities['market']")
 
 # Test 4: Economy Tab - Economic Indicators
 print("\n5. Testing Economy Tab (Economic Indicators)...")
@@ -126,7 +126,7 @@ for indicator in indicators:
         date = data.get('date', 'N/A')
         print(f"   • {indicator}: {value} (as of {date})")
 
-print(f"   ✅ Economy tab pulls live data from capabilities['fred']")
+print("   ✅ Economy tab pulls live data from capabilities['fred']")
 
 # Test 5: Workflows Tab
 print("\n6. Testing Workflows Tab...")

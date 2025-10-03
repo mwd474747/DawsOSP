@@ -5,8 +5,8 @@ Based on data quality, model accuracy, historical success rates, and correlation
 """
 
 import math
-from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from typing import Dict, Any, List
+from datetime import datetime
 import numpy as np
 
 

@@ -62,7 +62,7 @@ for query in test_cases:
     if companies_found:
         print(f"  ✅ Found: {companies_found[0][0]} -> {companies_found[0][1]}")
     else:
-        print(f"  ⚠️ No company found in query")
+        print("  ⚠️ No company found in query")
 
 # Test 2: Correlation calculations
 print("\n2. Testing Real Correlation Calculations")
@@ -89,16 +89,16 @@ for symbol in test_symbols:
 
         # Check if we got real correlations or defaults
         if corr_data.get('summary') and 'estimated' not in result.get('response', ''):
-            print(f"  ✅ Real correlations calculated")
+            print("  ✅ Real correlations calculated")
             if corr_data.get('strong_positive'):
                 print(f"     Strong positive: {', '.join(corr_data['strong_positive'][:3])}")
             if corr_data.get('negative'):
                 print(f"     Negative: {', '.join(corr_data['negative'][:3])}")
         else:
-            print(f"  ⚠️ Using default correlations (API may be unavailable)")
+            print("  ⚠️ Using default correlations (API may be unavailable)")
             print(f"     Summary: {corr_data.get('summary')}")
     else:
-        print(f"  ❌ No correlation data returned")
+        print("  ❌ No correlation data returned")
 
 # Test 3: Financial formulas availability
 print("\n3. Testing Financial Formulas Knowledge")
@@ -110,7 +110,7 @@ if formulas_path.exists():
     with open(formulas_path, 'r') as f:
         formulas = json.load(f)
 
-    print(f"✅ Financial formulas loaded")
+    print("✅ Financial formulas loaded")
 
     # Count formulas by category
     categories = formulas.get('formulas', {})
@@ -159,11 +159,11 @@ if pattern:
     resolved = pattern_engine._resolve_params(test_params, context, {})
 
     if resolved.get('symbol') == 'XOM':
-        print(f"  ✅ Correctly resolved 'Exxon' to 'XOM'")
+        print("  ✅ Correctly resolved 'Exxon' to 'XOM'")
     else:
         print(f"  ⚠️ Symbol resolution: {resolved.get('symbol')}")
 else:
-    print(f"  ❌ No pattern matched")
+    print("  ❌ No pattern matched")
 
 # Summary
 print("\n" + "=" * 80)

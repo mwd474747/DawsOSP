@@ -11,3 +11,10 @@
 2025-10-03 09:28:31,710 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
 2025-10-03 09:28:31,711 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
 2025-10-03 09:28:35,164 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: sector_performance {"pattern_id": "sector_performance", "confidence": 0.5, "matched": true}
+2025-10-03 09:39:53,677 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 09:39:53,678 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 09:39:53,678 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
+2025-10-03 10:51:00,224 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 10:51:00,225 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 10:51:00,225 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
+2025-10-03 10:51:11,832 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: sector_performance {"pattern_id": "sector_performance", "confidence": 0.5, "matched": true}

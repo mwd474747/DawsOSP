@@ -3,7 +3,6 @@
 Test how existing agents work with seeded investment knowledge
 No code changes - just using the system as designed
 """
-import os
 import json
 from datetime import datetime
 
@@ -108,7 +107,7 @@ for node_id, node in stock_nodes:
         })
 
 if value_stocks:
-    print(f"\n💎 Value Opportunities (P/E < 20):")
+    print("\n💎 Value Opportunities (P/E < 20):")
     for stock in sorted(value_stocks, key=lambda x: x['pe']):
         # Find sector connection
         sector = None
@@ -211,15 +210,15 @@ response = runtime.orchestrate(query)
 # Simulate what the response would look like
 print("\n📋 Integrated Response:")
 print("1. Regime Analysis (PatternSpotter):")
-print(f"   - Current: GOLDILOCKS")
-print(f"   - Favors: Growth with value opportunities")
+print("   - Current: GOLDILOCKS")
+print("   - Favors: Growth with value opportunities")
 
 print("\n2. Sector Allocation (GraphMind):")
-print(f"   - Technology: 30% (regime favored)")
-print(f"   - Financials: 25% (regime favored + value)")
-print(f"   - Healthcare: 20% (defensive + value)")
-print(f"   - Energy: 15% (value opportunity)")
-print(f"   - Cash: 10% (dry powder)")
+print("   - Technology: 30% (regime favored)")
+print("   - Financials: 25% (regime favored + value)")
+print("   - Healthcare: 20% (defensive + value)")
+print("   - Energy: 15% (value opportunity)")
+print("   - Cash: 10% (dry powder)")
 
 print("\n3. Stock Selection (DataHarvester + RelationshipHunter):")
 if value_stocks:
@@ -227,9 +226,9 @@ if value_stocks:
         print(f"   - {stock['symbol']}: Buffett criteria met (P/E {stock['pe']:.1f})")
 
 print("\n4. Risk Assessment (ForecastDreamer):")
-print(f"   - Portfolio Beta: 0.95 (slightly defensive)")
-print(f"   - Max Drawdown: 12% (acceptable)")
-print(f"   - Sharpe Ratio: 1.2 (good risk-adjusted returns)")
+print("   - Portfolio Beta: 0.95 (slightly defensive)")
+print("   - Max Drawdown: 12% (acceptable)")
+print("   - Sharpe Ratio: 1.2 (good risk-adjusted returns)")
 
 print("\n" + "=" * 80)
 print("INTEGRATION TEST SUMMARY")
@@ -268,4 +267,4 @@ test_results = {
 
 with open('investment_integration_test.json', 'w') as f:
     json.dump(test_results, f, indent=2)
-    print(f"\n💾 Test results saved to investment_integration_test.json")
+    print("\n💾 Test results saved to investment_integration_test.json")

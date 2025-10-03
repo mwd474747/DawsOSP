@@ -1,7 +1,6 @@
 """RefactorElf - Keeps code simple and clean"""
 from agents.base_agent import BaseAgent
-from typing import Dict, Any, List
-import os
+from typing import Dict, Any
 
 class RefactorElf(BaseAgent):
     """Simplifies code that gets too complex"""

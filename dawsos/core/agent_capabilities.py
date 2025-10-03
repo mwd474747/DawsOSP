@@ -578,7 +578,7 @@ if __name__ == '__main__':
     print("\n=== DawsOS Agent Capability Summary ===\n")
     print(f"Total Agents: {summary['total_agents']}")
     print(f"Total Capabilities: {summary['total_capabilities']}")
-    print(f"\nAgents by Category:")
+    print("\nAgents by Category:")
     for category, count in summary['agents_by_category'].items():
         print(f"  {category}: {count} agents")
 

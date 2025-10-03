@@ -6,8 +6,7 @@ Provides user interface for creating, managing, and viewing alerts
 
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional
+from datetime import datetime
 
 # Plotly imports with error handling
 try:

@@ -4,7 +4,7 @@ Agent Validator - Ensures all agents properly use Trinity Architecture
 Part of the governance framework to enforce system-wide consistency
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from datetime import datetime
 import inspect
 import logging

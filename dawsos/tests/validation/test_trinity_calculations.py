@@ -8,7 +8,6 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent))
 
 from agents.financial_analyst import FinancialAnalyst
-import json
 
 def test_financial_analyst():
     """Test the Financial Analyst agent directly"""

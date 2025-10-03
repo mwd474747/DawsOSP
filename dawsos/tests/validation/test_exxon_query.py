@@ -72,7 +72,7 @@ for query in test_queries:
                     print(f"     Matched phrase: '{phrase}'")
                     break
     else:
-        print(f"  ❌ No pattern matched")
+        print("  ❌ No pattern matched")
 
     print()
 
@@ -85,7 +85,7 @@ print(f"Executing: '{best_query}'")
 try:
     response = runtime.orchestrate(best_query)
 
-    print(f"\nResponse Structure:")
+    print("\nResponse Structure:")
     print(f"  • Has pattern: {bool('pattern' in response)}")
     print(f"  • Has formatted_response: {bool('formatted_response' in response)}")
     print(f"  • Has response: {bool('response' in response)}")
@@ -103,9 +103,9 @@ try:
 
         # Check if Exxon/XOM is mentioned
         if 'Exxon' in content or 'XOM' in content:
-            print(f"\n  ✅ Company name/symbol included in response")
+            print("\n  ✅ Company name/symbol included in response")
         else:
-            print(f"\n  ❌ Company name/symbol NOT in response")
+            print("\n  ❌ Company name/symbol NOT in response")
 
     elif 'response' in response:
         print(f"\n  Direct response: {response['response'][:200]}...")

@@ -7,8 +7,6 @@ Provides visual monitoring of pattern consistency, knowledge base integrity, and
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
 import json
 from pathlib import Path
 import sys
@@ -466,7 +464,7 @@ def render_checksums_tab(dim):
                 generated_at = checksum_data.get('generated_at', 'Unknown')
                 checksum_count = len(checksum_data.get('checksums', {}))
 
-                st.info(f"📄 Checksums File:")
+                st.info("📄 Checksums File:")
                 st.text(f"Generated: {generated_at[:19].replace('T', ' ')}")
                 st.text(f"Files tracked: {checksum_count}")
 

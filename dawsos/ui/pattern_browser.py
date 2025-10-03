@@ -5,9 +5,8 @@ Provides a rich UI for browsing, searching, filtering, and executing all 45 patt
 """
 
 import streamlit as st
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from datetime import datetime
-import json
 
 
 class PatternBrowser:
@@ -316,7 +315,7 @@ class PatternBrowser:
 
             # Execute button
             if st.button(
-                f"▶️ Execute",
+                "▶️ Execute",
                 key=f"exec_card_{pattern['id']}",
                 use_container_width=True
             ):
@@ -494,7 +493,7 @@ class PatternBrowser:
                 if 'error' in result:
                     st.error(f"❌ Execution Failed: {result['error']}")
                 else:
-                    st.success(f"✅ Pattern executed successfully!")
+                    st.success("✅ Pattern executed successfully!")
 
                     # Display formatted response if available
                     if 'formatted_response' in result:

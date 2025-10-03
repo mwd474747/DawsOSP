@@ -1,5 +1,5 @@
 from agents.base_agent import BaseAgent
-from typing import Dict, List, Tuple
+from typing import Dict, List
 from datetime import datetime, timedelta
 
 class PatternAgent(BaseAgent):

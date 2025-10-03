@@ -6,8 +6,8 @@ All tabs leverage Pattern-Knowledge-Agent system for consistency and simplicity
 
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional
+from datetime import datetime
+from typing import Dict, Any, List
 
 # Plotly imports with error handling
 try:
@@ -677,7 +677,7 @@ class TrinityDashboardTabs:
 
     def _get_system_health_metrics(self) -> Dict[str, Any]:
         """Get comprehensive system health metrics"""
-        from datetime import datetime, timedelta
+        from datetime import datetime
 
         # Get execution history
         exec_history = self.runtime.execution_history if self.runtime else []
@@ -975,7 +975,6 @@ class TrinityDashboardTabs:
 
     def _get_resource_metrics(self) -> Dict[str, Any]:
         """Get resource usage metrics"""
-        import os
         from pathlib import Path
 
         # Calculate storage size

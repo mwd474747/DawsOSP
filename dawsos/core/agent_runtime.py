@@ -1,12 +1,12 @@
 """Agent Runtime - Executes and coordinates agents"""
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from types import MappingProxyType
 import json
 import os
 import traceback
 import logging
 from datetime import datetime
-from core.agent_adapter import AgentAdapter, AgentRegistry
+from core.agent_adapter import AgentRegistry
 
 class AgentRuntime:
     """Simple runtime for executing agents"""

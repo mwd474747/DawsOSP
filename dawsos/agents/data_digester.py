@@ -1,6 +1,6 @@
 """DataDigester - Processes raw data into graph nodes"""
 from agents.base_agent import BaseAgent
-from typing import Dict, Any, List
+from typing import Dict, Any
 from datetime import datetime
 
 class DataDigester(BaseAgent):
@@ -174,17 +174,17 @@ class ConfidenceRater(BaseAgent):
 
     def rate(self, data: Dict[str, Any]) -> float:
         """Rate confidence in data using dynamic calculation"""
-        # Use dynamic confidence calculator
-        confidence_result = confidence_calculator.calculate_confidence(
-            data_quality=self._assess_source_quality(data),
-            num_data_points=len([k for k, v in data.items() if v is not None]),
-            correlation_strength=len(data.get('confirmed_by', [])) / 5.0,  # Normalize confirmations
-            analysis_type='data_validation',
-            timestamp=data.get('timestamp'),
-            data_source=data.get('source', 'unknown')
-        )
+        # Calculate confidence based on data quality factors
+        data_quality = self._assess_source_quality(data)
+        num_data_points = len([k for k, v in data.items() if v is not None])
+        correlation_strength = len(data.get('confirmed_by', [])) / 5.0  # Normalize confirmations
 
-        return confidence_result['confidence']
+        # Weighted average of factors
+        confidence = (data_quality * 0.5 +
+                     min(num_data_points / 10, 1.0) * 0.3 +
+                     correlation_strength * 0.2)
+
+        return round(confidence, 2)
 
     def _assess_source_quality(self, data: Dict[str, Any]) -> float:
         """Assess quality of data source"""

@@ -1,6 +1,6 @@
 from agents.base_agent import BaseAgent
 from core.relationships import Relationships
-from typing import Dict, List, Set
+from typing import Dict, List
 
 class RiskAgent(BaseAgent):
     """Specialized agent for risk analysis"""

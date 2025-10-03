@@ -23,35 +23,35 @@ def cmd_validate(args):
     print("🔍 Validating Patterns...")
     pattern_report = dim.validate_patterns()
 
-    print(f"\n📊 Pattern Validation Results:")
+    print("\n📊 Pattern Validation Results:")
     print(f"   Total Files: {pattern_report['total_files']}")
     print(f"   Valid Patterns: {pattern_report['valid_patterns']}")
     print(f"   Schema Files: {len(pattern_report['schema_files'])}")
 
     if pattern_report['duplicate_ids']:
-        print(f"\n⚠️  Duplicate Pattern IDs Found:")
+        print("\n⚠️  Duplicate Pattern IDs Found:")
         for pattern_id, files in pattern_report['duplicate_ids'].items():
             print(f"   '{pattern_id}': {files}")
 
     if pattern_report['invalid_files']:
-        print(f"\n❌ Invalid Files:")
+        print("\n❌ Invalid Files:")
         for invalid in pattern_report['invalid_files']:
             print(f"   {invalid['file']}: {invalid['error']}")
 
     if pattern_report['missing_ids']:
-        print(f"\n🔤 Files Missing IDs:")
+        print("\n🔤 Files Missing IDs:")
         for file in pattern_report['missing_ids']:
             print(f"   {file}")
 
     print("\n🔍 Validating Knowledge Bases...")
     knowledge_report = dim.validate_knowledge_bases()
 
-    print(f"\n📊 Knowledge Validation Results:")
+    print("\n📊 Knowledge Validation Results:")
     print(f"   Total Files: {knowledge_report['total_files']}")
     print(f"   Valid Files: {knowledge_report['valid_files']}")
 
     if knowledge_report['invalid_files']:
-        print(f"\n❌ Invalid Knowledge Files:")
+        print("\n❌ Invalid Knowledge Files:")
         for invalid in knowledge_report['invalid_files']:
             print(f"   {invalid['file']}: {invalid['error']}")
 
@@ -108,17 +108,17 @@ def cmd_health_check(args):
     status_emoji = "✅" if health_report['overall_status'] == 'healthy' else "⚠️"
     print(f"\n{status_emoji} Overall Status: {health_report['overall_status'].upper()}")
 
-    print(f"\n📊 Summary:")
+    print("\n📊 Summary:")
     print(f"   Patterns: {health_report['patterns']['valid_patterns']}/{health_report['patterns']['total_files']}")
     print(f"   Knowledge: {health_report['knowledge']['valid_files']}/{health_report['knowledge']['total_files']}")
 
     if 'issues' in health_report:
-        print(f"\n⚠️  Issues Detected:")
+        print("\n⚠️  Issues Detected:")
         for issue in health_report['issues']:
             print(f"   - {issue.replace('_', ' ').title()}")
 
     if health_report['recommendations']:
-        print(f"\n💡 Recommendations:")
+        print("\n💡 Recommendations:")
         for rec in health_report['recommendations']:
             print(f"   - {rec}")
 
@@ -144,7 +144,7 @@ def cmd_backup(args):
         with open(manifest_path, 'r') as f:
             manifest = json.load(f)
 
-        print(f"\n📄 Backup Contents:")
+        print("\n📄 Backup Contents:")
         for category, count in manifest['contents'].items():
             print(f"   {category}: {count} files")
 
@@ -159,7 +159,7 @@ def cmd_restore(args):
         return
 
     if not args.force:
-        response = input(f"⚠️  This will overwrite current data. Continue? (y/N): ")
+        response = input("⚠️  This will overwrite current data. Continue? (y/N): ")
         if response.lower() != 'y':
             print("❌ Restore cancelled.")
             return
@@ -185,7 +185,7 @@ def cmd_checksums(args):
             print(f"❌ {verification_report['error']}")
             return
 
-        print(f"\n📊 Verification Results:")
+        print("\n📊 Verification Results:")
         print(f"   Total Files: {verification_report['total_files']}")
         print(f"   Unchanged: {verification_report['unchanged_files']}")
         print(f"   Modified: {len(verification_report['modified_files'])}")
@@ -193,17 +193,17 @@ def cmd_checksums(args):
         print(f"   Deleted: {len(verification_report['deleted_files'])}")
 
         if verification_report['modified_files']:
-            print(f"\n📝 Modified Files:")
+            print("\n📝 Modified Files:")
             for file in verification_report['modified_files']:
                 print(f"   {file}")
 
         if verification_report['new_files']:
-            print(f"\n🆕 New Files:")
+            print("\n🆕 New Files:")
             for file in verification_report['new_files']:
                 print(f"   {file}")
 
         if verification_report['deleted_files']:
-            print(f"\n🗑️  Deleted Files:")
+            print("\n🗑️  Deleted Files:")
             for file in verification_report['deleted_files']:
                 print(f"   {file}")
 

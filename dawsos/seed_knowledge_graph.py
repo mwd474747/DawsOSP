@@ -326,7 +326,7 @@ def main():
     print("\n" + "=" * 80)
     print("KNOWLEDGE GRAPH SEEDED SUCCESSFULLY")
     print("=" * 80)
-    print(f"\nFinal Statistics:")
+    print("\nFinal Statistics:")
     print(f"• Total Nodes: {stats['total_nodes']}")
     print(f"• Total Edges: {stats['total_edges']}")
     print(f"• Node Types: {stats['node_types']}")

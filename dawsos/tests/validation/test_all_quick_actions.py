@@ -54,14 +54,14 @@ for button_name, query in quick_actions:
         has_template_vars = '{' in content and '}' in content
 
         if has_template_vars:
-            print(f"   ⚠️  Response has template variables")
+            print("   ⚠️  Response has template variables")
         else:
             print(f"   ✅ Response has content ({len(content)} chars)")
             # Show first line of response
             first_line = content.split('\n')[0]
             print(f"   Preview: {first_line[:60]}...")
     else:
-        print(f"   ❌ No formatted response")
+        print("   ❌ No formatted response")
 
     print()
 

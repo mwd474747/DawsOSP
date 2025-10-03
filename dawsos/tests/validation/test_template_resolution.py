@@ -35,7 +35,7 @@ print(f"Response Template: {pattern.get('response_template')}")
 
 # Execute pattern
 context = {'user_input': 'Find correlations for SPY'}
-print(f"\nExecuting pattern...")
+print("\nExecuting pattern...")
 
 # Manually execute steps to see outputs
 step_outputs = {}
@@ -50,7 +50,7 @@ step_outputs['price_data'] = result1
 
 # Step 2: relationship_hunter
 step2_params = {'data': result1, 'target': 'SPY'}
-print(f"\n2. relationship_hunter with data from step 1")
+print("\n2. relationship_hunter with data from step 1")
 result2 = runtime.execute('relationship_hunter', step2_params)
 print(f"   Result keys: {list(result2.keys())}")
 print(f"   Response: {result2.get('response', 'N/A')}")
@@ -58,7 +58,7 @@ step_outputs['correlations'] = result2
 
 # Step 3: claude
 step3_params = {'user_input': f"Analyze correlations for SPY: {result2}. Explain: 1) Strong correlations found 2) Inverse relationships 3) Trading implications 4) Hedge opportunities"}
-print(f"\n3. claude with correlation analysis request")
+print("\n3. claude with correlation analysis request")
 result3 = runtime.execute('claude', step3_params)
 print(f"   Result keys: {list(result3.keys())}")
 print(f"   Response: {result3.get('response', 'N/A')[:100]}...")

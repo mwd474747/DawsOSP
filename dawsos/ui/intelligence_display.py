@@ -12,13 +12,10 @@ All components integrate with the Trinity architecture (UniversalExecutor -> Pat
 """
 
 import streamlit as st
-import streamlit.components.v1 as components
-from typing import Dict, Any, List, Optional, Tuple
-import json
+from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 import plotly.graph_objects as go
 import plotly.express as px
-from pathlib import Path
 
 
 class IntelligenceDisplay:

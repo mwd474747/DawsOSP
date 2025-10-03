@@ -6,12 +6,10 @@ Provides validation, source control, and synchronization for Patterns, Knowledge
 
 import json
 import hashlib
-import os
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Set, Tuple
+from typing import Dict, Any, Optional
 from datetime import datetime
 import shutil
-import tempfile
 from core.logger import get_logger
 
 

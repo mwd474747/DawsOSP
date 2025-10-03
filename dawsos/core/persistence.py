@@ -4,8 +4,7 @@ import shutil
 import hashlib
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
-from pathlib import Path
+from typing import Dict, List, Any
 
 # Configure logging
 logger = logging.getLogger(__name__)

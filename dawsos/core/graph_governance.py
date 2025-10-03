@@ -4,7 +4,7 @@ Graph-Native Governance - Simple, powerful governance using knowledge graph rela
 Extends the existing KnowledgeGraph to make governance a first-class citizen
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from datetime import datetime
 import json
 

@@ -1,6 +1,6 @@
 """Core Invariants - The physics of DawsOS that never change"""
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, Any, Tuple, List
 from core.confidence_calculator import confidence_calculator
 

@@ -10,7 +10,6 @@ import json
 from pathlib import Path
 from core.knowledge_graph import KnowledgeGraph
 from core.pattern_engine import PatternEngine
-from core.agent_runtime import AgentRuntime
 
 print("=" * 80)
 print("PHASE 3 ENRICHMENT TEST SUITE")
@@ -253,9 +252,9 @@ print("✅ Patterns compatible with enriched data")
 print(f"\nOverall Success Rate: {success_count}/{total_tests} tests passed")
 
 print("\n📊 Data Enrichment Metrics:")
-print(f"  • Sectors with performance data: 11")
+print("  • Sectors with performance data: 11")
 print(f"  • Economic cycles documented: {len(loaded_data.get('economic_cycles', {}).get('economic_cycles', {}).get('historical_phases', []))}")
-print(f"  • S&P 500 companies included: 100+")
+print("  • S&P 500 companies included: 100+")
 print(f"  • Supply chain relationships mapped: {total_relationships}")
 print(f"  • Correlation pairs defined: {len(correlations) * len(correlations) if 'correlations' in locals() else 0}")
 

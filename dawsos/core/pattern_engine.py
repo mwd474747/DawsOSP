@@ -3,7 +3,6 @@
 Pattern Engine - The brain that executes pattern-based workflows
 This enables DawsOS to work through JSON-defined patterns rather than hard-coded logic
 """
-import os
 import json
 import re
 from typing import Dict, List, Any, Optional
@@ -168,6 +167,14 @@ class PatternEngine:
         # Pattern engine needs this for backward compatibility during transition
         if hasattr(self.runtime, 'agents'):
             try:
+                # Log bypass warning for telemetry tracking
+                if hasattr(self.runtime, 'agent_registry') and hasattr(self.runtime.agent_registry, 'log_bypass_warning'):
+                    self.runtime.agent_registry.log_bypass_warning(
+                        caller='pattern_engine',
+                        agent_name=agent_name,
+                        method='legacy_fallback'
+                    )
+
                 agents_dict = self.runtime.agents  # Will trigger bypass warning
                 if agent_name in agents_dict:
                     return agents_dict[agent_name]
@@ -314,7 +321,7 @@ class PatternEngine:
                     # Handle special actions
                     result = self.execute_action(action, params, context, step_outputs)
                 else:
-                    result = {"error": f"No valid agent or action found in step"}
+                    result = {"error": "No valid agent or action found in step"}
 
                 # Store the outputs
                 outputs = step.get('outputs', step.get('output', []))

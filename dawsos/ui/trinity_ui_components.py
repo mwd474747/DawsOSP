@@ -7,8 +7,7 @@ All components now wire to actual pattern execution and enriched data
 
 import streamlit as st
 import streamlit.components.v1 as components
-from typing import Dict, Any, List, Optional
-import json
+from typing import Dict, Any, List
 from datetime import datetime
 from agents.ui_generator import UIGeneratorAgent
 from core.pattern_engine import PatternEngine

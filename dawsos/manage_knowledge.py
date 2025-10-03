@@ -8,7 +8,7 @@ import json
 import os
 import shutil
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 class KnowledgeManager:
     """Manages knowledge updates with safety checks"""
@@ -101,7 +101,7 @@ class KnowledgeManager:
             if isinstance(data, dict):
                 data.update(updates)
             else:
-                print(f"⚠️ File is not a dict, replacing entirely")
+                print("⚠️ File is not a dict, replacing entirely")
                 data = updates
 
             # Validate new structure

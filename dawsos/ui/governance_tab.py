@@ -5,11 +5,8 @@ Leverages Trinity Architecture for intelligent data governance and monitoring
 """
 
 import streamlit as st
-from typing import Dict, Any, List
 from datetime import datetime, timedelta
-import json
 import plotly.graph_objects as go
-import networkx as nx
 
 def render_governance_tab(runtime, graph):
     """Render the Data Governance tab with conversational governance interface"""
@@ -147,7 +144,7 @@ def render_governance_tab(runtime, graph):
                 with st.expander(f"🔸 {pattern['name']}"):
                     st.write(pattern['description'])
                     st.code(f"Example: {pattern['example']}")
-                    if st.button(f"Use Example", key=f"example_{i}"):
+                    if st.button("Use Example", key=f"example_{i}"):
                         st.session_state['governance_request'] = pattern['example']
                         st.rerun()
 
