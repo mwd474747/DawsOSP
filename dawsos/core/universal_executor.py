@@ -56,9 +56,12 @@ class UniversalExecutor:
     
     def _load_meta_patterns(self):
         """Load meta-patterns for self-healing architecture."""
-        meta_pattern_dir = Path('dawsos/patterns/system/meta')
+        # Support both execution contexts: from project root and from dawsos/
+        meta_pattern_dir = Path('patterns/system/meta')
         if not meta_pattern_dir.exists():
-            logger.warning(f"Meta-pattern directory not found: {meta_pattern_dir}")
+            meta_pattern_dir = Path('dawsos/patterns/system/meta')
+        if not meta_pattern_dir.exists():
+            logger.warning(f"Meta-pattern directory not found in patterns/system/meta or dawsos/patterns/system/meta")
             return
         
         loaded = []
