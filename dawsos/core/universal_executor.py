@@ -31,25 +31,27 @@ logger = logging.getLogger(__name__)
 class UniversalExecutor:
     """Single entry point for ALL DawsOS execution."""
     
-    def __init__(self, graph: KnowledgeGraph, registry: AgentRegistry, runtime: "AgentRuntime" = None):
+    def __init__(self, graph: KnowledgeGraph, registry: AgentRegistry, runtime: "AgentRuntime" = None, auto_save: bool = True):
         """Initialize with Trinity components."""
         self.graph = graph
         self.registry = registry
         self.runtime = runtime
         self.pattern_engine = PatternEngine(runtime=runtime, graph=graph)
-        
+        self.auto_save = auto_save
+
         # Load meta-patterns
         self._load_meta_patterns()
-        
+
         # Track execution metrics
         self.metrics = {
             'total_executions': 0,
             'pattern_routed': 0,
             'legacy_migrated': 0,
             'compliance_failures': 0,
-            'last_execution': None
+            'last_execution': None,
+            'last_save': None
         }
-        
+
         logger.info("Universal Executor initialized with Trinity Architecture enforcement")
     
     def _load_meta_patterns(self):
@@ -124,6 +126,10 @@ class UniversalExecutor:
             # Store in graph (Trinity Knowledge multiplication)
             self._store_execution_result(request, result)
 
+            # Auto-save graph after execution
+            if self.auto_save:
+                self._save_graph()
+
             return result
 
         except Exception as e:
@@ -167,7 +173,7 @@ class UniversalExecutor:
                     'compliant': result.get('compliant', True)
                 }
             )
-            
+
             # Connect to agent node if applicable
             if result.get('agent'):
                 agent_nodes = self.graph.get_nodes_by_type('agent')
@@ -175,11 +181,20 @@ class UniversalExecutor:
                     if adata.get('name') == result['agent']:
                         self.graph.connect(node_id, aid, 'executed_by')
                         break
-            
+
             logger.debug(f"Stored execution result: {node_id}")
-            
+
         except Exception as e:
             logger.error(f"Failed to store execution result: {e}")
+
+    def _save_graph(self):
+        """Save knowledge graph to persistent storage."""
+        try:
+            self.graph.save('dawsos/storage/graph.json')
+            self.metrics['last_save'] = datetime.now().isoformat()
+            logger.debug("Knowledge graph auto-saved")
+        except Exception as e:
+            logger.error(f"Failed to auto-save graph: {e}")
     
     def _execute_fallback(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
