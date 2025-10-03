@@ -5,14 +5,14 @@ on:
     branches: [ main, develop ]
     paths:
       - 'dawsos/**/*.py'
-      - 'patterns/**/*.json'
+      - 'dawsos/patterns/**/*.json'
       - 'scripts/check_compliance.py'
       - '.github/workflows/compliance-check.yml'
   push:
     branches: [ main, develop ]
     paths:
       - 'dawsos/**/*.py'
-      - 'patterns/**/*.json'
+      - 'dawsos/patterns/**/*.json'
 
   # Allow manual trigger
   workflow_dispatch:
@@ -136,7 +136,7 @@ jobs:
       - name: Validate JSON syntax
         run: |
           # Check all pattern JSON files
-          find patterns -name "*.json" -type f | while read file; do
+          find dawsos/patterns -name "*.json" -type f | while read file; do
             echo "Checking $file..."
             python3 -m json.tool "$file" > /dev/null || exit 1
           done
