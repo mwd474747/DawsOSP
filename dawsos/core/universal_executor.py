@@ -54,7 +54,7 @@ class UniversalExecutor:
     
     def _load_meta_patterns(self):
         """Load meta-patterns for self-healing architecture."""
-        meta_pattern_dir = Path('patterns/system/meta')
+        meta_pattern_dir = Path('dawsos/patterns/system/meta')
         if not meta_pattern_dir.exists():
             logger.warning(f"Meta-pattern directory not found: {meta_pattern_dir}")
             return
