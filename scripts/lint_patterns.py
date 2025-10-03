@@ -257,11 +257,7 @@ def get_registered_agents() -> List[str]:
         'workflow_player',
         'ui_generator',
         'financial_analyst',
-        'governance_agent',
-        'equity_agent',
-        'macro_agent',
-        'risk_agent',
-        'pattern_agent'
+        'governance_agent'
     ]
     return agents
 
