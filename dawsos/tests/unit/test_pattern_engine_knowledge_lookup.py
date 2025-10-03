@@ -90,8 +90,8 @@ class TestPatternEngineKnowledgeLookup(unittest.TestCase):
     def test_get_nodes_by_type_returns_dict(self):
         """Test get_nodes_by_type returns dict, not list"""
         # Add test nodes
-        self.graph.add_node('stock', {'symbol': 'AAPL'})
-        self.graph.add_node('stock', {'symbol': 'GOOGL'})
+        self.graph.add_node(node_type='stock', data={'symbol': 'AAPL'})
+        self.graph.add_node(node_type='stock', data={'symbol': 'GOOGL'})
 
         # Get nodes by type
         nodes = self.graph.get_nodes_by_type('stock')
@@ -108,7 +108,7 @@ class TestPatternEngineKnowledgeLookup(unittest.TestCase):
     def test_get_node_works_correctly(self):
         """Test get_node returns node or None"""
         # Add test node
-        node_id = self.graph.add_node('stock', {'symbol': 'AAPL'})
+        node_id = self.graph.add_node(node_type='stock', data={'symbol': 'AAPL'})
 
         # Get node should return the node
         node = self.graph.get_node(node_id)

@@ -133,7 +133,7 @@ for query in chat_queries:
 print("\n4. Testing Knowledge Graph Operations...")
 
 # Test node addition
-test_node = graph.add_node('test_company', {
+test_node = graph.add_node(node_type='test_company', data={
     'symbol': 'TEST',
     'name': 'Test Company',
     'sector': 'Technology'

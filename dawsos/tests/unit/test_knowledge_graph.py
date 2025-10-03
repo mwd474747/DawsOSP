@@ -22,9 +22,9 @@ class TestKnowledgeGraphAPI(unittest.TestCase):
         self.graph = KnowledgeGraph()
 
         # Add test nodes
-        self.node1 = self.graph.add_node('stock', {'symbol': 'AAPL', 'price': 150})
-        self.node2 = self.graph.add_node('stock', {'symbol': 'GOOGL', 'price': 2800})
-        self.node3 = self.graph.add_node('sector', {'name': 'Technology'})
+        self.node1 = self.graph.add_node(node_type='stock', data={'symbol': 'AAPL', 'price': 150})
+        self.node2 = self.graph.add_node(node_type='stock', data={'symbol': 'GOOGL', 'price': 2800})
+        self.node3 = self.graph.add_node(node_type='sector', data={'name': 'Technology'})
 
         # Add test edges
         self.graph.connect(self.node1, self.node3, 'belongs_to', strength=0.9)
@@ -186,14 +186,14 @@ class TestKnowledgeGraphEdgeCases(unittest.TestCase):
 
     def test_get_node_data_none_handling(self):
         """Test get_node_data handles None values properly"""
-        node_id = self.graph.add_node('test', {'value': None})
+        node_id = self.graph.add_node(node_type='test', data={'value': None})
         value = self.graph.get_node_data(node_id, 'value', default='default')
         self.assertIsNone(value)  # Should return actual None, not default
 
     def test_relationship_case_sensitivity(self):
         """Test relationship matching is case-sensitive"""
-        node1 = self.graph.add_node('test', {})
-        node2 = self.graph.add_node('test', {})
+        node1 = self.graph.add_node(node_type='test', data={})
+        node2 = self.graph.add_node(node_type='test', data={})
         self.graph.connect(node1, node2, 'TestRelation')
 
         self.assertTrue(self.graph.has_edge(node1, node2, 'TestRelation'))

@@ -52,7 +52,7 @@ runtime.pattern_engine = pattern_engine
 print("\n2. Testing Knowledge Graph Tab (Dynamic Updates)...")
 
 # Add a new node
-test_node1 = graph.add_node('test_stock', {
+test_node1 = graph.add_node(node_type='test_stock', data={
     'ticker': 'TEST1',
     'price': 100.0,
     'timestamp': time.time()
