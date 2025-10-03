@@ -31,13 +31,43 @@ class KnowledgeLoader:
 
         # Dataset registry - maps friendly names to file paths
         self.datasets = {
+            # Core datasets
             'sector_performance': 'sector_performance.json',
             'economic_cycles': 'economic_cycles.json',
             'sp500_companies': 'sp500_companies.json',
             'sector_correlations': 'sector_correlations.json',
             'relationships': 'relationship_mappings.json',
             'ui_configurations': 'ui_configurations.json',
-            'company_database': 'company_database.json'
+            'company_database': 'company_database.json',
+
+            # Investment frameworks
+            'buffett_checklist': 'buffett_checklist.json',
+            'buffett_framework': 'buffett_framework.json',
+            'dalio_cycles': 'dalio_cycles.json',
+            'dalio_framework': 'dalio_framework.json',
+
+            # Financial data & calculations
+            'financial_calculations': 'financial_calculations.json',
+            'financial_formulas': 'financial_formulas.json',
+            'earnings_surprises': 'earnings_surprises.json',
+            'dividend_buyback': 'dividend_buyback_stats.json',
+
+            # Factor & alternative data
+            'factor_smartbeta': 'factor_smartbeta_profiles.json',
+            'insider_institutional': 'insider_institutional_activity.json',
+            'alt_data_signals': 'alt_data_signals.json',
+            'esg_governance': 'esg_governance_scores.json',
+
+            # Market structure & indicators
+            'cross_asset_lead_lag': 'cross_asset_lead_lag.json',
+            'econ_regime_watchlist': 'econ_regime_watchlist.json',
+            'fx_commodities': 'fx_commodities_snapshot.json',
+            'thematic_momentum': 'thematic_momentum.json',
+            'volatility_stress': 'volatility_stress_indicators.json',
+            'yield_curve': 'yield_curve_history.json',
+
+            # System metadata
+            'agent_capabilities': 'agent_capabilities.json'
         }
 
         self.logger.info(f"Knowledge Loader initialized with {len(self.datasets)} datasets")

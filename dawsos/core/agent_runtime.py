@@ -124,10 +124,16 @@ class AgentRuntime:
         self._save_to_agent_memory(execution)
 
     def _save_to_agent_memory(self, execution: Dict[str, Any]):
-        """Save execution to agent memory"""
+        """Save execution to agent memory with automatic rotation"""
         memory_file = 'storage/agent_memory/decisions.json'
 
         try:
+            # Rotate if file is too large (>5MB)
+            if os.path.exists(memory_file):
+                file_size_mb = os.path.getsize(memory_file) / (1024 * 1024)
+                if file_size_mb > 5:
+                    self._rotate_decisions_file(memory_file)
+
             # Load existing
             if os.path.exists(memory_file):
                 with open(memory_file, 'r') as f:
@@ -148,6 +154,19 @@ class AgentRuntime:
                 json.dump(decisions, f, indent=2)
         except Exception as e:
             print(f"Error saving to agent memory: {e}")
+
+    def _rotate_decisions_file(self, memory_file: str):
+        """Rotate decisions file when it gets too large"""
+        try:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            archive_dir = 'storage/agent_memory/archive'
+            os.makedirs(archive_dir, exist_ok=True)
+
+            archive_file = os.path.join(archive_dir, f'decisions_{timestamp}.json')
+            os.rename(memory_file, archive_file)
+            self.logger.info(f"Rotated decisions file to {archive_file}")
+        except Exception as e:
+            self.logger.error(f"Error rotating decisions file: {e}")
 
     def get_status(self) -> Dict[str, Any]:
         """Get runtime status"""

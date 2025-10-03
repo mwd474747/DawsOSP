@@ -27,8 +27,9 @@ def render_governance_tab(runtime, graph):
     if hasattr(governance_agent, 'graph_governance') and governance_agent.graph_governance:
         try:
             graph_metrics = governance_agent.graph_governance.comprehensive_governance_check()
-        except:
-            pass
+        except Exception as e:
+            st.warning(f"Could not load governance metrics: {str(e)}")
+            graph_metrics = {}
 
     # Governance Dashboard - Real metrics from graph
     col1, col2, col3, col4 = st.columns(4)
@@ -389,8 +390,9 @@ def render_governance_tab(runtime, graph):
                     try:
                         score = governance_agent.graph_governance._calculate_quality_from_graph(node_id)
                         quality_scores.append(score)
-                    except:
-                        pass
+                    except Exception:
+                        # Skip nodes that can't be scored
+                        continue
 
             if quality_scores:
                 fig = go.Figure(data=[go.Histogram(x=quality_scores, nbinsx=10)])
@@ -633,8 +635,9 @@ def render_governance_tab(runtime, graph):
                             node_time = datetime.fromisoformat(created)
                             if (now - node_time) < timedelta(hours=24):
                                 recent_nodes.append((node_id, node))
-                        except:
-                            pass
+                        except Exception:
+                            # Skip nodes with invalid timestamps
+                            continue
 
                 # Create activity chart
                 if recent_nodes:
@@ -714,8 +717,9 @@ def render_governance_tab(runtime, graph):
                         node_time = datetime.fromisoformat(modified)
                         if (datetime.now() - node_time) > timedelta(days=7):
                             stale_count += 1
-                    except:
-                        pass
+                    except Exception:
+                        # Skip nodes with invalid modified dates
+                        continue
 
             if stale_count > 10:
                 alerts.append({
