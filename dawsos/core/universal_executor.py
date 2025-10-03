@@ -220,10 +220,15 @@ class UniversalExecutor:
                     'recovery_mode': True
                 }
 
-                result = self.pattern_engine.execute_pattern(
-                    pattern_name='architecture_validator',
-                    context=recovery_context
-                )
+                # Get pattern dictionary first, then execute
+                validator_pattern = self.pattern_engine.get_pattern('architecture_validator')
+                if validator_pattern:
+                    result = self.pattern_engine.execute_pattern(
+                        validator_pattern,
+                        recovery_context
+                    )
+                else:
+                    result = {'error': 'architecture_validator pattern not found'}
 
                 if result.get('recovered'):
                     logger.info(f"Successfully recovered from error: {error}")
@@ -249,9 +254,14 @@ class UniversalExecutor:
     def validate_architecture(self) -> Dict[str, Any]:
         """Run architecture validation."""
         try:
+            # Get pattern dictionary first, then execute
+            validator_pattern = self.pattern_engine.get_pattern('architecture_validator')
+            if not validator_pattern:
+                return {'error': 'architecture_validator pattern not found'}
+
             result = self.pattern_engine.execute_pattern(
-                pattern_name='architecture_validator',
-                context={'startup': False}
+                validator_pattern,
+                {'startup': False}
             )
             return result
         except Exception as e:
