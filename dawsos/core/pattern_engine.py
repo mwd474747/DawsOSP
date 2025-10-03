@@ -907,12 +907,207 @@ class PatternEngine:
 
             return {"fixed_count": fixed_count, "fixes_applied": True}
 
+        # === META PATTERN ACTIONS (Trinity 2.0) ===
+
+        elif action == 'select_router':
+            """
+            Determine optimal routing strategy for request.
+            Returns: routing decision (pattern, agent, direct)
+            """
+            request = params.get('request', {})
+            request_type = request.get('type', 'unknown')
+
+            # Simple routing logic (no creep - just functional)
+            routing_decision = {
+                'strategy': 'pattern',  # Default to pattern-driven
+                'reason': 'Trinity compliance',
+                'timestamp': datetime.now().isoformat()
+            }
+
+            # Check if specific agent requested
+            if 'agent' in request:
+                routing_decision['strategy'] = 'agent'
+                routing_decision['agent_name'] = request['agent']
+                routing_decision['reason'] = 'Explicit agent request'
+
+            # Check if pattern match exists
+            elif 'pattern' in request or 'pattern_id' in request:
+                routing_decision['strategy'] = 'pattern'
+                routing_decision['pattern_id'] = request.get('pattern') or request.get('pattern_id')
+                routing_decision['reason'] = 'Pattern-driven execution'
+
+            # Check for user_input that might match pattern triggers
+            elif 'user_input' in request:
+                matched_pattern = self.find_pattern(request['user_input'])
+                if matched_pattern:
+                    routing_decision['strategy'] = 'pattern'
+                    routing_decision['pattern_id'] = matched_pattern.get('id')
+                    routing_decision['reason'] = 'Pattern trigger match'
+                else:
+                    routing_decision['strategy'] = 'agent'
+                    routing_decision['agent_name'] = 'claude'  # Default orchestrator
+                    routing_decision['reason'] = 'No pattern match, route to claude'
+
+            self.logger.debug(f"Routing decision: {routing_decision['strategy']}")
+            return routing_decision
+
+        elif action == 'execute_pattern':
+            """
+            Execute a pattern by ID with given context.
+            Handles nested pattern execution with recursion guard.
+            """
+            pattern_id = params.get('pattern_id')
+            pattern_context = params.get('context', context)
+
+            # Recursion guard (prevent infinite loops)
+            recursion_depth = context.get('_recursion_depth', 0)
+            if recursion_depth > 5:
+                self.logger.error(f"Max recursion depth exceeded for pattern {pattern_id}")
+                return {
+                    'error': 'Max recursion depth exceeded',
+                    'pattern_id': pattern_id,
+                    'depth': recursion_depth
+                }
+
+            # Get pattern
+            pattern = self.get_pattern(pattern_id)
+            if not pattern:
+                self.logger.error(f"Pattern not found: {pattern_id}")
+                return {
+                    'error': 'Pattern not found',
+                    'pattern_id': pattern_id
+                }
+
+            # Add recursion tracking
+            pattern_context['_recursion_depth'] = recursion_depth + 1
+            pattern_context['_parent_pattern'] = context.get('pattern_id')
+
+            # Execute pattern
+            try:
+                result = self.execute_pattern(pattern, pattern_context)
+                result['nested_execution'] = True
+                result['parent_pattern'] = context.get('pattern_id')
+                return result
+            except Exception as e:
+                self.logger.error(f"Nested pattern execution failed: {e}")
+                return {
+                    'error': str(e),
+                    'pattern_id': pattern_id
+                }
+
+        elif action == 'track_execution':
+            """
+            Track execution metrics for telemetry.
+            Records timing, success, and stores in runtime metrics.
+            """
+            result = params.get('result', {})
+            start_time = params.get('start_time')
+
+            # Calculate duration
+            end_time = datetime.now()
+            duration_ms = None
+            if start_time:
+                try:
+                    start_dt = datetime.fromisoformat(start_time)
+                    duration_ms = (end_time - start_dt).total_seconds() * 1000
+                except Exception as e:
+                    self.logger.warning(f"Could not calculate duration: {e}")
+
+            # Build metrics
+            metrics = {
+                'success': result.get('success', True),
+                'error': result.get('error'),
+                'duration_ms': duration_ms,
+                'timestamp': end_time.isoformat(),
+                'pattern_id': context.get('pattern_id'),
+                'agent_used': result.get('agent'),
+                'graph_stored': result.get('graph_stored', False)
+            }
+
+            # Store in runtime if available
+            if self.runtime and hasattr(self.runtime, 'track_execution'):
+                try:
+                    self.runtime.track_execution(metrics)
+                except Exception as e:
+                    self.logger.warning(f"Could not store metrics in runtime: {e}")
+
+            # Log for observability
+            self.logger.info(
+                f"Execution tracked: {metrics['pattern_id']} "
+                f"({metrics['duration_ms']:.1f}ms, success={metrics['success']})" if duration_ms else
+                f"Execution tracked: {metrics['pattern_id']} (success={metrics['success']})"
+            )
+
+            return metrics
+
+        elif action == 'store_in_graph':
+            """
+            Store execution result in knowledge graph.
+            Creates node with result data and metadata.
+            """
+            result = params.get('result', {})
+            metadata = params.get('metadata', {})
+
+            # Check if graph available
+            if not self.runtime or not hasattr(self.runtime, 'graph'):
+                self.logger.warning("No graph available for storage")
+                return {
+                    'stored': False,
+                    'reason': 'No graph available'
+                }
+
+            graph = self.runtime.graph
+
+            try:
+                # Build node data
+                node_data = {
+                    'type': 'execution_result',
+                    'result': result,
+                    'metadata': {
+                        **metadata,
+                        'timestamp': datetime.now().isoformat(),
+                        'pattern_id': context.get('pattern_id'),
+                        'stored_by': 'meta_pattern'
+                    }
+                }
+
+                # Add node to graph (using correct signature)
+                node_id = graph.add_node(
+                    node_type='execution_result',
+                    data=node_data
+                )
+
+                # Connect to pattern node if exists
+                pattern_id = context.get('pattern_id')
+                if pattern_id:
+                    pattern_nodes = graph.get_nodes_by_type('pattern')
+                    for pid, pdata in pattern_nodes.items():
+                        if pdata.get('id') == pattern_id:
+                            graph.connect(node_id, pid, 'executed_by')
+                            break
+
+                self.logger.debug(f"Stored result in graph: {node_id}")
+
+                return {
+                    'stored': True,
+                    'node_id': node_id,
+                    'timestamp': node_data['metadata']['timestamp']
+                }
+
+            except Exception as e:
+                self.logger.error(f"Failed to store in graph: {e}")
+                return {
+                    'stored': False,
+                    'error': str(e)
+                }
+
         else:
             # Truly unknown action - provide detailed error with suggestions
             supported_actions = [
                 'knowledge_lookup', 'enriched_lookup', 'evaluate', 'calculate',
                 'synthesize', 'fetch_financials', 'dcf_analysis',
-                'calculate_confidence', 'add_position'
+                'calculate_confidence', 'add_position', 'select_router',
+                'execute_pattern', 'track_execution', 'store_in_graph'
             ]
 
             return {
