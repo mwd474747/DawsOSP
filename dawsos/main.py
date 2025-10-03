@@ -268,15 +268,15 @@ def visualize_graph():
     for edge in G.edges():
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
-        edge_data = graph.edges[0]  # Get actual edge data
-        
+        edge_data = G.edges[edge]  # Get actual edge data for current edge
+
         # Color based on relationship type
         edge_color = '#666'
         if edge_data['type'] in ['causes', 'supports']:
             edge_color = '#00cc88'
         elif edge_data['type'] in ['pressures', 'weakens']:
             edge_color = '#ff4444'
-            
+
         edge_trace.append(go.Scatter(
             x=[x0, x1, None],
             y=[y0, y1, None],
