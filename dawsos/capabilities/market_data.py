@@ -1,9 +1,64 @@
 import urllib.request
 import urllib.parse
 import json
+import time
+import logging
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
+from collections import deque
 from dawsos.core.credentials import get_credential_manager
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+class RateLimiter:
+    """Rate limiter for FMP API calls with exponential backoff"""
+
+    def __init__(self, max_requests_per_minute: int = 750):
+        """
+        Initialize rate limiter
+
+        Args:
+            max_requests_per_minute: Maximum API requests per minute (FMP Pro = 750)
+        """
+        self.max_requests = max_requests_per_minute
+        self.requests = deque()
+        self.backoff_until = None
+
+    def wait_if_needed(self):
+        """Wait if approaching rate limit or in backoff period"""
+        now = time.time()
+
+        # Check if we're in backoff period
+        if self.backoff_until and now < self.backoff_until:
+            wait_time = self.backoff_until - now
+            logger.warning(f"Rate limit backoff: waiting {wait_time:.2f} seconds")
+            time.sleep(wait_time)
+            self.backoff_until = None
+            return
+
+        # Remove requests older than 1 minute
+        minute_ago = now - 60
+        while self.requests and self.requests[0] < minute_ago:
+            self.requests.popleft()
+
+        # If approaching limit, wait
+        if len(self.requests) >= self.max_requests * 0.95:  # 95% threshold
+            wait_time = 60 - (now - self.requests[0])
+            if wait_time > 0:
+                logger.warning(f"Approaching rate limit: waiting {wait_time:.2f} seconds")
+                time.sleep(wait_time)
+                self.requests.clear()
+
+        # Record this request
+        self.requests.append(now)
+
+    def set_backoff(self, retry_count: int = 1):
+        """Set exponential backoff period"""
+        backoff_seconds = min(2 ** retry_count, 60)  # Max 60 seconds
+        self.backoff_until = time.time() + backoff_seconds
+        logger.warning(f"Setting backoff for {backoff_seconds} seconds (retry {retry_count})")
+
 
 class MarketDataCapability:
     """Financial Modeling Prep API integration (Pro version)"""
@@ -14,56 +69,202 @@ class MarketDataCapability:
         self.api_key = credentials.get('FMP_API_KEY', required=False)
         self.base_url = 'https://financialmodelingprep.com/api'
         self.cache = {}
-        self.cache_ttl = 60  # 1 minute for real-time data
-        
+
+        # Configurable TTL by data type (in seconds)
+        self.cache_ttl = {
+            'quotes': 60,           # 1 minute - real-time data
+            'fundamentals': 86400,  # 24 hours - daily updates
+            'news': 21600,          # 6 hours
+            'historical': 3600,     # 1 hour
+            'profile': 86400        # 24 hours
+        }
+
+        # Rate limiter (FMP Pro = 750 req/min)
+        self.rate_limiter = RateLimiter(max_requests_per_minute=750)
+
+        # Cache statistics
+        self.cache_stats = {
+            'hits': 0,
+            'misses': 0,
+            'expired_fallbacks': 0
+        }
+
+    def _get_from_cache(self, cache_key: str, data_type: str) -> Optional[Tuple[Dict, bool]]:
+        """
+        Get data from cache
+
+        Args:
+            cache_key: Cache key to lookup
+            data_type: Type of data for TTL lookup ('quotes', 'fundamentals', etc.)
+
+        Returns:
+            Tuple of (data, is_fresh) or None if not in cache
+        """
+        if cache_key not in self.cache:
+            self.cache_stats['misses'] += 1
+            return None
+
+        cached = self.cache[cache_key]
+        age = (datetime.now() - cached['time']).total_seconds()
+        ttl = self.cache_ttl.get(data_type, 60)
+
+        if age < ttl:
+            self.cache_stats['hits'] += 1
+            return (cached['data'], True)
+        else:
+            # Data exists but is expired
+            return (cached['data'], False)
+
+    def _update_cache(self, cache_key: str, data: Dict):
+        """Update cache with new data"""
+        self.cache[cache_key] = {
+            'data': data,
+            'time': datetime.now()
+        }
+
+    def _make_api_call(self, url: str, max_retries: int = 3) -> Optional[Dict]:
+        """
+        Make API call with retry logic and error handling
+
+        Args:
+            url: Full API URL
+            max_retries: Maximum number of retry attempts
+
+        Returns:
+            Parsed JSON response or None on failure
+        """
+        # Check if API key is available
+        if not self.api_key:
+            logger.error("FMP API key not configured. Please set FMP_API_KEY in credentials.")
+            return None
+
+        for retry in range(max_retries):
+            try:
+                # Apply rate limiting
+                self.rate_limiter.wait_if_needed()
+
+                # Make request
+                with urllib.request.urlopen(url, timeout=10) as response:
+                    data = json.loads(response.read())
+                    logger.debug(f"API call successful: {url[:100]}...")
+                    return data
+
+            except urllib.error.HTTPError as e:
+                if e.code == 429:
+                    # Rate limit exceeded
+                    logger.warning(f"Rate limit exceeded (429), retry {retry + 1}/{max_retries}")
+                    self.rate_limiter.set_backoff(retry + 1)
+                    if retry < max_retries - 1:
+                        continue
+                    else:
+                        logger.error("Max retries exceeded for rate limit")
+                        return None
+
+                elif e.code == 401:
+                    # Authentication error
+                    logger.error("Invalid FMP API key (401). Please check your credentials.")
+                    return None
+
+                elif e.code == 404:
+                    # Not found - symbol may be invalid
+                    logger.warning(f"Resource not found (404): {url[:100]}...")
+                    return None
+
+                else:
+                    logger.error(f"HTTP error {e.code}: {e.reason}")
+                    if retry < max_retries - 1:
+                        time.sleep(1)
+                        continue
+                    return None
+
+            except urllib.error.URLError as e:
+                # Network error
+                logger.error(f"Network error: {e.reason}, retry {retry + 1}/{max_retries}")
+                if retry < max_retries - 1:
+                    time.sleep(2 ** retry)  # Exponential backoff
+                    continue
+                return None
+
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON response: {e}")
+                return None
+
+            except Exception as e:
+                logger.error(f"Unexpected error: {type(e).__name__}: {e}")
+                return None
+
+        return None
+
+    def get_cache_stats(self) -> Dict:
+        """Get cache statistics"""
+        total_requests = self.cache_stats['hits'] + self.cache_stats['misses']
+        hit_rate = (self.cache_stats['hits'] / total_requests * 100) if total_requests > 0 else 0
+
+        return {
+            'cache_hits': self.cache_stats['hits'],
+            'cache_misses': self.cache_stats['misses'],
+            'cache_hit_rate': f"{hit_rate:.1f}%",
+            'expired_fallbacks': self.cache_stats['expired_fallbacks'],
+            'cached_items': len(self.cache)
+        }
+
     def get_quote(self, symbol: str) -> Dict:
-        """Get real-time stock quote"""
+        """
+        Get real-time stock quote
+
+        Args:
+            symbol: Stock symbol (e.g., 'AAPL', 'TSLA')
+
+        Returns:
+            Dict with quote data or error information
+        """
+        cache_key = f"quote_{symbol}"
+
         # Check cache
-        if symbol in self.cache:
-            cached = self.cache[symbol]
-            if datetime.now() - cached['time'] < timedelta(seconds=self.cache_ttl):
-                return cached['data']
-        
+        cached = self._get_from_cache(cache_key, 'quotes')
+        if cached and cached[1]:  # If data is fresh
+            return cached[0]
+
+        # Make API call
         url = f"{self.base_url}/v3/quote/{symbol}?apikey={self.api_key}"
-        
-        try:
-            with urllib.request.urlopen(url) as response:
-                data = json.loads(response.read())
-                
-                if data:
-                    quote_data = data[0]
-                    quote = {
-                        'symbol': quote_data.get('symbol'),
-                        'name': quote_data.get('name'),
-                        'price': quote_data.get('price'),
-                        'previous_close': quote_data.get('previousClose'),
-                        'change': quote_data.get('change'),
-                        'change_percent': quote_data.get('changesPercentage'),
-                        'volume': quote_data.get('volume'),
-                        'market_cap': quote_data.get('marketCap'),
-                        'exchange': quote_data.get('exchange'),
-                        'day_low': quote_data.get('dayLow'),
-                        'day_high': quote_data.get('dayHigh'),
-                        'year_low': quote_data.get('yearLow'),
-                        'year_high': quote_data.get('yearHigh'),
-                        'pe': quote_data.get('pe'),
-                        'eps': quote_data.get('eps'),
-                        'avg_volume': quote_data.get('avgVolume'),
-                        'timestamp': quote_data.get('timestamp')
-                    }
-                    
-                    # Update cache
-                    self.cache[symbol] = {
-                        'data': quote,
-                        'time': datetime.now()
-                    }
-                    
-                    return quote
-                
-                return {'symbol': symbol, 'error': 'No data available'}
-                
-        except Exception as e:
-            return {'symbol': symbol, 'error': str(e)}
+        data = self._make_api_call(url)
+
+        if data and len(data) > 0:
+            quote_data = data[0]
+            quote = {
+                'symbol': quote_data.get('symbol'),
+                'name': quote_data.get('name'),
+                'price': quote_data.get('price'),
+                'previous_close': quote_data.get('previousClose'),
+                'change': quote_data.get('change'),
+                'change_percent': quote_data.get('changesPercentage'),
+                'volume': quote_data.get('volume'),
+                'market_cap': quote_data.get('marketCap'),
+                'exchange': quote_data.get('exchange'),
+                'day_low': quote_data.get('dayLow'),
+                'day_high': quote_data.get('dayHigh'),
+                'year_low': quote_data.get('yearLow'),
+                'year_high': quote_data.get('yearHigh'),
+                'pe': quote_data.get('pe'),
+                'eps': quote_data.get('eps'),
+                'avg_volume': quote_data.get('avgVolume'),
+                'timestamp': quote_data.get('timestamp')
+            }
+
+            # Update cache
+            self._update_cache(cache_key, quote)
+            return quote
+
+        # API call failed - try to return expired cache data
+        if cached:
+            logger.warning(f"API call failed, returning expired cache data for {symbol}")
+            self.cache_stats['expired_fallbacks'] += 1
+            result = cached[0].copy()
+            result['_cached'] = True
+            result['_warning'] = 'Using expired cached data due to API failure'
+            return result
+
+        return {'symbol': symbol, 'error': 'No data available'}
     
     def get_historical(self, symbol: str, period: str = '1M', interval: str = '1d') -> List[Dict]:
         """Get historical price data
@@ -126,39 +327,62 @@ class MarketDataCapability:
             return [{'error': str(e)}]
     
     def get_company_profile(self, symbol: str) -> Dict:
-        """Get comprehensive company profile"""
+        """
+        Get comprehensive company profile
+
+        Args:
+            symbol: Stock symbol (e.g., 'AAPL', 'TSLA')
+
+        Returns:
+            Dict with company profile data or error information
+        """
+        cache_key = f"profile_{symbol}"
+
+        # Check cache
+        cached = self._get_from_cache(cache_key, 'profile')
+        if cached and cached[1]:  # If data is fresh
+            return cached[0]
+
+        # Make API call
         url = f"{self.base_url}/v3/profile/{symbol}?apikey={self.api_key}"
-        
-        try:
-            with urllib.request.urlopen(url) as response:
-                data = json.loads(response.read())
-                
-                if data:
-                    profile = data[0]
-                    return {
-                        'symbol': profile.get('symbol'),
-                        'company_name': profile.get('companyName'),
-                        'sector': profile.get('sector'),
-                        'industry': profile.get('industry'),
-                        'ceo': profile.get('ceo'),
-                        'employees': profile.get('fullTimeEmployees'),
-                        'headquarters': f"{profile.get('city')}, {profile.get('state')}, {profile.get('country')}",
-                        'description': profile.get('description'),
-                        'website': profile.get('website'),
-                        'ipo_date': profile.get('ipoDate'),
-                        'market_cap': profile.get('mktCap'),
-                        'beta': profile.get('beta'),
-                        'dcf': profile.get('dcf'),  # Discounted Cash Flow value
-                        'rating': {
-                            'score': profile.get('rating'),
-                            'recommendation': profile.get('ratingRecommendation')
-                        }
-                    }
-                
-                return {'symbol': symbol, 'error': 'No profile data'}
-                
-        except Exception as e:
-            return {'symbol': symbol, 'error': str(e)}
+        data = self._make_api_call(url)
+
+        if data and len(data) > 0:
+            profile = data[0]
+            result = {
+                'symbol': profile.get('symbol'),
+                'company_name': profile.get('companyName'),
+                'sector': profile.get('sector'),
+                'industry': profile.get('industry'),
+                'ceo': profile.get('ceo'),
+                'employees': profile.get('fullTimeEmployees'),
+                'headquarters': f"{profile.get('city')}, {profile.get('state')}, {profile.get('country')}",
+                'description': profile.get('description'),
+                'website': profile.get('website'),
+                'ipo_date': profile.get('ipoDate'),
+                'market_cap': profile.get('mktCap'),
+                'beta': profile.get('beta'),
+                'dcf': profile.get('dcf'),  # Discounted Cash Flow value
+                'rating': {
+                    'score': profile.get('rating'),
+                    'recommendation': profile.get('ratingRecommendation')
+                }
+            }
+
+            # Update cache
+            self._update_cache(cache_key, result)
+            return result
+
+        # API call failed - try to return expired cache data
+        if cached:
+            logger.warning(f"API call failed, returning expired cache data for {symbol} profile")
+            self.cache_stats['expired_fallbacks'] += 1
+            result = cached[0].copy()
+            result['_cached'] = True
+            result['_warning'] = 'Using expired cached data due to API failure'
+            return result
+
+        return {'symbol': symbol, 'error': 'No profile data available'}
     
     def get_financials(self, symbol: str, statement: str = 'income', period: str = 'annual') -> List[Dict]:
         """Get financial statements
