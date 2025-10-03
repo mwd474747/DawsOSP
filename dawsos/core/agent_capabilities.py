@@ -7,7 +7,7 @@ Defines explicit capabilities, requirements, and outputs for each agent
 
 from typing import Dict, List, Any
 
-# Complete capability definitions for all 19 agents
+# Complete capability definitions for all 15 agents
 AGENT_CAPABILITIES: Dict[str, Dict[str, Any]] = {
 
     # === CORE ORCHESTRATION AGENTS ===

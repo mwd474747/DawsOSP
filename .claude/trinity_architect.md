@@ -30,15 +30,18 @@ Request → UniversalExecutor → PatternEngine → AgentRuntime/AgentRegistry �
 
 2. **PatternEngine** (`core/pattern_engine.py`)
    - Executes JSON-defined workflows from `dawsos/patterns/`
-   - 46+ patterns across categories: analysis, ui, governance, queries, workflows, system/meta
+   - 45 patterns (0 errors) across categories: analysis, ui, governance, queries, workflows, system/meta
    - Loads enriched knowledge via KnowledgeLoader
    - Resolves parameters with variable substitution
+   - Primary action: `execute_through_registry` (Trinity-compliant)
 
 3. **AgentRuntime** (`core/agent_runtime.py`)
    - Maintains registry of 19+ agents
    - `execute()` method routes through AgentRegistry
-   - `exec_via_registry()` is the sanctioned helper
+   - `exec_via_registry()` is the sanctioned helper (name-based routing)
+   - `execute_by_capability()` enables capability-based routing (new in 2.0)
    - Tracks execution history in `storage/agent_memory/decisions.json`
+   - Auto-rotates decisions file at 5MB threshold
 
 4. **AgentRegistry/AgentAdapter** (`core/agent_adapter.py`)
    - Wraps agents for consistent interface
@@ -56,9 +59,15 @@ Request → UniversalExecutor → PatternEngine → AgentRuntime/AgentRegistry �
    - Centralized enriched dataset loading
    - Caches data with 30-min TTL
    - Validates dataset structure
-   - 7 datasets: sector_performance, economic_cycles, sp500_companies, etc.
+   - 26 datasets (100% coverage): sector_performance, economic_cycles, buffett_framework, dalio_cycles, etc.
 
-### Registered Agents (19)
+7. **AGENT_CAPABILITIES** (`core/agent_capabilities.py`)
+   - Metadata defining 50+ capabilities across 15 agents
+   - Capability categories: data, analysis, graph, governance, code
+   - Enables capability-based routing via `execute_by_capability()`
+   - Tracks dependencies (`requires`), outputs (`provides`), integrations
+
+### Registered Agents (15)
 
 Core agents:
 - `claude` - Natural language interpretation
@@ -133,6 +142,16 @@ Utility agents:
    - Use `KnowledgeLoader.get_dataset(name)`
    - No ad-hoc file loading
 
+5. **Capability-based routing available**
+   - `runtime.execute_by_capability('can_calculate_dcf', context)` for flexible routing
+   - More resilient than name-based routing
+   - See `CAPABILITY_ROUTING_GUIDE.md`
+
+6. **Strict mode enforcement**
+   - Set `TRINITY_STRICT_MODE=true` environment variable
+   - Registry bypass telemetry via `log_bypass_warning()`
+   - CI/CD compliance checks in `.github/workflows/compliance-check.yml`
+
 ### Common Issues to Watch For
 
 1. **Registry Bypass**
@@ -162,6 +181,19 @@ Utility agents:
 2. **Smoke Tests**: `python -m pytest dawsos/tests/validation/test_trinity_smoke.py`
 3. **Integration Tests**: `python -m pytest dawsos/tests/validation/test_integration.py`
 4. **Full System**: `python -m pytest dawsos/tests/validation/test_full_system.py`
+5. **CI/CD**: `.github/workflows/compliance-check.yml` runs all checks on push
+
+## Essential Documentation References
+
+**Development Guides**:
+- [AgentDevelopmentGuide.md](../docs/AgentDevelopmentGuide.md) - Agent implementation, registration, and testing
+- [KnowledgeMaintenance.md](../docs/KnowledgeMaintenance.md) - Dataset formats, loader usage, refresh cadence
+- [DisasterRecovery.md](../docs/DisasterRecovery.md) - Backup rotation, checksums, restore procedures
+
+**Architecture References**:
+- [CAPABILITY_ROUTING_GUIDE.md](../CAPABILITY_ROUTING_GUIDE.md) - Capability-based routing walkthrough
+- [CORE_INFRASTRUCTURE_STABILIZATION.md](../CORE_INFRASTRUCTURE_STABILIZATION.md) - Core architecture upgrades
+- [SYSTEM_STATUS.md](../SYSTEM_STATUS.md) - Current system state (A+ grade)
 
 ## Code Review Checklist
 

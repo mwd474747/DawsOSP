@@ -1,6 +1,10 @@
 # DawsOS Claude Agent Specialists
 
-This directory contains specialized Claude .mdc agent configurations designed to deeply understand and maintain the DawsOS Trinity Architecture system.
+**System Version**: 2.0 (Trinity Architecture)
+**Grade**: A+ (98/100)
+**Last Updated**: October 3, 2025
+
+This directory contains specialized Claude agent configurations designed to deeply understand and maintain the DawsOS Trinity Architecture system.
 
 ## Agent Specialists
 
@@ -48,10 +52,10 @@ This directory contains specialized Claude .mdc agent configurations designed to
 - Validating pattern library health
 
 **Key Skills**:
-- Understands all 46+ patterns across 6 categories
-- Knows supported actions (knowledge_lookup, enriched_lookup, evaluate, etc.)
+- Understands all 45 patterns (0 errors) across 6 categories
+- Knows supported actions (execute_through_registry, enriched_lookup, evaluate, etc.)
 - Debugs variable substitution issues
-- Validates against schema with linter
+- Validates against schema with linter (CI/CD integrated)
 - Optimizes pattern performance
 
 ---
@@ -75,9 +79,9 @@ This directory contains specialized Claude .mdc agent configurations designed to
 - Tracking data lineage
 
 **Key Skills**:
-- Understands 7 enriched datasets and their structures
+- Understands 26 enriched datasets (100% coverage) and their structures
 - Knows all graph helper methods (get_node, safe_query, etc.)
-- Manages KnowledgeLoader caching
+- Manages KnowledgeLoader caching (30-min TTL)
 - Tracks confidence and metadata
 - Monitors graph health metrics
 
@@ -103,8 +107,9 @@ This directory contains specialized Claude .mdc agent configurations designed to
 - Optimizing agent performance
 
 **Key Skills**:
-- Knows all 19 registered agents and their methods
+- Knows all 15 registered agents and their 50+ capabilities
 - Understands AgentAdapter normalization
+- Implements capability-based routing (Trinity 2.0)
 - Tracks compliance metrics (last_success, failures, etc.)
 - Detects registry bypasses
 - Coordinates sequential and parallel execution
@@ -179,28 +184,30 @@ All specialists understand this core architecture:
                      ▼
 ┌─────────────────────────────────────────────────────────┐
 │              PatternEngine                               │
-│  - Loads 46+ JSON patterns                               │
+│  - Loads 45 JSON patterns (0 errors)                     │
 │  - Executes steps sequentially                           │
 │  - Resolves variables                                    │
-│  - Integrates enriched knowledge                         │
+│  - Integrates enriched knowledge via KnowledgeLoader     │
+│  - Primary action: execute_through_registry              │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
 │         AgentRuntime/AgentRegistry                       │
-│  - 19 registered agents                                  │
+│  - 15 registered agents with 50+ capabilities            │
 │  - AgentAdapter normalization                            │
-│  - Capability-based routing                              │
-│  - Execution telemetry                                   │
+│  - Capability-based routing (Trinity 2.0)                │
+│  - Execution telemetry & bypass detection                │
+│  - AGENT_CAPABILITIES metadata                           │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
 │              KnowledgeGraph                              │
 │  - Nodes, edges, patterns, forecasts                     │
-│  - 7 enriched datasets (cached)                          │
+│  - 26 enriched datasets (100% coverage, 30-min TTL)      │
 │  - Graph queries and traversals                          │
-│  - Persistence to storage/                               │
+│  - Persistence to storage/ (auto-rotation)               │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -264,10 +271,23 @@ All specialists can use these tools:
 - Knowledge Loader: `dawsos/core/knowledge_loader.py`
 
 ### Documentation
-- Architecture: `dawsos/README.md`
-- Trinity Flow: `dawsos/docs/TrinityExecutionFlow.md`
-- Phase 3 Data: `dawsos/docs/PHASE3_DATA_MAP.md`
-- Assessments: `dawsos/docs/archive/`
+
+**Essential Guides** (Trinity 2.0):
+- [README.md](../README.md) - Quick start and system overview
+- [CAPABILITY_ROUTING_GUIDE.md](../CAPABILITY_ROUTING_GUIDE.md) - Capability-based routing
+- [CORE_INFRASTRUCTURE_STABILIZATION.md](../CORE_INFRASTRUCTURE_STABILIZATION.md) - Architecture upgrades
+- [SYSTEM_STATUS.md](../SYSTEM_STATUS.md) - Current system state (A+ grade)
+- [QUICK_WINS_COMPLETE.md](../QUICK_WINS_COMPLETE.md) - Final improvements summary
+
+**Development Guides**:
+- [docs/AgentDevelopmentGuide.md](../docs/AgentDevelopmentGuide.md) - Agent implementation and registration
+- [docs/KnowledgeMaintenance.md](../docs/KnowledgeMaintenance.md) - Dataset formats and refresh
+- [docs/DisasterRecovery.md](../docs/DisasterRecovery.md) - Backup and restore procedures
+
+**Assessment Reports**:
+- [FINAL_ROADMAP_COMPLIANCE.md](../FINAL_ROADMAP_COMPLIANCE.md) - Complete compliance (A grade)
+- [docs/reports/](../docs/reports/) - Interim progress reports
+- [dawsos/docs/archive/](../dawsos/docs/archive/) - Historical documentation
 
 ---
 

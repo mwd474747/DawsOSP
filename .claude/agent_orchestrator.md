@@ -25,16 +25,18 @@ You manage:
 
 **Key Methods**:
 ```python
-# Registration
+# Registration (with capabilities - new in 2.0)
 runtime.register_agent(name, agent, capabilities)
 
 # Execution (Trinity-compliant)
 runtime.execute(agent_name, context)  # Goes through AgentRegistry
 runtime.exec_via_registry(agent_name, context)  # Explicit helper
 
-# Capability-based routing
-runtime.execute_by_capability(capability, context)
-runtime.get_agent_capabilities()
+# Capability-based routing (NEW in Trinity 2.0)
+runtime.execute_by_capability(capability, context)  # Route by capability
+runtime.get_agent_capabilities()  # List all capabilities
+registry.find_agents_by_capability(capability)  # Find matching agents
+registry.list_all_capabilities()  # 50+ capabilities across 15 agents
 
 # Agent access
 runtime.get_agent_instance(agent_name)  # Returns raw agent
@@ -256,7 +258,40 @@ return result
 - **Capabilities**: UI component generation
 - **Use Cases**: Dynamic UI creation, dashboard generation
 
-## Agent Capability System
+## Agent Capability System (Trinity 2.0)
+
+### AGENT_CAPABILITIES Module (`core/agent_capabilities.py`)
+
+**Purpose**: Centralized metadata defining 50+ capabilities across 15 agents
+
+**Structure**:
+```python
+AGENT_CAPABILITIES = {
+    'financial_analyst': {
+        'capabilities': [
+            'can_calculate_dcf',
+            'can_calculate_roic',
+            'can_calculate_fcf',
+            'can_calculate_owner_earnings',
+            'can_analyze_buffett_framework',
+            # ... 10+ more
+        ],
+        'requires': ['market_data', 'financial_statements'],
+        'provides': ['valuation', 'quality_score', 'investment_thesis'],
+        'integrates_with': ['data_harvester', 'equity_agent'],
+        'priority': 'high',
+        'category': 'analysis'
+    },
+    # ... 18 more agents
+}
+```
+
+**Capability Categories**:
+- **Data**: Fetching, parsing, enrichment (data_harvester, data_digester)
+- **Analysis**: Financial, macro, risk assessment (financial_analyst, macro_agent, risk_agent)
+- **Graph**: Operations, queries, relationships (graph_mind, relationship_hunter)
+- **Governance**: Compliance, quality, auditing (governance_agent)
+- **Code**: Generation, refactoring, structure (code_monkey, refactor_elf, structure_bot)
 
 ### Capability Inference
 
@@ -283,30 +318,44 @@ if 'forecast' in class_name or 'predict' in class_name:
 
 ### Explicit Capability Declaration
 
-**Best Practice**:
+**Best Practice** (Trinity 2.0):
 ```python
+# Load from AGENT_CAPABILITIES module
+from core.agent_capabilities import AGENT_CAPABILITIES
+
 # At registration
-runtime.register_agent('financial_analyst', agent, capabilities={
-    'can_calculate_dcf': True,
-    'can_calculate_roic': True,
-    'can_calculate_fcf': True,
-    'has_financial_data': True,
-    'requires_market_data': True
-})
+runtime.register_agent(
+    'financial_analyst',
+    agent,
+    capabilities=AGENT_CAPABILITIES.get('financial_analyst', {})
+)
 ```
 
 ### Capability-Based Routing
 
-```python
-# Find agent with capability
-agent_name = runtime.agent_registry.find_capable_agent('can_calculate_dcf')
+**New in Trinity 2.0** - More flexible than name-based routing:
 
-# Execute using capability
-result = runtime.execute_by_capability('can_forecast', {
-    'symbol': 'AAPL',
-    'horizon': '1m'
-})
+```python
+# Traditional name-based (still supported)
+result = runtime.exec_via_registry('financial_analyst', context)
+
+# New capability-based (recommended)
+result = runtime.execute_by_capability('can_calculate_dcf', context)
+
+# Find agents by capability
+agents = runtime.agent_registry.find_agents_by_capability('can_fetch_data')
+# Returns: ['data_harvester']
+
+# List all capabilities
+capabilities = runtime.agent_registry.list_all_capabilities()
+# Returns: ['can_calculate_dcf', 'can_fetch_stock_quotes', ...]
 ```
+
+**Benefits**:
+- Agent swapping without code changes
+- Better discoverability
+- Graceful degradation when agents unavailable
+- See [CAPABILITY_ROUTING_GUIDE.md](../CAPABILITY_ROUTING_GUIDE.md) for full documentation
 
 ## Execution Telemetry
 
@@ -424,10 +473,14 @@ analysis = runtime.execute('financial_analyst', {'symbol': 'AAPL'})
 
 1. **Always register with capabilities**
    ```python
-   runtime.register_agent('my_agent', agent, capabilities={
-       'can_do_x': True,
-       'requires_y': True
-   })
+   # Use AGENT_CAPABILITIES module (Trinity 2.0)
+   from core.agent_capabilities import AGENT_CAPABILITIES
+
+   runtime.register_agent(
+       'my_agent',
+       agent,
+       capabilities=AGENT_CAPABILITIES.get('my_agent', {})
+   )
    ```
 
 2. **Implement standard methods**
@@ -455,6 +508,7 @@ analysis = runtime.execute('financial_analyst', {'symbol': 'AAPL'})
    try:
        result = self.fetch_data()
    except Exception as e:
+       self.logger.error(f"Failed to fetch data: {e}")
        return {'error': str(e), 'agent': self.name}
    ```
 
@@ -467,6 +521,13 @@ analysis = runtime.execute('financial_analyst', {'symbol': 'AAPL'})
    # Good
    result = self.runtime.execute('other_agent', {'data': data})
    ```
+
+6. **Follow agent development guide**
+   - See [AgentDevelopmentGuide.md](../docs/AgentDevelopmentGuide.md) for:
+     - Implementation requirements
+     - Registration with AGENT_CAPABILITIES
+     - Testing procedures
+     - Trinity compliance patterns
 
 ## Your Mission
 
