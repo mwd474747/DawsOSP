@@ -36,7 +36,7 @@ class UniversalExecutor:
         self.graph = graph
         self.registry = registry
         self.runtime = runtime
-        self.pattern_engine = PatternEngine(runtime=runtime)
+        self.pattern_engine = PatternEngine(runtime=runtime, graph=graph)
         
         # Load meta-patterns
         self._load_meta_patterns()

@@ -16,13 +16,14 @@ from core.knowledge_loader import get_knowledge_loader
 class PatternEngine:
     """Execute JSON-defined patterns to coordinate agent actions"""
 
-    def __init__(self, pattern_dir: str = 'patterns', runtime=None):
+    def __init__(self, pattern_dir: str = 'patterns', runtime=None, graph=None):
         """
         Initialize the Pattern Engine
 
         Args:
             pattern_dir: Directory containing pattern JSON files
             runtime: AgentRuntime instance for executing agents
+            graph: KnowledgeGraph instance for enriched lookups (optional)
         """
         pattern_path = Path(pattern_dir)
         if not pattern_path.is_absolute() and not pattern_path.exists():
@@ -32,6 +33,9 @@ class PatternEngine:
                 pattern_path = candidate
         self.pattern_dir = pattern_path
         self.runtime = runtime
+
+        # Get graph from runtime or use provided
+        self.graph = graph if graph is not None else (runtime.graph if runtime and hasattr(runtime, 'graph') else None)
         self.patterns = {}
         self.logger = get_logger('PatternEngine')
         self.knowledge_loader = get_knowledge_loader()  # Centralized knowledge loading

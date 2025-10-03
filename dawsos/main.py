@@ -201,7 +201,11 @@ def init_session_state():
         )
 
         # Initialize PatternEngine after agents are registered
-        runtime.pattern_engine = PatternEngine('dawsos/patterns', runtime)
+        runtime.pattern_engine = PatternEngine(
+            'dawsos/patterns',
+            runtime=runtime,
+            graph=st.session_state.graph
+        )
         print(f"PatternEngine initialized with {len(runtime.pattern_engine.patterns)} patterns")
 
     # Initialize Universal Executor AFTER agent_runtime
