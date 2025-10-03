@@ -1,8 +1,64 @@
 import urllib.request
+import urllib.error
 import json
+import time
+import logging
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Tuple
+from collections import deque
 from dawsos.core.credentials import get_credential_manager
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+
+class RateLimiter:
+    """Rate limiter for FRED API calls with exponential backoff"""
+
+    def __init__(self, max_requests_per_minute: int = 1000):
+        """
+        Initialize rate limiter
+
+        Args:
+            max_requests_per_minute: Maximum API requests per minute (FRED has no strict limit, but 1000 is safe)
+        """
+        self.max_requests = max_requests_per_minute
+        self.requests = deque()
+        self.backoff_until = None
+
+    def wait_if_needed(self):
+        """Wait if approaching rate limit or in backoff period"""
+        now = time.time()
+
+        # Check if we're in backoff period
+        if self.backoff_until and now < self.backoff_until:
+            wait_time = self.backoff_until - now
+            logger.warning(f"Rate limit backoff: waiting {wait_time:.2f} seconds")
+            time.sleep(wait_time)
+            self.backoff_until = None
+            return
+
+        # Remove requests older than 1 minute
+        minute_ago = now - 60
+        while self.requests and self.requests[0] < minute_ago:
+            self.requests.popleft()
+
+        # If approaching limit, wait
+        if len(self.requests) >= self.max_requests * 0.95:  # 95% threshold
+            wait_time = 60 - (now - self.requests[0])
+            if wait_time > 0:
+                logger.warning(f"Approaching rate limit: waiting {wait_time:.2f} seconds")
+                time.sleep(wait_time)
+                self.requests.clear()
+
+        # Record this request
+        self.requests.append(now)
+
+    def set_backoff(self, retry_count: int = 1):
+        """Set exponential backoff period"""
+        backoff_seconds = min(2 ** retry_count, 60)  # Max 60 seconds
+        self.backoff_until = time.time() + backoff_seconds
+        logger.warning(f"Setting backoff for {backoff_seconds} seconds (retry {retry_count})")
 
 class FredDataCapability:
     """Federal Reserve Economic Data (FRED) API integration"""
@@ -13,9 +69,26 @@ class FredDataCapability:
         self.api_key = credentials.get('FRED_API_KEY', required=False)
         self.base_url = 'https://api.stlouisfed.org/fred'
         self.cache = {}
-        self.cache_ttl = 3600  # 1 hour for economic data
 
-        # Common economic indicators
+        # Configurable TTL by data type (in seconds)
+        # Economic data changes daily at most, so 24 hours is safe
+        self.cache_ttl = {
+            'series': 86400,      # 24 hours - economic data
+            'metadata': 604800,   # 1 week - series metadata rarely changes
+            'latest': 86400       # 24 hours - latest values
+        }
+
+        # Rate limiter (FRED has no strict limit, but 1000/min is safe)
+        self.rate_limiter = RateLimiter(max_requests_per_minute=1000)
+
+        # Cache statistics
+        self.cache_stats = {
+            'hits': 0,
+            'misses': 0,
+            'expired_fallbacks': 0
+        }
+
+        # Common economic indicators with T10Y2Y spread included
         self.indicators = {
             'GDP': 'GDP',  # Gross Domestic Product
             'CPI': 'CPIAUCSL',  # Consumer Price Index
@@ -23,6 +96,8 @@ class FredDataCapability:
             'FED_FUNDS': 'DFF',  # Federal Funds Rate
             'TREASURY_10Y': 'DGS10',  # 10-Year Treasury Rate
             'TREASURY_2Y': 'DGS2',  # 2-Year Treasury Rate
+            'T10Y2Y': 'T10Y2Y',  # 10Y-2Y Treasury Spread (Recession Indicator)
+            'SP500': 'SP500',  # S&P 500 Index
             'VIX': 'VIXCLS',  # CBOE Volatility Index
             'DOLLAR_INDEX': 'DTWEXBGS',  # Trade Weighted Dollar Index
             'RETAIL_SALES': 'RSXFS',  # Retail Sales
@@ -39,15 +114,143 @@ class FredDataCapability:
             'PMI_MANUFACTURING': 'MANEMP',  # Manufacturing Employment
         }
 
+    def _get_from_cache(self, cache_key: str, data_type: str) -> Optional[Tuple[Dict, bool]]:
+        """
+        Get data from cache
+
+        Args:
+            cache_key: Cache key to lookup
+            data_type: Type of data for TTL lookup ('series', 'metadata', 'latest')
+
+        Returns:
+            Tuple of (data, is_fresh) or None if not in cache
+        """
+        if cache_key not in self.cache:
+            self.cache_stats['misses'] += 1
+            return None
+
+        cached = self.cache[cache_key]
+        age = (datetime.now() - cached['time']).total_seconds()
+        ttl = self.cache_ttl.get(data_type, 86400)
+
+        if age < ttl:
+            self.cache_stats['hits'] += 1
+            return (cached['data'], True)
+        else:
+            # Data exists but is expired
+            return (cached['data'], False)
+
+    def _update_cache(self, cache_key: str, data: Dict):
+        """Update cache with new data"""
+        self.cache[cache_key] = {
+            'data': data,
+            'time': datetime.now()
+        }
+
+    def _make_api_call(self, url: str, max_retries: int = 3) -> Optional[Dict]:
+        """
+        Make API call with retry logic and error handling
+
+        Args:
+            url: Full API URL
+            max_retries: Maximum number of retry attempts
+
+        Returns:
+            Parsed JSON response or None on failure
+        """
+        # Check if API key is available
+        if not self.api_key:
+            logger.error("FRED API key not configured. Please set FRED_API_KEY in credentials.")
+            return None
+
+        for retry in range(max_retries):
+            try:
+                # Apply rate limiting
+                self.rate_limiter.wait_if_needed()
+
+                # Make request
+                with urllib.request.urlopen(url, timeout=10) as response:
+                    data = json.loads(response.read())
+                    logger.debug(f"API call successful: {url[:100]}...")
+                    return data
+
+            except urllib.error.HTTPError as e:
+                if e.code == 429:
+                    # Rate limit exceeded (rare for FRED)
+                    logger.warning(f"Rate limit exceeded (429), retry {retry + 1}/{max_retries}")
+                    self.rate_limiter.set_backoff(retry + 1)
+                    if retry < max_retries - 1:
+                        continue
+                    else:
+                        logger.error("Max retries exceeded for rate limit")
+                        return None
+
+                elif e.code == 400:
+                    # Bad request - likely invalid series ID
+                    logger.warning(f"Bad request (400): {url[:100]}...")
+                    return None
+
+                elif e.code == 404:
+                    # Not found - series may not exist
+                    logger.warning(f"Resource not found (404): {url[:100]}...")
+                    return None
+
+                else:
+                    logger.error(f"HTTP error {e.code}: {e.reason}")
+                    if retry < max_retries - 1:
+                        time.sleep(1)
+                        continue
+                    return None
+
+            except urllib.error.URLError as e:
+                # Network error
+                logger.error(f"Network error: {e.reason}, retry {retry + 1}/{max_retries}")
+                if retry < max_retries - 1:
+                    time.sleep(2 ** retry)  # Exponential backoff
+                    continue
+                return None
+
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON response: {e}")
+                return None
+
+            except Exception as e:
+                logger.error(f"Unexpected error: {type(e).__name__}: {e}")
+                return None
+
+        return None
+
+    def get_cache_stats(self) -> Dict:
+        """Get cache statistics"""
+        total_requests = self.cache_stats['hits'] + self.cache_stats['misses']
+        hit_rate = (self.cache_stats['hits'] / total_requests * 100) if total_requests > 0 else 0
+
+        return {
+            'cache_hits': self.cache_stats['hits'],
+            'cache_misses': self.cache_stats['misses'],
+            'cache_hit_rate': f"{hit_rate:.1f}%",
+            'expired_fallbacks': self.cache_stats['expired_fallbacks'],
+            'cached_items': len(self.cache)
+        }
+
     def get_series(self, series_id: str, start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict:
-        """Get time series data for a specific indicator"""
+        """
+        Get time series data for a specific indicator
+
+        Args:
+            series_id: FRED series ID (e.g., 'GDP', 'UNRATE')
+            start_date: Start date in YYYY-MM-DD format (default: 5 years ago)
+            end_date: End date in YYYY-MM-DD format (default: today)
+
+        Returns:
+            Dict with series data or error information
+        """
+        cache_key = f"series_{series_id}:{start_date}:{end_date}"
 
         # Check cache
-        cache_key = f"{series_id}:{start_date}:{end_date}"
-        if cache_key in self.cache:
-            cached = self.cache[cache_key]
-            if datetime.now() - cached['time'] < timedelta(seconds=self.cache_ttl):
-                return cached['data']
+        cached = self._get_from_cache(cache_key, 'series')
+        if cached and cached[1]:  # If data is fresh
+            return cached[0]
 
         # Default date range
         if not end_date:
@@ -67,45 +270,49 @@ class FredDataCapability:
         url = f"{self.base_url}/series/observations?"
         url += '&'.join([f"{k}={v}" for k, v in params.items()])
 
-        try:
-            with urllib.request.urlopen(url) as response:
-                data = json.loads(response.read())
+        # Make API call
+        data = self._make_api_call(url)
 
-                # Parse observations
-                observations = []
-                for obs in data.get('observations', []):
-                    try:
-                        # Skip entries with "." which means no data
-                        if obs.get('value') == '.':
-                            continue
-                        value = float(obs['value'])
-                        observations.append({
-                            'date': obs['date'],
-                            'value': value
-                        })
-                    except (ValueError, KeyError, TypeError):
+        if data:
+            # Parse observations
+            observations = []
+            for obs in data.get('observations', []):
+                try:
+                    # Skip entries with "." which means no data
+                    if obs.get('value') == '.':
                         continue
+                    value = float(obs['value'])
+                    observations.append({
+                        'date': obs['date'],
+                        'value': value
+                    })
+                except (ValueError, KeyError, TypeError):
+                    continue
 
-                result = {
-                    'series_id': series_id,
-                    'name': self._get_series_name(series_id),
-                    'units': data.get('units', 'Index'),
-                    'frequency': data.get('frequency', 'Monthly'),
-                    'observations': observations,
-                    'latest_value': observations[-1]['value'] if observations else None,
-                    'latest_date': observations[-1]['date'] if observations else None
-                }
+            result = {
+                'series_id': series_id,
+                'name': self._get_series_name(series_id),
+                'units': data.get('units', 'Index'),
+                'frequency': data.get('frequency', 'Monthly'),
+                'observations': observations,
+                'latest_value': observations[-1]['value'] if observations else None,
+                'latest_date': observations[-1]['date'] if observations else None
+            }
 
-                # Update cache
-                self.cache[cache_key] = {
-                    'data': result,
-                    'time': datetime.now()
-                }
+            # Update cache
+            self._update_cache(cache_key, result)
+            return result
 
-                return result
+        # API call failed - try to return expired cache data
+        if cached:
+            logger.warning(f"API call failed, returning expired cache data for {series_id}")
+            self.cache_stats['expired_fallbacks'] += 1
+            result = cached[0].copy()
+            result['_cached'] = True
+            result['_warning'] = 'Using expired cached data due to API failure'
+            return result
 
-        except Exception as e:
-            return {'error': str(e), 'series_id': series_id}
+        return {'error': 'No data available', 'series_id': series_id}
 
     def get_latest(self, indicator: str) -> Dict:
         """Get latest value for an indicator"""
@@ -304,6 +511,160 @@ class FredDataCapability:
             metrics['fed_action_likely'] = 'Unknown'
 
         return metrics
+
+    def series_info(self, series_id: str) -> Dict:
+        """
+        Get metadata for a FRED series
+
+        Args:
+            series_id: FRED series ID (e.g., 'GDP', 'UNRATE')
+
+        Returns:
+            Dict with series metadata (title, units, frequency, last_updated, etc.)
+        """
+        cache_key = f"metadata_{series_id}"
+
+        # Check cache
+        cached = self._get_from_cache(cache_key, 'metadata')
+        if cached and cached[1]:  # If data is fresh
+            return cached[0]
+
+        # Build URL for series info
+        params = {
+            'series_id': series_id,
+            'api_key': self.api_key,
+            'file_type': 'json'
+        }
+
+        url = f"{self.base_url}/series?"
+        url += '&'.join([f"{k}={v}" for k, v in params.items()])
+
+        # Make API call
+        data = self._make_api_call(url)
+
+        if data and 'seriess' in data and len(data['seriess']) > 0:
+            series_data = data['seriess'][0]
+            result = {
+                'series_id': series_data.get('id'),
+                'title': series_data.get('title'),
+                'units': series_data.get('units'),
+                'units_short': series_data.get('units_short'),
+                'frequency': series_data.get('frequency'),
+                'frequency_short': series_data.get('frequency_short'),
+                'seasonal_adjustment': series_data.get('seasonal_adjustment'),
+                'seasonal_adjustment_short': series_data.get('seasonal_adjustment_short'),
+                'last_updated': series_data.get('last_updated'),
+                'observation_start': series_data.get('observation_start'),
+                'observation_end': series_data.get('observation_end'),
+                'popularity': series_data.get('popularity'),
+                'notes': series_data.get('notes')
+            }
+
+            # Update cache
+            self._update_cache(cache_key, result)
+            return result
+
+        # API call failed - try to return expired cache data
+        if cached:
+            logger.warning(f"API call failed, returning expired cache data for {series_id} metadata")
+            self.cache_stats['expired_fallbacks'] += 1
+            result = cached[0].copy()
+            result['_cached'] = True
+            result['_warning'] = 'Using expired cached data due to API failure'
+            return result
+
+        return {'error': 'No metadata available', 'series_id': series_id}
+
+    def get_multiple_series(self, series_ids: List[str], start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict:
+        """
+        Fetch multiple series in one call
+
+        Args:
+            series_ids: List of FRED series IDs
+            start_date: Start date in YYYY-MM-DD format (default: 5 years ago)
+            end_date: End date in YYYY-MM-DD format (default: today)
+
+        Returns:
+            Dict with series_id as keys and series data as values
+        """
+        results = {}
+
+        for series_id in series_ids:
+            try:
+                data = self.get_series(series_id, start_date, end_date)
+                results[series_id] = data
+            except Exception as e:
+                logger.error(f"Error fetching series {series_id}: {e}")
+                results[series_id] = {'error': str(e)}
+
+        return results
+
+    def get_latest_value(self, series_id: str) -> Dict:
+        """
+        Get just the most recent data point for a series
+
+        Args:
+            series_id: FRED series ID (e.g., 'GDP', 'UNRATE')
+
+        Returns:
+            Dict with latest value, date, and series info
+        """
+        # Get last 30 days of data
+        end_date = datetime.now().strftime('%Y-%m-%d')
+        start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+
+        data = self.get_series(series_id, start_date, end_date)
+
+        if 'error' in data:
+            return data
+
+        observations = data.get('observations', [])
+        if observations:
+            latest = observations[-1]
+            return {
+                'series_id': series_id,
+                'name': data.get('name'),
+                'value': latest['value'],
+                'date': latest['date'],
+                'units': data.get('units'),
+                'frequency': data.get('frequency')
+            }
+
+        return {'error': 'No observations available', 'series_id': series_id}
+
+    def get_series_with_dates(self, series_id: str, start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict:
+        """
+        Get series data with datetime objects instead of strings
+
+        Args:
+            series_id: FRED series ID (e.g., 'GDP', 'UNRATE')
+            start_date: Start date in YYYY-MM-DD format (default: 5 years ago)
+            end_date: End date in YYYY-MM-DD format (default: today)
+
+        Returns:
+            Dict with series data including datetime objects
+        """
+        data = self.get_series(series_id, start_date, end_date)
+
+        if 'error' in data:
+            return data
+
+        # Convert date strings to datetime objects
+        observations = data.get('observations', [])
+        for obs in observations:
+            try:
+                obs['datetime'] = datetime.strptime(obs['date'], '%Y-%m-%d')
+            except (ValueError, KeyError):
+                obs['datetime'] = None
+
+        # Also convert latest_date if present
+        if data.get('latest_date'):
+            try:
+                data['latest_datetime'] = datetime.strptime(data['latest_date'], '%Y-%m-%d')
+            except ValueError:
+                data['latest_datetime'] = None
+
+        return data
 
     def _get_series_name(self, series_id: str) -> str:
         """Get human-readable name for series"""
