@@ -11,5 +11,105 @@
       "method_used": "process",
       "timestamp": "2025-10-02T23:40:45.564610"
     }
+  },
+  {
+    "agent": "test_agent",
+    "timestamp": "2025-10-03T00:40:24.691609",
+    "context": {
+      "test": "data"
+    },
+    "result": {
+      "result": "success"
+    }
+  },
+  {
+    "agent": "test_agent",
+    "timestamp": "2025-10-03T00:40:24.691899",
+    "context": {
+      "test": "data"
+    },
+    "result": {
+      "error": "failed"
+    }
+  },
+  {
+    "agent": "test_agent",
+    "timestamp": "2025-10-03T00:40:24.691975",
+    "context": {
+      "test": "data"
+    },
+    "result": {
+      "result": "success"
+    }
+  },
+  {
+    "agent": "test_agent",
+    "timestamp": "2025-10-03T00:40:24.692049",
+    "context": {
+      "test": "data"
+    },
+    "result": {
+      "error": "failed"
+    }
+  },
+  {
+    "agent": "test_agent",
+    "timestamp": "2025-10-03T00:40:24.692124",
+    "context": {
+      "test": "data"
+    },
+    "result": {
+      "result": "success"
+    }
+  },
+  {
+    "agent": "test_agent",
+    "timestamp": "2025-10-03T00:40:24.692201",
+    "context": {
+      "test": "data"
+    },
+    "result": {
+      "error": "failed"
+    }
+  },
+  {
+    "agent": "test_agent",
+    "timestamp": "2025-10-03T00:40:24.692281",
+    "context": {
+      "test": "data"
+    },
+    "result": {
+      "result": "success"
+    }
+  },
+  {
+    "agent": "test_agent",
+    "timestamp": "2025-10-03T00:40:24.692375",
+    "context": {
+      "test": "data"
+    },
+    "result": {
+      "error": "failed"
+    }
+  },
+  {
+    "agent": "test_agent",
+    "timestamp": "2025-10-03T00:40:24.692469",
+    "context": {
+      "test": "data"
+    },
+    "result": {
+      "result": "success"
+    }
+  },
+  {
+    "agent": "test_agent",
+    "timestamp": "2025-10-03T00:40:24.692557",
+    "context": {
+      "test": "data"
+    },
+    "result": {
+      "error": "failed"
+    }
   }
 ]

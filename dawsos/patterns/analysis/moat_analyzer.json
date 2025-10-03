@@ -1,118 +1,166 @@
 {
   "id": "moat_analyzer",
   "name": "Economic Moat Analyzer",
-  "trigger_phrases": [
+  "triggers": [
     "analyze economic moat",
     "analyze moat",
     "economic moat",
     "moat analysis",
     "competitive advantage",
-    "moat for {symbol}",
+    "moat for",
     "competitive position"
   ],
-  "triggers": [
-    "moat",
-    "economic moat",
-    "competitive advantage"
-  ],
-  "description": "Deep analysis of a company's economic moat",
+  "description": "Deep analysis of a company's economic moat using Buffett's framework",
   "category": "analysis",
   "priority": 95,
-  "response": {
-    "template": "\ud83c\udff0 **Economic Moat Analysis for {symbol}**\n\n\ud83d\udcca **Moat Sources Evaluation**\n\n\ud83c\udff7\ufe0f **Brand Moat**: {brand_score}/10\n{brand_details}\n\n\ud83c\udf10 **Network Effects**: {network_score}/10\n{network_details}\n\n\ud83d\udcb0 **Cost Advantages**: {cost_score}/10\n{cost_details}\n\n\ud83d\udd12 **Switching Costs**: {switching_score}/10\n{switching_details}\n\n\ud83d\udcc8 **Financial Evidence**\n\u2022 ROIC-WACC Spread: {roic_spread}%\n\u2022 Gross Margin Stability: {margin_stability}\n\u2022 10-Year Avg ROIC: {avg_roic}%\n\n\ud83c\udfaf **Overall Moat Rating**: {moat_rating}\n\u2022 Width: {moat_width}\n\u2022 Durability: {moat_durability}\n\u2022 Trend: {moat_trend}\n\n\ud83d\udca1 **Investment Implications**\n{investment_action}",
-    "format": "markdown"
+  "input_schema": {
+    "required": ["symbol"],
+    "optional": ["detailed"]
   },
-  "version": "1.0",
-  "last_updated": "2025-10-02",
   "steps": [
     {
-      "action": "knowledge_lookup",
+      "description": "Load Buffett moat framework",
+      "action": "execute_through_registry",
       "params": {
-        "knowledge_file": "buffett_framework.json",
-        "section": "economic_moat"
-      }
+        "agent": "data_harvester",
+        "context": {
+          "task": "load_knowledge",
+          "knowledge_file": "buffett_checklist.json",
+          "section": "Economic Moat",
+          "request": "Load Warren Buffett economic moat evaluation framework"
+        }
+      },
+      "save_as": "step_1"
     },
     {
-      "action": "evaluate",
-      "outputs": [
-        "brand_score"
-      ],
+      "description": "Gather company data",
+      "action": "execute_through_registry",
       "params": {
-        "type": "brand_moat",
-        "checks": [
-          "premium_pricing_ability",
-          "customer_loyalty",
-          "mind_share_leadership"
-        ]
-      }
+        "agent": "data_harvester",
+        "context": {
+          "task": "financial_data",
+          "symbol": "{symbol}",
+          "request": "Get financial and competitive data for {symbol}: ROIC, WACC, margins, market share, pricing power indicators"
+        }
+      },
+      "save_as": "step_2"
     },
     {
-      "action": "evaluate",
-      "outputs": [
-        "network_score"
-      ],
+      "description": "Evaluate brand moat",
+      "action": "execute_through_registry",
       "params": {
-        "type": "network_effects",
-        "checks": [
-          "value_increases_with_users",
-          "high_switching_costs",
-          "winner_take_all_dynamics"
-        ]
-      }
+        "agent": "claude",
+        "context": {
+          "task": "evaluate_moat_source",
+          "symbol": "{symbol}",
+          "moat_type": "Brand Power",
+          "checks": [
+            "Premium pricing ability",
+            "Customer loyalty",
+            "Mind share leadership"
+          ],
+          "data": "{step_2}",
+          "request": "Evaluate brand moat strength for {symbol}. Score 0-10 with detailed evidence."
+        }
+      },
+      "save_as": "step_3"
     },
     {
-      "action": "evaluate",
-      "outputs": [
-        "cost_score"
-      ],
+      "description": "Evaluate network effects",
+      "action": "execute_through_registry",
       "params": {
-        "type": "cost_advantages",
-        "checks": [
-          "lowest_cost_producer",
-          "economies_of_scale",
-          "unique_assets"
-        ]
-      }
+        "agent": "pattern_spotter",
+        "context": {
+          "task": "evaluate_moat_source",
+          "symbol": "{symbol}",
+          "moat_type": "Network Effects",
+          "checks": [
+            "Value increases with users",
+            "High switching costs",
+            "Winner-take-all dynamics"
+          ],
+          "data": "{step_2}",
+          "request": "Identify network effect patterns for {symbol}. Score 0-10."
+        }
+      },
+      "save_as": "step_4"
     },
     {
-      "action": "evaluate",
-      "outputs": [
-        "switching_score"
-      ],
+      "description": "Evaluate cost advantages",
+      "action": "execute_through_registry",
       "params": {
-        "type": "switching_costs",
-        "checks": [
-          "painful_to_switch",
-          "embedded_in_operations",
-          "long_term_contracts"
-        ]
-      }
+        "agent": "data_harvester",
+        "context": {
+          "task": "evaluate_moat_source",
+          "symbol": "{symbol}",
+          "moat_type": "Cost Advantages",
+          "checks": [
+            "Lowest cost producer",
+            "Economies of scale",
+            "Unique assets"
+          ],
+          "data": "{step_2}",
+          "request": "Analyze cost advantages for {symbol} vs competitors. Score 0-10."
+        }
+      },
+      "save_as": "step_5"
     },
     {
-      "action": "calculate",
-      "outputs": [
-        "roic_spread"
-      ],
+      "description": "Evaluate switching costs",
+      "action": "execute_through_registry",
       "params": {
-        "formula": "ROIC - WACC spread",
-        "target": ">15% for wide moat"
-      }
+        "agent": "claude",
+        "context": {
+          "task": "evaluate_moat_source",
+          "symbol": "{symbol}",
+          "moat_type": "Switching Costs",
+          "checks": [
+            "Painful to switch",
+            "Embedded in operations",
+            "Long-term contracts"
+          ],
+          "request": "Evaluate customer switching costs for {symbol}. Score 0-10 with examples."
+        }
+      },
+      "save_as": "step_6"
     },
     {
-      "action": "synthesize",
-      "outputs": [
-        "moat_rating",
-        "moat_durability"
-      ],
+      "description": "Calculate ROIC-WACC spread",
+      "action": "execute_through_registry",
       "params": {
-        "scores": [
-          "{brand_score}",
-          "{network_score}",
-          "{cost_score}",
-          "{switching_score}",
-          "{roic_spread}"
-        ]
-      }
+        "agent": "data_harvester",
+        "context": {
+          "task": "calculate_financial_metric",
+          "symbol": "{symbol}",
+          "metric": "ROIC-WACC spread",
+          "data": "{step_2}",
+          "request": "Calculate ROIC - WACC spread for {symbol}. Target: >15% for wide moat."
+        }
+      },
+      "save_as": "step_7"
+    },
+    {
+      "description": "Synthesize moat analysis",
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "task": "synthesize_moat_analysis",
+          "symbol": "{symbol}",
+          "framework": "{step_1}",
+          "brand_moat": "{step_3}",
+          "network_effects": "{step_4}",
+          "cost_advantages": "{step_5}",
+          "switching_costs": "{step_6}",
+          "roic_spread": "{step_7}",
+          "request": "Synthesize complete economic moat analysis for {symbol}. Provide: Overall moat rating (None/Narrow/Wide), Width assessment, Durability (years), Trend (widening/stable/eroding), and investment implications."
+        }
+      },
+      "save_as": "step_8"
     }
-  ]
+  ],
+  "template": "🏰 **Economic Moat Analysis: {symbol}**\n\n{step_8.response}\n\n---\n\n📊 **Moat Sources Evaluated**\n\n🏷️ **Brand Moat**: {step_3.score}/10\n{step_3.summary}\n\n🌐 **Network Effects**: {step_4.score}/10\n{step_4.summary}\n\n💰 **Cost Advantages**: {step_5.score}/10\n{step_5.summary}\n\n🔒 **Switching Costs**: {step_6.score}/10\n{step_6.summary}\n\n📈 **Financial Evidence**\n• ROIC-WACC Spread: {step_7.spread}%\n• 10-Year Avg ROIC: {step_7.avg_roic}%\n• Margin Stability: {step_7.margin_stability}\n\n🎯 **Overall Moat Rating**: {step_8.moat_rating}\n• Width: {step_8.moat_width}\n• Durability: {step_8.moat_durability}\n• Trend: {step_8.moat_trend}\n\n💡 **Investment Implications**\n{step_8.investment_action}\n\n*Moat analysis powered by DawsOS Trinity Architecture*",
+  "version": "2.0",
+  "last_updated": "2025-10-03",
+  "notes": "Converted from legacy action types to Trinity-compliant execute_through_registry pattern"
 }

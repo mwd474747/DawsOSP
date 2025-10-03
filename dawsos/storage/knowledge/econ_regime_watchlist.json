@@ -1,0 +1,34 @@
+{
+  "_meta": {
+    "dataset": "econ_regime_watchlist",
+    "version": "1.0",
+    "as_of": "2025-10-03",
+    "notes": "Sector/ETF tilts and notes for distinct macro regimes."
+  },
+  "regimes": {
+    "rising_inflation_sluggish_growth": {
+      "etfs": ["XLE", "XLP", "TIP", "GLD"],
+      "tilts": {
+        "offensive": ["energy", "materials"],
+        "defensive": ["staples", "utilities"]
+      },
+      "notes": [
+        "Short duration bias",
+        "Overweight real assets",
+        "Prefer pricing power in staples"
+      ]
+    },
+    "disinflation_reacceleration": {
+      "etfs": ["QQQ", "IWM", "HYG", "TLT"],
+      "tilts": {
+        "offensive": ["tech", "small_caps"],
+        "defensive": []
+      },
+      "notes": [
+        "Duration acceptable",
+        "Growth styles favored",
+        "Credit spreads stable"
+      ]
+    }
+  }
+}

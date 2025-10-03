@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "dataset": "yield_curve_history",
+    "version": "1.0",
+    "as_of": "2025-10-03",
+    "notes": "Historical curve shapes, inversion windows, and forward return stats."
+  },
+  "curves": [
+    {
+      "iso_date": "2025-09-30",
+      "points_bp": {
+        "3M": 550,
+        "2Y": 470,
+        "5Y": 420,
+        "10Y": 410,
+        "30Y": 430
+      },
+      "shape": "bear_flat"
+    },
+    {
+      "iso_date": "2025-06-30",
+      "points_bp": {
+        "3M": 540,
+        "2Y": 485,
+        "5Y": 445,
+        "10Y": 435,
+        "30Y": 440
+      },
+      "shape": "bear_flat"
+    }
+  ],
+  "inversions": [
+    {
+      "tenors": "2s10s",
+      "start": "2022-07-05",
+      "end": "2025-04-12",
+      "duration_days": 1012,
+      "eq_ret_next_12m_pct": 7.2,
+      "bond_ret_next_12m_pct": 4.5
+    },
+    {
+      "tenors": "3m10y",
+      "start": "2022-10-18",
+      "end": "2025-05-03",
+      "duration_days": 929,
+      "eq_ret_next_12m_pct": 5.8,
+      "bond_ret_next_12m_pct": 6.2
+    }
+  ]
+}

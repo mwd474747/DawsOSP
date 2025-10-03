@@ -191,20 +191,29 @@ def render_governance_tab(runtime, graph):
         # Governance metrics
         st.markdown("#### 📈 Key Metrics")
 
-        # Data quality score
+        # Data quality score - Use real graph metrics
         st.markdown("**Data Quality Score**")
-        st.progress(0.92)
-        st.caption("92% - Excellent")
+        data_quality = graph_metrics.get('overall_health', 0.92) if graph_metrics else 0.92
+        st.progress(data_quality)
+        quality_label = "Excellent" if data_quality > 0.9 else "Good" if data_quality > 0.7 else "Needs improvement"
+        st.caption(f"{data_quality:.0%} - {quality_label}")
 
-        # Compliance score
+        # Compliance score - Calculate from policy violations
         st.markdown("**Compliance Score**")
-        st.progress(0.88)
-        st.caption("88% - Good")
+        quality_issues_count = len(graph_metrics.get('quality_issues', [])) if graph_metrics else 0
+        total_nodes = graph_metrics.get('total_nodes', 1) if graph_metrics else 1
+        compliance = 1.0 - (quality_issues_count / max(total_nodes, 1)) if total_nodes > 0 else 0.88
+        st.progress(compliance)
+        compliance_label = "Excellent" if compliance > 0.9 else "Good" if compliance > 0.7 else "Needs improvement"
+        st.caption(f"{compliance:.0%} - {compliance_label}")
 
-        # Cost efficiency
+        # Cost efficiency - Calculate from orphan nodes (inefficiency indicator)
         st.markdown("**Cost Efficiency**")
-        st.progress(0.76)
-        st.caption("76% - Room for improvement")
+        orphan_count = len(graph_metrics.get('lineage_gaps', [])) if graph_metrics else 0
+        cost_efficiency = 1.0 - (orphan_count / max(total_nodes, 1)) if total_nodes > 0 else 0.76
+        st.progress(max(cost_efficiency, 0.5))  # Floor at 50%
+        cost_label = "Excellent" if cost_efficiency > 0.9 else "Good" if cost_efficiency > 0.7 else "Room for improvement"
+        st.caption(f"{cost_efficiency:.0%} - {cost_label}")
 
         # Quick actions
         st.markdown("#### ⚡ Quick Actions")

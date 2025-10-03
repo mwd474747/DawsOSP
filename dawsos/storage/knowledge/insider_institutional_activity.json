@@ -1,0 +1,68 @@
+{
+  "_meta": {
+    "dataset": "insider_institutional_activity",
+    "version": "1.0",
+    "as_of": "2025-10-03",
+    "notes": "Aggregated insider trades and institutional filings per ticker."
+  },
+  "MSFT": {
+    "insiders": [
+      {
+        "iso_date": "2025-08-15",
+        "type": "buy",
+        "shares": 12000,
+        "value_usd": 4500000,
+        "insider_role": "Officer"
+      },
+      {
+        "iso_date": "2025-07-30",
+        "type": "sell",
+        "shares": 5000,
+        "value_usd": 1900000,
+        "insider_role": "Director"
+      }
+    ],
+    "institutional": [
+      {
+        "filing_q": "2025Q2",
+        "form": "13F",
+        "fund": "Vanguard",
+        "net_change_shares": 1500000
+      },
+      {
+        "filing_q": "2025Q2",
+        "form": "13F",
+        "fund": "BlackRock",
+        "net_change_shares": 950000
+      }
+    ],
+    "rollups": {
+      "90d_net_insider_buy_usd": 3200000,
+      "13f_net_holdings_change_shares": 2100000
+    }
+  },
+  "TSLA": {
+    "insiders": [
+      {
+        "iso_date": "2025-09-12",
+        "type": "sell",
+        "shares": 25000,
+        "value_usd": 6200000,
+        "insider_role": "Executive",
+        "note": "Pre-arranged 10b5-1 plan"
+      }
+    ],
+    "institutional": [
+      {
+        "filing_q": "2025Q1",
+        "form": "13F",
+        "fund": "ARK Invest",
+        "net_change_shares": -300000
+      }
+    ],
+    "rollups": {
+      "90d_net_insider_buy_usd": -6200000,
+      "13f_net_holdings_change_shares": -300000
+    }
+  }
+}

@@ -163,9 +163,16 @@ class PatternEngine:
         if hasattr(self.runtime, 'get_agent_instance'):
             return self.runtime.get_agent_instance(agent_name)
 
-        # Fallback to legacy mapping if exposed
-        if hasattr(self.runtime, 'agents') and agent_name in self.runtime.agents:
-            return self.runtime.agents[agent_name]
+        # Fallback to legacy mapping if exposed (triggers bypass warning)
+        # This is the ONLY sanctioned use of direct agent access
+        # Pattern engine needs this for backward compatibility during transition
+        if hasattr(self.runtime, 'agents'):
+            try:
+                agents_dict = self.runtime.agents  # Will trigger bypass warning
+                if agent_name in agents_dict:
+                    return agents_dict[agent_name]
+            except Exception:
+                pass
 
         return None
 
@@ -1007,8 +1014,10 @@ class PatternEngine:
             'results': results
         }
 
-        # Use pattern's response template if available (support both 'response_template' and 'response.template')
+        # Use pattern's response template if available (support 'response_template', 'template', and 'response.template')
         template = pattern.get('response_template')
+        if not template:
+            template = pattern.get('template')  # Support root-level 'template' field
         if not template and isinstance(pattern.get('response'), dict):
             template = pattern['response'].get('template')
 

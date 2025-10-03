@@ -48,6 +48,11 @@ from capabilities.fundamentals import FundamentalsCapability
 from workflows.investment_workflows import InvestmentWorkflows
 from ui.workflows_tab import render_workflows_tab
 
+# New UI imports
+from ui.pattern_browser import render_pattern_browser
+from ui.alert_panel import AlertPanel
+from core.alert_manager import AlertManager
+
 # Trinity UI imports
 from ui.trinity_ui_components import get_trinity_ui
 from ui.data_integrity_tab import render_data_integrity_tab
@@ -225,6 +230,15 @@ def init_session_state():
         
     if 'persistence' not in st.session_state:
         st.session_state.persistence = PersistenceManager()
+
+    # Initialize alert manager
+    if 'alert_manager' not in st.session_state:
+        st.session_state.alert_manager = AlertManager()
+        # Create default alerts
+        st.session_state.alert_manager.create_template_alert(
+            'compliance_violation',
+            threshold=0
+        )
 
 def visualize_graph():
     """Create interactive graph visualization"""
@@ -587,7 +601,7 @@ def main():
     st.markdown("*Every interaction makes me smarter*")
     
     # Create tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs([
         "Chat",
         "Knowledge Graph",
         "Dashboard",
@@ -596,7 +610,9 @@ def main():
         "Workflows",
         "Trinity UI",
         "Data Integrity",
-        "Data Governance"
+        "Data Governance",
+        "Pattern Browser",
+        "Alerts"
     ])
     
     # Initialize Trinity dashboard tabs
@@ -694,9 +710,53 @@ def main():
             st.markdown("- ⚡ Quick governance actions")
             st.markdown("- 📚 Governance activity history")
 
+    with tab10:
+        # Pattern Browser Tab - Browse and Execute All Patterns
+        try:
+            render_pattern_browser(st.session_state.agent_runtime)
+        except Exception as e:
+            st.error(f"Pattern Browser Error: {str(e)}")
+            st.info("The Pattern Browser provides comprehensive access to all patterns in the system.")
+            st.markdown("### Features")
+            st.markdown("- 🔍 Search and filter patterns by name, description, triggers")
+            st.markdown("- 📁 Browse by category (queries, analysis, workflows, etc.)")
+            st.markdown("- ⭐ Filter by priority level")
+            st.markdown("- 📊 View detailed pattern information and steps")
+            st.markdown("- ▶️ Execute patterns with parameter input forms")
+            st.markdown("- 📈 View execution results with confidence scores")
+            st.markdown("- 📜 Track execution history")
+
+    with tab11:
+        # Alerts Tab - Alert Management and Notifications
+        try:
+            alert_panel = AlertPanel(
+                st.session_state.alert_manager,
+                st.session_state.agent_runtime
+            )
+            alert_panel.render_alert_panel()
+        except Exception as e:
+            st.error(f"Alerts Tab Error: {str(e)}")
+            st.info("The Alert System monitors patterns, data quality, and system health.")
+            st.markdown("### Features")
+            st.markdown("- 📊 Alert analytics dashboard")
+            st.markdown("- ➕ Create custom alerts with templates")
+            st.markdown("- 📋 Manage active alerts with filters")
+            st.markdown("- 📜 View alert history and acknowledge events")
+            st.markdown("- 🔧 Quick template-based alert creation")
+
     # Sidebar
     with st.sidebar:
         st.markdown("### Quick Actions")
+
+        # Alert notifications in sidebar
+        try:
+            alert_panel = AlertPanel(
+                st.session_state.alert_manager,
+                st.session_state.agent_runtime
+            )
+            alert_panel.render_alert_notifications()
+        except Exception:
+            pass  # Silent fail for sidebar notifications
         
         if st.button("Analyze Macro Environment"):
             # Add user message to chat

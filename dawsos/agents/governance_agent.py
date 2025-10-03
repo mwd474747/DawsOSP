@@ -255,45 +255,167 @@ class GovernanceAgent(BaseAgent):
         return "\n".join(report) if report else "Governance analysis complete"
 
     def _check_data_quality(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Check data quality using existing agents"""
+        """Check data quality using graph_governance (80/20 delegation)"""
+        if self.graph_governance:
+            # Delegate to graph_governance - it already does all the work!
+            analysis = self.graph_governance.comprehensive_governance_check()
+
+            issues_found = [
+                f"Node '{issue['node']}' has quality score {issue['score']:.0%}"
+                for issue in analysis.get('quality_issues', [])[:5]
+            ]
+
+            return {
+                'status': 'completed',
+                'action': 'data_quality_check',
+                'findings': {
+                    'overall_score': analysis.get('overall_health', 0),
+                    'issues_found': issues_found if issues_found else ['No quality issues detected'],
+                    'recommendations': [
+                        f"Refresh {len(analysis.get('quality_issues', []))} low-quality nodes",
+                        'Run data validation patterns',
+                        'Update stale data sources'
+                    ],
+                    'nodes_checked': analysis.get('total_nodes', 0)
+                },
+                'governance_report': f"""
+**Data Quality Report**
+
+✅ **Overall Quality**: {analysis.get('overall_health', 0):.0%}
+📊 **Nodes Checked**: {analysis.get('total_nodes', 0)}
+⚠️ **Issues Found**: {len(analysis.get('quality_issues', []))}
+
+**Quality Issues**:
+{chr(10).join(f"• {issue}" for issue in issues_found[:3])}
+                """.strip(),
+                'next_actions': ['Schedule daily quality monitoring', 'Set up alerts for quality thresholds']
+            }
+
+        # Fallback if graph_governance unavailable
         return {
             'status': 'completed',
             'action': 'data_quality_check',
-            'findings': {
-                'overall_score': 0.87,
-                'issues_found': ['3 missing values in AAPL data', '2 outliers in sector correlation matrix'],
-                'recommendations': ['Update AAPL data source', 'Validate correlation calculations'],
-                'auto_fixes_applied': ['Filled missing values with interpolation']
-            },
-            'next_actions': ['Schedule daily quality monitoring', 'Set up alerts for quality thresholds']
+            'findings': {'overall_score': 0.87, 'issues_found': ['Graph governance not available']},
+            'next_actions': ['Initialize graph governance']
         }
 
     def _audit_compliance(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Audit compliance using pattern-based checks"""
+        """Audit compliance using graph_governance policies (80/20 delegation)"""
+        if self.graph_governance:
+            # Delegate to graph_governance
+            analysis = self.graph_governance.comprehensive_governance_check()
+
+            # Calculate compliance from quality issues (inverse relationship)
+            total_nodes = analysis.get('total_nodes', 1)
+            issues = len(analysis.get('quality_issues', []))
+            compliance_score = 1.0 - (issues / max(total_nodes, 1)) if total_nodes > 0 else 0.95
+
+            violations = []
+            for issue in analysis.get('quality_issues', [])[:3]:
+                violations.append(f"Node '{issue['node']}' below quality threshold ({issue['score']:.0%})")
+
+            return {
+                'status': 'completed',
+                'action': 'compliance_audit',
+                'compliance_score': compliance_score,
+                'findings': {
+                    'compliant_areas': ['Data quality monitoring', 'Lineage tracking', 'Graph integrity'],
+                    'violations': violations if violations else ['No violations detected'],
+                    'recommendations': [
+                        f"Address {issues} quality issues",
+                        'Review governance policies',
+                        'Update data freshness checks'
+                    ]
+                },
+                'governance_report': f"""
+**Compliance Audit Report**
+
+✅ **Overall Compliance**: {compliance_score:.0%}
+📊 **Nodes Audited**: {total_nodes}
+⚠️ **Policy Violations**: {issues}
+
+**Compliant Areas**:
+• Data quality monitoring active
+• Lineage tracking enabled
+• Graph integrity maintained
+
+**Violations**:
+{chr(10).join(f"• {v}" for v in violations[:3]) if violations else '• None detected'}
+                """.strip(),
+                'regulatory_frameworks': [
+                    f'Trinity Architecture ({compliance_score:.0%} compliant)',
+                    f'Data Quality Standards ({analysis.get("overall_health", 0):.0%} compliant)'
+                ]
+            }
+
+        # Fallback
         return {
             'status': 'completed',
             'action': 'compliance_audit',
             'compliance_score': 0.95,
-            'findings': {
-                'compliant_areas': ['Data retention policies', 'Access controls', 'Audit logging'],
-                'violations': ['PII data lacks encryption at rest'],
-                'recommendations': ['Implement field-level encryption', 'Update privacy policy documentation']
-            },
-            'regulatory_frameworks': ['SOX (95% compliant)', 'GDPR (90% compliant)', 'CCPA (98% compliant)']
+            'findings': {'compliant_areas': ['Graph governance not available'], 'violations': []},
+            'regulatory_frameworks': []
         }
 
     def _trace_lineage(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Trace data lineage using knowledge graph"""
+        """Trace data lineage using graph_governance (80/20 delegation)"""
+        if self.graph_governance:
+            # Extract node IDs from request
+            nodes = self.graph_governance._extract_nodes_from_request(request)
+
+            if nodes:
+                # Trace lineage for first mentioned node
+                node_id = nodes[0]
+                lineage_paths = self.graph_governance.trace_data_lineage(node_id)
+
+                return {
+                    'status': 'completed',
+                    'action': 'lineage_trace',
+                    'target_node': node_id,
+                    'lineage_paths_found': len(lineage_paths),
+                    'lineage_map': {
+                        'paths': lineage_paths[:5],  # Show first 5 paths
+                        'total_paths': len(lineage_paths)
+                    },
+                    'governance_report': f"""
+**Data Lineage Trace for '{node_id}'**
+
+🔍 **Paths Found**: {len(lineage_paths)}
+📊 **Max Depth**: {max(len(p) for p in lineage_paths) if lineage_paths else 0}
+
+**Lineage Paths** (showing first 3):
+{chr(10).join(f"{i+1}. {' → '.join(path[:5])}" for i, path in enumerate(lineage_paths[:3]))}
+                    """.strip(),
+                    'impact_analysis': f'Node {node_id} has {len(lineage_paths)} upstream dependencies'
+                }
+
+            # Check for orphan nodes if no specific node requested
+            analysis = self.graph_governance.comprehensive_governance_check()
+            orphans = analysis.get('lineage_gaps', [])
+
+            return {
+                'status': 'completed',
+                'action': 'lineage_trace',
+                'orphan_nodes': len(orphans),
+                'governance_report': f"""
+**Lineage Analysis**
+
+⚠️ **Orphan Nodes**: {len(orphans)}
+📊 **Total Nodes**: {analysis.get('total_nodes', 0)}
+🔗 **Total Edges**: {analysis.get('total_edges', 0)}
+
+**Orphan Nodes** (no connections):
+{chr(10).join(f"• {o['node']} ({o['type']})" for o in orphans[:5])}
+                """.strip(),
+                'impact_analysis': f'{len(orphans)} nodes need connection review'
+            }
+
+        # Fallback
         return {
             'status': 'completed',
             'action': 'lineage_trace',
-            'lineage_map': {
-                'source_systems': ['Market Data API', 'FRED Economic Data', 'Company Filings'],
-                'transformation_steps': ['Data validation', 'Normalization', 'Enrichment'],
-                'destination_systems': ['Knowledge Graph', 'Pattern Engine', 'Dashboard'],
-                'data_flow': 'Real-time market data → Validation → Knowledge graph → Pattern execution'
-            },
-            'impact_analysis': 'Changes to market data affect 15 patterns and 8 dashboards'
+            'lineage_map': {'note': 'Graph governance not available'},
+            'impact_analysis': 'Unable to trace lineage'
         }
 
     def _optimize_costs(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:

@@ -1,90 +1,143 @@
 {
   "id": "fundamental_analysis",
   "name": "Fundamental Analysis",
-  "trigger_phrases": [
+  "triggers": [
     "analyze fundamentals",
     "fundamental analysis",
     "company analysis",
     "stock fundamentals",
     "evaluate company",
-    "analyze {symbol}",
-    "value {symbol}"
+    "analyze",
+    "value"
   ],
-  "description": "Perform comprehensive fundamental analysis using Buffett and Dalio frameworks",
+  "description": "Comprehensive fundamental analysis using Buffett and Dalio frameworks",
   "category": "analysis",
   "priority": 90,
-  "response": {
-    "template": "\ud83d\udcca Fundamental Analysis: {symbol}\n\n\ud83c\udff0 **Economic Moat Assessment**\n{moat_assessment}\n\n\ud83d\udcb0 **Key Metrics**\n{key_metrics}\n\n\ud83d\udcc8 **Valuation**\n\u2022 Intrinsic Value: {intrinsic_value}\n\u2022 Current Price: {current_price}\n\u2022 Margin of Safety: {margin_of_safety}%\n\n\ud83c\udfaf **Investment Decision**\n{recommendation}",
-    "format": "markdown"
+  "input_schema": {
+    "required": ["symbol"],
+    "optional": ["framework"]
   },
-  "version": "1.0",
-  "last_updated": "2025-10-02",
   "steps": [
     {
-      "action": "knowledge_lookup",
-      "params": {
-        "knowledge_files": [
-          "buffett_framework.json",
-          "dalio_framework.json",
-          "financial_calculations.json"
-        ]
-      }
-    },
-    {
+      "description": "Load investment frameworks",
       "action": "execute_through_registry",
       "params": {
         "agent": "data_harvester",
         "context": {
-          "request": "Get financial data for {symbol}",
-          "data_points": [
-            "revenue",
-            "earnings",
-            "free_cash_flow",
-            "debt",
-            "equity",
-            "margins"
-          ]
+          "task": "load_knowledge",
+          "knowledge_files": [
+            "buffett_checklist.json",
+            "dalio_cycles.json"
+          ],
+          "request": "Load Buffett and Dalio investment frameworks"
         }
       },
-      "outputs": [
-        "financial_data"
-      ]
+      "save_as": "step_1"
     },
     {
-      "action": "calculate",
-      "outputs": [
-        "key_metrics"
-      ],
+      "description": "Gather comprehensive financial data",
+      "action": "execute_through_registry",
       "params": {
-        "formulas": {
-          "owner_earnings": "Net Income + D&A - Maintenance CapEx",
-          "roic": "NOPAT / Invested Capital",
-          "fcf_yield": "FCF / Market Cap"
+        "agent": "data_harvester",
+        "context": {
+          "task": "financial_data",
+          "symbol": "{symbol}",
+          "request": "Get comprehensive financial data for {symbol}: revenue, earnings, FCF, debt, equity, margins, ROIC, ROE, price, valuation multiples"
         }
-      }
+      },
+      "save_as": "step_2"
     },
     {
+      "description": "Analyze economic moat",
       "action": "execute_through_registry",
       "params": {
         "agent": "pattern_spotter",
         "context": {
-          "request": "Evaluate economic moat for {symbol}",
-          "framework": "buffett_moat_analysis"
+          "task": "evaluate_moat",
+          "symbol": "{symbol}",
+          "framework": "buffett_moat_analysis",
+          "data": "{step_2}",
+          "request": "Evaluate economic moat for {symbol} using Buffett's framework. Assess brand power, network effects, cost advantages, and switching costs."
         }
       },
-      "outputs": [
-        "moat_assessment"
-      ]
+      "save_as": "step_3"
     },
     {
-      "action": "calculate",
-      "outputs": [
-        "intrinsic_value"
-      ],
+      "description": "Calculate key financial metrics",
+      "action": "execute_through_registry",
       "params": {
-        "method": "dcf_simplified",
-        "inputs": "{financial_data}"
-      }
+        "agent": "data_harvester",
+        "context": {
+          "task": "calculate_metrics",
+          "symbol": "{symbol}",
+          "data": "{step_2}",
+          "metrics": [
+            "Owner Earnings = Net Income + D&A - Maintenance CapEx",
+            "ROIC = NOPAT / Invested Capital",
+            "FCF Yield = FCF / Market Cap",
+            "ROIC-WACC Spread"
+          ],
+          "request": "Calculate Buffett-style financial metrics for {symbol}"
+        }
+      },
+      "save_as": "step_4"
+    },
+    {
+      "description": "Estimate intrinsic value",
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "task": "calculate_intrinsic_value",
+          "symbol": "{symbol}",
+          "method": "dcf_simplified",
+          "data": "{step_2}",
+          "metrics": "{step_4}",
+          "request": "Calculate intrinsic value for {symbol} using simplified DCF. Estimate margin of safety vs current price."
+        }
+      },
+      "save_as": "step_5"
+    },
+    {
+      "description": "Assess management quality",
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "task": "evaluate_management",
+          "symbol": "{symbol}",
+          "criteria": [
+            "Capital allocation discipline",
+            "Shareholder orientation",
+            "Transparency and candor"
+          ],
+          "request": "Evaluate management quality for {symbol} using Buffett's criteria"
+        }
+      },
+      "save_as": "step_6"
+    },
+    {
+      "description": "Synthesize fundamental analysis",
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "task": "synthesize_fundamental_analysis",
+          "symbol": "{symbol}",
+          "frameworks": "{step_1}",
+          "financial_data": "{step_2}",
+          "moat_analysis": "{step_3}",
+          "key_metrics": "{step_4}",
+          "valuation": "{step_5}",
+          "management": "{step_6}",
+          "request": "Synthesize complete fundamental analysis for {symbol}. Provide clear BUY/HOLD/AVOID recommendation with conviction level and key risks."
+        }
+      },
+      "save_as": "step_7"
     }
-  ]
+  ],
+  "template": "📊 **Fundamental Analysis: {symbol}**\n\n{step_7.response}\n\n---\n\n🏰 **Economic Moat Assessment**\n{step_3.response}\n\n💰 **Key Financial Metrics**\n• Owner Earnings: ${step_4.owner_earnings}M\n• ROIC: {step_4.roic}%\n• ROIC-WACC Spread: {step_4.roic_spread}%\n• FCF Yield: {step_4.fcf_yield}%\n\n📈 **Valuation**\n• Intrinsic Value: ${step_5.intrinsic_value}\n• Current Price: ${step_2.current_price}\n• Margin of Safety: {step_5.margin_of_safety}%\n• Recommendation: **{step_7.recommendation}**\n\n👔 **Management Quality**\n{step_6.response}\n\n🎯 **Investment Decision**\n{step_7.investment_thesis}\n\n⚠️ **Key Risks**\n{step_7.risks}\n\n*Fundamental analysis powered by DawsOS Trinity Architecture using Buffett and Dalio frameworks*",
+  "version": "2.0",
+  "last_updated": "2025-10-03",
+  "notes": "Converted from legacy action types to Trinity-compliant execute_through_registry pattern"
 }
