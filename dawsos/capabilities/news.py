@@ -1,14 +1,133 @@
 import urllib.request
 import urllib.parse
 import json
+import time
+import logging
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
+from collections import deque
 from dawsos.core.credentials import get_credential_manager
 
-class NewsCapability:
-    """News and sentiment analysis capability"""
+# Set up logging
+logger = logging.getLogger(__name__)
 
-    def __init__(self, api_key: str = None):
+
+class RateLimiter:
+    """Rate limiter for NewsAPI calls with daily limits and exponential backoff"""
+
+    def __init__(self, max_requests_per_day: int = 100):
+        """
+        Initialize rate limiter for NewsAPI
+
+        Args:
+            max_requests_per_day: Maximum API requests per day
+                                 Free tier: 100/day
+                                 Developer: 250/day
+                                 Business: 5000/day
+        """
+        self.max_requests = max_requests_per_day
+        self.requests = deque()  # Stores (timestamp, request_info) tuples
+        self.backoff_until = None
+        self.daily_reset_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+
+    def _clean_old_requests(self):
+        """Remove requests older than 24 hours"""
+        now = time.time()
+        twenty_four_hours_ago = now - 86400  # 24 hours in seconds
+
+        while self.requests and self.requests[0] < twenty_four_hours_ago:
+            self.requests.popleft()
+
+    def get_requests_remaining(self) -> int:
+        """Calculate requests remaining in current 24-hour window"""
+        self._clean_old_requests()
+        return max(0, self.max_requests - len(self.requests))
+
+    def get_usage_percentage(self) -> float:
+        """Get current usage percentage"""
+        self._clean_old_requests()
+        return (len(self.requests) / self.max_requests * 100) if self.max_requests > 0 else 0
+
+    def wait_if_needed(self):
+        """Wait if approaching rate limit or in backoff period"""
+        now = time.time()
+
+        # Check if we're in backoff period
+        if self.backoff_until and now < self.backoff_until:
+            wait_time = self.backoff_until - now
+            logger.warning(f"Rate limit backoff: waiting {wait_time:.2f} seconds")
+            time.sleep(wait_time)
+            self.backoff_until = None
+            return
+
+        # Clean old requests
+        self._clean_old_requests()
+
+        # Check if we're approaching the daily limit
+        usage_pct = self.get_usage_percentage()
+        if usage_pct >= 80:
+            logger.warning(f"Approaching daily rate limit: {usage_pct:.1f}% used "
+                          f"({len(self.requests)}/{self.max_requests} requests)")
+
+        # If at limit, calculate wait time until oldest request expires
+        if len(self.requests) >= self.max_requests:
+            oldest_request_time = self.requests[0]
+            wait_time = 86400 - (now - oldest_request_time)
+
+            if wait_time > 0:
+                logger.error(f"Daily rate limit reached! Need to wait {wait_time/3600:.1f} hours. "
+                           f"Consider upgrading API plan or using cached data.")
+                # Don't actually wait 24 hours - raise error instead
+                raise Exception(f"NewsAPI daily rate limit exceeded. Wait {wait_time/3600:.1f} hours or upgrade plan.")
+
+        # Record this request
+        self.requests.append(now)
+
+    def set_backoff(self, retry_count: int = 1):
+        """Set exponential backoff period"""
+        backoff_seconds = min(2 ** retry_count, 60)  # Max 60 seconds
+        self.backoff_until = time.time() + backoff_seconds
+        logger.warning(f"Setting backoff for {backoff_seconds} seconds (retry {retry_count})")
+
+
+class NewsCapability:
+    """News and sentiment analysis capability with comprehensive error handling and caching"""
+
+    # Spam/low-quality domains to filter out
+    SPAM_DOMAINS = {
+        'biztoc.com',
+        'zerohedge.com',
+        'benzinga.com',
+        'fool.com',
+        'seekingalpha.com',
+        'investing.com',
+        'insidermonkey.com',
+        'gurufocus.com'
+    }
+
+    # Positive and negative sentiment keywords (expanded)
+    POSITIVE_KEYWORDS = [
+        'surge', 'gain', 'profit', 'growth', 'rally', 'boom', 'strong', 'beat', 'exceed',
+        'record', 'high', 'optimistic', 'bullish', 'success', 'breakthrough', 'soar',
+        'rise', 'jump', 'advance', 'outperform', 'upgrade', 'innovative', 'expansion',
+        'recover', 'rebound', 'accelerate', 'robust', 'thrive', 'prosper'
+    ]
+
+    NEGATIVE_KEYWORDS = [
+        'crash', 'fall', 'loss', 'decline', 'drop', 'weak', 'miss', 'concern', 'fear',
+        'risk', 'low', 'pessimistic', 'bearish', 'failure', 'plunge', 'tumble', 'slump',
+        'collapse', 'downgrade', 'warning', 'cut', 'slash', 'underperform', 'struggle',
+        'recession', 'crisis', 'trouble', 'deteriorate', 'shrink'
+    ]
+
+    def __init__(self, api_key: str = None, max_requests_per_day: int = 100):
+        """
+        Initialize NewsCapability
+
+        Args:
+            api_key: NewsAPI key (optional, will try to get from credentials)
+            max_requests_per_day: Daily rate limit (default 100 for free tier)
+        """
         # Using NewsAPI (free tier available)
         # Get key at: https://newsapi.org/register
         if api_key:
@@ -16,135 +135,603 @@ class NewsCapability:
         else:
             credentials = get_credential_manager()
             self.api_key = credentials.get('NEWSAPI_KEY', required=False)
+
         self.base_url = 'https://newsapi.org/v2'
         self.cache = {}
-        self.cache_ttl = 300  # 5 minutes
-    
+
+        # Configurable TTL by data type (in seconds)
+        self.cache_ttl = {
+            'headlines': 3600,      # 1 hour - top headlines change frequently
+            'search': 21600,        # 6 hours - search results are more stable
+            'company': 21600,       # 6 hours - company-specific news
+            'market': 21600         # 6 hours - market news
+        }
+
+        # Rate limiter (configurable for different plans)
+        self.rate_limiter = RateLimiter(max_requests_per_day=max_requests_per_day)
+
+        # Cache statistics
+        self.cache_stats = {
+            'hits': 0,
+            'misses': 0,
+            'expired_fallbacks': 0
+        }
+
+    def _get_from_cache(self, cache_key: str, data_type: str) -> Optional[Tuple[List[Dict], bool]]:
+        """
+        Get data from cache
+
+        Args:
+            cache_key: Cache key to lookup
+            data_type: Type of data for TTL lookup ('headlines', 'search', etc.)
+
+        Returns:
+            Tuple of (data, is_fresh) or None if not in cache
+        """
+        if cache_key not in self.cache:
+            self.cache_stats['misses'] += 1
+            return None
+
+        cached = self.cache[cache_key]
+        age = (datetime.now() - cached['time']).total_seconds()
+        ttl = self.cache_ttl.get(data_type, 3600)
+
+        if age < ttl:
+            self.cache_stats['hits'] += 1
+            return (cached['data'], True)
+        else:
+            # Data exists but is expired
+            return (cached['data'], False)
+
+    def _update_cache(self, cache_key: str, data: List[Dict]):
+        """Update cache with new data"""
+        self.cache[cache_key] = {
+            'data': data,
+            'time': datetime.now()
+        }
+
+    def _make_api_call(self, url: str, max_retries: int = 3) -> Optional[Dict]:
+        """
+        Make API call with retry logic and error handling
+
+        Args:
+            url: Full API URL
+            max_retries: Maximum number of retry attempts
+
+        Returns:
+            Parsed JSON response or None on failure
+        """
+        # Check if API key is available
+        if not self.api_key:
+            logger.error("NewsAPI key not configured. Please set NEWSAPI_KEY in credentials.")
+            return None
+
+        for retry in range(max_retries):
+            try:
+                # Apply rate limiting
+                self.rate_limiter.wait_if_needed()
+
+                # Make request
+                with urllib.request.urlopen(url, timeout=10) as response:
+                    data = json.loads(response.read())
+                    logger.debug(f"API call successful: {url[:100]}...")
+                    return data
+
+            except urllib.error.HTTPError as e:
+                if e.code == 429:
+                    # Rate limit exceeded
+                    logger.warning(f"Rate limit exceeded (429), retry {retry + 1}/{max_retries}")
+                    self.rate_limiter.set_backoff(retry + 1)
+                    if retry < max_retries - 1:
+                        continue
+                    else:
+                        logger.error("Max retries exceeded for rate limit")
+                        return None
+
+                elif e.code == 426:
+                    # Upgrade required (free tier limitation)
+                    logger.error("Upgrade required (426). This endpoint requires a paid NewsAPI plan.")
+                    return None
+
+                elif e.code == 401:
+                    # Authentication error
+                    logger.error("Invalid NewsAPI key (401). Please check your credentials.")
+                    return None
+
+                elif e.code == 404:
+                    # Not found
+                    logger.warning(f"Resource not found (404): {url[:100]}...")
+                    return None
+
+                else:
+                    logger.error(f"HTTP error {e.code}: {e.reason}")
+                    if retry < max_retries - 1:
+                        time.sleep(1)
+                        continue
+                    return None
+
+            except urllib.error.URLError as e:
+                # Network error
+                logger.error(f"Network error: {e.reason}, retry {retry + 1}/{max_retries}")
+                if retry < max_retries - 1:
+                    time.sleep(2 ** retry)  # Exponential backoff
+                    continue
+                return None
+
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON response: {e}")
+                return None
+
+            except Exception as e:
+                logger.error(f"Unexpected error: {type(e).__name__}: {e}")
+                return None
+
+        return None
+
+    def _is_spam_or_low_quality(self, article: Dict) -> bool:
+        """
+        Check if article is from spam/low-quality source
+
+        Args:
+            article: Article dictionary
+
+        Returns:
+            True if article should be filtered out
+        """
+        # Check if content is [Removed] (API limitation for older articles)
+        description = article.get('description', '')
+        content = article.get('content', '')
+        if description == '[Removed]' or content == '[Removed]':
+            return True
+
+        # Check domain
+        url = article.get('url', '')
+        for spam_domain in self.SPAM_DOMAINS:
+            if spam_domain in url.lower():
+                return True
+
+        # Check if source is None or empty
+        source_name = article.get('source', {}).get('name', '')
+        if not source_name or source_name.lower() == 'removed':
+            return True
+
+        return False
+
+    def _filter_duplicates(self, articles: List[Dict]) -> List[Dict]:
+        """
+        Filter duplicate articles based on title similarity
+
+        Args:
+            articles: List of articles
+
+        Returns:
+            Filtered list without duplicates
+        """
+        seen_titles = set()
+        filtered = []
+
+        for article in articles:
+            title = article.get('title', '').lower().strip()
+
+            # Skip if we've seen a very similar title
+            if title and title not in seen_titles:
+                seen_titles.add(title)
+                filtered.append(article)
+
+        return filtered
+
+    def _calculate_quality_score(self, article: Dict) -> float:
+        """
+        Calculate quality score for article (0-1)
+
+        Args:
+            article: Article dictionary
+
+        Returns:
+            Quality score between 0 and 1
+        """
+        score = 0.5  # Start with neutral score
+
+        # High-quality sources
+        source = article.get('source', {}).get('name', '').lower()
+        quality_sources = ['reuters', 'bloomberg', 'wall street journal', 'financial times',
+                          'cnbc', 'marketwatch', 'barron', 'yahoo finance', 'associated press']
+
+        if any(q in source for q in quality_sources):
+            score += 0.3
+
+        # Has description and content
+        if article.get('description') and article.get('description') != '[Removed]':
+            score += 0.1
+
+        if article.get('content') and article.get('content') != '[Removed]':
+            score += 0.1
+
+        # Ensure score is between 0 and 1
+        return min(1.0, max(0.0, score))
+
     def get_headlines(self, query: str = None, category: str = 'business') -> List[Dict]:
-        """Get top headlines"""
+        """
+        Get top headlines
+
+        Args:
+            query: Optional search query
+            category: Category (business, technology, etc.)
+
+        Returns:
+            List of articles with metadata
+        """
         cache_key = f"headlines_{query}_{category}"
-        
+
         # Check cache
-        if cache_key in self.cache:
-            cached = self.cache[cache_key]
-            if datetime.now() - cached['time'] < timedelta(seconds=self.cache_ttl):
-                return cached['data']
-        
+        cached = self._get_from_cache(cache_key, 'headlines')
+        if cached and cached[1]:  # If data is fresh
+            return cached[0]
+
         # Build URL
         endpoint = f"{self.base_url}/top-headlines"
         params = {
             'apiKey': self.api_key,
             'category': category,
             'country': 'us',
-            'pageSize': 20
+            'pageSize': 50  # Get more to account for filtering
         }
-        
+
         if query:
             params['q'] = query
-        
+
         url = f"{endpoint}?{urllib.parse.urlencode(params)}"
-        
-        try:
-            with urllib.request.urlopen(url) as response:
-                data = json.loads(response.read())
-                
-                articles = []
-                for article in data.get('articles', []):
-                    articles.append({
-                        'title': article.get('title'),
-                        'description': article.get('description'),
-                        'source': article.get('source', {}).get('name'),
-                        'url': article.get('url'),
-                        'published_at': article.get('publishedAt'),
-                        'sentiment': self._analyze_sentiment(article)
-                    })
-                
-                # Cache results
-                self.cache[cache_key] = {
-                    'data': articles,
-                    'time': datetime.now()
-                }
-                
-                return articles
-                
-        except Exception as e:
-            return [{'error': str(e)}]
+
+        # Make API call
+        data = self._make_api_call(url)
+
+        if data and data.get('articles'):
+            articles = []
+            for article in data.get('articles', []):
+                # Filter spam/low-quality
+                if self._is_spam_or_low_quality(article):
+                    continue
+
+                sentiment = self.analyze_sentiment(article)
+                quality = self._calculate_quality_score(article)
+
+                articles.append({
+                    'title': article.get('title'),
+                    'description': article.get('description'),
+                    'source': article.get('source', {}).get('name'),
+                    'url': article.get('url'),
+                    'published_at': article.get('publishedAt'),
+                    'sentiment': sentiment['label'],
+                    'sentiment_score': sentiment['score'],
+                    'quality_score': quality
+                })
+
+            # Filter duplicates
+            articles = self._filter_duplicates(articles)
+
+            # Limit to 20 best quality articles
+            articles = sorted(articles, key=lambda x: x['quality_score'], reverse=True)[:20]
+
+            # Cache results
+            self._update_cache(cache_key, articles)
+            return articles
+
+        # API call failed - try to return expired cache data
+        if cached:
+            logger.warning(f"API call failed, returning expired cache data for headlines")
+            self.cache_stats['expired_fallbacks'] += 1
+            result = [a.copy() for a in cached[0]]
+            for article in result:
+                article['_cached'] = True
+                article['_warning'] = 'Using expired cached data due to API failure'
+            return result
+
+        return [{'error': 'No data available'}]
     
-    def search_news(self, query: str, from_date: str = None) -> List[Dict]:
-        """Search news articles"""
+    def search_news(self, query: str, from_date: str = None, days: int = 7) -> List[Dict]:
+        """
+        Search news articles
+
+        Args:
+            query: Search query
+            from_date: Start date (YYYY-MM-DD format)
+            days: Number of days to search back (if from_date not specified)
+
+        Returns:
+            List of articles
+        """
         if not from_date:
-            from_date = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
-        
+            from_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+
+        cache_key = f"search_{query}_{from_date}"
+
+        # Check cache
+        cached = self._get_from_cache(cache_key, 'search')
+        if cached and cached[1]:  # If data is fresh
+            return cached[0]
+
         endpoint = f"{self.base_url}/everything"
         params = {
             'apiKey': self.api_key,
             'q': query,
             'from': from_date,
             'sortBy': 'relevancy',
-            'pageSize': 20,
+            'pageSize': 50,  # Get more to account for filtering
             'language': 'en'
         }
-        
+
         url = f"{endpoint}?{urllib.parse.urlencode(params)}"
-        
-        try:
-            with urllib.request.urlopen(url) as response:
-                data = json.loads(response.read())
-                
-                articles = []
-                for article in data.get('articles', []):
-                    articles.append({
-                        'title': article.get('title'),
-                        'description': article.get('description'),
-                        'source': article.get('source', {}).get('name'),
-                        'url': article.get('url'),
-                        'published_at': article.get('publishedAt'),
-                        'sentiment': self._analyze_sentiment(article)
-                    })
-                
-                return articles
-                
-        except Exception as e:
-            return [{'error': str(e)}]
-    
-    def _analyze_sentiment(self, article: Dict) -> str:
-        """Simple sentiment analysis based on keywords"""
+
+        # Make API call
+        data = self._make_api_call(url)
+
+        if data and data.get('articles'):
+            articles = []
+            for article in data.get('articles', []):
+                # Filter spam/low-quality
+                if self._is_spam_or_low_quality(article):
+                    continue
+
+                sentiment = self.analyze_sentiment(article)
+                quality = self._calculate_quality_score(article)
+
+                articles.append({
+                    'title': article.get('title'),
+                    'description': article.get('description'),
+                    'source': article.get('source', {}).get('name'),
+                    'url': article.get('url'),
+                    'published_at': article.get('publishedAt'),
+                    'sentiment': sentiment['label'],
+                    'sentiment_score': sentiment['score'],
+                    'quality_score': quality
+                })
+
+            # Filter duplicates
+            articles = self._filter_duplicates(articles)
+
+            # Limit to 20 best quality articles
+            articles = sorted(articles, key=lambda x: x['quality_score'], reverse=True)[:20]
+
+            # Cache results
+            self._update_cache(cache_key, articles)
+            return articles
+
+        # API call failed - try to return expired cache data
+        if cached:
+            logger.warning(f"API call failed, returning expired cache data for search: {query}")
+            self.cache_stats['expired_fallbacks'] += 1
+            result = [a.copy() for a in cached[0]]
+            for article in result:
+                article['_cached'] = True
+                article['_warning'] = 'Using expired cached data due to API failure'
+            return result
+
+        return [{'error': 'No data available'}]
+
+    def analyze_sentiment(self, article: Dict) -> Dict:
+        """
+        Enhanced sentiment analysis with score
+
+        Args:
+            article: Article dictionary
+
+        Returns:
+            Dict with 'score' (-1 to +1) and 'label' (positive/negative/neutral)
+        """
         text = f"{article.get('title', '')} {article.get('description', '')}".lower()
-        
-        positive_words = ['surge', 'gain', 'profit', 'growth', 'rally', 'boom', 
-                         'strong', 'beat', 'exceed', 'record', 'high', 'optimistic']
-        negative_words = ['crash', 'fall', 'loss', 'decline', 'drop', 'weak',
-                         'miss', 'concern', 'fear', 'risk', 'low', 'pessimistic']
-        
-        positive_score = sum(1 for word in positive_words if word in text)
-        negative_score = sum(1 for word in negative_words if word in text)
-        
-        if positive_score > negative_score:
-            return 'positive'
-        elif negative_score > positive_score:
-            return 'negative'
+
+        # Count positive and negative words
+        positive_count = sum(1 for word in self.POSITIVE_KEYWORDS if word in text)
+        negative_count = sum(1 for word in self.NEGATIVE_KEYWORDS if word in text)
+
+        # Calculate total for normalization
+        total = positive_count + negative_count
+
+        # Calculate sentiment score (-1 to +1)
+        if total == 0:
+            score = 0.0
+            label = 'neutral'
         else:
-            return 'neutral'
+            score = (positive_count - negative_count) / total
+
+            if score > 0.2:
+                label = 'positive'
+            elif score < -0.2:
+                label = 'negative'
+            else:
+                label = 'neutral'
+
+        return {
+            'score': round(score, 2),
+            'label': label,
+            'positive_count': positive_count,
+            'negative_count': negative_count
+        }
     
+    def get_company_news(self, symbol: str, days: int = 7) -> List[Dict]:
+        """
+        Get company-specific news
+
+        Args:
+            symbol: Stock symbol (e.g., 'TSLA', 'AAPL')
+            days: Number of days to look back
+
+        Returns:
+            List of articles about the company
+        """
+        cache_key = f"company_{symbol}_{days}"
+
+        # Check cache
+        cached = self._get_from_cache(cache_key, 'company')
+        if cached and cached[1]:
+            return cached[0]
+
+        # Search for company news
+        from_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+        return self.search_news(query=symbol, from_date=from_date, days=days)
+
+    def get_market_news(self, category: str = 'business', days: int = 7) -> List[Dict]:
+        """
+        Get market or sector-wide news
+
+        Args:
+            category: Category (business, technology, etc.)
+            days: Number of days to look back
+
+        Returns:
+            List of market news articles
+        """
+        cache_key = f"market_{category}_{days}"
+
+        # Check cache
+        cached = self._get_from_cache(cache_key, 'market')
+        if cached and cached[1]:
+            return cached[0]
+
+        # Get headlines
+        return self.get_headlines(category=category)
+
+    def extract_key_events(self, articles: List[Dict]) -> List[Dict]:
+        """
+        Extract key events from articles and create timeline
+
+        Args:
+            articles: List of articles
+
+        Returns:
+            List of key events sorted by date
+        """
+        events = []
+
+        for article in articles:
+            # Skip if no date
+            if not article.get('published_at'):
+                continue
+
+            # Consider high-impact events based on sentiment and quality
+            sentiment_score = article.get('sentiment_score', 0)
+            quality_score = article.get('quality_score', 0)
+
+            # High impact if strong sentiment and high quality
+            impact_score = abs(sentiment_score) * quality_score
+
+            if impact_score > 0.3:  # Threshold for significance
+                events.append({
+                    'date': article['published_at'],
+                    'title': article.get('title'),
+                    'source': article.get('source'),
+                    'sentiment': article.get('sentiment'),
+                    'impact_score': round(impact_score, 2),
+                    'url': article.get('url')
+                })
+
+        # Sort by date (newest first)
+        events = sorted(events, key=lambda x: x['date'], reverse=True)
+
+        return events
+
+    def get_trending_topics(self, days: int = 7) -> Dict:
+        """
+        Get trending topics from recent news
+
+        Args:
+            days: Number of days to analyze
+
+        Returns:
+            Dict with topic frequencies and top articles
+        """
+        # Get recent market news
+        articles = self.get_market_news(days=days)
+
+        # Simple keyword extraction
+        topic_counts = {}
+        topic_articles = {}
+
+        for article in articles:
+            text = f"{article.get('title', '')} {article.get('description', '')}".lower()
+
+            # Key financial topics
+            topics = ['earnings', 'merger', 'acquisition', 'ipo', 'dividend', 'stock split',
+                     'layoff', 'hiring', 'partnership', 'regulation', 'innovation',
+                     'revenue', 'profit', 'loss', 'expansion', 'bankruptcy']
+
+            for topic in topics:
+                if topic in text:
+                    topic_counts[topic] = topic_counts.get(topic, 0) + 1
+
+                    # Store sample article
+                    if topic not in topic_articles:
+                        topic_articles[topic] = {
+                            'title': article.get('title'),
+                            'source': article.get('source'),
+                            'url': article.get('url')
+                        }
+
+        # Sort by frequency
+        sorted_topics = sorted(topic_counts.items(), key=lambda x: x[1], reverse=True)
+
+        return {
+            'trending_topics': [
+                {
+                    'topic': topic,
+                    'count': count,
+                    'sample_article': topic_articles.get(topic)
+                }
+                for topic, count in sorted_topics[:10]
+            ],
+            'analysis_period_days': days,
+            'total_articles_analyzed': len(articles),
+            'timestamp': datetime.now().isoformat()
+        }
+
+    def get_cache_stats(self) -> Dict:
+        """Get cache statistics"""
+        total_requests = self.cache_stats['hits'] + self.cache_stats['misses']
+        hit_rate = (self.cache_stats['hits'] / total_requests * 100) if total_requests > 0 else 0
+
+        return {
+            'cache_hits': self.cache_stats['hits'],
+            'cache_misses': self.cache_stats['misses'],
+            'cache_hit_rate': f"{hit_rate:.1f}%",
+            'expired_fallbacks': self.cache_stats['expired_fallbacks'],
+            'cached_items': len(self.cache)
+        }
+
+    def get_rate_limit_status(self) -> Dict:
+        """Get rate limit status"""
+        return {
+            'requests_remaining': self.rate_limiter.get_requests_remaining(),
+            'usage_percentage': f"{self.rate_limiter.get_usage_percentage():.1f}%",
+            'max_requests_per_day': self.rate_limiter.max_requests,
+            'requests_used': len(self.rate_limiter.requests)
+        }
+
     def get_market_sentiment(self) -> Dict:
         """Get overall market sentiment"""
         # Get headlines for market analysis
         headlines = self.get_headlines(category='business')
-        
+
         sentiment_counts = {
             'positive': 0,
             'negative': 0,
             'neutral': 0
         }
-        
+
+        total_score = 0.0
+
         for article in headlines:
             if 'sentiment' in article:
                 sentiment_counts[article['sentiment']] += 1
-        
+
+            if 'sentiment_score' in article:
+                total_score += article['sentiment_score']
+
         total = sum(sentiment_counts.values()) or 1
-        
+        avg_score = total_score / total if total > 0 else 0
+
         return {
             'overall': max(sentiment_counts, key=sentiment_counts.get),
+            'average_score': round(avg_score, 2),
             'distribution': {
                 'positive': sentiment_counts['positive'] / total,
                 'negative': sentiment_counts['negative'] / total,
