@@ -156,16 +156,17 @@ class UniversalExecutor:
     def _store_execution_result(self, request: Dict[str, Any], result: Dict[str, Any]):
         """Store execution result in knowledge graph."""
         try:
-            node_data = {
-                'type': 'execution',
-                'request': request,
-                'result': result,
-                'timestamp': datetime.now().isoformat(),
-                'executor': 'universal',
-                'compliant': result.get('compliant', True)
-            }
-            
-            node_id = self.graph.add_node(**node_data)
+            # Use correct KnowledgeGraph.add_node signature
+            node_id = self.graph.add_node(
+                node_type='execution',
+                data={
+                    'request': request,
+                    'result': result,
+                    'timestamp': datetime.now().isoformat(),
+                    'executor': 'universal',
+                    'compliant': result.get('compliant', True)
+                }
+            )
             
             # Connect to agent node if applicable
             if result.get('agent'):
