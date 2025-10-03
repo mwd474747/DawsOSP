@@ -261,11 +261,11 @@ class KnowledgeGraph:
         node_types = {}
         for node in self.nodes.values():
             node_types[node['type']] = node_types.get(node['type'], 0) + 1
-        
+
         edge_types = {}
         for edge in self.edges:
             edge_types[edge['type']] = edge_types.get(edge['type'], 0) + 1
-        
+
         return {
             'total_nodes': len(self.nodes),
             'total_edges': len(self.edges),
@@ -274,7 +274,132 @@ class KnowledgeGraph:
             'edge_types': edge_types,
             'avg_connections': len(self.edges) / max(len(self.nodes), 1)
         }
-    
+
+    def get_node(self, node_id: str) -> Optional[Dict]:
+        """
+        Get a single node by ID safely.
+
+        Args:
+            node_id: The ID of the node to retrieve
+
+        Returns:
+            Node data dictionary or None if not found
+        """
+        return self.nodes.get(node_id)
+
+    def get_nodes_by_type(self, node_type: str) -> Dict[str, Dict]:
+        """
+        Get all nodes of a specific type.
+
+        Args:
+            node_type: The type of nodes to retrieve
+
+        Returns:
+            Dictionary of {node_id: node_data} for nodes matching the type
+        """
+        return {node_id: node_data for node_id, node_data in self.nodes.items()
+                if node_data.get('type') == node_type}
+
+    def has_edge(self, from_id: str, to_id: str, relationship: Optional[str] = None) -> bool:
+        """
+        Check if an edge exists between two nodes.
+
+        Args:
+            from_id: Source node ID
+            to_id: Target node ID
+            relationship: Optional relationship type to check for
+
+        Returns:
+            True if edge exists, False otherwise
+        """
+        for edge in self.edges:
+            if edge['from'] == from_id and edge['to'] == to_id:
+                if relationship is None or edge['type'] == relationship:
+                    return True
+        return False
+
+    def get_edge(self, from_id: str, to_id: str, relationship: Optional[str] = None) -> Optional[Dict]:
+        """
+        Get edge data between two nodes.
+
+        Args:
+            from_id: Source node ID
+            to_id: Target node ID
+            relationship: Optional relationship type filter
+
+        Returns:
+            Edge dictionary or None if not found
+        """
+        for edge in self.edges:
+            if edge['from'] == from_id and edge['to'] == to_id:
+                if relationship is None or edge['type'] == relationship:
+                    return edge
+        return None
+
+    def safe_query(self, pattern: dict, default: Any = None) -> List[str]:
+        """
+        Query nodes with safe fallback.
+
+        Args:
+            pattern: Query pattern dictionary
+            default: Default value if query fails or returns empty
+
+        Returns:
+            List of matching node IDs or default value
+        """
+        try:
+            results = self.query(pattern)
+            return results if results else (default if default is not None else [])
+        except Exception as e:
+            print(f"Query failed: {e}")
+            return default if default is not None else []
+
+    def get_node_data(self, node_id: str, key: str, default: Any = None) -> Any:
+        """
+        Safely get data from a node.
+
+        Args:
+            node_id: Node ID to query
+            key: Data key to retrieve
+            default: Default value if node or key not found
+
+        Returns:
+            Node data value or default
+        """
+        node = self.get_node(node_id)
+        if node and 'data' in node:
+            return node['data'].get(key, default)
+        return default
+
+    def get_connected_nodes(self, node_id: str, direction: str = 'out',
+                           relationship: Optional[str] = None) -> List[str]:
+        """
+        Get all nodes connected to a given node.
+
+        Args:
+            node_id: Source node ID
+            direction: 'out' for outgoing, 'in' for incoming, 'both' for all
+            relationship: Optional relationship type filter
+
+        Returns:
+            List of connected node IDs
+        """
+        connected = []
+
+        if direction in ['out', 'both']:
+            for edge in self.edges:
+                if edge['from'] == node_id:
+                    if relationship is None or edge['type'] == relationship:
+                        connected.append(edge['to'])
+
+        if direction in ['in', 'both']:
+            for edge in self.edges:
+                if edge['to'] == node_id:
+                    if relationship is None or edge['type'] == relationship:
+                        connected.append(edge['from'])
+
+        return connected
+
     def save(self, filepath: str = 'storage/graph.json'):
         """Save graph to file"""
         os.makedirs(os.path.dirname(filepath), exist_ok=True)

@@ -52,22 +52,21 @@ class WorkflowRecorder(BaseAgent):
             # Check if this forms a pattern
             self._identify_pattern(workflow)
 
-        # Store result in knowledge graph
-        result = {
-        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
-            node_id = self.store_result(result)
-            result['node_id'] = node_id
-        return result
+            # Return success result
+            result = {
                 "status": "recorded",
                 "workflow_id": workflow['id'],
                 "pattern": workflow.get('pattern_name')
             }
+        else:
+            # Not significant enough to record
+            result = {"status": "not_recorded", "reason": "Not significant enough"}
 
         # Store result in knowledge graph
-        result = {"status": "not_recorded", "reason": "Not significant enough"}
         if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
-            node_id = self.store_result(result)
-            result['node_id'] = node_id
+            stored_node_id = self.store_result(result)
+            result['stored_node_id'] = stored_node_id
+
         return result
 
     def _create_workflow(self, interaction: Dict[str, Any], decision: Dict[str, Any]) -> Dict[str, Any]:

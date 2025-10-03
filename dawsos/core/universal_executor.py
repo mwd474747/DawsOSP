@@ -20,7 +20,7 @@ from datetime import datetime
 # Import core components
 from core.pattern_engine import PatternEngine
 from core.knowledge_graph import KnowledgeGraph
-from core.agent_registry import AgentRegistry
+from core.agent_adapter import AgentRegistry  # Fixed: AgentRegistry is in agent_adapter, not agent_registry
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class UniversalExecutor:
         """Initialize with Trinity components."""
         self.graph = graph
         self.registry = registry
-        self.pattern_engine = PatternEngine(graph)
+        self.pattern_engine = PatternEngine()
         
         # Load meta-patterns
         self._load_meta_patterns()
@@ -87,29 +87,45 @@ class UniversalExecutor:
         try:
             # Prepare execution context
             context = self._prepare_context(request)
-            
-            # ALWAYS route through meta_executor pattern
+
+            # ALWAYS route through meta_executor pattern if available
             # This ensures Trinity compliance
-            result = self.pattern_engine.execute_pattern(
-                pattern_name='meta_executor',
-                context=context
-            )
-            
+            if self.pattern_engine.has_pattern('meta_executor'):
+                pattern = self.pattern_engine.get_pattern('meta_executor')
+
+                if pattern:
+                    result = self.pattern_engine.execute_pattern(pattern, context)
+
+                    if not isinstance(result, dict):
+                        logger.warning("meta_executor pattern returned unexpected result; using fallback execution")
+                        result = self._execute_fallback(context)
+                    # If pattern engine cannot execute (e.g., no runtime), fall back gracefully
+                    elif result.get('error') == 'No runtime configured for pattern execution':
+                        logger.warning("meta_executor pattern could not execute (missing runtime); using fallback execution")
+                        result = self._execute_fallback(context)
+                else:
+                    logger.warning("meta_executor pattern metadata missing; using fallback execution")
+                    result = self._execute_fallback(context)
+            else:
+                # Fallback: Direct execution without meta pattern
+                logger.warning("meta_executor pattern not found; using fallback execution")
+                result = self._execute_fallback(context)
+
             # Track routing metrics
             if result.get('migrated'):
                 self.metrics['legacy_migrated'] += 1
             if result.get('pattern_routed'):
                 self.metrics['pattern_routed'] += 1
-            
+
             # Store in graph (Trinity Knowledge multiplication)
             self._store_execution_result(request, result)
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Universal execution failed: {e}")
             self.metrics['compliance_failures'] += 1
-            
+
             # Attempt recovery through architecture_validator
             return self._attempt_recovery(request, str(e))
     
@@ -148,8 +164,8 @@ class UniversalExecutor:
             
             # Connect to agent node if applicable
             if result.get('agent'):
-                agent_node = self.graph.get_nodes_by_type('agent')
-                for aid, adata in agent_node:
+                agent_nodes = self.graph.get_nodes_by_type('agent')
+                for aid, adata in agent_nodes.items():
                     if adata.get('name') == result['agent']:
                         self.graph.connect(node_id, aid, 'executed_by')
                         break
@@ -159,28 +175,59 @@ class UniversalExecutor:
         except Exception as e:
             logger.error(f"Failed to store execution result: {e}")
     
+    def _execute_fallback(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Fallback execution when meta_executor pattern is missing.
+        Provides basic routing without full Trinity compliance.
+        """
+        logger.warning("Executing in fallback mode - meta_executor pattern unavailable")
+
+        # Try to route to an agent if specified
+        if 'agent' in context:
+            agent_name = context['agent']
+            if self.registry:
+                agent = self.registry.get_agent(agent_name)
+                if agent:
+                    try:
+                        result = agent.execute(context)
+                        result['fallback_mode'] = True
+                        return result
+                    except Exception as e:
+                        logger.error(f"Agent execution failed in fallback: {e}")
+
+        # If no agent or agent failed, return basic response
+        return {
+            'success': False,
+            'error': 'Fallback execution - no suitable agent or pattern found',
+            'fallback_mode': True,
+            'timestamp': datetime.now().isoformat()
+        }
+
     def _attempt_recovery(self, request: Dict[str, Any], error: str) -> Dict[str, Any]:
         """Attempt to recover from execution failure."""
         try:
-            # Use architecture_validator pattern for recovery
-            recovery_context = {
-                'request': request,
-                'error': error,
-                'recovery_mode': True
-            }
-            
-            result = self.pattern_engine.execute_pattern(
-                pattern_name='architecture_validator',
-                context=recovery_context
-            )
-            
-            if result.get('recovered'):
-                logger.info(f"Successfully recovered from error: {error}")
-                return result
-            
+            # Use architecture_validator pattern for recovery if available
+            if self.pattern_engine.has_pattern('architecture_validator'):
+                recovery_context = {
+                    'request': request,
+                    'error': error,
+                    'recovery_mode': True
+                }
+
+                result = self.pattern_engine.execute_pattern(
+                    pattern_name='architecture_validator',
+                    context=recovery_context
+                )
+
+                if result.get('recovered'):
+                    logger.info(f"Successfully recovered from error: {error}")
+                    return result
+            else:
+                logger.warning("architecture_validator pattern not found, cannot attempt recovery")
+
         except Exception as recovery_error:
             logger.error(f"Recovery failed: {recovery_error}")
-        
+
         # Return error response if recovery fails
         return {
             'success': False,

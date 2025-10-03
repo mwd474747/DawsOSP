@@ -70,12 +70,15 @@ class WorkflowPlayer(BaseAgent):
     def play(self, workflow_id: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a workflow"""
         if workflow_id not in self.loaded_workflows:
-        # Store result in knowledge graph
-        result = {"error": f"Workflow {workflow_id} not found"}
-        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
-            node_id = self.store_result(result)
-            result['node_id'] = node_id
-        return result
+            # Workflow not found error
+            result = {"error": f"Workflow {workflow_id} not found"}
+
+            # Store result in knowledge graph
+            if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+                stored_node_id = self.store_result(result)
+                result['stored_node_id'] = stored_node_id
+
+            return result
 
         workflow = self.loaded_workflows[workflow_id]
 
@@ -88,12 +91,15 @@ class WorkflowPlayer(BaseAgent):
         adaptation = self.think(adaptation_context)
 
         if not adaptation.get('can_use', False):
-        # Store result in knowledge graph
-        result = {"error": "Workflow not applicable to current context"}
-        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
-            node_id = self.store_result(result)
-            result['node_id'] = node_id
-        return result
+            # Workflow not applicable error
+            result = {"error": "Workflow not applicable to current context"}
+
+            # Store result in knowledge graph
+            if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+                stored_node_id = self.store_result(result)
+                result['stored_node_id'] = stored_node_id
+
+            return result
 
         # Execute steps
         results = []
@@ -105,17 +111,20 @@ class WorkflowPlayer(BaseAgent):
             if isinstance(step_result, dict) and 'error' in step_result:
                 break
 
-        # Store result in knowledge graph
+        # Build result
         result = {
-        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
-            node_id = self.store_result(result)
-            result['node_id'] = node_id
-        return result
             "workflow_id": workflow_id,
             "executed": True,
             "results": results,
             "success": all(r.get('success', False) if isinstance(r, dict) else True for r in results)
         }
+
+        # Store result in knowledge graph
+        if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+            stored_node_id = self.store_result(result)
+            result['stored_node_id'] = stored_node_id
+
+        return result
 
     def _matches_trigger(self, trigger: Any, intent: str, user_input: str) -> bool:
         """Check if trigger matches current context"""

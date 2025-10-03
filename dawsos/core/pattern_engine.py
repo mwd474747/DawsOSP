@@ -142,6 +142,30 @@ class PatternEngine:
 
         self.logger.info(f"Loaded {loaded_count} patterns successfully")
 
+    def has_pattern(self, pattern_id: str) -> bool:
+        """
+        Check if a pattern exists in the loaded patterns.
+
+        Args:
+            pattern_id: ID of the pattern to check
+
+        Returns:
+            True if pattern exists, False otherwise
+        """
+        return pattern_id in self.patterns
+
+    def get_pattern(self, pattern_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get a pattern by ID.
+
+        Args:
+            pattern_id: ID of the pattern to retrieve
+
+        Returns:
+            Pattern dictionary or None if not found
+        """
+        return self.patterns.get(pattern_id)
+
     def find_pattern(self, user_input: str) -> Optional[Dict[str, Any]]:
         """
         Find the best matching pattern for user input

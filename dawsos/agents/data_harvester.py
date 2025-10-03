@@ -61,7 +61,7 @@ class DataHarvester(BaseAgent):
 
                 if data:
                     return {
-                        'response': f'Fetched market data for {', '.join(symbols)}',
+                        'response': f'Fetched market data for {", ".join(symbols)}',
                         'data': data
                     }
 
@@ -160,7 +160,7 @@ class DataHarvester(BaseAgent):
 
             if data:
                 return {
-                    'response': f'Fetched data for: {', '.join(data.keys())}',
+                    'response': f'Fetched data for: {", ".join(data.keys())}',
                     'data': data
                 }
 
