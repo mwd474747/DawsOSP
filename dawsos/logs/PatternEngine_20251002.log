@@ -171,3 +171,6 @@
 2025-10-02 22:23:39,352 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
 2025-10-02 22:23:39,354 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
 2025-10-02 22:23:39,354 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-02 22:26:04,549 - PatternEngine - DEBUG - logger:debug:78 - No pattern matched for: Run Buffett checklist for MSFT 
+2025-10-02 22:26:11,489 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: sector_performance {"pattern_id": "sector_performance", "confidence": 0.5, "matched": true}
+2025-10-02 22:46:01,162 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.5, "matched": true}

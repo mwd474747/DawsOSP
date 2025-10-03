@@ -18,11 +18,12 @@ def render_governance_tab(runtime, graph):
     st.markdown("*Powered by Trinity Architecture with Graph-Native Governance*")
 
     # Check if governance agent is available
-    if not runtime or 'governance_agent' not in runtime.agents:
+    if not runtime or not runtime.agent_registry.get_agent('governance_agent'):
         st.error("⚠️ Governance Agent not available. Please check system configuration.")
         return
 
-    governance_agent = runtime.agents['governance_agent']
+    governance_adapter = runtime.agent_registry.get_agent('governance_agent')
+    governance_agent = governance_adapter.agent if governance_adapter else None
 
     # Get real-time graph governance metrics
     graph_metrics = {}
@@ -162,8 +163,9 @@ def render_governance_tab(runtime, graph):
         st.markdown("#### 🚨 Recent Alerts")
         try:
             # Get governance alerts from pattern spotter
-            if 'pattern_spotter' in runtime.agents:
-                alert_data = runtime.agents['pattern_spotter'].process(
+            pattern_spotter_adapter = runtime.agent_registry.get_agent('pattern_spotter') if runtime else None
+            if pattern_spotter_adapter:
+                alert_data = pattern_spotter_adapter.agent.process(
                     "governance_alerts"
                 )
 
@@ -269,17 +271,20 @@ def render_governance_tab(runtime, graph):
 
                                 # Execute improvements
                                 for improvement in high_priority:
-                                    if improvement['type'] == 'data_refresh' and 'data_harvester' in runtime.agents:
-                                        runtime.agents['data_harvester'].process(
+                                    data_harvester = runtime.agent_registry.get_agent('data_harvester') if runtime else None
+                                    relationship_hunter = runtime.agent_registry.get_agent('relationship_hunter') if runtime else None
+
+                                    if improvement['type'] == 'data_refresh' and data_harvester:
+                                        data_harvester.agent.process(
                                             f"refresh data for {improvement['target']}"
                                         )
-                                    elif improvement['type'] == 'add_connection' and 'relationship_hunter' in runtime.agents:
-                                        runtime.agents['relationship_hunter'].process(
+                                    elif improvement['type'] == 'add_connection' and relationship_hunter:
+                                        relationship_hunter.agent.process(
                                             f"find connections for {improvement['target']}"
                                         )
-                                    elif improvement['type'] == 'seed_data' and 'data_harvester' in runtime.agents:
+                                    elif improvement['type'] == 'seed_data' and data_harvester:
                                         for symbol in ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA']:
-                                            runtime.agents['data_harvester'].process(
+                                            data_harvester.agent.process(
                                                 f"get stock data for {symbol}"
                                             )
 

@@ -303,7 +303,7 @@ result = test_case(
     "Should save workflow"
 )
 
-recorder = runtime.agents.get('workflow_recorder')
+recorder = runtime.get_agent_instance('workflow_recorder') if hasattr(runtime, 'get_agent_instance') else None
 if recorder:
     interaction = {
         'user_input': "Check Apple stock",

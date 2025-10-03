@@ -15,6 +15,7 @@ from core.knowledge_graph import KnowledgeGraph
 from core.agent_adapter import AgentRegistry
 from core.universal_executor import UniversalExecutor, get_executor
 from core.pattern_engine import PatternEngine
+from core.agent_runtime import AgentRuntime
 
 
 class TestTrinitySmoke(unittest.TestCase):
@@ -137,6 +138,56 @@ class TestTrinitySmoke(unittest.TestCase):
         # Should return error response, not crash
         self.assertIsNotNone(result)
         self.assertIn('error', result)
+
+    def test_runtime_orchestrate_uses_executor(self):
+        """SMOKE: AgentRuntime delegates orchestration to executor when available"""
+
+        class DummyExecutor:
+            def __init__(self):
+                self.requests = []
+
+            def execute(self, request):
+                self.requests.append(request)
+                return {'success': True, 'fallback_mode': True}
+
+        runtime = AgentRuntime()
+        runtime.executor = DummyExecutor()
+
+        response = runtime.orchestrate("Check the market")
+
+        self.assertTrue(response.get('success'))
+        self.assertEqual(len(runtime.executor.requests), 1)
+        self.assertEqual(runtime.executor.requests[0].get('user_input'), "Check the market")
+
+    def test_executor_routes_through_meta_pattern(self):
+        """SMOKE: UniversalExecutor executes via meta_executor pattern when available"""
+
+        runtime = AgentRuntime()
+
+        executor = UniversalExecutor(self.graph, self.registry, runtime=runtime)
+
+        # Inject a fake meta pattern path
+        executor.pattern_engine.patterns['meta_executor'] = {'id': 'meta_executor'}
+
+        def fake_has_pattern(pattern_id):
+            return pattern_id == 'meta_executor'
+
+        captured = {}
+
+        def fake_execute_pattern(pattern, context):
+            captured['pattern'] = pattern
+            captured['context'] = context
+            return {'success': True, 'pattern_routed': True}
+
+        executor.pattern_engine.has_pattern = fake_has_pattern  # type: ignore
+        executor.pattern_engine.execute_pattern = fake_execute_pattern  # type: ignore
+
+        result = executor.execute({'type': 'test_request', 'foo': 'bar'})
+
+        self.assertTrue(result.get('success'))
+        self.assertTrue(result.get('pattern_routed'))
+        self.assertEqual(captured['pattern'], {'id': 'meta_executor'})
+        self.assertEqual(captured['context']['original_request']['foo'], 'bar')
 
 
 class TestAgentRegistry(unittest.TestCase):

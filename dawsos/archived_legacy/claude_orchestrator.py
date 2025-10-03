@@ -1,11 +1,19 @@
+"""Legacy Claude orchestrator (archived).
+
+This module is preserved only for historical reference. The active execution
+path flows through the Trinity stack (UniversalExecutor → PatternEngine →
+AgentRuntime) and should be used instead of this file.
+"""
+
 from anthropic import Anthropic
 import json
 import os
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
+
 class ClaudeOrchestrator:
-    """Claude's brain - interprets, decides, and orchestrates"""
+    """Claude's brain - interprets, decides, and orchestrates (legacy)."""
 
     def __init__(self, graph, agents: Dict = None, executor=None):
         self.claude = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))

@@ -197,7 +197,14 @@ class AgentValidator:
         elif hasattr(runtime, 'agent_registry') and hasattr(runtime.agent_registry, 'get_compliance_metrics'):
             results['runtime_metrics'] = runtime.agent_registry.get_compliance_metrics()
 
-        for agent_name, agent_instance in runtime.agents.items():
+        if hasattr(runtime, 'iter_agent_instances'):
+            agent_iter = runtime.iter_agent_instances()
+        elif hasattr(runtime, 'agent_registry'):
+            agent_iter = ((name, adapter.agent) for name, adapter in runtime.agent_registry.agents.items())
+        else:
+            agent_iter = getattr(runtime, 'agents', {}).items()
+
+        for agent_name, agent_instance in agent_iter:
             agent_class = agent_instance.__class__
             validation = self.validate_agent(agent_class, agent_instance)
 

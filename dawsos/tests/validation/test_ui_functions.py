@@ -44,7 +44,7 @@ runtime.register_agent('relationship_hunter', RelationshipHunter(graph))
 pattern_engine = PatternEngine('patterns', runtime)
 runtime.pattern_engine = pattern_engine
 
-print(f"   ✅ Agents: {len(runtime.agents)} registered")
+print(f"   ✅ Agents: {len(runtime.agent_registry.agents)} registered")
 print(f"   ✅ Patterns: {len(pattern_engine.patterns)} loaded")
 
 # Test all Quick Action buttons
@@ -187,7 +187,7 @@ for button, result in results.items():
 print(f"\n📊 System Status:")
 print(f"   • Knowledge Graph: {stats['total_nodes']} nodes, {stats['total_edges']} edges")
 print(f"   • Patterns: {len(pattern_engine.patterns)} loaded")
-print(f"   • Agents: {len(runtime.agents)} active")
+print(f"   • Agents: {len(runtime.agent_registry.agents)} active")
 
 print(f"\n🎯 UI Features Ready:")
 print(f"   ✅ Chat interface with formatted responses")

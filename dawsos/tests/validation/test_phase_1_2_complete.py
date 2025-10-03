@@ -50,7 +50,7 @@ pattern_engine = PatternEngine('patterns', runtime)
 runtime.pattern_engine = pattern_engine
 
 print(f"\n✅ System Initialized")
-print(f"   Agents registered: {len(runtime.agents)}")
+print(f"   Agents registered: {len(runtime.agent_registry.agents)}")
 print(f"   Patterns loaded: {len(pattern_engine.patterns)}")
 
 # Phase 1 Tests

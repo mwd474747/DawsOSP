@@ -13,7 +13,7 @@ Every agent, pattern, UI action, and API call routes through here.
 
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, TYPE_CHECKING
 from pathlib import Path
 from datetime import datetime
 
@@ -22,17 +22,21 @@ from core.pattern_engine import PatternEngine
 from core.knowledge_graph import KnowledgeGraph
 from core.agent_adapter import AgentRegistry  # Fixed: AgentRegistry is in agent_adapter, not agent_registry
 
+if TYPE_CHECKING:
+    from core.agent_runtime import AgentRuntime
+
 logger = logging.getLogger(__name__)
 
 
 class UniversalExecutor:
     """Single entry point for ALL DawsOS execution."""
     
-    def __init__(self, graph: KnowledgeGraph, registry: AgentRegistry):
+    def __init__(self, graph: KnowledgeGraph, registry: AgentRegistry, runtime: "AgentRuntime" = None):
         """Initialize with Trinity components."""
         self.graph = graph
         self.registry = registry
-        self.pattern_engine = PatternEngine()
+        self.runtime = runtime
+        self.pattern_engine = PatternEngine(runtime=runtime)
         
         # Load meta-patterns
         self._load_meta_patterns()
@@ -137,6 +141,7 @@ class UniversalExecutor:
         context['graph'] = self.graph
         context['registry'] = self.registry
         context['pattern_engine'] = self.pattern_engine
+        context['runtime'] = self.runtime
         
         # Add execution metadata
         context['execution_id'] = f"exec_{datetime.now().timestamp()}"
@@ -256,15 +261,15 @@ class UniversalExecutor:
 # Singleton instance
 _executor_instance = None
 
-def get_executor(graph: KnowledgeGraph = None, registry: AgentRegistry = None) -> UniversalExecutor:
+def get_executor(graph: KnowledgeGraph = None, registry: AgentRegistry = None, runtime: "AgentRuntime" = None) -> UniversalExecutor:
     """Get or create the universal executor singleton."""
     global _executor_instance
     
     if _executor_instance is None:
         if graph is None or registry is None:
             raise ValueError("Graph and registry required for initial executor creation")
-        _executor_instance = UniversalExecutor(graph, registry)
-    
+        _executor_instance = UniversalExecutor(graph, registry, runtime)
+
     return _executor_instance
 
 

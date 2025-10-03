@@ -85,7 +85,13 @@ class TrinityUIComponents:
             # Calculate REAL dynamic confidence based on system state
             try:
                 # Get actual system metrics
-                graph_stats = self.runtime.agents.get('graph_mind').graph.get_stats() if self.runtime else {}
+                graph_mind = None
+                if self.runtime:
+                    graph_mind = self.runtime.agent_registry.get_agent('graph_mind')
+                if graph_mind:
+                    graph_stats = graph_mind.agent.graph.get_stats() if hasattr(graph_mind.agent, 'graph') else {}
+                else:
+                    graph_stats = {}
                 total_nodes = graph_stats.get('total_nodes', 0)
                 total_edges = graph_stats.get('total_edges', 0)
 
@@ -512,7 +518,7 @@ class TrinityUIComponents:
             })
 
         with col4:
-            agent_count = len(self.runtime.agents) if self.runtime else 0
+            agent_count = len(self.runtime.agent_registry.agents) if self.runtime else 0
             self.render_dashboard_widget({
                 'title': 'Agents Ready',
                 'value': agent_count,

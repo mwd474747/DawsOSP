@@ -1,5 +1,6 @@
 """Agent Runtime - Executes and coordinates agents"""
 from typing import Dict, Any, List, Optional
+from types import MappingProxyType
 import json
 import os
 from datetime import datetime
@@ -9,16 +10,17 @@ class AgentRuntime:
     """Simple runtime for executing agents"""
 
     def __init__(self):
-        self.agents = {}
+        self._agents = {}
         self.execution_history = []
         self.active_agents = []
         self.pattern_engine = None  # Will be initialized after agents are registered
         self.agent_registry = AgentRegistry()  # New: Agent registry for capabilities
         self.use_adapter = True  # Flag to enable/disable adapter usage
+        self.executor = None  # Will be set by outer orchestration layer
 
     def register_agent(self, name: str, agent: Any, capabilities: Optional[Dict] = None):
         """Register an agent with the runtime"""
-        self.agents[name] = agent
+        self._agents[name] = agent
 
         # Also register with adapter if enabled
         if self.use_adapter:
@@ -28,7 +30,8 @@ class AgentRuntime:
 
     def execute(self, agent_name: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Execute agent through unified adapter with automatic Trinity compliance"""
-        if agent_name not in self.agents:
+        adapter = self.agent_registry.get_agent(agent_name)
+        if not adapter:
             return {"error": f"Agent {agent_name} not found"}
 
         # Mark as active
@@ -68,95 +71,28 @@ class AgentRuntime:
         }
 
         agent_name = agent_map.get(task_type)
-        if agent_name and agent_name in self.agents:
+        if agent_name and self.has_agent(agent_name):
             return self.execute(agent_name, task)
-
-        # Default to Claude
-        if 'claude' in self.agents:
-            return self.execute('claude', task)
 
         return {"error": f"No agent for task type: {task_type}"}
 
     def orchestrate(self, user_input: str) -> Dict[str, Any]:
-        """Main orchestration - Claude interprets, delegates to others"""
-        # Try pattern engine first
+        """Main orchestration entry point that delegates to the UniversalExecutor."""
+        if self.executor:
+            request = {
+                'type': 'chat_input',
+                'user_input': user_input
+            }
+            return self.executor.execute(request)
+
+        # Executor not configured - fall back to local pattern engine if available
         if self.pattern_engine:
             pattern = self.pattern_engine.find_pattern(user_input)
             if pattern:
-                # Execute the pattern
                 context = {'user_input': user_input}
-                result = self.pattern_engine.execute_pattern(pattern, context)
-                return result
+                return self.pattern_engine.execute_pattern(pattern, context)
 
-        # Fall back to Claude interpretation
-        if 'claude' not in self.agents:
-            return {"error": "Claude not available"}
-
-        # Get Claude's interpretation
-        claude_response = self.execute('claude', {"user_input": user_input})
-
-        # Based on intent, delegate to specialized agents
-        intent = claude_response.get('intent', 'unknown')
-        results = []
-
-        if intent == 'ADD_DATA':
-            # Use data harvester
-            harvest_result = self.execute('data_harvester', {
-                "request": user_input
-            })
-            results.append(harvest_result)
-
-            # Then digest it
-            if harvest_result and 'error' not in harvest_result:
-                digest_result = self.execute('data_digester', {
-                    "data": harvest_result,
-                    "data_type": "mixed"
-                })
-                results.append(digest_result)
-
-        elif intent == 'FORECAST':
-            # Use forecast dreamer
-            target = claude_response.get('entities', [''])[0]
-            forecast_result = self.execute('forecast_dreamer', {
-                "target": target,
-                "horizon": "1d"
-            })
-            results.append(forecast_result)
-
-        elif intent == 'BUILD':
-            # Use code monkey
-            code_result = self.execute('code_monkey', {
-                "task": claude_response.get('action', 'write code'),
-                "file_path": "new_feature.py"
-            })
-            results.append(code_result)
-
-        elif intent == 'ANALYZE':
-            # Use pattern spotter
-            pattern_result = self.execute('pattern_spotter', {})
-            results.append(pattern_result)
-
-            # And relationship hunter
-            relationship_result = self.execute('relationship_hunter', {})
-            results.append(relationship_result)
-
-        # Record this workflow if successful
-        if all('error' not in r for r in results if isinstance(r, dict)):
-            self.execute('workflow_recorder', {
-                "interaction": {
-                    "user_input": user_input,
-                    "intent": intent,
-                    "actions": [claude_response] + results,
-                    "result": results,
-                    "success": True
-                }
-            })
-
-        return {
-            "interpretation": claude_response,
-            "results": results,
-            "friendly_response": claude_response.get('friendly_response', 'Done!')
-        }
+        return {"error": "Executor not configured"}
 
     def get_compliance_metrics(self) -> Dict[str, Any]:
         """Get Trinity Architecture compliance metrics for all agents"""
@@ -209,7 +145,7 @@ class AgentRuntime:
     def get_status(self) -> Dict[str, Any]:
         """Get runtime status"""
         return {
-            "registered_agents": list(self.agents.keys()),
+            "registered_agents": list(self._agents.keys()),
             "active_agents": self.active_agents,
             "total_executions": len(self.execution_history),
             "recent_executions": self.execution_history[-5:]
@@ -225,7 +161,7 @@ class AgentRuntime:
         """Save runtime state"""
         state = {
             "timestamp": datetime.now().isoformat(),
-            "agents": list(self.agents.keys()),
+            "agents": list(self._agents.keys()),
             "execution_count": len(self.execution_history)
         }
 
@@ -250,7 +186,7 @@ class AgentRuntime:
         }
 
         agent_name = capability_to_agent.get(capability)
-        if agent_name and agent_name in self.agents:
+        if agent_name and self.has_agent(agent_name):
             return self.execute(agent_name, context)
 
         return {'error': f'No agent found with capability: {capability}'}
@@ -262,7 +198,7 @@ class AgentRuntime:
 
         # Basic capability listing
         capabilities = {}
-        for name, agent in self.agents.items():
+        for name, agent in self._agents.items():
             capabilities[name] = {
                 'name': name,
                 'class': agent.__class__.__name__,
@@ -270,3 +206,24 @@ class AgentRuntime:
                 'has_llm': hasattr(agent, 'llm_client')
             }
         return capabilities
+
+    def has_agent(self, name: str) -> bool:
+        """Check if an agent is registered"""
+        return name in self._agents
+
+    def get_agent_instance(self, name: str) -> Optional[Any]:
+        """Get the raw agent instance by name"""
+        adapter = self.agent_registry.get_agent(name)
+        if adapter:
+            return adapter.agent
+        return self._agents.get(name)
+
+    def iter_agent_instances(self):
+        """Iterate over registered agent instances"""
+        for name, adapter in self.agent_registry.agents.items():
+            yield name, adapter.agent
+
+    @property
+    def agents(self) -> MappingProxyType:
+        """Read-only view of registered agent instances (legacy access)"""
+        return MappingProxyType(self._agents)

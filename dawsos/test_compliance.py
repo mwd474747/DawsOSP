@@ -29,7 +29,7 @@ def test_compliance_system():
     runtime.register_agent('pattern_spotter', PatternSpotter(graph))
     runtime.register_agent('governance_agent', GovernanceAgent(graph))
 
-    print(f"Registered {len(runtime.agents)} agents\n")
+    print(f"Registered {len(runtime.agent_registry.agents)} agents\n")
 
     # Test 1: Execute agents to generate runtime metrics
     print("Test 1: Executing agents to generate runtime metrics...")

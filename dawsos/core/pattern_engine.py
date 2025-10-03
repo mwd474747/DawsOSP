@@ -142,6 +142,45 @@ class PatternEngine:
 
         self.logger.info(f"Loaded {loaded_count} patterns successfully")
 
+    def _get_agent(self, agent_name: str):
+        """Retrieve agent instance from runtime via registry"""
+        if not self.runtime:
+            return None
+
+        if hasattr(self.runtime, 'agent_registry'):
+            adapter = self.runtime.agent_registry.get_agent(agent_name)
+            if adapter:
+                return adapter.agent
+
+        if hasattr(self.runtime, 'get_agent_instance'):
+            return self.runtime.get_agent_instance(agent_name)
+
+        # Fallback to legacy mapping if exposed
+        if hasattr(self.runtime, 'agents') and agent_name in self.runtime.agents:
+            return self.runtime.agents[agent_name]
+
+        return None
+
+    def _has_agent(self, agent_name: str) -> bool:
+        """Check if runtime has agent available"""
+        return self._get_agent(agent_name) is not None
+
+    def _iter_agents(self):
+        """Iterate over (name, agent_instance) pairs"""
+        if not self.runtime:
+            return []
+
+        if hasattr(self.runtime, 'iter_agent_instances'):
+            return list(self.runtime.iter_agent_instances())
+
+        if hasattr(self.runtime, 'agent_registry'):
+            return [(name, adapter.agent) for name, adapter in self.runtime.agent_registry.agents.items()]
+
+        if hasattr(self.runtime, 'agents'):
+            return list(self.runtime.agents.items())
+
+        return []
+
     def has_pattern(self, pattern_id: str) -> bool:
         """
         Check if a pattern exists in the loaded patterns.
@@ -253,7 +292,7 @@ class PatternEngine:
                 action = step.get('action')
 
                 # Execute based on action type
-                if agent and agent in self.runtime.agents:
+                if agent and self._has_agent(agent):
                     # Direct agent call
                     result = self.runtime.execute(agent, params)
                 elif action:
@@ -313,8 +352,8 @@ class PatternEngine:
             section = params.get('section', '')
 
             # Query actual knowledge graph through any agent that has access
-            if self.runtime and hasattr(self.runtime, 'agents'):
-                for agent_name, agent in self.runtime.agents.items():
+            if self.runtime:
+                for agent_name, agent in self._iter_agents():
                     if hasattr(agent, 'graph'):
                         # Try to get knowledge from graph
                         nodes = agent.graph.get_nodes_by_type(section)
@@ -560,7 +599,7 @@ class PatternEngine:
         elif action.startswith("agent:"):
             # Extract agent name and call it
             agent_name = action.replace("agent:", "")
-            if agent_name in self.runtime.agents:
+            if self._has_agent(agent_name):
                 return self.runtime.execute(agent_name, params)
             else:
                 return {"error": f"Agent {agent_name} not found"}
@@ -572,7 +611,7 @@ class PatternEngine:
             period = params.get('period', 'quarter')
 
             # Try to use data harvester agent
-            data_harvester = self.runtime.agents.get('data_harvester') if self.runtime else None
+            data_harvester = self._get_agent('data_harvester') if self.runtime else None
             if data_harvester:
                 # Request financial data
                 request = f"{data_type} for {symbol} {period}"
@@ -607,7 +646,7 @@ class PatternEngine:
             growth_assumption = params.get('growth_assumption', 'moderate')
 
             # Try to use financial analyst
-            financial_analyst = self.runtime.agents.get('financial_analyst') if self.runtime else None
+            financial_analyst = self._get_agent('financial_analyst') if self.runtime else None
             if financial_analyst:
                 request = f"DCF analysis for {symbol}"
                 result = financial_analyst.process_request(request, {'symbol': symbol})
@@ -640,7 +679,7 @@ class PatternEngine:
             factors = params.get('factors', [])
 
             # Try to use financial analyst for confidence calculation
-            financial_analyst = self.runtime.agents.get('financial_analyst') if self.runtime else None
+            financial_analyst = self._get_agent('financial_analyst') if self.runtime else None
             if financial_analyst:
                 # Get confidence from financial analyst
                 confidence_data = financial_analyst._calculate_confidence({}, symbol)
@@ -712,8 +751,8 @@ class PatternEngine:
         elif action == "fix_constructor_args":
             # Fix agent constructor arguments on the fly
             agent_name = params.get('agent')
-            if self.runtime and agent_name in self.runtime.agents:
-                agent = self.runtime.agents[agent_name]
+            if self.runtime and self._has_agent(agent_name):
+                agent = self._get_agent(agent_name)
                 if hasattr(agent, 'graph') and isinstance(agent.graph, str):
                     # Graph is incorrectly a string, fix it
                     if hasattr(self, 'graph'):
@@ -763,10 +802,10 @@ class PatternEngine:
         elif action == "validate_agent":
             # Validate agent exists and is properly configured
             agent_name = params.get('agent')
-            if not self.runtime or agent_name not in self.runtime.agents:
+            if not self.runtime or not self._has_agent(agent_name):
                 return {"valid": False, "error": f"Agent {agent_name} not found"}
 
-            agent = self.runtime.agents[agent_name]
+            agent = self._get_agent(agent_name)
             issues = []
 
             # Check graph configuration
@@ -803,7 +842,7 @@ class PatternEngine:
                 return []
 
             agents = []
-            for name, agent in self.runtime.agents.items():
+            for name, agent in self._iter_agents():
                 agents.append({
                     'name': name,
                     'class': agent.__class__.__name__,
@@ -838,8 +877,8 @@ class PatternEngine:
             for issue_type, issue_list in fixes.items():
                 if issue_type == 'constructors':
                     for issue in issue_list:
-                        if self.runtime and issue['agent'] in self.runtime.agents:
-                            agent = self.runtime.agents[issue['agent']]
+                        if self.runtime and self._has_agent(issue['agent']):
+                            agent = self._get_agent(issue['agent'])
                             if hasattr(self, 'graph'):
                                 agent.graph = self.graph
                                 fixed_count += 1
@@ -1329,7 +1368,7 @@ class PatternEngine:
         """Get company moat analysis from knowledge base and agents"""
         try:
             # Get equity agent for company analysis
-            equity_agent = self.runtime.agents.get('equity_agent') if self.runtime else None
+            equity_agent = self._get_agent('equity_agent') if self.runtime else None
             if equity_agent:
                 stock_analysis = equity_agent.analyze_stock(symbol)
 
@@ -1369,7 +1408,7 @@ class PatternEngine:
         """Get financial metrics from Financial Analyst"""
         try:
             # Get financial analyst
-            financial_analyst = self.runtime.agents.get('financial_analyst') if self.runtime else None
+            financial_analyst = self._get_agent('financial_analyst') if self.runtime else None
             if financial_analyst:
                 # Get ROIC analysis
                 roic_result = financial_analyst.process_request(f'ROIC for {symbol}', {'symbol': symbol})
@@ -1398,7 +1437,7 @@ class PatternEngine:
                 }
 
             # Fallback to data harvester for basic metrics
-            data_harvester = self.runtime.agents.get('data_harvester') if self.runtime else None
+            data_harvester = self._get_agent('data_harvester') if self.runtime else None
             if data_harvester:
                 financial_data = data_harvester.harvest(f'financial data for {symbol}')
                 if 'data' in financial_data:
@@ -1424,8 +1463,8 @@ class PatternEngine:
         """Get real macroeconomic data from agents"""
         try:
             # Get macro agent for economic analysis
-            macro_agent = self.runtime.agents.get('macro_agent') if self.runtime else None
-            data_harvester = self.runtime.agents.get('data_harvester') if self.runtime else None
+            macro_agent = self._get_agent('macro_agent') if self.runtime else None
+            data_harvester = self._get_agent('data_harvester') if self.runtime else None
 
             macro_data = {}
 

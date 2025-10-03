@@ -263,7 +263,7 @@ def test_data_harvester_integration(runtime):
         "Get correlations for SPY"
     ]
 
-    harvester = runtime.agents.get('data_harvester')
+    harvester = runtime.get_agent_instance('data_harvester') if hasattr(runtime, 'get_agent_instance') else None
     if not harvester:
         print("  ❌ DataHarvester not available")
         return

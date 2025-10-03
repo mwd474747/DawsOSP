@@ -175,7 +175,8 @@ class TrinityDashboardTabs:
                 st.metric("Knowledge Nodes", stats.get('total_nodes', 0))
 
             with intel_cols[2]:
-                st.metric("Agents Ready", len(self.runtime.agents))
+                agent_count = len(self.runtime.agent_registry.agents) if self.runtime else 0
+                st.metric("Agents Ready", agent_count)
 
             with intel_cols[3]:
                 # Pattern execution success rate
@@ -328,7 +329,8 @@ class TrinityDashboardTabs:
                 return result
             else:
                 # Fallback to direct agent processing
-                claude = self.runtime.agents.get('claude')
+                claude_adapter = self.runtime.agent_registry.get_agent('claude') if self.runtime else None
+                claude = claude_adapter.agent if claude_adapter else None
                 if claude:
                     response = claude.process({'query': prompt})
                     return {'response': response, 'pattern': 'Direct Claude'}

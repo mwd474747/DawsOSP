@@ -1,9 +1,15 @@
-"""Agent Orchestrator - Coordinates agent execution"""
+"""Legacy agent orchestrator (archived).
+
+Retained for reference only. Use UniversalExecutor + PatternEngine +
+AgentRuntime for new development.
+"""
+
 from typing import Dict, Any, List, Optional
 from core.agent_runtime import AgentRuntime
 
+
 class AgentOrchestrator:
-    """Coordinates multiple agents to accomplish complex tasks"""
+    """Coordinates multiple agents to accomplish complex tasks (legacy)."""
 
     def __init__(self, runtime: AgentRuntime):
         self.runtime = runtime

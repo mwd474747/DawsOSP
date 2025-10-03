@@ -101,11 +101,12 @@ def test_agent_initialization():
         runtime = AgentRuntime()
         runtime.graph = graph  # Set graph after initialization
 
-        print(f"✅ Initialized {len(runtime.agents)} agents")
+        print(f"✅ Initialized {len(runtime.agent_registry.agents)} agents")
 
         # Test governance agent specifically
-        if 'governance' in runtime.agents:
-            gov_agent = runtime.agents['governance']
+        gov_adapter = runtime.agent_registry.get_agent('governance')
+        if gov_adapter:
+            gov_agent = gov_adapter.agent
             if hasattr(gov_agent, 'graph_governance'):
                 print("✅ GovernanceAgent has graph_governance")
             if hasattr(gov_agent, 'governance_hooks'):
