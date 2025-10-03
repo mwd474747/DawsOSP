@@ -3,15 +3,19 @@ import urllib.parse
 import json
 from datetime import datetime, timedelta
 from typing import Dict, List
-import os
+from dawsos.core.credentials import get_credential_manager
 
 class NewsCapability:
     """News and sentiment analysis capability"""
-    
+
     def __init__(self, api_key: str = None):
         # Using NewsAPI (free tier available)
         # Get key at: https://newsapi.org/register
-        self.api_key = api_key or os.getenv('NEWSAPI_KEY', 'your_newsapi_key_here')
+        if api_key:
+            self.api_key = api_key
+        else:
+            credentials = get_credential_manager()
+            self.api_key = credentials.get('NEWSAPI_KEY', required=False)
         self.base_url = 'https://newsapi.org/v2'
         self.cache = {}
         self.cache_ttl = 300  # 5 minutes

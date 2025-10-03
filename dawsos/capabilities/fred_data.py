@@ -1,15 +1,16 @@
-import os
 import urllib.request
 import json
 from datetime import datetime, timedelta
 from typing import Dict, Optional
+from dawsos.core.credentials import get_credential_manager
 
 class FredDataCapability:
     """Federal Reserve Economic Data (FRED) API integration"""
 
     def __init__(self):
-        # Get FRED API key from environment
-        self.api_key = os.getenv('FRED_API_KEY')
+        # Get FRED API key from credential manager
+        credentials = get_credential_manager()
+        self.api_key = credentials.get('FRED_API_KEY', required=False)
         self.base_url = 'https://api.stlouisfed.org/fred'
         self.cache = {}
         self.cache_ttl = 3600  # 1 hour for economic data

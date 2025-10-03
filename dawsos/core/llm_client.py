@@ -1,19 +1,22 @@
 """LLM Client - Wrapper for Claude API"""
-import os
 import json
 from typing import Dict, Any
 from anthropic import Anthropic
 import re
+from dawsos.core.credentials import get_credential_manager
 
 class LLMClient:
     """Simple wrapper for Claude API"""
 
     def __init__(self):
-        self.api_key = os.getenv('ANTHROPIC_API_KEY')
+        # Get API key from credential manager
+        credentials = get_credential_manager()
+        self.api_key = credentials.get('ANTHROPIC_API_KEY', required=True)
+
         if not self.api_key:
             raise ValueError(
-                "ANTHROPIC_API_KEY environment variable is required for DawsOS to function. "
-                "Please set your API key in the .env file."
+                "ANTHROPIC_API_KEY is required for DawsOS to function. "
+                "Please set your API key as an environment variable or in the .env file."
             )
 
         self.client = Anthropic(api_key=self.api_key)

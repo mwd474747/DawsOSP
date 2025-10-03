@@ -1,16 +1,17 @@
-import os
 import urllib.request
 import urllib.parse
 import json
 from datetime import datetime, timedelta
 from typing import Dict, List
+from dawsos.core.credentials import get_credential_manager
 
 class MarketDataCapability:
     """Financial Modeling Prep API integration (Pro version)"""
-    
+
     def __init__(self):
-        # Get FMP API key from environment
-        self.api_key = os.getenv('FMP_API_KEY')
+        # Get FMP API key from credential manager
+        credentials = get_credential_manager()
+        self.api_key = credentials.get('FMP_API_KEY', required=False)
         self.base_url = 'https://financialmodelingprep.com/api'
         self.cache = {}
         self.cache_ttl = 60  # 1 minute for real-time data
