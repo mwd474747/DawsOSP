@@ -121,16 +121,46 @@ You manage:
 
 **Purpose**: Centralized, cached access to enriched datasets
 
-**Available Datasets**:
+**Available Datasets** (26 total - 100% coverage):
 ```python
 datasets = {
+    # Core datasets (7)
     'sector_performance': 'sector_performance.json',
     'economic_cycles': 'economic_cycles.json',
     'sp500_companies': 'sp500_companies.json',
     'sector_correlations': 'sector_correlations.json',
     'relationships': 'relationship_mappings.json',
     'ui_configurations': 'ui_configurations.json',
-    'company_database': 'company_database.json'
+    'company_database': 'company_database.json',
+
+    # Investment frameworks (4)
+    'buffett_checklist': 'buffett_checklist.json',
+    'buffett_framework': 'buffett_framework.json',
+    'dalio_cycles': 'dalio_cycles.json',
+    'dalio_framework': 'dalio_framework.json',
+
+    # Financial data & calculations (4)
+    'financial_calculations': 'financial_calculations.json',
+    'financial_formulas': 'financial_formulas.json',
+    'earnings_surprises': 'earnings_surprises.json',
+    'dividend_buyback': 'dividend_buyback_stats.json',
+
+    # Factor & alternative data (4)
+    'factor_smartbeta': 'factor_smartbeta_profiles.json',
+    'insider_institutional': 'insider_institutional_activity.json',
+    'alt_data_signals': 'alt_data_signals.json',
+    'esg_governance': 'esg_governance_scores.json',
+
+    # Market structure & indicators (6)
+    'cross_asset_lead_lag': 'cross_asset_lead_lag.json',
+    'econ_regime_watchlist': 'econ_regime_watchlist.json',
+    'fx_commodities': 'fx_commodities_snapshot.json',
+    'thematic_momentum': 'thematic_momentum.json',
+    'volatility_stress': 'volatility_stress_indicators.json',
+    'yield_curve': 'yield_curve_history.json',
+
+    # System metadata (1)
+    'agent_capabilities': 'agent_capabilities.json'
 }
 ```
 
@@ -291,8 +321,9 @@ forecast = graph.forecast('AAPL', horizon='1m')
 - Main graph: `storage/graph.json`
 - Seeded graph: `storage/seeded_graph.json`
 - Session data: `storage/session.json`
-- Agent memory: `storage/agent_memory/decisions.json`
-- Backups: `storage/backups/`
+- Agent memory: `storage/agent_memory/decisions.json` (auto-rotates at 5MB)
+- Backups: `storage/backups/` (30-day retention)
+- Enriched datasets: `storage/knowledge/`
 
 **Persistence Manager** (`core/persistence.py`):
 ```python
@@ -300,7 +331,7 @@ from core.persistence import PersistenceManager
 
 pm = PersistenceManager()
 
-# Save graph
+# Save graph (with checksums)
 pm.save_graph(graph)
 
 # Save session state
@@ -309,9 +340,17 @@ pm.save_session_state(state)
 # Load graph
 graph = pm.load_graph()
 
-# Create backup
+# Create backup (timestamped with .meta file)
 pm.backup_graph()
+
+# Rotate old backups (>30 days)
+pm.rotate_old_backups(days=30)
 ```
+
+**Disaster Recovery**:
+- See [DisasterRecovery.md](../docs/DisasterRecovery.md) for complete backup/restore procedures
+- Checksum validation ensures data integrity
+- Timestamped archives provide full audit trail
 
 ### Knowledge Seeding
 
@@ -378,6 +417,7 @@ graph.save('storage/graph.json')
    # Good
    loader = get_knowledge_loader()
    data = loader.get_dataset('sector_performance')
+   # Benefits: 30-min cache, validation, stale detection
    ```
 
 4. **Set appropriate strengths**
@@ -392,6 +432,11 @@ graph.save('storage/graph.json')
    node['metadata']['source'] = 'financial_analyst'
    node['metadata']['last_updated'] = datetime.now().isoformat()
    ```
+
+6. **Follow dataset format requirements**
+   - See [KnowledgeMaintenance.md](../docs/KnowledgeMaintenance.md) for _meta headers
+   - Required fields: `_meta.version`, `_meta.last_updated`, `_meta.source`
+   - Refresh cadence documented per dataset type
 
 ### Monitoring Graph Health
 

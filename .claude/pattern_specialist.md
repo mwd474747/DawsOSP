@@ -16,13 +16,16 @@ You specialize in:
 
 ### Pattern Location
 All patterns live in `dawsos/patterns/` with subdirectories:
-- `analysis/` - Analytical workflows (11 patterns)
+- `analysis/` - Analytical workflows (14 patterns)
 - `ui/` - UI interaction patterns (6 patterns)
 - `governance/` - Compliance and quality (6 patterns)
 - `queries/` - Data retrieval patterns (6 patterns)
 - `workflows/` - Multi-step workflows (4 patterns)
-- `actions/` - Discrete actions (5 patterns)
+- `actions/` - Discrete actions (4 patterns)
 - `system/meta/` - Meta-execution patterns (5 patterns)
+
+**Total**: 45 patterns (0 errors, 1 cosmetic warning)
+**Validation**: `python3 scripts/lint_patterns.py` integrated in CI/CD
 
 ### Pattern Engine (`core/pattern_engine.py`)
 
@@ -108,8 +111,14 @@ context = {
 
 #### Knowledge Actions
 - `knowledge_lookup` - Query knowledge graph by type/section
-- `enriched_lookup` - Load enriched JSON datasets
-  - Supports: `sector_performance`, `economic_cycles`, `sp500_companies`, `sector_correlations`, `relationships`, `ui_configurations`, `company_database`
+- `enriched_lookup` - Load enriched JSON datasets via KnowledgeLoader
+  - Supports: All 26 registered datasets (see `CAPABILITY_ROUTING_GUIDE.md`)
+  - Core: sector_performance, economic_cycles, sp500_companies, sector_correlations, relationships, ui_configurations, company_database
+  - Frameworks: buffett_checklist, buffett_framework, dalio_cycles, dalio_framework
+  - Financial: financial_calculations, financial_formulas, earnings_surprises, dividend_buyback
+  - Factor/Alt: factor_smartbeta, insider_institutional, alt_data_signals, esg_governance
+  - Market: cross_asset_lead_lag, econ_regime_watchlist, fx_commodities, thematic_momentum, volatility_stress, yield_curve
+  - System: agent_capabilities
 
 #### Data Actions
 - `fetch_financials` - Get financial statements
@@ -123,13 +132,15 @@ context = {
 
 #### Meta-Pattern Actions (Trinity Governance)
 - `detect_execution_type` - Determine request type (agent_direct, pattern, ui_action, api_call, legacy)
-- `execute_through_registry` - Force registry execution
+- `execute_through_registry` - **Primary action for agent execution** (Trinity 2.0 standard)
 - `normalize_response` - Ensure Trinity-compliant response format
 - `fix_constructor_args` - Repair agent initialization
 - `validate_agent` - Check agent configuration
 - `scan_agents` - List all registered agents
 - `check_constructor_compliance` - Validate agent constructors
 - `apply_fixes` - Auto-fix detected issues
+
+**Note**: `execute_through_registry` is the standard action in Trinity 2.0 patterns. All 45 patterns use this action for agent calls.
 
 ### Variable Substitution
 
@@ -220,6 +231,8 @@ context = {
 
 **Run**: `python scripts/lint_patterns.py`
 
+**Integrated in CI/CD**: `.github/workflows/compliance-check.yml` validates all patterns on push
+
 **Checks**:
 - Required fields (id, name, description, steps/workflow)
 - Duplicate pattern IDs
@@ -228,12 +241,15 @@ context = {
 - Unknown/deprecated fields
 - Empty steps
 - Orphaned references
+- Trinity compliance (execute_through_registry usage)
 
 **Common Issues**:
 - Missing `version` and `last_updated` (warning)
 - Unknown fields like `step`, `method`, `order` (warning)
 - Invalid agent names (error)
 - Missing `steps` or `workflow` (error)
+
+**Current Status**: 45 patterns, 0 errors, 1 cosmetic warning
 
 ### Pattern Execution Flow
 

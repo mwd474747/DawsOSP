@@ -157,3 +157,154 @@
 2025-10-03 10:51:13,936 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
 2025-10-03 10:51:13,939 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
 2025-10-03 10:51:13,941 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 12:28:05,381 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'ui_configurations' from dawsos/storage/knowledge/ui_configurations.json 
+2025-10-03 12:28:06,565 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'economic_cycles' from dawsos/storage/knowledge/economic_cycles.json 
+2025-10-03 12:28:06,566 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 12:28:06,573 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 12:28:06,573 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'sector_correlations' from dawsos/storage/knowledge/sector_correlations.json 
+2025-10-03 12:28:06,574 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 12:28:06,579 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'sector_performance' from dawsos/storage/knowledge/sector_performance.json 
+2025-10-03 12:28:06,579 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 12:28:06,580 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 12:28:06,581 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 13:02:26,206 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 13:02:26,246 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'ui_configurations' from dawsos/storage/knowledge/ui_configurations.json 
+2025-10-03 13:02:27,903 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'economic_cycles' from dawsos/storage/knowledge/economic_cycles.json 
+2025-10-03 13:02:27,903 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 13:02:27,923 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 13:02:27,925 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'sector_correlations' from dawsos/storage/knowledge/sector_correlations.json 
+2025-10-03 13:02:27,926 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 13:02:27,938 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'sector_performance' from dawsos/storage/knowledge/sector_performance.json 
+2025-10-03 13:02:27,939 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 13:02:27,942 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 13:02:27,945 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 13:05:17,290 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 14:52:56,230 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 14:58:03,067 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 14:58:20,226 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 14:58:57,048 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 14:59:37,759 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 15:00:06,437 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 15:00:28,316 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 15:00:45,741 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 15:01:25,233 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 15:12:26,517 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'ui_configurations' from dawsos/storage/knowledge/ui_configurations.json 
+2025-10-03 15:12:32,514 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'economic_cycles' from dawsos/storage/knowledge/economic_cycles.json 
+2025-10-03 15:12:32,514 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:12:32,532 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:12:32,533 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'sector_correlations' from dawsos/storage/knowledge/sector_correlations.json 
+2025-10-03 15:12:32,534 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:12:32,543 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'sector_performance' from dawsos/storage/knowledge/sector_performance.json 
+2025-10-03 15:12:32,543 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:12:32,546 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:12:32,548 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:30:15,906 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:30:16,347 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 15:30:17,711 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:30:17,711 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:30:17,729 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:30:17,729 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:30:17,730 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:30:17,740 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_performance' 
+2025-10-03 15:30:17,740 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:30:17,743 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:30:17,745 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:31:32,529 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 15:31:32,590 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 15:31:32,637 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 15:32:04,147 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:05,249 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:32:05,249 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:32:05,268 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:05,268 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:32:05,268 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:32:05,274 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_performance' 
+2025-10-03 15:32:05,274 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:32:05,276 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:05,277 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:05,412 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:06,399 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:32:06,399 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:32:06,407 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:06,408 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:32:06,408 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:32:06,414 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_performance' 
+2025-10-03 15:32:06,414 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:32:06,416 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:06,418 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:16,007 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:19,604 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:32:19,605 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:32:19,613 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:19,614 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:32:19,614 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:32:19,619 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_performance' 
+2025-10-03 15:32:19,619 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:32:19,621 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:19,623 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:19,720 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:20,634 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:32:20,635 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:32:20,656 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:20,656 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:32:20,657 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:32:20,665 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_performance' 
+2025-10-03 15:32:20,665 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:32:20,668 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:32:20,670 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:33:44,538 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:33:45,658 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:33:45,658 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:33:45,680 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:33:45,680 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:33:45,681 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:33:45,689 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_performance' 
+2025-10-03 15:33:45,689 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:33:45,693 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:33:45,695 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:33:45,804 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:33:46,978 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:33:46,979 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:33:47,003 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:33:47,003 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:33:47,004 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 15:33:47,011 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_performance' 
+2025-10-03 15:33:47,012 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 15:33:47,014 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:33:47,016 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 15:35:21,714 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 15:38:55,307 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 15:38:59,382 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 15:39:33,906 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 16:39:41,284 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 16:39:43,439 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 16:39:43,449 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'ui_configurations' from dawsos/storage/knowledge/ui_configurations.json 
+2025-10-03 16:39:44,647 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'economic_cycles' from dawsos/storage/knowledge/economic_cycles.json 
+2025-10-03 16:39:44,648 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 16:39:44,662 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 16:39:44,663 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'sector_correlations' from dawsos/storage/knowledge/sector_correlations.json 
+2025-10-03 16:39:44,665 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 16:39:44,677 - KnowledgeLoader - INFO - logger:info:83 - Loaded dataset 'sector_performance' from dawsos/storage/knowledge/sector_performance.json 
+2025-10-03 16:39:44,677 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 16:39:44,681 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 16:39:44,684 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 16:39:46,050 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 16:39:49,737 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 16:39:49,738 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 16:39:49,757 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 16:39:49,757 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 16:39:49,758 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 16:39:49,766 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_performance' 
+2025-10-03 16:39:49,766 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 16:39:49,769 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 16:39:49,772 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 16:39:49,897 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 16:39:50,771 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 16:39:50,772 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 16:39:50,789 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 16:39:50,789 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 16:39:50,792 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_correlations' 
+2025-10-03 16:39:50,800 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'sector_performance' 
+2025-10-03 16:39:50,800 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'economic_cycles' 
+2025-10-03 16:39:50,804 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 
+2025-10-03 16:39:50,806 - KnowledgeLoader - DEBUG - logger:debug:78 - Cache hit for dataset 'ui_configurations' 

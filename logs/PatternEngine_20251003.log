@@ -18,3 +18,221 @@
 2025-10-03 10:51:00,225 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
 2025-10-03 10:51:00,225 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
 2025-10-03 10:51:11,832 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: sector_performance {"pattern_id": "sector_performance", "confidence": 0.5, "matched": true}
+2025-10-03 13:02:26,243 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 13:02:26,243 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 13:02:26,244 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
+2025-10-03 14:52:56,231 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
+2025-10-03 14:58:03,067 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
+2025-10-03 14:58:03,067 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 14:58:03,067 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 14:58:03,067 - PatternEngine - DEBUG - logger:debug:78 - No pattern matched for: random question that does not match any pattern 
+2025-10-03 14:58:03,067 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 14:58:03,068 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
+2025-10-03 14:58:03,068 - PatternEngine - ERROR - logger:error:100 - Pattern not found: nonexistent_pattern {"error_type": null, "error_message": null}
+2025-10-03 14:58:03,068 - PatternEngine - ERROR - logger:error:100 - Pattern not found: some_pattern {"error_type": null, "error_message": null}
+2025-10-03 14:58:20,226 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
+2025-10-03 14:58:20,226 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 14:58:20,226 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 14:58:20,226 - PatternEngine - DEBUG - logger:debug:78 - No pattern matched for: random question that does not match any pattern 
+2025-10-03 14:58:20,226 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 14:58:20,226 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
+2025-10-03 14:58:20,226 - PatternEngine - ERROR - logger:error:100 - Pattern not found: nonexistent_pattern {"error_type": null, "error_message": null}
+2025-10-03 14:58:20,226 - PatternEngine - ERROR - logger:error:100 - Pattern not found: meta_executor {"error_type": null, "error_message": null}
+2025-10-03 14:58:57,054 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 14:58:57,055 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 14:58:57,055 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 14:58:57,055 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 14:58:57,055 - PatternEngine - DEBUG - logger:debug:78 - No pattern matched for: random question that does not match any pattern 
+2025-10-03 14:58:57,055 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 14:58:57,056 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 14:58:57,056 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 14:58:57,056 - PatternEngine - ERROR - logger:error:100 - Pattern not found: nonexistent_pattern {"error_type": null, "error_message": null}
+2025-10-03 14:59:37,766 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 14:59:37,766 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 14:59:37,766 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 14:59:37,766 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 14:59:37,766 - PatternEngine - DEBUG - logger:debug:78 - No pattern matched for: random question that does not match any pattern 
+2025-10-03 14:59:37,766 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 14:59:37,767 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 14:59:37,767 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 14:59:37,767 - PatternEngine - ERROR - logger:error:100 - Pattern not found: nonexistent_pattern {"error_type": null, "error_message": null}
+2025-10-03 14:59:37,767 - PatternEngine - ERROR - logger:error:100 - Max recursion depth exceeded for pattern meta_executor {"error_type": null, "error_message": null}
+2025-10-03 14:59:37,769 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 14:59:37,769 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 14:59:37,769 - PatternEngine - INFO - logger:info:83 - Execution tracked: None (0.0ms, success=True) 
+2025-10-03 15:00:06,442 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:00:06,442 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:00:06,442 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 15:00:06,442 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:00:06,442 - PatternEngine - DEBUG - logger:debug:78 - No pattern matched for: random question that does not match any pattern 
+2025-10-03 15:00:06,442 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 15:00:06,443 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:00:06,443 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:00:06,444 - PatternEngine - ERROR - logger:error:100 - Pattern not found: nonexistent_pattern {"error_type": null, "error_message": null}
+2025-10-03 15:00:06,444 - PatternEngine - ERROR - logger:error:100 - Max recursion depth exceeded for pattern meta_executor {"error_type": null, "error_message": null}
+2025-10-03 15:00:06,445 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:00:06,445 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:00:06,445 - PatternEngine - INFO - logger:info:83 - Execution tracked: test_pattern (0.0ms, success=True) 
+2025-10-03 15:00:06,445 - PatternEngine - INFO - logger:info:83 - Execution tracked: error_pattern (0.0ms, success=False) 
+2025-10-03 15:00:06,445 - PatternEngine - INFO - logger:info:83 - Execution tracked: None (success=True) 
+2025-10-03 15:00:06,446 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:00:06,446 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:00:06,446 - PatternEngine - WARNING - logger:warning:89 - No graph available for storage 
+2025-10-03 15:00:28,323 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:00:28,323 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:00:28,323 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 15:00:28,323 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:00:28,323 - PatternEngine - DEBUG - logger:debug:78 - No pattern matched for: random question that does not match any pattern 
+2025-10-03 15:00:28,323 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 15:00:28,325 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:00:28,325 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:00:28,325 - PatternEngine - ERROR - logger:error:100 - Pattern not found: nonexistent_pattern {"error_type": null, "error_message": null}
+2025-10-03 15:00:28,325 - PatternEngine - ERROR - logger:error:100 - Max recursion depth exceeded for pattern meta_executor {"error_type": null, "error_message": null}
+2025-10-03 15:00:28,327 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:00:28,327 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:00:28,327 - PatternEngine - INFO - logger:info:83 - Execution tracked: test_pattern (0.0ms, success=True) 
+2025-10-03 15:00:28,327 - PatternEngine - INFO - logger:info:83 - Execution tracked: error_pattern (0.0ms, success=False) 
+2025-10-03 15:00:28,327 - PatternEngine - INFO - logger:info:83 - Execution tracked: None (success=True) 
+2025-10-03 15:00:28,328 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:00:28,328 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:00:28,328 - PatternEngine - WARNING - logger:warning:89 - No graph available for storage 
+2025-10-03 15:00:28,329 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:00:28,329 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:00:28,329 - PatternEngine - DEBUG - logger:debug:78 - Stored result in graph: execution_result_5b6c7744 
+2025-10-03 15:00:45,746 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:00:45,746 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:00:45,746 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 15:00:45,746 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:00:45,746 - PatternEngine - DEBUG - logger:debug:78 - No pattern matched for: random question that does not match any pattern 
+2025-10-03 15:00:45,746 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 15:00:45,748 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:00:45,748 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:00:45,748 - PatternEngine - ERROR - logger:error:100 - Pattern not found: nonexistent_pattern {"error_type": null, "error_message": null}
+2025-10-03 15:00:45,748 - PatternEngine - ERROR - logger:error:100 - Max recursion depth exceeded for pattern meta_executor {"error_type": null, "error_message": null}
+2025-10-03 15:00:45,749 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:00:45,749 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:00:45,749 - PatternEngine - INFO - logger:info:83 - Execution tracked: test_pattern (0.0ms, success=True) 
+2025-10-03 15:00:45,749 - PatternEngine - INFO - logger:info:83 - Execution tracked: error_pattern (0.0ms, success=False) 
+2025-10-03 15:00:45,749 - PatternEngine - INFO - logger:info:83 - Execution tracked: None (success=True) 
+2025-10-03 15:00:45,751 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:00:45,751 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:00:45,751 - PatternEngine - WARNING - logger:warning:89 - No graph available for storage 
+2025-10-03 15:00:45,752 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:00:45,752 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:00:45,752 - PatternEngine - DEBUG - logger:debug:78 - Stored result in graph: execution_result_c57ca456 
+2025-10-03 15:01:25,241 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:01:25,241 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:01:25,241 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:01:25,241 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:01:25,242 - PatternEngine - ERROR - logger:error:100 - Pattern not found: None {"error_type": null, "error_message": null}
+2025-10-03 15:01:25,242 - PatternEngine - INFO - logger:info:83 - Execution tracked: None (success=True) 
+2025-10-03 15:01:25,242 - PatternEngine - DEBUG - logger:debug:78 - Stored result in graph: execution_result_c6d18ec2 
+2025-10-03 15:01:25,242 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:01:25,242 - PatternEngine - INFO - logger:info:83 - Execution tracked: buffett_checklist (success=True) 
+2025-10-03 15:01:25,242 - PatternEngine - DEBUG - logger:debug:78 - Stored result in graph: execution_result_fcb6e438 
+2025-10-03 15:30:16,354 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:30:16,355 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:30:16,358 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:30:16,358 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:30:16,360 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:30:16,360 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:31:32,536 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:31:32,536 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:31:32,536 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 15:31:32,536 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:31:32,537 - PatternEngine - DEBUG - logger:debug:78 - No pattern matched for: random question that does not match any pattern 
+2025-10-03 15:31:32,537 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 15:31:32,538 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:31:32,538 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:31:32,538 - PatternEngine - ERROR - logger:error:100 - Pattern not found: nonexistent_pattern {"error_type": null, "error_message": null}
+2025-10-03 15:31:32,538 - PatternEngine - ERROR - logger:error:100 - Max recursion depth exceeded for pattern meta_executor {"error_type": null, "error_message": null}
+2025-10-03 15:31:32,539 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:31:32,539 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:31:32,539 - PatternEngine - INFO - logger:info:83 - Execution tracked: test_pattern (0.0ms, success=True) 
+2025-10-03 15:31:32,539 - PatternEngine - INFO - logger:info:83 - Execution tracked: error_pattern (0.0ms, success=False) 
+2025-10-03 15:31:32,539 - PatternEngine - INFO - logger:info:83 - Execution tracked: None (success=True) 
+2025-10-03 15:31:32,541 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:31:32,541 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:31:32,541 - PatternEngine - WARNING - logger:warning:89 - No graph available for storage 
+2025-10-03 15:31:32,542 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:31:32,542 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:31:32,542 - PatternEngine - DEBUG - logger:debug:78 - Stored result in graph: execution_result_bc497c17 
+2025-10-03 15:31:32,592 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:31:32,592 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:31:32,592 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:31:32,592 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:31:32,592 - PatternEngine - ERROR - logger:error:100 - Pattern not found: None {"error_type": null, "error_message": null}
+2025-10-03 15:31:32,592 - PatternEngine - INFO - logger:info:83 - Execution tracked: None (success=True) 
+2025-10-03 15:31:32,592 - PatternEngine - DEBUG - logger:debug:78 - Stored result in graph: execution_result_b812da55 
+2025-10-03 15:31:32,592 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:31:32,592 - PatternEngine - INFO - logger:info:83 - Execution tracked: buffett_checklist (success=True) 
+2025-10-03 15:31:32,592 - PatternEngine - DEBUG - logger:debug:78 - Stored result in graph: execution_result_001dc18d 
+2025-10-03 15:31:32,639 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:31:32,639 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:31:32,640 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:31:32,640 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:31:32,641 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:31:32,641 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:35:21,721 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:35:21,721 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:35:21,721 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 15:35:21,721 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:35:21,721 - PatternEngine - DEBUG - logger:debug:78 - No pattern matched for: random question that does not match any pattern 
+2025-10-03 15:35:21,721 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 15:35:21,723 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:35:21,723 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:35:21,723 - PatternEngine - ERROR - logger:error:100 - Pattern not found: nonexistent_pattern {"error_type": null, "error_message": null}
+2025-10-03 15:35:21,723 - PatternEngine - ERROR - logger:error:100 - Max recursion depth exceeded for pattern meta_executor {"error_type": null, "error_message": null}
+2025-10-03 15:35:21,736 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:35:21,736 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:35:21,736 - PatternEngine - INFO - logger:info:83 - Execution tracked: test_pattern (0.0ms, success=True) 
+2025-10-03 15:35:21,737 - PatternEngine - INFO - logger:info:83 - Execution tracked: error_pattern (0.0ms, success=False) 
+2025-10-03 15:35:21,737 - PatternEngine - INFO - logger:info:83 - Execution tracked: None (success=True) 
+2025-10-03 15:35:21,769 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:35:21,769 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:35:21,769 - PatternEngine - WARNING - logger:warning:89 - No graph available for storage 
+2025-10-03 15:35:21,773 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:35:21,773 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:35:21,774 - PatternEngine - DEBUG - logger:debug:78 - Stored result in graph: execution_result_4dd49aeb 
+2025-10-03 15:38:55,313 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:38:55,313 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:38:55,313 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 15:38:55,314 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:38:55,314 - PatternEngine - DEBUG - logger:debug:78 - No pattern matched for: random question that does not match any pattern 
+2025-10-03 15:38:55,314 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: agent 
+2025-10-03 15:38:55,316 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:38:55,316 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:38:55,316 - PatternEngine - ERROR - logger:error:100 - Pattern not found: nonexistent_pattern {"error_type": null, "error_message": null}
+2025-10-03 15:38:55,316 - PatternEngine - ERROR - logger:error:100 - Max recursion depth exceeded for pattern meta_executor {"error_type": null, "error_message": null}
+2025-10-03 15:38:55,317 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:38:55,318 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:38:55,318 - PatternEngine - INFO - logger:info:83 - Execution tracked: test_pattern (0.0ms, success=True) 
+2025-10-03 15:38:55,318 - PatternEngine - INFO - logger:info:83 - Execution tracked: error_pattern (0.0ms, success=False) 
+2025-10-03 15:38:55,318 - PatternEngine - INFO - logger:info:83 - Execution tracked: None (success=True) 
+2025-10-03 15:38:55,319 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:38:55,319 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:38:55,319 - PatternEngine - WARNING - logger:warning:89 - No graph available for storage 
+2025-10-03 15:38:55,321 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:38:55,321 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:38:55,321 - PatternEngine - DEBUG - logger:debug:78 - Stored result in graph: execution_result_7dcfcc02 
+2025-10-03 15:38:59,388 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:38:59,388 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:38:59,390 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:38:59,390 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:38:59,393 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:38:59,393 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:38:59,396 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 15:38:59,396 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 15:38:59,396 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:38:59,396 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:38:59,396 - PatternEngine - ERROR - logger:error:100 - Pattern not found: None {"error_type": null, "error_message": null}
+2025-10-03 15:38:59,396 - PatternEngine - INFO - logger:info:83 - Execution tracked: None (success=True) 
+2025-10-03 15:38:59,396 - PatternEngine - DEBUG - logger:debug:78 - Stored result in graph: execution_result_2d37a78f 
+2025-10-03 15:38:59,396 - PatternEngine - DEBUG - logger:debug:78 - Routing decision: pattern 
+2025-10-03 15:38:59,396 - PatternEngine - INFO - logger:info:83 - Execution tracked: buffett_checklist (success=True) 
+2025-10-03 15:38:59,396 - PatternEngine - DEBUG - logger:debug:78 - Stored result in graph: execution_result_3861dd2f 
+2025-10-03 15:39:33,907 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
+2025-10-03 16:39:41,284 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
+2025-10-03 16:39:43,446 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 16:39:43,447 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 16:39:43,447 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 

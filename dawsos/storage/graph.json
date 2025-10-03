@@ -1,64 +1,54 @@
 {
   "version": 1,
   "nodes": {
-    "FED_RATE": {
-      "id": "FED_RATE",
-      "type": "indicator",
+    "DataHarvester_result_66ab6e9e": {
+      "id": "DataHarvester_result_66ab6e9e",
+      "type": "DataHarvester_result",
       "data": {
-        "name": "Federal Funds Rate",
-        "category": "monetary_policy",
-        "source": "FRED",
-        "frequency": "monthly"
+        "agent": "DataHarvester",
+        "result": {
+          "response": "Processed request: Get SPY VIX DXY TLT data",
+          "data": {},
+          "node_id": "DataHarvester_result_e74e0bda",
+          "agent": "DataHarvester",
+          "method_used": "think",
+          "timestamp": "2025-10-03T16:39:44.645318",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T16:39:44.645190"
       },
-      "created": "2024-01-01T00:00:00",
-      "modified": "2024-01-01T00:00:00",
+      "created": "2025-10-03T16:39:44.645301",
+      "modified": "2025-10-03T16:39:44.645304",
       "connections_in": [],
-      "connections_out": [
-        "edge_001",
-        "edge_002",
-        "edge_003"
-      ],
+      "connections_out": [],
       "metadata": {
         "access_count": 0,
         "last_accessed": null,
         "confidence": 1.0
       }
     },
-    "CPI": {
-      "id": "CPI",
-      "type": "indicator",
+    "DataHarvester_result_e74e0bda": {
+      "id": "DataHarvester_result_e74e0bda",
+      "type": "DataHarvester_result",
       "data": {
-        "name": "Consumer Price Index",
-        "category": "inflation",
-        "source": "FRED",
-        "frequency": "monthly"
+        "agent": "DataHarvester",
+        "result": {
+          "response": "Processed request: Get SPY VIX DXY TLT data",
+          "data": {},
+          "node_id": "DataHarvester_result_e74e0bda",
+          "agent": "DataHarvester",
+          "method_used": "think",
+          "timestamp": "2025-10-03T16:39:44.645318",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T16:39:44.645324",
+        "context": {
+          "request": "Get SPY VIX DXY TLT data"
+        }
       },
-      "created": "2024-01-01T00:00:00",
-      "modified": "2024-01-01T00:00:00",
+      "created": "2025-10-03T16:39:44.645336",
+      "modified": "2025-10-03T16:39:44.645339",
       "connections_in": [],
-      "connections_out": [
-        "edge_004"
-      ],
-      "metadata": {
-        "access_count": 0,
-        "last_accessed": null,
-        "confidence": 1.0
-      }
-    },
-    "TECH_SECTOR": {
-      "id": "TECH_SECTOR",
-      "type": "sector",
-      "data": {
-        "name": "Technology",
-        "index": "XLK",
-        "market_cap_weight": 0.28
-      },
-      "created": "2024-01-01T00:00:00",
-      "modified": "2024-01-01T00:00:00",
-      "connections_in": [
-        "edge_001",
-        "edge_005"
-      ],
       "connections_out": [],
       "metadata": {
         "access_count": 0,
@@ -66,80 +56,31 @@
         "confidence": 1.0
       }
     },
-    "FINANCIALS_SECTOR": {
-      "id": "FINANCIALS_SECTOR",
-      "type": "sector",
+    "PatternSpotter_result_608e52be": {
+      "id": "PatternSpotter_result_608e52be",
+      "type": "PatternSpotter_result",
       "data": {
-        "name": "Financials",
-        "index": "XLF",
-        "market_cap_weight": 0.13
+        "agent": "PatternSpotter",
+        "result": {
+          "response": "Detected market regime using multi-factor analysis",
+          "regime": "Analysis Error",
+          "confidence": 0.0,
+          "indicators": [],
+          "agent": "PatternSpotter",
+          "method_used": "process",
+          "timestamp": "2025-10-03T16:39:44.645448",
+          "node_id": "PatternSpotter_result_608e52be",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T16:39:44.645453",
+        "context": {
+          "data": "{market_data}",
+          "analysis_type": "regime"
+        }
       },
-      "created": "2024-01-01T00:00:00",
-      "modified": "2024-01-01T00:00:00",
-      "connections_in": [
-        "edge_002"
-      ],
-      "connections_out": [],
-      "metadata": {
-        "access_count": 0,
-        "last_accessed": null,
-        "confidence": 1.0
-      }
-    },
-    "REAL_ESTATE_SECTOR": {
-      "id": "REAL_ESTATE_SECTOR",
-      "type": "sector",
-      "data": {
-        "name": "Real Estate",
-        "index": "XLRE",
-        "market_cap_weight": 0.025
-      },
-      "created": "2024-01-01T00:00:00",
-      "modified": "2024-01-01T00:00:00",
-      "connections_in": [
-        "edge_003"
-      ],
-      "connections_out": [],
-      "metadata": {
-        "access_count": 0,
-        "last_accessed": null,
-        "confidence": 1.0
-      }
-    },
-    "GDP": {
-      "id": "GDP",
-      "type": "indicator",
-      "data": {
-        "name": "Gross Domestic Product",
-        "category": "growth",
-        "source": "FRED",
-        "frequency": "quarterly"
-      },
-      "created": "2024-01-01T00:00:00",
-      "modified": "2024-01-01T00:00:00",
+      "created": "2025-10-03T16:39:44.645466",
+      "modified": "2025-10-03T16:39:44.645468",
       "connections_in": [],
-      "connections_out": [
-        "edge_005",
-        "edge_006"
-      ],
-      "metadata": {
-        "access_count": 0,
-        "last_accessed": null,
-        "confidence": 1.0
-      }
-    },
-    "CORPORATE_EARNINGS": {
-      "id": "CORPORATE_EARNINGS",
-      "type": "fundamental",
-      "data": {
-        "name": "S&P 500 Earnings",
-        "category": "earnings"
-      },
-      "created": "2024-01-01T00:00:00",
-      "modified": "2024-01-01T00:00:00",
-      "connections_in": [
-        "edge_006"
-      ],
       "connections_out": [],
       "metadata": {
         "access_count": 0,
@@ -147,8 +88,261 @@
         "confidence": 1.0
       }
     },
-    "framework_98ab155c": {
-      "id": "framework_98ab155c",
+    "Claude_result_9ced4b86": {
+      "id": "Claude_result_9ced4b86",
+      "type": "Claude_result",
+      "data": {
+        "agent": "Claude",
+        "result": {
+          "intent": "ANALYSIS",
+          "entities": [
+            "market",
+            "regime"
+          ],
+          "action": "analyze",
+          "parameters": {},
+          "friendly_response": "Analyzing market regime",
+          "response": "\ud83c\udfaf Current Market Regime: RISK-ON\n\n\ud83d\udcca Key Indicators:\n\u2022 VIX: 15.2 (Low - Complacency)\n\u2022 DXY: 104.5 (Neutral)\n\u2022 Credit Spreads: Tight\n\u2022 Equity Momentum: Positive\n\n\ud83d\udd0d Regime Characteristics:\n\u2022 High risk appetite\n\u2022 Growth outperforming value\n\u2022 Tech sector leadership\n\u2022 Low volatility environment\n\n\u26a0\ufe0f Confidence Level: 75%\n\n\ud83d\udcdd Recommendations:\n\u2022 Maintain equity exposure\n\u2022 Overweight growth sectors\n\u2022 Keep hedges minimal\n\u2022 Watch for regime shift signals",
+          "node_id": "Claude_result_6ef30214",
+          "agent": "Claude",
+          "method_used": "process",
+          "timestamp": "2025-10-03T16:39:44.648589",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T16:39:44.648536"
+      },
+      "created": "2025-10-03T16:39:44.648580",
+      "modified": "2025-10-03T16:39:44.648583",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "Claude_result_6ef30214": {
+      "id": "Claude_result_6ef30214",
+      "type": "Claude_result",
+      "data": {
+        "agent": "Claude",
+        "result": {
+          "intent": "ANALYSIS",
+          "entities": [
+            "market",
+            "regime"
+          ],
+          "action": "analyze",
+          "parameters": {},
+          "friendly_response": "Analyzing market regime",
+          "response": "\ud83c\udfaf Current Market Regime: RISK-ON\n\n\ud83d\udcca Key Indicators:\n\u2022 VIX: 15.2 (Low - Complacency)\n\u2022 DXY: 104.5 (Neutral)\n\u2022 Credit Spreads: Tight\n\u2022 Equity Momentum: Positive\n\n\ud83d\udd0d Regime Characteristics:\n\u2022 High risk appetite\n\u2022 Growth outperforming value\n\u2022 Tech sector leadership\n\u2022 Low volatility environment\n\n\u26a0\ufe0f Confidence Level: 75%\n\n\ud83d\udcdd Recommendations:\n\u2022 Maintain equity exposure\n\u2022 Overweight growth sectors\n\u2022 Keep hedges minimal\n\u2022 Watch for regime shift signals",
+          "node_id": "Claude_result_6ef30214",
+          "agent": "Claude",
+          "method_used": "process",
+          "timestamp": "2025-10-03T16:39:44.648589",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T16:39:44.648593",
+        "context": {
+          "user_input": "Based on current analysis {regime_analysis}, historical cycles {historical_cycles.data}, and cycle indicators {cycle_indicators.data}, determine: 1) Current market regime (Risk-On/Risk-Off/Transitioning) 2) Which historical period (from {historical_cycles.data}) most resembles current conditions 3) Key indicators and confidence level 4) Sector rotation recommendations based on regime"
+        }
+      },
+      "created": "2025-10-03T16:39:44.648604",
+      "modified": "2025-10-03T16:39:44.648606",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "DataHarvester_result_dfe26dd0": {
+      "id": "DataHarvester_result_dfe26dd0",
+      "type": "DataHarvester_result",
+      "data": {
+        "agent": "DataHarvester",
+        "result": {
+          "response": "Processed request: Get SPY VIX DXY TLT data",
+          "data": {},
+          "node_id": "DataHarvester_result_32df7879",
+          "agent": "DataHarvester",
+          "method_used": "think",
+          "timestamp": "2025-10-03T16:39:49.736382",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T16:39:49.735460"
+      },
+      "created": "2025-10-03T16:39:49.735632",
+      "modified": "2025-10-03T16:39:49.735638",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "DataHarvester_result_32df7879": {
+      "id": "DataHarvester_result_32df7879",
+      "type": "DataHarvester_result",
+      "data": {
+        "agent": "DataHarvester",
+        "result": {
+          "response": "Processed request: Get SPY VIX DXY TLT data",
+          "data": {},
+          "node_id": "DataHarvester_result_32df7879",
+          "agent": "DataHarvester",
+          "method_used": "think",
+          "timestamp": "2025-10-03T16:39:49.736382",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T16:39:49.736600",
+        "context": {
+          "request": "Get SPY VIX DXY TLT data"
+        }
+      },
+      "created": "2025-10-03T16:39:49.736640",
+      "modified": "2025-10-03T16:39:49.736643",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "PatternSpotter_result_6421874b": {
+      "id": "PatternSpotter_result_6421874b",
+      "type": "PatternSpotter_result",
+      "data": {
+        "agent": "PatternSpotter",
+        "result": {
+          "response": "Detected market regime using multi-factor analysis",
+          "regime": "Analysis Error",
+          "confidence": 0.0,
+          "indicators": [],
+          "agent": "PatternSpotter",
+          "method_used": "process",
+          "timestamp": "2025-10-03T16:39:49.736924",
+          "node_id": "PatternSpotter_result_6421874b",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T16:39:49.736932",
+        "context": {
+          "data": "{market_data}",
+          "analysis_type": "regime"
+        }
+      },
+      "created": "2025-10-03T16:39:49.736956",
+      "modified": "2025-10-03T16:39:49.736959",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "Claude_result_a826e0f6": {
+      "id": "Claude_result_a826e0f6",
+      "type": "Claude_result",
+      "data": {
+        "agent": "Claude",
+        "result": {
+          "intent": "ANALYSIS",
+          "entities": [
+            "market",
+            "regime"
+          ],
+          "action": "analyze",
+          "parameters": {},
+          "friendly_response": "Analyzing market regime",
+          "response": "\ud83c\udfaf Current Market Regime: RISK-ON\n\n\ud83d\udcca Key Indicators:\n\u2022 VIX: 15.2 (Low - Complacency)\n\u2022 DXY: 104.5 (Neutral)\n\u2022 Credit Spreads: Tight\n\u2022 Equity Momentum: Positive\n\n\ud83d\udd0d Regime Characteristics:\n\u2022 High risk appetite\n\u2022 Growth outperforming value\n\u2022 Tech sector leadership\n\u2022 Low volatility environment\n\n\u26a0\ufe0f Confidence Level: 75%\n\n\ud83d\udcdd Recommendations:\n\u2022 Maintain equity exposure\n\u2022 Overweight growth sectors\n\u2022 Keep hedges minimal\n\u2022 Watch for regime shift signals",
+          "node_id": "Claude_result_c4731f2d",
+          "agent": "Claude",
+          "method_used": "process",
+          "timestamp": "2025-10-03T16:39:49.738834",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T16:39:49.738802"
+      },
+      "created": "2025-10-03T16:39:49.738826",
+      "modified": "2025-10-03T16:39:49.738828",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "Claude_result_c4731f2d": {
+      "id": "Claude_result_c4731f2d",
+      "type": "Claude_result",
+      "data": {
+        "agent": "Claude",
+        "result": {
+          "intent": "ANALYSIS",
+          "entities": [
+            "market",
+            "regime"
+          ],
+          "action": "analyze",
+          "parameters": {},
+          "friendly_response": "Analyzing market regime",
+          "response": "\ud83c\udfaf Current Market Regime: RISK-ON\n\n\ud83d\udcca Key Indicators:\n\u2022 VIX: 15.2 (Low - Complacency)\n\u2022 DXY: 104.5 (Neutral)\n\u2022 Credit Spreads: Tight\n\u2022 Equity Momentum: Positive\n\n\ud83d\udd0d Regime Characteristics:\n\u2022 High risk appetite\n\u2022 Growth outperforming value\n\u2022 Tech sector leadership\n\u2022 Low volatility environment\n\n\u26a0\ufe0f Confidence Level: 75%\n\n\ud83d\udcdd Recommendations:\n\u2022 Maintain equity exposure\n\u2022 Overweight growth sectors\n\u2022 Keep hedges minimal\n\u2022 Watch for regime shift signals",
+          "node_id": "Claude_result_c4731f2d",
+          "agent": "Claude",
+          "method_used": "process",
+          "timestamp": "2025-10-03T16:39:49.738834",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T16:39:49.738837",
+        "context": {
+          "user_input": "Based on current analysis {regime_analysis}, historical cycles {historical_cycles.data}, and cycle indicators {cycle_indicators.data}, determine: 1) Current market regime (Risk-On/Risk-Off/Transitioning) 2) Which historical period (from {historical_cycles.data}) most resembles current conditions 3) Key indicators and confidence level 4) Sector rotation recommendations based on regime"
+        }
+      },
+      "created": "2025-10-03T16:39:49.738847",
+      "modified": "2025-10-03T16:39:49.738849",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "execution_690cd9e5": {
+      "id": "execution_690cd9e5",
+      "type": "execution",
+      "data": {
+        "request": {
+          "type": "chat_input",
+          "user_input": "Show me macro analysis"
+        },
+        "result": {
+          "success": false,
+          "error": "Fallback execution - no suitable agent or pattern found",
+          "fallback_mode": true,
+          "timestamp": "2025-10-03T16:39:49.863273"
+        },
+        "timestamp": "2025-10-03T16:39:49.863278",
+        "executor": "universal",
+        "compliant": true
+      },
+      "created": "2025-10-03T16:39:49.863297",
+      "modified": "2025-10-03T16:39:49.863298",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "framework_041afca2": {
+      "id": "framework_041afca2",
       "type": "framework",
       "data": {
         "name": "Buffett Investment Framework",
@@ -156,14 +350,14 @@
         "creator": "Warren Buffett",
         "core_principle": "Buy wonderful companies at fair prices"
       },
-      "created": "2025-10-01T20:35:51.713405",
-      "modified": "2025-10-01T20:35:51.713411",
+      "created": "2025-10-03T16:39:57.574727",
+      "modified": "2025-10-03T16:39:57.574732",
       "connections_in": [],
       "connections_out": [
-        "edge_b104c448",
-        "edge_f16e9f88",
-        "edge_eb1843d7",
-        "edge_354dd277"
+        "edge_e04ad89c",
+        "edge_3aa40558",
+        "edge_693a4484",
+        "edge_355f2f7e"
       ],
       "metadata": {
         "access_count": 0,
@@ -171,8 +365,8 @@
         "confidence": 1.0
       }
     },
-    "concept_caf81ec4": {
-      "id": "concept_caf81ec4",
+    "concept_4b9f9d54": {
+      "id": "concept_4b9f9d54",
       "type": "concept",
       "data": {
         "name": "Circle of Competence",
@@ -183,10 +377,10 @@
           "Can I predict what this business will look like in 10 years?"
         ]
       },
-      "created": "2025-10-01T20:35:51.713419",
-      "modified": "2025-10-01T20:35:51.713420",
+      "created": "2025-10-03T16:39:57.574738",
+      "modified": "2025-10-03T16:39:57.574739",
       "connections_in": [
-        "edge_b104c448"
+        "edge_e04ad89c"
       ],
       "connections_out": [],
       "metadata": {
@@ -195,24 +389,24 @@
         "confidence": 1.0
       }
     },
-    "concept_0e2780e9": {
-      "id": "concept_0e2780e9",
+    "concept_b7aac41f": {
+      "id": "concept_b7aac41f",
       "type": "concept",
       "data": {
         "name": "Economic Moat",
         "definition": "Sustainable competitive advantage protecting profits"
       },
-      "created": "2025-10-01T20:35:51.713431",
-      "modified": "2025-10-01T20:35:51.713432",
+      "created": "2025-10-03T16:39:57.574747",
+      "modified": "2025-10-03T16:39:57.574748",
       "connections_in": [
-        "edge_f16e9f88"
+        "edge_3aa40558"
       ],
       "connections_out": [
-        "edge_b84de3fa",
-        "edge_62c90de7",
-        "edge_1068122a",
-        "edge_d37b44f6",
-        "edge_08a031e9"
+        "edge_a4bcc104",
+        "edge_3345fa00",
+        "edge_5942e8d1",
+        "edge_9c5e4268",
+        "edge_6a9c0621"
       ],
       "metadata": {
         "access_count": 0,
@@ -220,8 +414,8 @@
         "confidence": 1.0
       }
     },
-    "moat_type_e2be0d57": {
-      "id": "moat_type_e2be0d57",
+    "moat_type_e92d9133": {
+      "id": "moat_type_e92d9133",
       "type": "moat_type",
       "data": {
         "name": "Brand Moat",
@@ -243,10 +437,10 @@
         ],
         "durability_test": "Will customers still prefer this brand in 20 years?"
       },
-      "created": "2025-10-01T20:35:51.713443",
-      "modified": "2025-10-01T20:35:51.713444",
+      "created": "2025-10-03T16:39:57.574757",
+      "modified": "2025-10-03T16:39:57.574758",
       "connections_in": [
-        "edge_b84de3fa"
+        "edge_a4bcc104"
       ],
       "connections_out": [],
       "metadata": {
@@ -255,8 +449,8 @@
         "confidence": 1.0
       }
     },
-    "moat_type_6497ebf0": {
-      "id": "moat_type_6497ebf0",
+    "moat_type_e9cf5f2f": {
+      "id": "moat_type_e9cf5f2f",
       "type": "moat_type",
       "data": {
         "name": "Network Effects",
@@ -279,10 +473,10 @@
         ],
         "durability_test": "Does each new user make the product more valuable?"
       },
-      "created": "2025-10-01T20:35:51.713453",
-      "modified": "2025-10-01T20:35:51.713454",
+      "created": "2025-10-03T16:39:57.574764",
+      "modified": "2025-10-03T16:39:57.574765",
       "connections_in": [
-        "edge_62c90de7"
+        "edge_3345fa00"
       ],
       "connections_out": [],
       "metadata": {
@@ -291,8 +485,8 @@
         "confidence": 1.0
       }
     },
-    "moat_type_2c649d4c": {
-      "id": "moat_type_2c649d4c",
+    "moat_type_c1b60137": {
+      "id": "moat_type_c1b60137",
       "type": "moat_type",
       "data": {
         "name": "Cost Advantages",
@@ -314,10 +508,10 @@
         ],
         "durability_test": "Can competitors match our costs even with unlimited capital?"
       },
-      "created": "2025-10-01T20:35:51.713461",
-      "modified": "2025-10-01T20:35:51.713461",
+      "created": "2025-10-03T16:39:57.574771",
+      "modified": "2025-10-03T16:39:57.574771",
       "connections_in": [
-        "edge_1068122a"
+        "edge_5942e8d1"
       ],
       "connections_out": [],
       "metadata": {
@@ -326,8 +520,8 @@
         "confidence": 1.0
       }
     },
-    "moat_type_6c23ccc9": {
-      "id": "moat_type_6c23ccc9",
+    "moat_type_ec3c6a1b": {
+      "id": "moat_type_ec3c6a1b",
       "type": "moat_type",
       "data": {
         "name": "Switching Costs",
@@ -350,10 +544,10 @@
         ],
         "durability_test": "Would switching require significant time, money, or risk?"
       },
-      "created": "2025-10-01T20:35:51.713467",
-      "modified": "2025-10-01T20:35:51.713468",
+      "created": "2025-10-03T16:39:57.574776",
+      "modified": "2025-10-03T16:39:57.574777",
       "connections_in": [
-        "edge_d37b44f6"
+        "edge_9c5e4268"
       ],
       "connections_out": [],
       "metadata": {
@@ -362,8 +556,8 @@
         "confidence": 1.0
       }
     },
-    "moat_type_845c8c73": {
-      "id": "moat_type_845c8c73",
+    "moat_type_d1abebf4": {
+      "id": "moat_type_d1abebf4",
       "type": "moat_type",
       "data": {
         "name": "Intangible Assets",
@@ -386,10 +580,10 @@
         ],
         "durability_test": "Are these assets legally protected and hard to replicate?"
       },
-      "created": "2025-10-01T20:35:51.713474",
-      "modified": "2025-10-01T20:35:51.713474",
+      "created": "2025-10-03T16:39:57.574782",
+      "modified": "2025-10-03T16:39:57.574782",
       "connections_in": [
-        "edge_08a031e9"
+        "edge_6a9c0621"
       ],
       "connections_out": [],
       "metadata": {
@@ -398,8 +592,8 @@
         "confidence": 1.0
       }
     },
-    "concept_966a115b": {
-      "id": "concept_966a115b",
+    "concept_ce97d6d6": {
+      "id": "concept_ce97d6d6",
       "type": "concept",
       "data": {
         "name": "Management Quality",
@@ -408,10 +602,10 @@
           "capital_allocation"
         ]
       },
-      "created": "2025-10-01T20:35:51.713481",
-      "modified": "2025-10-01T20:35:51.713481",
+      "created": "2025-10-03T16:39:57.574787",
+      "modified": "2025-10-03T16:39:57.574788",
       "connections_in": [
-        "edge_eb1843d7"
+        "edge_693a4484"
       ],
       "connections_out": [],
       "metadata": {
@@ -420,8 +614,8 @@
         "confidence": 1.0
       }
     },
-    "concept_17a221bf": {
-      "id": "concept_17a221bf",
+    "concept_9821d00d": {
+      "id": "concept_9821d00d",
       "type": "concept",
       "data": {
         "name": "Intrinsic Value",
@@ -431,13 +625,13 @@
           "asset_based"
         ]
       },
-      "created": "2025-10-01T20:35:51.713488",
-      "modified": "2025-10-01T20:35:51.713488",
+      "created": "2025-10-03T16:39:57.574793",
+      "modified": "2025-10-03T16:39:57.574794",
       "connections_in": [
-        "edge_354dd277"
+        "edge_355f2f7e"
       ],
       "connections_out": [
-        "edge_eab68657"
+        "edge_d1271869"
       ],
       "metadata": {
         "access_count": 0,
@@ -445,8 +639,8 @@
         "confidence": 1.0
       }
     },
-    "formula_38be998d": {
-      "id": "formula_38be998d",
+    "formula_9ef784e6": {
+      "id": "formula_9ef784e6",
       "type": "formula",
       "data": {
         "name": "Owner Earnings",
@@ -459,10 +653,10 @@
         ],
         "quality_check": "Owner earnings should exceed reported earnings for quality businesses"
       },
-      "created": "2025-10-01T20:35:51.713494",
-      "modified": "2025-10-01T20:35:51.713495",
+      "created": "2025-10-03T16:39:57.574799",
+      "modified": "2025-10-03T16:39:57.574800",
       "connections_in": [
-        "edge_eab68657"
+        "edge_d1271869"
       ],
       "connections_out": [],
       "metadata": {
@@ -471,8 +665,8 @@
         "confidence": 1.0
       }
     },
-    "framework_ae294d13": {
-      "id": "framework_ae294d13",
+    "framework_eab197cc": {
+      "id": "framework_eab197cc",
       "type": "framework",
       "data": {
         "name": "Dalio Economic Machine",
@@ -480,15 +674,15 @@
         "creator": "Ray Dalio",
         "core_principle": "Economy works like a machine with predictable cycles"
       },
-      "created": "2025-10-01T20:35:51.713892",
-      "modified": "2025-10-01T20:35:51.713895",
+      "created": "2025-10-03T16:39:57.575104",
+      "modified": "2025-10-03T16:39:57.575105",
       "connections_in": [],
       "connections_out": [
-        "edge_8974d9e4",
-        "edge_e53327b7",
-        "edge_2a50bd57",
-        "edge_9d47406f",
-        "edge_daec69f9"
+        "edge_3591d396",
+        "edge_4c4f9d48",
+        "edge_1f058af9",
+        "edge_85bae5e0",
+        "edge_946ef4d8"
       ],
       "metadata": {
         "access_count": 0,
@@ -496,8 +690,8 @@
         "confidence": 1.0
       }
     },
-    "economic_force_c81137b8": {
-      "id": "economic_force_c81137b8",
+    "economic_force_3989dceb": {
+      "id": "economic_force_3989dceb",
       "type": "economic_force",
       "data": {
         "name": "Productivity Growth",
@@ -509,10 +703,10 @@
           "strategy": "Stay invested for long term"
         }
       },
-      "created": "2025-10-01T20:35:51.713901",
-      "modified": "2025-10-01T20:35:51.713902",
+      "created": "2025-10-03T16:39:57.575108",
+      "modified": "2025-10-03T16:39:57.575108",
       "connections_in": [
-        "edge_8974d9e4"
+        "edge_3591d396"
       ],
       "connections_out": [],
       "metadata": {
@@ -521,8 +715,8 @@
         "confidence": 1.0
       }
     },
-    "cycle_2996f291": {
-      "id": "cycle_2996f291",
+    "cycle_1943caa3": {
+      "id": "cycle_1943caa3",
       "type": "cycle",
       "data": {
         "name": "Short-term Debt Cycle",
@@ -535,16 +729,16 @@
           "trough"
         ]
       },
-      "created": "2025-10-01T20:35:51.713912",
-      "modified": "2025-10-01T20:35:51.713913",
+      "created": "2025-10-03T16:39:57.575114",
+      "modified": "2025-10-03T16:39:57.575115",
       "connections_in": [
-        "edge_e53327b7"
+        "edge_4c4f9d48"
       ],
       "connections_out": [
-        "edge_5563b649",
-        "edge_a4bfb2b9",
-        "edge_50f72855",
-        "edge_fb8bd55c"
+        "edge_140a9df9",
+        "edge_4b20fc26",
+        "edge_0e1fd6a9",
+        "edge_94306326"
       ],
       "metadata": {
         "access_count": 0,
@@ -552,8 +746,8 @@
         "confidence": 1.0
       }
     },
-    "cycle_phase_22de2563": {
-      "id": "cycle_phase_22de2563",
+    "cycle_phase_51cf1950": {
+      "id": "cycle_phase_51cf1950",
       "type": "cycle_phase",
       "data": {
         "name": "expansion",
@@ -583,10 +777,10 @@
           "strategy": "Risk-on, use leverage carefully"
         }
       },
-      "created": "2025-10-01T20:35:51.713920",
-      "modified": "2025-10-01T20:35:51.713921",
+      "created": "2025-10-03T16:39:57.575120",
+      "modified": "2025-10-03T16:39:57.575121",
       "connections_in": [
-        "edge_5563b649"
+        "edge_140a9df9"
       ],
       "connections_out": [],
       "metadata": {
@@ -595,8 +789,8 @@
         "confidence": 1.0
       }
     },
-    "cycle_phase_7a673a1b": {
-      "id": "cycle_phase_7a673a1b",
+    "cycle_phase_5c6bf4b2": {
+      "id": "cycle_phase_5c6bf4b2",
       "type": "cycle_phase",
       "data": {
         "name": "peak",
@@ -627,10 +821,10 @@
           "strategy": "Prepare for downturn"
         }
       },
-      "created": "2025-10-01T20:35:51.713928",
-      "modified": "2025-10-01T20:35:51.713929",
+      "created": "2025-10-03T16:39:57.575126",
+      "modified": "2025-10-03T16:39:57.575127",
       "connections_in": [
-        "edge_a4bfb2b9"
+        "edge_4b20fc26"
       ],
       "connections_out": [],
       "metadata": {
@@ -639,8 +833,8 @@
         "confidence": 1.0
       }
     },
-    "cycle_phase_ef242271": {
-      "id": "cycle_phase_ef242271",
+    "cycle_phase_4e0760b7": {
+      "id": "cycle_phase_4e0760b7",
       "type": "cycle_phase",
       "data": {
         "name": "recession",
@@ -671,10 +865,10 @@
           "strategy": "Capital preservation, prepare to buy"
         }
       },
-      "created": "2025-10-01T20:35:51.713935",
-      "modified": "2025-10-01T20:35:51.713936",
+      "created": "2025-10-03T16:39:57.575132",
+      "modified": "2025-10-03T16:39:57.575132",
       "connections_in": [
-        "edge_50f72855"
+        "edge_0e1fd6a9"
       ],
       "connections_out": [],
       "metadata": {
@@ -683,8 +877,8 @@
         "confidence": 1.0
       }
     },
-    "cycle_phase_0abbcc61": {
-      "id": "cycle_phase_0abbcc61",
+    "cycle_phase_40cda83a": {
+      "id": "cycle_phase_40cda83a",
       "type": "cycle_phase",
       "data": {
         "name": "trough",
@@ -714,10 +908,10 @@
           "strategy": "Aggressive buying opportunity"
         }
       },
-      "created": "2025-10-01T20:35:51.713942",
-      "modified": "2025-10-01T20:35:51.713943",
+      "created": "2025-10-03T16:39:57.575137",
+      "modified": "2025-10-03T16:39:57.575138",
       "connections_in": [
-        "edge_fb8bd55c"
+        "edge_94306326"
       ],
       "connections_out": [],
       "metadata": {
@@ -726,8 +920,8 @@
         "confidence": 1.0
       }
     },
-    "cycle_8b6bab29": {
-      "id": "cycle_8b6bab29",
+    "cycle_ce6f1f59": {
+      "id": "cycle_ce6f1f59",
       "type": "cycle",
       "data": {
         "name": "Long-term Debt Cycle",
@@ -740,10 +934,10 @@
           "deleveraging"
         ]
       },
-      "created": "2025-10-01T20:35:51.713949",
-      "modified": "2025-10-01T20:35:51.713949",
+      "created": "2025-10-03T16:39:57.575144",
+      "modified": "2025-10-03T16:39:57.575144",
       "connections_in": [
-        "edge_2a50bd57"
+        "edge_1f058af9"
       ],
       "connections_out": [],
       "metadata": {
@@ -752,8 +946,8 @@
         "confidence": 1.0
       }
     },
-    "portfolio_1755dab3": {
-      "id": "portfolio_1755dab3",
+    "portfolio_8cb1a499": {
+      "id": "portfolio_8cb1a499",
       "type": "portfolio",
       "data": {
         "name": "All-Weather Portfolio",
@@ -786,16 +980,16 @@
           }
         }
       },
-      "created": "2025-10-01T20:35:51.713956",
-      "modified": "2025-10-01T20:35:51.713956",
+      "created": "2025-10-03T16:39:57.575149",
+      "modified": "2025-10-03T16:39:57.575150",
       "connections_in": [
-        "edge_9d47406f"
+        "edge_85bae5e0"
       ],
       "connections_out": [
-        "edge_8e1904e3",
-        "edge_437c3a28",
-        "edge_cd9c1b15",
-        "edge_d49594dc"
+        "edge_fc94464f",
+        "edge_be19c01a",
+        "edge_b3fe835f",
+        "edge_2cbfee3d"
       ],
       "metadata": {
         "access_count": 0,
@@ -803,8 +997,8 @@
         "confidence": 1.0
       }
     },
-    "market_environment_8504bc79": {
-      "id": "market_environment_8504bc79",
+    "market_environment_84b8c7fd": {
+      "id": "market_environment_84b8c7fd",
       "type": "market_environment",
       "data": {
         "name": "Growth Rising",
@@ -823,10 +1017,10 @@
           "Cash"
         ]
       },
-      "created": "2025-10-01T20:35:51.713964",
-      "modified": "2025-10-01T20:35:51.713965",
+      "created": "2025-10-03T16:39:57.575156",
+      "modified": "2025-10-03T16:39:57.575156",
       "connections_in": [
-        "edge_8e1904e3"
+        "edge_fc94464f"
       ],
       "connections_out": [],
       "metadata": {
@@ -835,8 +1029,8 @@
         "confidence": 1.0
       }
     },
-    "market_environment_2c9c2979": {
-      "id": "market_environment_2c9c2979",
+    "market_environment_f6ea71cf": {
+      "id": "market_environment_f6ea71cf",
       "type": "market_environment",
       "data": {
         "name": "Growth Falling",
@@ -854,10 +1048,10 @@
           "EM"
         ]
       },
-      "created": "2025-10-01T20:35:51.713972",
-      "modified": "2025-10-01T20:35:51.713972",
+      "created": "2025-10-03T16:39:57.575162",
+      "modified": "2025-10-03T16:39:57.575162",
       "connections_in": [
-        "edge_437c3a28"
+        "edge_be19c01a"
       ],
       "connections_out": [],
       "metadata": {
@@ -866,8 +1060,8 @@
         "confidence": 1.0
       }
     },
-    "market_environment_a6b43141": {
-      "id": "market_environment_a6b43141",
+    "market_environment_f3c2b5f9": {
+      "id": "market_environment_f3c2b5f9",
       "type": "market_environment",
       "data": {
         "name": "Inflation Rising",
@@ -886,10 +1080,10 @@
           "Stocks initially"
         ]
       },
-      "created": "2025-10-01T20:35:51.713979",
-      "modified": "2025-10-01T20:35:51.713980",
+      "created": "2025-10-03T16:39:57.575168",
+      "modified": "2025-10-03T16:39:57.575168",
       "connections_in": [
-        "edge_cd9c1b15"
+        "edge_b3fe835f"
       ],
       "connections_out": [],
       "metadata": {
@@ -898,8 +1092,8 @@
         "confidence": 1.0
       }
     },
-    "market_environment_0b83d3fb": {
-      "id": "market_environment_0b83d3fb",
+    "market_environment_1d8e5a58": {
+      "id": "market_environment_1d8e5a58",
       "type": "market_environment",
       "data": {
         "name": "Inflation Falling",
@@ -917,10 +1111,10 @@
           "Real estate"
         ]
       },
-      "created": "2025-10-01T20:35:51.713986",
-      "modified": "2025-10-01T20:35:51.713987",
+      "created": "2025-10-03T16:39:57.575174",
+      "modified": "2025-10-03T16:39:57.575174",
       "connections_in": [
-        "edge_d49594dc"
+        "edge_2cbfee3d"
       ],
       "connections_out": [],
       "metadata": {
@@ -929,8 +1123,8 @@
         "confidence": 1.0
       }
     },
-    "concept_d00fa324": {
-      "id": "concept_d00fa324",
+    "concept_5ccd6c9c": {
+      "id": "concept_5ccd6c9c",
       "type": "concept",
       "data": {
         "name": "Paradigm Shifts",
@@ -944,10 +1138,10 @@
           "Technology fundamentally changes economy"
         ]
       },
-      "created": "2025-10-01T20:35:51.713993",
-      "modified": "2025-10-01T20:35:51.713994",
+      "created": "2025-10-03T16:39:57.575181",
+      "modified": "2025-10-03T16:39:57.575181",
       "connections_in": [
-        "edge_daec69f9"
+        "edge_946ef4d8"
       ],
       "connections_out": [],
       "metadata": {
@@ -956,8 +1150,8 @@
         "confidence": 1.0
       }
     },
-    "knowledge_base_70f8e34e": {
-      "id": "knowledge_base_70f8e34e",
+    "knowledge_base_90385381": {
+      "id": "knowledge_base_90385381",
       "type": "knowledge_base",
       "data": {
         "name": "Financial Calculations",
@@ -968,16 +1162,16 @@
           "combined_framework"
         ]
       },
-      "created": "2025-10-01T20:35:51.714362",
-      "modified": "2025-10-01T20:35:51.714364",
+      "created": "2025-10-03T16:39:57.575399",
+      "modified": "2025-10-03T16:39:57.575400",
       "connections_in": [],
       "connections_out": [
-        "edge_d574b63a",
-        "edge_96386ad2",
-        "edge_373397bc",
-        "edge_fab37cb4",
-        "edge_65fd7b63",
-        "edge_08ad69df"
+        "edge_9cafde99",
+        "edge_eb469aae",
+        "edge_252379bc",
+        "edge_d17a08bf",
+        "edge_2b87c88e",
+        "edge_55d3e86d"
       ],
       "metadata": {
         "access_count": 0,
@@ -985,8 +1179,8 @@
         "confidence": 1.0
       }
     },
-    "calculation_69d5b781": {
-      "id": "calculation_69d5b781",
+    "calculation_413c57d8": {
+      "id": "calculation_413c57d8",
       "type": "calculation",
       "data": {
         "name": "Owner Earnings",
@@ -1035,10 +1229,10 @@
           ]
         }
       },
-      "created": "2025-10-01T20:35:51.714368",
-      "modified": "2025-10-01T20:35:51.714369",
+      "created": "2025-10-03T16:39:57.575403",
+      "modified": "2025-10-03T16:39:57.575403",
       "connections_in": [
-        "edge_d574b63a"
+        "edge_9cafde99"
       ],
       "connections_out": [],
       "metadata": {
@@ -1047,8 +1241,8 @@
         "confidence": 1.0
       }
     },
-    "calculation_a4f535fd": {
-      "id": "calculation_a4f535fd",
+    "calculation_4a48a60c": {
+      "id": "calculation_4a48a60c",
       "type": "calculation",
       "data": {
         "name": "Moat Quantification",
@@ -1090,10 +1284,10 @@
           }
         }
       },
-      "created": "2025-10-01T20:35:51.714376",
-      "modified": "2025-10-01T20:35:51.714377",
+      "created": "2025-10-03T16:39:57.575409",
+      "modified": "2025-10-03T16:39:57.575410",
       "connections_in": [
-        "edge_96386ad2"
+        "edge_eb469aae"
       ],
       "connections_out": [],
       "metadata": {
@@ -1102,8 +1296,8 @@
         "confidence": 1.0
       }
     },
-    "calculation_30abf623": {
-      "id": "calculation_30abf623",
+    "calculation_b95da9ea": {
+      "id": "calculation_b95da9ea",
       "type": "calculation",
       "data": {
         "name": "Intrinsic Value Methods",
@@ -1161,10 +1355,10 @@
           "adjustment": "Use normalized earnings not current"
         }
       },
-      "created": "2025-10-01T20:35:51.714384",
-      "modified": "2025-10-01T20:35:51.714384",
+      "created": "2025-10-03T16:39:57.575415",
+      "modified": "2025-10-03T16:39:57.575416",
       "connections_in": [
-        "edge_373397bc"
+        "edge_252379bc"
       ],
       "connections_out": [],
       "metadata": {
@@ -1173,8 +1367,8 @@
         "confidence": 1.0
       }
     },
-    "calculation_727d4026": {
-      "id": "calculation_727d4026",
+    "calculation_d04c3e39": {
+      "id": "calculation_d04c3e39",
       "type": "calculation",
       "data": {
         "name": "Debt Cycle Position",
@@ -1266,10 +1460,10 @@
           ]
         }
       },
-      "created": "2025-10-01T20:35:51.714392",
-      "modified": "2025-10-01T20:35:51.714393",
+      "created": "2025-10-03T16:39:57.575421",
+      "modified": "2025-10-03T16:39:57.575422",
       "connections_in": [
-        "edge_fab37cb4"
+        "edge_d17a08bf"
       ],
       "connections_out": [],
       "metadata": {
@@ -1278,8 +1472,8 @@
         "confidence": 1.0
       }
     },
-    "calculation_9b794f94": {
-      "id": "calculation_9b794f94",
+    "calculation_33a4c2fb": {
+      "id": "calculation_33a4c2fb",
       "type": "calculation",
       "data": {
         "name": "All-Weather Risk Parity",
@@ -1314,10 +1508,10 @@
           }
         }
       },
-      "created": "2025-10-01T20:35:51.714399",
-      "modified": "2025-10-01T20:35:51.714400",
+      "created": "2025-10-03T16:39:57.575427",
+      "modified": "2025-10-03T16:39:57.575427",
       "connections_in": [
-        "edge_65fd7b63"
+        "edge_2b87c88e"
       ],
       "connections_out": [],
       "metadata": {
@@ -1326,8 +1520,8 @@
         "confidence": 1.0
       }
     },
-    "framework_7a7e2a59": {
-      "id": "framework_7a7e2a59",
+    "framework_4b75c56a": {
+      "id": "framework_4b75c56a",
       "type": "framework",
       "data": {
         "name": "Quality-Value Matrix",
@@ -1355,10 +1549,10 @@
           }
         }
       },
-      "created": "2025-10-01T20:35:51.714407",
-      "modified": "2025-10-01T20:35:51.714407",
+      "created": "2025-10-03T16:39:57.575433",
+      "modified": "2025-10-03T16:39:57.575433",
       "connections_in": [
-        "edge_08ad69df"
+        "edge_55d3e86d"
       ],
       "connections_out": [],
       "metadata": {
@@ -1367,8 +1561,8 @@
         "confidence": 1.0
       }
     },
-    "company_fa603a77": {
-      "id": "company_fa603a77",
+    "company_0296f81c": {
+      "id": "company_0296f81c",
       "type": "company",
       "data": {
         "symbol": "AAPL",
@@ -1378,8 +1572,8 @@
         "owner_earnings_quality": "Excellent",
         "cycle_sensitivity": "Moderate"
       },
-      "created": "2025-10-01T20:35:51.714430",
-      "modified": "2025-10-01T20:35:51.714431",
+      "created": "2025-10-03T16:39:57.575451",
+      "modified": "2025-10-03T16:39:57.575452",
       "connections_in": [],
       "connections_out": [],
       "metadata": {
@@ -1388,16 +1582,16 @@
         "confidence": 1.0
       }
     },
-    "analysis_query_a87cc181": {
-      "id": "analysis_query_a87cc181",
+    "analysis_query_63c32e7b": {
+      "id": "analysis_query_63c32e7b",
       "type": "analysis_query",
       "data": {
         "query": "moat analysis for AAPL",
         "symbol": "AAPL",
         "analysis_type": "moat"
       },
-      "created": "2025-10-01T20:35:51.714434",
-      "modified": "2025-10-01T20:35:51.714435",
+      "created": "2025-10-03T16:39:57.575454",
+      "modified": "2025-10-03T16:39:57.575455",
       "connections_in": [],
       "connections_out": [],
       "metadata": {
@@ -1406,8 +1600,8 @@
         "confidence": 1.0
       }
     },
-    "company_220af20e": {
-      "id": "company_220af20e",
+    "company_923d222d": {
+      "id": "company_923d222d",
       "type": "company",
       "data": {
         "symbol": "BRK.B",
@@ -1417,8 +1611,8 @@
         "owner_earnings_quality": "Excellent",
         "cycle_sensitivity": "Low"
       },
-      "created": "2025-10-01T20:35:51.714437",
-      "modified": "2025-10-01T20:35:51.714438",
+      "created": "2025-10-03T16:39:57.575457",
+      "modified": "2025-10-03T16:39:57.575458",
       "connections_in": [],
       "connections_out": [],
       "metadata": {
@@ -1427,16 +1621,16 @@
         "confidence": 1.0
       }
     },
-    "analysis_query_f141bdd1": {
-      "id": "analysis_query_f141bdd1",
+    "analysis_query_de08dcf7": {
+      "id": "analysis_query_de08dcf7",
       "type": "analysis_query",
       "data": {
         "query": "moat analysis for BRK.B",
         "symbol": "BRK.B",
         "analysis_type": "moat"
       },
-      "created": "2025-10-01T20:35:51.714441",
-      "modified": "2025-10-01T20:35:51.714442",
+      "created": "2025-10-03T16:39:57.575460",
+      "modified": "2025-10-03T16:39:57.575461",
       "connections_in": [],
       "connections_out": [],
       "metadata": {
@@ -1445,8 +1639,8 @@
         "confidence": 1.0
       }
     },
-    "company_2906a67d": {
-      "id": "company_2906a67d",
+    "company_75705801": {
+      "id": "company_75705801",
       "type": "company",
       "data": {
         "symbol": "V",
@@ -1456,8 +1650,8 @@
         "owner_earnings_quality": "Excellent",
         "cycle_sensitivity": "Moderate"
       },
-      "created": "2025-10-01T20:35:51.714444",
-      "modified": "2025-10-01T20:35:51.714445",
+      "created": "2025-10-03T16:39:57.575463",
+      "modified": "2025-10-03T16:39:57.575463",
       "connections_in": [],
       "connections_out": [],
       "metadata": {
@@ -1466,16 +1660,16 @@
         "confidence": 1.0
       }
     },
-    "analysis_query_f0a475f0": {
-      "id": "analysis_query_f0a475f0",
+    "analysis_query_fd309027": {
+      "id": "analysis_query_fd309027",
       "type": "analysis_query",
       "data": {
         "query": "moat analysis for V",
         "symbol": "V",
         "analysis_type": "moat"
       },
-      "created": "2025-10-01T20:35:51.714448",
-      "modified": "2025-10-01T20:35:51.714448",
+      "created": "2025-10-03T16:39:57.575465",
+      "modified": "2025-10-03T16:39:57.575466",
       "connections_in": [],
       "connections_out": [],
       "metadata": {
@@ -1484,8 +1678,8 @@
         "confidence": 1.0
       }
     },
-    "company_c9c7b9ce": {
-      "id": "company_c9c7b9ce",
+    "company_980f02f1": {
+      "id": "company_980f02f1",
       "type": "company",
       "data": {
         "symbol": "COST",
@@ -1495,8 +1689,8 @@
         "owner_earnings_quality": "Good",
         "cycle_sensitivity": "Low"
       },
-      "created": "2025-10-01T20:35:51.714451",
-      "modified": "2025-10-01T20:35:51.714451",
+      "created": "2025-10-03T16:39:57.575468",
+      "modified": "2025-10-03T16:39:57.575469",
       "connections_in": [],
       "connections_out": [],
       "metadata": {
@@ -1505,16 +1699,16 @@
         "confidence": 1.0
       }
     },
-    "analysis_query_6f309300": {
-      "id": "analysis_query_6f309300",
+    "analysis_query_eedc62a2": {
+      "id": "analysis_query_eedc62a2",
       "type": "analysis_query",
       "data": {
         "query": "moat analysis for COST",
         "symbol": "COST",
         "analysis_type": "moat"
       },
-      "created": "2025-10-01T20:35:51.714454",
-      "modified": "2025-10-01T20:35:51.714454",
+      "created": "2025-10-03T16:39:57.575471",
+      "modified": "2025-10-03T16:39:57.575471",
       "connections_in": [],
       "connections_out": [],
       "metadata": {
@@ -1523,8 +1717,8 @@
         "confidence": 1.0
       }
     },
-    "company_b54fa076": {
-      "id": "company_b54fa076",
+    "company_1ecdc376": {
+      "id": "company_1ecdc376",
       "type": "company",
       "data": {
         "symbol": "MSFT",
@@ -1534,8 +1728,8 @@
         "owner_earnings_quality": "Excellent",
         "cycle_sensitivity": "Moderate"
       },
-      "created": "2025-10-01T20:35:51.714457",
-      "modified": "2025-10-01T20:35:51.714457",
+      "created": "2025-10-03T16:39:57.575473",
+      "modified": "2025-10-03T16:39:57.575474",
       "connections_in": [],
       "connections_out": [],
       "metadata": {
@@ -1544,16 +1738,16 @@
         "confidence": 1.0
       }
     },
-    "analysis_query_517b70ef": {
-      "id": "analysis_query_517b70ef",
+    "analysis_query_99fa54b0": {
+      "id": "analysis_query_99fa54b0",
       "type": "analysis_query",
       "data": {
         "query": "moat analysis for MSFT",
         "symbol": "MSFT",
         "analysis_type": "moat"
       },
-      "created": "2025-10-01T20:35:51.714460",
-      "modified": "2025-10-01T20:35:51.714460",
+      "created": "2025-10-03T16:39:57.575476",
+      "modified": "2025-10-03T16:39:57.575476",
       "connections_in": [],
       "connections_out": [],
       "metadata": {
@@ -1565,464 +1759,367 @@
   },
   "edges": [
     {
-      "id": "edge_001",
-      "from": "FED_RATE",
-      "to": "TECH_SECTOR",
-      "type": "pressures",
-      "strength": 0.8,
-      "metadata": {
-        "reasoning": "Higher rates increase discount rate for growth stocks"
-      },
-      "created": "2024-01-01T00:00:00",
-      "activations": 0
-    },
-    {
-      "id": "edge_002",
-      "from": "FED_RATE",
-      "to": "FINANCIALS_SECTOR",
-      "type": "supports",
-      "strength": 0.6,
-      "metadata": {
-        "reasoning": "Banks benefit from higher net interest margins"
-      },
-      "created": "2024-01-01T00:00:00",
-      "activations": 0
-    },
-    {
-      "id": "edge_003",
-      "from": "FED_RATE",
-      "to": "REAL_ESTATE_SECTOR",
-      "type": "pressures",
-      "strength": 0.9,
-      "metadata": {
-        "reasoning": "Higher rates directly impact mortgage costs and property valuations"
-      },
-      "created": "2024-01-01T00:00:00",
-      "activations": 0
-    },
-    {
-      "id": "edge_004",
-      "from": "CPI",
-      "to": "FED_RATE",
-      "type": "causes",
-      "strength": 0.7,
-      "metadata": {
-        "reasoning": "Fed responds to inflation with rate changes"
-      },
-      "created": "2024-01-01T00:00:00",
-      "activations": 0
-    },
-    {
-      "id": "edge_005",
-      "from": "GDP",
-      "to": "TECH_SECTOR",
-      "type": "supports",
-      "strength": 0.7,
-      "metadata": {
-        "reasoning": "Economic growth drives tech spending"
-      },
-      "created": "2024-01-01T00:00:00",
-      "activations": 0
-    },
-    {
-      "id": "edge_006",
-      "from": "GDP",
-      "to": "CORPORATE_EARNINGS",
-      "type": "causes",
-      "strength": 0.8,
-      "metadata": {
-        "reasoning": "Economic growth drives corporate profits"
-      },
-      "created": "2024-01-01T00:00:00",
-      "activations": 0
-    },
-    {
-      "id": "edge_b104c448",
-      "from": "framework_98ab155c",
-      "to": "concept_caf81ec4",
+      "id": "edge_e04ad89c",
+      "from": "framework_041afca2",
+      "to": "concept_4b9f9d54",
       "type": "includes_concept",
       "strength": 1.0,
       "metadata": {
         "importance": "critical"
       },
-      "created": "2025-10-01T20:35:51.713425",
+      "created": "2025-10-03T16:39:57.574743",
       "activations": 0
     },
     {
-      "id": "edge_f16e9f88",
-      "from": "framework_98ab155c",
-      "to": "concept_0e2780e9",
+      "id": "edge_3aa40558",
+      "from": "framework_041afca2",
+      "to": "concept_b7aac41f",
       "type": "includes_concept",
       "strength": 1.0,
       "metadata": {
         "importance": "critical"
       },
-      "created": "2025-10-01T20:35:51.713436",
+      "created": "2025-10-03T16:39:57.574751",
       "activations": 0
     },
     {
-      "id": "edge_b84de3fa",
-      "from": "concept_0e2780e9",
-      "to": "moat_type_e2be0d57",
+      "id": "edge_a4bcc104",
+      "from": "concept_b7aac41f",
+      "to": "moat_type_e92d9133",
       "type": "has_type",
       "strength": 1.0,
       "metadata": {
         "category": "brand_moat"
       },
-      "created": "2025-10-01T20:35:51.713447",
+      "created": "2025-10-03T16:39:57.574760",
       "activations": 0
     },
     {
-      "id": "edge_62c90de7",
-      "from": "concept_0e2780e9",
-      "to": "moat_type_6497ebf0",
+      "id": "edge_3345fa00",
+      "from": "concept_b7aac41f",
+      "to": "moat_type_e9cf5f2f",
       "type": "has_type",
       "strength": 1.0,
       "metadata": {
         "category": "network_effects"
       },
-      "created": "2025-10-01T20:35:51.713457",
+      "created": "2025-10-03T16:39:57.574767",
       "activations": 0
     },
     {
-      "id": "edge_1068122a",
-      "from": "concept_0e2780e9",
-      "to": "moat_type_2c649d4c",
+      "id": "edge_5942e8d1",
+      "from": "concept_b7aac41f",
+      "to": "moat_type_c1b60137",
       "type": "has_type",
       "strength": 1.0,
       "metadata": {
         "category": "cost_advantages"
       },
-      "created": "2025-10-01T20:35:51.713464",
+      "created": "2025-10-03T16:39:57.574774",
       "activations": 0
     },
     {
-      "id": "edge_d37b44f6",
-      "from": "concept_0e2780e9",
-      "to": "moat_type_6c23ccc9",
+      "id": "edge_9c5e4268",
+      "from": "concept_b7aac41f",
+      "to": "moat_type_ec3c6a1b",
       "type": "has_type",
       "strength": 1.0,
       "metadata": {
         "category": "switching_costs"
       },
-      "created": "2025-10-01T20:35:51.713471",
+      "created": "2025-10-03T16:39:57.574779",
       "activations": 0
     },
     {
-      "id": "edge_08a031e9",
-      "from": "concept_0e2780e9",
-      "to": "moat_type_845c8c73",
+      "id": "edge_6a9c0621",
+      "from": "concept_b7aac41f",
+      "to": "moat_type_d1abebf4",
       "type": "has_type",
       "strength": 1.0,
       "metadata": {
         "category": "intangible_assets"
       },
-      "created": "2025-10-01T20:35:51.713477",
+      "created": "2025-10-03T16:39:57.574785",
       "activations": 0
     },
     {
-      "id": "edge_eb1843d7",
-      "from": "framework_98ab155c",
-      "to": "concept_966a115b",
+      "id": "edge_693a4484",
+      "from": "framework_041afca2",
+      "to": "concept_ce97d6d6",
       "type": "evaluates",
       "strength": 1.0,
       "metadata": {
         "importance": "high"
       },
-      "created": "2025-10-01T20:35:51.713484",
+      "created": "2025-10-03T16:39:57.574790",
       "activations": 0
     },
     {
-      "id": "edge_354dd277",
-      "from": "framework_98ab155c",
-      "to": "concept_17a221bf",
+      "id": "edge_355f2f7e",
+      "from": "framework_041afca2",
+      "to": "concept_9821d00d",
       "type": "calculates",
       "strength": 1.0,
       "metadata": {
         "purpose": "investment_decision"
       },
-      "created": "2025-10-01T20:35:51.713491",
+      "created": "2025-10-03T16:39:57.574796",
       "activations": 0
     },
     {
-      "id": "edge_eab68657",
-      "from": "concept_17a221bf",
-      "to": "formula_38be998d",
+      "id": "edge_d1271869",
+      "from": "concept_9821d00d",
+      "to": "formula_9ef784e6",
       "type": "uses_formula",
       "strength": 1.0,
       "metadata": {
         "preferred": true
       },
-      "created": "2025-10-01T20:35:51.713497",
+      "created": "2025-10-03T16:39:57.574802",
       "activations": 0
     },
     {
-      "id": "edge_8974d9e4",
-      "from": "framework_ae294d13",
-      "to": "economic_force_c81137b8",
+      "id": "edge_3591d396",
+      "from": "framework_eab197cc",
+      "to": "economic_force_3989dceb",
       "type": "driven_by",
       "strength": 1.0,
       "metadata": {
         "type": "long_term"
       },
-      "created": "2025-10-01T20:35:51.713906",
+      "created": "2025-10-03T16:39:57.575111",
       "activations": 0
     },
     {
-      "id": "edge_e53327b7",
-      "from": "framework_ae294d13",
-      "to": "cycle_2996f291",
+      "id": "edge_4c4f9d48",
+      "from": "framework_eab197cc",
+      "to": "cycle_1943caa3",
       "type": "includes_cycle",
       "strength": 1.0,
       "metadata": {
         "timeframe": "short"
       },
-      "created": "2025-10-01T20:35:51.713916",
+      "created": "2025-10-03T16:39:57.575117",
       "activations": 0
     },
     {
-      "id": "edge_5563b649",
-      "from": "cycle_2996f291",
-      "to": "cycle_phase_22de2563",
+      "id": "edge_140a9df9",
+      "from": "cycle_1943caa3",
+      "to": "cycle_phase_51cf1950",
       "type": "has_phase",
       "strength": 1.0,
       "metadata": {
         "sequence": "expansion"
       },
-      "created": "2025-10-01T20:35:51.713924",
+      "created": "2025-10-03T16:39:57.575123",
       "activations": 0
     },
     {
-      "id": "edge_a4bfb2b9",
-      "from": "cycle_2996f291",
-      "to": "cycle_phase_7a673a1b",
+      "id": "edge_4b20fc26",
+      "from": "cycle_1943caa3",
+      "to": "cycle_phase_5c6bf4b2",
       "type": "has_phase",
       "strength": 1.0,
       "metadata": {
         "sequence": "peak"
       },
-      "created": "2025-10-01T20:35:51.713931",
+      "created": "2025-10-03T16:39:57.575129",
       "activations": 0
     },
     {
-      "id": "edge_50f72855",
-      "from": "cycle_2996f291",
-      "to": "cycle_phase_ef242271",
+      "id": "edge_0e1fd6a9",
+      "from": "cycle_1943caa3",
+      "to": "cycle_phase_4e0760b7",
       "type": "has_phase",
       "strength": 1.0,
       "metadata": {
         "sequence": "recession"
       },
-      "created": "2025-10-01T20:35:51.713938",
+      "created": "2025-10-03T16:39:57.575135",
       "activations": 0
     },
     {
-      "id": "edge_fb8bd55c",
-      "from": "cycle_2996f291",
-      "to": "cycle_phase_0abbcc61",
+      "id": "edge_94306326",
+      "from": "cycle_1943caa3",
+      "to": "cycle_phase_40cda83a",
       "type": "has_phase",
       "strength": 1.0,
       "metadata": {
         "sequence": "trough"
       },
-      "created": "2025-10-01T20:35:51.713945",
+      "created": "2025-10-03T16:39:57.575141",
       "activations": 0
     },
     {
-      "id": "edge_2a50bd57",
-      "from": "framework_ae294d13",
-      "to": "cycle_8b6bab29",
+      "id": "edge_1f058af9",
+      "from": "framework_eab197cc",
+      "to": "cycle_ce6f1f59",
       "type": "includes_cycle",
       "strength": 1.0,
       "metadata": {
         "timeframe": "long"
       },
-      "created": "2025-10-01T20:35:51.713952",
+      "created": "2025-10-03T16:39:57.575146",
       "activations": 0
     },
     {
-      "id": "edge_9d47406f",
-      "from": "framework_ae294d13",
-      "to": "portfolio_1755dab3",
+      "id": "edge_85bae5e0",
+      "from": "framework_eab197cc",
+      "to": "portfolio_8cb1a499",
       "type": "recommends_portfolio",
       "strength": 1.0,
       "metadata": {
         "purpose": "all_environments"
       },
-      "created": "2025-10-01T20:35:51.713959",
+      "created": "2025-10-03T16:39:57.575152",
       "activations": 0
     },
     {
-      "id": "edge_8e1904e3",
-      "from": "portfolio_1755dab3",
-      "to": "market_environment_8504bc79",
+      "id": "edge_fc94464f",
+      "from": "portfolio_8cb1a499",
+      "to": "market_environment_84b8c7fd",
       "type": "handles_environment",
       "strength": 1.0,
       "metadata": {
         "risk_allocation": "25%"
       },
-      "created": "2025-10-01T20:35:51.713967",
+      "created": "2025-10-03T16:39:57.575159",
       "activations": 0
     },
     {
-      "id": "edge_437c3a28",
-      "from": "portfolio_1755dab3",
-      "to": "market_environment_2c9c2979",
+      "id": "edge_be19c01a",
+      "from": "portfolio_8cb1a499",
+      "to": "market_environment_f6ea71cf",
       "type": "handles_environment",
       "strength": 1.0,
       "metadata": {
         "risk_allocation": "25%"
       },
-      "created": "2025-10-01T20:35:51.713975",
+      "created": "2025-10-03T16:39:57.575165",
       "activations": 0
     },
     {
-      "id": "edge_cd9c1b15",
-      "from": "portfolio_1755dab3",
-      "to": "market_environment_a6b43141",
+      "id": "edge_b3fe835f",
+      "from": "portfolio_8cb1a499",
+      "to": "market_environment_f3c2b5f9",
       "type": "handles_environment",
       "strength": 1.0,
       "metadata": {
         "risk_allocation": "25%"
       },
-      "created": "2025-10-01T20:35:51.713982",
+      "created": "2025-10-03T16:39:57.575171",
       "activations": 0
     },
     {
-      "id": "edge_d49594dc",
-      "from": "portfolio_1755dab3",
-      "to": "market_environment_0b83d3fb",
+      "id": "edge_2cbfee3d",
+      "from": "portfolio_8cb1a499",
+      "to": "market_environment_1d8e5a58",
       "type": "handles_environment",
       "strength": 1.0,
       "metadata": {
         "risk_allocation": "25%"
       },
-      "created": "2025-10-01T20:35:51.713989",
+      "created": "2025-10-03T16:39:57.575178",
       "activations": 0
     },
     {
-      "id": "edge_daec69f9",
-      "from": "framework_ae294d13",
-      "to": "concept_d00fa324",
+      "id": "edge_946ef4d8",
+      "from": "framework_eab197cc",
+      "to": "concept_5ccd6c9c",
       "type": "recognizes",
       "strength": 1.0,
       "metadata": {
         "importance": "critical"
       },
-      "created": "2025-10-01T20:35:51.713996",
+      "created": "2025-10-03T16:39:57.575184",
       "activations": 0
     },
     {
-      "id": "edge_d574b63a",
-      "from": "knowledge_base_70f8e34e",
-      "to": "calculation_69d5b781",
+      "id": "edge_9cafde99",
+      "from": "knowledge_base_90385381",
+      "to": "calculation_413c57d8",
       "type": "contains_calculation",
       "strength": 1.0,
       "metadata": {
         "framework": "buffett"
       },
-      "created": "2025-10-01T20:35:51.714372",
+      "created": "2025-10-03T16:39:57.575406",
       "activations": 0
     },
     {
-      "id": "edge_96386ad2",
-      "from": "knowledge_base_70f8e34e",
-      "to": "calculation_a4f535fd",
+      "id": "edge_eb469aae",
+      "from": "knowledge_base_90385381",
+      "to": "calculation_4a48a60c",
       "type": "contains_calculation",
       "strength": 1.0,
       "metadata": {
         "framework": "buffett"
       },
-      "created": "2025-10-01T20:35:51.714380",
+      "created": "2025-10-03T16:39:57.575412",
       "activations": 0
     },
     {
-      "id": "edge_373397bc",
-      "from": "knowledge_base_70f8e34e",
-      "to": "calculation_30abf623",
+      "id": "edge_252379bc",
+      "from": "knowledge_base_90385381",
+      "to": "calculation_b95da9ea",
       "type": "contains_calculation",
       "strength": 1.0,
       "metadata": {
         "framework": "buffett"
       },
-      "created": "2025-10-01T20:35:51.714387",
+      "created": "2025-10-03T16:39:57.575418",
       "activations": 0
     },
     {
-      "id": "edge_fab37cb4",
-      "from": "knowledge_base_70f8e34e",
-      "to": "calculation_727d4026",
+      "id": "edge_d17a08bf",
+      "from": "knowledge_base_90385381",
+      "to": "calculation_d04c3e39",
       "type": "contains_calculation",
       "strength": 1.0,
       "metadata": {
         "framework": "dalio"
       },
-      "created": "2025-10-01T20:35:51.714396",
+      "created": "2025-10-03T16:39:57.575424",
       "activations": 0
     },
     {
-      "id": "edge_65fd7b63",
-      "from": "knowledge_base_70f8e34e",
-      "to": "calculation_9b794f94",
+      "id": "edge_2b87c88e",
+      "from": "knowledge_base_90385381",
+      "to": "calculation_33a4c2fb",
       "type": "contains_calculation",
       "strength": 1.0,
       "metadata": {
         "framework": "dalio"
       },
-      "created": "2025-10-01T20:35:51.714403",
+      "created": "2025-10-03T16:39:57.575430",
       "activations": 0
     },
     {
-      "id": "edge_08ad69df",
-      "from": "knowledge_base_70f8e34e",
-      "to": "framework_7a7e2a59",
+      "id": "edge_55d3e86d",
+      "from": "knowledge_base_90385381",
+      "to": "framework_4b75c56a",
       "type": "contains_framework",
       "strength": 1.0,
       "metadata": {
         "type": "combined"
       },
-      "created": "2025-10-01T20:35:51.714410",
+      "created": "2025-10-03T16:39:57.575436",
       "activations": 0
     }
   ],
-  "patterns": {
-    "rate_cycle": {
-      "type": "cycle",
-      "name": "Interest Rate Cycle",
-      "nodes": [
-        "CPI",
-        "FED_RATE",
-        "TECH_SECTOR",
-        "GDP"
-      ],
-      "description": "Inflation \u2192 Rates \u2192 Growth Stocks \u2192 Economic Growth",
-      "strength": 0.7,
-      "discovered": "2024-01-01T00:00:00",
-      "activations": 0
-    },
-    "sector_rotation": {
-      "type": "pattern",
-      "name": "Sector Rotation",
-      "description": "Money flows between sectors based on rate environment",
-      "relationships": [
-        "FED_RATE\u2192TECH_SECTOR (inverse)",
-        "FED_RATE\u2192FINANCIALS_SECTOR (positive)"
-      ],
-      "discovered": "2024-01-01T00:00:00",
-      "activations": 0
-    }
-  },
+  "patterns": {},
   "forecasts": {},
   "metadata": {
-    "last_saved": "2025-10-01T20:35:51.714635",
+    "last_saved": "2025-10-03T16:39:57.575544",
     "stats": {
-      "total_nodes": 49,
-      "total_edges": 35,
-      "total_patterns": 2,
+      "total_nodes": 53,
+      "total_edges": 29,
+      "total_patterns": 0,
       "node_types": {
-        "indicator": 3,
-        "sector": 3,
-        "fundamental": 1,
+        "DataHarvester_result": 4,
+        "PatternSpotter_result": 2,
+        "Claude_result": 4,
+        "execution": 1,
         "framework": 3,
         "concept": 5,
         "moat_type": 5,
@@ -2038,9 +2135,6 @@
         "analysis_query": 5
       },
       "edge_types": {
-        "pressures": 2,
-        "supports": 2,
-        "causes": 2,
         "includes_concept": 2,
         "has_type": 5,
         "evaluates": 1,
@@ -2055,7 +2149,7 @@
         "contains_calculation": 5,
         "contains_framework": 1
       },
-      "avg_connections": 0.7142857142857143
+      "avg_connections": 0.5471698113207547
     }
   }
 }

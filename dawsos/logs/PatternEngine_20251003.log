@@ -87,3 +87,25 @@
 2025-10-03 09:01:45,770 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'economic_cycles' not found or failed to load 
 2025-10-03 09:01:45,770 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
 2025-10-03 09:01:45,770 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 16:39:57,579 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
+2025-10-03 16:39:57,583 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 16:39:57,583 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 16:39:57,587 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 16:39:57,643 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 16:39:57,643 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'sector_correlations' not found or failed to load 
+2025-10-03 16:39:57,643 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'sector_correlations' not found or failed to load 
+2025-10-03 16:39:57,663 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'sector_performance' not found or failed to load 
+2025-10-03 16:39:57,663 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'economic_cycles' not found or failed to load 
+2025-10-03 16:39:57,663 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 16:39:57,663 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 16:40:23,743 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
+2025-10-03 16:40:23,750 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 16:40:23,750 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 16:40:23,752 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 16:40:23,781 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 16:40:23,782 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'sector_correlations' not found or failed to load 
+2025-10-03 16:40:23,783 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'sector_correlations' not found or failed to load 
+2025-10-03 16:40:23,795 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'sector_performance' not found or failed to load 
+2025-10-03 16:40:23,795 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'economic_cycles' not found or failed to load 
+2025-10-03 16:40:23,796 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 16:40:23,796 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 

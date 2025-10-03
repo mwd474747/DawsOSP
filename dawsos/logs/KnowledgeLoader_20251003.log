@@ -75,3 +75,23 @@
 2025-10-03 09:01:45,770 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/economic_cycles.json 
 2025-10-03 09:01:45,770 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/ui_configurations.json 
 2025-10-03 09:01:45,770 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/ui_configurations.json 
+2025-10-03 12:25:15,098 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 12:34:27,942 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 16:39:57,578 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 16:39:57,587 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/ui_configurations.json 
+2025-10-03 16:39:57,642 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/ui_configurations.json 
+2025-10-03 16:39:57,643 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/sector_correlations.json 
+2025-10-03 16:39:57,643 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/sector_correlations.json 
+2025-10-03 16:39:57,663 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/sector_performance.json 
+2025-10-03 16:39:57,663 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/economic_cycles.json 
+2025-10-03 16:39:57,663 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/ui_configurations.json 
+2025-10-03 16:39:57,663 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/ui_configurations.json 
+2025-10-03 16:40:23,742 - KnowledgeLoader - INFO - logger:info:83 - Knowledge Loader initialized with 26 datasets 
+2025-10-03 16:40:23,752 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/ui_configurations.json 
+2025-10-03 16:40:23,781 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/ui_configurations.json 
+2025-10-03 16:40:23,781 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/sector_correlations.json 
+2025-10-03 16:40:23,783 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/sector_correlations.json 
+2025-10-03 16:40:23,795 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/sector_performance.json 
+2025-10-03 16:40:23,795 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/economic_cycles.json 
+2025-10-03 16:40:23,795 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/ui_configurations.json 
+2025-10-03 16:40:23,796 - KnowledgeLoader - WARNING - logger:warning:89 - Dataset file not found: dawsos/storage/knowledge/ui_configurations.json 
