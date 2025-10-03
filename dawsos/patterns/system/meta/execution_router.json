@@ -61,5 +61,7 @@
     "agent": "{agent_name}",
     "method": "{method}",
     "compliant": true
-  }
+  },
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

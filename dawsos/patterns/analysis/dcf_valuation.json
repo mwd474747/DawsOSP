@@ -4,41 +4,54 @@
   "description": "Comprehensive DCF (Discounted Cash Flow) valuation using Trinity architecture",
   "category": "analysis",
   "input_schema": {
-    "required": ["symbol"],
-    "optional": ["growth_assumption", "discount_rate_override"]
+    "required": [
+      "symbol"
+    ],
+    "optional": [
+      "growth_assumption",
+      "discount_rate_override"
+    ]
   },
-  "workflow": [
+  "template": "**DCF Valuation Analysis for {symbol}**\n\n**Intrinsic Value:** ${dcf_analysis.intrinsic_value}\n**Confidence Level:** {dcf_analysis.confidence:.0%}\n\n**Key Metrics:**\n- Discount Rate (WACC): {dcf_analysis.discount_rate:.2%}\n- Terminal Value: ${dcf_analysis.terminal_value:,.0f}M\n- Methodology: {dcf_analysis.methodology}\n\n**Projected Free Cash Flows (5-year):**\n{#dcf_analysis.projected_fcf}\n- Year {@index}: ${.} million\n{/dcf_analysis.projected_fcf}\n\n**Investment Recommendation:**\n{#dcf_analysis.confidence > 0.8}\n\u2705 **HIGH CONFIDENCE** - DCF analysis shows strong valuation foundation\n{/dcf_analysis.confidence > 0.8}\n{#dcf_analysis.confidence <= 0.8}\n\u26a0\ufe0f **MODERATE CONFIDENCE** - Additional analysis recommended\n{/dcf_analysis.confidence <= 0.8}\n\n*Analysis powered by Trinity architecture using knowledge-driven DCF methodology*",
+  "version": "1.0",
+  "last_updated": "2025-10-02",
+  "steps": [
     {
-      "step": 1,
       "description": "Gather company financial data",
-      "agent": "data_harvester",
-      "action": "fetch_financials",
+      "action": "execute_through_registry",
       "parameters": {
         "symbol": "{symbol}",
         "data_type": "financial_statements"
+      },
+      "params": {
+        "agent": "data_harvester",
+        "context": {}
       }
     },
     {
-      "step": 2,
       "description": "Perform comprehensive DCF analysis",
-      "agent": "financial_analyst",
-      "action": "dcf_analysis",
+      "action": "execute_through_registry",
       "parameters": {
         "symbol": "{symbol}",
         "methodology": "standard_dcf",
         "growth_assumption": "{growth_assumption|moderate}"
+      },
+      "params": {
+        "agent": "financial_analyst",
+        "context": {}
       }
     },
     {
-      "step": 3,
       "description": "Calculate confidence score",
-      "agent": "financial_analyst",
-      "action": "calculate_confidence",
+      "action": "execute_through_registry",
       "parameters": {
         "symbol": "{symbol}",
         "analysis_type": "dcf"
+      },
+      "params": {
+        "agent": "financial_analyst",
+        "context": {}
       }
     }
-  ],
-  "template": "**DCF Valuation Analysis for {symbol}**\n\n**Intrinsic Value:** ${dcf_analysis.intrinsic_value}\n**Confidence Level:** {dcf_analysis.confidence:.0%}\n\n**Key Metrics:**\n- Discount Rate (WACC): {dcf_analysis.discount_rate:.2%}\n- Terminal Value: ${dcf_analysis.terminal_value:,.0f}M\n- Methodology: {dcf_analysis.methodology}\n\n**Projected Free Cash Flows (5-year):**\n{#dcf_analysis.projected_fcf}\n- Year {@index}: ${.} million\n{/dcf_analysis.projected_fcf}\n\n**Investment Recommendation:**\n{#dcf_analysis.confidence > 0.8}\n✅ **HIGH CONFIDENCE** - DCF analysis shows strong valuation foundation\n{/dcf_analysis.confidence > 0.8}\n{#dcf_analysis.confidence <= 0.8}\n⚠️ **MODERATE CONFIDENCE** - Additional analysis recommended\n{/dcf_analysis.confidence <= 0.8}\n\n*Analysis powered by Trinity architecture using knowledge-driven DCF methodology*"
+  ]
 }

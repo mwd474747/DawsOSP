@@ -2,72 +2,81 @@
   "id": "sector_rotation",
   "name": "Sector Rotation Analysis",
   "description": "Identify which sectors to rotate into based on economic cycle",
-  "triggers": ["sector rotation", "which sectors", "sector analysis", "sector allocation"],
-  "workflow": [
+  "triggers": [
+    "sector rotation",
+    "which sectors",
+    "sector analysis",
+    "sector allocation"
+  ],
+  "response_template": "## Sector Rotation Strategy\n\n### Economic Cycle Position\nWe are currently in the **{cycle_phase.phase}** phase of the economic cycle.\n\n### Historical Performance in {cycle_phase.phase} Phase\n{historical_performance.data}\n\n### Recommended Sectors\nBased on historical performance in this phase:\n- **Outperformers**: {sector_recommendations.data.outperformers}\n- **Underperformers**: {sector_recommendations.data.underperformers}\n\n### Current Momentum\n{momentum_analysis.response}\n\n### Rotation Strategy\n{rotation_strategy.recommendation}",
+  "version": "1.0",
+  "last_updated": "2025-10-02",
+  "steps": [
     {
-      "step": "get_economic_indicators",
-      "agent": "data_harvester",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get economic indicators GDP, CPI, unemployment, yield curve"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get economic indicators GDP, CPI, unemployment, yield curve"
+        }
       },
-      "output": "economic_data"
+      "save_as": "economic_data"
     },
     {
-      "step": "determine_cycle_phase",
       "action": "evaluate",
       "params": {
         "type": "debt_cycle_position",
         "data": "{economic_data}"
       },
-      "output": "cycle_phase"
+      "save_as": "cycle_phase"
     },
     {
-      "step": "lookup_historical_performance",
       "action": "enriched_lookup",
       "params": {
         "data_type": "sector_performance",
         "query": "cycle_performance",
         "phase": "{cycle_phase.phase}"
       },
-      "output": "historical_performance"
+      "save_as": "historical_performance"
     },
     {
-      "step": "lookup_rotation_strategy",
       "action": "enriched_lookup",
       "params": {
         "data_type": "sector_performance",
         "query": "rotation_strategies",
         "phase": "{cycle_phase.phase}"
       },
-      "output": "sector_recommendations"
+      "save_as": "sector_recommendations"
     },
     {
-      "step": "get_sector_data",
-      "agent": "data_harvester",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get sector ETFs XLF XLK XLE XLV XLI XLY XLP XLB XLU"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get sector ETFs XLF XLK XLE XLV XLI XLY XLP XLB XLU"
+        }
       },
-      "output": "sector_data"
+      "save_as": "sector_data"
     },
     {
-      "step": "analyze_momentum",
-      "agent": "pattern_spotter",
+      "action": "execute_through_registry",
       "params": {
-        "analysis_type": "momentum",
-        "data": "{sector_data}"
+        "agent": "pattern_spotter",
+        "context": {
+          "analysis_type": "momentum",
+          "data": "{sector_data}"
+        }
       },
-      "output": "momentum_analysis"
+      "save_as": "momentum_analysis"
     },
     {
-      "step": "synthesize",
       "action": "synthesize",
       "params": {
         "cycle_phase": "{cycle_phase}",
         "recommended_sectors": "{sector_recommendations}",
         "current_momentum": "{momentum_analysis}"
       },
-      "output": "rotation_strategy"
+      "save_as": "rotation_strategy"
     }
-  ],
-  "response_template": "## Sector Rotation Strategy\n\n### Economic Cycle Position\nWe are currently in the **{cycle_phase.phase}** phase of the economic cycle.\n\n### Historical Performance in {cycle_phase.phase} Phase\n{historical_performance.data}\n\n### Recommended Sectors\nBased on historical performance in this phase:\n- **Outperformers**: {sector_recommendations.data.outperformers}\n- **Underperformers**: {sector_recommendations.data.underperformers}\n\n### Current Momentum\n{momentum_analysis.response}\n\n### Rotation Strategy\n{rotation_strategy.recommendation}"
+  ]
 }

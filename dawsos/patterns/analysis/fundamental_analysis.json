@@ -13,11 +13,16 @@
   "description": "Perform comprehensive fundamental analysis using Buffett and Dalio frameworks",
   "category": "analysis",
   "priority": 90,
-  "workflow": [
+  "response": {
+    "template": "\ud83d\udcca Fundamental Analysis: {symbol}\n\n\ud83c\udff0 **Economic Moat Assessment**\n{moat_assessment}\n\n\ud83d\udcb0 **Key Metrics**\n{key_metrics}\n\n\ud83d\udcc8 **Valuation**\n\u2022 Intrinsic Value: {intrinsic_value}\n\u2022 Current Price: {current_price}\n\u2022 Margin of Safety: {margin_of_safety}%\n\n\ud83c\udfaf **Investment Decision**\n{recommendation}",
+    "format": "markdown"
+  },
+  "version": "1.0",
+  "last_updated": "2025-10-02",
+  "steps": [
     {
-      "step": "load_frameworks",
       "action": "knowledge_lookup",
-      "parameters": {
+      "params": {
         "knowledge_files": [
           "buffett_framework.json",
           "dalio_framework.json",
@@ -26,54 +31,60 @@
       }
     },
     {
-      "step": "gather_financials",
-      "action": "agent:data_harvester",
-      "parameters": {
-        "request": "Get financial data for {symbol}",
-        "data_points": [
-          "revenue",
-          "earnings",
-          "free_cash_flow",
-          "debt",
-          "equity",
-          "margins"
-        ]
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get financial data for {symbol}",
+          "data_points": [
+            "revenue",
+            "earnings",
+            "free_cash_flow",
+            "debt",
+            "equity",
+            "margins"
+          ]
+        }
       },
-      "outputs": ["financial_data"]
+      "outputs": [
+        "financial_data"
+      ]
     },
     {
-      "step": "calculate_metrics",
       "action": "calculate",
-      "parameters": {
+      "outputs": [
+        "key_metrics"
+      ],
+      "params": {
         "formulas": {
           "owner_earnings": "Net Income + D&A - Maintenance CapEx",
           "roic": "NOPAT / Invested Capital",
           "fcf_yield": "FCF / Market Cap"
         }
-      },
-      "outputs": ["key_metrics"]
+      }
     },
     {
-      "step": "assess_moat",
-      "action": "agent:pattern_spotter",
-      "parameters": {
-        "request": "Evaluate economic moat for {symbol}",
-        "framework": "buffett_moat_analysis"
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "pattern_spotter",
+        "context": {
+          "request": "Evaluate economic moat for {symbol}",
+          "framework": "buffett_moat_analysis"
+        }
       },
-      "outputs": ["moat_assessment"]
+      "outputs": [
+        "moat_assessment"
+      ]
     },
     {
-      "step": "value_company",
       "action": "calculate",
-      "parameters": {
+      "outputs": [
+        "intrinsic_value"
+      ],
+      "params": {
         "method": "dcf_simplified",
         "inputs": "{financial_data}"
-      },
-      "outputs": ["intrinsic_value"]
+      }
     }
-  ],
-  "response": {
-    "template": "📊 Fundamental Analysis: {symbol}\n\n🏰 **Economic Moat Assessment**\n{moat_assessment}\n\n💰 **Key Metrics**\n{key_metrics}\n\n📈 **Valuation**\n• Intrinsic Value: {intrinsic_value}\n• Current Price: {current_price}\n• Margin of Safety: {margin_of_safety}%\n\n🎯 **Investment Decision**\n{recommendation}",
-    "format": "markdown"
-  }
+  ]
 }

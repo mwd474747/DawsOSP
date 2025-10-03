@@ -17,6 +17,7 @@ from core.relationships import Relationships
 from core.persistence import PersistenceManager
 from core.pattern_engine import PatternEngine
 from core.universal_executor import UniversalExecutor
+from core.agent_capabilities import AGENT_CAPABILITIES
 
 # Agent imports
 from agents.graph_mind import GraphMind
@@ -120,26 +121,86 @@ def init_session_state():
         # Now capabilities exists and can be used
         caps = st.session_state.capabilities
 
-        # Register agents
+        # Register agents with explicit capabilities
         runtime = st.session_state.agent_runtime
-        runtime.register_agent('graph_mind', GraphMind(st.session_state.graph))
-        runtime.register_agent('claude', Claude(st.session_state.graph))
-        runtime.register_agent('data_harvester', DataHarvester(st.session_state.graph, caps))
-        runtime.register_agent('data_digester', DataDigester(st.session_state.graph))
-        runtime.register_agent('relationship_hunter', RelationshipHunter(st.session_state.graph, capabilities=caps))
-        runtime.register_agent('pattern_spotter', PatternSpotter(st.session_state.graph))
-        runtime.register_agent('forecast_dreamer', ForecastDreamer(st.session_state.graph))
-        runtime.register_agent('code_monkey', CodeMonkey(st.session_state.graph))
-        runtime.register_agent('structure_bot', StructureBot(st.session_state.graph))
-        runtime.register_agent('refactor_elf', RefactorElf(st.session_state.graph))
-        runtime.register_agent('workflow_recorder', WorkflowRecorder(st.session_state.graph))
-        runtime.register_agent('workflow_player', WorkflowPlayer(st.session_state.graph))
-        runtime.register_agent('ui_generator', UIGeneratorAgent(st.session_state.graph))
-        runtime.register_agent('financial_analyst', FinancialAnalyst(st.session_state.graph))
-        runtime.register_agent('governance_agent', GovernanceAgent(st.session_state.graph))
+        runtime.register_agent(
+            'graph_mind',
+            GraphMind(st.session_state.graph),
+            capabilities=AGENT_CAPABILITIES['graph_mind']
+        )
+        runtime.register_agent(
+            'claude',
+            Claude(st.session_state.graph),
+            capabilities=AGENT_CAPABILITIES['claude']
+        )
+        runtime.register_agent(
+            'data_harvester',
+            DataHarvester(st.session_state.graph, caps),
+            capabilities=AGENT_CAPABILITIES['data_harvester']
+        )
+        runtime.register_agent(
+            'data_digester',
+            DataDigester(st.session_state.graph),
+            capabilities=AGENT_CAPABILITIES['data_digester']
+        )
+        runtime.register_agent(
+            'relationship_hunter',
+            RelationshipHunter(st.session_state.graph, capabilities=caps),
+            capabilities=AGENT_CAPABILITIES['relationship_hunter']
+        )
+        runtime.register_agent(
+            'pattern_spotter',
+            PatternSpotter(st.session_state.graph),
+            capabilities=AGENT_CAPABILITIES['pattern_spotter']
+        )
+        runtime.register_agent(
+            'forecast_dreamer',
+            ForecastDreamer(st.session_state.graph),
+            capabilities=AGENT_CAPABILITIES['forecast_dreamer']
+        )
+        runtime.register_agent(
+            'code_monkey',
+            CodeMonkey(st.session_state.graph),
+            capabilities=AGENT_CAPABILITIES['code_monkey']
+        )
+        runtime.register_agent(
+            'structure_bot',
+            StructureBot(st.session_state.graph),
+            capabilities=AGENT_CAPABILITIES['structure_bot']
+        )
+        runtime.register_agent(
+            'refactor_elf',
+            RefactorElf(st.session_state.graph),
+            capabilities=AGENT_CAPABILITIES['refactor_elf']
+        )
+        runtime.register_agent(
+            'workflow_recorder',
+            WorkflowRecorder(st.session_state.graph),
+            capabilities=AGENT_CAPABILITIES['workflow_recorder']
+        )
+        runtime.register_agent(
+            'workflow_player',
+            WorkflowPlayer(st.session_state.graph),
+            capabilities=AGENT_CAPABILITIES['workflow_player']
+        )
+        runtime.register_agent(
+            'ui_generator',
+            UIGeneratorAgent(st.session_state.graph),
+            capabilities=AGENT_CAPABILITIES['ui_generator']
+        )
+        runtime.register_agent(
+            'financial_analyst',
+            FinancialAnalyst(st.session_state.graph),
+            capabilities=AGENT_CAPABILITIES['financial_analyst']
+        )
+        runtime.register_agent(
+            'governance_agent',
+            GovernanceAgent(st.session_state.graph),
+            capabilities=AGENT_CAPABILITIES['governance_agent']
+        )
 
         # Initialize PatternEngine after agents are registered
-        runtime.pattern_engine = PatternEngine('patterns', runtime)
+        runtime.pattern_engine = PatternEngine('dawsos/patterns', runtime)
         print(f"PatternEngine initialized with {len(runtime.pattern_engine.patterns)} patterns")
 
     # Initialize Universal Executor AFTER agent_runtime

@@ -1,0 +1,106 @@
+{
+  "id": "moat_analyzer",
+  "name": "Economic Moat Analyzer",
+  "trigger_phrases": [
+    "analyze economic moat",
+    "analyze moat",
+    "economic moat",
+    "moat analysis",
+    "competitive advantage",
+    "moat for {symbol}",
+    "competitive position"
+  ],
+  "triggers": ["moat", "economic moat", "competitive advantage"],
+  "description": "Deep analysis of a company's economic moat",
+  "category": "analysis",
+  "priority": 95,
+  "workflow": [
+    {
+      "step": "load_moat_framework",
+      "action": "knowledge_lookup",
+      "parameters": {
+        "knowledge_file": "buffett_framework.json",
+        "section": "economic_moat"
+      }
+    },
+    {
+      "step": "analyze_brand",
+      "action": "evaluate",
+      "parameters": {
+        "type": "brand_moat",
+        "checks": [
+          "premium_pricing_ability",
+          "customer_loyalty",
+          "mind_share_leadership"
+        ]
+      },
+      "outputs": ["brand_score"]
+    },
+    {
+      "step": "analyze_network",
+      "action": "evaluate",
+      "parameters": {
+        "type": "network_effects",
+        "checks": [
+          "value_increases_with_users",
+          "high_switching_costs",
+          "winner_take_all_dynamics"
+        ]
+      },
+      "outputs": ["network_score"]
+    },
+    {
+      "step": "analyze_costs",
+      "action": "evaluate",
+      "parameters": {
+        "type": "cost_advantages",
+        "checks": [
+          "lowest_cost_producer",
+          "economies_of_scale",
+          "unique_assets"
+        ]
+      },
+      "outputs": ["cost_score"]
+    },
+    {
+      "step": "analyze_switching",
+      "action": "evaluate",
+      "parameters": {
+        "type": "switching_costs",
+        "checks": [
+          "painful_to_switch",
+          "embedded_in_operations",
+          "long_term_contracts"
+        ]
+      },
+      "outputs": ["switching_score"]
+    },
+    {
+      "step": "calculate_roic",
+      "action": "calculate",
+      "parameters": {
+        "formula": "ROIC - WACC spread",
+        "target": ">15% for wide moat"
+      },
+      "outputs": ["roic_spread"]
+    },
+    {
+      "step": "overall_assessment",
+      "action": "synthesize",
+      "parameters": {
+        "scores": [
+          "{brand_score}",
+          "{network_score}",
+          "{cost_score}",
+          "{switching_score}",
+          "{roic_spread}"
+        ]
+      },
+      "outputs": ["moat_rating", "moat_durability"]
+    }
+  ],
+  "response": {
+    "template": "🏰 **Economic Moat Analysis for {symbol}**\n\n📊 **Moat Sources Evaluation**\n\n🏷️ **Brand Moat**: {brand_score}/10\n{brand_details}\n\n🌐 **Network Effects**: {network_score}/10\n{network_details}\n\n💰 **Cost Advantages**: {cost_score}/10\n{cost_details}\n\n🔒 **Switching Costs**: {switching_score}/10\n{switching_details}\n\n📈 **Financial Evidence**\n• ROIC-WACC Spread: {roic_spread}%\n• Gross Margin Stability: {margin_stability}\n• 10-Year Avg ROIC: {avg_roic}%\n\n🎯 **Overall Moat Rating**: {moat_rating}\n• Width: {moat_width}\n• Durability: {moat_durability}\n• Trend: {moat_trend}\n\n💡 **Investment Implications**\n{investment_action}",
+    "format": "markdown"
+  }
+}

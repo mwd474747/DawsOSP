@@ -3,7 +3,11 @@
   "name": "System Self-Improvement",
   "description": "Analyzes and improves the system using existing capabilities",
   "category": "system",
-  "tags": ["improvement", "optimization", "maintenance"],
+  "tags": [
+    "improvement",
+    "optimization",
+    "maintenance"
+  ],
   "triggers": [
     "improve system",
     "optimize",
@@ -13,47 +17,43 @@
   ],
   "steps": [
     {
-      "step": 1,
       "description": "Run comprehensive governance check",
-      "agent": "governance_agent",
-      "action": {
-        "type": "governance_check",
-        "target": "comprehensive"
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "governance_agent",
+        "context": {}
       }
     },
     {
-      "step": 2,
       "description": "Identify pattern gaps and opportunities",
-      "agent": "pattern_spotter",
-      "action": {
-        "type": "find_patterns",
-        "input": "system_gaps"
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "pattern_spotter",
+        "context": {}
       }
     },
     {
-      "step": 3,
       "description": "Find missing relationships",
-      "agent": "relationship_hunter",
-      "action": {
-        "type": "find_connections",
-        "target": "orphan_nodes"
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "relationship_hunter",
+        "context": {}
       }
     },
     {
-      "step": 4,
       "description": "Refresh stale data",
-      "agent": "data_harvester",
-      "action": {
-        "type": "refresh_data",
-        "target": "quality_issues"
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "data_harvester",
+        "context": {}
       }
     },
     {
-      "step": 5,
       "description": "Apply improvements",
-      "agent": "governance_agent",
-      "action": {
-        "type": "apply_improvements"
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "governance_agent",
+        "context": {}
       }
     }
   ],
@@ -64,5 +64,7 @@
   "success_criteria": {
     "improvements_made": "at least 1",
     "no_errors": true
-  }
+  },
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

@@ -65,5 +65,7 @@
     "migrated": true,
     "legacy_type": "{legacy_type}",
     "migration_note": "This call was automatically migrated from legacy direct execution to Trinity-compliant execution"
-  }
+  },
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

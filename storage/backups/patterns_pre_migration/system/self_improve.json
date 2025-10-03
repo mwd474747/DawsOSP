@@ -1,0 +1,68 @@
+{
+  "id": "self_improve",
+  "name": "System Self-Improvement",
+  "description": "Analyzes and improves the system using existing capabilities",
+  "category": "system",
+  "tags": ["improvement", "optimization", "maintenance"],
+  "triggers": [
+    "improve system",
+    "optimize",
+    "suggest improvements",
+    "auto improve",
+    "fix issues"
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "description": "Run comprehensive governance check",
+      "agent": "governance_agent",
+      "action": {
+        "type": "governance_check",
+        "target": "comprehensive"
+      }
+    },
+    {
+      "step": 2,
+      "description": "Identify pattern gaps and opportunities",
+      "agent": "pattern_spotter",
+      "action": {
+        "type": "find_patterns",
+        "input": "system_gaps"
+      }
+    },
+    {
+      "step": 3,
+      "description": "Find missing relationships",
+      "agent": "relationship_hunter",
+      "action": {
+        "type": "find_connections",
+        "target": "orphan_nodes"
+      }
+    },
+    {
+      "step": 4,
+      "description": "Refresh stale data",
+      "agent": "data_harvester",
+      "action": {
+        "type": "refresh_data",
+        "target": "quality_issues"
+      }
+    },
+    {
+      "step": 5,
+      "description": "Apply improvements",
+      "agent": "governance_agent",
+      "action": {
+        "type": "apply_improvements"
+      }
+    }
+  ],
+  "output": {
+    "format": "improvement_report",
+    "template": "System Improvement Report:\n\nGovernance Analysis:\n- Total Nodes: {total_nodes}\n- Quality Issues: {quality_issues_count}\n- Orphan Nodes: {orphan_nodes_count}\n\nImprovements Applied:\n{improvements_list}\n\nNext Steps:\n{recommendations}"
+  },
+  "success_criteria": {
+    "improvements_made": "at least 1",
+    "no_errors": true
+  }
+}

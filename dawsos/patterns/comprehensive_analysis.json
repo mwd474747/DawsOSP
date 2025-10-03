@@ -2,54 +2,65 @@
   "id": "comprehensive_analysis",
   "name": "Comprehensive Stock Analysis",
   "description": "Complete analysis combining fundamentals, technicals, and sentiment",
-  "triggers": ["comprehensive analysis", "full analysis", "complete assessment", "deep dive"],
-  "workflow": [
+  "triggers": [
+    "comprehensive analysis",
+    "full analysis",
+    "complete assessment",
+    "deep dive"
+  ],
+  "response_template": "## Comprehensive Analysis: {SYMBOL}\n\n### Economic Moat\n{moat_analysis.response}\n\n### Correlations\n{correlations.response}\n\n### Patterns Detected\n{patterns.response}\n\n### Valuation\nCurrent valuation metrics suggest {valuation.assessment}\n\n### Summary\n{final_analysis}",
+  "version": "1.0",
+  "last_updated": "2025-10-02",
+  "steps": [
     {
-      "step": "fetch_fundamentals",
-      "agent": "data_harvester",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get fundamental data for {SYMBOL}"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get fundamental data for {SYMBOL}"
+        }
       },
-      "output": "fundamentals"
+      "save_as": "fundamentals"
     },
     {
-      "step": "analyze_moat",
       "action": "knowledge_lookup",
       "params": {
         "query": "economic_moat",
         "symbol": "{SYMBOL}"
       },
-      "output": "moat_analysis"
+      "save_as": "moat_analysis"
     },
     {
-      "step": "find_correlations",
-      "agent": "relationship_hunter",
+      "action": "execute_through_registry",
       "params": {
-        "target": "{SYMBOL}",
-        "data": "{fundamentals}"
+        "agent": "relationship_hunter",
+        "context": {
+          "target": "{SYMBOL}",
+          "data": "{fundamentals}"
+        }
       },
-      "output": "correlations"
+      "save_as": "correlations"
     },
     {
-      "step": "detect_patterns",
-      "agent": "pattern_spotter",
+      "action": "execute_through_registry",
       "params": {
-        "analysis_type": "stock_patterns",
-        "data": "{fundamentals}"
+        "agent": "pattern_spotter",
+        "context": {
+          "analysis_type": "stock_patterns",
+          "data": "{fundamentals}"
+        }
       },
-      "output": "patterns"
+      "save_as": "patterns"
     },
     {
-      "step": "calculate_valuation",
       "action": "calculate",
       "params": {
         "method": "pe_valuation",
         "inputs": "{fundamentals}"
       },
-      "output": "valuation"
+      "save_as": "valuation"
     },
     {
-      "step": "synthesize",
       "action": "synthesize",
       "params": {
         "components": [
@@ -59,8 +70,7 @@
           "{valuation}"
         ]
       },
-      "output": "final_analysis"
+      "save_as": "final_analysis"
     }
-  ],
-  "response_template": "## Comprehensive Analysis: {SYMBOL}\n\n### Economic Moat\n{moat_analysis.response}\n\n### Correlations\n{correlations.response}\n\n### Patterns Detected\n{patterns.response}\n\n### Valuation\nCurrent valuation metrics suggest {valuation.assessment}\n\n### Summary\n{final_analysis}"
+  ]
 }

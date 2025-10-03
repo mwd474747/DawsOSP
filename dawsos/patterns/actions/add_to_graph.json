@@ -2,45 +2,64 @@
   "id": "add_to_graph",
   "name": "Add to Knowledge Graph",
   "description": "Adds data, entities, or relationships to the knowledge graph",
-  "triggers": ["add", "save", "store", "remember", "track", "graph"],
-  "entities": ["SYMBOL"],
+  "triggers": [
+    "add",
+    "save",
+    "store",
+    "remember",
+    "track",
+    "graph"
+  ],
+  "entities": [
+    "SYMBOL"
+  ],
   "priority": 8,
   "steps": [
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get comprehensive data for {SYMBOL} or {user_input}"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get comprehensive data for {SYMBOL} or {user_input}"
+        }
       },
-      "output": "raw_data"
+      "save_as": "raw_data"
     },
     {
-      "agent": "data_digester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{raw_data}",
-        "data_type": "auto_detect"
+        "agent": "data_digester",
+        "context": {
+          "data": "{raw_data}",
+          "data_type": "auto_detect"
+        }
       },
-      "output": "structured_data"
+      "save_as": "structured_data"
     },
     {
-      "agent": "relationship_hunter",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{structured_data}"
+        "agent": "relationship_hunter",
+        "context": {
+          "data": "{structured_data}"
+        }
       },
-      "output": "relationships"
+      "save_as": "relationships"
     },
     {
-      "agent": "claude",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "user_input": "Added to knowledge graph: {structured_data} with relationships: {relationships}. Summarize what was added."
+        "agent": "claude",
+        "context": {
+          "user_input": "Added to knowledge graph: {structured_data} with relationships: {relationships}. Summarize what was added."
+        }
       },
-      "output": "confirmation"
+      "save_as": "confirmation"
     }
   ],
   "response_type": "action",
   "response_template": "{confirmation}",
-  "cache_ttl": 0
+  "cache_ttl": 0,
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

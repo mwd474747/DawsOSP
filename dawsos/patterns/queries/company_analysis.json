@@ -2,17 +2,28 @@
   "id": "company_analysis",
   "name": "Company Analysis",
   "description": "Comprehensive analysis of a company's fundamentals and performance",
-  "triggers": ["analyze", "company", "fundamental", "earnings", "revenue", "valuation"],
-  "entities": ["SYMBOL"],
+  "triggers": [
+    "analyze",
+    "company",
+    "fundamental",
+    "earnings",
+    "revenue",
+    "valuation"
+  ],
+  "entities": [
+    "SYMBOL"
+  ],
   "priority": 8,
   "steps": [
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get complete fundamentals for {SYMBOL}: financials, ratios, earnings, revenue"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get complete fundamentals for {SYMBOL}: financials, ratios, earnings, revenue"
+        }
       },
-      "output": "company_data"
+      "save_as": "company_data"
     },
     {
       "action": "enriched_lookup",
@@ -22,7 +33,7 @@
         "symbol": "{SYMBOL}",
         "sector": "{company_data.sector}"
       },
-      "output": "peer_companies"
+      "save_as": "peer_companies"
     },
     {
       "action": "enriched_lookup",
@@ -31,27 +42,33 @@
         "query": "supply_chain_relationships",
         "company": "{SYMBOL}"
       },
-      "output": "supply_chain"
+      "save_as": "supply_chain"
     },
     {
-      "agent": "data_digester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{company_data}",
-        "data_type": "company_fundamentals"
+        "agent": "data_digester",
+        "context": {
+          "data": "{company_data}",
+          "data_type": "company_fundamentals"
+        }
       },
-      "output": "digested_data"
+      "save_as": "digested_data"
     },
     {
-      "agent": "claude",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "user_input": "Analyze {SYMBOL} with fundamentals {digested_data}, peer companies {peer_companies.data}, and supply chain {supply_chain.data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation vs peers 3) Competitive position analysis 4) Supply chain risks 5) Growth prospects 6) Investment recommendation with peer comparison"
+        "agent": "claude",
+        "context": {
+          "user_input": "Analyze {SYMBOL} with fundamentals {digested_data}, peer companies {peer_companies.data}, and supply chain {supply_chain.data}. Apply Buffett-Ackman-Dalio framework. Provide: 1) Business quality score 2) Valuation vs peers 3) Competitive position analysis 4) Supply chain risks 5) Growth prospects 6) Investment recommendation with peer comparison"
+        }
       },
-      "output": "analysis_report"
+      "save_as": "analysis_report"
     }
   ],
   "response_type": "analysis",
   "response_template": "{analysis_report}",
-  "cache_ttl": 1800
+  "cache_ttl": 1800,
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

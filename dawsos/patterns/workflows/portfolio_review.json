@@ -2,54 +2,70 @@
   "id": "portfolio_review",
   "name": "Portfolio Review",
   "description": "Comprehensive portfolio analysis and rebalancing suggestions",
-  "triggers": ["review portfolio", "rebalance", "portfolio check"],
+  "triggers": [
+    "review portfolio",
+    "rebalance",
+    "portfolio check"
+  ],
   "entities": [],
   "priority": 8,
   "steps": [
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get all portfolio holdings from knowledge graph"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get all portfolio holdings from knowledge graph"
+        }
       },
-      "output": "holdings"
+      "save_as": "holdings"
     },
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get current prices, fundamentals, and news for all holdings: {holdings}"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get current prices, fundamentals, and news for all holdings: {holdings}"
+        }
       },
-      "output": "portfolio_data"
+      "save_as": "portfolio_data"
     },
     {
-      "agent": "pattern_spotter",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{portfolio_data}",
-        "analysis_type": "portfolio_health"
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{portfolio_data}",
+          "analysis_type": "portfolio_health"
+        }
       },
-      "output": "health_metrics"
+      "save_as": "health_metrics"
     },
     {
-      "agent": "relationship_hunter",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{portfolio_data}",
-        "analysis_type": "correlation_matrix"
+        "agent": "relationship_hunter",
+        "context": {
+          "data": "{portfolio_data}",
+          "analysis_type": "correlation_matrix"
+        }
       },
-      "output": "correlations"
+      "save_as": "correlations"
     },
     {
-      "agent": "claude",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "user_input": "Review portfolio {holdings} with metrics {health_metrics} and correlations {correlations}. Provide: 1) Performance Summary 2) Risk Analysis 3) Diversification Score 4) Problem Holdings 5) Rebalancing Recommendations 6) New Ideas to Consider"
+        "agent": "claude",
+        "context": {
+          "user_input": "Review portfolio {holdings} with metrics {health_metrics} and correlations {correlations}. Provide: 1) Performance Summary 2) Risk Analysis 3) Diversification Score 4) Problem Holdings 5) Rebalancing Recommendations 6) New Ideas to Consider"
+        }
       },
-      "output": "portfolio_review"
+      "save_as": "portfolio_review"
     }
   ],
   "response_type": "portfolio_analysis",
   "response_template": "{portfolio_review}",
-  "cache_ttl": 1800
+  "cache_ttl": 1800,
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

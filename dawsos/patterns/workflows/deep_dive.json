@@ -2,65 +2,86 @@
   "id": "deep_dive",
   "name": "Company Deep Dive",
   "description": "Comprehensive analysis using Buffett-Ackman-Dalio framework",
-  "triggers": ["deep dive", "full analysis", "investment thesis", "research"],
-  "entities": ["SYMBOL"],
+  "triggers": [
+    "deep dive",
+    "full analysis",
+    "investment thesis",
+    "research"
+  ],
+  "entities": [
+    "SYMBOL"
+  ],
   "priority": 9,
   "steps": [
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get all available data for {SYMBOL}: financials, ratios, earnings, news, insider trading, institutional holdings"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get all available data for {SYMBOL}: financials, ratios, earnings, news, insider trading, institutional holdings"
+        }
       },
-      "output": "company_data"
+      "save_as": "company_data"
     },
     {
-      "agent": "data_digester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{company_data}",
-        "data_type": "deep_analysis"
+        "agent": "data_digester",
+        "context": {
+          "data": "{company_data}",
+          "data_type": "deep_analysis"
+        }
       },
-      "output": "structured_analysis"
+      "save_as": "structured_analysis"
     },
     {
-      "agent": "pattern_spotter",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{structured_analysis}",
-        "analysis_type": "investment_quality"
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{structured_analysis}",
+          "analysis_type": "investment_quality"
+        }
       },
-      "output": "quality_metrics"
+      "save_as": "quality_metrics"
     },
     {
-      "agent": "relationship_hunter",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{structured_analysis}",
-        "target": "{SYMBOL}"
+        "agent": "relationship_hunter",
+        "context": {
+          "data": "{structured_analysis}",
+          "target": "{SYMBOL}"
+        }
       },
-      "output": "relationships"
+      "save_as": "relationships"
     },
     {
-      "agent": "forecast_dreamer",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{company_data}",
-        "target": "{SYMBOL}",
-        "horizon": "1y"
+        "agent": "forecast_dreamer",
+        "context": {
+          "data": "{company_data}",
+          "target": "{SYMBOL}",
+          "horizon": "1y"
+        }
       },
-      "output": "forecast"
+      "save_as": "forecast"
     },
     {
-      "agent": "claude",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "user_input": "Create investment thesis for {SYMBOL} using Buffett-Ackman-Dalio framework. Data: {structured_analysis}, Quality: {quality_metrics}, Related: {relationships}, Forecast: {forecast}. Include: Executive Summary, Business Analysis, Financial Health, Valuation, Risks, Catalyst, Recommendation with conviction level"
+        "agent": "claude",
+        "context": {
+          "user_input": "Create investment thesis for {SYMBOL} using Buffett-Ackman-Dalio framework. Data: {structured_analysis}, Quality: {quality_metrics}, Related: {relationships}, Forecast: {forecast}. Include: Executive Summary, Business Analysis, Financial Health, Valuation, Risks, Catalyst, Recommendation with conviction level"
+        }
       },
-      "output": "investment_thesis"
+      "save_as": "investment_thesis"
     }
   ],
   "response_type": "deep_analysis",
   "response_template": "{investment_thesis}",
-  "cache_ttl": 3600
+  "cache_ttl": 3600,
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

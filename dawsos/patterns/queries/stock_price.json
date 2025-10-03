@@ -2,29 +2,44 @@
   "id": "stock_price",
   "name": "Get Stock Price",
   "description": "Fetches current stock price and displays key metrics",
-  "triggers": ["stock price", "price", "quote", "trading", "cost", "worth"],
-  "entities": ["SYMBOL"],
+  "triggers": [
+    "stock price",
+    "price",
+    "quote",
+    "trading",
+    "cost",
+    "worth"
+  ],
+  "entities": [
+    "SYMBOL"
+  ],
   "priority": 10,
   "steps": [
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get quote for {SYMBOL}"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get quote for {SYMBOL}"
+        }
       },
-      "output": "quote_data"
+      "save_as": "quote_data"
     },
     {
-      "agent": "claude",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "user_input": "Format this nicely: {quote_data}"
+        "agent": "claude",
+        "context": {
+          "user_input": "Format this nicely: {quote_data}"
+        }
       },
-      "output": "formatted_response"
+      "save_as": "formatted_response"
     }
   ],
   "response_type": "stock_quote",
   "response_template": "{SYMBOL} is trading at ${quote_data.price} ({quote_data.change_percent}%)",
   "error_handling": "stop",
-  "cache_ttl": 60
+  "cache_ttl": 60,
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

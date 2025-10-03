@@ -3,6 +3,8 @@ from typing import Dict, Any, List, Optional
 from types import MappingProxyType
 import json
 import os
+import traceback
+import logging
 from datetime import datetime
 from core.agent_adapter import AgentAdapter, AgentRegistry
 
@@ -17,6 +19,11 @@ class AgentRuntime:
         self.agent_registry = AgentRegistry()  # New: Agent registry for capabilities
         self.use_adapter = True  # Flag to enable/disable adapter usage
         self.executor = None  # Will be set by outer orchestration layer
+
+        # Trinity compliance guardrails
+        self._access_warnings_enabled = True
+        self._strict_mode = os.getenv('TRINITY_STRICT_MODE', 'false').lower() == 'true'
+        self.logger = logging.getLogger('AgentRuntime')
 
     def register_agent(self, name: str, agent: Any, capabilities: Optional[Dict] = None):
         """Register an agent with the runtime"""
@@ -225,5 +232,74 @@ class AgentRuntime:
 
     @property
     def agents(self) -> MappingProxyType:
-        """Read-only view of registered agent instances (legacy access)"""
+        """
+        Read-only view of registered agent instances (DEPRECATED - legacy access)
+
+        WARNING: Direct agent access bypasses Trinity Architecture compliance.
+        Use exec_via_registry() instead for proper graph storage and tracking.
+
+        Example:
+            # DEPRECATED (bypasses Trinity):
+            agent = runtime.agents['agent_name']
+            result = agent.process(context)
+
+            # RECOMMENDED (Trinity compliant):
+            result = runtime.exec_via_registry('agent_name', context)
+
+        This property logs bypass warnings and will raise errors in strict mode.
+        Set TRINITY_STRICT_MODE=true environment variable to enforce compliance.
+        """
+        if self._access_warnings_enabled:
+            # Get caller information from stack trace
+            stack = traceback.extract_stack()
+            # Go back 2 frames: current property -> caller
+            if len(stack) >= 2:
+                caller_frame = stack[-2]
+                caller_info = f"{caller_frame.filename}:{caller_frame.lineno} in {caller_frame.name}"
+            else:
+                caller_info = "Unknown caller"
+
+            # Log bypass warning
+            warning_msg = (
+                f"TRINITY BYPASS WARNING: Direct .agents access from {caller_info}. "
+                f"Use exec_via_registry() instead for Trinity compliance."
+            )
+
+            if self._strict_mode:
+                # In strict mode, raise an error
+                error_msg = (
+                    f"TRINITY STRICT MODE: Direct agent access is prohibited!\n"
+                    f"Caller: {caller_info}\n"
+                    f"Use runtime.exec_via_registry(agent_name, context) instead of runtime.agents[agent_name]"
+                )
+                self.logger.error(error_msg)
+                raise RuntimeError(error_msg)
+            else:
+                # In warning mode, just log
+                self.logger.warning(warning_msg)
+
+            # Log to registry for tracking
+            self.agent_registry.log_bypass_warning(caller_info, "agents", "property_access")
+
         return MappingProxyType(self._agents)
+
+    def exec_via_registry(self, agent_name: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Sanctioned path for executing agents through the registry.
+        This is the recommended way to call agents from patterns, UI, and other code.
+        """
+        return self.execute(agent_name, context)
+
+    def disable_access_warnings(self):
+        """
+        Disable access warnings for internal use cases where direct access is legitimate.
+
+        WARNING: Only use this for backward compatibility during migration.
+        Should be removed once all code is updated to use exec_via_registry().
+
+        Example:
+            runtime.disable_access_warnings()
+            agent = runtime.agents['agent_name']  # No warning
+        """
+        self._access_warnings_enabled = False
+        self.logger.info("Trinity access warnings disabled (legacy compatibility mode)")

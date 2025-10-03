@@ -2,38 +2,62 @@
   "id": "technical_analysis",
   "name": "Technical Analysis",
   "description": "Performs technical analysis with indicators and chart patterns",
-  "triggers": ["technical", "chart", "rsi", "macd", "moving average", "support", "resistance"],
-  "entities": ["SYMBOL"],
+  "triggers": [
+    "technical",
+    "chart",
+    "rsi",
+    "macd",
+    "moving average",
+    "support",
+    "resistance"
+  ],
+  "entities": [
+    "SYMBOL"
+  ],
   "priority": 7,
   "steps": [
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get {SYMBOL} price data with volume for last 6 months"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get {SYMBOL} price data with volume for last 6 months"
+        }
       },
-      "output": "price_data"
+      "save_as": "price_data"
     },
     {
-      "agent": "pattern_spotter",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{price_data}",
-        "analysis_type": "technical",
-        "indicators": ["RSI", "MACD", "MA50", "MA200", "Volume"]
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{price_data}",
+          "analysis_type": "technical",
+          "indicators": [
+            "RSI",
+            "MACD",
+            "MA50",
+            "MA200",
+            "Volume"
+          ]
+        }
       },
-      "output": "technical_signals"
+      "save_as": "technical_signals"
     },
     {
-      "agent": "claude",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "user_input": "Provide technical analysis for {SYMBOL} based on {technical_signals}: 1) Current trend 2) Key levels 3) Indicator signals 4) Entry/exit points 5) Risk/reward setup"
+        "agent": "claude",
+        "context": {
+          "user_input": "Provide technical analysis for {SYMBOL} based on {technical_signals}: 1) Current trend 2) Key levels 3) Indicator signals 4) Entry/exit points 5) Risk/reward setup"
+        }
       },
-      "output": "technical_report"
+      "save_as": "technical_report"
     }
   ],
   "response_type": "analysis",
   "response_template": "{technical_report}",
-  "cache_ttl": 300
+  "cache_ttl": 300,
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

@@ -5,8 +5,13 @@
   "category": "governance",
   "extends": "governance_template",
   "input_schema": {
-    "required": ["target_nodes"],
-    "optional": ["policy_file", "auto_remediate"]
+    "required": [
+      "target_nodes"
+    ],
+    "optional": [
+      "policy_file",
+      "auto_remediate"
+    ]
   },
   "default_parameters": {
     "policy_file": "knowledge/governance_policies.json",
@@ -14,39 +19,47 @@
   },
   "steps": [
     {
-      "order": 1,
-      "agent": "governance",
-      "action": "load_policies",
+      "action": "execute_through_registry",
       "parameters": {
         "policy_file": "{policy_file}"
+      },
+      "params": {
+        "agent": "governance",
+        "context": {}
       }
     },
     {
-      "order": 2,
-      "agent": "governance",
-      "action": "validate_nodes",
+      "action": "execute_through_registry",
       "parameters": {
         "nodes": "{target_nodes}",
         "policies": "{step_1.policies}"
+      },
+      "params": {
+        "agent": "governance",
+        "context": {}
       }
     },
     {
-      "order": 3,
-      "agent": "governance",
-      "action": "apply_remediation",
+      "action": "execute_through_registry",
       "parameters": {
         "violations": "{step_2.violations}",
         "auto_fix": "{auto_remediate}"
       },
-      "condition": "{step_2.violations_found}"
+      "condition": "{step_2.violations_found}",
+      "params": {
+        "agent": "governance",
+        "context": {}
+      }
     },
     {
-      "order": 4,
-      "agent": "governance",
-      "action": "update_graph_governance",
+      "action": "execute_through_registry",
       "parameters": {
         "validation_results": "{step_2}",
         "remediation_results": "{step_3}"
+      },
+      "params": {
+        "agent": "governance",
+        "context": {}
       }
     }
   ],
@@ -60,5 +73,7 @@
     "validation_success": 0.4,
     "remediation_effectiveness": 0.3
   },
-  "template": "**Policy Validation Report**\n\n**Nodes Validated**: {target_nodes}\n**Policies Applied**: {step_1.policies|length}\n\n**Validation Results**:\n✅ Compliant: {step_2.compliant_count}\n⚠️ Violations: {step_2.violations|length}\n\n{#step_2.violations}\n**Violation {index}**:\n- Node: {.node}\n- Policy: {.policy}\n- Severity: {.severity}\n- Message: {.message}\n{#step_3.fixed}\n✓ Auto-remediated\n{/step_3.fixed}\n{/step_2.violations}\n\n**Graph Governance Updated**: {step_4.success}\n\n*Powered by DawsOS Trinity Architecture with policy-driven governance*"
+  "template": "**Policy Validation Report**\n\n**Nodes Validated**: {target_nodes}\n**Policies Applied**: {step_1.policies|length}\n\n**Validation Results**:\n\u2705 Compliant: {step_2.compliant_count}\n\u26a0\ufe0f Violations: {step_2.violations|length}\n\n{#step_2.violations}\n**Violation {index}**:\n- Node: {.node}\n- Policy: {.policy}\n- Severity: {.severity}\n- Message: {.message}\n{#step_3.fixed}\n\u2713 Auto-remediated\n{/step_3.fixed}\n{/step_2.violations}\n\n**Graph Governance Updated**: {step_4.success}\n\n*Powered by DawsOS Trinity Architecture with policy-driven governance*",
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

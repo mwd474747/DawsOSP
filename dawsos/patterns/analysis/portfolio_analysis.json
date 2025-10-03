@@ -2,45 +2,61 @@
   "id": "portfolio_analysis",
   "name": "Portfolio Analysis",
   "description": "Analyzes portfolio composition, risk, and performance",
-  "triggers": ["portfolio", "holdings", "allocation", "diversification", "risk"],
+  "triggers": [
+    "portfolio",
+    "holdings",
+    "allocation",
+    "diversification",
+    "risk"
+  ],
   "entities": [],
   "priority": 8,
   "steps": [
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get portfolio holdings from knowledge graph"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get portfolio holdings from knowledge graph"
+        }
       },
-      "output": "holdings"
+      "save_as": "holdings"
     },
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get current prices and fundamentals for portfolio: {holdings}"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get current prices and fundamentals for portfolio: {holdings}"
+        }
       },
-      "output": "portfolio_data"
+      "save_as": "portfolio_data"
     },
     {
-      "agent": "pattern_spotter",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{portfolio_data}",
-        "analysis_type": "portfolio_risk"
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{portfolio_data}",
+          "analysis_type": "portfolio_risk"
+        }
       },
-      "output": "risk_metrics"
+      "save_as": "risk_metrics"
     },
     {
-      "agent": "claude",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "user_input": "Analyze portfolio with {holdings} and metrics {risk_metrics}. Provide: 1) Asset allocation 2) Risk assessment 3) Diversification score 4) Performance attribution 5) Rebalancing suggestions"
+        "agent": "claude",
+        "context": {
+          "user_input": "Analyze portfolio with {holdings} and metrics {risk_metrics}. Provide: 1) Asset allocation 2) Risk assessment 3) Diversification score 4) Performance attribution 5) Rebalancing suggestions"
+        }
       },
-      "output": "portfolio_report"
+      "save_as": "portfolio_report"
     }
   ],
   "response_type": "analysis",
   "response_template": "{portfolio_report}",
-  "cache_ttl": 600
+  "cache_ttl": 600,
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

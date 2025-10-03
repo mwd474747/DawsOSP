@@ -3,59 +3,80 @@
   "name": "Smart Alert System",
   "description": "Monitors thresholds and generates contextual alerts",
   "category": "ui",
-  "triggers": ["alerts", "notifications", "warnings"],
-  "workflow": [
+  "triggers": [
+    "alerts",
+    "notifications",
+    "warnings"
+  ],
+  "version": "1.0",
+  "last_updated": "2025-10-02",
+  "steps": [
     {
-      "step": "get_alert_thresholds",
       "action": "enriched_lookup",
       "params": {
         "data_type": "ui_configurations",
         "query": "alert_thresholds"
       },
-      "output": "thresholds"
+      "save_as": "thresholds"
     },
     {
-      "step": "check_portfolio_risk",
-      "agent": "risk_agent",
+      "action": "execute_through_registry",
       "params": {
-        "include_correlations": true,
-        "timeframe": "1M"
+        "agent": "risk_agent",
+        "context": {
+          "include_correlations": true,
+          "timeframe": "1M"
+        }
       },
-      "output": "current_risk"
+      "save_as": "current_risk"
     },
     {
-      "step": "check_market_conditions",
-      "agent": "macro_agent",
+      "action": "execute_through_registry",
       "params": {
-        "indicators": ["VIX", "DXY", "TNX"],
-        "include_trends": true
+        "agent": "macro_agent",
+        "context": {
+          "indicators": [
+            "VIX",
+            "DXY",
+            "TNX"
+          ],
+          "include_trends": true
+        }
       },
-      "output": "market_metrics"
+      "save_as": "market_metrics"
     },
     {
-      "step": "generate_alerts",
-      "agent": "pattern_spotter",
+      "action": "execute_through_registry",
       "params": {
-        "thresholds": "{thresholds}",
-        "current_data": {
-          "risk": "{current_risk}",
-          "market": "{market_metrics}"
-        },
-        "alert_types": ["warning", "critical", "info"]
+        "agent": "pattern_spotter",
+        "context": {
+          "thresholds": "{thresholds}",
+          "current_data": {
+            "risk": "{current_risk}",
+            "market": "{market_metrics}"
+          },
+          "alert_types": [
+            "warning",
+            "critical",
+            "info"
+          ]
+        }
       },
-      "output": "alert_list"
+      "save_as": "alert_list"
     },
     {
-      "step": "create_alert_ui",
-      "agent": "ui_generator",
+      "action": "execute_through_registry",
       "params": {
-        "component_type": "alert_feed",
-        "data": {
-          "alerts": "{alert_list}"
-        },
-        "style": "default"
+        "agent": "ui_generator",
+        "context": {
+          "component_type": "alert_feed",
+          "data": {
+            "alerts": "{alert_list}"
+          },
+          "style": "default"
+        }
       },
-      "output": "alert_component"
+      "save_as": "alert_component"
     }
   ]
 }

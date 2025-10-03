@@ -2,45 +2,61 @@
   "id": "opportunity_scan",
   "name": "Market Opportunity Scanner",
   "description": "Scans markets for trading and investment opportunities",
-  "triggers": ["scan", "opportunities", "find trades", "screening", "ideas"],
+  "triggers": [
+    "scan",
+    "opportunities",
+    "find trades",
+    "screening",
+    "ideas"
+  ],
   "entities": [],
   "priority": 8,
   "steps": [
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get top movers, unusual volume, breakouts, and oversold stocks"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get top movers, unusual volume, breakouts, and oversold stocks"
+        }
       },
-      "output": "market_scan"
+      "save_as": "market_scan"
     },
     {
-      "agent": "pattern_spotter",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{market_scan}",
-        "analysis_type": "opportunity_detection"
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{market_scan}",
+          "analysis_type": "opportunity_detection"
+        }
       },
-      "output": "opportunities"
+      "save_as": "opportunities"
     },
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get fundamentals for top opportunities: {opportunities}"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get fundamentals for top opportunities: {opportunities}"
+        }
       },
-      "output": "opportunity_data"
+      "save_as": "opportunity_data"
     },
     {
-      "agent": "claude",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "user_input": "Analyze opportunities from {opportunities} with data {opportunity_data}. Rank by: 1) Risk/Reward 2) Technical Setup 3) Fundamental Quality 4) Catalyst. Provide top 5 ideas with entry/exit/stop levels"
+        "agent": "claude",
+        "context": {
+          "user_input": "Analyze opportunities from {opportunities} with data {opportunity_data}. Rank by: 1) Risk/Reward 2) Technical Setup 3) Fundamental Quality 4) Catalyst. Provide top 5 ideas with entry/exit/stop levels"
+        }
       },
-      "output": "opportunity_report"
+      "save_as": "opportunity_report"
     }
   ],
   "response_type": "opportunities",
   "response_template": "{opportunity_report}",
-  "cache_ttl": 600
+  "cache_ttl": 600,
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

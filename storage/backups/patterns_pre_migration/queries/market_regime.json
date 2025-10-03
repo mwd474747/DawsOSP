@@ -1,0 +1,54 @@
+{
+  "id": "market_regime",
+  "name": "Detect Market Regime",
+  "description": "Analyzes current market conditions and identifies the regime",
+  "triggers": ["regime", "market condition", "bull", "bear", "risk", "environment"],
+  "entities": [],
+  "priority": 9,
+  "steps": [
+    {
+      "agent": "data_harvester",
+      "method": "process",
+      "params": {
+        "request": "Get SPY VIX DXY TLT data"
+      },
+      "output": "market_data"
+    },
+    {
+      "agent": "pattern_spotter",
+      "method": "process",
+      "params": {
+        "data": "{market_data}",
+        "analysis_type": "regime"
+      },
+      "output": "regime_analysis"
+    },
+    {
+      "action": "enriched_lookup",
+      "params": {
+        "data_type": "economic_cycles",
+        "query": "historical_phases"
+      },
+      "output": "historical_cycles"
+    },
+    {
+      "action": "enriched_lookup",
+      "params": {
+        "data_type": "economic_cycles",
+        "query": "cycle_indicators"
+      },
+      "output": "cycle_indicators"
+    },
+    {
+      "agent": "claude",
+      "method": "process",
+      "params": {
+        "user_input": "Based on current analysis {regime_analysis}, historical cycles {historical_cycles.data}, and cycle indicators {cycle_indicators.data}, determine: 1) Current market regime (Risk-On/Risk-Off/Transitioning) 2) Which historical period (from {historical_cycles.data}) most resembles current conditions 3) Key indicators and confidence level 4) Sector rotation recommendations based on regime"
+      },
+      "output": "regime_report"
+    }
+  ],
+  "response_type": "regime_analysis",
+  "response_template": "{regime_report}",
+  "cache_ttl": 300
+}

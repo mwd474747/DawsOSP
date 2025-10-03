@@ -11,6 +11,7 @@ from pathlib import Path
 from datetime import datetime
 from core.logger import get_logger
 from core.confidence_calculator import confidence_calculator
+from core.knowledge_loader import get_knowledge_loader
 
 
 class PatternEngine:
@@ -24,10 +25,17 @@ class PatternEngine:
             pattern_dir: Directory containing pattern JSON files
             runtime: AgentRuntime instance for executing agents
         """
-        self.pattern_dir = Path(pattern_dir)
+        pattern_path = Path(pattern_dir)
+        if not pattern_path.is_absolute() and not pattern_path.exists():
+            package_root = Path(__file__).resolve().parent.parent
+            candidate = package_root / pattern_path
+            if candidate.exists():
+                pattern_path = candidate
+        self.pattern_dir = pattern_path
         self.runtime = runtime
         self.patterns = {}
         self.logger = get_logger('PatternEngine')
+        self.knowledge_loader = get_knowledge_loader()  # Centralized knowledge loading
         self.company_db = self._load_company_database()
         self.load_patterns()
 
@@ -1138,25 +1146,14 @@ class PatternEngine:
         return self.patterns.get(pattern_id)
 
     def load_enriched_data(self, data_type: str) -> Optional[Dict]:
-        """Load enriched data from Phase 3 JSON files"""
-        data_files = {
-            'sector_performance': 'storage/knowledge/sector_performance.json',
-            'economic_cycles': 'storage/knowledge/economic_cycles.json',
-            'sp500_companies': 'storage/knowledge/sp500_companies.json',
-            'sector_correlations': 'storage/knowledge/sector_correlations.json',
-            'relationships': 'storage/knowledge/relationship_mappings.json',
-            'ui_configurations': 'storage/knowledge/ui_configurations.json'
-        }
+        """Load enriched data from Phase 3 JSON files using centralized loader"""
+        # Use the knowledge loader for centralized, cached access
+        data = self.knowledge_loader.get_dataset(data_type)
 
-        if data_type in data_files:
-            filepath = Path(data_files[data_type])
-            if filepath.exists():
-                try:
-                    with open(filepath, 'r') as f:
-                        return json.load(f)
-                except Exception as e:
-                    print(f"Error loading {data_type}: {e}")
-        return None
+        if data is None:
+            self.logger.warning(f"Enriched data '{data_type}' not found or failed to load")
+
+        return data
 
     def extract_enriched_section(self, data: Dict, query: str, params: Dict) -> Dict:
         """Extract specific section from enriched data based on query and params"""

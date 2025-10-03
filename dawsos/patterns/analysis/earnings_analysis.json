@@ -2,37 +2,54 @@
   "id": "earnings_analysis",
   "name": "Earnings Analysis",
   "description": "Analyzes company earnings, guidance, and estimates",
-  "triggers": ["earnings", "eps", "revenue", "guidance", "beat", "miss"],
-  "entities": ["SYMBOL"],
+  "triggers": [
+    "earnings",
+    "eps",
+    "revenue",
+    "guidance",
+    "beat",
+    "miss"
+  ],
+  "entities": [
+    "SYMBOL"
+  ],
   "priority": 8,
   "steps": [
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get {SYMBOL} earnings history, estimates, and guidance"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get {SYMBOL} earnings history, estimates, and guidance"
+        }
       },
-      "output": "earnings_data"
+      "save_as": "earnings_data"
     },
     {
-      "agent": "pattern_spotter",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{earnings_data}",
-        "analysis_type": "earnings_trend"
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{earnings_data}",
+          "analysis_type": "earnings_trend"
+        }
       },
-      "output": "earnings_patterns"
+      "save_as": "earnings_patterns"
     },
     {
-      "agent": "claude",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "user_input": "Analyze {SYMBOL} earnings {earnings_data} and trends {earnings_patterns}. Include: 1) Beat/miss history 2) Growth trajectory 3) Guidance analysis 4) Estimate revisions 5) Trading implications"
+        "agent": "claude",
+        "context": {
+          "user_input": "Analyze {SYMBOL} earnings {earnings_data} and trends {earnings_patterns}. Include: 1) Beat/miss history 2) Growth trajectory 3) Guidance analysis 4) Estimate revisions 5) Trading implications"
+        }
       },
-      "output": "earnings_report"
+      "save_as": "earnings_report"
     }
   ],
   "response_type": "analysis",
   "response_template": "{earnings_report}",
-  "cache_ttl": 1800
+  "cache_ttl": 1800,
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

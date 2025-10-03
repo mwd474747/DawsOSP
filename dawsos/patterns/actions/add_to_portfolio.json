@@ -2,43 +2,60 @@
   "id": "add_to_portfolio",
   "name": "Add to Portfolio",
   "description": "Adds a position to the tracked portfolio",
-  "triggers": ["buy", "purchase", "add position", "portfolio add"],
-  "entities": ["SYMBOL", "QUANTITY", "PRICE"],
+  "triggers": [
+    "buy",
+    "purchase",
+    "add position",
+    "portfolio add"
+  ],
+  "entities": [
+    "SYMBOL",
+    "QUANTITY",
+    "PRICE"
+  ],
   "priority": 6,
   "steps": [
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get current price and fundamentals for {SYMBOL}"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get current price and fundamentals for {SYMBOL}"
+        }
       },
-      "output": "asset_data"
+      "save_as": "asset_data"
     },
     {
-      "agent": "data_digester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": {
-          "action": "add_position",
-          "symbol": "{SYMBOL}",
-          "quantity": "{QUANTITY}",
-          "price": "{PRICE}",
-          "asset_data": "{asset_data}"
-        },
-        "data_type": "portfolio_transaction"
+        "agent": "data_digester",
+        "context": {
+          "data": {
+            "action": "add_position",
+            "symbol": "{SYMBOL}",
+            "quantity": "{QUANTITY}",
+            "price": "{PRICE}",
+            "asset_data": "{asset_data}"
+          },
+          "data_type": "portfolio_transaction"
+        }
       },
-      "output": "position"
+      "save_as": "position"
     },
     {
-      "agent": "claude",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "user_input": "Added {SYMBOL} to portfolio: {position}. Current data: {asset_data}"
+        "agent": "claude",
+        "context": {
+          "user_input": "Added {SYMBOL} to portfolio: {position}. Current data: {asset_data}"
+        }
       },
-      "output": "confirmation"
+      "save_as": "confirmation"
     }
   ],
   "response_type": "action",
   "response_template": "{confirmation}",
-  "cache_ttl": 0
+  "cache_ttl": 0,
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

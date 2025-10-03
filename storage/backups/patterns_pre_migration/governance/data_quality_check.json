@@ -1,0 +1,17 @@
+{
+  "id": "data_quality_check",
+  "name": "Data Quality Governance",
+  "description": "Comprehensive data quality assessment and improvement",
+  "category": "governance",
+  "extends": "governance_template",
+  "input_schema": {
+    "required": ["request"],
+    "optional": ["auto_fix", "quality_threshold"]
+  },
+  "default_parameters": {
+    "governance_type": "data_quality",
+    "auto_fix": "true",
+    "priority_level": "high"
+  },
+  "template": "**Data Quality Governance Report**\n\n**Quality Request**: {request}\n\n**Overall Quality Score**: {step_4.findings.overall_score:.0%}\n\n**Issues Found**:\n{#step_4.findings.issues_found}\n- {.}\n{/step_4.findings.issues_found}\n\n**Auto-Fixes Applied**:\n{#step_4.findings.auto_fixes_applied}\n- {.}\n{/step_4.findings.auto_fixes_applied}\n\n**Recommendations**:\n{#step_4.findings.recommendations}\n- {.}\n{/step_4.findings.recommendations}\n\n**Next Actions**:\n{#step_4.next_actions}\n- {.}\n{/step_4.next_actions}\n\n*Quality monitoring powered by DawsOS Trinity Architecture*"
+}

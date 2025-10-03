@@ -1,0 +1,15 @@
+[
+  {
+    "agent": "test_agent",
+    "timestamp": "2025-10-02T23:40:45.564613",
+    "context": {
+      "input": "test"
+    },
+    "result": {
+      "result": "recommended_test processed",
+      "agent": "DummyAgent",
+      "method_used": "process",
+      "timestamp": "2025-10-02T23:40:45.564610"
+    }
+  }
+]

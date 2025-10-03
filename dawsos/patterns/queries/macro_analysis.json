@@ -2,37 +2,53 @@
   "id": "macro_analysis",
   "name": "Macro Economic Analysis",
   "description": "Analyzes macroeconomic indicators and trends",
-  "triggers": ["macro", "economy", "gdp", "inflation", "unemployment", "fed", "rates"],
+  "triggers": [
+    "macro",
+    "economy",
+    "gdp",
+    "inflation",
+    "unemployment",
+    "fed",
+    "rates"
+  ],
   "entities": [],
   "priority": 8,
   "steps": [
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get latest GDP, CPI, unemployment, fed funds rate, 10Y yield data"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get latest GDP, CPI, unemployment, fed funds rate, 10Y yield data"
+        }
       },
-      "output": "macro_data"
+      "save_as": "macro_data"
     },
     {
-      "agent": "pattern_spotter",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{macro_data}",
-        "analysis_type": "macro_trends"
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{macro_data}",
+          "analysis_type": "macro_trends"
+        }
       },
-      "output": "macro_patterns"
+      "save_as": "macro_patterns"
     },
     {
-      "agent": "claude",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "user_input": "Analyze this macro data {macro_data} and patterns {macro_patterns}. Provide: 1) Economic cycle stage 2) Key trends 3) Risk factors 4) Investment implications"
+        "agent": "claude",
+        "context": {
+          "user_input": "Analyze this macro data {macro_data} and patterns {macro_patterns}. Provide: 1) Economic cycle stage 2) Key trends 3) Risk factors 4) Investment implications"
+        }
       },
-      "output": "macro_report"
+      "save_as": "macro_report"
     }
   ],
   "response_type": "analysis",
   "response_template": "{macro_report}",
-  "cache_ttl": 600
+  "cache_ttl": 600,
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

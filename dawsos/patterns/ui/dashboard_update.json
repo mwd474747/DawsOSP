@@ -2,37 +2,49 @@
   "id": "dashboard_update",
   "name": "Dashboard Update",
   "description": "Updates dashboard with latest market data",
-  "triggers": ["refresh", "update dashboard", "latest data"],
+  "triggers": [
+    "refresh",
+    "update dashboard",
+    "latest data"
+  ],
   "entities": [],
   "priority": 7,
   "steps": [
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get SPY QQQ DIA IWM VIX DXY BTC-USD"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get SPY QQQ DIA IWM VIX DXY BTC-USD"
+        }
       },
-      "output": "market_data"
+      "save_as": "market_data"
     },
     {
-      "agent": "pattern_spotter",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{market_data}",
-        "analysis_type": "quick_regime"
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{market_data}",
+          "analysis_type": "quick_regime"
+        }
       },
-      "output": "regime"
+      "save_as": "regime"
     },
     {
-      "agent": "claude",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "user_input": "Format dashboard update: Market data: {market_data}, Regime: {regime}"
+        "agent": "claude",
+        "context": {
+          "user_input": "Format dashboard update: Market data: {market_data}, Regime: {regime}"
+        }
       },
-      "output": "dashboard_update"
+      "save_as": "dashboard_update"
     }
   ],
   "response_type": "ui_update",
   "response_template": "{dashboard_update}",
-  "cache_ttl": 60
+  "cache_ttl": 60,
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

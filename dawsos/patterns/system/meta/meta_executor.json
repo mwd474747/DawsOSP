@@ -2,7 +2,9 @@
   "id": "meta_executor",
   "name": "Meta Executor",
   "description": "Universal router that ensures all execution flows through the correct Trinity path",
-  "triggers": ["*"],
+  "triggers": [
+    "*"
+  ],
   "steps": [
     {
       "action": "detect_execution_type",
@@ -43,5 +45,7 @@
       }
     }
   ],
-  "response_template": "{result}"
+  "response_template": "{result}",
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

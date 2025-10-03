@@ -10,84 +10,101 @@
     "moat for {symbol}",
     "competitive position"
   ],
-  "triggers": ["moat", "economic moat", "competitive advantage"],
+  "triggers": [
+    "moat",
+    "economic moat",
+    "competitive advantage"
+  ],
   "description": "Deep analysis of a company's economic moat",
   "category": "analysis",
   "priority": 95,
-  "workflow": [
+  "response": {
+    "template": "\ud83c\udff0 **Economic Moat Analysis for {symbol}**\n\n\ud83d\udcca **Moat Sources Evaluation**\n\n\ud83c\udff7\ufe0f **Brand Moat**: {brand_score}/10\n{brand_details}\n\n\ud83c\udf10 **Network Effects**: {network_score}/10\n{network_details}\n\n\ud83d\udcb0 **Cost Advantages**: {cost_score}/10\n{cost_details}\n\n\ud83d\udd12 **Switching Costs**: {switching_score}/10\n{switching_details}\n\n\ud83d\udcc8 **Financial Evidence**\n\u2022 ROIC-WACC Spread: {roic_spread}%\n\u2022 Gross Margin Stability: {margin_stability}\n\u2022 10-Year Avg ROIC: {avg_roic}%\n\n\ud83c\udfaf **Overall Moat Rating**: {moat_rating}\n\u2022 Width: {moat_width}\n\u2022 Durability: {moat_durability}\n\u2022 Trend: {moat_trend}\n\n\ud83d\udca1 **Investment Implications**\n{investment_action}",
+    "format": "markdown"
+  },
+  "version": "1.0",
+  "last_updated": "2025-10-02",
+  "steps": [
     {
-      "step": "load_moat_framework",
       "action": "knowledge_lookup",
-      "parameters": {
+      "params": {
         "knowledge_file": "buffett_framework.json",
         "section": "economic_moat"
       }
     },
     {
-      "step": "analyze_brand",
       "action": "evaluate",
-      "parameters": {
+      "outputs": [
+        "brand_score"
+      ],
+      "params": {
         "type": "brand_moat",
         "checks": [
           "premium_pricing_ability",
           "customer_loyalty",
           "mind_share_leadership"
         ]
-      },
-      "outputs": ["brand_score"]
+      }
     },
     {
-      "step": "analyze_network",
       "action": "evaluate",
-      "parameters": {
+      "outputs": [
+        "network_score"
+      ],
+      "params": {
         "type": "network_effects",
         "checks": [
           "value_increases_with_users",
           "high_switching_costs",
           "winner_take_all_dynamics"
         ]
-      },
-      "outputs": ["network_score"]
+      }
     },
     {
-      "step": "analyze_costs",
       "action": "evaluate",
-      "parameters": {
+      "outputs": [
+        "cost_score"
+      ],
+      "params": {
         "type": "cost_advantages",
         "checks": [
           "lowest_cost_producer",
           "economies_of_scale",
           "unique_assets"
         ]
-      },
-      "outputs": ["cost_score"]
+      }
     },
     {
-      "step": "analyze_switching",
       "action": "evaluate",
-      "parameters": {
+      "outputs": [
+        "switching_score"
+      ],
+      "params": {
         "type": "switching_costs",
         "checks": [
           "painful_to_switch",
           "embedded_in_operations",
           "long_term_contracts"
         ]
-      },
-      "outputs": ["switching_score"]
+      }
     },
     {
-      "step": "calculate_roic",
       "action": "calculate",
-      "parameters": {
+      "outputs": [
+        "roic_spread"
+      ],
+      "params": {
         "formula": "ROIC - WACC spread",
         "target": ">15% for wide moat"
-      },
-      "outputs": ["roic_spread"]
+      }
     },
     {
-      "step": "overall_assessment",
       "action": "synthesize",
-      "parameters": {
+      "outputs": [
+        "moat_rating",
+        "moat_durability"
+      ],
+      "params": {
         "scores": [
           "{brand_score}",
           "{network_score}",
@@ -95,12 +112,7 @@
           "{switching_score}",
           "{roic_spread}"
         ]
-      },
-      "outputs": ["moat_rating", "moat_durability"]
+      }
     }
-  ],
-  "response": {
-    "template": "🏰 **Economic Moat Analysis for {symbol}**\n\n📊 **Moat Sources Evaluation**\n\n🏷️ **Brand Moat**: {brand_score}/10\n{brand_details}\n\n🌐 **Network Effects**: {network_score}/10\n{network_details}\n\n💰 **Cost Advantages**: {cost_score}/10\n{cost_details}\n\n🔒 **Switching Costs**: {switching_score}/10\n{switching_details}\n\n📈 **Financial Evidence**\n• ROIC-WACC Spread: {roic_spread}%\n• Gross Margin Stability: {margin_stability}\n• 10-Year Avg ROIC: {avg_roic}%\n\n🎯 **Overall Moat Rating**: {moat_rating}\n• Width: {moat_width}\n• Durability: {moat_durability}\n• Trend: {moat_trend}\n\n💡 **Investment Implications**\n{investment_action}",
-    "format": "markdown"
-  }
+  ]
 }

@@ -2,53 +2,70 @@
   "id": "morning_briefing",
   "name": "Morning Market Briefing",
   "description": "Comprehensive morning market overview and analysis",
-  "triggers": ["morning", "briefing", "daily update", "market open"],
+  "triggers": [
+    "morning",
+    "briefing",
+    "daily update",
+    "market open"
+  ],
   "entities": [],
   "priority": 9,
   "steps": [
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get futures, major indices, VIX, DXY, commodities, crypto"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get futures, major indices, VIX, DXY, commodities, crypto"
+        }
       },
-      "output": "market_overview"
+      "save_as": "market_overview"
     },
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get latest economic calendar and earnings today"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get latest economic calendar and earnings today"
+        }
       },
-      "output": "calendar_data"
+      "save_as": "calendar_data"
     },
     {
-      "agent": "pattern_spotter",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "data": "{market_overview}",
-        "analysis_type": "regime"
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{market_overview}",
+          "analysis_type": "regime"
+        }
       },
-      "output": "regime_status"
+      "save_as": "regime_status"
     },
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Get top market news and sentiment"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get top market news and sentiment"
+        }
       },
-      "output": "news_data"
+      "save_as": "news_data"
     },
     {
-      "agent": "claude",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "user_input": "Create morning briefing with: Market overview: {market_overview}, Regime: {regime_status}, Calendar: {calendar_data}, News: {news_data}. Format as: 1) Market Regime & Sentiment 2) Key Levels to Watch 3) Economic Events 4) Earnings Today 5) Trading Ideas"
+        "agent": "claude",
+        "context": {
+          "user_input": "Create morning briefing with: Market overview: {market_overview}, Regime: {regime_status}, Calendar: {calendar_data}, News: {news_data}. Format as: 1) Market Regime & Sentiment 2) Key Levels to Watch 3) Economic Events 4) Earnings Today 5) Trading Ideas"
+        }
       },
-      "output": "briefing"
+      "save_as": "briefing"
     }
   ],
   "response_type": "briefing",
   "response_template": "{briefing}",
-  "cache_ttl": 1800
+  "cache_ttl": 1800,
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

@@ -2,38 +2,53 @@
   "id": "export_data",
   "name": "Export Data",
   "description": "Exports data or analysis to various formats",
-  "triggers": ["export", "download", "save as", "generate report"],
-  "entities": ["FORMAT"],
+  "triggers": [
+    "export",
+    "download",
+    "save as",
+    "generate report"
+  ],
+  "entities": [
+    "FORMAT"
+  ],
   "priority": 6,
   "steps": [
     {
-      "agent": "data_harvester",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "request": "Gather all relevant data from current context and graph"
+        "agent": "data_harvester",
+        "context": {
+          "request": "Gather all relevant data from current context and graph"
+        }
       },
-      "output": "export_data"
+      "save_as": "export_data"
     },
     {
-      "agent": "code_monkey",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "task": "format_export",
-        "data": "{export_data}",
-        "format": "{FORMAT}"
+        "agent": "code_monkey",
+        "context": {
+          "task": "format_export",
+          "data": "{export_data}",
+          "format": "{FORMAT}"
+        }
       },
-      "output": "formatted_export"
+      "save_as": "formatted_export"
     },
     {
-      "agent": "claude",
-      "method": "process",
+      "action": "execute_through_registry",
       "params": {
-        "user_input": "Exported data in {FORMAT} format: {formatted_export}"
+        "agent": "claude",
+        "context": {
+          "user_input": "Exported data in {FORMAT} format: {formatted_export}"
+        }
       },
-      "output": "export_confirmation"
+      "save_as": "export_confirmation"
     }
   ],
   "response_type": "action",
   "response_template": "{export_confirmation}",
-  "cache_ttl": 0
+  "cache_ttl": 0,
+  "version": "1.0",
+  "last_updated": "2025-10-02"
 }

@@ -3,39 +3,45 @@
   "name": "Dynamic Dashboard Generator",
   "description": "Generates personalized dashboard based on user patterns and preferences",
   "category": "ui",
-  "triggers": ["dashboard", "home", "overview"],
-  "workflow": [
+  "triggers": [
+    "dashboard",
+    "home",
+    "overview"
+  ],
+  "version": "1.0",
+  "last_updated": "2025-10-02",
+  "steps": [
     {
-      "step": "get_ui_config",
       "action": "enriched_lookup",
       "params": {
         "data_type": "ui_configurations",
         "query": "dashboard_widgets"
       },
-      "output": "widget_config"
+      "save_as": "widget_config"
     },
     {
-      "step": "get_layout_template",
       "action": "enriched_lookup",
       "params": {
         "data_type": "ui_configurations",
         "query": "layout_templates.default_dashboard"
       },
-      "output": "layout"
+      "save_as": "layout"
     },
     {
-      "step": "generate_dashboard",
-      "agent": "ui_generator",
+      "action": "execute_through_registry",
       "params": {
-        "component_type": "dashboard_widget",
-        "data": {
-          "widgets": "{widget_config}",
-          "layout": "{layout}",
-          "theme": "dark_theme"
-        },
-        "style": "grid"
+        "agent": "ui_generator",
+        "context": {
+          "component_type": "dashboard_widget",
+          "data": {
+            "widgets": "{widget_config}",
+            "layout": "{layout}",
+            "theme": "dark_theme"
+          },
+          "style": "grid"
+        }
       },
-      "output": "dashboard_html"
+      "save_as": "dashboard_html"
     }
   ]
 }

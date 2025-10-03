@@ -2,7 +2,7 @@
 Agent Adapter - Provides consistent interface for all agents
 This allows agents with different method signatures to work uniformly
 """
-from typing import Dict, Any, Optional, Protocol, runtime_checkable
+from typing import Dict, Any, Optional, Protocol, runtime_checkable, List
 from datetime import datetime
 
 
@@ -170,6 +170,7 @@ class AgentRegistry:
         self.agents = {}
         self.capabilities_map = {}
         self.execution_metrics = {}  # Track compliance metrics
+        self.bypass_warnings = []  # Track registry bypasses
 
     def register(self, name: str, agent: Any, capabilities: Optional[Dict] = None):
         """Register an agent with optional capabilities"""
@@ -207,20 +208,38 @@ class AgentRegistry:
         # Execute through adapter
         result = self.agents[agent_name].execute(context)
 
-        # Track metrics
+        # Track metrics with enhanced telemetry
         if agent_name not in self.execution_metrics:
             self.execution_metrics[agent_name] = {
                 'total_executions': 0,
                 'graph_stored': 0,
-                'failures': 0
+                'failures': 0,
+                'last_success': None,
+                'last_failure': None,
+                'failure_reasons': [],
+                'capability_tags': self.capabilities_map.get(agent_name, {})
             }
 
         self.execution_metrics[agent_name]['total_executions'] += 1
 
         if result.get('graph_stored'):
             self.execution_metrics[agent_name]['graph_stored'] += 1
+            self.execution_metrics[agent_name]['last_success'] = datetime.now().isoformat()
         elif 'error' in result:
             self.execution_metrics[agent_name]['failures'] += 1
+            self.execution_metrics[agent_name]['last_failure'] = datetime.now().isoformat()
+
+            # Track failure reason
+            failure_reason = result.get('error', 'Unknown error')
+            self.execution_metrics[agent_name]['failure_reasons'].append({
+                'timestamp': datetime.now().isoformat(),
+                'reason': failure_reason
+            })
+
+            # Keep only last 10 failure reasons
+            if len(self.execution_metrics[agent_name]['failure_reasons']) > 10:
+                self.execution_metrics[agent_name]['failure_reasons'] = \
+                    self.execution_metrics[agent_name]['failure_reasons'][-10:]
 
         return result
 
@@ -255,3 +274,27 @@ class AgentRegistry:
             )
 
         return metrics
+
+    def log_bypass_warning(self, caller: str, agent_name: str, method: str):
+        """Log when code bypasses the registry to call agents directly"""
+        warning = {
+            'timestamp': datetime.now().isoformat(),
+            'caller': caller,
+            'agent': agent_name,
+            'method': method,
+            'message': f'BYPASS WARNING: {caller} called {agent_name}.{method}() directly, bypassing registry'
+        }
+        self.bypass_warnings.append(warning)
+
+        # Keep only last 100 warnings
+        if len(self.bypass_warnings) > 100:
+            self.bypass_warnings = self.bypass_warnings[-100:]
+
+        # Also log to console for visibility
+        import logging
+        logger = logging.getLogger('AgentRegistry')
+        logger.warning(warning['message'])
+
+    def get_bypass_warnings(self, limit: int = 50) -> List[Dict]:
+        """Get recent bypass warnings"""
+        return self.bypass_warnings[-limit:]

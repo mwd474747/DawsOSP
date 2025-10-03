@@ -1,0 +1,66 @@
+{
+  "id": "comprehensive_analysis",
+  "name": "Comprehensive Stock Analysis",
+  "description": "Complete analysis combining fundamentals, technicals, and sentiment",
+  "triggers": ["comprehensive analysis", "full analysis", "complete assessment", "deep dive"],
+  "workflow": [
+    {
+      "step": "fetch_fundamentals",
+      "agent": "data_harvester",
+      "params": {
+        "request": "Get fundamental data for {SYMBOL}"
+      },
+      "output": "fundamentals"
+    },
+    {
+      "step": "analyze_moat",
+      "action": "knowledge_lookup",
+      "params": {
+        "query": "economic_moat",
+        "symbol": "{SYMBOL}"
+      },
+      "output": "moat_analysis"
+    },
+    {
+      "step": "find_correlations",
+      "agent": "relationship_hunter",
+      "params": {
+        "target": "{SYMBOL}",
+        "data": "{fundamentals}"
+      },
+      "output": "correlations"
+    },
+    {
+      "step": "detect_patterns",
+      "agent": "pattern_spotter",
+      "params": {
+        "analysis_type": "stock_patterns",
+        "data": "{fundamentals}"
+      },
+      "output": "patterns"
+    },
+    {
+      "step": "calculate_valuation",
+      "action": "calculate",
+      "params": {
+        "method": "pe_valuation",
+        "inputs": "{fundamentals}"
+      },
+      "output": "valuation"
+    },
+    {
+      "step": "synthesize",
+      "action": "synthesize",
+      "params": {
+        "components": [
+          "{moat_analysis}",
+          "{correlations}",
+          "{patterns}",
+          "{valuation}"
+        ]
+      },
+      "output": "final_analysis"
+    }
+  ],
+  "response_template": "## Comprehensive Analysis: {SYMBOL}\n\n### Economic Moat\n{moat_analysis.response}\n\n### Correlations\n{correlations.response}\n\n### Patterns Detected\n{patterns.response}\n\n### Valuation\nCurrent valuation metrics suggest {valuation.assessment}\n\n### Summary\n{final_analysis}"
+}
