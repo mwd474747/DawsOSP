@@ -1,5 +1,5 @@
 """Agent Runtime - Executes and coordinates agents"""
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from types import MappingProxyType
 import json
 import os
@@ -8,27 +8,33 @@ import logging
 from datetime import datetime
 from core.agent_adapter import AgentRegistry
 
+# Avoid circular imports
+if TYPE_CHECKING:
+    from core.pattern_engine import PatternEngine
+    from core.universal_executor import UniversalExecutor
+    from core.knowledge_graph import KnowledgeGraph
+
 class AgentRuntime:
     """Simple runtime for executing agents"""
 
     def __init__(self):
-        self._agents = {}
-        self.execution_history = []
-        self.active_agents = []
-        self.pattern_engine = None  # Will be initialized after agents are registered
-        self.agent_registry = AgentRegistry()  # New: Agent registry for capabilities
-        self.use_adapter = True  # Flag to enable/disable adapter usage
-        self.executor = None  # Will be set by outer orchestration layer
-        self.graph = None  # Optional shared graph reference for meta-pattern storage
+        self._agents: Dict[str, Any] = {}
+        self.execution_history: List[Dict[str, Any]] = []
+        self.active_agents: List[str] = []
+        self.pattern_engine: Optional['PatternEngine'] = None  # Will be initialized after agents
+        self.agent_registry: AgentRegistry = AgentRegistry()  # Agent registry for capabilities
+        self.use_adapter: bool = True  # Flag to enable/disable adapter usage
+        self.executor: Optional['UniversalExecutor'] = None  # Will be set by outer orchestration
+        self.graph: Optional['KnowledgeGraph'] = None  # Optional shared graph reference
 
         # Trinity compliance guardrails
-        self._access_warnings_enabled = True
-        self._strict_mode = os.getenv('TRINITY_STRICT_MODE', 'false').lower() == 'true'
-        self.logger = logging.getLogger('AgentRuntime')
+        self._access_warnings_enabled: bool = True
+        self._strict_mode: bool = os.getenv('TRINITY_STRICT_MODE', 'false').lower() == 'true'
+        self.logger: logging.Logger = logging.getLogger('AgentRuntime')
 
         # Telemetry tracking
-        self.telemetry = []
-        self.telemetry_summary = {
+        self.telemetry: List[Dict[str, Any]] = []
+        self.telemetry_summary: Dict[str, Any] = {
             'total_executions': 0,
             'success_count': 0,
             'total_duration_ms': 0.0,
