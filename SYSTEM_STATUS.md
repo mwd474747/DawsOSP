@@ -18,7 +18,7 @@ The DawsOS system has been fully refactored to Trinity Architecture with compreh
 ### ✅ Trinity Architecture (100% Complete)
 
 **Registration & Routing**:
-- ✅ All 19 agents registered with capability metadata from `AGENT_CAPABILITIES`
+- ✅ All 15 agents registered with capability metadata from `AGENT_CAPABILITIES`
 - ✅ `AgentRuntime.agents` marked read-only with bypass warnings
 - ✅ `exec_via_registry()` is sanctioned call path
 - ✅ `TRINITY_STRICT_MODE` environment variable supported
@@ -32,7 +32,7 @@ main.py → AgentRuntime.orchestrate() → UniversalExecutor → PatternEngine �
 ```bash
 # Check agent registration
 python3 -c "from dawsos.core.agent_runtime import AgentRuntime; r = AgentRuntime(); print(f'Agents: {len(r._agents)}')"
-# Output: 19 agents registered
+# Output: 15 agents registered
 ```
 
 ---
@@ -284,7 +284,7 @@ from dawsos.main import runtime
 print(f'Registered agents: {len(runtime._agents)}')
 print(f'Registry agents: {len(runtime.agent_registry.adapters)}')
 "
-# Output: 19 agents in both ✅
+# Output: 15 agents in both ✅
 ```
 
 ### Bypass Telemetry

@@ -103,7 +103,7 @@ The DawsOS codebase has been evaluated against **all 8 sections** of the Cleanup
 ### ✅ Completed Items
 
 **1. Capability Registration**
-- ✅ All 19 agents have comprehensive capability metadata
+- ✅ All 15 agents have comprehensive capability metadata
 - ✅ File: `dawsos/core/agent_capabilities.py` (600+ lines)
 - ✅ Metadata includes: capabilities, requires, provides, integrates_with, priority, category
 
