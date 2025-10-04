@@ -1579,25 +1579,23 @@ class PatternEngine:
     def _get_company_moat_analysis(self, symbol: str, context: Dict[str, Any]) -> Dict[str, str]:
         """Get company moat analysis from knowledge base and agents"""
         try:
-            # Get equity agent for company analysis
-            equity_agent = self._get_agent('equity_agent') if self.runtime else None
-            if equity_agent:
-                stock_analysis = equity_agent.analyze_stock(symbol)
+            # Note: Previously called equity_agent (removed in agent consolidation)
+            # Moat analysis now uses knowledge base templates with pattern-driven approach
+            # Future: Could integrate with financial_analyst via company_analysis pattern
 
-                # Extract moat-related insights from stock analysis
-                sector_position = stock_analysis.get('sector_position', {})
-                connections = stock_analysis.get('connections', 0)
+            # Try to get sector from context for better moat templates
+            sector = context.get('sector', '').lower() if context else ''
 
-                # Use knowledge base to get moat details based on sector
-                sector = sector_position.get('sector', '').lower()
+            # Get moat templates from knowledge base if available
+            if sector:
                 moat_templates = self._get_moat_templates_from_knowledge(sector)
-
-                return {
-                    'brand_details': moat_templates.get('brand', f"• {symbol} brand analysis based on {connections} market connections"),
-                    'network_details': moat_templates.get('network', f"• Network effects analysis for {sector} sector"),
-                    'cost_details': moat_templates.get('cost', f"• Cost advantage assessment for {symbol}"),
-                    'switching_details': moat_templates.get('switching', f"• Switching cost analysis for {sector} sector")
-                }
+                if moat_templates:
+                    return {
+                        'brand_details': moat_templates.get('brand', f"• {symbol} brand recognition assessment needed"),
+                        'network_details': moat_templates.get('network', f"• Network effects analysis for {sector} sector"),
+                        'cost_details': moat_templates.get('cost', f"• Cost advantage assessment for {symbol}"),
+                        'switching_details': moat_templates.get('switching', f"• Switching cost analysis for {sector} sector")
+                    }
 
             # Fallback: generic moat analysis
             return {

@@ -487,6 +487,9 @@ class TestComplianceIntegration(unittest.TestCase):
         self.registry = AgentRegistry()
         self.registry.register('data_harvester', MockAgent('data_harvester'))
         self.registry.register('financial_analyst', MockAgent('financial_analyst'))
+        # Note: macro_agent is legacy (removed in agent consolidation)
+        # Keeping mock registration here for backward-compatible testing
+        # In production, use financial_analyst with macro_analysis pattern instead
         self.registry.register('macro_agent', MockAgent('macro_agent'))
 
         self.checker = ComplianceChecker(self.registry, strict_mode=False)
