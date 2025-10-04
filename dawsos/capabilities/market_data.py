@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from collections import deque
-from dawsos.core.credentials import get_credential_manager
+from core.credentials import get_credential_manager
 
 # Set up logging
 logger = logging.getLogger(__name__)

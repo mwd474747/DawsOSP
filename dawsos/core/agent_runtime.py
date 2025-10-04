@@ -19,6 +19,7 @@ class AgentRuntime:
         self.agent_registry = AgentRegistry()  # New: Agent registry for capabilities
         self.use_adapter = True  # Flag to enable/disable adapter usage
         self.executor = None  # Will be set by outer orchestration layer
+        self.graph = None  # Optional shared graph reference for meta-pattern storage
 
         # Trinity compliance guardrails
         self._access_warnings_enabled = True

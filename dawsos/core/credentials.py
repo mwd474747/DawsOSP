@@ -93,6 +93,7 @@ class CredentialManager:
         env_paths = [
             Path(self.env_file),  # Relative to current directory
             Path.cwd() / self.env_file,  # Current working directory
+            Path(__file__).parent.parent / self.env_file,  # dawsos/.env
             Path(__file__).parent.parent.parent / self.env_file,  # Project root
         ]
 

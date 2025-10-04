@@ -21,6 +21,7 @@ from datetime import datetime
 from core.pattern_engine import PatternEngine
 from core.knowledge_graph import KnowledgeGraph
 from core.agent_adapter import AgentRegistry  # Fixed: AgentRegistry is in agent_adapter, not agent_registry
+from core.persistence import PersistenceManager
 
 if TYPE_CHECKING:
     from core.agent_runtime import AgentRuntime
@@ -39,6 +40,13 @@ class UniversalExecutor:
         self.pattern_engine = PatternEngine(runtime=runtime, graph=graph)
         self.auto_save = auto_save
 
+        # Ensure runtime retains shared graph reference for meta-pattern operations
+        if self.runtime is not None:
+            self.runtime.graph = graph
+
+        # Initialize PersistenceManager for advanced backup/checksum features
+        self.persistence = PersistenceManager()
+
         # Load meta-patterns
         self._load_meta_patterns()
 
@@ -49,7 +57,9 @@ class UniversalExecutor:
             'legacy_migrated': 0,
             'compliance_failures': 0,
             'last_execution': None,
-            'last_save': None
+            'last_save': None,
+            'last_backup': None,
+            'total_backups': 0
         }
 
         logger.info("Universal Executor initialized with Trinity Architecture enforcement")
@@ -191,11 +201,18 @@ class UniversalExecutor:
             logger.error(f"Failed to store execution result: {e}")
 
     def _save_graph(self):
-        """Save knowledge graph to persistent storage."""
+        """Save knowledge graph with backup and checksum validation."""
         try:
-            self.graph.save('dawsos/storage/graph.json')
+            # Use PersistenceManager for advanced save with backup rotation
+            save_result = self.persistence.save_graph_with_backup(self.graph)
+
+            # Update metrics
             self.metrics['last_save'] = datetime.now().isoformat()
-            logger.debug("Knowledge graph auto-saved")
+            self.metrics['last_backup'] = save_result.get('backup_path')
+            self.metrics['total_backups'] += 1
+
+            logger.info(f"Knowledge graph saved with backup: {save_result['checksum'][:8]}...")
+            logger.debug(f"Backup: {save_result['backup_path']}, removed {save_result['backups_removed']} old backups")
         except Exception as e:
             logger.error(f"Failed to auto-save graph: {e}")
     

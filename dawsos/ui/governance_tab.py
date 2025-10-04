@@ -140,6 +140,97 @@ def render_governance_tab(runtime, graph):
 
     st.markdown("---")
 
+    # Persistence Health Metrics
+    st.markdown("### 💾 Persistence & Backup Health")
+    st.markdown("*Real-time backup rotation and checksum validation*")
+
+    # Get persistence manager from session state or executor
+    persistence = None
+    if 'persistence' in st.session_state:
+        persistence = st.session_state.persistence
+    elif hasattr(st.session_state.get('executor'), 'persistence'):
+        persistence = st.session_state.executor.persistence
+
+    if persistence:
+        try:
+            # Get backup list
+            backups = persistence.list_backups()
+
+            # Calculate metrics
+            total_backups = len(backups)
+            total_backup_size = sum(b.get('size', 0) for b in backups) / (1024 * 1024)  # MB
+
+            # Get most recent backup info
+            latest_backup = backups[0] if backups else None
+            latest_checksum = None
+            if latest_backup and 'metadata' in latest_backup:
+                latest_checksum = latest_backup['metadata'].get('checksum', '')[:16]
+
+            # Verify integrity of latest backup
+            integrity_status = "✅ Valid"
+            if latest_backup:
+                integrity = persistence.verify_integrity(latest_backup['path'])
+                if not integrity['valid']:
+                    integrity_status = f"❌ {integrity['error']}"
+
+            # Display metrics
+            col1, col2, col3, col4 = st.columns(4)
+
+            with col1:
+                st.metric(
+                    label="💾 Total Backups",
+                    value=total_backups,
+                    delta="30-day retention"
+                )
+
+            with col2:
+                st.metric(
+                    label="📦 Backup Size",
+                    value=f"{total_backup_size:.1f} MB",
+                    delta="Auto-rotated"
+                )
+
+            with col3:
+                st.metric(
+                    label="🔐 Latest Checksum",
+                    value=f"{latest_checksum}..." if latest_checksum else "N/A",
+                    delta=integrity_status
+                )
+
+            with col4:
+                if latest_backup:
+                    latest_time = latest_backup.get('modified', 'Unknown')
+                    st.metric(
+                        label="⏰ Last Backup",
+                        value=latest_time[-8:-3] if len(latest_time) > 10 else latest_time,  # Show time only
+                        delta=f"{latest_backup.get('metadata', {}).get('node_count', 0)} nodes"
+                    )
+                else:
+                    st.metric(
+                        label="⏰ Last Backup",
+                        value="None",
+                        delta="No backups yet"
+                    )
+
+            # Backup list in expander
+            with st.expander("📋 View All Backups"):
+                if backups:
+                    for i, backup in enumerate(backups[:10]):  # Show last 10
+                        metadata = backup.get('metadata', {})
+                        st.text(f"{i+1}. {backup['filename']}")
+                        st.text(f"   Size: {backup['size'] / 1024:.1f} KB | Nodes: {metadata.get('node_count', 0)} | Edges: {metadata.get('edge_count', 0)}")
+                        st.text(f"   Checksum: {metadata.get('checksum', 'N/A')[:32]}...")
+                        st.text("")
+                else:
+                    st.info("No backups available yet")
+
+        except Exception as e:
+            st.warning(f"Could not load persistence metrics: {str(e)}")
+    else:
+        st.warning("⚠️ Persistence Manager not initialized")
+
+    st.markdown("---")
+
     # Main governance interface
     col1, col2 = st.columns([2, 1])
 

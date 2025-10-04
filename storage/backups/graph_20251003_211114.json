@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "nodes": {
+    "test_f8b755d4": {
+      "id": "test_f8b755d4",
+      "type": "test",
+      "data": {
+        "name": "Test Node 1",
+        "value": 100
+      },
+      "created": "2025-10-03T21:11:14.720375",
+      "modified": "2025-10-03T21:11:14.720382",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "test_3ba67c19": {
+      "id": "test_3ba67c19",
+      "type": "test",
+      "data": {
+        "name": "Test Node 2",
+        "value": 200
+      },
+      "created": "2025-10-03T21:11:14.720388",
+      "modified": "2025-10-03T21:11:14.720389",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "test_335e47d4": {
+      "id": "test_335e47d4",
+      "type": "test",
+      "data": {
+        "name": "Extra Node 0"
+      },
+      "created": "2025-10-03T21:11:14.721171",
+      "modified": "2025-10-03T21:11:14.721172",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "test_463795a0": {
+      "id": "test_463795a0",
+      "type": "test",
+      "data": {
+        "name": "Extra Node 1"
+      },
+      "created": "2025-10-03T21:11:14.721656",
+      "modified": "2025-10-03T21:11:14.721657",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "test_c7637f73": {
+      "id": "test_c7637f73",
+      "type": "test",
+      "data": {
+        "name": "Extra Node 2"
+      },
+      "created": "2025-10-03T21:11:14.722106",
+      "modified": "2025-10-03T21:11:14.722107",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    }
+  },
+  "edges": [],
+  "patterns": {},
+  "forecasts": {},
+  "metadata": {
+    "last_saved": "2025-10-03T21:11:14.722133",
+    "stats": {
+      "total_nodes": 5,
+      "total_edges": 0,
+      "total_patterns": 0,
+      "node_types": {
+        "test": 5
+      },
+      "edge_types": {},
+      "avg_connections": 0.0
+    }
+  }
+}

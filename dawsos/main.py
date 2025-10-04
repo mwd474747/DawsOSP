@@ -100,8 +100,11 @@ def init_session_state():
                 seed_knowledge_graph.seed_investment_examples(st.session_state.graph)
                 print(f"Seeded knowledge graph to {st.session_state.graph.get_stats()['total_nodes']} nodes")
 
-                # Save the seeded graph for next time
-                st.session_state.graph.save('storage/graph.json')
+                # Save the seeded graph with backup for next time
+                if 'persistence' in st.session_state:
+                    st.session_state.persistence.save_graph_with_backup(st.session_state.graph)
+                else:
+                    st.session_state.graph.save('storage/graph.json')
             except Exception as e:
                 print(f"Note: Knowledge seeding skipped: {e}")
 
@@ -124,6 +127,8 @@ def init_session_state():
 
         # Register agents with explicit capabilities
         runtime = st.session_state.agent_runtime
+        # Expose graph reference on runtime for meta-pattern storage/telemetry
+        runtime.graph = st.session_state.graph
         runtime.register_agent(
             'graph_mind',
             GraphMind(st.session_state.graph),
@@ -427,8 +432,8 @@ def display_chat_interface():
 
                     st.session_state.chat_history.append({"role": "assistant", "content": response})
 
-                    # Save graph after changes
-                    st.session_state.graph.save('storage/graph.json')
+                    # Save graph with backup after changes
+                    st.session_state.persistence.save_graph_with_backup(st.session_state.graph)
 
                     # Force rerun to update graph
                     st.rerun()
@@ -898,8 +903,8 @@ def main():
         st.markdown("### Graph Controls")
         
         if st.button("Save Graph"):
-            st.session_state.graph.save('storage/graph.json')
-            st.success("Graph saved!")
+            save_result = st.session_state.persistence.save_graph_with_backup(st.session_state.graph)
+            st.success(f"Graph saved with backup! Checksum: {save_result['checksum'][:16]}...")
             
         if st.button("Load Graph"):
             if st.session_state.graph.load('storage/graph.json'):

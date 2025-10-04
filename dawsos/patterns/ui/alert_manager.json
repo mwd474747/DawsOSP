@@ -22,8 +22,9 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "risk_agent",
+        "agent": "relationship_hunter",
         "context": {
+          "analysis_type": "risk",
           "include_correlations": true,
           "timeframe": "1M"
         }
@@ -33,8 +34,9 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "macro_agent",
+        "agent": "pattern_spotter",
         "context": {
+          "analysis_type": "macro",
           "indicators": [
             "VIX",
             "DXY",

@@ -1,0 +1,447 @@
+{
+  "version": 1,
+  "nodes": {
+    "test_f8b755d4": {
+      "id": "test_f8b755d4",
+      "type": "test",
+      "data": {
+        "name": "Test Node 1",
+        "value": 100
+      },
+      "created": "2025-10-03T21:11:14.720375",
+      "modified": "2025-10-03T21:11:14.720382",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "test_3ba67c19": {
+      "id": "test_3ba67c19",
+      "type": "test",
+      "data": {
+        "name": "Test Node 2",
+        "value": 200
+      },
+      "created": "2025-10-03T21:11:14.720388",
+      "modified": "2025-10-03T21:11:14.720389",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "test_335e47d4": {
+      "id": "test_335e47d4",
+      "type": "test",
+      "data": {
+        "name": "Extra Node 0"
+      },
+      "created": "2025-10-03T21:11:14.721171",
+      "modified": "2025-10-03T21:11:14.721172",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "test_463795a0": {
+      "id": "test_463795a0",
+      "type": "test",
+      "data": {
+        "name": "Extra Node 1"
+      },
+      "created": "2025-10-03T21:11:14.721656",
+      "modified": "2025-10-03T21:11:14.721657",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "test_c7637f73": {
+      "id": "test_c7637f73",
+      "type": "test",
+      "data": {
+        "name": "Extra Node 2"
+      },
+      "created": "2025-10-03T21:11:14.722106",
+      "modified": "2025-10-03T21:11:14.722107",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "DataHarvester_result_a7f8485a": {
+      "id": "DataHarvester_result_a7f8485a",
+      "type": "DataHarvester_result",
+      "data": {
+        "agent": "DataHarvester",
+        "result": {
+          "response": "Processed request: Get SPY VIX DXY TLT data",
+          "data": {},
+          "node_id": "DataHarvester_result_9b4a5d9a",
+          "agent": "DataHarvester",
+          "method_used": "think",
+          "timestamp": "2025-10-03T21:31:51.595646",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T21:31:51.595620"
+      },
+      "created": "2025-10-03T21:31:51.595640",
+      "modified": "2025-10-03T21:31:51.595641",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "DataHarvester_result_9b4a5d9a": {
+      "id": "DataHarvester_result_9b4a5d9a",
+      "type": "DataHarvester_result",
+      "data": {
+        "agent": "DataHarvester",
+        "result": {
+          "response": "Processed request: Get SPY VIX DXY TLT data",
+          "data": {},
+          "node_id": "DataHarvester_result_9b4a5d9a",
+          "agent": "DataHarvester",
+          "method_used": "think",
+          "timestamp": "2025-10-03T21:31:51.595646",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T21:31:51.595648",
+        "context": {
+          "request": "Get SPY VIX DXY TLT data"
+        }
+      },
+      "created": "2025-10-03T21:31:51.595653",
+      "modified": "2025-10-03T21:31:51.595653",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "PatternSpotter_result_2167d9dd": {
+      "id": "PatternSpotter_result_2167d9dd",
+      "type": "PatternSpotter_result",
+      "data": {
+        "agent": "PatternSpotter",
+        "result": {
+          "response": "Detected market regime using multi-factor analysis",
+          "regime": "Analysis Error",
+          "confidence": 0.0,
+          "indicators": [],
+          "agent": "PatternSpotter",
+          "method_used": "process",
+          "timestamp": "2025-10-03T21:31:51.595673",
+          "node_id": "PatternSpotter_result_2167d9dd",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T21:31:51.595675",
+        "context": {
+          "data": "{market_data}",
+          "analysis_type": "regime"
+        }
+      },
+      "created": "2025-10-03T21:31:51.595680",
+      "modified": "2025-10-03T21:31:51.595681",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "Claude_result_a94193d2": {
+      "id": "Claude_result_a94193d2",
+      "type": "Claude_result",
+      "data": {
+        "agent": "Claude",
+        "result": {
+          "intent": "ANALYSIS",
+          "entities": [
+            "market",
+            "regime"
+          ],
+          "action": "analyze",
+          "parameters": {},
+          "friendly_response": "Analyzing market regime",
+          "response": "\ud83c\udfaf Current Market Regime: RISK-ON\n\n\ud83d\udcca Key Indicators:\n\u2022 VIX: 15.2 (Low - Complacency)\n\u2022 DXY: 104.5 (Neutral)\n\u2022 Credit Spreads: Tight\n\u2022 Equity Momentum: Positive\n\n\ud83d\udd0d Regime Characteristics:\n\u2022 High risk appetite\n\u2022 Growth outperforming value\n\u2022 Tech sector leadership\n\u2022 Low volatility environment\n\n\u26a0\ufe0f Confidence Level: 75%\n\n\ud83d\udcdd Recommendations:\n\u2022 Maintain equity exposure\n\u2022 Overweight growth sectors\n\u2022 Keep hedges minimal\n\u2022 Watch for regime shift signals",
+          "node_id": "Claude_result_7a9b2528",
+          "agent": "Claude",
+          "method_used": "process",
+          "timestamp": "2025-10-03T21:31:51.596244",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T21:31:51.596235"
+      },
+      "created": "2025-10-03T21:31:51.596241",
+      "modified": "2025-10-03T21:31:51.596242",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "Claude_result_7a9b2528": {
+      "id": "Claude_result_7a9b2528",
+      "type": "Claude_result",
+      "data": {
+        "agent": "Claude",
+        "result": {
+          "intent": "ANALYSIS",
+          "entities": [
+            "market",
+            "regime"
+          ],
+          "action": "analyze",
+          "parameters": {},
+          "friendly_response": "Analyzing market regime",
+          "response": "\ud83c\udfaf Current Market Regime: RISK-ON\n\n\ud83d\udcca Key Indicators:\n\u2022 VIX: 15.2 (Low - Complacency)\n\u2022 DXY: 104.5 (Neutral)\n\u2022 Credit Spreads: Tight\n\u2022 Equity Momentum: Positive\n\n\ud83d\udd0d Regime Characteristics:\n\u2022 High risk appetite\n\u2022 Growth outperforming value\n\u2022 Tech sector leadership\n\u2022 Low volatility environment\n\n\u26a0\ufe0f Confidence Level: 75%\n\n\ud83d\udcdd Recommendations:\n\u2022 Maintain equity exposure\n\u2022 Overweight growth sectors\n\u2022 Keep hedges minimal\n\u2022 Watch for regime shift signals",
+          "node_id": "Claude_result_7a9b2528",
+          "agent": "Claude",
+          "method_used": "process",
+          "timestamp": "2025-10-03T21:31:51.596244",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T21:31:51.596245",
+        "context": {
+          "user_input": "Based on current analysis {regime_analysis}, historical cycles {historical_cycles.data}, and cycle indicators {cycle_indicators.data}, determine: 1) Current market regime (Risk-On/Risk-Off/Transitioning) 2) Which historical period (from {historical_cycles.data}) most resembles current conditions 3) Key indicators and confidence level 4) Sector rotation recommendations based on regime"
+        }
+      },
+      "created": "2025-10-03T21:31:51.596248",
+      "modified": "2025-10-03T21:31:51.596249",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "DataHarvester_result_0a181d7f": {
+      "id": "DataHarvester_result_0a181d7f",
+      "type": "DataHarvester_result",
+      "data": {
+        "agent": "DataHarvester",
+        "result": {
+          "response": "Processed request: Get SPY VIX DXY TLT data",
+          "data": {},
+          "node_id": "DataHarvester_result_33f29efc",
+          "agent": "DataHarvester",
+          "method_used": "think",
+          "timestamp": "2025-10-03T21:37:29.688105",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T21:37:29.688059"
+      },
+      "created": "2025-10-03T21:37:29.688090",
+      "modified": "2025-10-03T21:37:29.688091",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "DataHarvester_result_33f29efc": {
+      "id": "DataHarvester_result_33f29efc",
+      "type": "DataHarvester_result",
+      "data": {
+        "agent": "DataHarvester",
+        "result": {
+          "response": "Processed request: Get SPY VIX DXY TLT data",
+          "data": {},
+          "node_id": "DataHarvester_result_33f29efc",
+          "agent": "DataHarvester",
+          "method_used": "think",
+          "timestamp": "2025-10-03T21:37:29.688105",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T21:37:29.688107",
+        "context": {
+          "request": "Get SPY VIX DXY TLT data"
+        }
+      },
+      "created": "2025-10-03T21:37:29.688112",
+      "modified": "2025-10-03T21:37:29.688113",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "PatternSpotter_result_f123850c": {
+      "id": "PatternSpotter_result_f123850c",
+      "type": "PatternSpotter_result",
+      "data": {
+        "agent": "PatternSpotter",
+        "result": {
+          "response": "Detected market regime using multi-factor analysis",
+          "regime": "Analysis Error",
+          "confidence": 0.0,
+          "indicators": [],
+          "agent": "PatternSpotter",
+          "method_used": "process",
+          "timestamp": "2025-10-03T21:37:29.688136",
+          "node_id": "PatternSpotter_result_f123850c",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T21:37:29.688137",
+        "context": {
+          "data": "{market_data}",
+          "analysis_type": "regime"
+        }
+      },
+      "created": "2025-10-03T21:37:29.688143",
+      "modified": "2025-10-03T21:37:29.688144",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "Claude_result_d5e7f156": {
+      "id": "Claude_result_d5e7f156",
+      "type": "Claude_result",
+      "data": {
+        "agent": "Claude",
+        "result": {
+          "intent": "ANALYSIS",
+          "entities": [
+            "market",
+            "regime"
+          ],
+          "action": "analyze",
+          "parameters": {},
+          "friendly_response": "Analyzing market regime",
+          "response": "\ud83c\udfaf Current Market Regime: RISK-ON\n\n\ud83d\udcca Key Indicators:\n\u2022 VIX: 15.2 (Low - Complacency)\n\u2022 DXY: 104.5 (Neutral)\n\u2022 Credit Spreads: Tight\n\u2022 Equity Momentum: Positive\n\n\ud83d\udd0d Regime Characteristics:\n\u2022 High risk appetite\n\u2022 Growth outperforming value\n\u2022 Tech sector leadership\n\u2022 Low volatility environment\n\n\u26a0\ufe0f Confidence Level: 75%\n\n\ud83d\udcdd Recommendations:\n\u2022 Maintain equity exposure\n\u2022 Overweight growth sectors\n\u2022 Keep hedges minimal\n\u2022 Watch for regime shift signals",
+          "node_id": "Claude_result_af7d9c31",
+          "agent": "Claude",
+          "method_used": "process",
+          "timestamp": "2025-10-03T21:37:29.688398",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T21:37:29.688389"
+      },
+      "created": "2025-10-03T21:37:29.688395",
+      "modified": "2025-10-03T21:37:29.688396",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "Claude_result_af7d9c31": {
+      "id": "Claude_result_af7d9c31",
+      "type": "Claude_result",
+      "data": {
+        "agent": "Claude",
+        "result": {
+          "intent": "ANALYSIS",
+          "entities": [
+            "market",
+            "regime"
+          ],
+          "action": "analyze",
+          "parameters": {},
+          "friendly_response": "Analyzing market regime",
+          "response": "\ud83c\udfaf Current Market Regime: RISK-ON\n\n\ud83d\udcca Key Indicators:\n\u2022 VIX: 15.2 (Low - Complacency)\n\u2022 DXY: 104.5 (Neutral)\n\u2022 Credit Spreads: Tight\n\u2022 Equity Momentum: Positive\n\n\ud83d\udd0d Regime Characteristics:\n\u2022 High risk appetite\n\u2022 Growth outperforming value\n\u2022 Tech sector leadership\n\u2022 Low volatility environment\n\n\u26a0\ufe0f Confidence Level: 75%\n\n\ud83d\udcdd Recommendations:\n\u2022 Maintain equity exposure\n\u2022 Overweight growth sectors\n\u2022 Keep hedges minimal\n\u2022 Watch for regime shift signals",
+          "node_id": "Claude_result_af7d9c31",
+          "agent": "Claude",
+          "method_used": "process",
+          "timestamp": "2025-10-03T21:37:29.688398",
+          "graph_stored": true
+        },
+        "timestamp": "2025-10-03T21:37:29.688399",
+        "context": {
+          "user_input": "Based on current analysis {regime_analysis}, historical cycles {historical_cycles.data}, and cycle indicators {cycle_indicators.data}, determine: 1) Current market regime (Risk-On/Risk-Off/Transitioning) 2) Which historical period (from {historical_cycles.data}) most resembles current conditions 3) Key indicators and confidence level 4) Sector rotation recommendations based on regime"
+        }
+      },
+      "created": "2025-10-03T21:37:29.688402",
+      "modified": "2025-10-03T21:37:29.688402",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "execution_2866e015": {
+      "id": "execution_2866e015",
+      "type": "execution",
+      "data": {
+        "request": {
+          "type": "chat_input",
+          "user_input": "Show me macro analysis"
+        },
+        "result": {
+          "success": false,
+          "error": "Fallback execution - no suitable agent or pattern found",
+          "fallback_mode": true,
+          "timestamp": "2025-10-03T21:37:29.825179"
+        },
+        "timestamp": "2025-10-03T21:37:29.825182",
+        "executor": "universal",
+        "compliant": true
+      },
+      "created": "2025-10-03T21:37:29.825201",
+      "modified": "2025-10-03T21:37:29.825202",
+      "connections_in": [],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    }
+  },
+  "edges": [],
+  "patterns": {},
+  "forecasts": {},
+  "metadata": {
+    "last_saved": "2025-10-03T21:37:29.825707",
+    "stats": {
+      "total_nodes": 16,
+      "total_edges": 0,
+      "total_patterns": 0,
+      "node_types": {
+        "test": 5,
+        "DataHarvester_result": 4,
+        "PatternSpotter_result": 2,
+        "Claude_result": 4,
+        "execution": 1
+      },
+      "edge_types": {},
+      "avg_connections": 0.0
+    }
+  }
+}

@@ -1672,91 +1672,102 @@ class PatternEngine:
             }
 
     def _get_macro_economic_data(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Get real macroeconomic data from agents"""
+        """Get real macroeconomic data from FRED via data_harvester agent"""
         try:
-            # Get macro agent for economic analysis
-            macro_agent = self._get_agent('macro_agent') if self.runtime else None
+            from core.api_normalizer import get_normalizer
+
+            # Get data_harvester agent (has FRED integration)
             data_harvester = self._get_agent('data_harvester') if self.runtime else None
 
-            macro_data = {}
+            if not data_harvester:
+                self.logger.warning("data_harvester agent not available - cannot fetch macro data")
+                return self._empty_macro_data()
 
-            if macro_agent:
-                # Get comprehensive economic analysis
-                economy_analysis = macro_agent.analyze_economy()
-                regime = economy_analysis.get('regime', 'transitional')
-                indicators = economy_analysis.get('indicators', {})
+            # Fetch key economic indicators from FRED
+            indicators_to_fetch = {
+                'GDP': 'GDP',           # Gross Domestic Product
+                'CPI': 'CPIAUCSL',      # Consumer Price Index
+                'UNRATE': 'UNRATE',     # Unemployment Rate
+                'FEDFUNDS': 'FEDFUNDS'  # Federal Funds Rate
+            }
 
-                # Map regime to cycle positions
-                cycle_mapping = {
-                    'goldilocks': ('Mid Expansion', 'Sustained Growth'),
-                    'overheating': ('Late Expansion', 'Overheating'),
-                    'stagflation': ('Late Expansion', 'Slowing Growth'),
-                    'recession': ('Contraction', 'Economic Decline'),
-                    'transitional': ('Uncertain', 'Mixed Signals')
+            normalizer = get_normalizer()
+            normalized_indicators = {}
+
+            # Fetch and normalize each indicator
+            for name, series_id in indicators_to_fetch.items():
+                try:
+                    # Use data_harvester to get FRED data
+                    result = data_harvester.harvest(series_id)
+                    raw_data = result.get('data', {}).get(series_id, {})
+
+                    # Normalize the payload
+                    normalized = normalizer.normalize_economic_indicator(raw_data, name, 'fred')
+                    if normalized.get('data_quality') != 'none':
+                        normalized_indicators[name] = normalized
+                except Exception as e:
+                    self.logger.warning(f"Could not fetch {name}: {e}")
+
+            # Generate macro context from normalized indicators
+            if normalized_indicators:
+                macro_context = normalizer.normalize_macro_context(normalized_indicators)
+
+                # Build comprehensive macro data dict
+                unemployment_val = normalized_indicators.get('UNRATE', {}).get('value')
+                fed_rate_val = normalized_indicators.get('FEDFUNDS', {}).get('value')
+                cpi_change = normalized_indicators.get('CPI', {}).get('change_percent')
+
+                macro_data = {
+                    'short_cycle_position': macro_context.get('short_cycle_position', 'Data Pending'),
+                    'short_cycle_phase': macro_context.get('short_cycle_phase', 'Analysis Required'),
+                    'unemployment': f"{float(unemployment_val):.1f}%" if unemployment_val else 'Data Pending',
+                    'rates_level': f"{float(fed_rate_val):.2f}%" if fed_rate_val else 'Data Pending',
+                    'credit_growth': f"{cpi_change:.1f}%" if cpi_change else 'Data Pending',
+                    'fed_stance': self._determine_fed_stance({'value': fed_rate_val}),
+                    'debt_to_gdp': '130%',  # Historical average - could fetch from FRED series GFDEGDQ188S
+                    'data_quality': macro_context.get('data_quality', 'low'),
+                    'indicators_count': len(normalized_indicators),
+                    'last_updated': macro_context.get('last_updated', 'Unknown')
                 }
 
-                short_cycle, short_phase = cycle_mapping.get(regime, ('Unknown', 'Unknown'))
-
-                # Extract specific indicator values
-                unemployment_data = indicators.get('UNEMPLOYMENT', {})
-                fed_rate_data = indicators.get('FED_RATE', {})
-
+                # Add long-term cycle analysis
                 macro_data.update({
-                    'short_cycle_position': short_cycle,
-                    'short_cycle_phase': short_phase,
-                    'unemployment': unemployment_data.get('current', 'N/A'),
-                    'rates_level': f"{fed_rate_data.get('current', 'N/A')}%" if fed_rate_data.get('current') else 'N/A',
-                    'fed_stance': self._determine_fed_stance(fed_rate_data)
+                    'long_cycle_position': self._assess_long_cycle_position(macro_data),
+                    'long_cycle_phase': self._assess_long_cycle_phase(macro_data),
+                    'wealth_inequality': self._assess_wealth_inequality(),
+                    'paradigm_risk': self._assess_paradigm_risk(macro_data),
+                    'recommendations': self._generate_macro_recommendations(macro_data)
                 })
 
-            if data_harvester:
-                # Get additional economic data
-                economic_data = data_harvester.harvest('macro economic indicators')
-                harvested_data = economic_data.get('data', {})
-
-                # Extract specific metrics
-                if 'CPI' in harvested_data:
-                    cpi_data = harvested_data['CPI']
-                    macro_data['credit_growth'] = cpi_data.get('change', 'N/A')
-
-                if 'GDP' in harvested_data:
-                    gdp_data = harvested_data['GDP']
-                    # Estimate debt-to-GDP based on growth trends
-                    gdp_trend = gdp_data.get('trend', 'stable')
-                    if gdp_trend == 'growing':
-                        macro_data['debt_to_gdp'] = '125'  # Lower when growing
-                    elif gdp_trend == 'declining':
-                        macro_data['debt_to_gdp'] = '135'  # Higher when declining
-                    else:
-                        macro_data['debt_to_gdp'] = '130'  # Stable baseline
-
-            # Add long-term cycle analysis
-            macro_data.update({
-                'long_cycle_position': self._assess_long_cycle_position(macro_data),
-                'long_cycle_phase': self._assess_long_cycle_phase(macro_data),
-                'wealth_inequality': self._assess_wealth_inequality(),
-                'paradigm_risk': self._assess_paradigm_risk(macro_data),
-                'recommendations': self._generate_macro_recommendations(macro_data)
-            })
-
-            return macro_data
+                return macro_data
+            else:
+                self.logger.warning("No economic indicators successfully fetched")
+                return self._empty_macro_data()
 
         except Exception as e:
             self.logger.error(f"Error getting macro economic data: {e}")
-            return {
-                'short_cycle_position': 'Data Error',
-                'short_cycle_phase': 'Unable to determine',
-                'credit_growth': 'N/A',
-                'unemployment': 'N/A',
-                'fed_stance': 'Unknown',
-                'long_cycle_position': 'Unknown',
-                'long_cycle_phase': 'Unknown',
-                'debt_to_gdp': 'N/A',
-                'rates_level': 'N/A',
-                'wealth_inequality': 'Data unavailable',
-                'paradigm_risk': 'Unable to assess',
-                'recommendations': 'Economic data analysis required'
-            }
+            import traceback
+            traceback.print_exc()
+            return self._empty_macro_data()
+
+    def _empty_macro_data(self) -> Dict[str, Any]:
+        """Return empty macro data structure when real data unavailable"""
+        return {
+            'short_cycle_position': 'Data Unavailable',
+            'short_cycle_phase': 'API Access Required',
+            'credit_growth': 'Data Unavailable',
+            'unemployment': 'Data Unavailable',
+            'fed_stance': 'Data Unavailable',
+            'long_cycle_position': 'Data Unavailable',
+            'long_cycle_phase': 'Data Unavailable',
+            'debt_to_gdp': 'Data Unavailable',
+            'rates_level': 'Data Unavailable',
+            'wealth_inequality': 'Data Unavailable',
+            'paradigm_risk': 'Data Unavailable',
+            'recommendations': '⚠️ Configure FRED API key to enable macro analysis',
+            'data_quality': 'none',
+            'error': 'No API access - configure credentials in .env file'
+        }
 
     def _get_moat_templates_from_knowledge(self, sector: str) -> Dict[str, str]:
         """Get moat analysis templates based on sector from knowledge base"""
@@ -1801,17 +1812,24 @@ class PatternEngine:
 
     def _determine_fed_stance(self, fed_data: Dict) -> str:
         """Determine Federal Reserve stance from data"""
-        current_rate = fed_data.get('current', 0)
-        forecast = fed_data.get('forecast', 'neutral')
+        # Handle both old format (current) and new format (value)
+        current_rate = fed_data.get('value') or fed_data.get('current', 0)
 
-        if forecast == 'bullish':
-            return 'Tightening'
-        elif forecast == 'bearish':
-            return 'Easing'
-        elif current_rate > 5.0:
+        # Convert to float if string
+        try:
+            current_rate = float(current_rate) if current_rate else 0
+        except (ValueError, TypeError):
+            return 'Data Unavailable'
+
+        # Determine stance based on rate level
+        if current_rate > 5.0:
             return 'Restrictive'
-        elif current_rate < 2.0:
+        elif current_rate > 3.0:
+            return 'Tightening'
+        elif current_rate < 1.0:
             return 'Accommodative'
+        elif current_rate < 2.5:
+            return 'Easing'
         else:
             return 'Neutral'
 

@@ -109,3 +109,88 @@
 2025-10-03 16:40:23,795 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'economic_cycles' not found or failed to load 
 2025-10-03 16:40:23,796 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
 2025-10-03 16:40:23,796 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 17:00:26,271 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 17:00:26,271 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 17:00:26,271 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: stock_price {"pattern_id": "stock_price", "confidence": 0.5, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: market_regime {"pattern_id": "market_regime", "confidence": 0.475, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: macro_analysis {"pattern_id": "macro_analysis", "confidence": 0.475, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: company_analysis {"pattern_id": "company_analysis", "confidence": 0.5, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: sector_performance {"pattern_id": "sector_performance", "confidence": 0.5, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: correlation_finder {"pattern_id": "correlation_finder", "confidence": 0.475, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: technical_analysis {"pattern_id": "technical_analysis", "confidence": 0.475, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: portfolio_analysis {"pattern_id": "portfolio_analysis", "confidence": 0.475, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: earnings_analysis {"pattern_id": "earnings_analysis", "confidence": 0.475, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: risk_assessment {"pattern_id": "risk_assessment", "confidence": 0.475, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: sentiment_analysis {"pattern_id": "sentiment_analysis", "confidence": 0.475, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: add_to_graph {"pattern_id": "add_to_graph", "confidence": 0.5, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: create_alert {"pattern_id": "create_alert", "confidence": 0.475, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: add_to_portfolio {"pattern_id": "add_to_portfolio", "confidence": 0.5, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: morning_briefing {"pattern_id": "morning_briefing", "confidence": 0.5, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: comprehensive_analysis {"pattern_id": "comprehensive_analysis", "confidence": 0.475, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: opportunity_scan {"pattern_id": "opportunity_scan", "confidence": 0.5, "matched": true}
+2025-10-03 17:00:26,272 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: help_guide {"pattern_id": "help_guide", "confidence": 0.475, "matched": true}
+2025-10-03 17:00:26,599 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 17:00:26,599 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 17:00:26,599 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: macro_analysis {"pattern_id": "macro_analysis", "confidence": 0.475, "matched": true}
+2025-10-03 17:00:27,484 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: market_regime {"pattern_id": "market_regime", "confidence": 0.475, "matched": true}
+2025-10-03 17:00:28,274 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'economic_cycles' not found or failed to load 
+2025-10-03 17:00:28,275 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'economic_cycles' not found or failed to load 
+2025-10-03 17:00:28,275 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: sector_performance {"pattern_id": "sector_performance", "confidence": 0.5, "matched": true}
+2025-10-03 17:00:29,309 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: correlation_finder {"pattern_id": "correlation_finder", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:14,866 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 17:01:14,867 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 17:01:14,867 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: market_regime {"pattern_id": "market_regime", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:15,518 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'economic_cycles' not found or failed to load 
+2025-10-03 17:01:15,518 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'economic_cycles' not found or failed to load 
+2025-10-03 17:01:21,306 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 17:01:21,306 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 17:01:22,863 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: macro_analysis {"pattern_id": "macro_analysis", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:22,863 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: market_regime {"pattern_id": "market_regime", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:22,863 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: fundamental_analysis {"pattern_id": "fundamental_analysis", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:22,863 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: owner_earnings {"pattern_id": "owner_earnings", "confidence": 0.5, "matched": true}
+2025-10-03 17:01:22,863 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.5, "matched": true}
+2025-10-03 17:01:22,864 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: dalio_cycle {"pattern_id": "dalio_cycle", "confidence": 0.5, "matched": true}
+2025-10-03 17:01:22,881 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 17:01:22,881 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 17:01:22,881 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:22,881 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:22,881 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:22,882 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.525, "matched": true}
+2025-10-03 17:01:22,882 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:22,882 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:22,882 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.5, "matched": true}
+2025-10-03 17:01:22,882 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:23,418 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:23,418 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:23,419 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:25,068 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 17:01:25,069 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 17:01:25,069 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: buffett_checklist {"pattern_id": "buffett_checklist", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:25,069 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: owner_earnings {"pattern_id": "owner_earnings", "confidence": 0.5, "matched": true}
+2025-10-03 17:01:25,069 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.525, "matched": true}
+2025-10-03 17:01:25,069 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: dalio_cycle {"pattern_id": "dalio_cycle", "confidence": 0.5, "matched": true}
+2025-10-03 17:01:25,069 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: fundamental_analysis {"pattern_id": "fundamental_analysis", "confidence": 0.475, "matched": true}
+2025-10-03 17:01:25,069 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: moat_analyzer {"pattern_id": "moat_analyzer", "confidence": 0.5, "matched": true}
+2025-10-03 17:01:25,672 - PatternEngine - DEBUG - logger:debug:78 - Pattern match: buffett_checklist {"pattern_id": "buffett_checklist", "confidence": 0.475, "matched": true}
+2025-10-03 19:13:48,016 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
+2025-10-03 19:13:48,022 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 19:13:48,022 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 19:13:48,024 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 19:13:48,060 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 19:13:48,060 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'sector_correlations' not found or failed to load 
+2025-10-03 19:13:48,061 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'sector_correlations' not found or failed to load 
+2025-10-03 19:13:48,071 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'sector_performance' not found or failed to load 
+2025-10-03 19:13:48,071 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'economic_cycles' not found or failed to load 
+2025-10-03 19:13:48,072 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 19:13:48,072 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 21:46:28,321 - PatternEngine - INFO - logger:info:83 - Loaded 0 patterns successfully 
+2025-10-03 21:46:28,328 - PatternEngine - INFO - logger:info:83 - Skipped 1 schema files 
+2025-10-03 21:46:28,328 - PatternEngine - INFO - logger:info:83 - Loaded 45 patterns successfully 
+2025-10-03 21:46:28,330 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 21:46:28,361 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 21:46:28,361 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'sector_correlations' not found or failed to load 
+2025-10-03 21:46:28,362 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'sector_correlations' not found or failed to load 
+2025-10-03 21:46:28,372 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'sector_performance' not found or failed to load 
+2025-10-03 21:46:28,372 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'economic_cycles' not found or failed to load 
+2025-10-03 21:46:28,373 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 
+2025-10-03 21:46:28,373 - PatternEngine - WARNING - logger:warning:89 - Enriched data 'ui_configurations' not found or failed to load 

@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from collections import deque
-from dawsos.core.credentials import get_credential_manager
+from core.credentials import get_credential_manager
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -320,9 +320,9 @@ class FredDataCapability:
         # Map indicator name to series ID
         series_id = self.indicators.get(indicator.upper(), indicator)
 
-        # Get last 30 days of data
+        # Get last 1 year of data (many indicators are monthly/quarterly)
         end_date = datetime.now().strftime('%Y-%m-%d')
-        start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        start_date = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
 
         data = self.get_series(series_id, start_date, end_date)
 
@@ -609,9 +609,9 @@ class FredDataCapability:
         Returns:
             Dict with latest value, date, and series info
         """
-        # Get last 30 days of data
+        # Get last 1 year of data (many indicators are monthly/quarterly)
         end_date = datetime.now().strftime('%Y-%m-%d')
-        start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        start_date = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
 
         data = self.get_series(series_id, start_date, end_date)
 

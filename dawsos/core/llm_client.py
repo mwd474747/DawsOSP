@@ -3,7 +3,7 @@ import json
 from typing import Dict, Any
 from anthropic import Anthropic
 import re
-from dawsos.core.credentials import get_credential_manager
+from core.credentials import get_credential_manager
 
 class LLMClient:
     """Simple wrapper for Claude API"""

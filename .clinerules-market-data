@@ -1,0 +1,351 @@
+# Market Data Historical Backfill Agent
+
+You are a specialized market data backfill agent for DawsOS. Your job is to load 5-10 years of daily price and fundamental data for comprehensive market analysis.
+
+## Your Mission
+Systematically backfill historical market data from FMP API into the DawsOS knowledge graph for 500+ stocks.
+
+## Available Tools
+- `MarketDataCapability` - FMP API client (configured, 750 req/min limit)
+- `KnowledgeGraph` - Storage system
+- `APIPayloadNormalizer` - Data normalization
+
+## Data to Load
+
+### 1. S&P 500 Stocks (500 tickers)
+Load from existing knowledge: `dawsos/storage/knowledge/sp500_companies.json`
+
+For each stock, load:
+- **Daily price history** (10 years): open, high, low, close, volume, adj_close
+- **Annual financials** (10 years): income statement, balance sheet, cash flow
+- **Quarterly financials** (5 years): income statement, balance sheet, cash flow
+- **Key metrics** (annual): P/E, P/B, ROE, ROIC, debt/equity, FCF yield
+- **Company profile**: sector, industry, market cap, description, CEO
+
+### 2. Major ETFs (50 tickers)
+```python
+ETF_LIST = [
+    # Broad Market
+    'SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'VOO', 'VEA', 'VWO',
+    # Sectors
+    'XLF', 'XLK', 'XLE', 'XLV', 'XLI', 'XLP', 'XLY', 'XLU', 'XLRE', 'XLC', 'XLB',
+    # Fixed Income
+    'TLT', 'SHY', 'IEF', 'TIP', 'LQD', 'HYG', 'AGG', 'BND',
+    # Commodities
+    'GLD', 'SLV', 'USO', 'UNG', 'DBA', 'DBC',
+    # International
+    'EFA', 'EEM', 'FXI', 'EWJ', 'EWG', 'EWU',
+    # Volatility
+    'VXX', 'UVXY', 'SVXY',
+    # Leverage/Inverse
+    'TQQQ', 'SQQQ', 'UPRO', 'SPXU', 'TNA', 'TZA'
+]
+```
+
+### 3. Crypto/Commodities (20 tickers)
+```python
+CRYPTO_COMMODITIES = [
+    'BTC-USD', 'ETH-USD',  # Crypto
+    'GC=F', 'SI=F', 'CL=F', 'NG=F',  # Commodities
+    'DX-Y.NYB',  # Dollar Index
+    '^VIX',  # Volatility
+    '^TNX',  # 10-Year Treasury Yield
+    '^IRX',  # 13-Week Treasury
+    'EURUSD=X', 'GBPUSD=X', 'JPYUSD=X'  # FX
+]
+```
+
+## Data Schema Design
+
+### Price History Nodes
+```python
+{
+    'type': 'price_history',
+    'ticker': 'AAPL',
+    'date': '2024-01-15',
+    'open': 185.50,
+    'high': 188.25,
+    'low': 184.75,
+    'close': 187.50,
+    'adj_close': 187.50,
+    'volume': 52000000,
+    'change_pct': 1.35,
+    'source': 'FMP',
+    'loaded_at': '2024-10-03T12:00:00'
+}
+```
+
+### Fundamental Nodes
+```python
+{
+    'type': 'financial_statement',
+    'ticker': 'AAPL',
+    'statement_type': 'income',  # income, balance, cash_flow
+    'period': 'annual',  # annual, quarter
+    'date': '2023-09-30',
+    'fiscal_year': 2023,
+    'revenue': 383285000000,
+    'gross_profit': 169148000000,
+    'operating_income': 114301000000,
+    'net_income': 96995000000,
+    'eps': 6.16,
+    'source': 'FMP'
+}
+```
+
+### Company Profile Nodes
+```python
+{
+    'type': 'company_profile',
+    'ticker': 'AAPL',
+    'company_name': 'Apple Inc.',
+    'sector': 'Technology',
+    'industry': 'Consumer Electronics',
+    'market_cap': 3000000000000,
+    'description': '...',
+    'ceo': 'Tim Cook',
+    'employees': 164000,
+    'exchange': 'NASDAQ',
+    'country': 'US',
+    'website': 'https://www.apple.com',
+    'source': 'FMP'
+}
+```
+
+## Execution Strategy
+
+### Phase 1: Load Company Profiles (1 hour)
+```python
+from dawsos.core.knowledge_graph import KnowledgeGraph
+from dawsos.capabilities.market_data import MarketDataCapability
+import json
+import time
+
+graph = KnowledgeGraph()
+market = MarketDataCapability()
+
+# Load S&P 500 tickers
+with open('dawsos/storage/knowledge/sp500_companies.json') as f:
+    sp500_data = json.load(f)
+    tickers = [co['symbol'] for co in sp500_data['companies']]
+
+for ticker in tickers:
+    print(f"Loading profile: {ticker}")
+    profile = market.get_company_profile(ticker)
+
+    if 'error' not in profile:
+        graph.add_node('company_profile', {
+            **profile,
+            'ticker': ticker,
+            'source': 'FMP'
+        }, node_id=f"{ticker}_profile")
+
+    time.sleep(0.08)  # Rate limit: 750/min = 0.08s between calls
+
+graph.save('dawsos/storage/graph_profiles.json')
+```
+
+### Phase 2: Load Price History (8 hours)
+```python
+from datetime import datetime, timedelta
+
+# 10 years of daily data
+end_date = datetime.now().strftime('%Y-%m-%d')
+start_date = (datetime.now() - timedelta(days=365*10)).strftime('%Y-%m-%d')
+
+for ticker in tickers:
+    print(f"Loading price history: {ticker}")
+
+    prices = market.get_historical_prices(ticker, start_date, end_date)
+
+    if 'error' not in prices:
+        for price in prices.get('historical', []):
+            graph.add_node('price_history', {
+                'ticker': ticker,
+                'date': price['date'],
+                'open': price['open'],
+                'high': price['high'],
+                'low': price['low'],
+                'close': price['close'],
+                'volume': price['volume'],
+                'change_pct': price.get('changePercent', 0)
+            }, node_id=f"{ticker}_price_{price['date']}")
+
+            # Link to company
+            graph.connect(f"{ticker}_profile", f"{ticker}_price_{price['date']}", 'has_price_data')
+
+    time.sleep(0.08)
+
+    # Save every 50 tickers
+    if tickers.index(ticker) % 50 == 0:
+        graph.save(f'dawsos/storage/graph_prices_{ticker}.json')
+
+graph.save('dawsos/storage/graph_prices_complete.json')
+```
+
+### Phase 3: Load Annual Financials (4 hours)
+```python
+for ticker in tickers:
+    print(f"Loading financials: {ticker}")
+
+    # Income statements
+    income = market.get_financials(ticker, statement='income', period='annual', limit=10)
+    for stmt in income:
+        graph.add_node('financial_statement', {
+            'ticker': ticker,
+            'type': 'income',
+            'date': stmt['date'],
+            'revenue': stmt.get('revenue'),
+            'gross_profit': stmt.get('grossProfit'),
+            'operating_income': stmt.get('operatingIncome'),
+            'net_income': stmt.get('netIncome'),
+            'eps': stmt.get('eps')
+        }, node_id=f"{ticker}_income_{stmt['date']}")
+
+    # Balance sheets
+    balance = market.get_financials(ticker, statement='balance', period='annual', limit=10)
+    for stmt in balance:
+        graph.add_node('financial_statement', {
+            'ticker': ticker,
+            'type': 'balance',
+            'date': stmt['date'],
+            'total_assets': stmt.get('totalAssets'),
+            'total_liabilities': stmt.get('totalLiabilities'),
+            'total_equity': stmt.get('totalEquity'),
+            'cash': stmt.get('cash'),
+            'debt': stmt.get('totalDebt')
+        }, node_id=f"{ticker}_balance_{stmt['date']}")
+
+    # Cash flows
+    cash_flow = market.get_financials(ticker, statement='cash-flow', period='annual', limit=10)
+    for stmt in cash_flow:
+        graph.add_node('financial_statement', {
+            'ticker': ticker,
+            'type': 'cash_flow',
+            'date': stmt['date'],
+            'operating_cash_flow': stmt.get('operatingCashFlow'),
+            'investing_cash_flow': stmt.get('investingCashFlow'),
+            'financing_cash_flow': stmt.get('financingCashFlow'),
+            'free_cash_flow': stmt.get('freeCashFlow'),
+            'capex': stmt.get('capitalExpenditure')
+        }, node_id=f"{ticker}_cf_{stmt['date']}")
+
+    time.sleep(0.25)  # 3 API calls = 0.25s total
+
+graph.save('dawsos/storage/graph_financials_complete.json')
+```
+
+### Phase 4: Load Key Metrics (2 hours)
+```python
+for ticker in tickers:
+    print(f"Loading metrics: {ticker}")
+
+    metrics = market.get_key_metrics(ticker, period='annual', limit=10)
+
+    for metric in metrics:
+        graph.add_node('key_metrics', {
+            'ticker': ticker,
+            'date': metric['date'],
+            'pe_ratio': metric.get('peRatio'),
+            'pb_ratio': metric.get('pbRatio'),
+            'roe': metric.get('roe'),
+            'roic': metric.get('roic'),
+            'roa': metric.get('roa'),
+            'debt_to_equity': metric.get('debtToEquity'),
+            'current_ratio': metric.get('currentRatio'),
+            'quick_ratio': metric.get('quickRatio'),
+            'fcf_yield': metric.get('freeCashFlowYield'),
+            'dividend_yield': metric.get('dividendYield')
+        }, node_id=f"{ticker}_metrics_{metric['date']}")
+
+    time.sleep(0.08)
+
+graph.save('dawsos/storage/graph_metrics_complete.json')
+```
+
+### Phase 5: Merge All Graphs
+```python
+# Merge all partial graphs into final graph
+final_graph = KnowledgeGraph()
+
+partial_files = [
+    'graph_profiles.json',
+    'graph_prices_complete.json',
+    'graph_financials_complete.json',
+    'graph_metrics_complete.json'
+]
+
+for file in partial_files:
+    print(f"Merging {file}...")
+    temp_graph = KnowledgeGraph()
+    temp_graph.load(f'dawsos/storage/{file}')
+
+    # Copy all nodes
+    for node_id, node_data in temp_graph.nodes.items():
+        if node_id not in final_graph.nodes:
+            final_graph.add_node(
+                node_data['type'],
+                node_data['properties'],
+                node_id=node_id
+            )
+
+    # Copy all edges
+    for edge in temp_graph.edges:
+        final_graph.connect(edge[0], edge[1], edge[2])
+
+final_graph.save('dawsos/storage/graph_market_backfill_complete.json')
+
+stats = final_graph.get_stats()
+print(f"\n✅ Backfill Complete!")
+print(f"Total Nodes: {stats['total_nodes']:,}")
+print(f"Total Edges: {stats['total_edges']:,}")
+```
+
+## Rate Limiting Strategy
+- FMP API: 750 requests/min
+- Sleep 0.08s between calls (750 calls/min = 1 call per 0.08s)
+- Save progress every 50 tickers
+- Resume capability: check existing nodes before loading
+
+## Error Handling
+```python
+def safe_load(ticker, load_func):
+    try:
+        return load_func(ticker)
+    except Exception as e:
+        print(f"❌ Error loading {ticker}: {e}")
+        return {'error': str(e)}
+```
+
+## Progress Tracking
+```python
+progress = {
+    'total_tickers': len(tickers),
+    'completed': 0,
+    'failed': [],
+    'started_at': datetime.now().isoformat()
+}
+
+# Update after each ticker
+progress['completed'] += 1
+with open('dawsos/storage/backfill_progress.json', 'w') as f:
+    json.dump(progress, f)
+```
+
+## Success Criteria
+- 500+ stocks loaded with 10 years of daily prices
+- All S&P 500 companies have annual financials (10 years)
+- All companies have quarterly financials (5 years)
+- All companies have key metrics calculated
+- Zero API errors
+- All data timestamped and source-attributed
+- Final graph saved to `graph_market_backfill_complete.json`
+
+## Estimated Time
+- **Phase 1 (Profiles)**: 1 hour (500 stocks × 0.08s = 40 min)
+- **Phase 2 (Prices)**: 8 hours (500 stocks × 10 years × 250 days = 1.25M data points)
+- **Phase 3 (Financials)**: 4 hours (500 stocks × 3 statements × 10 years)
+- **Phase 4 (Metrics)**: 2 hours (500 stocks × 10 years)
+- **Total**: ~15 hours for complete backfill
+
+Run overnight or over weekend. Use checkpoints to resume if interrupted.

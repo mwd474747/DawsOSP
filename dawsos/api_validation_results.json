@@ -1,9 +1,9 @@
 {
-  "timestamp": "2025-10-01T15:34:20.646970",
+  "timestamp": "2025-10-03T17:01:14.842034",
   "summary": {
     "total_tests": 31,
-    "successful": 26,
-    "success_rate": 83.87096774193549,
+    "successful": 31,
+    "success_rate": 100.0,
     "by_api": {
       "FRED": {
         "total": 10,
@@ -19,7 +19,7 @@
       },
       "NewsAPI": {
         "total": 5,
-        "success": 0
+        "success": 5
       },
       "Combined": {
         "total": 1,
@@ -58,7 +58,7 @@
       "name": "Federal Funds Rate",
       "success": true,
       "value": 4.09,
-      "date": "2025-09-29"
+      "date": "2025-10-02"
     },
     {
       "api": "FRED",
@@ -73,8 +73,8 @@
       "indicator": "DGS10",
       "name": "10-Year Treasury Rate",
       "success": true,
-      "value": 4.15,
-      "date": "2025-09-29"
+      "value": 4.1,
+      "date": "2025-10-02"
     },
     {
       "api": "FRED",
@@ -112,81 +112,81 @@
       "api": "FMP",
       "symbol": "AAPL",
       "success": true,
-      "price": 256.05,
-      "change": 0.55767,
-      "volume": 30528991
+      "price": 258.02,
+      "change": 0.34613,
+      "volume": 48552848
     },
     {
       "api": "FMP",
       "symbol": "MSFT",
       "success": true,
-      "price": 519.04,
-      "change": 0.21045,
-      "volume": 13171995
+      "price": 517.35,
+      "change": 0.31217,
+      "volume": 15058411
     },
     {
       "api": "FMP",
       "symbol": "GOOGL",
       "success": true,
-      "price": 245.97,
-      "change": 1.18058,
-      "volume": 21996701
+      "price": 245.35,
+      "change": -0.13839,
+      "volume": 30222209
     },
     {
       "api": "FMP",
       "symbol": "AMZN",
       "success": true,
-      "price": 220.765,
-      "change": 0.54425,
-      "volume": 31777169
+      "price": 219.51,
+      "change": -1.3039,
+      "volume": 43514246
     },
     {
       "api": "FMP",
       "symbol": "TSLA",
       "success": true,
-      "price": 460.41,
-      "change": 3.52806,
-      "volume": 84249643
+      "price": 429.83,
+      "change": -1.41514,
+      "volume": 132426362
     },
     {
       "api": "FMP",
       "symbol": "NVDA",
       "success": true,
-      "price": 187.2,
-      "change": 0.3323,
-      "volume": 138120176
+      "price": 187.62,
+      "change": -0.67235,
+      "volume": 136011661
     },
     {
       "api": "FMP",
       "symbol": "META",
       "success": true,
-      "price": 719.1101,
-      "change": -2.07929,
-      "volume": 16760189
+      "price": 710.56,
+      "change": -2.26807,
+      "volume": 16031961
     },
     {
       "api": "FMP",
       "symbol": "SPY",
       "success": true,
-      "price": 669.18,
-      "change": 0.45033,
-      "volume": 53962976
+      "price": 669.25,
+      "change": 0.00448283,
+      "volume": 65058380
     },
     {
       "api": "FMP",
       "symbol": "QQQ",
       "success": true,
-      "price": 603.68,
-      "change": 0.55133,
-      "volume": 37827513
+      "price": 603.155,
+      "change": -0.42511,
+      "volume": 44576883
     },
     {
       "api": "FMP",
       "symbol": "GLD",
       "success": true,
-      "price": 355.695,
-      "change": 0.06329648,
-      "volume": 13286872
+      "price": 357.62,
+      "change": 0.79765,
+      "volume": 14077447
     },
     {
       "api": "Claude",
@@ -203,7 +203,7 @@
       "success": true,
       "response": {
         "direction": "neutral",
-        "reasoning": "The economic indicators provided suggest a relatively stable economic environment. The GDP of $30,000 is a strong indicator of economic growth, while the CPI of 3.5% and unemployment rate of 4.3% are within normal ranges. These factors do not strongly indicate a significant market move in either direction, suggesting a neutral market outlook."
+        "reasoning": "Based on the given economic indicators, the market direction is likely to be neutral. The GDP of 30,000 suggests a relatively strong economy, but the CPI of 3.5% indicates moderate inflation. The unemployment rate of 4.3% is relatively low, which is generally positive for the market. However, these factors do not strongly point to either an upward or downward market trend. The overall economic conditions appear to be balanced, leading to a neutral market prediction."
       }
     },
     {
@@ -213,12 +213,16 @@
       "response": {
         "entities": [
           {
-            "text": "Apple",
+            "entity": "Apple",
             "type": "ORGANIZATION"
           },
           {
-            "text": "5%",
-            "type": "PERCENT"
+            "entity": "5%",
+            "type": "PERCENTAGE"
+          },
+          {
+            "entity": "expectations",
+            "type": "MISC"
           }
         ]
       }
@@ -238,38 +242,38 @@
       "success": true,
       "response": {
         "correlation": 0.7,
-        "relationship_type": "Strong positive relationship"
+        "relationship_type": "strongly positive"
       }
     },
     {
       "api": "NewsAPI",
       "query": "Apple earnings",
-      "success": false,
-      "error": "'NewsCapability' object has no attribute 'search'"
+      "success": true,
+      "count": 1
     },
     {
       "api": "NewsAPI",
       "query": "Federal Reserve",
-      "success": false,
-      "error": "'NewsCapability' object has no attribute 'search'"
+      "success": true,
+      "count": 1
     },
     {
       "api": "NewsAPI",
       "query": "inflation",
-      "success": false,
-      "error": "'NewsCapability' object has no attribute 'search'"
+      "success": true,
+      "count": 1
     },
     {
       "api": "NewsAPI",
       "query": "stock market",
-      "success": false,
-      "error": "'NewsCapability' object has no attribute 'search'"
+      "success": true,
+      "count": 1
     },
     {
       "api": "NewsAPI",
       "query": "cryptocurrency",
-      "success": false,
-      "error": "'NewsCapability' object has no attribute 'search'"
+      "success": true,
+      "count": 1
     },
     {
       "api": "Combined",
