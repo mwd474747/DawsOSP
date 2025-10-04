@@ -184,7 +184,7 @@
 
 ### Architecture Philosophy
 
-**Old Model** (19 agents):
+**Old Model** (15 agents (consolidated from 19 in Oct 2025)):
 ```
 equity_agent → analyze_stock()
 macro_agent → analyze_economy()

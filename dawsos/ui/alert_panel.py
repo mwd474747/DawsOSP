@@ -122,7 +122,7 @@ class AlertPanel:
                         hole=0.4
                     )])
                     fig.update_layout(height=300)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
                 else:
                     # Fallback to simple metrics
                     st.metric("Info", severity_data['info'])
@@ -173,7 +173,7 @@ class AlertPanel:
                                title="Alert Timeline (Last 10 Events)")
 
                 fig.update_traces(marker=dict(size=12))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             else:
                 # Fallback to table view
                 st.dataframe(df)

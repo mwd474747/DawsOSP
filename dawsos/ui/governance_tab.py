@@ -380,7 +380,7 @@ def render_governance_tab(runtime, graph):
         st.markdown("#### ⚡ Quick Actions")
 
         # Add Agent Compliance Check button
-        if st.button("🤖 Check Agent Compliance", use_container_width=True):
+        if st.button("🤖 Check Agent Compliance", width="stretch"):
             with st.spinner("Validating all agents for Trinity Architecture compliance..."):
                 try:
                     compliance_result = governance_agent.process_request(
@@ -419,7 +419,7 @@ def render_governance_tab(runtime, graph):
                     st.error(f"❌ Compliance check failed: {str(e)}")
 
         # Add System Improvement button
-        if st.button("🎯 Auto-Improve System", use_container_width=True):
+        if st.button("🎯 Auto-Improve System", width="stretch"):
             with st.spinner("Analyzing system for improvements..."):
                 try:
                     # Get improvement suggestions
@@ -475,7 +475,7 @@ def render_governance_tab(runtime, graph):
                 except Exception as e:
                     st.error(f"Improvement analysis failed: {str(e)}")
 
-        if st.button("🔍 System Health Check", use_container_width=True):
+        if st.button("🔍 System Health Check", width="stretch"):
             with st.spinner("Running system health check..."):
                 try:
                     health_result = governance_agent.process_request(
@@ -488,7 +488,7 @@ def render_governance_tab(runtime, graph):
                 except Exception as e:
                     st.error(f"❌ Health check failed: {str(e)}")
 
-        if st.button("📊 Generate Compliance Report", use_container_width=True):
+        if st.button("📊 Generate Compliance Report", width="stretch"):
             with st.spinner("Generating compliance report..."):
                 try:
                     compliance_result = governance_agent.process_request(
@@ -504,7 +504,7 @@ def render_governance_tab(runtime, graph):
                 except Exception as e:
                     st.error(f"❌ Report generation failed: {str(e)}")
 
-        if st.button("💰 Cost Optimization Scan", use_container_width=True):
+        if st.button("💰 Cost Optimization Scan", width="stretch"):
             with st.spinner("Scanning for cost optimization opportunities..."):
                 try:
                     cost_result = governance_agent.process_request(
@@ -565,7 +565,7 @@ def render_governance_tab(runtime, graph):
                     yaxis_title="Number of Nodes",
                     height=300
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
     with tab2:
         st.markdown("#### Data Lineage Explorer")
@@ -824,7 +824,7 @@ def render_governance_tab(runtime, graph):
                         yaxis_title="Nodes Created",
                         height=250
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
 
                     st.info(f"📈 {len(recent_nodes)} nodes created in last 24 hours")
                 else:

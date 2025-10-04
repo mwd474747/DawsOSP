@@ -77,7 +77,7 @@
 **Commit**: 82ea7a1
 
 **Changes**:
-- Updated "19 agents" → "15 agents" across 8 files:
+- Updated "15 agents (consolidated from 19 in Oct 2025)" → "15 agents" across 8 files:
   - `.claude/README.md` (2 locations)
   - `.claude/trinity_architect.md` (3 locations)
   - `.claude/agent_orchestrator.md` (3 locations)
@@ -89,7 +89,7 @@
 **Verification**:
 - Confirmed: AGENT_CAPABILITIES has exactly 15 agents
 - Confirmed: main.py registers exactly 15 agents
-- Confirmed: No active docs reference "19 agents" (except archives)
+- Confirmed: No active docs reference "15 agents (consolidated from 19 in Oct 2025)" (except archives)
 
 **Impact**:
 - Documentation now matches reality

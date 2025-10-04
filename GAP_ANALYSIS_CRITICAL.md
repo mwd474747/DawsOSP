@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-The assessment reveals **significant discrepancies** between documentation and actual system behavior. While documentation claims A+ grade with 19 agents and full Trinity compliance, reality shows:
+The assessment reveals **significant discrepancies** between documentation and actual system behavior. While documentation claims A+ grade with 15 agents (consolidated from 19 in Oct 2025) and full Trinity compliance, reality shows:
 
 - **15 agents registered** (not 19) - 4 agents exist only in documentation
 - **UniversalExecutor broken** - meta pattern path incorrect, cannot route
@@ -26,13 +26,13 @@ The assessment reveals **significant discrepancies** between documentation and a
 
 ### Issue 1: Agent Count Mismatch (Documentation vs Reality)
 
-**Documented**: 19 agents with AGENT_CAPABILITIES
+**Documented**: 15 agents (consolidated from 19 in Oct 2025) with AGENT_CAPABILITIES
 **Reality**: 15 agents registered in main.py
 
 **Evidence**:
 ```bash
-# Capabilities file claims 19 agents (line 10)
-"# Complete capability definitions for all 19 agents"
+# Capabilities file claims 15 agents (consolidated from 19 in Oct 2025) (line 10)
+"# Complete capability definitions for all 15 agents (consolidated from 19 in Oct 2025)"
 
 # Agent files in dawsos/agents/
 ls -1 dawsos/agents/*.py | wc -l  # Returns: 16 (includes __init__.py)
@@ -452,7 +452,7 @@ def test_patterns():
 ### Original Claim: A+ (98/100)
 **Breakdown**:
 - Trinity architecture complete ✅
-- 19 agents with capabilities ✅
+- 15 agents (consolidated from 19 in Oct 2025) with capabilities ✅
 - 45 patterns validated ✅
 - Full telemetry ✅
 - Professional UI ✅
@@ -576,7 +576,7 @@ def test_patterns():
 **Outcome**: Documentation accurate, system B+
 
 1. Update all docs to reflect current behavior (2 hours)
-   - Change "19 agents" → "15 agents"
+   - Change "15 agents (consolidated from 19 in Oct 2025)" → "15 agents"
    - Add "Known Issues" sections
    - Note fallback mode is always active
    - Clarify "professional graph" has edge display bug
@@ -675,7 +675,7 @@ python3 -c "from dawsos.core.universal_executor import UniversalExecutor; # trig
 
 The following issues are being addressed for v2.0.0 final:
 
-1. **Agent Count**: Documentation references 19 agents, 15 are currently registered. The equity_agent, macro_agent, and risk_agent are in development.
+1. **Agent Count**: Documentation references 15 agents (consolidated from 19 in Oct 2025), 15 are currently registered. The equity_agent, macro_agent, and risk_agent are in development.
 
 2. **Meta Pattern Routing**: The UniversalExecutor currently operates in fallback mode while meta-pattern action handlers are being implemented.
 

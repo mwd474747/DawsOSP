@@ -317,7 +317,7 @@ class PatternBrowser:
             if st.button(
                 "▶️ Execute",
                 key=f"exec_card_{pattern['id']}",
-                use_container_width=True
+                width="stretch"
             ):
                 st.session_state['selected_pattern'] = pattern['id']
                 st.session_state['show_execution_form'] = True
@@ -344,7 +344,7 @@ class PatternBrowser:
                 st.caption(f"⭐ Priority: {pattern['priority']} | 🔧 {len(pattern['steps'])} steps")
 
             with col3:
-                if st.button("Execute", key=f"exec_list_{pattern['id']}", use_container_width=True):
+                if st.button("Execute", key=f"exec_list_{pattern['id']}", width="stretch"):
                     st.session_state['selected_pattern'] = pattern['id']
                     st.session_state['show_execution_form'] = True
                     st.rerun()
@@ -428,9 +428,9 @@ class PatternBrowser:
 
                 col1, col2 = st.columns([1, 1])
                 with col1:
-                    submit = st.form_submit_button("▶️ Execute Pattern", use_container_width=True)
+                    submit = st.form_submit_button("▶️ Execute Pattern", width="stretch")
                 with col2:
-                    cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
+                    cancel = st.form_submit_button("❌ Cancel", width="stretch")
 
                 if cancel:
                     st.session_state['show_execution_form'] = False
@@ -454,7 +454,7 @@ class PatternBrowser:
 
             col1, col2 = st.columns([1, 1])
             with col1:
-                if st.button("▶️ Execute Pattern", use_container_width=True):
+                if st.button("▶️ Execute Pattern", width="stretch"):
                     context = {
                         'user_input': f"Execute {pattern['name']}",
                         'timestamp': datetime.now().isoformat()
@@ -462,7 +462,7 @@ class PatternBrowser:
                     self.execute_pattern_ui(pattern, context)
 
             with col2:
-                if st.button("❌ Cancel", use_container_width=True):
+                if st.button("❌ Cancel", width="stretch"):
                     st.session_state['show_execution_form'] = False
                     st.session_state['selected_pattern'] = None
                     st.rerun()

@@ -782,7 +782,7 @@ pytest tests/validation/ -v  # Ensure old tests still pass
 Align agent count in documentation with reality (15 agents registered).
 
 ### Current Problem
-- Docs claim 19 agents
+- Docs claim 15 agents (consolidated from 19 in Oct 2025)
 - Only 15 registered in main.py
 - 4 agents (equity, macro, risk, +1?) missing
 
@@ -880,7 +880,7 @@ find dawsos/archived_legacy -name "*.py" 2>/dev/null
 **Change Line 10**:
 ```python
 # Before
-# Complete capability definitions for all 19 agents
+# Complete capability definitions for all 15 agents (consolidated from 19 in Oct 2025)
 
 # After
 # Complete capability definitions for all 15 agents
@@ -903,30 +903,30 @@ find dawsos/archived_legacy -name "*.py" 2>/dev/null
 - Add new capabilities
 
 #### Step 3.6: Update Specialist Agent Docs (30 min)
-**Files to Update** (search/replace "19 agents" → "15 agents"):
+**Files to Update** (search/replace "15 agents (consolidated from 19 in Oct 2025)" → "15 agents"):
 
 1. `.claude/trinity_architect.md`
 ```bash
 sed -i '' 's/19+ agents/15 agents/g' .claude/trinity_architect.md
-sed -i '' 's/19 agents/15 agents/g' .claude/trinity_architect.md
+sed -i '' 's/15 agents (consolidated from 19 in Oct 2025)/15 agents/g' .claude/trinity_architect.md
 ```
 
 2. `.claude/agent_orchestrator.md`
 ```bash
-sed -i '' 's/all 19 agents/all 15 agents/g' .claude/agent_orchestrator.md
-sed -i '' 's/across 19 agents/across 15 agents/g' .claude/agent_orchestrator.md
+sed -i '' 's/all 15 agents (consolidated from 19 in Oct 2025)/all 15 agents/g' .claude/agent_orchestrator.md
+sed -i '' 's/across 15 agents (consolidated from 19 in Oct 2025)/across 15 agents/g' .claude/agent_orchestrator.md
 ```
 
 3. `.claude/README.md`
 ```bash
-sed -i '' 's/All 19/All 15/g' .claude/README.md
+sed -i '' 's/All 15/All 15/g' .claude/README.md
 sed -i '' 's/19 registered agents/15 registered agents/g' .claude/README.md
 ```
 
 4. `CLAUDE.md`
 ```bash
-sed -i '' 's/19 agents/15 agents/g' CLAUDE.md
-sed -i '' 's/across 19 agents/across 15 agents/g' CLAUDE.md
+sed -i '' 's/15 agents (consolidated from 19 in Oct 2025)/15 agents/g' CLAUDE.md
+sed -i '' 's/across 15 agents (consolidated from 19 in Oct 2025)/across 15 agents/g' CLAUDE.md
 ```
 
 5. `SYSTEM_STATUS.md`
@@ -936,13 +936,13 @@ sed -i '' 's/**Agents**: 19/**Agents**: 15/g' SYSTEM_STATUS.md
 
 6. `CAPABILITY_ROUTING_GUIDE.md`
 ```bash
-sed -i '' 's/50+ capabilities across 19 agents/50+ capabilities across 15 agents/g' CAPABILITY_ROUTING_GUIDE.md
+sed -i '' 's/50+ capabilities across 15 agents (consolidated from 19 in Oct 2025)/50+ capabilities across 15 agents/g' CAPABILITY_ROUTING_GUIDE.md
 ```
 
 **Validation**:
 ```bash
-# Verify no "19 agents" remain (except in archived docs)
-grep -r "19 agents" . --include="*.md" --exclude-dir=archived_legacy --exclude-dir=docs/reports
+# Verify no "15 agents (consolidated from 19 in Oct 2025)" remain (except in archived docs)
+grep -r "15 agents (consolidated from 19 in Oct 2025)" . --include="*.md" --exclude-dir=archived_legacy --exclude-dir=docs/reports
 # Should be: No matches (or only in historical/archived contexts)
 ```
 
@@ -1039,11 +1039,11 @@ Documentation now accurately reflects 15 registered agents"
 ### Rollback Procedure
 ```bash
 git checkout dawsos/core/agent_capabilities.py .claude/*.md CLAUDE.md SYSTEM_STATUS.md
-# Revert to "19 agents" if needed
+# Revert to "15 agents (consolidated from 19 in Oct 2025)" if needed
 ```
 
 ### Success Criteria
-- [ ] `grep -r "19 agents"` returns no matches (except archives)
+- [ ] `grep -r "15 agents (consolidated from 19 in Oct 2025)"` returns no matches (except archives)
 - [ ] AGENT_CAPABILITIES comment says "15 agents"
 - [ ] test_agent_count.py passes
 - [ ] All specialist agent docs list 15 agents

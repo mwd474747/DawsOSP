@@ -317,7 +317,7 @@ class TrinityUIComponents:
         )
 
         if radar_result.get('success') and 'plotly_figure' in radar_result:
-            st.plotly_chart(radar_result['plotly_figure'], use_container_width=True)
+            st.plotly_chart(radar_result['plotly_figure'], width="stretch")
         else:
             st.error("Failed to generate risk radar")
 
@@ -452,7 +452,7 @@ class TrinityUIComponents:
                         if st.button(
                             f"{shortcut['icon']} {shortcut['description']}",
                             key=f"shortcut_{shortcut_id}",
-                            use_container_width=True
+                            width="stretch"
                         ):
                             # Execute the pattern
                             pattern = self.pattern_engine.get_pattern(shortcut['pattern'])

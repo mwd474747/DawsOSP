@@ -91,7 +91,7 @@ class IntelligenceDisplay:
             font={'size': 14}
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
         # Show historical trend if requested
         if show_history and self.runtime:
@@ -135,7 +135,7 @@ class IntelligenceDisplay:
                 showlegend=False
             )
 
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     def render_multi_confidence(self, scores: Dict[str, float]) -> None:
         """
@@ -294,7 +294,7 @@ class IntelligenceDisplay:
             margin=dict(l=20, r=20, t=40, b=20)
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # ========================================================================
     # C. AGENT FLOW DIAGRAM
@@ -668,7 +668,7 @@ graph TD
                         'Failures': agent_stats['failures']
                     })
 
-                st.dataframe(agent_data, use_container_width=True)
+                st.dataframe(agent_data, width="stretch")
 
         # Get graph statistics
         if self.graph:
@@ -702,7 +702,7 @@ graph TD
                 )])
 
                 fig.update_layout(height=300, margin=dict(l=20, r=20, t=20, b=20))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
 
 # ============================================================================

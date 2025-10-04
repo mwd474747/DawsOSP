@@ -193,7 +193,7 @@ def render_validation_tab(dim):
 
                 fig = px.pie(df, values='Count', names='Directory',
                            title="Pattern Files by Directory")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
 
 def render_health_check_tab(dim):

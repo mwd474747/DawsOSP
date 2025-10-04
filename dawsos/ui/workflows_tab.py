@@ -78,7 +78,7 @@ def render_workflows_tab(workflows, graph, runtime):
     quick_col1, quick_col2, quick_col3, quick_col4 = st.columns(4)
 
     with quick_col1:
-        if st.button("🌅 Morning Briefing", use_container_width=True):
+        if st.button("🌅 Morning Briefing", width="stretch"):
             with st.spinner("Generating morning briefing..."):
                 result = workflows.execute_workflow('morning_briefing')
                 workflows.save_workflow_result(result)
@@ -111,7 +111,7 @@ def render_workflows_tab(workflows, graph, runtime):
                     st.markdown("**Favored Sectors:** Balanced allocation recommended")
 
     with quick_col2:
-        if st.button("💎 Find Value", use_container_width=True):
+        if st.button("💎 Find Value", width="stretch"):
             with st.spinner("Scanning for value..."):
                 result = workflows.execute_workflow('value_scan')
                 workflows.save_workflow_result(result)
@@ -127,7 +127,7 @@ def render_workflows_tab(workflows, graph, runtime):
                                 st.markdown(f"- **{stock['symbol']}**: P/E {stock['pe']:.1f}, Price ${stock['price']:.2f}")
 
     with quick_col3:
-        if st.button("🎯 Check Regime", use_container_width=True):
+        if st.button("🎯 Check Regime", width="stretch"):
             with st.spinner("Analyzing regime..."):
                 result = workflows.execute_workflow('regime_check')
                 workflows.save_workflow_result(result)
@@ -141,7 +141,7 @@ def render_workflows_tab(workflows, graph, runtime):
                         st.markdown(f"**Description:** {regime_data.get('description', 'No description')}")
 
     with quick_col4:
-        if st.button("⚠️ Risk Check", use_container_width=True):
+        if st.button("⚠️ Risk Check", width="stretch"):
             with st.spinner("Assessing risks..."):
                 result = workflows.execute_workflow('risk_assessment')
                 workflows.save_workflow_result(result)

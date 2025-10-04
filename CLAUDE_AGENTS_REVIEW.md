@@ -65,7 +65,7 @@ The Claude Code agent system (`.claude/*.md` files) contains 4 specialized agent
 - **Impact**: Agent can't guide on modern capabilities
 
 #### Agent Orchestrator Claims:
-- **WRONG**: Lists 19 agents but outdated capability tracking
+- **WRONG**: Lists 15 agents (consolidated from 19 in Oct 2025) but outdated capability tracking
 - **WRONG**: Missing `AGENT_CAPABILITIES` metadata structure
 - **WRONG**: No mention of 50+ capabilities across agents
 - **Impact**: Can't help with capability-based development
@@ -151,7 +151,7 @@ The Claude Code agent system (`.claude/*.md` files) contains 4 specialized agent
 
 | Agent Claims | Reality | Gap |
 |--------------|---------|-----|
-| 19 agents | 19 agents | ✅ Correct |
+| 15 agents (consolidated from 19 in Oct 2025) | 15 agents (consolidated from 19 in Oct 2025) | ✅ Correct |
 | Basic tracking | Enhanced telemetry | **Partial** |
 | Name-based routing | Capability-based routing | **Missing** |
 | No capabilities | 50+ capabilities defined | **Missing** |
@@ -167,7 +167,7 @@ The Claude Code agent system (`.claude/*.md` files) contains 4 specialized agent
    ```python
    from core.agent_capabilities import AGENT_CAPABILITIES
 
-   # All 19 agents registered with:
+   # All 15 agents (consolidated from 19 in Oct 2025) registered with:
    - capabilities: List of what agent can do
    - requires: Dependencies needed
    - provides: What agent outputs
@@ -265,7 +265,7 @@ The Claude Code agent system (`.claude/*.md` files) contains 4 specialized agent
 
 **Add Sections**:
 1. **AGENT_CAPABILITIES Metadata**
-   - 50+ capabilities across 19 agents
+   - 50+ capabilities across 15 agents (consolidated from 19 in Oct 2025)
    - Capability categories (data, analysis, graph, governance, code)
    - Integration matrix
 
@@ -305,7 +305,7 @@ The Claude Code agent system (`.claude/*.md` files) contains 4 specialized agent
 **Last Updated**: October 3, 2025
 
 ## Core Architecture
-- 19 agents with 50+ capabilities
+- 15 agents (consolidated from 19 in Oct 2025) with 50+ capabilities
 - 45 patterns (0 errors)
 - 26 enriched datasets (100% coverage)
 - Capability-based routing

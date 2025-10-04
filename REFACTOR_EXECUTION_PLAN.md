@@ -661,7 +661,7 @@ def test_agents():
 
 # ✅ After (pytest assertions)
 def test_all_agents_registered():
-    """Verify all 19 agents are registered"""
+    """Verify all 15 agents (consolidated from 19 in Oct 2025) are registered"""
     expected_agents = [
         'claude', 'data_harvester', 'data_digester',
         'graph_mind', 'pattern_spotter', 'relationship_hunter',
@@ -1039,7 +1039,7 @@ Key Principles:
 Available Resources:
 - 26 enriched datasets (sector_performance, economic_cycles, buffett_framework, etc.)
 - 45 validated patterns (analysis, ui, governance, queries, workflows)
-- 19 agents with AGENT_CAPABILITIES metadata
+- 15 agents (consolidated from 19 in Oct 2025) with AGENT_CAPABILITIES metadata
 ```
 
 **Validation**: Test agent responses reference Trinity architecture

@@ -110,7 +110,7 @@ class TrinityDashboardTabs:
             # Enhanced graph visualization
             if self.graph.nodes:
                 fig = self._create_enhanced_graph_viz()
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             else:
                 st.info("🌱 Start chatting or run patterns to build the knowledge graph!")
 
@@ -214,7 +214,7 @@ class TrinityDashboardTabs:
         agent_df = self._format_agent_metrics_table(agent_metrics, sort_by)
 
         if not agent_df.empty:
-            st.dataframe(agent_df, use_container_width=True, height=400)
+            st.dataframe(agent_df, width="stretch", height=400)
 
             # Click to see detailed agent history
             selected_agent = st.selectbox("View details for agent:",
@@ -242,7 +242,7 @@ class TrinityDashboardTabs:
                 if PLOTLY_AVAILABLE and px is not None:
                     fig = px.bar(top_patterns_df, x='count', y='pattern', orientation='h',
                                title="Pattern Usage Frequency")
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
                 else:
                     st.dataframe(top_patterns_df)
             else:
@@ -261,7 +261,7 @@ class TrinityDashboardTabs:
         st.markdown("**Recent Pattern Executions (Last 20)**")
         recent_df = self._format_recent_patterns(pattern_stats['recent_executions'])
         if not recent_df.empty:
-            st.dataframe(recent_df, use_container_width=True)
+            st.dataframe(recent_df, width="stretch")
         else:
             st.info("No recent executions")
 
@@ -313,7 +313,7 @@ class TrinityDashboardTabs:
                 if PLOTLY_AVAILABLE and px is not None:
                     fig = px.line(growth_df, x='timestamp', y=['nodes', 'edges'],
                                 title="Knowledge Graph Growth Over Time")
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
                 else:
                     st.dataframe(growth_df)
             else:
@@ -329,7 +329,7 @@ class TrinityDashboardTabs:
         st.markdown("**Recent Additions**")
         if graph_health['recent_nodes']:
             recent_nodes_df = pd.DataFrame(graph_health['recent_nodes'])
-            st.dataframe(recent_nodes_df, use_container_width=True)
+            st.dataframe(recent_nodes_df, width="stretch")
 
         st.markdown("---")
 
