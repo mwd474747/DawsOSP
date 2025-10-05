@@ -389,6 +389,6 @@ class UIGeneratorAgent:
         if 'component_html' in component_result:
             st.components.v1.html(component_result['component_html'], height=None)
         elif 'plotly_figure' in component_result:
-            st.plotly_chart(component_result['plotly_figure'], use_container_width=True)
+            st.plotly_chart(component_result['plotly_figure'], width="stretch")
         else:
             st.error("Unknown component type")

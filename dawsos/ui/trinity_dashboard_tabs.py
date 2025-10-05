@@ -104,12 +104,30 @@ class TrinityDashboardTabs:
         """Enhanced knowledge graph with pattern-driven operations"""
         st.markdown("### 🧠 Trinity Knowledge Graph - Pattern-Enhanced Intelligence")
 
+        # Sampling controls for large graphs
+        total_nodes = len(self.graph.nodes)
+        if total_nodes > 500:
+            st.info(f"📊 Large graph detected ({total_nodes:,} nodes). Using intelligent sampling for performance.")
+
+            col_a, col_b, col_c = st.columns(3)
+            with col_a:
+                max_nodes = st.slider("Max nodes to display", 100, 2000, 500, 100)
+            with col_b:
+                strategy = st.selectbox("Sampling strategy",
+                                       ['importance', 'recent', 'connected', 'random'],
+                                       help="importance: Most connected/accessed | recent: Recently modified | connected: Start from hub | random: Random sample")
+            with col_c:
+                st.metric("Total Nodes", f"{total_nodes:,}")
+        else:
+            max_nodes = 500
+            strategy = 'importance'
+
         col1, col2 = st.columns([3, 1])
 
         with col1:
             # Enhanced graph visualization
             if self.graph.nodes:
-                fig = self._create_enhanced_graph_viz()
+                fig = self._create_enhanced_graph_viz(max_nodes=max_nodes, strategy=strategy)
                 st.plotly_chart(fig, width="stretch")
             else:
                 st.info("🌱 Start chatting or run patterns to build the knowledge graph!")
@@ -635,40 +653,109 @@ class TrinityDashboardTabs:
             if st.button(f"▶️ {pattern_name}", key=f"{group_name}_{pattern_id}"):
                 self._execute_pattern(pattern_id)
 
-    def _create_enhanced_graph_viz(self):
-        """Create enhanced graph visualization"""
-        # This would create an enhanced Plotly graph with pattern-driven insights
-        # For now, return a simple implementation
+    def _create_enhanced_graph_viz(self, max_nodes: int = 500, strategy: str = 'importance'):
+        """
+        Create enhanced graph visualization with intelligent sampling for large graphs
+
+        Args:
+            max_nodes: Maximum nodes to display (default 500)
+            strategy: Sampling strategy - 'importance', 'recent', 'random', or 'connected'
+        """
+        import random
+
+        # Sample graph if it's large
+        sampled = self.graph.sample_for_visualization(max_nodes=max_nodes, strategy=strategy)
+
         fig = go.Figure()
 
-        # Add nodes and edges based on graph data
+        # Show sampling info if graph was sampled
+        title = "Trinity Knowledge Graph"
+        if sampled['sampled']:
+            title += f" (Showing {sampled['sampled_nodes']:,} of {sampled['total_nodes']:,} nodes - {strategy} strategy)"
+
+        # Add edges first (so they appear behind nodes)
+        edge_x = []
+        edge_y = []
+
+        # Build position lookup
+        node_positions = {}
+        for i, (node_id, node_data) in enumerate(sampled['nodes'].items()):
+            # Deterministic layout based on node_id hash for consistency
+            hash_val = hash(node_id)
+            x = (hash_val % 1000) / 100
+            y = ((hash_val // 1000) % 1000) / 100
+            node_positions[node_id] = (x, y)
+
+        # Draw edges
+        for edge in sampled['edges']:
+            if edge['from'] in node_positions and edge['to'] in node_positions:
+                x0, y0 = node_positions[edge['from']]
+                x1, y1 = node_positions[edge['to']]
+                edge_x.extend([x0, x1, None])
+                edge_y.extend([y0, y1, None])
+
+        if edge_x:
+            fig.add_trace(go.Scatter(
+                x=edge_x, y=edge_y,
+                mode='lines',
+                line=dict(width=0.5, color='#888'),
+                hoverinfo='none',
+                showlegend=False
+            ))
+
+        # Add nodes
         node_x = []
         node_y = []
         node_text = []
+        node_colors = []
+        node_sizes = []
 
-        for node_id, node_data in self.graph.nodes.items():
-            # Simple layout - in production would use proper graph layout
-            import random
-            node_x.append(random.uniform(0, 10))
-            node_y.append(random.uniform(0, 10))
-            node_text.append(f"{node_id}<br>{node_data.get('type', 'unknown')}")
+        # Color map for node types
+        type_colors = {
+            'company': '#1f77b4',
+            'sector': '#ff7f0e',
+            'indicator': '#2ca02c',
+            'pattern': '#d62728',
+            'relationship': '#9467bd',
+            'forecast': '#8c564b'
+        }
+
+        for node_id, node_data in sampled['nodes'].items():
+            x, y = node_positions[node_id]
+            node_x.append(x)
+            node_y.append(y)
+
+            node_type = node_data.get('type', 'unknown')
+            node_text.append(f"{node_id}<br>Type: {node_type}")
+
+            # Color by type
+            node_colors.append(type_colors.get(node_type, '#888'))
+
+            # Size by connection count
+            connections = len(node_data.get('connections_in', [])) + len(node_data.get('connections_out', []))
+            node_sizes.append(min(20 + connections * 2, 50))  # Scale size by connections
 
         fig.add_trace(go.Scatter(
             x=node_x, y=node_y,
-            mode='markers+text',
+            mode='markers',
             text=node_text,
-            textposition="middle center",
-            marker=dict(size=20, color='lightblue'),
+            hoverinfo='text',
+            marker=dict(
+                size=node_sizes,
+                color=node_colors,
+                line=dict(width=2, color='white')
+            ),
             name='Knowledge Nodes'
         ))
 
         fig.update_layout(
-            title="Trinity Knowledge Graph",
+            title=title,
             showlegend=False,
             hovermode='closest',
-            margin=dict(b=20,l=5,r=5,t=40),
+            margin=dict(b=20, l=5, r=5, t=60),
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            height=600
         )
 
         return fig

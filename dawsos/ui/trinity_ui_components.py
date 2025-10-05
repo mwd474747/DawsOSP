@@ -563,6 +563,71 @@ class TrinityUIComponents:
             self.render_pattern_shortcuts()
 
 
+    def render_api_health_status(self) -> None:
+        """Render API health status widget for observability"""
+        try:
+            from capabilities.fred_data import FredDataCapability
+
+            # Get FRED health status
+            fred = FredDataCapability()
+            health = fred.get_health_status()
+
+            # Determine status emoji and color
+            if health['cache_health'] == 'healthy':
+                status_emoji = "🟢"
+                status_text = "Healthy"
+                status_color = "#28a745"
+            elif health['cache_health'] == 'degraded':
+                status_emoji = "🟡"
+                status_text = "Degraded"
+                status_color = "#ffc107"
+            elif health['cache_health'] == 'critical':
+                status_emoji = "🔴"
+                status_text = "Critical"
+                status_color = "#dc3545"
+            else:
+                status_emoji = "⚪"
+                status_text = "Unknown"
+                status_color = "#6c757d"
+
+            # Render health status
+            with st.container():
+                st.markdown("### 📡 API Health Status")
+
+                # Main status indicator
+                st.markdown(
+                    f"**FRED API:** {status_emoji} <span style='color:{status_color}'>{status_text}</span>",
+                    unsafe_allow_html=True
+                )
+
+                # Metrics
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Total Requests", health['total_requests'])
+                with col2:
+                    st.metric("Fallbacks", health['fallback_count'],
+                             delta=f"-{health['fallback_count']}" if health['fallback_count'] > 0 else None,
+                             delta_color="inverse")
+
+                # Warnings
+                if health['warnings']:
+                    st.warning("**Active Warnings:**")
+                    for warning in health['warnings']:
+                        st.markdown(f"- {warning}")
+
+                # Additional info
+                if not health['api_configured']:
+                    st.info("💡 **Tip:** Set FRED_API_KEY in .env for live economic data")
+
+                # Cache stats expander
+                with st.expander("📊 Detailed Cache Stats"):
+                    stats = fred.get_cache_stats()
+                    st.json(stats)
+
+        except Exception as e:
+            st.error(f"Failed to load API health status: {str(e)}")
+
+
 def get_trinity_ui(pattern_engine: PatternEngine = None, runtime: AgentRuntime = None) -> TrinityUIComponents:
     """Factory function to create Trinity UI components"""
     return TrinityUIComponents(pattern_engine, runtime)

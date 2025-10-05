@@ -1,6 +1,6 @@
 # Capability-Based Routing Guide
 
-**Date**: October 3, 2025
+**Date**: October 4, 2025 (Updated with migrated capabilities)
 **Status**: ✅ Implemented & Ready to Use
 
 ---
@@ -36,8 +36,22 @@ result = runtime.execute_by_capability('can_calculate_dcf', context)
 - `can_fetch_fundamentals` - Financial statements (data_harvester)
 
 ### Analysis Capabilities
-- `can_detect_patterns` - Pattern recognition (pattern_spotter)
-- `can_calculate_dcf` - DCF valuation (financial_analyst)
+
+**Financial Analysis** (financial_analyst):
+- `can_calculate_dcf` - DCF valuation with graph-based assumptions
+- `can_calculate_roic` - Return on invested capital
+- `can_analyze_moat` - Competitive advantage analysis
+- `can_analyze_stock_comprehensive` - Full equity analysis with macro influences (migrated Oct 2025)
+- `can_compare_stocks` - Side-by-side comparison with peer positioning (migrated Oct 2025)
+- `can_analyze_economy` - Economic regime detection (goldilocks/stagflation/recession) (migrated Oct 2025)
+- `can_analyze_portfolio_risk` - Portfolio concentration and correlation analysis (migrated Oct 2025)
+
+**Pattern Detection** (pattern_spotter):
+- `can_detect_patterns` - Pattern recognition (sequences, cycles, triggers)
+- `can_detect_anomalies` - Graph anomaly detection
+- `can_analyze_market_regime` - Risk-on/risk-off detection
+
+**Other**:
 - `can_calculate_correlations` - Correlation analysis (data_harvester, relationship_hunter)
 - `can_analyze_sentiment` - News sentiment (financial_analyst)
 

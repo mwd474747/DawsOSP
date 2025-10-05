@@ -107,7 +107,7 @@ runtime.register_agent('financial_analyst', FinancialAnalyst(graph), capabilitie
 ```
 
 **Tasks**:
-- [ ] Add capability declarations to all 19 agents in main.py
+- [ ] Add capability declarations to all 15 agents in main.py
 - [ ] Create capability registry schema (capabilities.json)
 - [ ] Add `require_capabilities=True` flag to AgentRegistry
 - [ ] Warn on registration without capabilities (or error in strict mode)
@@ -162,7 +162,7 @@ AGENT_CAPABILITIES = {
         'can_enforce_policy': True,
         'provides_governance': True
     },
-    # ... complete for all 19 agents
+    # ... complete for all 15 agents
 }
 ```
 
@@ -682,7 +682,7 @@ json
 | Task | Days | Owner | Status |
 |------|------|-------|--------|
 | Add access guardrails to AgentRuntime | 2 | Dev | Pending |
-| Add capability metadata to all 19 agents | 3 | Dev | Pending |
+| Add capability metadata to all 15 agents | 3 | Dev | Pending |
 | Create ComplianceChecker | 1 | Dev | Pending |
 | Update pattern linter with capability checks | 1 | Dev | Pending |
 
@@ -710,7 +710,7 @@ json
 
 ### Phase 1: Enforcement
 - [ ] No code can access `runtime.agents[...]` without warning/error
-- [ ] All 19 agents registered with explicit capabilities
+- [ ] All 15 agents registered with explicit capabilities
 - [ ] ComplianceChecker validates all pattern executions
 - [ ] Bypass warnings logged and monitored
 

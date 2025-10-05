@@ -119,7 +119,7 @@
 | Task | Days | Status |
 |------|------|--------|
 | Add access guardrails (prevent direct agent access) | 2 | Pending |
-| Add capability metadata to all 19 agents | 3 | Pending |
+| Add capability metadata to all 15 agents | 3 | Pending |
 | Create ComplianceChecker for runtime validation | 1 | Pending |
 | Update pattern linter with capability checks | 1 | Pending |
 
@@ -227,7 +227,7 @@
 
 **Must Have**:
 - [ ] Zero direct agent access (enforced by guardrails)
-- [ ] All 19 agents have explicit capability metadata
+- [ ] All 15 agents have explicit capability metadata
 - [ ] ComplianceChecker validates all executions
 - [ ] Zero legacy orchestration references
 - [ ] 100% regression test coverage for Trinity flow
@@ -391,7 +391,7 @@
 - [ ] Update internal code to use exec_via_registry()
 
 **Day 3-5: Track A - Capabilities**
-- [ ] Define capability schema for all 19 agents
+- [ ] Define capability schema for all 15 agents
 - [ ] Update main.py registrations
 - [ ] Test capability-based routing
 

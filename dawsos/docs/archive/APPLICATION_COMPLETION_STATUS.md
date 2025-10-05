@@ -241,7 +241,7 @@ Request → UniversalExecutor → PatternEngine → AgentRegistry → Agent → 
 
 **Needed**:
 ```python
-# Explicit capability registration for all 19 agents
+# Explicit capability registration for all 15 agents
 runtime.register_agent('financial_analyst', agent, capabilities={
     'can_calculate_dcf': True,
     'can_calculate_roic': True,
@@ -364,7 +364,7 @@ runtime.register_agent('financial_analyst', agent, capabilities={
    - **Effort**: 2-3 days
 
 2. **Agent Capability Declarations**
-   - Add explicit capabilities to all 19 agents
+   - Add explicit capabilities to all 15 agents
    - Test capability-based routing
    - **Effort**: 1-2 days
 

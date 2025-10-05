@@ -421,7 +421,7 @@ class KnowledgeGraph:
         """Load graph from file"""
         if not os.path.exists(filepath):
             return False
-            
+
         try:
             with open(filepath, 'r') as f:
                 data = json.load(f)
@@ -434,3 +434,99 @@ class KnowledgeGraph:
         except Exception as e:
             print(f"Error loading graph: {e}")
             return False
+
+    def sample_for_visualization(self, max_nodes: int = 500, strategy: str = 'importance') -> Dict:
+        """
+        Sample graph for visualization to handle large graphs (96K+ nodes)
+
+        Args:
+            max_nodes: Maximum number of nodes to include
+            strategy: Sampling strategy - 'importance', 'recent', 'random', or 'connected'
+
+        Returns:
+            Dict with sampled nodes and edges suitable for visualization
+        """
+        import random
+
+        total_nodes = len(self.nodes)
+
+        # If graph is small enough, return all
+        if total_nodes <= max_nodes:
+            return {
+                'nodes': self.nodes,
+                'edges': self.edges,
+                'sampled': False,
+                'total_nodes': total_nodes,
+                'total_edges': len(self.edges)
+            }
+
+        # Sample nodes based on strategy
+        if strategy == 'importance':
+            # Sort by access count and connection degree
+            node_scores = {}
+            for node_id, node in self.nodes.items():
+                access_count = node.get('metadata', {}).get('access_count', 0)
+                connections = len(node.get('connections_in', [])) + len(node.get('connections_out', []))
+                node_scores[node_id] = access_count + connections
+
+            sampled_ids = sorted(node_scores.keys(), key=lambda x: node_scores[x], reverse=True)[:max_nodes]
+
+        elif strategy == 'recent':
+            # Sort by most recently modified
+            sampled_ids = sorted(
+                self.nodes.keys(),
+                key=lambda x: self.nodes[x].get('modified', ''),
+                reverse=True
+            )[:max_nodes]
+
+        elif strategy == 'connected':
+            # Start with most connected node and expand
+            sampled_ids = set()
+            # Find most connected node
+            if self.nodes:
+                start_node = max(
+                    self.nodes.keys(),
+                    key=lambda x: len(self.nodes[x].get('connections_in', [])) + len(self.nodes[x].get('connections_out', []))
+                )
+                sampled_ids.add(start_node)
+
+                # BFS expansion
+                queue = [start_node]
+                while queue and len(sampled_ids) < max_nodes:
+                    current = queue.pop(0)
+                    node = self.nodes[current]
+
+                    for neighbor in node.get('connections_out', []):
+                        if neighbor not in sampled_ids and len(sampled_ids) < max_nodes:
+                            sampled_ids.add(neighbor)
+                            queue.append(neighbor)
+
+                    for neighbor in node.get('connections_in', []):
+                        if neighbor not in sampled_ids and len(sampled_ids) < max_nodes:
+                            sampled_ids.add(neighbor)
+                            queue.append(neighbor)
+
+            sampled_ids = list(sampled_ids)
+
+        else:  # random
+            sampled_ids = random.sample(list(self.nodes.keys()), min(max_nodes, total_nodes))
+
+        # Build sampled nodes
+        sampled_nodes = {node_id: self.nodes[node_id] for node_id in sampled_ids}
+
+        # Build sampled edges (only edges between sampled nodes)
+        sampled_edges = [
+            edge for edge in self.edges
+            if edge['from'] in sampled_ids and edge['to'] in sampled_ids
+        ]
+
+        return {
+            'nodes': sampled_nodes,
+            'edges': sampled_edges,
+            'sampled': True,
+            'total_nodes': total_nodes,
+            'total_edges': len(self.edges),
+            'sampled_nodes': len(sampled_nodes),
+            'sampled_edges': len(sampled_edges),
+            'strategy': strategy
+        }

@@ -1,14 +1,28 @@
 """LLM Client - Wrapper for Claude API"""
 import json
-from typing import Dict, Any
-from anthropic import Anthropic
+from typing import Dict, Any, Optional
 import re
 from core.credentials import get_credential_manager
+
+# Optional import guard for anthropic
+try:
+    from anthropic import Anthropic
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_AVAILABLE = False
+    Anthropic = None
 
 class LLMClient:
     """Simple wrapper for Claude API"""
 
     def __init__(self):
+        # Check if anthropic is available
+        if not ANTHROPIC_AVAILABLE:
+            raise ImportError(
+                "The 'anthropic' package is required for LLMClient but not installed. "
+                "Install it with: pip install anthropic"
+            )
+
         # Get API key from credential manager
         credentials = get_credential_manager()
         self.api_key = credentials.get('ANTHROPIC_API_KEY', required=True)

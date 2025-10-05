@@ -645,7 +645,7 @@ def main():
             st.markdown("### Living Knowledge Graph")
             if st.session_state.graph.nodes:
                 fig = visualize_graph()
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             else:
                 st.info("Start chatting to build the knowledge graph!")
             stats = st.session_state.graph.get_stats()
@@ -752,6 +752,14 @@ def main():
     # Sidebar
     with st.sidebar:
         st.markdown("### Quick Actions")
+
+        # API Health Status
+        st.markdown("---")
+        try:
+            trinity_ui.render_api_health_status()
+        except Exception as e:
+            st.warning(f"API health status unavailable: {str(e)}")
+        st.markdown("---")
 
         # Alert notifications in sidebar
         try:

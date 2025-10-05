@@ -14,7 +14,7 @@ The DawsOS codebase has been evaluated against the comprehensive Cleanup & Harde
 
 ### Key Strengths ✅
 - ✅ **Trinity enforcement**: 45 patterns, 0 errors, 1 minor warning
-- ✅ **Capability metadata**: 19 agents with full capability definitions
+- ✅ **Capability metadata**: 15 agents (consolidated from 19 in Oct 2025) with full capability definitions
 - ✅ **Knowledge loader**: Centralized caching system operational
 - ✅ **Pattern linting**: Automated validation with CI-ready script
 - ✅ **Backup rotation**: 30-day retention with metadata
@@ -141,7 +141,7 @@ jobs:
 
 **File**: [dawsos/core/agent_capabilities.py](dawsos/core/agent_capabilities.py)
 
-**All 19 agents have comprehensive metadata**:
+**All 15 agents have comprehensive metadata**:
 ```python
 AGENT_CAPABILITIES = {
     'claude': {

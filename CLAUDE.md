@@ -2,7 +2,7 @@
 
 **System Version**: 2.0 (Trinity Architecture)
 **Grade**: A+ (98/100)
-**Last Updated**: October 3, 2025
+**Last Updated**: October 4, 2025
 
 This file provides persistent context for all Claude Code sessions working on DawsOS.
 
@@ -76,7 +76,8 @@ See [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) for 50+ available
 
 ### Current Metrics
 - **Patterns**: 45 (0 errors, 1 cosmetic warning)
-- **Agents**: 19 registered with 50+ capabilities
+- **Agents**: 15 (consolidated, legacy archive deleted Oct 2025)
+- **Capabilities**: 50+ across financial_analyst, pattern_spotter, and other agents
 - **Datasets**: 26 (100% coverage in KnowledgeLoader)
 - **Tests**: All passing (pytest suite)
 - **CI/CD**: `.github/workflows/compliance-check.yml` validates on push
@@ -104,6 +105,31 @@ See [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) for 50+ available
 **Market Indicators (6)**: cross_asset_lead_lag, econ_regime_watchlist, fx_commodities, thematic_momentum, volatility_stress, yield_curve
 
 **System Metadata (1)**: agent_capabilities
+
+### Financial Analyst Capabilities (Migrated Oct 2025)
+
+The **financial_analyst** agent now contains all functionality from archived equity_agent, macro_agent, and risk_agent:
+
+**Equity Analysis** (from equity_agent):
+- `analyze_stock_comprehensive()` - Full stock analysis with macro influences and catalysts
+- `compare_stocks()` - Side-by-side comparison with peer analysis
+- Graph-based macro influence tracing (inflation → sector → stock)
+- Catalyst identification (SUPPORTS/STRENGTHENS relationships)
+- Risk detection (PRESSURES/WEAKENS relationships)
+
+**Macro Economy Analysis** (from macro_agent):
+- `analyze_economy()` - Economic regime analysis (goldilocks/stagflation/recession)
+- Economic indicator aggregation (GDP, CPI, unemployment, etc.)
+- Regime-based sector opportunity identification
+- Macro risk detection (recession signals, inflation spikes)
+
+**Portfolio Risk Analysis** (from risk_agent):
+- `analyze_portfolio_risk()` - Comprehensive portfolio analysis
+- Concentration risk detection (>20% single, >60% top-5)
+- Sector correlation proxy via graph relationships
+- Portfolio-level macro sensitivity aggregation
+
+All methods use Trinity-compliant execution through `runtime.execute_by_capability()` and graph-based analysis.
 
 ---
 
@@ -157,9 +183,8 @@ See [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) for 50+ available
 
 ### Status & Compliance
 - [SYSTEM_STATUS.md](SYSTEM_STATUS.md) - Current A+ grade report
-- [QUICK_WINS_COMPLETE.md](QUICK_WINS_COMPLETE.md) - Final improvements
-- [CORE_INFRASTRUCTURE_STABILIZATION.md](CORE_INFRASTRUCTURE_STABILIZATION.md) - Architecture upgrades
-- [FINAL_ROADMAP_COMPLIANCE.md](FINAL_ROADMAP_COMPLIANCE.md) - Complete compliance
+- [TECHNICAL_DEBT_STATUS.md](TECHNICAL_DEBT_STATUS.md) - Current debt tracking
+- [docs/archive/planning/](docs/archive/planning/) - Historical planning documents (Oct 2025 consolidation)
 
 ### Specialist Agents (Consult Before Changes)
 - [.claude/README.md](.claude/README.md) - Agent system overview

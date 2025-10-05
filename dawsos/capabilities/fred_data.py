@@ -233,6 +233,49 @@ class FredDataCapability:
             'cached_items': len(self.cache)
         }
 
+    def get_health_status(self) -> Dict:
+        """
+        Get API health status for observability
+
+        Returns:
+            Dict with health metrics including:
+            - api_configured: bool - Whether API key is set
+            - fallback_count: int - Number of times expired cache was used
+            - cache_health: str - 'healthy', 'degraded', or 'critical'
+            - warnings: List[str] - Active warnings
+        """
+        warnings = []
+
+        # Check API key configuration
+        api_configured = bool(self.api_key)
+        if not api_configured:
+            warnings.append("FRED API key not configured - using cached data only")
+
+        # Check fallback usage
+        fallback_count = self.cache_stats['expired_fallbacks']
+        if fallback_count > 0:
+            warnings.append(f"Using expired cached data ({fallback_count} fallbacks)")
+
+        # Determine cache health
+        total_requests = self.cache_stats['hits'] + self.cache_stats['misses']
+        if total_requests == 0:
+            cache_health = 'unknown'
+        elif fallback_count > total_requests * 0.5:
+            cache_health = 'critical'  # More than 50% fallbacks
+        elif fallback_count > 0:
+            cache_health = 'degraded'  # Some fallbacks
+        else:
+            cache_health = 'healthy'
+
+        return {
+            'api_configured': api_configured,
+            'fallback_count': fallback_count,
+            'cache_health': cache_health,
+            'warnings': warnings,
+            'total_requests': total_requests,
+            'cache_size': len(self.cache)
+        }
+
     def get_series(self, series_id: str, start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict:
         """
         Get time series data for a specific indicator
@@ -305,13 +348,20 @@ class FredDataCapability:
 
         # API call failed - try to return expired cache data
         if cached:
-            logger.warning(f"API call failed, returning expired cache data for {series_id}")
+            cache_age = (datetime.now() - self.cache[cache_key]['time']).days
+            logger.warning(
+                f"⚠️  FRED API FAILURE - Using expired cache for {series_id} "
+                f"(age: {cache_age} days). Data may be stale!"
+            )
             self.cache_stats['expired_fallbacks'] += 1
             result = cached[0].copy()
             result['_cached'] = True
-            result['_warning'] = 'Using expired cached data due to API failure'
+            result['_stale'] = True
+            result['_cache_age_days'] = cache_age
+            result['_warning'] = f'Using expired cached data ({cache_age} days old) due to API failure'
             return result
 
+        logger.error(f"❌ FRED API FAILURE - No cached data available for {series_id}")
         return {'error': 'No data available', 'series_id': series_id}
 
     def get_latest(self, indicator: str) -> Dict:
@@ -566,13 +616,20 @@ class FredDataCapability:
 
         # API call failed - try to return expired cache data
         if cached:
-            logger.warning(f"API call failed, returning expired cache data for {series_id} metadata")
+            cache_age = (datetime.now() - self.cache[cache_key]['time']).days
+            logger.warning(
+                f"⚠️  FRED API FAILURE - Using expired cache for {series_id} metadata "
+                f"(age: {cache_age} days). Data may be stale!"
+            )
             self.cache_stats['expired_fallbacks'] += 1
             result = cached[0].copy()
             result['_cached'] = True
-            result['_warning'] = 'Using expired cached data due to API failure'
+            result['_stale'] = True
+            result['_cache_age_days'] = cache_age
+            result['_warning'] = f'Using expired cached metadata ({cache_age} days old) due to API failure'
             return result
 
+        logger.error(f"❌ FRED API FAILURE - No cached metadata available for {series_id}")
         return {'error': 'No metadata available', 'series_id': series_id}
 
     def get_multiple_series(self, series_ids: List[str], start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict:

@@ -188,7 +188,7 @@ display.render_intelligence_summary(result)
 - ✅ PatternEngine - 45 patterns loaded
 - ✅ UniversalExecutor - Trinity path enforced
 - ✅ KnowledgeGraph - Graph operations working
-- ✅ AGENT_CAPABILITIES - 104 capabilities across 19 agents
+- ✅ AGENT_CAPABILITIES - 104 capabilities across 15 agents
 - ✅ ComplianceChecker - Runtime validation active
 
 **Test Result**: ✅ All core imports successful

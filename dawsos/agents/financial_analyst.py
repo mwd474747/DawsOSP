@@ -7,7 +7,7 @@ Leverages Trinity architecture to provide sophisticated financial analysis
 from typing import Dict, List, Any, Optional
 from .base_agent import BaseAgent
 from datetime import datetime
-from core.confidence_calculator import confidence_calculator
+from ..core.confidence_calculator import confidence_calculator
 
 
 class FinancialAnalyst(BaseAgent):
@@ -55,8 +55,33 @@ class FinancialAnalyst(BaseAgent):
                 query_node_id = self.add_knowledge('analysis_query', query_data)
                 context['query_node_id'] = query_node_id
 
+        # Economy Analysis (migrated from macro_agent)
+        if any(term in request_lower for term in ['economy', 'economic regime', 'macro analysis', 'economic analysis']):
+            return self.analyze_economy(context)
+
+        # Portfolio Risk Analysis (migrated from risk_agent)
+        elif any(term in request_lower for term in ['portfolio risk', 'portfolio analysis', 'holdings risk']):
+            holdings = context.get('holdings', {})
+            if not holdings:
+                return {"error": "Portfolio analysis requires 'holdings' in context (dict of symbol: weight)"}
+            return self.analyze_portfolio_risk(holdings, context)
+
+        # Comprehensive Stock Analysis (migrated from equity_agent)
+        elif any(term in request_lower for term in ['comprehensive stock', 'full stock analysis', 'stock comprehensive']):
+            symbol = self._extract_symbol(request, context)
+            if not symbol:
+                return {"error": "No stock symbol found in request"}
+            return self.analyze_stock_comprehensive(symbol, context)
+
+        # Stock Comparison (migrated from equity_agent)
+        elif any(term in request_lower for term in ['compare stocks', 'stock comparison']):
+            symbols = context.get('symbols', [])
+            if not symbols:
+                return {"error": "Stock comparison requires 'symbols' list in context"}
+            return self.compare_stocks(symbols, context)
+
         # DCF Valuation
-        if any(term in request_lower for term in ['dcf', 'discounted cash flow', 'intrinsic value']):
+        elif any(term in request_lower for term in ['dcf', 'discounted cash flow', 'intrinsic value']):
             return self._perform_dcf_analysis(request, context)
 
         # ROIC Calculation
@@ -675,3 +700,502 @@ class FinancialAnalyst(BaseAgent):
         except:
             pass
         return None
+
+    # ==================== MIGRATED FROM ARCHIVED AGENTS ====================
+    # The following methods were migrated from equity_agent, macro_agent, and risk_agent
+    # during the October 2025 legacy elimination refactor.
+    # See git history at commit e2be11e for original implementations.
+
+    def analyze_stock_comprehensive(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Comprehensive stock analysis including fundamental + macro influences + catalysts
+
+        Migrated from equity_agent.analyze_stock()
+        Combines DCF/ROIC analysis with macro influence tracing and catalyst identification
+        """
+        if context is None:
+            context = {}
+
+        # Find or create stock node
+        stock_node = self._find_or_create_company_node(symbol)
+
+        # Get connections for influence analysis
+        if hasattr(self.graph, 'trace_connections'):
+            connections = self.graph.trace_connections(stock_node, max_depth=3)
+        else:
+            connections = []
+
+        # Build comprehensive analysis
+        analysis = {
+            'symbol': symbol,
+            'timestamp': datetime.now().isoformat(),
+
+            # Fundamental analysis (existing methods)
+            'dcf_valuation': self._perform_dcf_analysis(f"DCF for {symbol}", {'symbol': symbol}),
+            'roic': self._calculate_roic(f"ROIC for {symbol}", {'symbol': symbol}),
+
+            # Macro influences (new)
+            'macro_influences': self._find_macro_influences_for_stock(stock_node, connections),
+
+            # Sector positioning (new)
+            'sector_position': self._analyze_sector_position_for_stock(stock_node),
+
+            # Risk factors (new)
+            'risk_factors': self._identify_stock_risks(stock_node, connections),
+
+            # Growth catalysts (new)
+            'catalysts': self._identify_catalysts(stock_node, connections),
+
+            # Metadata
+            'connection_count': len(connections),
+            'analysis_type': 'comprehensive'
+        }
+
+        return analysis
+
+    def _find_macro_influences_for_stock(self, stock_node: str, connections: List[List[Dict]]) -> List[Dict]:
+        """
+        Find macroeconomic influences on stock through graph relationships
+
+        Migrated from equity_agent._find_macro_influences()
+        Traces paths from economic indicators to stock
+        """
+        macro_influences = []
+
+        for path in connections:
+            for edge in path:
+                from_node = self.graph.nodes.get(edge['from'], {})
+                from_type = from_node.get('type', '')
+
+                # Check if node is a macro/economic indicator
+                if from_type in ['indicator', 'economic', 'macro']:
+                    influence = {
+                        'factor': edge['from'],
+                        'factor_name': from_node.get('data', {}).get('name', edge['from']),
+                        'relationship': edge['type'],
+                        'strength': edge.get('strength', 0.5),
+                        'type': from_type
+                    }
+
+                    # Avoid duplicates
+                    if influence not in macro_influences:
+                        macro_influences.append(influence)
+
+        # Return top 5 strongest influences
+        return sorted(macro_influences, key=lambda x: x['strength'], reverse=True)[:5]
+
+    def _analyze_sector_position_for_stock(self, stock_node: str) -> Dict:
+        """
+        Analyze stock's position within its sector including peer comparison
+
+        Migrated from equity_agent._analyze_sector_position()
+        """
+        # Find sector connections (PART_OF relationship)
+        for edge in self.graph.edges:
+            if edge['from'] == stock_node and edge.get('type') == 'PART_OF':
+                sector_node = edge['to']
+
+                # Get sector forecast if available
+                sector_forecast = {}
+                if hasattr(self.graph, 'forecast'):
+                    sector_forecast = self.graph.forecast(sector_node)
+
+                # Find peer companies in same sector
+                peers = []
+                for other_edge in self.graph.edges:
+                    if (other_edge.get('to') == sector_node and
+                        other_edge.get('type') == 'PART_OF' and
+                        other_edge['from'] != stock_node):
+                        peers.append(other_edge['from'])
+
+                return {
+                    'sector': sector_node,
+                    'sector_name': self.graph.nodes.get(sector_node, {}).get('data', {}).get('name', sector_node),
+                    'sector_outlook': sector_forecast.get('forecast', 'neutral'),
+                    'peer_count': len(peers),
+                    'peers': peers[:5]  # Top 5 peers
+                }
+
+        return {
+            'sector': 'unknown',
+            'sector_outlook': 'neutral',
+            'peer_count': 0,
+            'peers': []
+        }
+
+    def _identify_stock_risks(self, stock_node: str, connections: List[List[Dict]]) -> List[str]:
+        """
+        Identify risks specific to the stock from graph relationships
+
+        Migrated from equity_agent._identify_stock_risks()
+        Looks for PRESSURES and WEAKENS relationships
+        """
+        risks = []
+
+        # Check for negative relationships
+        for path in connections:
+            for edge in path:
+                if edge.get('to') == stock_node:
+                    relationship = edge.get('type', '')
+
+                    # Negative relationship types
+                    if relationship in ['PRESSURES', 'WEAKENS', 'THREATENS', 'COMPETES_WITH']:
+                        from_node_id = edge['from']
+                        from_node = self.graph.nodes.get(from_node_id, {})
+                        from_name = from_node.get('data', {}).get('name', from_node_id)
+                        strength = edge.get('strength', 0.5)
+
+                        risks.append(f"{from_name} {relationship.lower()} stock (strength: {strength:.2f})")
+
+        return risks[:5]  # Top 5 risks
+
+    def _identify_catalysts(self, stock_node: str, connections: List[List[Dict]]) -> List[str]:
+        """
+        Identify potential growth catalysts from graph relationships
+
+        Migrated from equity_agent._identify_catalysts()
+        Looks for SUPPORTS and STRENGTHENS relationships
+        """
+        catalysts = []
+
+        # Check for positive relationships
+        for path in connections:
+            for edge in path:
+                if edge.get('to') == stock_node:
+                    relationship = edge.get('type', '')
+
+                    # Positive relationship types
+                    if relationship in ['SUPPORTS', 'STRENGTHENS', 'BENEFITS_FROM', 'ALIGNED_WITH']:
+                        from_node_id = edge['from']
+                        from_node = self.graph.nodes.get(from_node_id, {})
+                        from_name = from_node.get('data', {}).get('name', from_node_id)
+                        strength = edge.get('strength', 0.5)
+
+                        catalysts.append(f"{from_name} {relationship.lower()} stock (strength: {strength:.2f})")
+
+        return catalysts[:5]  # Top 5 catalysts
+
+    def compare_stocks(self, symbols: List[str], context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Side-by-side comparison of multiple stocks
+
+        Migrated from equity_agent.compare_stocks()
+        Compares fundamentals, valuations, and relative strengths
+        """
+        if context is None:
+            context = {}
+
+        comparisons = {}
+
+        for symbol in symbols:
+            try:
+                # Get comprehensive analysis for each stock
+                analysis = self.analyze_stock_comprehensive(symbol, context)
+                comparisons[symbol] = {
+                    'dcf_value': analysis.get('dcf_valuation', {}).get('intrinsic_value'),
+                    'roic': analysis.get('roic', {}).get('roic'),
+                    'macro_risk_count': len(analysis.get('risk_factors', [])),
+                    'catalyst_count': len(analysis.get('catalysts', [])),
+                    'sector': analysis.get('sector_position', {}).get('sector_name'),
+                    'peer_count': analysis.get('sector_position', {}).get('peer_count', 0)
+                }
+            except Exception as e:
+                comparisons[symbol] = {'error': str(e)}
+
+        return {
+            'timestamp': datetime.now().isoformat(),
+            'symbols_compared': symbols,
+            'comparisons': comparisons,
+            'analysis_type': 'stock_comparison'
+        }
+    # ==================== MACRO ECONOMY ANALYSIS ====================
+    # Migrated from macro_agent.py
+
+    def analyze_economy(self, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Comprehensive macroeconomic analysis including regime detection
+
+        Migrated from macro_agent.analyze_economy()
+        Analyzes key economic indicators and determines current economic regime
+        """
+        if context is None:
+            context = {}
+
+        key_indicators = [
+            'GDP', 'CPI', 'UNEMPLOYMENT', 'FED_RATE',
+            'M2', 'TREASURY_10Y', 'VIX', 'DXY'
+        ]
+
+        analysis = {
+            'timestamp': datetime.now().isoformat(),
+            'indicators': {},
+            'regime': None,
+            'risks': [],
+            'opportunities': []
+        }
+
+        # Analyze each indicator
+        for indicator in key_indicators:
+            # Query graph for indicator node
+            indicator_nodes = [
+                node_id for node_id, node in self.graph.nodes.items()
+                if node.get('type') == 'indicator' and 
+                   node.get('data', {}).get('name') == indicator
+            ]
+
+            if indicator_nodes:
+                node_id = indicator_nodes[0]
+                node = self.graph.nodes.get(node_id, {})
+                value = node.get('data', {}).get('value')
+
+                # Get forecast if available
+                forecast_data = {}
+                if hasattr(self.graph, 'forecast'):
+                    forecast_data = self.graph.forecast(node_id)
+
+                analysis['indicators'][indicator] = {
+                    'current': value,
+                    'forecast': forecast_data.get('forecast', 'neutral'),
+                    'confidence': forecast_data.get('confidence', 0.5),
+                    'key_drivers': forecast_data.get('key_drivers', [])
+                }
+
+        # Determine economic regime
+        analysis['regime'] = self._determine_economic_regime(analysis['indicators'])
+
+        # Identify macro risks and opportunities
+        analysis['risks'] = self._identify_macro_risks(analysis)
+        analysis['opportunities'] = self._identify_sector_opportunities(analysis)
+
+        return analysis
+
+    def _determine_economic_regime(self, indicators: Dict) -> str:
+        """
+        Determine current economic regime based on indicator forecasts
+
+        Migrated from macro_agent._determine_regime()
+        Returns: goldilocks, stagflation, overheating, recession, or transitional
+        """
+        gdp = indicators.get('GDP', {})
+        inflation = indicators.get('CPI', {})
+
+        if not gdp or not inflation:
+            return 'insufficient_data'
+
+        growth_outlook = gdp.get('forecast', 'neutral')
+        inflation_outlook = inflation.get('forecast', 'neutral')
+
+        # Regime determination logic
+        if growth_outlook == 'bullish' and inflation_outlook == 'bearish':
+            return 'goldilocks'  # Good growth, low inflation
+        elif growth_outlook == 'bearish' and inflation_outlook == 'bullish':
+            return 'stagflation'  # Low growth, high inflation
+        elif growth_outlook == 'bullish' and inflation_outlook == 'bullish':
+            return 'overheating'  # High growth, high inflation
+        elif growth_outlook == 'bearish' and inflation_outlook == 'bearish':
+            return 'recession'  # Low growth, low inflation
+        else:
+            return 'transitional'
+
+    def _identify_macro_risks(self, analysis: Dict) -> List[str]:
+        """Identify macroeconomic risks based on indicator analysis"""
+        risks = []
+
+        indicators = analysis.get('indicators', {})
+
+        # Check for recession signals
+        if indicators.get('GDP', {}).get('forecast') == 'bearish':
+            risks.append("GDP forecast bearish - recession risk")
+
+        # Check for inflation concerns
+        if indicators.get('CPI', {}).get('forecast') == 'bullish':
+            risks.append("Inflation rising - purchasing power erosion")
+
+        # Check for rate risk
+        if indicators.get('FED_RATE', {}).get('forecast') == 'bullish':
+            risks.append("Rising rates - valuation compression risk")
+
+        # Check for market stress
+        vix = indicators.get('VIX', {})
+        if vix.get('current') and vix['current'] > 25:
+            risks.append(f"Elevated market volatility (VIX: {vix['current']})")
+
+        return risks
+
+    def _identify_sector_opportunities(self, analysis: Dict) -> List[str]:
+        """Identify sector opportunities based on economic regime"""
+        opportunities = []
+        regime = analysis.get('regime')
+
+        # Regime-based sector recommendations
+        if regime == 'goldilocks':
+            opportunities.append("Technology sector - benefits from growth + low rates")
+            opportunities.append("Consumer discretionary - strong demand environment")
+        elif regime == 'stagflation':
+            opportunities.append("Energy sector - inflation hedge")
+            opportunities.append("Commodities - real asset protection")
+        elif regime == 'recession':
+            opportunities.append("Defensive sectors - utilities, healthcare")
+            opportunities.append("Quality companies - pricing power")
+        elif regime == 'overheating':
+            opportunities.append("Financials - benefit from rising rates")
+            opportunities.append("Materials - supply constraints")
+
+        return opportunities
+
+    # ==================== PORTFOLIO RISK ANALYSIS ====================
+    # Migrated from risk_agent.py
+
+    def analyze_portfolio_risk(self, holdings: Dict[str, float], context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Comprehensive portfolio risk analysis
+
+        Migrated from risk_agent.analyze_portfolio_risk()
+
+        Args:
+            holdings: Dict of {symbol: position_size_percent}
+            context: Additional context
+
+        Returns:
+            Dict with concentration, correlation, and risk metrics
+        """
+        if context is None:
+            context = {}
+
+        analysis = {
+            'timestamp': datetime.now().isoformat(),
+            'holdings_count': len(holdings),
+            'concentration': self._check_concentration_risk(holdings),
+            'correlations': self._analyze_portfolio_correlations(holdings),
+            'macro_sensitivity': self._analyze_macro_sensitivity(holdings),
+            'recommendations': []
+        }
+
+        # Generate risk recommendations
+        analysis['recommendations'] = self._generate_portfolio_recommendations(analysis)
+
+        return analysis
+
+    def _check_concentration_risk(self, holdings: Dict[str, float]) -> Dict:
+        """
+        Check for concentration risk in portfolio
+
+        Migrated from risk_agent._check_concentration()
+        """
+        # Calculate concentration metrics
+        total_weight = sum(holdings.values())
+        if total_weight == 0:
+            return {'error': 'Empty portfolio'}
+
+        # Normalize weights
+        normalized = {k: (v / total_weight) * 100 for k, v in holdings.items()}
+
+        # Find largest positions
+        sorted_positions = sorted(normalized.items(), key=lambda x: x[1], reverse=True)
+        top_5 = sorted_positions[:5]
+        top_5_weight = sum([pos[1] for pos in top_5])
+
+        # Concentration flags
+        flags = []
+        if any(weight > 20 for _, weight in sorted_positions):
+            flags.append("Single position >20% - high concentration risk")
+        if top_5_weight > 60:
+            flags.append(f"Top 5 positions = {top_5_weight:.1f}% - portfolio concentration")
+
+        return {
+            'largest_position': sorted_positions[0] if sorted_positions else None,
+            'top_5_concentration': top_5_weight,
+            'flags': flags,
+            'positions': sorted_positions
+        }
+
+    def _analyze_portfolio_correlations(self, holdings: Dict[str, float]) -> Dict:
+        """
+        Analyze correlations between portfolio holdings
+
+        Migrated from risk_agent._analyze_correlations()
+        Simplified implementation - full correlation requires historical data
+        """
+        # Simplified: Check sector concentration as proxy for correlation
+        sector_exposure = {}
+
+        for symbol in holdings.keys():
+            # Find company node
+            company_node = self._find_or_create_company_node(symbol)
+            node_data = self.graph.nodes.get(company_node, {})
+            sector = node_data.get('data', {}).get('sector', 'Unknown')
+
+            sector_exposure[sector] = sector_exposure.get(sector, 0) + holdings[symbol]
+
+        # Identify high correlation risk (sector concentration)
+        total = sum(sector_exposure.values())
+        sector_pcts = {k: (v/total)*100 for k, v in sector_exposure.items()} if total > 0 else {}
+
+        flags = []
+        for sector, pct in sector_pcts.items():
+            if pct > 40:
+                flags.append(f"{sector} sector >40% - high sector correlation risk")
+
+        return {
+            'sector_exposure': sector_pcts,
+            'flags': flags,
+            'note': 'Sector concentration used as correlation proxy'
+        }
+
+    def _analyze_macro_sensitivity(self, holdings: Dict[str, float]) -> Dict:
+        """
+        Analyze portfolio sensitivity to macroeconomic factors
+
+        Migrated from risk_agent._analyze_macro_sensitivity()
+        """
+        # Aggregate macro influences across portfolio
+        macro_exposures = {}
+
+        for symbol, weight in holdings.items():
+            try:
+                # Get comprehensive analysis
+                analysis = self.analyze_stock_comprehensive(symbol)
+                macro_influences = analysis.get('macro_influences', [])
+
+                # Weight the influences by position size
+                for influence in macro_influences:
+                    factor = influence['factor_name']
+                    strength = influence['strength'] * (weight / 100)  # Weight by position
+
+                    macro_exposures[factor] = macro_exposures.get(factor, 0) + strength
+
+            except Exception:
+                pass  # Skip stocks with errors
+
+        # Sort by exposure strength
+        sorted_exposures = sorted(macro_exposures.items(), key=lambda x: x[1], reverse=True)
+
+        return {
+            'top_exposures': sorted_exposures[:5],
+            'total_factors': len(macro_exposures),
+            'note': 'Weighted by position size'
+        }
+
+    def _generate_portfolio_recommendations(self, analysis: Dict) -> List[str]:
+        """Generate risk management recommendations based on portfolio analysis"""
+        recommendations = []
+
+        # Concentration recommendations
+        conc_flags = analysis.get('concentration', {}).get('flags', [])
+        if conc_flags:
+            recommendations.append("Consider reducing largest positions to improve diversification")
+
+        # Correlation recommendations
+        corr_flags = analysis.get('correlations', {}).get('flags', [])
+        if corr_flags:
+            recommendations.append("High sector concentration detected - diversify across sectors")
+
+        # Macro sensitivity recommendations
+        top_exposures = analysis.get('macro_sensitivity', {}).get('top_exposures', [])
+        if top_exposures and top_exposures[0][1] > 0.5:
+            recommendations.append(f"High exposure to {top_exposures[0][0]} - consider hedging")
+
+        if not recommendations:
+            recommendations.append("Portfolio shows reasonable diversification")
+
+        return recommendations

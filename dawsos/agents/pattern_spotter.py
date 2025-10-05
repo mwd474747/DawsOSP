@@ -1,5 +1,5 @@
 """PatternSpotter - Identifies recurring patterns in the graph"""
-from agents.base_agent import BaseAgent
+from .base_agent import BaseAgent
 from typing import Dict, Any, List
 from datetime import datetime
 
