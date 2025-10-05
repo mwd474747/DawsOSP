@@ -55,25 +55,25 @@ class FinancialAnalyst(BaseAgent):
                 query_node_id = self.add_knowledge('analysis_query', query_data)
                 context['query_node_id'] = query_node_id
 
-        # Economy Analysis (migrated from macro_agent)
+        # Economy analysis handler
         if any(term in request_lower for term in ['economy', 'economic regime', 'macro analysis', 'economic analysis']):
             return self.analyze_economy(context)
 
-        # Portfolio Risk Analysis (migrated from risk_agent)
+        # Portfolio risk analysis handler
         elif any(term in request_lower for term in ['portfolio risk', 'portfolio analysis', 'holdings risk']):
             holdings = context.get('holdings', {})
             if not holdings:
                 return {"error": "Portfolio analysis requires 'holdings' in context (dict of symbol: weight)"}
             return self.analyze_portfolio_risk(holdings, context)
 
-        # Comprehensive Stock Analysis (migrated from equity_agent)
+        # Comprehensive stock analysis handler
         elif any(term in request_lower for term in ['comprehensive stock', 'full stock analysis', 'stock comprehensive']):
             symbol = self._extract_symbol(request, context)
             if not symbol:
                 return {"error": "No stock symbol found in request"}
             return self.analyze_stock_comprehensive(symbol, context)
 
-        # Stock Comparison (migrated from equity_agent)
+        # Stock comparison handler
         elif any(term in request_lower for term in ['compare stocks', 'stock comparison']):
             symbols = context.get('symbols', [])
             if not symbols:
