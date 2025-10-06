@@ -8,6 +8,9 @@ from typing import Dict, List, Any, Optional
 from .base_agent import BaseAgent
 from datetime import datetime
 from ..core.confidence_calculator import confidence_calculator
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class FinancialAnalyst(BaseAgent):
@@ -697,8 +700,12 @@ class FinancialAnalyst(BaseAgent):
             if invested_capital > 0:
                 nopat = ebit * (1 - tax_rate)
                 return nopat / invested_capital
-        except:
-            pass
+        except (KeyError, TypeError, ValueError) as e:
+            logger.warning(f"Failed to calculate internal ROIC: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error in ROIC calculation: {e}", exc_info=True)
+            return None
         return None
 
     # ==================== MIGRATED FROM ARCHIVED AGENTS ====================

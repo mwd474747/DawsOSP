@@ -92,8 +92,8 @@ class LLMClient:
                 # Try to parse value as JSON
                 try:
                     value = json.loads(value)
-                except:
-                    # Keep as string
+                except json.JSONDecodeError:
+                    # Keep as string if not valid JSON
                     pass
 
                 result[key] = value
