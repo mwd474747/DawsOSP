@@ -8,6 +8,7 @@ from typing import Dict, List, Any, Optional
 from .base_agent import BaseAgent
 from datetime import datetime
 from ..core.confidence_calculator import confidence_calculator
+from .analyzers.dcf_analyzer import DCFAnalyzer
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,17 @@ class FinancialAnalyst(BaseAgent):
     def __init__(self, graph=None, llm_client=None):
         super().__init__(graph=graph, name="financial_analyst", llm_client=llm_client)
         self.capabilities_needed = ['market', 'enriched_data']
+
+        # Initialize DCF analyzer (Phase 2.1 extraction)
+        self.dcf_analyzer = None  # Lazy initialization on first use
+
+    def _ensure_dcf_analyzer(self):
+        """Lazy initialization of DCF analyzer (needs market capability)"""
+        if self.dcf_analyzer is None and 'market' in self.capabilities:
+            self.dcf_analyzer = DCFAnalyzer(
+                self.capabilities['market'],
+                self.logger
+            )
 
     def _find_or_create_company_node(self, symbol: str, financial_data: Dict = None) -> str:
         """Find existing company node or create a new one"""
@@ -125,23 +137,23 @@ class FinancialAnalyst(BaseAgent):
             if 'error' in financial_data:
                 return financial_data
 
-            # Perform DCF calculation using knowledge-driven methodology
-            dcf_model = calc_knowledge.get('dcf_models', {}).get('standard_dcf', {})
-
-            # Step 1: Project Cash Flows
-            projected_fcf = self._project_cash_flows(financial_data, symbol)
-
-            # Step 2: Calculate Discount Rate (WACC)
-            discount_rate = self._calculate_wacc(financial_data, symbol)
-
-            # Step 3: Calculate Present Values
-            present_values = self._calculate_present_values(projected_fcf, discount_rate)
-
-            # Step 4: Estimate Terminal Value
-            terminal_value = self._estimate_terminal_value(projected_fcf, discount_rate)
-
-            # Step 5: Sum NPV
-            intrinsic_value = sum(present_values) + terminal_value
+            # Phase 2.1: Delegate DCF calculation to DCFAnalyzer
+            self._ensure_dcf_analyzer()
+            if self.dcf_analyzer:
+                # Use extracted DCF analyzer
+                dcf_result = self.dcf_analyzer.calculate_intrinsic_value(symbol, financial_data)
+                projected_fcf = dcf_result['projected_fcf']
+                discount_rate = dcf_result['discount_rate']
+                present_values = dcf_result['present_values']
+                terminal_value = dcf_result['terminal_value']
+                intrinsic_value = dcf_result['intrinsic_value']
+            else:
+                # Fallback to legacy implementation if DCF analyzer not available
+                projected_fcf = self._project_cash_flows(financial_data, symbol)
+                discount_rate = self._calculate_wacc(financial_data, symbol)
+                present_values = self._calculate_present_values(projected_fcf, discount_rate)
+                terminal_value = self._estimate_terminal_value(projected_fcf, discount_rate)
+                intrinsic_value = sum(present_values) + terminal_value
 
             # Calculate dynamic confidence using the new confidence calculator
             confidence_result = confidence_calculator.calculate_dcf_confidence(
