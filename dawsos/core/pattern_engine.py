@@ -12,6 +12,12 @@ from core.logger import get_logger
 from core.confidence_calculator import confidence_calculator
 from core.knowledge_loader import get_knowledge_loader
 
+# Import action registry system
+from core.actions.registry import ActionRegistry
+from core.actions.execute_through_registry import ExecuteThroughRegistryAction
+from core.actions.normalize_response import NormalizeResponseAction
+from core.actions.store_in_graph import StoreInGraphAction
+
 # Type aliases for clarity
 PatternDict: TypeAlias = Dict[str, Any]
 ContextDict: TypeAlias = Dict[str, Any]
@@ -49,7 +55,39 @@ class PatternEngine:
         self.logger = get_logger('PatternEngine')
         self.knowledge_loader = get_knowledge_loader()  # Centralized knowledge loading
         self.company_db = self._load_company_database()
+
+        # Initialize action registry (Phase 1.4)
+        self.action_registry = ActionRegistry()
+        self._register_action_handlers()
+
         self.load_patterns()
+
+    def _register_action_handlers(self) -> None:
+        """
+        Register action handlers with the action registry.
+
+        Phase 1.4: Gradual migration to handler-based system.
+        Currently registers 3 critical handlers, with fallback to legacy for others.
+        """
+        try:
+            # Register Phase 1.4 handlers (3 critical actions)
+            handlers = [
+                ExecuteThroughRegistryAction(self),  # Most critical - Trinity compliance
+                NormalizeResponseAction(self),  # Response formatting
+                StoreInGraphAction(self),  # Graph persistence
+            ]
+
+            for handler in handlers:
+                self.action_registry.register(handler)
+
+            self.logger.info(
+                f"Action registry initialized with {len(handlers)} handlers "
+                f"(fallback to legacy for remaining actions)"
+            )
+
+        except Exception as e:
+            self.logger.error(f"Failed to register action handlers: {e}", exc_info=True)
+            # Don't fail initialization - legacy system will handle everything
 
     def _load_company_database(self) -> Dict:
         """Load the company database for symbol resolution"""
@@ -369,7 +407,9 @@ class PatternEngine:
 
     def execute_action(self, action: ActionName, params: ParamsDict, context: ContextDict, outputs: OutputsDict) -> ResultDict:
         """
-        Execute a special action (not a direct agent call)
+        Execute a special action (not a direct agent call).
+
+        HYBRID SYSTEM (Phase 1.4): Tries new action registry first, falls back to legacy.
 
         Args:
             action: Action type (knowledge_lookup, evaluate, calculate, etc.)
@@ -380,7 +420,32 @@ class PatternEngine:
         Returns:
             Action result
         """
-        # Handle different action types
+        # Phase 1.4: Try new action registry first
+        if self.action_registry.has_action(action):
+            self.logger.debug(f"Executing action '{action}' via registry")
+            return self.action_registry.execute(action, params, context, outputs)
+
+        # Fallback to legacy implementation for unmigrated actions
+        self.logger.debug(f"Executing action '{action}' via legacy handler (not yet migrated)")
+        return self._execute_action_legacy(action, params, context, outputs)
+
+    def _execute_action_legacy(self, action: ActionName, params: ParamsDict, context: ContextDict, outputs: OutputsDict) -> ResultDict:
+        """
+        Legacy action execution (Phase 1.4 migration in progress).
+
+        This method contains the original 765-line execute_action implementation.
+        Actions will be gradually migrated to the registry system.
+
+        Args:
+            action: Action type
+            params: Action parameters
+            context: Current context
+            outputs: Previous step outputs
+
+        Returns:
+            Action result
+        """
+        # Handle different action types (LEGACY - to be migrated)
         if action == "knowledge_lookup":
             # Look up knowledge from the graph
             knowledge_file = params.get('knowledge_file', '')
