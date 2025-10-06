@@ -17,6 +17,13 @@ from core.actions.registry import ActionRegistry
 from core.actions.execute_through_registry import ExecuteThroughRegistryAction
 from core.actions.normalize_response import NormalizeResponseAction
 from core.actions.store_in_graph import StoreInGraphAction
+from core.actions.fix_constructor_args import FixConstructorArgsAction
+from core.actions.inject_capabilities import InjectCapabilitiesAction
+from core.actions.check_constructor_compliance import CheckConstructorComplianceAction
+from core.actions.scan_agents import ScanAgentsAction
+from core.actions.detect_execution_type import DetectExecutionTypeAction
+from core.actions.add_position import AddPositionAction
+from core.actions.validate_agent import ValidateAgentAction
 
 # Type aliases for clarity
 PatternDict: TypeAlias = Dict[str, Any]
@@ -67,14 +74,26 @@ class PatternEngine:
         Register action handlers with the action registry.
 
         Phase 1.4: Gradual migration to handler-based system.
-        Currently registers 3 critical handlers, with fallback to legacy for others.
+        Currently registers 10 handlers, with fallback to legacy for remaining 12.
         """
         try:
-            # Register Phase 1.4 handlers (3 critical actions)
+            # Register Phase 1.4 handlers (10/22 actions - 45% complete)
             handlers = [
-                ExecuteThroughRegistryAction(self),  # Most critical - Trinity compliance
-                NormalizeResponseAction(self),  # Response formatting
-                StoreInGraphAction(self),  # Graph persistence
+                # Trinity compliance (most critical)
+                ExecuteThroughRegistryAction(self),
+
+                # Response formatting and storage
+                NormalizeResponseAction(self),
+                StoreInGraphAction(self),
+
+                # Agent validation and repair (Phase 1.4.2 - Simple actions)
+                FixConstructorArgsAction(self),
+                InjectCapabilitiesAction(self),
+                CheckConstructorComplianceAction(self),
+                ScanAgentsAction(self),
+                DetectExecutionTypeAction(self),
+                AddPositionAction(self),
+                ValidateAgentAction(self),
             ]
 
             for handler in handlers:
@@ -82,7 +101,7 @@ class PatternEngine:
 
             self.logger.info(
                 f"Action registry initialized with {len(handlers)} handlers "
-                f"(fallback to legacy for remaining actions)"
+                f"({len(handlers)}/22 actions migrated - fallback to legacy for remaining)"
             )
 
         except Exception as e:

@@ -7,7 +7,7 @@ handling and logging. Supports both the new handler-based system and
 fallback to legacy execute_action for gradual migration.
 """
 
-from typing import Dict, List
+from typing import Dict, List, Any
 import logging
 
 from . import ActionHandler, ParamsDict, ContextDict, OutputsDict, ResultDict, ActionName
