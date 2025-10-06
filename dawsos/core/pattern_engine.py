@@ -5,12 +5,21 @@ This enables DawsOS to work through JSON-defined patterns rather than hard-coded
 """
 import json
 import re
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, TypeAlias, Iterator, Tuple
 from pathlib import Path
 from datetime import datetime
 from core.logger import get_logger
 from core.confidence_calculator import confidence_calculator
 from core.knowledge_loader import get_knowledge_loader
+
+# Type aliases for clarity
+PatternDict: TypeAlias = Dict[str, Any]
+ContextDict: TypeAlias = Dict[str, Any]
+ResultDict: TypeAlias = Dict[str, Any]
+OutputsDict: TypeAlias = Dict[str, Any]
+ParamsDict: TypeAlias = Dict[str, Any]
+ActionName: TypeAlias = str
+PatternID: TypeAlias = str
 
 
 class PatternEngine:
@@ -207,7 +216,7 @@ class PatternEngine:
 
         return []
 
-    def has_pattern(self, pattern_id: str) -> bool:
+    def has_pattern(self, pattern_id: PatternID) -> bool:
         """
         Check if a pattern exists in the loaded patterns.
 
@@ -219,7 +228,7 @@ class PatternEngine:
         """
         return pattern_id in self.patterns
 
-    def get_pattern(self, pattern_id: str) -> Optional[Dict[str, Any]]:
+    def get_pattern(self, pattern_id: PatternID) -> Optional[PatternDict]:
         """
         Get a pattern by ID.
 
@@ -231,7 +240,7 @@ class PatternEngine:
         """
         return self.patterns.get(pattern_id)
 
-    def find_pattern(self, user_input: str) -> Optional[Dict[str, Any]]:
+    def find_pattern(self, user_input: str) -> Optional[PatternDict]:
         """
         Find the best matching pattern for user input
 
@@ -286,7 +295,7 @@ class PatternEngine:
             self.logger.error("Error finding pattern", error=e, user_input=user_input)
             return None
 
-    def execute_pattern(self, pattern: Dict[str, Any], context: Dict[str, Any] = None) -> Dict[str, Any]:
+    def execute_pattern(self, pattern: PatternDict, context: Optional[ContextDict] = None) -> ResultDict:
         """
         Execute a pattern by running its steps in sequence
 
@@ -358,7 +367,7 @@ class PatternEngine:
         # Format the final response
         return self.format_response(pattern, results, step_outputs, context)
 
-    def execute_action(self, action: str, params: Dict[str, Any], context: Dict[str, Any], outputs: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_action(self, action: ActionName, params: ParamsDict, context: ContextDict, outputs: OutputsDict) -> ResultDict:
         """
         Execute a special action (not a direct agent call)
 
@@ -1122,7 +1131,7 @@ class PatternEngine:
                 'params': params
             }
 
-    def _resolve_params(self, params: Dict[str, Any], context: Dict[str, Any], outputs: Dict[str, Any]) -> Dict[str, Any]:
+    def _resolve_params(self, params: ParamsDict, context: ContextDict, outputs: OutputsDict) -> ParamsDict:
         """
         Resolve parameter variables like {user_input}, {SYMBOL}, {step_1.price}
 
@@ -1200,7 +1209,7 @@ class PatternEngine:
 
         return resolved
 
-    def format_response(self, pattern: Dict[str, Any], results: List[Dict], outputs: Dict[str, Any], context: Dict[str, Any] = None) -> Dict[str, Any]:
+    def format_response(self, pattern: PatternDict, results: List[ResultDict], outputs: OutputsDict, context: Optional[ContextDict] = None) -> ResultDict:
         """
         Format the final response based on pattern template
 
@@ -1352,15 +1361,15 @@ class PatternEngine:
         self.patterns = {}
         self.load_patterns()
 
-    def get_pattern_list(self) -> List[str]:
+    def get_pattern_list(self) -> List[PatternID]:
         """Get list of available pattern IDs"""
         return list(self.patterns.keys())
 
-    def get_pattern(self, pattern_id: str) -> Optional[Dict[str, Any]]:
+    def get_pattern(self, pattern_id: PatternID) -> Optional[PatternDict]:
         """Get a specific pattern by ID"""
         return self.patterns.get(pattern_id)
 
-    def load_enriched_data(self, data_type: str) -> Optional[Dict]:
+    def load_enriched_data(self, data_type: str) -> Optional[Dict[str, Any]]:
         """Load enriched data from Phase 3 JSON files using centralized loader"""
         # Use the knowledge loader for centralized, cached access
         data = self.knowledge_loader.get_dataset(data_type)
@@ -1370,7 +1379,7 @@ class PatternEngine:
 
         return data
 
-    def extract_enriched_section(self, data: Dict, query: str, params: Dict) -> Dict:
+    def extract_enriched_section(self, data: Dict[str, Any], query: str, params: ParamsDict) -> Dict[str, Any]:
         """Extract specific section from enriched data based on query and params"""
         try:
             # Handle different query types
