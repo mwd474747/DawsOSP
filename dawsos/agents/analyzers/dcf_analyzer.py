@@ -11,11 +11,16 @@ Key Methods:
 - calculate_wacc: Calculate weighted average cost of capital
 - calculate_present_values: Discount cash flows to present value
 - estimate_terminal_value: Calculate terminal value using perpetuity model
+
+Phase 2.4: Uses FinancialConstants for all magic numbers.
 """
 
 from typing import Dict, List, Any, TypeAlias
 from datetime import datetime
 import logging
+
+# Phase 2.4: Import financial constants
+from ...config.financial_constants import FinancialConstants
 
 # Type aliases
 FinancialData: TypeAlias = Dict[str, Any]
@@ -120,26 +125,24 @@ class DCFAnalyzer:
         self,
         financial_data: FinancialData,
         symbol: str,
-        years: int = 5
+        years: int = None
     ) -> CashFlows:
         """
         Project future cash flows based on historical data.
 
-        Uses conservative declining growth rate assumptions:
-        - Year 1: 8%
-        - Year 2: 6%
-        - Year 3: 5%
-        - Year 4: 4%
-        - Year 5: 3%
+        Uses conservative declining growth rate assumptions from FinancialConstants.
 
         Args:
             financial_data: Company financial data
             symbol: Stock ticker (for logging)
-            years: Number of years to project (default: 5)
+            years: Number of years to project (default: from constants)
 
         Returns:
             List of projected free cash flows
         """
+        if years is None:
+            years = FinancialConstants.DCF_PROJECTION_YEARS
+
         try:
             # Get historical FCF
             current_fcf = financial_data.get('free_cash_flow', 0)
@@ -152,8 +155,8 @@ class DCFAnalyzer:
                 # Fallback to conservative estimates
                 return [100, 105, 110, 115, 120]
 
-            # Use conservative declining growth assumption
-            growth_rates = [0.08, 0.06, 0.05, 0.04, 0.03][:years]
+            # Use conservative declining growth assumption from constants
+            growth_rates = FinancialConstants.DEFAULT_GROWTH_RATES[:years]
 
             projected_fcf = []
             fcf = current_fcf
@@ -215,10 +218,10 @@ class DCFAnalyzer:
             WACC as decimal (e.g., 0.105 for 10.5%)
         """
         try:
-            # CAPM components
-            risk_free_rate = 0.045  # Current 10-year Treasury
-            market_risk_premium = 0.06
-            beta = financial_data.get('beta', 1.0)
+            # CAPM components from FinancialConstants
+            risk_free_rate = FinancialConstants.RISK_FREE_RATE
+            market_risk_premium = FinancialConstants.MARKET_RISK_PREMIUM
+            beta = financial_data.get('beta', FinancialConstants.DEFAULT_BETA)
 
             # Calculate cost of equity using CAPM
             cost_of_equity = risk_free_rate + (beta * market_risk_premium)
@@ -238,7 +241,7 @@ class DCFAnalyzer:
 
         except Exception as e:
             self.logger.warning(f"WACC calculation failed for {symbol}: {e}, using default")
-            return 0.10  # 10% default discount rate
+            return FinancialConstants.DEFAULT_DISCOUNT_RATE
 
     def calculate_present_values(
         self,
@@ -271,7 +274,7 @@ class DCFAnalyzer:
         self,
         projected_fcf: CashFlows,
         discount_rate: float,
-        terminal_growth_rate: float = 0.025
+        terminal_growth_rate: float = None
     ) -> float:
         """
         Estimate terminal value using perpetual growth model.
@@ -285,11 +288,13 @@ class DCFAnalyzer:
         Args:
             projected_fcf: List of projected free cash flows
             discount_rate: Discount rate (WACC) as decimal
-            terminal_growth_rate: Perpetual growth rate (default: 2.5%)
+            terminal_growth_rate: Perpetual growth rate (default: from constants)
 
         Returns:
             Present value of terminal value
         """
+        if terminal_growth_rate is None:
+            terminal_growth_rate = FinancialConstants.TERMINAL_GROWTH_RATE
         if not projected_fcf:
             self.logger.warning("No projected cash flows, terminal value is 0")
             return 0
