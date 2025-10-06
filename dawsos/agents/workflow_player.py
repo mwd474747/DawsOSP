@@ -2,6 +2,9 @@
 from agents.base_agent import BaseAgent
 from typing import Dict, Any, List
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 class WorkflowPlayer(BaseAgent):
     """Replays successful workflows"""
@@ -33,7 +36,14 @@ class WorkflowPlayer(BaseAgent):
         try:
             with open('storage/workflows.json', 'r') as f:
                 self.loaded_workflows = json.load(f)
-        except:
+        except FileNotFoundError:
+            logger.info("No workflows.json found, starting with empty workflows")
+            self.loaded_workflows = {}
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse workflows.json: {e}")
+            self.loaded_workflows = {}
+        except Exception as e:
+            logger.error(f"Unexpected error loading workflows: {e}", exc_info=True)
             self.loaded_workflows = {}
 
         try:
@@ -46,8 +56,12 @@ class WorkflowPlayer(BaseAgent):
                         "steps": pattern.get('common_steps'),
                         "pattern": True
                     }
-        except:
-            pass
+        except FileNotFoundError:
+            logger.debug("No patterns.json found, skipping pattern loading")
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse patterns.json: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error loading patterns: {e}", exc_info=True)
 
     def find_applicable(self, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Find workflows applicable to current context"""

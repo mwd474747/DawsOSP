@@ -3,6 +3,9 @@ from agents.base_agent import BaseAgent
 from typing import Dict, Any, List
 from datetime import datetime
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 class WorkflowRecorder(BaseAgent):
     """Records successful interaction patterns"""
@@ -111,7 +114,14 @@ class WorkflowRecorder(BaseAgent):
         try:
             with open('storage/patterns.json', 'r') as f:
                 all_patterns = json.load(f)
-        except:
+        except FileNotFoundError:
+            logger.info("Creating new patterns.json file")
+            all_patterns = {}
+        except json.JSONDecodeError as e:
+            logger.warning(f"Corrupted patterns.json, starting fresh: {e}")
+            all_patterns = {}
+        except Exception as e:
+            logger.error(f"Unexpected error reading patterns.json: {e}", exc_info=True)
             all_patterns = {}
 
         all_patterns[pattern['name']] = pattern
