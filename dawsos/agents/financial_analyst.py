@@ -11,6 +11,7 @@ from ..core.confidence_calculator import confidence_calculator
 from .analyzers.dcf_analyzer import DCFAnalyzer
 from .analyzers.moat_analyzer import MoatAnalyzer
 from .analyzers.financial_data_fetcher import FinancialDataFetcher
+from .analyzers.financial_confidence_calculator import FinancialConfidenceCalculator
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,10 +24,11 @@ class FinancialAnalyst(BaseAgent):
         super().__init__(graph=graph, name="financial_analyst", llm_client=llm_client)
         self.capabilities_needed = ['market', 'enriched_data']
 
-        # Initialize analyzers (Phase 2.1 extraction)
+        # Initialize analyzers (Phase 2.1 extraction - 100% complete)
         self.dcf_analyzer = None  # Lazy initialization on first use
         self.moat_analyzer = None  # Lazy initialization on first use
         self.data_fetcher = None  # Lazy initialization on first use
+        self.confidence_calculator = None  # Lazy initialization on first use
 
     def _ensure_dcf_analyzer(self):
         """Lazy initialization of DCF analyzer (needs market capability)"""
@@ -47,6 +49,14 @@ class FinancialAnalyst(BaseAgent):
             self.data_fetcher = FinancialDataFetcher(
                 market_capability=self.capabilities.get('market'),
                 enriched_data_capability=self.capabilities.get('enriched_data'),
+                logger=self.logger
+            )
+
+    def _ensure_confidence_calculator(self):
+        """Lazy initialization of confidence calculator"""
+        if self.confidence_calculator is None:
+            self.confidence_calculator = FinancialConfidenceCalculator(
+                confidence_calculator_module=confidence_calculator,
                 logger=self.logger
             )
 
@@ -532,18 +542,30 @@ class FinancialAnalyst(BaseAgent):
 
     def _calculate_confidence(self, financial_data: Dict, symbol: str) -> float:
         """Calculate confidence score based on data quality and business predictability"""
-        try:
+        # Phase 2.1: Delegate to FinancialConfidenceCalculator
+        self._ensure_confidence_calculator()
+        if self.confidence_calculator:
             # Get confidence factors from knowledge base
             calc_knowledge = self._get_calculation_knowledge()
             confidence_factors = calc_knowledge.get('valuation_methodologies', {}).get('confidence_factors', {})
 
-            # Assess data quality based on available financial data
+            # Get data quality from FinancialDataFetcher
             data_quality = self._assess_data_quality(financial_data)
 
-            # Calculate business predictability based on sector and metrics
+            return self.confidence_calculator.calculate_confidence(
+                financial_data=financial_data,
+                symbol=symbol,
+                confidence_factors=confidence_factors,
+                data_quality=data_quality
+            )
+
+        # Fallback to legacy implementation
+        try:
+            calc_knowledge = self._get_calculation_knowledge()
+            confidence_factors = calc_knowledge.get('valuation_methodologies', {}).get('confidence_factors', {})
+            data_quality = self._assess_data_quality(financial_data)
             business_predictability = self._assess_business_predictability(financial_data, symbol)
 
-            # Use dynamic confidence calculator
             confidence_result = confidence_calculator.calculate_confidence(
                 data_quality=data_quality,
                 model_accuracy=business_predictability,
@@ -551,11 +573,8 @@ class FinancialAnalyst(BaseAgent):
                 num_data_points=len([k for k, v in financial_data.items() if v is not None]),
                 analysis_type='dcf'
             )
-
             return confidence_result['confidence']
-
         except Exception:
-            # Fallback to dynamic calculation with defaults
             return confidence_calculator.calculate_confidence(
                 data_quality=0.6,
                 analysis_type='dcf'
@@ -796,26 +815,35 @@ class FinancialAnalyst(BaseAgent):
 
     def _assess_business_predictability(self, financial_data: Dict[str, Any], symbol: str) -> float:
         """Assess business predictability based on financial metrics"""
-        predictability = 0.7  # Base predictability
+        # Phase 2.1: Delegate to FinancialConfidenceCalculator
+        self._ensure_confidence_calculator()
+        if self.confidence_calculator:
+            return self.confidence_calculator.assess_business_predictability(financial_data, symbol)
 
-        # Higher predictability for stable metrics
+        # Fallback to legacy implementation
+        predictability = 0.7
         roic = self._calculate_roic_internal(financial_data)
-        if roic and roic > 0.15:  # Strong ROIC suggests predictable business
+        if roic and roic > 0.15:
             predictability += 0.1
-        elif roic and roic < 0.05:  # Weak ROIC suggests unpredictable business
+        elif roic and roic < 0.05:
             predictability -= 0.1
 
-        # Check debt levels (high debt = less predictable)
         debt_equity = financial_data.get('debt_to_equity', 0.5)
-        if debt_equity > 1.0:  # High leverage
+        if debt_equity > 1.0:
             predictability -= 0.1
-        elif debt_equity < 0.3:  # Conservative leverage
+        elif debt_equity < 0.3:
             predictability += 0.05
 
         return min(1.0, max(0.3, predictability))
 
     def _calculate_roic_internal(self, financial_data: Dict[str, Any]) -> Optional[float]:
         """Internal ROIC calculation for predictability assessment"""
+        # Phase 2.1: Delegate to FinancialConfidenceCalculator
+        self._ensure_confidence_calculator()
+        if self.confidence_calculator:
+            return self.confidence_calculator.calculate_roic_internal(financial_data)
+
+        # Fallback to legacy implementation
         try:
             ebit = financial_data.get('ebit', 0)
             tax_rate = financial_data.get('tax_rate', 0.21)

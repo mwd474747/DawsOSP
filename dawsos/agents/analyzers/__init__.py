@@ -18,8 +18,10 @@ __all__ = [
     'DCFAnalyzer',
     'MoatAnalyzer',
     'FinancialDataFetcher',
+    'FinancialConfidenceCalculator',
 ]
 
 from .dcf_analyzer import DCFAnalyzer
 from .moat_analyzer import MoatAnalyzer
 from .financial_data_fetcher import FinancialDataFetcher
+from .financial_confidence_calculator import FinancialConfidenceCalculator
