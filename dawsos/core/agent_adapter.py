@@ -2,8 +2,17 @@
 Agent Adapter - Provides consistent interface for all agents
 This allows agents with different method signatures to work uniformly
 """
-from typing import Dict, Any, Optional, Protocol, runtime_checkable, List
+from typing import Dict, Any, Optional, Protocol, runtime_checkable, List, TypeAlias
 from datetime import datetime
+
+
+# Type aliases for robustness and clarity
+AgentName: TypeAlias = str
+AgentContext: TypeAlias = Dict[str, Any]
+AgentResult: TypeAlias = Dict[str, Any]
+CapabilityDict: TypeAlias = Dict[str, Any]
+MethodName: TypeAlias = str
+ComplianceMetrics: TypeAlias = Dict[str, Any]
 
 
 @runtime_checkable
@@ -20,7 +29,7 @@ class AgentAdapter:
     Handles method resolution and parameter adaptation
     """
 
-    def __init__(self, agent: Any, capabilities: Optional[Dict] = None):
+    def __init__(self, agent: Any, capabilities: Optional[CapabilityDict] = None) -> None:
         """
         Initialize adapter with an agent instance
 
@@ -33,14 +42,14 @@ class AgentAdapter:
         self.method_priority = ['process', 'think', 'analyze', 'interpret', 'harvest', 'execute']
         self._detect_methods()
 
-    def _detect_methods(self):
+    def _detect_methods(self) -> None:
         """Detect which methods the agent implements"""
         self.available_methods = {}
         for method_name in self.method_priority:
             if hasattr(self.agent, method_name) and callable(getattr(self.agent, method_name)):
                 self.available_methods[method_name] = getattr(self.agent, method_name)
 
-    def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, context: AgentContext) -> AgentResult:
         """
         Execute agent with consistent interface and automatic Trinity compliance
 
@@ -172,13 +181,13 @@ class AgentRegistry:
         self.execution_metrics = {}  # Track compliance metrics
         self.bypass_warnings = []  # Track registry bypasses
 
-    def register(self, name: str, agent: Any, capabilities: Optional[Dict] = None):
+    def register(self, name: AgentName, agent: Any, capabilities: Optional[CapabilityDict] = None) -> None:
         """Register an agent with optional capabilities"""
         adapter = AgentAdapter(agent, capabilities)
         self.agents[name] = adapter
         self.capabilities_map[name] = adapter.get_capabilities()
 
-    def get_agent(self, name: str) -> Optional[AgentAdapter]:
+    def get_agent(self, name: AgentName) -> Optional[AgentAdapter]:
         """Get agent by name"""
         return self.agents.get(name)
 
@@ -189,7 +198,7 @@ class AgentRegistry:
                 return name
         return None
 
-    def execute_by_capability(self, capability: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_by_capability(self, capability: str, context: AgentContext) -> AgentResult:
         """Execute using first agent with required capability"""
         agent_name = self.find_capable_agent(capability)
         if agent_name:
@@ -200,7 +209,7 @@ class AgentRegistry:
         """Get capabilities of all registered agents"""
         return self.capabilities_map.copy()
 
-    def execute_with_tracking(self, agent_name: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_with_tracking(self, agent_name: AgentName, context: AgentContext) -> AgentResult:
         """Execute agent and track Trinity compliance"""
         if agent_name not in self.agents:
             return {'error': f'Agent {agent_name} not found'}
@@ -243,7 +252,7 @@ class AgentRegistry:
 
         return result
 
-    def get_compliance_metrics(self) -> Dict[str, Any]:
+    def get_compliance_metrics(self) -> ComplianceMetrics:
         """Get Trinity Architecture compliance metrics for all agents"""
         metrics = {
             'agents': {},

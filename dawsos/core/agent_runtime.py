@@ -1,5 +1,5 @@
 """Agent Runtime - Executes and coordinates agents"""
-from typing import Dict, Any, Optional, List, TYPE_CHECKING
+from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union, Callable, TypeAlias
 from types import MappingProxyType
 import json
 import os
@@ -13,6 +13,15 @@ if TYPE_CHECKING:
     from core.pattern_engine import PatternEngine
     from core.universal_executor import UniversalExecutor
     from core.knowledge_graph import KnowledgeGraph
+
+
+# Type aliases for robustness and clarity
+AgentName: TypeAlias = str
+AgentContext: TypeAlias = Dict[str, Any]
+AgentResult: TypeAlias = Dict[str, Any]
+ExecutionMetrics: TypeAlias = Dict[str, Any]
+CapabilityDict: TypeAlias = Dict[str, Any]
+TelemetryData: TypeAlias = Dict[str, Any]
 
 class AgentRuntime:
     """Simple runtime for executing agents"""
@@ -43,7 +52,7 @@ class AgentRuntime:
             'last_execution_time': None
         }
 
-    def register_agent(self, name: str, agent: Any, capabilities: Optional[Dict] = None):
+    def register_agent(self, name: AgentName, agent: Any, capabilities: Optional[CapabilityDict] = None) -> None:
         """Register an agent with the runtime"""
         self._agents[name] = agent
 
@@ -53,7 +62,7 @@ class AgentRuntime:
 
         print(f"Registered agent: {name}")
 
-    def execute(self, agent_name: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, agent_name: AgentName, context: AgentContext) -> AgentResult:
         """Execute agent through unified adapter with automatic Trinity compliance"""
         adapter = self.agent_registry.get_agent(agent_name)
         if not adapter:
@@ -77,7 +86,7 @@ class AgentRuntime:
             if agent_name in self.active_agents:
                 self.active_agents.remove(agent_name)
 
-    def delegate(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    def delegate(self, task: AgentContext) -> AgentResult:
         """Delegate task to appropriate agent"""
         task_type = task.get('type', 'unknown')
 
@@ -101,7 +110,7 @@ class AgentRuntime:
 
         return {"error": f"No agent for task type: {task_type}"}
 
-    def orchestrate(self, user_input: str) -> Dict[str, Any]:
+    def orchestrate(self, user_input: str) -> AgentResult:
         """Main orchestration entry point that delegates to the UniversalExecutor."""
         if self.executor:
             request = {
@@ -119,11 +128,11 @@ class AgentRuntime:
 
         return {"error": "Executor not configured"}
 
-    def get_compliance_metrics(self) -> Dict[str, Any]:
+    def get_compliance_metrics(self) -> ExecutionMetrics:
         """Get Trinity Architecture compliance metrics for all agents"""
         return self.agent_registry.get_compliance_metrics()
 
-    def _log_execution(self, agent_name: str, context: Dict[str, Any], result: Dict[str, Any]):
+    def _log_execution(self, agent_name: AgentName, context: AgentContext, result: AgentResult) -> None:
         """Log agent execution"""
         execution = {
             "agent": agent_name,
@@ -141,7 +150,7 @@ class AgentRuntime:
         # Also save to file
         self._save_to_agent_memory(execution)
 
-    def _save_to_agent_memory(self, execution: Dict[str, Any]):
+    def _save_to_agent_memory(self, execution: Dict[str, Any]) -> None:
         """Save execution to agent memory with automatic rotation"""
         memory_file = 'storage/agent_memory/decisions.json'
 
@@ -173,7 +182,7 @@ class AgentRuntime:
         except Exception as e:
             print(f"Error saving to agent memory: {e}")
 
-    def track_execution(self, metrics: Dict[str, Any]):
+    def track_execution(self, metrics: ExecutionMetrics) -> None:
         """
         Track execution metrics for telemetry.
         Called by PatternEngine's track_execution action.

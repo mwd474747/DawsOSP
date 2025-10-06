@@ -32,22 +32,34 @@ streamlit run dawsos/main.py
 
 ### Environment Configuration (Optional)
 
-DawsOS works with sensible defaults but can be enhanced with API keys.
+**DawsOS is fully functional without API keys** - it uses cached data, enriched datasets, and fallback responses. API keys enable real-time data and live AI analysis.
 
 **Setup `.env` file** (optional):
 ```bash
-# Copy example
-cp .env.example .env
+# 1. Copy example template to dawsos/ directory
+cp .env.example dawsos/.env
 
-# Edit with your keys
-nano .env
+# 2. Edit with your API keys
+nano dawsos/.env
+
+# 3. Restart the application
+streamlit run dawsos/main.py
 ```
 
-**Optional API Keys**:
-- `ANTHROPIC_API_KEY` - Enables live Claude AI analysis (cached responses used if not set)
-- `FRED_API_KEY` - Economic data API from Federal Reserve (generous free tier)
+**Available API Keys** (all optional):
 
-**Note**: The system is fully functional without API keys. They unlock real-time AI insights and fresh economic data.
+| API Key | Purpose | Free Tier | Get Key At |
+|---------|---------|-----------|------------|
+| `ANTHROPIC_API_KEY` | Live Claude AI responses | Pay-as-you-go | [console.anthropic.com](https://console.anthropic.com/) |
+| `FRED_API_KEY` | Economic indicators (GDP, inflation) | Unlimited free | [fred.stlouisfed.org](https://fred.stlouisfed.org/docs/api/api_key.html) |
+| `FMP_API_KEY` | Stock quotes, fundamentals | 250 calls/day | [financialmodelingprep.com](https://financialmodelingprep.com/developer/docs/) |
+| `NEWSAPI_KEY` | Real-time news headlines | 100 calls/day | [newsapi.org](https://newsapi.org/register) |
+| `OPENAI_API_KEY` | Optional fallback LLM | Pay-as-you-go | [platform.openai.com](https://platform.openai.com/api-keys) |
+
+**System Configuration**:
+- `TRINITY_STRICT_MODE=true` - Enforce strict architecture compliance (default: false)
+
+**Important**: Place `.env` file in `dawsos/.env` (not root directory)
 
 ---
 
