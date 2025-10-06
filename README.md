@@ -9,15 +9,45 @@
 ## Quick Start
 
 ```bash
-# 1. Activate environment
+# 1. Clone repository
+git clone <your-repo-url>
+cd DawsOSB
+
+# 2. Create virtual environment
+python3 -m venv dawsos/venv
 source dawsos/venv/bin/activate
 
-# 2. Run the application
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Generate knowledge graph (first run only, ~30 seconds)
+python scripts/seed_minimal_graph.py
+
+# 5. Run the application
 streamlit run dawsos/main.py
 
-# 3. Open browser
+# 6. Open browser
 # http://localhost:8502
 ```
+
+### Environment Configuration (Optional)
+
+DawsOS works with sensible defaults but can be enhanced with API keys.
+
+**Setup `.env` file** (optional):
+```bash
+# Copy example
+cp .env.example .env
+
+# Edit with your keys
+nano .env
+```
+
+**Optional API Keys**:
+- `ANTHROPIC_API_KEY` - Enables live Claude AI analysis (cached responses used if not set)
+- `FRED_API_KEY` - Economic data API from Federal Reserve (generous free tier)
+
+**Note**: The system is fully functional without API keys. They unlock real-time AI insights and fresh economic data.
 
 ---
 
@@ -247,21 +277,7 @@ result = runtime.execute_by_capability('can_calculate_dcf', context)
 
 ### Steps
 
-```bash
-# 1. Clone repository
-git clone <your-repo-url>
-cd DawsOSB
-
-# 2. Create virtual environment
-python3 -m venv dawsos/venv
-source dawsos/venv/bin/activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Run application
-streamlit run dawsos/main.py
-```
+See [Quick Start](#quick-start) section above for complete setup instructions.
 
 ### Production Checklist
 - [ ] Set `TRINITY_STRICT_MODE=true` (optional)

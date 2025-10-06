@@ -36,3 +36,8 @@ logs/
 *.tmp
 *.bak
 *.orig
+
+# Knowledge Graph Storage (generated, not tracked)
+storage/graph.json
+storage/graph_backup_*.json
+storage/*_test_*.json
