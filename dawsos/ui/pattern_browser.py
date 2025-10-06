@@ -2,18 +2,25 @@
 """
 Pattern Browser UI Component - Comprehensive Pattern Discovery and Execution Interface
 Provides a rich UI for browsing, searching, filtering, and executing all 45 patterns in the DawsOS system
+
+Phase 3.1: Comprehensive type hints added
 """
 
 import streamlit as st
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, Tuple, TypeAlias
 from datetime import datetime
+
+# Type aliases for clarity
+PatternDict: TypeAlias = Dict[str, Any]
+PatternList: TypeAlias = List[PatternDict]
+CategoryConfig: TypeAlias = Dict[str, Dict[str, str]]
 
 
 class PatternBrowser:
     """Comprehensive pattern browser UI component for DawsOS Trinity system"""
 
     # Category icons and colors
-    CATEGORY_CONFIG = {
+    CATEGORY_CONFIG: CategoryConfig = {
         'queries': {'icon': '🔍', 'color': '#3498db', 'description': 'Data queries and lookups'},
         'analysis': {'icon': '📊', 'color': '#2ecc71', 'description': 'Analytical patterns'},
         'financial': {'icon': '💰', 'color': '#f39c12', 'description': 'Financial analysis'},
@@ -28,15 +35,14 @@ class PatternBrowser:
         'other': {'icon': '📦', 'color': '#95a5a6', 'description': 'Other patterns'}
     }
 
-    def __init__(self, runtime):
-        """
-        Initialize Pattern Browser
+    def __init__(self, runtime: Any) -> None:
+        """Initialize Pattern Browser.
 
         Args:
             runtime: AgentRuntime instance with pattern_engine
         """
-        self.runtime = runtime
-        self.pattern_engine = runtime.pattern_engine if hasattr(runtime, 'pattern_engine') else None
+        self.runtime: Any = runtime
+        self.pattern_engine: Optional[Any] = runtime.pattern_engine if hasattr(runtime, 'pattern_engine') else None
 
     def render_pattern_browser(self) -> None:
         """Main entry point for pattern browser tab"""

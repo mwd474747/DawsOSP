@@ -4,6 +4,8 @@ API Health & Fallback Monitoring Tab
 
 Provides transparency into API health, fallback events, and data freshness.
 Shows users when cached/fallback data is being used and why.
+
+Phase 3.1: Comprehensive type hints added
 """
 
 import streamlit as st
@@ -12,8 +14,8 @@ from core.fallback_tracker import get_fallback_tracker
 from core.credentials import get_credential_manager
 
 
-def render_api_health_tab():
-    """Render API Health & Fallback Monitoring dashboard"""
+def render_api_health_tab() -> None:
+    """Render API Health & Fallback Monitoring dashboard."""
 
     st.header("🔌 API Health Monitor")
     st.markdown("Real-time monitoring of API health, fallback events, and data freshness")

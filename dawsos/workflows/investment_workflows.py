@@ -2,25 +2,44 @@
 """
 Investment Workflow Patterns for DawsOS
 These workflows codify the Buffett-Ackman-Dalio investment process
+
+Phase 3.1: Comprehensive type hints added
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional, TypeAlias
 from datetime import datetime
 import json
+
+# Type aliases for clarity
+WorkflowDict: TypeAlias = Dict[str, Any]
+StepDict: TypeAlias = Dict[str, Any]
+ResultDict: TypeAlias = Dict[str, Any]
+ContextDict: TypeAlias = Dict[str, Any]
+HistoryList: TypeAlias = List[ResultDict]
 
 logger = logging.getLogger(__name__)
 
 class InvestmentWorkflows:
     """Core investment workflow patterns"""
 
-    def __init__(self, runtime, graph):
-        self.runtime = runtime
-        self.graph = graph
-        self.workflows = self._define_workflows()
+    def __init__(self, runtime: Any, graph: Any) -> None:
+        """Initialize InvestmentWorkflows with runtime and graph.
 
-    def _define_workflows(self) -> Dict:
-        """Define reusable investment workflows"""
+        Args:
+            runtime: Agent runtime instance for workflow execution
+            graph: Knowledge graph instance for data storage/retrieval
+        """
+        self.runtime: Any = runtime
+        self.graph: Any = graph
+        self.workflows: Dict[str, WorkflowDict] = self._define_workflows()
+
+    def _define_workflows(self) -> Dict[str, WorkflowDict]:
+        """Define reusable investment workflows.
+
+        Returns:
+            Dictionary mapping workflow names to workflow definitions
+        """
         return {
             'regime_check': {
                 'name': 'Daily Regime Check',
@@ -139,8 +158,16 @@ class InvestmentWorkflows:
             }
         }
 
-    def execute_workflow(self, workflow_name: str, context: Dict = None) -> Dict:
-        """Execute a specific workflow"""
+    def execute_workflow(self, workflow_name: str, context: Optional[ContextDict] = None) -> ResultDict:
+        """Execute a specific workflow.
+
+        Args:
+            workflow_name: Name of the workflow to execute
+            context: Optional context dictionary for workflow execution
+
+        Returns:
+            Dictionary containing workflow execution results
+        """
         if workflow_name not in self.workflows:
             return {'error': f'Workflow {workflow_name} not found'}
 
@@ -174,8 +201,16 @@ class InvestmentWorkflows:
 
         return results
 
-    def _execute_step(self, step: Dict, context: Dict = None) -> Any:
-        """Execute a single workflow step"""
+    def _execute_step(self, step: StepDict, context: Optional[ContextDict] = None) -> Any:
+        """Execute a single workflow step.
+
+        Args:
+            step: Step definition dictionary
+            context: Optional context from previous steps
+
+        Returns:
+            Result from step execution
+        """
         agent_name = step['agent']
         action = step['action']
         params = step.get('params', [])
@@ -233,8 +268,15 @@ class InvestmentWorkflows:
         # Default return
         return {'status': 'completed', 'agent': agent_name, 'action': action}
 
-    def schedule_workflow(self, workflow_name: str) -> Dict:
-        """Schedule a workflow for automatic execution"""
+    def schedule_workflow(self, workflow_name: str) -> ResultDict:
+        """Schedule a workflow for automatic execution.
+
+        Args:
+            workflow_name: Name of the workflow to schedule
+
+        Returns:
+            Dictionary with scheduling information
+        """
         if workflow_name not in self.workflows:
             return {'error': f'Workflow {workflow_name} not found'}
 
@@ -246,7 +288,14 @@ class InvestmentWorkflows:
         }
 
     def _calculate_next_run(self, frequency: str) -> str:
-        """Calculate next run time based on frequency"""
+        """Calculate next run time based on frequency.
+
+        Args:
+            frequency: Frequency string (daily, weekly, monthly, quarterly)
+
+        Returns:
+            ISO format timestamp for next scheduled run
+        """
         from datetime import timedelta
         now = datetime.now()
 
@@ -262,8 +311,15 @@ class InvestmentWorkflows:
 
         return next_run.isoformat()
 
-    def get_workflow_history(self, workflow_name: str = None) -> List[Dict]:
-        """Get execution history for workflows"""
+    def get_workflow_history(self, workflow_name: Optional[str] = None) -> HistoryList:
+        """Get execution history for workflows.
+
+        Args:
+            workflow_name: Optional workflow name to filter history
+
+        Returns:
+            List of workflow execution results
+        """
         # In production, this would query a database
         history = []
         try:
@@ -280,8 +336,12 @@ class InvestmentWorkflows:
             return [h for h in history if h.get('workflow') == workflow_name]
         return history
 
-    def save_workflow_result(self, result: Dict):
-        """Save workflow execution result"""
+    def save_workflow_result(self, result: ResultDict) -> None:
+        """Save workflow execution result.
+
+        Args:
+            result: Workflow execution result dictionary to save
+        """
         history = self.get_workflow_history()
         history.append(result)
 
@@ -292,7 +352,14 @@ class InvestmentWorkflows:
             json.dump(history, f, indent=2)
 
     def suggest_workflow(self, context: str) -> str:
-        """Suggest appropriate workflow based on context"""
+        """Suggest appropriate workflow based on context.
+
+        Args:
+            context: Context string to analyze for workflow suggestion
+
+        Returns:
+            Name of suggested workflow
+        """
         context_lower = context.lower()
 
         if 'regime' in context_lower or 'market condition' in context_lower:

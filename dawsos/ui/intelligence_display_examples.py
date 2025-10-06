@@ -4,9 +4,12 @@ Intelligence Display Integration Examples
 
 This file demonstrates how to integrate the intelligence_display.py component
 into various parts of the DawsOS Trinity architecture.
+
+Phase 3.1: Comprehensive type hints added
 """
 
 import streamlit as st
+from typing import Any
 from ui.intelligence_display import IntelligenceDisplay, create_intelligence_display
 from ui.intelligence_display import quick_confidence_display, quick_thinking_trace
 
@@ -15,10 +18,8 @@ from ui.intelligence_display import quick_confidence_display, quick_thinking_tra
 # EXAMPLE 1: Integration with Pattern Execution
 # ============================================================================
 
-def example_pattern_execution_with_intelligence():
-    """
-    Show how to display intelligence after a pattern execution
-    """
+def example_pattern_execution_with_intelligence() -> None:
+    """Show how to display intelligence after a pattern execution."""
     st.markdown("## Example 1: Pattern Execution Intelligence")
 
     # Assuming you have these from your Trinity setup
@@ -63,10 +64,8 @@ def example_pattern_execution_with_intelligence():
 # EXAMPLE 2: Standalone Confidence Display
 # ============================================================================
 
-def example_standalone_confidence():
-    """
-    Show confidence for a prediction or analysis
-    """
+def example_standalone_confidence() -> None:
+    """Show confidence for a prediction or analysis."""
     st.markdown("## Example 2: Standalone Confidence Display")
 
     # Quick confidence display without full setup
@@ -88,9 +87,8 @@ def example_standalone_confidence():
 # EXAMPLE 3: Integration with Agent Results
 # ============================================================================
 
-def example_agent_result_intelligence(runtime):
-    """
-    Display intelligence for any agent execution result
+def example_agent_result_intelligence(runtime: Any) -> None:
+    """Display intelligence for any agent execution result.
 
     Args:
         runtime: AgentRuntime instance
@@ -124,9 +122,8 @@ def example_agent_result_intelligence(runtime):
 # EXAMPLE 4: System Health Dashboard Integration
 # ============================================================================
 
-def example_system_health_tab(runtime):
-    """
-    Integration example for a system health dashboard tab
+def example_system_health_tab(runtime: Any) -> None:
+    """Integration example for a system health dashboard tab.
 
     Args:
         runtime: AgentRuntime instance
@@ -151,9 +148,8 @@ def example_system_health_tab(runtime):
 # EXAMPLE 5: Decision Provenance Deep Dive
 # ============================================================================
 
-def example_decision_provenance(graph):
-    """
-    Deep dive into a specific decision's provenance
+def example_decision_provenance(graph: Any) -> None:
+    """Deep dive into a specific decision's provenance.
 
     Args:
         graph: KnowledgeGraph instance
@@ -194,10 +190,8 @@ def example_decision_provenance(graph):
 # EXAMPLE 6: Execution Trace for Debugging
 # ============================================================================
 
-def example_execution_trace_debug():
-    """
-    Use thinking trace for debugging agent execution
-    """
+def example_execution_trace_debug() -> None:
+    """Use thinking trace for debugging agent execution."""
     st.markdown("## Example 6: Execution Trace Debugging")
 
     # Sample execution history with an error

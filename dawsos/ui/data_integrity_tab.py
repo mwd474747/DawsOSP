@@ -2,6 +2,8 @@
 """
 Data Integrity Tab - Real-time data integrity monitoring and management UI
 Provides visual monitoring of pattern consistency, knowledge base integrity, and system health
+
+Phase 3.1: Comprehensive type hints added
 """
 
 import logging
@@ -20,8 +22,8 @@ from core.data_integrity_manager import get_data_integrity_manager
 logger = logging.getLogger(__name__)
 
 
-def render_data_integrity_tab():
-    """Render the data integrity monitoring tab"""
+def render_data_integrity_tab() -> None:
+    """Render the data integrity monitoring tab."""
     st.markdown("# 🔐 Data Integrity Dashboard")
     st.markdown("*Real-time monitoring of Trinity architecture data consistency*")
 

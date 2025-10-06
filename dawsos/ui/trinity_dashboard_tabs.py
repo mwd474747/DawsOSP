@@ -2,13 +2,15 @@
 """
 Trinity Dashboard Tabs - Unified Trinity-architecture UI tabs
 All tabs leverage Pattern-Knowledge-Agent system for consistency and simplicity
+
+Phase 3.1: Comprehensive type hints added
 """
 
 import logging
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -26,13 +28,20 @@ except ImportError:
 class TrinityDashboardTabs:
     """Unified Trinity-architecture dashboard tabs"""
 
-    def __init__(self, pattern_engine, runtime, graph):
-        self.pattern_engine = pattern_engine
-        self.runtime = runtime
-        self.graph = graph
+    def __init__(self, pattern_engine: Any, runtime: Any, graph: Any) -> None:
+        """Initialize Trinity Dashboard Tabs.
 
-    def render_trinity_chat_interface(self):
-        """Enhanced chat interface with pattern suggestions"""
+        Args:
+            pattern_engine: PatternEngine instance
+            runtime: AgentRuntime instance
+            graph: KnowledgeGraph instance
+        """
+        self.pattern_engine: Any = pattern_engine
+        self.runtime: Any = runtime
+        self.graph: Any = graph
+
+    def render_trinity_chat_interface(self) -> None:
+        """Enhanced chat interface with pattern suggestions."""
         st.markdown("### 🤖 Trinity Chat - Pattern-Powered Conversations")
 
         # Pattern suggestions based on context
@@ -103,7 +112,7 @@ class TrinityDashboardTabs:
                 st.session_state.chat_history.append({"role": "assistant", "content": response})
                 st.rerun()
 
-    def render_trinity_knowledge_graph(self):
+    def render_trinity_knowledge_graph(self) -> None:
         """Enhanced knowledge graph with pattern-driven operations"""
         st.markdown("### 🧠 Trinity Knowledge Graph - Pattern-Enhanced Intelligence")
 
@@ -169,7 +178,7 @@ class TrinityDashboardTabs:
                 if pattern and st.button(f"🧠 {pattern.get('name', pattern_id)}", key=f"graph_{pattern_id}"):
                     self._execute_pattern(pattern_id)
 
-    def render_trinity_dashboard(self):
+    def render_trinity_dashboard(self) -> None:
         """Enhanced Pattern-driven intelligence dashboard with comprehensive system health monitoring"""
         st.markdown("### 📊 Trinity Intelligence Dashboard - Real-Time System Health & Metrics")
 
@@ -402,7 +411,7 @@ class TrinityDashboardTabs:
             else:
                 st.info("🌟 Run patterns to generate insights")
 
-    def render_trinity_markets(self):
+    def render_trinity_markets(self) -> None:
         """Pattern-driven market data interface"""
         st.markdown("### 📈 Trinity Markets - Pattern-Enhanced Market Intelligence")
 
@@ -445,7 +454,7 @@ class TrinityDashboardTabs:
                     if st.button(f"▶️ {pattern.get('name', pattern_id)}", key=f"market_{pattern_id}"):
                         self._execute_pattern(pattern_id)
 
-    def render_trinity_economy(self):
+    def render_trinity_economy(self) -> None:
         """Pattern-driven economic indicators"""
         st.markdown("### 🌍 Trinity Economy - Pattern-Enhanced Economic Intelligence")
 
@@ -482,7 +491,7 @@ class TrinityDashboardTabs:
                     if st.button(f"▶️ {pattern.get('name', pattern_id)}", key=f"econ_{pattern_id}"):
                         self._execute_pattern(pattern_id)
 
-    def render_trinity_workflows(self):
+    def render_trinity_workflows(self) -> None:
         """Pattern-driven workflow management"""
         st.markdown("### ⚡ Trinity Workflows - Pattern-Based Automation")
 
@@ -514,7 +523,7 @@ class TrinityDashboardTabs:
                     st.json(execution['result'])
 
     # Helper methods
-    def _execute_suggested_question(self, question: str):
+    def _execute_suggested_question(self, question: str) -> None:
         """Execute a suggested question via pattern matching"""
         try:
             pattern = self.pattern_engine.find_pattern(question)
@@ -551,7 +560,7 @@ class TrinityDashboardTabs:
         except Exception as e:
             return {'response': f'Error processing request: {str(e)}', 'pattern': 'Error'}
 
-    def _execute_pattern(self, pattern_id: str):
+    def _execute_pattern(self, pattern_id: str) -> None:
         """Execute a pattern and show results"""
         try:
             pattern = self.pattern_engine.get_pattern(pattern_id)
@@ -576,7 +585,7 @@ class TrinityDashboardTabs:
         except Exception as e:
             st.error(f"Error executing pattern: {str(e)}")
 
-    def _execute_pattern_with_symbol(self, pattern_id: str, symbol: str):
+    def _execute_pattern_with_symbol(self, pattern_id: str, symbol: str) -> None:
         """Execute pattern with specific symbol"""
         try:
             pattern = self.pattern_engine.get_pattern(pattern_id)
@@ -647,7 +656,7 @@ class TrinityDashboardTabs:
                 workflow_patterns.append(pattern)
         return workflow_patterns
 
-    def _render_pattern_group(self, patterns: List[Dict[str, Any]], group_name: str):
+    def _render_pattern_group(self, patterns: List[Dict[str, Any]], group_name: str) -> None:
         """Render a group of patterns"""
         for pattern in patterns[:3]:  # Show top 3 per column
             pattern_id = pattern.get('id', 'unknown')
@@ -904,7 +913,7 @@ class TrinityDashboardTabs:
 
         return df
 
-    def _render_agent_details(self, agent_name: str, agent_metrics: Dict):
+    def _render_agent_details(self, agent_name: str, agent_metrics: Dict[str, Any]) -> None:
         """Render detailed metrics for a specific agent"""
         if agent_name not in agent_metrics:
             st.warning(f"No metrics found for {agent_name}")
@@ -1115,6 +1124,15 @@ class TrinityDashboardTabs:
         }
 
 
-def get_trinity_dashboard_tabs(pattern_engine, runtime, graph):
-    """Factory function to create Trinity dashboard tabs"""
+def get_trinity_dashboard_tabs(pattern_engine: Any, runtime: Any, graph: Any) -> TrinityDashboardTabs:
+    """Factory function to create Trinity dashboard tabs.
+
+    Args:
+        pattern_engine: PatternEngine instance
+        runtime: AgentRuntime instance
+        graph: KnowledgeGraph instance
+
+    Returns:
+        TrinityDashboardTabs instance
+    """
     return TrinityDashboardTabs(pattern_engine, runtime, graph)

@@ -3,28 +3,44 @@
 Trinity UI Components - Phase 1 Complete
 Enhanced UI components with REAL data from knowledge graph and patterns
 All components now wire to actual pattern execution and enriched data
+
+Phase 3.1: Comprehensive type hints added
 """
 
 import streamlit as st
 import streamlit.components.v1 as components
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, TypeAlias
 from datetime import datetime
 from agents.ui_generator import UIGeneratorAgent
 from core.pattern_engine import PatternEngine
 from core.agent_runtime import AgentRuntime
 from core.confidence_calculator import confidence_calculator
 
+# Type aliases for clarity
+ComponentDict: TypeAlias = Dict[str, Any]
+PatternList: TypeAlias = List[Dict[str, Any]]
+
 
 class TrinityUIComponents:
     """Enhanced UI components that leverage the Trinity architecture with real data"""
 
-    def __init__(self, pattern_engine: PatternEngine = None, runtime: AgentRuntime = None):
-        self.pattern_engine = pattern_engine
-        self.runtime = runtime
-        self.ui_generator = UIGeneratorAgent()
+    def __init__(self, pattern_engine: Optional[PatternEngine] = None, runtime: Optional[AgentRuntime] = None) -> None:
+        """Initialize Trinity UI Components.
 
-    def render_pattern_browser(self, category_filter: str = None) -> None:
-        """Render an interactive pattern browser using Trinity architecture"""
+        Args:
+            pattern_engine: Optional PatternEngine instance
+            runtime: Optional AgentRuntime instance
+        """
+        self.pattern_engine: Optional[PatternEngine] = pattern_engine
+        self.runtime: Optional[AgentRuntime] = runtime
+        self.ui_generator: UIGeneratorAgent = UIGeneratorAgent()
+
+    def render_pattern_browser(self, category_filter: Optional[str] = None) -> None:
+        """Render an interactive pattern browser using Trinity architecture.
+
+        Args:
+            category_filter: Optional category to filter patterns by
+        """
         if not self.pattern_engine:
             st.error("Pattern Engine not available")
             return

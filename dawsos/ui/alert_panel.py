@@ -2,11 +2,14 @@
 """
 Alert Panel - Streamlit UI components for the DawsOS Alert System
 Provides user interface for creating, managing, and viewing alerts
+
+Phase 3.1: Comprehensive type hints added
 """
 
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+from typing import Dict, Any, List, Optional, TypeAlias
 
 # Plotly imports with error handling
 try:
@@ -23,16 +26,26 @@ import sys
 from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from core.alert_manager import AlertManager, AlertType, AlertSeverity, AlertStatus
+from core.alert_manager import AlertManager, AlertType, AlertSeverity, AlertStatus, Alert, AlertEvent
+
+# Type aliases for clarity
+ComponentDict: TypeAlias = Dict[str, Any]
+SummaryDict: TypeAlias = Dict[str, Any]
+EventList: TypeAlias = List[AlertEvent]
 
 
 class AlertPanel:
     """Alert panel UI components for DawsOS Trinity"""
 
-    def __init__(self, alert_manager: AlertManager, runtime=None):
-        """Initialize alert panel"""
-        self.alert_manager = alert_manager
-        self.runtime = runtime
+    def __init__(self, alert_manager: AlertManager, runtime: Optional[Any] = None) -> None:
+        """Initialize alert panel.
+
+        Args:
+            alert_manager: AlertManager instance for alert operations
+            runtime: Optional runtime instance for alert checking
+        """
+        self.alert_manager: AlertManager = alert_manager
+        self.runtime: Optional[Any] = runtime
 
         # Initialize session state for notifications
         if 'alert_notifications' not in st.session_state:
@@ -40,8 +53,8 @@ class AlertPanel:
         if 'dismissed_notifications' not in st.session_state:
             st.session_state.dismissed_notifications = set()
 
-    def render_alert_panel(self):
-        """Main alert panel UI"""
+    def render_alert_panel(self) -> None:
+        """Main alert panel UI."""
         st.markdown("### 🔔 Alert & Notification Center")
 
         # Alert summary at the top
@@ -70,8 +83,8 @@ class AlertPanel:
         # Check for alerts and show notifications
         self._check_and_show_notifications()
 
-    def _render_alert_summary(self):
-        """Render alert summary metrics"""
+    def _render_alert_summary(self) -> None:
+        """Render alert summary metrics."""
         summary = self.alert_manager.get_alert_summary()
 
         col1, col2, col3, col4, col5 = st.columns(5)
@@ -101,8 +114,8 @@ class AlertPanel:
                      delta="High priority" if critical_count > 0 else None,
                      delta_color="inverse")
 
-    def _render_alert_dashboard(self):
-        """Render alert dashboard with visualizations"""
+    def _render_alert_dashboard(self) -> None:
+        """Render alert dashboard with visualizations."""
         st.markdown("#### 📊 Alert Analytics Dashboard")
 
         summary = self.alert_manager.get_alert_summary()
@@ -216,8 +229,8 @@ class AlertPanel:
             response_rate = (ack_events / total_events * 100) if total_events > 0 else 0
             st.metric("Response Rate", f"{response_rate:.1f}%")
 
-    def _render_alert_creation_form(self):
-        """Render alert creation form"""
+    def _render_alert_creation_form(self) -> None:
+        """Render alert creation form."""
         st.markdown("#### ➕ Create New Alert")
 
         with st.form("create_alert_form"):
@@ -314,8 +327,8 @@ class AlertPanel:
                     except Exception as e:
                         st.error(f"Error creating alert: {str(e)}")
 
-    def _render_active_alerts(self):
-        """Render active alerts list"""
+    def _render_active_alerts(self) -> None:
+        """Render active alerts list."""
         st.markdown("#### 📋 Active Alerts")
 
         active_alerts = self.alert_manager.get_active_alerts()
@@ -356,8 +369,12 @@ class AlertPanel:
         else:
             st.info("No alerts match the current filters")
 
-    def _render_alert_card(self, alert):
-        """Render individual alert card"""
+    def _render_alert_card(self, alert: Alert) -> None:
+        """Render individual alert card.
+
+        Args:
+            alert: Alert instance to render
+        """
         # Status indicator
         status_colors = {
             'active': '🟢',
@@ -419,8 +436,8 @@ class AlertPanel:
                         st.success("Alert deleted")
                         st.rerun()
 
-    def _render_alert_history(self):
-        """Render alert history"""
+    def _render_alert_history(self) -> None:
+        """Render alert history."""
         st.markdown("#### 📜 Alert History")
 
         # History filters
@@ -452,8 +469,12 @@ class AlertPanel:
         else:
             st.info("No alert events in history")
 
-    def _render_event_card(self, event):
-        """Render individual event card"""
+    def _render_event_card(self, event: AlertEvent) -> None:
+        """Render individual event card.
+
+        Args:
+            event: AlertEvent instance to render
+        """
         severity_colors = {
             'info': '🔵',
             'warning': '🟠',
@@ -488,8 +509,8 @@ class AlertPanel:
                         st.success("Event acknowledged")
                         st.rerun()
 
-    def _render_alert_templates(self):
-        """Render alert templates for quick creation"""
+    def _render_alert_templates(self) -> None:
+        """Render alert templates for quick creation."""
         st.markdown("#### 🔧 Alert Templates")
         st.markdown("Quickly create alerts from common templates")
 
@@ -612,8 +633,8 @@ class AlertPanel:
                 except Exception as e:
                     st.error(str(e))
 
-    def _check_and_show_notifications(self):
-        """Check alerts and show real-time notifications"""
+    def _check_and_show_notifications(self) -> None:
+        """Check alerts and show real-time notifications."""
         if self.runtime:
             # Check all alerts
             triggered_events = self.alert_manager.check_alerts(self.runtime)
@@ -627,8 +648,8 @@ class AlertPanel:
         # Display notifications
         self._render_notifications()
 
-    def _render_notifications(self):
-        """Render real-time toast notifications"""
+    def _render_notifications(self) -> None:
+        """Render real-time toast notifications."""
         if st.session_state.alert_notifications:
             for event in st.session_state.alert_notifications[:3]:  # Show max 3 at a time
                 if event.event_id not in st.session_state.dismissed_notifications:
@@ -649,8 +670,8 @@ class AlertPanel:
                 if e.event_id not in st.session_state.dismissed_notifications
             ]
 
-    def render_alert_notifications(self):
-        """Render alert notifications sidebar widget"""
+    def render_alert_notifications(self) -> None:
+        """Render alert notifications sidebar widget."""
         with st.sidebar:
             st.markdown("### 🔔 Notifications")
 
@@ -676,6 +697,14 @@ class AlertPanel:
                 st.success("All clear! No pending alerts.")
 
 
-def get_alert_panel(alert_manager: AlertManager, runtime=None) -> AlertPanel:
-    """Factory function to create alert panel"""
+def get_alert_panel(alert_manager: AlertManager, runtime: Optional[Any] = None) -> AlertPanel:
+    """Factory function to create alert panel.
+
+    Args:
+        alert_manager: AlertManager instance
+        runtime: Optional runtime instance
+
+    Returns:
+        AlertPanel instance
+    """
     return AlertPanel(alert_manager, runtime)

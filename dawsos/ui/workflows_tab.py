@@ -1,12 +1,21 @@
 """
 Workflows Tab - Investment workflow management and execution
+
+Phase 3.1: Comprehensive type hints added
 """
 import streamlit as st
 from datetime import datetime
+from typing import Any
 import pandas as pd
 
-def render_workflows_tab(workflows, graph, runtime):
-    """Render the workflows management tab"""
+def render_workflows_tab(workflows: Any, graph: Any, runtime: Any) -> None:
+    """Render the workflows management tab.
+
+    Args:
+        workflows: InvestmentWorkflows instance
+        graph: Knowledge graph instance
+        runtime: Agent runtime instance
+    """
 
     st.markdown("## 🔄 Investment Workflows")
     st.markdown("Automated investment analysis patterns based on Buffett, Ackman, and Dalio frameworks")

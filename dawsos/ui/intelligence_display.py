@@ -9,30 +9,36 @@ This module visualizes agent intelligence, decision-making, and execution flows:
 - Decision provenance explaining reasoning and data sources
 
 All components integrate with the Trinity architecture (UniversalExecutor -> PatternEngine -> AgentRegistry -> Agents -> KnowledgeGraph)
+
+Phase 3.1: Comprehensive type hints added
 """
 
 import streamlit as st
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any, TypeAlias
 from datetime import datetime
 import plotly.graph_objects as go
 import plotly.express as px
+
+# Type aliases for clarity
+ResultDict: TypeAlias = Dict[str, Any]
+ExecutionHistory: TypeAlias = List[Dict[str, Any]]
+NodeDict: TypeAlias = Dict[str, Any]
 
 
 class IntelligenceDisplay:
     """Visualize agent intelligence and decision-making processes"""
 
-    def __init__(self, graph=None, registry=None, runtime=None):
-        """
-        Initialize intelligence display with Trinity components
+    def __init__(self, graph: Optional[Any] = None, registry: Optional[Any] = None, runtime: Optional[Any] = None) -> None:
+        """Initialize intelligence display with Trinity components.
 
         Args:
             graph: KnowledgeGraph instance for decision nodes
             registry: AgentRegistry for agent tracking
             runtime: AgentRuntime for execution metrics
         """
-        self.graph = graph
-        self.registry = registry
-        self.runtime = runtime
+        self.graph: Optional[Any] = graph
+        self.registry: Optional[Any] = registry
+        self.runtime: Optional[Any] = runtime
 
     # ========================================================================
     # A. CONFIDENCE SCORE DISPLAY
@@ -709,9 +715,8 @@ graph TD
 # UTILITY FUNCTIONS
 # ============================================================================
 
-def create_intelligence_display(graph=None, registry=None, runtime=None) -> IntelligenceDisplay:
-    """
-    Factory function to create IntelligenceDisplay with Trinity components
+def create_intelligence_display(graph: Optional[Any] = None, registry: Optional[Any] = None, runtime: Optional[Any] = None) -> IntelligenceDisplay:
+    """Factory function to create IntelligenceDisplay with Trinity components.
 
     Args:
         graph: KnowledgeGraph instance
@@ -725,8 +730,7 @@ def create_intelligence_display(graph=None, registry=None, runtime=None) -> Inte
 
 
 def quick_confidence_display(confidence: float, label: str = "Confidence") -> None:
-    """
-    Quick helper to display a confidence gauge without full setup
+    """Quick helper to display a confidence gauge without full setup.
 
     Args:
         confidence: Confidence score (0-100)
@@ -736,9 +740,8 @@ def quick_confidence_display(confidence: float, label: str = "Confidence") -> No
     display.render_confidence_gauge(confidence, label)
 
 
-def quick_thinking_trace(execution_history: List[Dict]) -> None:
-    """
-    Quick helper to display thinking trace without full setup
+def quick_thinking_trace(execution_history: ExecutionHistory) -> None:
+    """Quick helper to display thinking trace without full setup.
 
     Args:
         execution_history: List of execution steps

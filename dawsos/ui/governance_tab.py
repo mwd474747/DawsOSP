@@ -2,14 +2,22 @@
 """
 Data Governance Tab - Exposes the 80/20 Conversational Data Governance System
 Leverages Trinity Architecture for intelligent data governance and monitoring
+
+Phase 3.1: Comprehensive type hints added
 """
 
 import streamlit as st
 from datetime import datetime, timedelta
+from typing import Any, Optional
 import plotly.graph_objects as go
 
-def render_governance_tab(runtime, graph):
-    """Render the Data Governance tab with conversational governance interface"""
+def render_governance_tab(runtime: Any, graph: Any) -> None:
+    """Render the Data Governance tab with conversational governance interface.
+
+    Args:
+        runtime: Agent runtime instance for governance operations
+        graph: Knowledge graph instance for metrics and governance
+    """
 
     st.markdown("# 🛡️ Data Governance Center")
     st.markdown("*Powered by Trinity Architecture with Graph-Native Governance*")
