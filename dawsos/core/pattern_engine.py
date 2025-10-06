@@ -28,6 +28,14 @@ from core.actions.knowledge_lookup import KnowledgeLookupAction
 from core.actions.enriched_lookup import EnrichedLookupAction
 from core.actions.calculate_confidence import CalculateConfidenceAction
 from core.actions.fetch_financials import FetchFinancialsAction
+from core.actions.evaluate import EvaluateAction
+from core.actions.calculate import CalculateAction
+from core.actions.synthesize import SynthesizeAction
+from core.actions.dcf_analysis import DCFAnalysisAction
+from core.actions.apply_fixes import ApplyFixesAction
+from core.actions.select_router import SelectRouterAction
+from core.actions.execute_pattern import ExecutePatternAction
+from core.actions.track_execution import TrackExecutionAction
 
 # Type aliases for clarity
 PatternDict: TypeAlias = Dict[str, Any]
@@ -77,11 +85,11 @@ class PatternEngine:
         """
         Register action handlers with the action registry.
 
-        Phase 1.4: Gradual migration to handler-based system.
-        Currently registers 14 handlers, with fallback to legacy for remaining 8.
+        Phase 1.4: Complete - all 22 actions migrated to handler system.
+        Legacy execute_action_legacy() method can be deprecated.
         """
         try:
-            # Register Phase 1.4 handlers (14/22 actions - 64% complete)
+            # Register all Phase 1.4 handlers (22/22 actions - 100% complete)
             handlers = [
                 # Trinity compliance (most critical)
                 ExecuteThroughRegistryAction(self),
@@ -104,6 +112,16 @@ class PatternEngine:
                 EnrichedLookupAction(self),
                 CalculateConfidenceAction(self),
                 FetchFinancialsAction(self),
+
+                # Analysis and calculations (Phase 1.4.4 - Final migration)
+                EvaluateAction(self),
+                CalculateAction(self),
+                SynthesizeAction(self),
+                DCFAnalysisAction(self),
+                ApplyFixesAction(self),
+                SelectRouterAction(self),
+                ExecutePatternAction(self),
+                TrackExecutionAction(self),
             ]
 
             for handler in handlers:
@@ -111,7 +129,7 @@ class PatternEngine:
 
             self.logger.info(
                 f"Action registry initialized with {len(handlers)} handlers "
-                f"({len(handlers)}/22 actions migrated - fallback to legacy for remaining)"
+                f"(100% migration complete - legacy fallback retained for safety)"
             )
 
         except Exception as e:
