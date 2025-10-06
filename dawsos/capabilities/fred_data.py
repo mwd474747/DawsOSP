@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from collections import deque
 from core.credentials import get_credential_manager
+from core.api_helper import APIHelper
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -60,10 +61,13 @@ class RateLimiter:
         self.backoff_until = time.time() + backoff_seconds
         logger.warning(f"Setting backoff for {backoff_seconds} seconds (retry {retry_count})")
 
-class FredDataCapability:
-    """Federal Reserve Economic Data (FRED) API integration"""
+class FredDataCapability(APIHelper):
+    """Federal Reserve Economic Data (FRED) API integration with retry and fallback tracking"""
 
     def __init__(self):
+        # Initialize APIHelper mixin
+        super().__init__()
+
         # Get FRED API key from credential manager
         credentials = get_credential_manager()
         self.api_key = credentials.get('FRED_API_KEY', required=False)
@@ -147,9 +151,35 @@ class FredDataCapability:
             'time': datetime.now()
         }
 
+    def _fetch_url(self, url: str) -> Dict:
+        """
+        Internal method to fetch URL (wrapped by api_call for retry/fallback)
+
+        Args:
+            url: Full API URL
+
+        Returns:
+            Parsed JSON response
+
+        Raises:
+            Exception: On any error (handled by APIHelper)
+        """
+        # Check if API key is available
+        if not self.api_key:
+            raise ValueError("FRED API key not configured")
+
+        # Apply rate limiting
+        self.rate_limiter.wait_if_needed()
+
+        # Make request
+        with urllib.request.urlopen(url, timeout=10) as response:
+            data = json.loads(response.read())
+            logger.debug(f"API call successful: {url[:100]}...")
+            return data
+
     def _make_api_call(self, url: str, max_retries: int = 3) -> Optional[Dict]:
         """
-        Make API call with retry logic and error handling
+        Make API call with retry logic and fallback tracking (uses APIHelper)
 
         Args:
             url: Full API URL
@@ -158,67 +188,14 @@ class FredDataCapability:
         Returns:
             Parsed JSON response or None on failure
         """
-        # Check if API key is available
-        if not self.api_key:
-            logger.error("FRED API key not configured. Please set FRED_API_KEY in credentials.")
-            return None
-
-        for retry in range(max_retries):
-            try:
-                # Apply rate limiting
-                self.rate_limiter.wait_if_needed()
-
-                # Make request
-                with urllib.request.urlopen(url, timeout=10) as response:
-                    data = json.loads(response.read())
-                    logger.debug(f"API call successful: {url[:100]}...")
-                    return data
-
-            except urllib.error.HTTPError as e:
-                if e.code == 429:
-                    # Rate limit exceeded (rare for FRED)
-                    logger.warning(f"Rate limit exceeded (429), retry {retry + 1}/{max_retries}")
-                    self.rate_limiter.set_backoff(retry + 1)
-                    if retry < max_retries - 1:
-                        continue
-                    else:
-                        logger.error("Max retries exceeded for rate limit")
-                        return None
-
-                elif e.code == 400:
-                    # Bad request - likely invalid series ID
-                    logger.warning(f"Bad request (400): {url[:100]}...")
-                    return None
-
-                elif e.code == 404:
-                    # Not found - series may not exist
-                    logger.warning(f"Resource not found (404): {url[:100]}...")
-                    return None
-
-                else:
-                    logger.error(f"HTTP error {e.code}: {e.reason}")
-                    if retry < max_retries - 1:
-                        time.sleep(1)
-                        continue
-                    return None
-
-            except urllib.error.URLError as e:
-                # Network error
-                logger.error(f"Network error: {e.reason}, retry {retry + 1}/{max_retries}")
-                if retry < max_retries - 1:
-                    time.sleep(2 ** retry)  # Exponential backoff
-                    continue
-                return None
-
-            except json.JSONDecodeError as e:
-                logger.error(f"Invalid JSON response: {e}")
-                return None
-
-            except Exception as e:
-                logger.error(f"Unexpected error: {type(e).__name__}: {e}")
-                return None
-
-        return None
+        return self.api_call(
+            self._fetch_url,
+            url,
+            max_retries=max_retries,
+            backoff=1.0,
+            fallback=None,
+            component_name='fred_api'
+        )
 
     def get_cache_stats(self) -> Dict:
         """Get cache statistics"""
