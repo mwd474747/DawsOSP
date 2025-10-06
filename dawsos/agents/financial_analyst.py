@@ -10,6 +10,7 @@ from datetime import datetime
 from ..core.confidence_calculator import confidence_calculator
 from .analyzers.dcf_analyzer import DCFAnalyzer
 from .analyzers.moat_analyzer import MoatAnalyzer
+from .analyzers.financial_data_fetcher import FinancialDataFetcher
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ class FinancialAnalyst(BaseAgent):
         # Initialize analyzers (Phase 2.1 extraction)
         self.dcf_analyzer = None  # Lazy initialization on first use
         self.moat_analyzer = None  # Lazy initialization on first use
+        self.data_fetcher = None  # Lazy initialization on first use
 
     def _ensure_dcf_analyzer(self):
         """Lazy initialization of DCF analyzer (needs market capability)"""
@@ -38,6 +40,15 @@ class FinancialAnalyst(BaseAgent):
         """Lazy initialization of moat analyzer"""
         if self.moat_analyzer is None:
             self.moat_analyzer = MoatAnalyzer(self.logger)
+
+    def _ensure_data_fetcher(self):
+        """Lazy initialization of data fetcher"""
+        if self.data_fetcher is None:
+            self.data_fetcher = FinancialDataFetcher(
+                market_capability=self.capabilities.get('market'),
+                enriched_data_capability=self.capabilities.get('enriched_data'),
+                logger=self.logger
+            )
 
     def _find_or_create_company_node(self, symbol: str, financial_data: Dict = None) -> str:
         """Find existing company node or create a new one"""
@@ -442,25 +453,35 @@ class FinancialAnalyst(BaseAgent):
 
     def _get_calculation_knowledge(self) -> Dict[str, Any]:
         """Get financial calculation knowledge from enriched data"""
+        # Phase 2.1: Delegate to FinancialDataFetcher
+        self._ensure_data_fetcher()
+        if self.data_fetcher:
+            return self.data_fetcher.get_calculation_knowledge()
+
+        # Fallback to legacy implementation
         if 'enriched_data' in self.capabilities:
             return self.capabilities['enriched_data'].get('financial_calculations', {})
         return {}
 
     def _get_company_financials(self, symbol: str) -> Dict[str, Any]:
         """Get company financial data from FMP API via market capability"""
+        # Phase 2.1: Delegate to FinancialDataFetcher
+        self._ensure_data_fetcher()
+        if self.data_fetcher:
+            return self.data_fetcher.get_company_financials(symbol)
+
+        # Fallback to legacy implementation
         if 'market' not in self.capabilities:
             return {"error": "Market capability not available"}
 
+        # Legacy inline implementation (kept for safety, should not reach here)
         try:
             market = self.capabilities['market']
-
-            # Get latest financial statements from FMP API
             income_statements = market.get_financials(symbol, statement='income', period='annual')
             balance_sheets = market.get_financials(symbol, statement='balance', period='annual')
             cash_flow_statements = market.get_financials(symbol, statement='cash-flow', period='annual')
             company_profile = market.get_company_profile(symbol)
 
-            # Check for errors in any response
             if not income_statements or 'error' in income_statements[0]:
                 return {"error": f"Failed to fetch income statement for {symbol}"}
             if not balance_sheets or 'error' in balance_sheets[0]:
@@ -468,59 +489,43 @@ class FinancialAnalyst(BaseAgent):
             if not cash_flow_statements or 'error' in cash_flow_statements[0]:
                 return {"error": f"Failed to fetch cash flow statement for {symbol}"}
 
-            # Get most recent period (index 0)
             income = income_statements[0]
             balance = balance_sheets[0]
             cash_flow = cash_flow_statements[0]
 
-            # Calculate derived metrics
             total_debt = balance.get('debt', 0) or 0
             total_equity = balance.get('total_equity', 0) or 0
-            total_capital = total_debt + total_equity
 
-            # Get or calculate free cash flow
             free_cash_flow = cash_flow.get('free_cash_flow')
             if not free_cash_flow:
-                # Calculate: Operating Cash Flow - Capital Expenditures
                 operating_cf = cash_flow.get('operating_cash_flow', 0) or 0
-                capex = abs(cash_flow.get('capex', 0) or 0)  # CapEx is usually negative
+                capex = abs(cash_flow.get('capex', 0) or 0)
                 free_cash_flow = operating_cf - capex
 
-            # Build comprehensive financial data structure
             return {
                 "symbol": symbol,
-                # Core metrics for DCF
                 "free_cash_flow": free_cash_flow or 0,
                 "net_income": income.get('net_income', 0) or 0,
-                "ebit": income.get('operating_income', 0) or 0,  # Operating income = EBIT
+                "ebit": income.get('operating_income', 0) or 0,
                 "ebitda": income.get('ebitda', 0) or 0,
                 "revenue": income.get('revenue', 0) or 0,
-
-                # Cash flow components
                 "operating_cash_flow": cash_flow.get('operating_cash_flow', 0) or 0,
                 "capital_expenditures": abs(cash_flow.get('capex', 0) or 0),
                 "depreciation_amortization": income.get('ebitda', 0) - income.get('operating_income', 0) if income.get('ebitda') and income.get('operating_income') else 0,
-
-                # Balance sheet items
                 "total_debt": total_debt,
                 "total_equity": total_equity,
                 "cash": balance.get('cash', 0) or 0,
                 "total_assets": balance.get('total_assets', 0) or 0,
                 "total_liabilities": balance.get('total_liabilities', 0) or 0,
                 "working_capital": (balance.get('total_assets', 0) or 0) - (balance.get('total_liabilities', 0) or 0),
-                "working_capital_change": 0,  # Would need historical data to calculate
-
-                # Additional metrics from profile
-                "tax_rate": 0.21,  # Default US corporate tax rate
+                "working_capital_change": 0,
+                "tax_rate": 0.21,
                 "beta": company_profile.get('beta', 1.0) if company_profile and 'error' not in company_profile else 1.0,
                 "market_cap": company_profile.get('mktCap', 0) if company_profile and 'error' not in company_profile else 0,
-
-                # Metadata
                 "period": income.get('date', 'Unknown'),
                 "data_source": "FMP API",
                 "fetched_at": datetime.now().isoformat()
             }
-
         except Exception as e:
             logger.error(f"Failed to get financial data for {symbol}: {e}", exc_info=True)
             return {"error": f"Failed to get financial data: {str(e)}"}
@@ -746,14 +751,16 @@ class FinancialAnalyst(BaseAgent):
 
     def _extract_symbol(self, request: str, context: Dict[str, Any]) -> Optional[str]:
         """Extract stock symbol from request or context"""
-        # Check context first
+        # Phase 2.1: Delegate to FinancialDataFetcher
+        self._ensure_data_fetcher()
+        if self.data_fetcher:
+            return self.data_fetcher.extract_symbol(request, context)
+
+        # Fallback to legacy implementation
         if context and 'symbol' in context:
             return context['symbol']
 
-        # Extract from request text
         words = request.upper().split()
-
-        # Look for common stock symbol patterns
         for word in words:
             if len(word) >= 1 and len(word) <= 5 and word.isalpha():
                 return word
@@ -762,25 +769,28 @@ class FinancialAnalyst(BaseAgent):
 
     def _assess_data_quality(self, financial_data: Dict[str, Any]) -> float:
         """Assess the quality of financial data"""
+        # Phase 2.1: Delegate to FinancialDataFetcher
+        self._ensure_data_fetcher()
+        if self.data_fetcher:
+            return self.data_fetcher.assess_data_quality(financial_data)
+
+        # Fallback to legacy implementation
         if not financial_data:
             return 0.3
 
-        # Check for key financial metrics
         required_fields = ['free_cash_flow', 'net_income', 'revenue', 'ebit']
         present_fields = sum(1 for field in required_fields if financial_data.get(field) is not None)
         completeness_score = present_fields / len(required_fields)
 
-        # Check for data consistency
-        consistency_score = 0.8  # Default good consistency
+        consistency_score = 0.8
         fcf = financial_data.get('free_cash_flow', 0)
         net_income = financial_data.get('net_income', 0)
 
         if fcf and net_income:
             fcf_ratio = abs(fcf / net_income) if net_income != 0 else 0
-            if fcf_ratio > 3:  # Unusual FCF/NI ratio
+            if fcf_ratio > 3:
                 consistency_score -= 0.2
 
-        # Calculate overall data quality
         data_quality = (completeness_score * 0.6 + consistency_score * 0.4)
         return min(1.0, max(0.0, data_quality))
 
