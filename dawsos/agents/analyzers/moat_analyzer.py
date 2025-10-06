@@ -7,11 +7,16 @@ Evaluates 5 moat factors: brand, network effects, cost advantages,
 switching costs, and intangible assets.
 
 Part of Phase 2 god object refactoring to reduce FinancialAnalyst complexity.
+
+Phase 2.4: Uses FinancialConstants for all magic numbers.
 """
 
 import logging
 from datetime import datetime
 from typing import Dict, Any, Callable
+
+# Phase 2.4: Import financial constants
+from ...config.financial_constants import FinancialConstants
 
 # Type aliases for clarity
 FinancialData = Dict[str, Any]
@@ -30,10 +35,10 @@ class MoatAnalyzer:
     - Switching Costs: Customer retention (recurring revenue proxy)
     - Intangible Assets: Patents, licenses, regulatory advantages
 
-    Ratings:
-    - Wide Moat: Score > 30 (strong, durable advantage)
-    - Narrow Moat: Score 15-30 (moderate, temporary advantage)
-    - No Moat: Score < 15 (commodity, competitive market)
+    Ratings (from FinancialConstants):
+    - Wide Moat: Score > WIDE_MOAT_THRESHOLD (strong, durable advantage)
+    - Narrow Moat: Score > NARROW_MOAT_THRESHOLD (moderate, temporary advantage)
+    - No Moat: Score < NARROW_MOAT_THRESHOLD (commodity, competitive market)
     """
 
     def __init__(self, logger: logging.Logger):
@@ -105,7 +110,7 @@ class MoatAnalyzer:
         Evaluate brand moat based on pricing power (gross margins).
 
         Companies with strong brands can charge premium prices,
-        leading to high gross margins (>50%).
+        leading to high gross margins (from FinancialConstants).
 
         Args:
             financial_data: Financial metrics
@@ -115,12 +120,11 @@ class MoatAnalyzer:
         """
         gross_margin = financial_data.get('gross_margin', 0)
 
-        if gross_margin <= 0.5:  # <50% gross margin
+        if gross_margin <= FinancialConstants.BRAND_MOAT_GROSS_MARGIN_THRESHOLD:
             score = 0
         else:
-            # Score = gross_margin * 15, capped at 10
-            # 50% margin = 7.5, 67% margin = 10
-            score = min(10, gross_margin * 15)
+            # Score = gross_margin * multiplier, capped at 10
+            score = min(10, gross_margin * FinancialConstants.BRAND_MOAT_MULTIPLIER)
 
         self.logger.debug(
             f"Brand strength: {score:.1f}/10 "
@@ -135,7 +139,7 @@ class MoatAnalyzer:
 
         Network effects occur when product value increases with more users
         (social networks, marketplaces, platforms). Indicated by high
-        growth rates in tech sectors.
+        growth rates in tech sectors (from FinancialConstants).
 
         Args:
             financial_data: Financial metrics
@@ -147,16 +151,15 @@ class MoatAnalyzer:
         revenue_growth = financial_data.get('revenue_growth', 0)
 
         # Only applicable to tech and communication services
-        if sector not in ['Technology', 'Communication Services']:
+        if sector not in FinancialConstants.NETWORK_EFFECTS_SECTORS:
             self.logger.debug(f"Network effects: 0/10 (sector: {sector})")
             return 0
 
-        if revenue_growth <= 0.2:  # <20% growth
+        if revenue_growth <= FinancialConstants.NETWORK_EFFECTS_GROWTH_THRESHOLD:
             score = 0
         else:
-            # Score = revenue_growth * 30, capped at 10
-            # 20% growth = 6, 33% growth = 10
-            score = min(10, revenue_growth * 30)
+            # Score = revenue_growth * multiplier, capped at 10
+            score = min(10, revenue_growth * FinancialConstants.NETWORK_EFFECTS_MULTIPLIER)
 
         self.logger.debug(
             f"Network effects: {score:.1f}/10 "
@@ -171,7 +174,7 @@ class MoatAnalyzer:
 
         Companies with structural cost advantages (economies of scale,
         unique processes, proprietary technology) achieve high operating
-        margins (>20%).
+        margins (from FinancialConstants).
 
         Args:
             financial_data: Financial metrics
@@ -181,12 +184,11 @@ class MoatAnalyzer:
         """
         operating_margin = financial_data.get('operating_margin', 0)
 
-        if operating_margin <= 0.2:  # <20% operating margin
+        if operating_margin <= FinancialConstants.COST_ADVANTAGES_MARGIN_THRESHOLD:
             score = 0
         else:
-            # Score = operating_margin * 30, capped at 10
-            # 20% margin = 6, 33% margin = 10
-            score = min(10, operating_margin * 30)
+            # Score = operating_margin * multiplier, capped at 10
+            score = min(10, operating_margin * FinancialConstants.COST_ADVANTAGES_MULTIPLIER)
 
         self.logger.debug(
             f"Cost advantages: {score:.1f}/10 "
@@ -201,7 +203,7 @@ class MoatAnalyzer:
 
         High switching costs (contractual, integration, learning curve)
         create customer stickiness. Approximated by recurring revenue
-        percentage (subscriptions, contracts).
+        percentage (from FinancialConstants).
 
         Args:
             financial_data: Financial metrics
@@ -211,11 +213,11 @@ class MoatAnalyzer:
         """
         recurring_revenue_pct = financial_data.get('recurring_revenue_pct', 0)
 
-        if recurring_revenue_pct <= 0.7:  # <70% recurring
+        if recurring_revenue_pct <= FinancialConstants.SWITCHING_COSTS_RECURRING_THRESHOLD:
             score = 0
         else:
-            # High recurring revenue (>70%) = 8/10 score
-            score = 8
+            # High recurring revenue = base score from constants
+            score = FinancialConstants.SWITCHING_COSTS_BASE_SCORE
 
         self.logger.debug(
             f"Switching costs: {score:.1f}/10 "
@@ -255,15 +257,17 @@ class MoatAnalyzer:
         """
         Convert numeric moat score to categorical rating.
 
+        Uses thresholds from FinancialConstants.
+
         Args:
             total_score: Sum of all moat factor scores (0-50)
 
         Returns:
             'Wide', 'Narrow', or 'None'
         """
-        if total_score > 30:
+        if total_score > FinancialConstants.WIDE_MOAT_THRESHOLD:
             return 'Wide'
-        elif total_score > 15:
+        elif total_score > FinancialConstants.NARROW_MOAT_THRESHOLD:
             return 'Narrow'
         else:
             return 'None'

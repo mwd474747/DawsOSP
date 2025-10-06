@@ -6,11 +6,17 @@ Handles fetching and aggregating financial data from various sources
 (FMP API, enriched datasets, knowledge graph).
 
 Part of Phase 2 god object refactoring to reduce FinancialAnalyst complexity.
+
+Phase 2.4: Uses FinancialConstants and SystemConstants for all magic numbers.
 """
 
 import logging
 from datetime import datetime
 from typing import Dict, Any, Optional
+
+# Phase 2.4: Import constants
+from ...config.financial_constants import FinancialConstants
+from ...config.system_constants import SystemConstants
 
 # Type aliases for clarity
 FinancialData = Dict[str, Any]
@@ -93,6 +99,9 @@ class FinancialDataFetcher:
             balance = balance_sheets[0]
             cash_flow = cash_flow_statements[0]
 
+            # Phase 2.4: Use FinancialConstants for default tax rate
+            default_tax_rate = FinancialConstants.CORPORATE_TAX_RATE
+
             # Calculate derived metrics
             total_debt = balance.get('debt', 0) or 0
             total_equity = balance.get('total_equity', 0) or 0
@@ -153,7 +162,7 @@ class FinancialDataFetcher:
                 # Market metrics
                 "beta": beta,
                 "market_cap": market_cap,
-                "tax_rate": 0.21,  # Default US corporate tax rate
+                "tax_rate": default_tax_rate,  # Phase 2.4: From FinancialConstants
 
                 # Moat metrics (calculated from financials)
                 "gross_margin": (income.get('gross_profit', 0) / income.get('revenue', 1)) if income.get('revenue') else 0,
@@ -232,9 +241,10 @@ class FinancialDataFetcher:
         # Extract from request text
         words = request.upper().split()
 
-        # Look for common stock symbol patterns (1-5 letters, all alpha)
+        # Phase 2.4: Use SystemConstants for symbol validation
         for word in words:
-            if len(word) >= 1 and len(word) <= 5 and word.isalpha():
+            if (SystemConstants.MIN_SYMBOL_LENGTH <= len(word) <= SystemConstants.MAX_SYMBOL_LENGTH
+                    and word.isalpha()):
                 self.logger.debug(f"Symbol from request: {word}")
                 return word
 
@@ -257,28 +267,30 @@ class FinancialDataFetcher:
         """
         if not financial_data or 'error' in financial_data:
             self.logger.debug("Low data quality: Missing or error data")
-            return 0.3
+            return FinancialConstants.MIN_PREDICTABILITY  # Phase 2.4: Was 0.3
 
         # Check for key financial metrics
         required_fields = ['free_cash_flow', 'net_income', 'revenue', 'ebit']
         present_fields = sum(1 for field in required_fields if financial_data.get(field) is not None)
         completeness_score = present_fields / len(required_fields)
 
-        # Check for data consistency
-        consistency_score = 0.8  # Default good consistency
+        # Phase 2.4: Check data consistency using FinancialConstants
+        consistency_score = FinancialConstants.GOOD_CONSISTENCY_SCORE
         fcf = financial_data.get('free_cash_flow', 0)
         net_income = financial_data.get('net_income', 0)
 
         if fcf and net_income:
             fcf_ratio = abs(fcf / net_income) if net_income != 0 else 0
-            if fcf_ratio > 3:  # Unusual FCF/NI ratio
-                consistency_score -= 0.2
+            if fcf_ratio > FinancialConstants.FCF_NI_RATIO_THRESHOLD:
+                consistency_score -= FinancialConstants.FCF_NI_CONSISTENCY_PENALTY
                 self.logger.debug(
                     f"Consistency penalty: FCF/NI ratio = {fcf_ratio:.2f}"
                 )
 
-        # Calculate overall data quality
-        data_quality = (completeness_score * 0.6 + consistency_score * 0.4)
+        # Phase 2.4: Calculate overall data quality using weighted constants
+        completeness_weight, consistency_weight = FinancialConstants.CONSISTENCY_COMPLETENESS_WEIGHT
+        data_quality = (completeness_score * completeness_weight +
+                       consistency_score * consistency_weight)
         quality_score = min(1.0, max(0.0, data_quality))
 
         self.logger.debug(

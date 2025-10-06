@@ -6,10 +6,15 @@ Calculates confidence scores for financial analyses based on data quality,
 business predictability, and historical success rates.
 
 Part of Phase 2 god object refactoring to reduce FinancialAnalyst complexity.
+
+Phase 2.4: Uses FinancialConstants for all magic numbers.
 """
 
 import logging
 from typing import Dict, Any, Optional
+
+# Phase 2.4: Import constants
+from ...config.financial_constants import FinancialConstants
 
 # Type aliases for clarity
 FinancialData = Dict[str, Any]
@@ -68,10 +73,10 @@ class FinancialConfidenceCalculator:
         try:
             self.logger.debug(f"Calculating confidence for {symbol}")
 
-            # Use provided data quality or calculate from financial data
+            # Phase 2.4: Use FinancialConstants for data quality default
             if data_quality is None:
                 # Will be calculated by assess_data_quality via data_fetcher
-                data_quality = 0.6  # Safe default
+                data_quality = FinancialConstants.DEFAULT_DATA_QUALITY
 
             # Calculate business predictability
             business_predictability = self.assess_business_predictability(
@@ -79,9 +84,12 @@ class FinancialConfidenceCalculator:
                 symbol
             )
 
-            # Get historical success rate from factors
+            # Phase 2.4: Get historical success rate from factors or FinancialConstants
             confidence_factors = confidence_factors or {}
-            historical_success_rate = confidence_factors.get('dcf_success_rate', 0.68)
+            historical_success_rate = confidence_factors.get(
+                'dcf_success_rate',
+                FinancialConstants.DCF_HISTORICAL_SUCCESS_RATE
+            )
 
             # Count available data points
             num_data_points = len([k for k, v in financial_data.items() if v is not None])
@@ -106,12 +114,12 @@ class FinancialConfidenceCalculator:
             return confidence_score
 
         except Exception as e:
-            # Fallback to dynamic calculation with defaults
+            # Phase 2.4: Fallback using FinancialConstants
             self.logger.warning(
                 f"Confidence calculation failed for {symbol}, using defaults: {e}"
             )
             return self.confidence_calc.calculate_confidence(
-                data_quality=0.6,
+                data_quality=FinancialConstants.DEFAULT_DATA_QUALITY,
                 analysis_type='dcf'
             )['confidence']
 
@@ -132,28 +140,32 @@ class FinancialConfidenceCalculator:
         Returns:
             Predictability score (0.3-1.0), higher = more predictable
         """
-        predictability = 0.7  # Base predictability
+        # Phase 2.4: Use FinancialConstants for predictability calculation
+        predictability = FinancialConstants.BASE_PREDICTABILITY
 
         # Higher predictability for stable metrics
         roic = self.calculate_roic_internal(financial_data)
-        if roic and roic > 0.15:  # Strong ROIC (>15%) suggests predictable business
-            predictability += 0.1
-            self.logger.debug(f"{symbol} ROIC: {roic:.2%} (strong, +0.1 predictability)")
-        elif roic and roic < 0.05:  # Weak ROIC (<5%) suggests unpredictable business
-            predictability -= 0.1
-            self.logger.debug(f"{symbol} ROIC: {roic:.2%} (weak, -0.1 predictability)")
+        if roic and roic > FinancialConstants.STRONG_ROIC_THRESHOLD:
+            predictability += FinancialConstants.STRONG_ROIC_PREDICTABILITY_BONUS
+            self.logger.debug(f"{symbol} ROIC: {roic:.2%} (strong, +{FinancialConstants.STRONG_ROIC_PREDICTABILITY_BONUS} predictability)")
+        elif roic and roic < FinancialConstants.WEAK_ROIC_THRESHOLD:
+            predictability -= FinancialConstants.WEAK_ROIC_PREDICTABILITY_PENALTY
+            self.logger.debug(f"{symbol} ROIC: {roic:.2%} (weak, -{FinancialConstants.WEAK_ROIC_PREDICTABILITY_PENALTY} predictability)")
 
         # Check debt levels (high debt = less predictable)
-        debt_equity = financial_data.get('debt_to_equity', 0.5)
-        if debt_equity > 1.0:  # High leverage (D/E > 1.0)
-            predictability -= 0.1
-            self.logger.debug(f"{symbol} D/E: {debt_equity:.2f} (high, -0.1 predictability)")
-        elif debt_equity < 0.3:  # Conservative leverage (D/E < 0.3)
-            predictability += 0.05
-            self.logger.debug(f"{symbol} D/E: {debt_equity:.2f} (low, +0.05 predictability)")
+        debt_equity = financial_data.get('debt_to_equity', FinancialConstants.DEFAULT_DEBT_TO_EQUITY)
+        if debt_equity > FinancialConstants.HIGH_LEVERAGE_THRESHOLD:
+            predictability -= FinancialConstants.HIGH_LEVERAGE_PREDICTABILITY_PENALTY
+            self.logger.debug(f"{symbol} D/E: {debt_equity:.2f} (high, -{FinancialConstants.HIGH_LEVERAGE_PREDICTABILITY_PENALTY} predictability)")
+        elif debt_equity < FinancialConstants.LOW_LEVERAGE_THRESHOLD:
+            predictability += FinancialConstants.LOW_LEVERAGE_PREDICTABILITY_BONUS
+            self.logger.debug(f"{symbol} D/E: {debt_equity:.2f} (low, +{FinancialConstants.LOW_LEVERAGE_PREDICTABILITY_BONUS} predictability)")
 
-        # Clamp to reasonable range
-        predictability_score = min(1.0, max(0.3, predictability))
+        # Clamp to reasonable range using FinancialConstants
+        predictability_score = min(
+            FinancialConstants.MAX_PREDICTABILITY,
+            max(FinancialConstants.MIN_PREDICTABILITY, predictability)
+        )
 
         self.logger.debug(f"{symbol} predictability: {predictability_score:.2f}")
 
@@ -178,7 +190,8 @@ class FinancialConfidenceCalculator:
         """
         try:
             ebit = financial_data.get('ebit', 0)
-            tax_rate = financial_data.get('tax_rate', 0.21)
+            # Phase 2.4: Use FinancialConstants for tax rate default
+            tax_rate = financial_data.get('tax_rate', FinancialConstants.CORPORATE_TAX_RATE)
 
             # Invested capital components
             working_capital = financial_data.get('working_capital', 0)
@@ -227,7 +240,7 @@ class FinancialConfidenceCalculator:
             financial_data: Financial metrics
 
         Returns:
-            Debt-to-Equity ratio (0.0+), or 0.5 as default if can't calculate
+            Debt-to-Equity ratio (0.0+), or default from FinancialConstants if can't calculate
         """
         try:
             total_debt = financial_data.get('total_debt', 0)
@@ -245,10 +258,12 @@ class FinancialConfidenceCalculator:
             if 'debt_to_equity' in financial_data:
                 return financial_data['debt_to_equity']
 
-            # Default moderate leverage
-            self.logger.debug("D/E calculation failed, using default 0.5")
-            return 0.5
+            # Phase 2.4: Use FinancialConstants for default D/E
+            self.logger.debug(
+                f"D/E calculation failed, using default {FinancialConstants.DEFAULT_DEBT_TO_EQUITY}"
+            )
+            return FinancialConstants.DEFAULT_DEBT_TO_EQUITY
 
         except Exception as e:
             self.logger.warning(f"Failed to calculate D/E ratio: {e}")
-            return 0.5
+            return FinancialConstants.DEFAULT_DEBT_TO_EQUITY
