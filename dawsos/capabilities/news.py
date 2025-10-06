@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from collections import deque
 from core.credentials import get_credential_manager
+from core.api_helper import APIHelper
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -90,8 +91,8 @@ class RateLimiter:
         logger.warning(f"Setting backoff for {backoff_seconds} seconds (retry {retry_count})")
 
 
-class NewsCapability:
-    """News and sentiment analysis capability with comprehensive error handling and caching"""
+class NewsCapability(APIHelper):
+    """News and sentiment analysis capability with retry, fallback tracking, and caching"""
 
     # Spam/low-quality domains to filter out
     SPAM_DOMAINS = {
@@ -128,6 +129,9 @@ class NewsCapability:
             api_key: NewsAPI key (optional, will try to get from credentials)
             max_requests_per_day: Daily rate limit (default 100 for free tier)
         """
+        # Initialize APIHelper mixin
+        super().__init__()
+
         # Using NewsAPI (free tier available)
         # Get key at: https://newsapi.org/register
         if api_key:
@@ -190,9 +194,35 @@ class NewsCapability:
             'time': datetime.now()
         }
 
+    def _fetch_url(self, url: str) -> Dict:
+        """
+        Internal method to fetch URL (wrapped by api_call for retry/fallback)
+
+        Args:
+            url: Full API URL
+
+        Returns:
+            Parsed JSON response
+
+        Raises:
+            Exception: On any error (handled by APIHelper)
+        """
+        # Check if API key is available
+        if not self.api_key:
+            raise ValueError("NewsAPI key not configured")
+
+        # Apply rate limiting
+        self.rate_limiter.wait_if_needed()
+
+        # Make request
+        with urllib.request.urlopen(url, timeout=10) as response:
+            data = json.loads(response.read())
+            logger.debug(f"API call successful: {url[:100]}...")
+            return data
+
     def _make_api_call(self, url: str, max_retries: int = 3) -> Optional[Dict]:
         """
-        Make API call with retry logic and error handling
+        Make API call with retry logic and fallback tracking (uses APIHelper)
 
         Args:
             url: Full API URL
@@ -201,72 +231,14 @@ class NewsCapability:
         Returns:
             Parsed JSON response or None on failure
         """
-        # Check if API key is available
-        if not self.api_key:
-            logger.error("NewsAPI key not configured. Please set NEWSAPI_KEY in credentials.")
-            return None
-
-        for retry in range(max_retries):
-            try:
-                # Apply rate limiting
-                self.rate_limiter.wait_if_needed()
-
-                # Make request
-                with urllib.request.urlopen(url, timeout=10) as response:
-                    data = json.loads(response.read())
-                    logger.debug(f"API call successful: {url[:100]}...")
-                    return data
-
-            except urllib.error.HTTPError as e:
-                if e.code == 429:
-                    # Rate limit exceeded
-                    logger.warning(f"Rate limit exceeded (429), retry {retry + 1}/{max_retries}")
-                    self.rate_limiter.set_backoff(retry + 1)
-                    if retry < max_retries - 1:
-                        continue
-                    else:
-                        logger.error("Max retries exceeded for rate limit")
-                        return None
-
-                elif e.code == 426:
-                    # Upgrade required (free tier limitation)
-                    logger.error("Upgrade required (426). This endpoint requires a paid NewsAPI plan.")
-                    return None
-
-                elif e.code == 401:
-                    # Authentication error
-                    logger.error("Invalid NewsAPI key (401). Please check your credentials.")
-                    return None
-
-                elif e.code == 404:
-                    # Not found
-                    logger.warning(f"Resource not found (404): {url[:100]}...")
-                    return None
-
-                else:
-                    logger.error(f"HTTP error {e.code}: {e.reason}")
-                    if retry < max_retries - 1:
-                        time.sleep(1)
-                        continue
-                    return None
-
-            except urllib.error.URLError as e:
-                # Network error
-                logger.error(f"Network error: {e.reason}, retry {retry + 1}/{max_retries}")
-                if retry < max_retries - 1:
-                    time.sleep(2 ** retry)  # Exponential backoff
-                    continue
-                return None
-
-            except json.JSONDecodeError as e:
-                logger.error(f"Invalid JSON response: {e}")
-                return None
-
-            except Exception as e:
-                logger.error(f"Unexpected error: {type(e).__name__}: {e}")
-                return None
-
-        return None
+        return self.api_call(
+            self._fetch_url,
+            url,
+            max_retries=max_retries,
+            backoff=1.0,
+            fallback=None,
+            component_name='news_api'
+        )
 
     def _is_spam_or_low_quality(self, article: Dict) -> bool:
         """
