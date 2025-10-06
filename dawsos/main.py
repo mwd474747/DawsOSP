@@ -53,6 +53,7 @@ from core.alert_manager import AlertManager
 from ui.trinity_ui_components import get_trinity_ui
 from ui.data_integrity_tab import render_data_integrity_tab
 from ui.trinity_dashboard_tabs import get_trinity_dashboard_tabs
+from ui.api_health_tab import render_api_health_tab
 
 # Page config
 st.set_page_config(
@@ -402,7 +403,25 @@ def display_chat_interface():
         with st.chat_message("assistant"):
             with st.spinner("DawsOS is thinking..."):
                 response = st.session_state.agent_runtime.orchestrate(user_input)
-                
+
+                # Check for fallback/cached data warning
+                if response.get('source') == 'fallback':
+                    ui_message = response.get('ui_message', '⚠️ Using cached data')
+                    st.warning(ui_message)
+
+                    # Show explanation in expander
+                    with st.expander("ℹ️ Why am I seeing cached data?"):
+                        reason = response.get('fallback_reason', 'Unknown')
+                        st.markdown(f"""
+**Reason**: {reason}
+
+**To enable live AI responses**:
+1. Add `ANTHROPIC_API_KEY` to your `.env` file
+2. Restart the application
+
+**Note**: Cached responses are still useful for analysis and are updated regularly.
+                        """)
+
                 # Display response
                 if 'error' in response:
                     st.error(f"Error: {response['error']}")
@@ -606,7 +625,7 @@ def main():
     st.markdown("*Every interaction makes me smarter*")
     
     # Create tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs([
         "Chat",
         "Knowledge Graph",
         "Dashboard",
@@ -617,7 +636,8 @@ def main():
         "Data Integrity",
         "Data Governance",
         "Pattern Browser",
-        "Alerts"
+        "Alerts",
+        "API Health"
     ])
     
     # Initialize Trinity dashboard tabs
@@ -747,6 +767,20 @@ def main():
             st.markdown("- ➕ Create custom alerts with templates")
             st.markdown("- 📋 Manage active alerts with filters")
             st.markdown("- 📜 View alert history and acknowledge events")
+
+    with tab12:
+        # API Health Tab - Fallback monitoring and API status
+        try:
+            render_api_health_tab()
+        except Exception as e:
+            st.error(f"API Health Tab Error: {str(e)}")
+            st.info("The API Health Monitor tracks fallback events and API configuration.")
+            st.markdown("### Features")
+            st.markdown("- 📊 Fallback event statistics (LLM, APIs, cache)")
+            st.markdown("- 🕐 Recent fallback events with explanations")
+            st.markdown("- 🔑 API configuration status checker")
+            st.markdown("- 📡 FRED API health metrics")
+            st.markdown("- 📅 Data freshness guidelines")
             st.markdown("- 🔧 Quick template-based alert creation")
 
     # Sidebar

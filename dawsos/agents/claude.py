@@ -1,6 +1,7 @@
 """Claude - The main personality that interprets user intent"""
-from agents.base_agent import BaseAgent
+from .base_agent import BaseAgent
 from typing import Dict, Any, List
+from core.fallback_tracker import get_fallback_tracker
 
 class Claude(BaseAgent):
     """The conversational interface to the system"""
@@ -52,15 +53,62 @@ class Claude(BaseAgent):
         """Main method for processing context - called by runtime"""
         user_input = context.get('user_input', '')
 
+        # If no LLM client, use fallback responses
+        if not self.llm_client:
+            tracker = get_fallback_tracker()
+            fallback_meta = tracker.mark_fallback(
+                component='llm',
+                reason='api_key_missing',
+                data_type='cached'
+            )
+            result = self._fallback_response(user_input, context)
+            result.update(fallback_meta)
+            return result
+
+        # Generate prompt for LLM
+        prompt = self.get_prompt(context)
+
+        # Call Claude API with JSON parsing
+        try:
+            response = self.llm_client.complete(prompt, parse_json=True)
+
+            # Ensure response has required fields
+            if not isinstance(response, dict):
+                response = {"response": str(response)}
+
+            if 'friendly_response' not in response:
+                response['friendly_response'] = f"Analyzing: {user_input}"
+
+            return response
+
+        except Exception as e:
+            # Fallback on error
+            print(f"LLM API error, using fallback: {e}")
+            tracker = get_fallback_tracker()
+            fallback_meta = tracker.mark_fallback(
+                component='llm',
+                reason='api_error',
+                data_type='cached'
+            )
+            result = self._fallback_response(user_input, context)
+            result.update(fallback_meta)
+            return result
+
+    def _fallback_response(self, user_input: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Fallback responses when LLM is unavailable"""
+        user_input_lower = str(user_input).lower()
+
         # Generate a clean response based on the input
-        if 'macro' in str(user_input).lower() and ('data' in str(user_input).lower() or 'patterns' in str(user_input).lower()):
+        if 'macro' in user_input_lower and ('data' in user_input_lower or 'patterns' in user_input_lower):
             return {
                 "intent": "ANALYSIS",
                 "entities": ["macro", "economy"],
                 "action": "analyze",
                 "parameters": {},
-                "friendly_response": "Analyzing macroeconomic environment",
-                "response": """📊 Macroeconomic Analysis
+                "friendly_response": "Analyzing macroeconomic environment (cached response)",
+                "response": """⚠️ **Using Cached Analysis - LLM Unavailable**
+
+📊 Macroeconomic Analysis (FALLBACK)
 
 🔄 Economic Cycle Stage: **Late Cycle**
 • GDP Growth: 2.1% (Slowing from 2.8%)
@@ -86,16 +134,21 @@ class Claude(BaseAgent):
 • **Defensive Tilt**: Increase allocation to staples, utilities
 • **Fixed Income Attractive**: Lock in yields above 4%
 • **International Diversification**: Consider non-US exposure
-• **Maintain Hedges**: Volatility likely to increase"""
+• **Maintain Hedges**: Volatility likely to increase
+
+ℹ️ For real-time AI analysis, configure ANTHROPIC_API_KEY""",
+                "source": "fallback"
             }
-        elif 'regime' in str(user_input).lower():
+        elif 'regime' in user_input_lower:
             return {
                 "intent": "ANALYSIS",
                 "entities": ["market", "regime"],
                 "action": "analyze",
                 "parameters": {},
-                "friendly_response": "Analyzing market regime",
-                "response": """🎯 Current Market Regime: RISK-ON
+                "friendly_response": "Analyzing market regime (cached response)",
+                "response": """⚠️ **Using Cached Analysis - LLM Unavailable**
+
+🎯 Current Market Regime: RISK-ON (FALLBACK)
 
 📊 Key Indicators:
 • VIX: 15.2 (Low - Complacency)
@@ -115,9 +168,12 @@ class Claude(BaseAgent):
 • Maintain equity exposure
 • Overweight growth sectors
 • Keep hedges minimal
-• Watch for regime shift signals"""
+• Watch for regime shift signals
+
+ℹ️ For real-time AI analysis, configure ANTHROPIC_API_KEY""",
+                "source": "fallback"
             }
-        elif 'correlations' in str(user_input).lower():
+        elif 'correlations' in user_input_lower:
             # Extract correlations if passed in
             if '{correlations}' in user_input:
                 # This is a template, so provide a formatted response
@@ -126,8 +182,10 @@ class Claude(BaseAgent):
                     "entities": ["SPY", "correlations"],
                     "action": "analyze",
                     "parameters": {},
-                    "friendly_response": "Analyzing correlations",
-                    "response": """SPY Correlation Analysis:
+                    "friendly_response": "Analyzing correlations (cached response)",
+                    "response": """⚠️ **Using Cached Analysis - LLM Unavailable**
+
+SPY Correlation Analysis (FALLBACK):
 
 📈 Strong Positive Correlations:
 • QQQ: 0.85 - Tech sector moves closely with SPY
@@ -145,17 +203,22 @@ class Claude(BaseAgent):
 🛡️ Hedge Opportunities:
 • Long DXY or UUP when SPY overbought
 • Gold allocation for tail risk protection
-• VXX for short-term volatility hedges"""
+• VXX for short-term volatility hedges
+
+ℹ️ For real-time AI analysis, configure ANTHROPIC_API_KEY""",
+                    "source": "fallback"
                 }
 
-        elif 'sector' in str(user_input).lower():
+        elif 'sector' in user_input_lower:
             return {
                 "intent": "ANALYSIS",
                 "entities": ["sectors", "performance"],
                 "action": "analyze",
                 "parameters": {},
-                "friendly_response": "Analyzing sector performance",
-                "response": """📊 Sector Performance Analysis
+                "friendly_response": "Analyzing sector performance (cached response)",
+                "response": """⚠️ **Using Cached Analysis - LLM Unavailable**
+
+📊 Sector Performance Analysis (FALLBACK)
 
 🏆 Leading Sectors (Past Month):
 1. **Technology (XLK)**: +5.2% - AI momentum continues
@@ -180,7 +243,10 @@ class Claude(BaseAgent):
 💡 Opportunities:
 • Tech pullbacks on profit-taking
 • Financial strength on NIM expansion
-• Energy oversold on seasonal weakness"""
+• Energy oversold on seasonal weakness
+
+ℹ️ For real-time AI analysis, configure ANTHROPIC_API_KEY""",
+                "source": "fallback"
             }
 
         # Default response
@@ -189,8 +255,9 @@ class Claude(BaseAgent):
             "entities": [],
             "action": "process",
             "parameters": {},
-            "friendly_response": f"Processing: {user_input}",
-            "response": f"I'll help you with: {user_input}"
+            "friendly_response": f"Processing: {user_input} (LLM unavailable)",
+            "response": f"⚠️ **LLM Unavailable - Using Fallback**\n\nI'll help you with: {user_input}\n\nℹ️ For AI-powered insights, configure ANTHROPIC_API_KEY in your .env file",
+            "source": "fallback"
         }
 
     def process(self, user_input: str) -> Dict[str, Any]:
