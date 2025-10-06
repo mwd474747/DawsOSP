@@ -24,6 +24,10 @@ from core.actions.scan_agents import ScanAgentsAction
 from core.actions.detect_execution_type import DetectExecutionTypeAction
 from core.actions.add_position import AddPositionAction
 from core.actions.validate_agent import ValidateAgentAction
+from core.actions.knowledge_lookup import KnowledgeLookupAction
+from core.actions.enriched_lookup import EnrichedLookupAction
+from core.actions.calculate_confidence import CalculateConfidenceAction
+from core.actions.fetch_financials import FetchFinancialsAction
 
 # Type aliases for clarity
 PatternDict: TypeAlias = Dict[str, Any]
@@ -74,10 +78,10 @@ class PatternEngine:
         Register action handlers with the action registry.
 
         Phase 1.4: Gradual migration to handler-based system.
-        Currently registers 10 handlers, with fallback to legacy for remaining 12.
+        Currently registers 14 handlers, with fallback to legacy for remaining 8.
         """
         try:
-            # Register Phase 1.4 handlers (10/22 actions - 45% complete)
+            # Register Phase 1.4 handlers (14/22 actions - 64% complete)
             handlers = [
                 # Trinity compliance (most critical)
                 ExecuteThroughRegistryAction(self),
@@ -94,6 +98,12 @@ class PatternEngine:
                 DetectExecutionTypeAction(self),
                 AddPositionAction(self),
                 ValidateAgentAction(self),
+
+                # Knowledge and data (Phase 1.4.3 - Knowledge actions)
+                KnowledgeLookupAction(self),
+                EnrichedLookupAction(self),
+                CalculateConfidenceAction(self),
+                FetchFinancialsAction(self),
             ]
 
             for handler in handlers:
