@@ -8,8 +8,17 @@ import json
 import os
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, TypeAlias, Tuple, Set
 import networkx as nx
+
+# Type aliases for clarity
+NodeID: TypeAlias = str
+NodeType: TypeAlias = str
+NodeData: TypeAlias = Dict[str, Any]
+EdgeData: TypeAlias = Dict[str, Any]
+Relationship: TypeAlias = str
+QueryPattern: TypeAlias = Dict[str, Any]
+StatsDict: TypeAlias = Dict[str, Any]
 
 
 class KnowledgeGraph:
@@ -58,7 +67,7 @@ class KnowledgeGraph:
 
     # ============ PUBLIC API (16 methods - preserve exactly) ============
 
-    def add_node(self, node_type: str, data: dict, node_id: str = None) -> str:
+    def add_node(self, node_type: NodeType, data: NodeData, node_id: Optional[NodeID] = None) -> NodeID:
         """Add a knowledge node to the graph"""
         if not node_id:
             node_id = f"{node_type}_{uuid.uuid4().hex[:8]}"
@@ -88,9 +97,9 @@ class KnowledgeGraph:
 
         return node_id
 
-    def connect(self, from_id: str, to_id: str,
-                relationship: str, strength: float = 1.0,
-                metadata: dict = None) -> bool:
+    def connect(self, from_id: NodeID, to_id: NodeID,
+                relationship: Relationship, strength: float = 1.0,
+                metadata: Optional[Dict[str, Any]] = None) -> bool:
         """Create a connection between nodes"""
         if not self._graph.has_node(from_id) or not self._graph.has_node(to_id):
             return False
@@ -119,7 +128,7 @@ class KnowledgeGraph:
 
         return True
 
-    def trace_connections(self, start_node: str,
+    def trace_connections(self, start_node: NodeID,
                          max_depth: int = 3,
                          min_strength: float = 0.3) -> List[List[Dict]]:
         """
@@ -171,7 +180,7 @@ class KnowledgeGraph:
 
         return paths
 
-    def forecast(self, target_node: str, horizon: str = '1d') -> dict:
+    def forecast(self, target_node: NodeID, horizon: str = '1d') -> Dict[str, Any]:
         """
         Forecast future state using all connections
         NEW: Uses NetworkX predecessors - O(1) instead of O(E)
@@ -255,7 +264,7 @@ class KnowledgeGraph:
             'influences': len(influences)
         }
 
-    def query(self, pattern: dict) -> List[str]:
+    def query(self, pattern: QueryPattern) -> List[NodeID]:
         """Query nodes matching a pattern"""
         results = []
 
@@ -286,7 +295,7 @@ class KnowledgeGraph:
 
         return results
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> StatsDict:
         """Get graph statistics"""
         node_types = {}
         for node_id in self._graph.nodes():
@@ -307,7 +316,7 @@ class KnowledgeGraph:
             'avg_connections': self._graph.number_of_edges() / max(self._graph.number_of_nodes(), 1)
         }
 
-    def get_node(self, node_id: str) -> Optional[Dict]:
+    def get_node(self, node_id: NodeID) -> Optional[NodeData]:
         """Get a single node by ID safely"""
         if not self._graph.has_node(node_id):
             return None
@@ -317,7 +326,7 @@ class KnowledgeGraph:
             **self._graph.nodes[node_id]
         }
 
-    def get_nodes_by_type(self, node_type: str) -> Dict[str, Dict]:
+    def get_nodes_by_type(self, node_type: NodeType) -> Dict[NodeID, NodeData]:
         """Get all nodes of a specific type"""
         return {
             node_id: {'id': node_id, **attrs}
@@ -325,7 +334,7 @@ class KnowledgeGraph:
             if attrs.get('type') == node_type
         }
 
-    def has_edge(self, from_id: str, to_id: str, relationship: Optional[str] = None) -> bool:
+    def has_edge(self, from_id: NodeID, to_id: NodeID, relationship: Optional[Relationship] = None) -> bool:
         """Check if an edge exists between two nodes"""
         if not self._graph.has_edge(from_id, to_id):
             return False
@@ -336,7 +345,7 @@ class KnowledgeGraph:
 
         return True
 
-    def get_edge(self, from_id: str, to_id: str, relationship: Optional[str] = None) -> Optional[Dict]:
+    def get_edge(self, from_id: NodeID, to_id: NodeID, relationship: Optional[Relationship] = None) -> Optional[EdgeData]:
         """Get edge data between two nodes"""
         if not self._graph.has_edge(from_id, to_id):
             return None
@@ -352,7 +361,7 @@ class KnowledgeGraph:
             **edge_attrs
         }
 
-    def safe_query(self, pattern: dict, default: Any = None) -> List[str]:
+    def safe_query(self, pattern: QueryPattern, default: Any = None) -> List[NodeID]:
         """Query nodes with safe fallback"""
         try:
             results = self.query(pattern)
@@ -361,7 +370,7 @@ class KnowledgeGraph:
             print(f"Query failed: {e}")
             return default if default is not None else []
 
-    def get_node_data(self, node_id: str, key: str, default: Any = None) -> Any:
+    def get_node_data(self, node_id: NodeID, key: str, default: Any = None) -> Any:
         """Safely get data from a node"""
         if not self._graph.has_node(node_id):
             return default
@@ -369,7 +378,7 @@ class KnowledgeGraph:
         node_data = self._graph.nodes[node_id].get('data', {})
         return node_data.get(key, default)
 
-    def get_connected_nodes(self, node_id: str, direction: str = 'out',
+    def get_connected_nodes(self, node_id: NodeID, direction: str = 'out',
                            relationship: Optional[str] = None) -> List[str]:
         """
         Get all nodes connected to a given node
@@ -392,7 +401,7 @@ class KnowledgeGraph:
 
         return connected
 
-    def update_node_data(self, node_id: str, data_updates: Dict[str, Any]) -> bool:
+    def update_node_data(self, node_id: NodeID, data_updates: Dict[str, Any]) -> bool:
         """
         Update node data fields safely (NEW METHOD for governance hooks)
 

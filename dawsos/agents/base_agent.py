@@ -1,21 +1,27 @@
-from typing import Dict, List, Any
+from typing import Dict, List, Any, TypeAlias, Optional
 from datetime import datetime
 import json
 import logging
 
 logger = logging.getLogger(__name__)
 
+# Type aliases for clarity
+AgentContext: TypeAlias = Dict[str, Any]
+AgentResult: TypeAlias = Dict[str, Any]
+NodeID: TypeAlias = str
+AnalysisResult: TypeAlias = Dict[str, Any]
+
 class BaseAgent:
     """Base class for all specialized agents"""
 
-    def __init__(self, graph, name: str = None, focus_areas: List[str] = None, llm_client=None):
+    def __init__(self, graph, name: Optional[str] = None, focus_areas: Optional[List[str]] = None, llm_client=None):
         self.graph = graph  # Shared knowledge graph
         self.name = name or self.__class__.__name__
         self.focus_areas = focus_areas or []
         self.memory = []  # Agent-specific memory
         self.llm_client = llm_client  # For LLM-based agents
 
-    def think(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def think(self, context: AgentContext) -> AgentResult:
         """Main processing method - called by runtime"""
         # Default implementation - override in subclasses
         user_input = context.get('user_input', context.get('request', ''))
@@ -31,7 +37,7 @@ class BaseAgent:
             'data': analysis
         }
         
-    def analyze(self, query: str) -> Dict:
+    def analyze(self, query: str) -> AnalysisResult:
         """Base analysis method - override in subclasses"""
         # Find relevant nodes
         relevant_nodes = self._find_relevant_nodes(query)
@@ -55,7 +61,7 @@ class BaseAgent:
             'timestamp': datetime.now().isoformat()
         }
     
-    def _find_relevant_nodes(self, query: str) -> List[str]:
+    def _find_relevant_nodes(self, query: str) -> List[NodeID]:
         """Find nodes relevant to the query"""
         relevant = []
         query_lower = query.lower()
@@ -74,7 +80,7 @@ class BaseAgent:
         
         return list(set(relevant))[:20]  # Limit to 20 most relevant
     
-    def _analyze_patterns(self, connections: List[List[Dict]]) -> Dict:
+    def _analyze_patterns(self, connections: List[List[Dict[str, Any]]]) -> Dict[str, int]:
         """Analyze patterns in connections"""
         patterns = {
             'strong_paths': 0,

@@ -1467,7 +1467,7 @@ class PatternEngine:
             'found': False
         }
 
-    def _calculate_cycle_score(self, cycle_type: str, context: Dict[str, Any]) -> float:
+    def _calculate_cycle_score(self, cycle_type: str, context: ContextDict) -> float:
         """Calculate debt cycle score using enriched economic data"""
         try:
             if 'enriched_data' in self.capabilities:
@@ -1489,7 +1489,7 @@ class PatternEngine:
         except Exception:
             return 6.5 if cycle_type == 'short_term' else 7.8
 
-    def _calculate_dcf_value(self, context: Dict[str, Any]) -> float:
+    def _calculate_dcf_value(self, context: ContextDict) ->float:
         """Calculate DCF intrinsic value using Financial Analyst agent"""
         try:
             symbol = context.get('symbol')
@@ -1507,7 +1507,7 @@ class PatternEngine:
         except Exception:
             return 100.0
 
-    def _calculate_roic_spread(self, context: Dict[str, Any]) -> float:
+    def _calculate_roic_spread(self, context: ContextDict) ->float:
         """Calculate ROIC-WACC spread using Financial Analyst agent"""
         try:
             symbol = context.get('symbol')
@@ -1528,7 +1528,7 @@ class PatternEngine:
         except Exception:
             return 8.5
 
-    def _calculate_fcf_yield(self, context: Dict[str, Any]) -> float:
+    def _calculate_fcf_yield(self, context: ContextDict) ->float:
         """Calculate FCF yield using Financial Analyst agent"""
         try:
             symbol = context.get('symbol')
@@ -1547,7 +1547,7 @@ class PatternEngine:
         except Exception:
             return 4.2
 
-    def _calculate_roic(self, context: Dict[str, Any]) -> float:
+    def _calculate_roic(self, context: ContextDict) ->float:
         """Calculate ROIC using Financial Analyst agent"""
         try:
             symbol = context.get('symbol')
@@ -1565,7 +1565,7 @@ class PatternEngine:
         except Exception:
             return 15.8
 
-    def _calculate_owner_earnings(self, context: Dict[str, Any]) -> float:
+    def _calculate_owner_earnings(self, context: ContextDict) ->float:
         """Calculate Owner Earnings using Financial Analyst agent"""
         try:
             symbol = context.get('symbol')
@@ -1585,7 +1585,7 @@ class PatternEngine:
         except Exception:
             return 25.0
 
-    def _get_company_moat_analysis(self, symbol: str, context: Dict[str, Any]) -> Dict[str, str]:
+    def _get_company_moat_analysis(self, symbol: str, context: ContextDict) ->Dict[str, str]:
         """Get company moat analysis from knowledge base and agents"""
         try:
             # Note: Previously called equity_agent (removed in agent consolidation)
@@ -1623,7 +1623,7 @@ class PatternEngine:
                 'switching_details': 'Switching cost data unavailable'
             }
 
-    def _get_financial_metrics(self, symbol: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_financial_metrics(self, symbol: str, context: ContextDict) ->Dict[str, Any]:
         """Get financial metrics from Financial Analyst"""
         try:
             # Get financial analyst
@@ -1678,7 +1678,7 @@ class PatternEngine:
                 'margin_stability': 'Error retrieving data'
             }
 
-    def _get_macro_economic_data(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_macro_economic_data(self, context: ContextDict) ->Dict[str, Any]:
         """Get real macroeconomic data from FRED via data_harvester agent"""
         try:
             from core.api_normalizer import get_normalizer

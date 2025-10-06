@@ -13,7 +13,7 @@ Every agent, pattern, UI action, and API call routes through here.
 
 import json
 import logging
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, TYPE_CHECKING, TypeAlias, Optional, List
 from pathlib import Path
 from datetime import datetime
 
@@ -28,11 +28,17 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Type aliases for clarity
+RequestDict: TypeAlias = Dict[str, Any]
+ResponseDict: TypeAlias = Dict[str, Any]
+MetricsDict: TypeAlias = Dict[str, Any]
+PatternID: TypeAlias = str
+
 
 class UniversalExecutor:
     """Single entry point for ALL DawsOS execution."""
     
-    def __init__(self, graph: KnowledgeGraph, registry: AgentRegistry, runtime: "AgentRuntime" = None, auto_save: bool = True):
+    def __init__(self, graph: KnowledgeGraph, registry: AgentRegistry, runtime: Optional["AgentRuntime"] = None, auto_save: bool = True):
         """Initialize with Trinity components."""
         self.graph = graph
         self.registry = registry
@@ -87,7 +93,7 @@ class UniversalExecutor:
         
         logger.info(f"Validated {len(loaded)} meta-patterns: {loaded}")
     
-    def execute(self, request: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, request: RequestDict) -> ResponseDict:
         """
         Universal execution entry point.
         
@@ -152,7 +158,7 @@ class UniversalExecutor:
             # Attempt recovery through architecture_validator
             return self._attempt_recovery(request, str(e))
     
-    def _prepare_context(self, request: Dict[str, Any]) -> Dict[str, Any]:
+    def _prepare_context(self, request: RequestDict) -> ResponseDict:
         """Prepare execution context with Trinity components."""
         context = request.copy()
         
@@ -172,7 +178,7 @@ class UniversalExecutor:
         
         return context
     
-    def _store_execution_result(self, request: Dict[str, Any], result: Dict[str, Any]):
+    def _store_execution_result(self, request: RequestDict, result: ResponseDict):
         """Store execution result in knowledge graph."""
         try:
             # Use correct KnowledgeGraph.add_node signature
@@ -216,7 +222,7 @@ class UniversalExecutor:
         except Exception as e:
             logger.error(f"Failed to auto-save graph: {e}")
     
-    def _execute_fallback(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _execute_fallback(self, context: RequestDict) -> ResponseDict:
         """
         Fallback execution when meta_executor pattern is missing.
         Provides basic routing without full Trinity compliance.
@@ -244,7 +250,7 @@ class UniversalExecutor:
             'timestamp': datetime.now().isoformat()
         }
 
-    def _attempt_recovery(self, request: Dict[str, Any], error: str) -> Dict[str, Any]:
+    def _attempt_recovery(self, request: Dict[str, Any], error: str) -> ResponseDict:
         """Attempt to recover from execution failure."""
         try:
             # Use architecture_validator pattern for recovery if available
@@ -282,11 +288,11 @@ class UniversalExecutor:
             'timestamp': datetime.now().isoformat()
         }
     
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> MetricsDict:
         """Get execution metrics."""
         return self.metrics.copy()
     
-    def validate_architecture(self) -> Dict[str, Any]:
+    def validate_architecture(self) -> ResponseDict:
         """Run architecture validation."""
         try:
             # Get pattern dictionary first, then execute
@@ -319,7 +325,7 @@ def get_executor(graph: KnowledgeGraph = None, registry: AgentRegistry = None, r
     return _executor_instance
 
 
-def execute(request: Dict[str, Any]) -> Dict[str, Any]:
+def execute(request: Dict[str, Any]) -> ResponseDict:
     """Convenience function for universal execution."""
     executor = get_executor()
     if executor is None:
