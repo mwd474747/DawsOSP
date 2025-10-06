@@ -342,7 +342,7 @@ rg "test_graph.json|persistence_test.json" dawsos/tests/
 
 **3. Review duplicate configs** ⚠️ Needs investigation
 ```bash
-# Check if .env.docker exists and is used
+# Note: `.env.docker` removed Oct 2025; `.env` is canonical for all deployments.
 # Consolidate or document differences
 ```
 

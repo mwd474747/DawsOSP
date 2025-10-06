@@ -2,7 +2,7 @@
 import json
 from typing import Dict, Any, Optional
 import re
-from core.credentials import get_credential_manager
+from .credentials import get_credential_manager
 
 # Optional import guard for anthropic
 try:
