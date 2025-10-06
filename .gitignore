@@ -41,3 +41,6 @@ logs/
 storage/graph.json
 storage/graph_backup_*.json
 storage/*_test_*.json
+dawsos/storage/graph.json
+dawsos/storage/graph_backup_*.json
+dawsos/storage/*_test_*.json
