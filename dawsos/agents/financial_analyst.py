@@ -30,6 +30,46 @@ class FinancialAnalyst(BaseAgent):
         self.data_fetcher = None  # Lazy initialization on first use
         self.confidence_calculator = None  # Lazy initialization on first use
 
+        # Phase 2.3: Request routing table (replaces complex if/elif chain)
+        # Format: (trigger_keywords, handler_method, requires_symbol, requires_context_key)
+        self.request_router = [
+            # Economy and macro analysis
+            (['economy', 'economic regime', 'macro analysis', 'economic analysis'],
+             self.analyze_economy, False, None),
+
+            # Portfolio analysis
+            (['portfolio risk', 'portfolio analysis', 'holdings risk'],
+             self.analyze_portfolio_risk, False, 'holdings'),
+
+            # Comprehensive stock analysis
+            (['comprehensive stock', 'full stock analysis', 'stock comprehensive'],
+             self.analyze_stock_comprehensive, True, None),
+
+            # Stock comparison
+            (['compare stocks', 'stock comparison'],
+             self.compare_stocks, False, 'symbols'),
+
+            # DCF valuation
+            (['dcf', 'discounted cash flow', 'intrinsic value'],
+             self._perform_dcf_analysis, False, None),
+
+            # ROIC calculation
+            (['roic', 'return on invested capital'],
+             self._calculate_roic, False, None),
+
+            # Owner earnings
+            (['owner earnings', 'buffett earnings'],
+             self._calculate_owner_earnings, False, None),
+
+            # Moat analysis
+            (['moat', 'competitive advantage', 'competitive position'],
+             self._analyze_moat, False, None),
+
+            # Free cash flow analysis
+            (['free cash flow', 'fcf'],
+             self._analyze_free_cash_flow, False, None),
+        ]
+
     def _ensure_dcf_analyzer(self):
         """Lazy initialization of DCF analyzer (needs market capability)"""
         if self.dcf_analyzer is None and 'market' in self.capabilities:
@@ -78,7 +118,11 @@ class FinancialAnalyst(BaseAgent):
         return self.add_knowledge('company', company_data)
 
     def process_request(self, request: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Process financial analysis requests"""
+        """
+        Process financial analysis requests using routing table.
+
+        Phase 2.3: Simplified from 70-line if/elif chain to declarative routing table.
+        """
         if context is None:
             context = {}
 
@@ -98,54 +142,47 @@ class FinancialAnalyst(BaseAgent):
                 query_node_id = self.add_knowledge('analysis_query', query_data)
                 context['query_node_id'] = query_node_id
 
-        # Economy analysis handler
-        if any(term in request_lower for term in ['economy', 'economic regime', 'macro analysis', 'economic analysis']):
-            return self.analyze_economy(context)
+        # Route request using routing table
+        for triggers, handler, requires_symbol, requires_context_key in self.request_router:
+            # Check if any trigger matches
+            if any(trigger in request_lower for trigger in triggers):
+                # Validate required context
+                if requires_context_key and requires_context_key not in context:
+                    return {
+                        "error": f"{handler.__name__} requires '{requires_context_key}' in context"
+                    }
 
-        # Portfolio risk analysis handler
-        elif any(term in request_lower for term in ['portfolio risk', 'portfolio analysis', 'holdings risk']):
-            holdings = context.get('holdings', {})
-            if not holdings:
-                return {"error": "Portfolio analysis requires 'holdings' in context (dict of symbol: weight)"}
-            return self.analyze_portfolio_risk(holdings, context)
+                # Extract and validate symbol if required
+                if requires_symbol:
+                    symbol = self._extract_symbol(request, context)
+                    if not symbol:
+                        return {"error": "No stock symbol found in request"}
+                    # Call handler with symbol
+                    return handler(symbol, context)
 
-        # Comprehensive stock analysis handler
-        elif any(term in request_lower for term in ['comprehensive stock', 'full stock analysis', 'stock comprehensive']):
-            symbol = self._extract_symbol(request, context)
-            if not symbol:
-                return {"error": "No stock symbol found in request"}
-            return self.analyze_stock_comprehensive(symbol, context)
+                # Call handler based on signature
+                if requires_context_key == 'holdings':
+                    # Portfolio analysis needs holdings extracted
+                    holdings = context.get('holdings', {})
+                    return handler(holdings, context)
+                elif requires_context_key == 'symbols':
+                    # Stock comparison needs symbols list
+                    symbols = context.get('symbols', [])
+                    return handler(symbols, context)
+                elif requires_context_key is None and requires_symbol is False:
+                    # Handlers that take (request, context) or just (context)
+                    try:
+                        # Try (request, context) signature first
+                        return handler(request, context)
+                    except TypeError:
+                        # Fall back to (context) signature for analyze_economy
+                        return handler(context)
+                else:
+                    # Default: (request, context)
+                    return handler(request, context)
 
-        # Stock comparison handler
-        elif any(term in request_lower for term in ['compare stocks', 'stock comparison']):
-            symbols = context.get('symbols', [])
-            if not symbols:
-                return {"error": "Stock comparison requires 'symbols' list in context"}
-            return self.compare_stocks(symbols, context)
-
-        # DCF Valuation
-        elif any(term in request_lower for term in ['dcf', 'discounted cash flow', 'intrinsic value']):
-            return self._perform_dcf_analysis(request, context)
-
-        # ROIC Calculation
-        elif any(term in request_lower for term in ['roic', 'return on invested capital']):
-            return self._calculate_roic(request, context)
-
-        # Owner Earnings
-        elif any(term in request_lower for term in ['owner earnings', 'buffett earnings']):
-            return self._calculate_owner_earnings(request, context)
-
-        # Moat Analysis
-        elif any(term in request_lower for term in ['moat', 'competitive advantage', 'competitive position']):
-            return self._analyze_moat(request, context)
-
-        # Free Cash Flow Analysis
-        elif any(term in request_lower for term in ['free cash flow', 'fcf']):
-            return self._analyze_free_cash_flow(request, context)
-
-        # General Financial Analysis
-        else:
-            return self._general_financial_analysis(request, context)
+        # No route matched - use general financial analysis
+        return self._general_financial_analysis(request, context)
 
     def _perform_dcf_analysis(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Perform comprehensive DCF analysis using Trinity architecture"""
