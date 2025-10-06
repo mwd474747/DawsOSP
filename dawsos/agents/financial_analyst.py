@@ -9,6 +9,7 @@ from .base_agent import BaseAgent
 from datetime import datetime
 from ..core.confidence_calculator import confidence_calculator
 from .analyzers.dcf_analyzer import DCFAnalyzer
+from .analyzers.moat_analyzer import MoatAnalyzer
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,8 +22,9 @@ class FinancialAnalyst(BaseAgent):
         super().__init__(graph=graph, name="financial_analyst", llm_client=llm_client)
         self.capabilities_needed = ['market', 'enriched_data']
 
-        # Initialize DCF analyzer (Phase 2.1 extraction)
+        # Initialize analyzers (Phase 2.1 extraction)
         self.dcf_analyzer = None  # Lazy initialization on first use
+        self.moat_analyzer = None  # Lazy initialization on first use
 
     def _ensure_dcf_analyzer(self):
         """Lazy initialization of DCF analyzer (needs market capability)"""
@@ -31,6 +33,11 @@ class FinancialAnalyst(BaseAgent):
                 self.capabilities['market'],
                 self.logger
             )
+
+    def _ensure_moat_analyzer(self):
+        """Lazy initialization of moat analyzer"""
+        if self.moat_analyzer is None:
+            self.moat_analyzer = MoatAnalyzer(self.logger)
 
     def _find_or_create_company_node(self, symbol: str, financial_data: Dict = None) -> str:
         """Find existing company node or create a new one"""
@@ -561,86 +568,138 @@ class FinancialAnalyst(BaseAgent):
             if 'error' in financial_data:
                 return financial_data
 
-            # Calculate moat factors
-            moat_scores = {
-                'brand': 0,
-                'network_effects': 0,
-                'cost_advantages': 0,
-                'switching_costs': 0,
-                'intangible_assets': 0
-            }
+            # Phase 2.1: Delegate to MoatAnalyzer
+            self._ensure_moat_analyzer()
+            if self.moat_analyzer:
+                # Use MoatAnalyzer for moat calculation
+                moat_analysis = self.moat_analyzer.analyze_moat(symbol, financial_data)
 
-            # Brand moat (based on gross margin)
-            gross_margin = financial_data.get('gross_margin', 0)
-            if gross_margin > 0.5:  # >50% gross margin indicates pricing power
-                moat_scores['brand'] = min(10, gross_margin * 15)
+                # Extract results for backward compatibility
+                moat_rating = moat_analysis['moat_rating']
+                total_score = moat_analysis['overall_score']
+                moat_scores = moat_analysis['factors']
 
-            # Network effects (for tech companies)
-            if financial_data.get('sector') in ['Technology', 'Communication Services']:
-                revenue_growth = financial_data.get('revenue_growth', 0)
-                if revenue_growth > 0.2:  # >20% growth
-                    moat_scores['network_effects'] = min(10, revenue_growth * 30)
+                # Store moat analysis in knowledge graph
+                moat_node_data = {
+                    'symbol': symbol,
+                    'moat_rating': moat_rating,
+                    'moat_score': total_score,
+                    'brand_score': moat_scores['brand'],
+                    'network_effects_score': moat_scores['network_effects'],
+                    'cost_advantages_score': moat_scores['cost_advantages'],
+                    'switching_costs_score': moat_scores['switching_costs'],
+                    'intangible_assets_score': moat_scores['intangible_assets'],
+                    'gross_margin': financial_data.get('gross_margin', 0),
+                    'operating_margin': financial_data.get('operating_margin', 0),
+                    'timestamp': moat_analysis['timestamp']
+                }
 
-            # Cost advantages (based on operating margin)
-            operating_margin = financial_data.get('operating_margin', 0)
-            if operating_margin > 0.2:  # >20% operating margin
-                moat_scores['cost_advantages'] = min(10, operating_margin * 30)
+                # Add moat analysis node to graph if graph is available
+                moat_node_id = None
+                if self.graph:
+                    moat_node_id = self.add_knowledge('moat_analysis', moat_node_data)
 
-            # Switching costs (based on customer retention, approximated by recurring revenue)
-            if financial_data.get('recurring_revenue_pct', 0) > 0.7:
-                moat_scores['switching_costs'] = 8
+                    # Find or create company node
+                    company_node_id = self._find_or_create_company_node(symbol, financial_data)
 
-            # Calculate overall moat score
-            total_score = sum(moat_scores.values())
-            moat_rating = 'Wide' if total_score > 30 else 'Narrow' if total_score > 15 else 'None'
+                    # Connect moat analysis to company
+                    self.connect_knowledge(moat_node_id, company_node_id, 'analyzes', strength=0.9)
 
-            # Store moat analysis in knowledge graph
-            moat_node_data = {
-                'symbol': symbol,
-                'moat_rating': moat_rating,
-                'moat_score': total_score,
-                'brand_score': moat_scores['brand'],
-                'network_effects_score': moat_scores['network_effects'],
-                'cost_advantages_score': moat_scores['cost_advantages'],
-                'switching_costs_score': moat_scores['switching_costs'],
-                'intangible_assets_score': moat_scores['intangible_assets'],
-                'gross_margin': gross_margin,
-                'operating_margin': operating_margin,
-                'timestamp': datetime.now().isoformat()
-            }
+                    # If this was from a query, connect to query node
+                    if context.get('query_node_id'):
+                        self.connect_knowledge(context['query_node_id'], moat_node_id, 'resulted_in', strength=0.95)
 
-            # Add moat analysis node to graph if graph is available
-            moat_node_id = None
-            if self.graph:
-                moat_node_id = self.add_knowledge('moat_analysis', moat_node_data)
-
-                # Find or create company node
-                company_node_id = self._find_or_create_company_node(symbol, financial_data)
-
-                # Connect moat analysis to company
-                self.connect_knowledge(moat_node_id, company_node_id, 'analyzes', strength=0.9)
-
-                # If this was from a query, connect to query node
-                if context.get('query_node_id'):
-                    self.connect_knowledge(context['query_node_id'], moat_node_id, 'resulted_in', strength=0.95)
-
-            return {
-                "symbol": symbol,
-                "moat_analysis": {
-                    "moat_rating": moat_rating,
-                    "overall_score": total_score,
-                    "factors": moat_scores,
-                    "financial_evidence": {
-                        "gross_margin": f"{gross_margin:.1%}",
-                        "operating_margin": f"{operating_margin:.1%}"
-                    }
-                },
-                "node_id": moat_node_id,
-                "response": f"{symbol} has a {moat_rating} moat with score {total_score:.1f}/50"
-            }
+                return {
+                    "symbol": symbol,
+                    "moat_analysis": {
+                        "moat_rating": moat_rating,
+                        "overall_score": total_score,
+                        "factors": moat_scores,
+                        "financial_evidence": moat_analysis['financial_evidence']
+                    },
+                    "node_id": moat_node_id,
+                    "response": f"{symbol} has a {moat_rating} moat with score {total_score:.1f}/50"
+                }
+            else:
+                # Fallback to legacy inline implementation (should not happen)
+                self.logger.warning("MoatAnalyzer not available, using fallback")
+                return self._analyze_moat_legacy(symbol, financial_data, context)
 
         except Exception as e:
             return {"error": f"Moat analysis failed: {str(e)}"}
+
+    def _analyze_moat_legacy(self, symbol: str, financial_data: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """Legacy moat analysis implementation (fallback only)"""
+        # Calculate moat factors (inline legacy version)
+        moat_scores = {
+            'brand': 0,
+            'network_effects': 0,
+            'cost_advantages': 0,
+            'switching_costs': 0,
+            'intangible_assets': 0
+        }
+
+        # Brand moat (based on gross margin)
+        gross_margin = financial_data.get('gross_margin', 0)
+        if gross_margin > 0.5:
+            moat_scores['brand'] = min(10, gross_margin * 15)
+
+        # Network effects (for tech companies)
+        if financial_data.get('sector') in ['Technology', 'Communication Services']:
+            revenue_growth = financial_data.get('revenue_growth', 0)
+            if revenue_growth > 0.2:
+                moat_scores['network_effects'] = min(10, revenue_growth * 30)
+
+        # Cost advantages (based on operating margin)
+        operating_margin = financial_data.get('operating_margin', 0)
+        if operating_margin > 0.2:
+            moat_scores['cost_advantages'] = min(10, operating_margin * 30)
+
+        # Switching costs
+        if financial_data.get('recurring_revenue_pct', 0) > 0.7:
+            moat_scores['switching_costs'] = 8
+
+        # Calculate overall moat score
+        total_score = sum(moat_scores.values())
+        moat_rating = 'Wide' if total_score > 30 else 'Narrow' if total_score > 15 else 'None'
+
+        # Store in graph
+        moat_node_data = {
+            'symbol': symbol,
+            'moat_rating': moat_rating,
+            'moat_score': total_score,
+            'brand_score': moat_scores['brand'],
+            'network_effects_score': moat_scores['network_effects'],
+            'cost_advantages_score': moat_scores['cost_advantages'],
+            'switching_costs_score': moat_scores['switching_costs'],
+            'intangible_assets_score': moat_scores['intangible_assets'],
+            'gross_margin': gross_margin,
+            'operating_margin': operating_margin,
+            'timestamp': datetime.now().isoformat()
+        }
+
+        moat_node_id = None
+        if self.graph:
+            moat_node_id = self.add_knowledge('moat_analysis', moat_node_data)
+            company_node_id = self._find_or_create_company_node(symbol, financial_data)
+            self.connect_knowledge(moat_node_id, company_node_id, 'analyzes', strength=0.9)
+            if context.get('query_node_id'):
+                self.connect_knowledge(context['query_node_id'], moat_node_id, 'resulted_in', strength=0.95)
+
+        return {
+            "symbol": symbol,
+            "moat_analysis": {
+                "moat_rating": moat_rating,
+                "overall_score": total_score,
+                "factors": moat_scores,
+                "financial_evidence": {
+                    "gross_margin": f"{gross_margin:.1%}",
+                    "operating_margin": f"{operating_margin:.1%}"
+                }
+            },
+            "node_id": moat_node_id,
+            "response": f"{symbol} has a {moat_rating} moat with score {total_score:.1f}/50"
+        }
 
     def _analyze_free_cash_flow(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze free cash flow trends and quality"""

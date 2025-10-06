@@ -16,6 +16,8 @@ while maintaining backward compatibility through the FinancialAnalyst orchestrat
 
 __all__ = [
     'DCFAnalyzer',
+    'MoatAnalyzer',
 ]
 
 from .dcf_analyzer import DCFAnalyzer
+from .moat_analyzer import MoatAnalyzer
