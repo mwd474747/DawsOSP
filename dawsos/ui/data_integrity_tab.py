@@ -4,6 +4,7 @@ Data Integrity Tab - Real-time data integrity monitoring and management UI
 Provides visual monitoring of pattern consistency, knowledge base integrity, and system health
 """
 
+import logging
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -15,6 +16,8 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent))
 
 from core.data_integrity_manager import get_data_integrity_manager
+
+logger = logging.getLogger(__name__)
 
 
 def render_data_integrity_tab():
@@ -393,8 +396,14 @@ def render_backups_tab(dim):
                             st.text(f"📦 {backup_dir.name}")
                             st.text(f"   {created}")
 
-                        except:
+                        except FileNotFoundError:
                             st.text(f"📦 {backup_dir.name} (no manifest)")
+                        except json.JSONDecodeError as e:
+                            logger.warning(f"Corrupted manifest in {backup_dir.name}: {e}")
+                            st.text(f"📦 {backup_dir.name} (corrupted manifest)")
+                        except Exception as e:
+                            logger.error(f"Error reading backup manifest: {e}", exc_info=True)
+                            st.text(f"📦 {backup_dir.name} (error reading)")
             else:
                 st.info("No backups found")
         else:

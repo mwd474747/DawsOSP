@@ -101,7 +101,14 @@ class AgentValidator:
         try:
             from agents.base_agent import BaseAgent
             return issubclass(agent_class, BaseAgent)
-        except:
+        except (TypeError, AttributeError) as e:
+            logger.debug(f"Agent validation failed for {agent_class}: {e}")
+            return False
+        except ImportError as e:
+            logger.error(f"Failed to import BaseAgent: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error validating agent: {e}", exc_info=True)
             return False
 
     def _check_graph_usage(self, agent_class) -> Dict[str, Any]:

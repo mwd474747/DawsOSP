@@ -4,9 +4,12 @@ Governance Hooks - Creative integration patterns to make agents governance-aware
 Automatically improves graph effectiveness and outcome tracking
 """
 
+import logging
 from typing import Dict, Any, Callable
 from datetime import datetime
 import functools
+
+logger = logging.getLogger(__name__)
 
 
 class GovernanceHooks:
@@ -232,8 +235,12 @@ class GovernanceHooks:
             # For categorical predictions
             return 1.0 if predicted == actual else 0.0
 
-        except:
+        except (KeyError, TypeError) as e:
+            logger.warning(f"Accuracy calculation failed: {e}")
             return 0.5  # Default neutral accuracy
+        except Exception as e:
+            logger.error(f"Unexpected error in accuracy calculation: {e}", exc_info=True)
+            return 0.5
 
     def _adjust_relationship_strengths(self, node_id: str, accuracy: float):
         """Adjust relationship strengths based on prediction accuracy"""

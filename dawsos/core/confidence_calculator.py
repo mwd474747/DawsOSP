@@ -5,9 +5,12 @@ Based on data quality, model accuracy, historical success rates, and correlation
 """
 
 import math
+import logging
 from typing import Dict, Any, List
 from datetime import datetime
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class ConfidenceCalculator:
@@ -138,8 +141,10 @@ class ConfidenceCalculator:
                     quality_score += 0.1
                 elif age_hours > 168:  # Week old
                     quality_score -= 0.1
-            except:
-                pass
+            except (TypeError, ValueError) as e:
+                logger.debug(f"Age-based quality scoring skipped: {e}")
+            except Exception as e:
+                logger.error(f"Unexpected error in quality scoring: {e}", exc_info=True)
 
         # Check for data completeness
         missing_fields = kwargs.get('missing_fields', 0)

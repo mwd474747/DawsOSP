@@ -4,9 +4,12 @@ Investment Workflow Patterns for DawsOS
 These workflows codify the Buffett-Ackman-Dalio investment process
 """
 
+import logging
 from typing import Dict, List, Any
 from datetime import datetime
 import json
+
+logger = logging.getLogger(__name__)
 
 class InvestmentWorkflows:
     """Core investment workflow patterns"""
@@ -266,8 +269,12 @@ class InvestmentWorkflows:
         try:
             with open('storage/workflow_history.json', 'r') as f:
                 history = json.load(f)
-        except:
-            pass
+        except FileNotFoundError:
+            logger.debug("No workflow history file found")
+        except json.JSONDecodeError as e:
+            logger.warning(f"Corrupted workflow history: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error loading workflow history: {e}", exc_info=True)
 
         if workflow_name:
             return [h for h in history if h.get('workflow') == workflow_name]

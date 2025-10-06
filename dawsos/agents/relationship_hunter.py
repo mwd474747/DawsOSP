@@ -1,6 +1,9 @@
 """RelationshipHunter - Finds connections between nodes"""
+import logging
 from agents.base_agent import BaseAgent
 from typing import Dict, Any, List, Tuple
+
+logger = logging.getLogger(__name__)
 
 class RelationshipHunter(BaseAgent):
     """Hunts for relationships between nodes"""
@@ -130,7 +133,11 @@ class RelationshipHunter(BaseAgent):
             correlation = corr_matrix[0, 1]
 
             return round(correlation, 2) if not np.isnan(correlation) else 0.0
-        except:
+        except (ValueError, IndexError) as e:
+            logger.debug(f"Correlation calculation failed (likely insufficient data): {e}")
+            return 0.0
+        except Exception as e:
+            logger.error(f"Unexpected error calculating correlation: {e}", exc_info=True)
             return 0.0
 
     def _calculate_price_correlation(self, history1: List[Dict], history2: List[Dict]) -> float:

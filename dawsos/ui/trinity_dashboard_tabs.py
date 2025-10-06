@@ -4,10 +4,13 @@ Trinity Dashboard Tabs - Unified Trinity-architecture UI tabs
 All tabs leverage Pattern-Knowledge-Agent system for consistency and simplicity
 """
 
+import logging
 import streamlit as st
 import pandas as pd
 from datetime import datetime
 from typing import Dict, Any, List
+
+logger = logging.getLogger(__name__)
 
 # Plotly imports with error handling
 try:
@@ -809,7 +812,14 @@ class TrinityDashboardTabs:
                 last_backup = datetime.fromisoformat(backups[0]['modified']).strftime('%Y-%m-%d %H:%M')
             else:
                 last_backup = "No backups"
-        except:
+        except FileNotFoundError:
+            logger.debug("Backup directory not found")
+            last_backup = "No backup directory"
+        except PermissionError as e:
+            logger.warning(f"Permission denied accessing backups: {e}")
+            last_backup = "Permission denied"
+        except Exception as e:
+            logger.error(f"Error checking backups: {e}", exc_info=True)
             last_backup = "Unknown"
 
         return {
