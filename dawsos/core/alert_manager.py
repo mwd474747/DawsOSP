@@ -483,7 +483,7 @@ class AlertManager:
                 graph = runtime.pattern_engine.graph if hasattr(runtime.pattern_engine, 'graph') else None
                 if graph and hasattr(graph, 'nodes'):
                     data['graph'] = {
-                        'total_nodes': len(graph.nodes),
+                        'total_nodes': graph._graph.number_of_nodes(),
                         'growth_rate': 0  # Would track growth over time
                     }
 

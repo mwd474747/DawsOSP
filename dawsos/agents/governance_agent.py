@@ -694,7 +694,7 @@ class GovernanceAgent(BaseAgent):
             return None
 
         # Search for existing governance node
-        for node_id, node in self.graph.nodes.items():
+        for node_id, node in self.graph._graph.nodes(data=True):
             if node['type'] == 'governance' and node['data'].get('primary'):
                 return node_id
 
@@ -787,7 +787,7 @@ class GovernanceAgent(BaseAgent):
 
         # Pattern suggestions if few patterns executed
         if hasattr(self.graph, 'nodes'):
-            pattern_nodes = [n for n, data in self.graph.nodes.items() if data.get('type') == 'pattern_execution']
+            pattern_nodes = [n for n, data in self.graph._graph.nodes(data=True) if data.get('type') == 'pattern_execution']
             if len(pattern_nodes) < 5:
                 improvements.append({
                     'type': 'pattern_suggestion',
@@ -859,7 +859,7 @@ class GovernanceAgent(BaseAgent):
             target_nodes = context.get('target_nodes', [])
             if not target_nodes and self.graph:
                 # Get sample nodes for validation
-                target_nodes = list(self.graph.nodes.keys())[:10]
+                target_nodes = list(self.list(graph._graph.nodes()))[:10]
 
             validation_results = {
                 'compliant_count': 0,

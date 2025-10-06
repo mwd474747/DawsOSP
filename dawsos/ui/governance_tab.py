@@ -43,7 +43,7 @@ def render_governance_tab(runtime: Any, graph: Any) -> None:
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        total_nodes = graph_metrics.get('total_nodes', len(graph.nodes) if graph else 0)
+        total_nodes = graph_metrics.get('total_nodes', graph._graph.number_of_nodes() if graph else 0)
         st.metric(
             label="🔗 Graph Nodes",
             value=f"{total_nodes:,}",
@@ -554,9 +554,9 @@ def render_governance_tab(runtime: Any, graph: Any) -> None:
             st.success("✅ All nodes meet quality thresholds")
 
         # Quality distribution chart
-        if graph and len(graph.nodes) > 0:
+        if graph and graph._graph.number_of_nodes() > 0:
             quality_scores = []
-            for node_id in list(graph.nodes.keys())[:50]:  # Sample first 50 nodes
+            for node_id in list(list(graph._graph.nodes()))[:50]:  # Sample first 50 nodes
                 if hasattr(governance_agent, 'graph_governance'):
                     try:
                         score = governance_agent.graph_governance._calculate_quality_from_graph(node_id)
@@ -579,8 +579,8 @@ def render_governance_tab(runtime: Any, graph: Any) -> None:
         st.markdown("#### Data Lineage Explorer")
 
         # Node selector for lineage
-        if graph and len(graph.nodes) > 0:
-            node_options = list(graph.nodes.keys())[:100]  # Limit to 100 for performance
+        if graph and graph._graph.number_of_nodes() > 0:
+            node_options = list(list(graph._graph.nodes()))[:100]  # Limit to 100 for performance
             selected_node = st.selectbox(
                 "Select node to trace lineage:",
                 options=node_options,
@@ -622,7 +622,7 @@ def render_governance_tab(runtime: Any, graph: Any) -> None:
             policy_rule = st.text_area("Policy Rule", placeholder="e.g., All financial data must be updated daily")
 
             # Multi-select for nodes to apply policy to
-            if graph and len(graph.nodes) > 0:
+            if graph and graph._graph.number_of_nodes() > 0:
                 apply_to_types = st.multiselect(
                     "Apply to node types:",
                     options=['stock', 'indicator', 'sector', 'event', 'pattern'],
@@ -634,7 +634,7 @@ def render_governance_tab(runtime: Any, graph: Any) -> None:
                         try:
                             # Find nodes of selected types
                             applies_to = [
-                                node_id for node_id, node in graph.nodes.items()
+                                node_id for node_id, node in graph._graph.nodes(data=True)
                                 if node.get('type') in apply_to_types
                             ][:20]  # Limit to 20 nodes
 
@@ -652,7 +652,7 @@ def render_governance_tab(runtime: Any, graph: Any) -> None:
 
         if graph:
             policy_count = 0
-            for node_id, node in graph.nodes.items():
+            for node_id, node in graph._graph.nodes(data=True):
                 if node.get('type') == 'data_policy':
                     policy_count += 1
                     with st.expander(f"📜 {node['data'].get('name', node_id)}"):
@@ -799,7 +799,7 @@ def render_governance_tab(runtime: Any, graph: Any) -> None:
                 now = datetime.now()
                 recent_nodes = []
 
-                for node_id, node in graph.nodes.items():
+                for node_id, node in graph._graph.nodes(data=True):
                     created = node.get('created', '')
                     if created:
                         try:
@@ -844,12 +844,12 @@ def render_governance_tab(runtime: Any, graph: Any) -> None:
 
             # Calculate key metrics
             if graph:
-                total_nodes = len(graph.nodes)
-                total_edges = len(graph.edges) if hasattr(graph, 'edges') else 0
+                total_nodes = graph._graph.number_of_nodes()
+                total_edges = graph._graph.number_of_edges() if hasattr(graph, 'edges') else 0
 
                 # Node type distribution
                 node_types = {}
-                for node_id, node in graph.nodes.items():
+                for node_id, node in graph._graph.nodes(data=True):
                     node_type = node.get('type', 'unknown')
                     node_types[node_type] = node_types.get(node_type, 0) + 1
 
@@ -881,7 +881,7 @@ def render_governance_tab(runtime: Any, graph: Any) -> None:
         # Check for stale data
         if graph:
             stale_count = 0
-            for node_id, node in graph.nodes.items():
+            for node_id, node in graph._graph.nodes(data=True):
                 modified = node.get('modified', '')
                 if modified:
                     try:
@@ -931,8 +931,8 @@ def render_governance_tab(runtime: Any, graph: Any) -> None:
         # Add current snapshot
         current_snapshot = {
             'timestamp': datetime.now().isoformat(),
-            'nodes': len(graph.nodes) if graph else 0,
-            'edges': len(graph.edges) if graph and hasattr(graph, 'edges') else 0
+            'nodes': graph._graph.number_of_nodes() if graph else 0,
+            'edges': graph._graph.number_of_edges() if graph and hasattr(graph, 'edges') else 0
         }
 
         # Keep last 20 snapshots

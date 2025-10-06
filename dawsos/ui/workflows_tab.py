@@ -102,7 +102,7 @@ def render_workflows_tab(workflows: Any, graph: Any, runtime: Any) -> None:
 
                 # Find value opportunities
                 value_stocks = []
-                for node_id, node in graph.nodes.items():
+                for node_id, node in graph._graph.nodes(data=True):
                     if node['type'] == 'stock':
                         pe = node['data'].get('pe', 999)
                         if 0 < pe < 20:

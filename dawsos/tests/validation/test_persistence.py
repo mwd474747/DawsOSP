@@ -41,7 +41,7 @@ graph.add_node('stock', {'symbol': 'TEST1', 'price': 100}, 'TEST1')
 graph.add_node('indicator', {'value': 25000}, 'TEST_GDP')
 graph.connect('TEST_GDP', 'TEST1', 'influences', 0.7)
 
-print(f"✅ Created {len(graph.nodes)} nodes, {len(graph.edges)} edges")
+print(f"✅ Created {graph._graph.number_of_nodes()} nodes, {graph._graph.number_of_edges()} edges")
 
 # Save the graph
 print("\nSaving graph to disk...")
@@ -49,19 +49,19 @@ graph.save('storage/persistence_test.json')
 print("✅ Saved to storage/persistence_test.json")
 
 # Clear memory
-original_node_count = len(graph.nodes)
+original_node_count = graph._graph.number_of_nodes()
 graph.nodes = {}
 graph.edges = []
-print(f"✅ Cleared memory (nodes: {len(graph.nodes)})")
+print(f"✅ Cleared memory (nodes: {graph._graph.number_of_nodes()})")
 
 # Load it back
 print("\nLoading graph from disk...")
 graph.load('storage/persistence_test.json')
-print(f"✅ Loaded {len(graph.nodes)} nodes, {len(graph.edges)} edges")
-assert len(graph.nodes) == original_node_count, "Data loss detected!"
+print(f"✅ Loaded {graph._graph.number_of_nodes()} nodes, {graph._graph.number_of_edges()} edges")
+assert graph._graph.number_of_nodes() == original_node_count, "Data loss detected!"
 
 # Show loaded data
-for node_id, node in graph.nodes.items():
+for node_id, node in graph._graph.nodes(data=True):
     print(f"   - {node_id}: {node['type']} = {node['data']}")
 
 print("\n2. API CACHING")

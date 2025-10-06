@@ -155,7 +155,7 @@ result = test_case(
     "Should create 3 nodes"
 )
 
-initial_nodes = len(graph.nodes)
+initial_nodes = graph._graph.number_of_nodes()
 
 # Add economic indicator nodes
 gdp_node = graph.add_node('indicator', {'value': 30000, 'name': 'GDP'}, 'GDP')
@@ -163,11 +163,11 @@ cpi_node = graph.add_node('indicator', {'value': 3.5, 'name': 'CPI'}, 'CPI')
 aapl_node = graph.add_node('stock', {'ticker': 'AAPL', 'price': 175}, 'AAPL')
 
 print(f"   Initial nodes: {initial_nodes}")
-print(f"   Final nodes: {len(graph.nodes)}")
-print(f"   Added: {list(graph.nodes.keys())}")
+print(f"   Final nodes: {graph._graph.number_of_nodes()}")
+print(f"   Added: {list(list(graph._graph.nodes()))}")
 
-result['output'] = {'nodes_added': len(graph.nodes) - initial_nodes}
-result['success'] = len(graph.nodes) > initial_nodes
+result['output'] = {'nodes_added': graph._graph.number_of_nodes() - initial_nodes}
+result['success'] = graph._graph.number_of_nodes() > initial_nodes
 test_results['tests'].append(result)
 
 # Test 3.2: Create connections
@@ -177,18 +177,18 @@ result = test_case(
     "Should create relationships"
 )
 
-initial_edges = len(graph.edges)
+initial_edges = graph._graph.number_of_edges()
 
 # Create connections
 graph.connect('GDP', 'AAPL', 'influences', 0.7)
 graph.connect('CPI', 'AAPL', 'pressures', 0.5)
 
 print(f"   Initial edges: {initial_edges}")
-print(f"   Final edges: {len(graph.edges)}")
+print(f"   Final edges: {graph._graph.number_of_edges()}")
 print(f"   Connections: {[(e['from'], e['to'], e['type']) for e in graph.edges]}")
 
-result['output'] = {'edges_added': len(graph.edges) - initial_edges}
-result['success'] = len(graph.edges) > initial_edges
+result['output'] = {'edges_added': graph._graph.number_of_edges() - initial_edges}
+result['success'] = graph._graph.number_of_edges() > initial_edges
 test_results['tests'].append(result)
 
 # Test 3.3: Save and load
@@ -200,19 +200,19 @@ result = test_case(
 
 # Save current state
 graph.save('storage/test_graph.json')
-nodes_before = len(graph.nodes)
-edges_before = len(graph.edges)
+nodes_before = graph._graph.number_of_nodes()
+edges_before = graph._graph.number_of_edges()
 
 # Clear and reload
 graph.nodes = {}
 graph.edges = []
 graph.load('storage/test_graph.json')
 
-print(f"   Nodes before: {nodes_before}, after: {len(graph.nodes)}")
-print(f"   Edges before: {edges_before}, after: {len(graph.edges)}")
+print(f"   Nodes before: {nodes_before}, after: {graph._graph.number_of_nodes()}")
+print(f"   Edges before: {edges_before}, after: {graph._graph.number_of_edges()}")
 
-result['output'] = {'restored': len(graph.nodes) == nodes_before}
-result['success'] = len(graph.nodes) == nodes_before
+result['output'] = {'restored': graph._graph.number_of_nodes() == nodes_before}
+result['success'] = graph._graph.number_of_nodes() == nodes_before
 test_results['tests'].append(result)
 
 print("\n" + "=" * 80)
@@ -234,7 +234,7 @@ for p in patterns[:3]:  # Show first 3
     print(f"   - {p.get('pattern_type')}: {p.get('description', 'N/A')}")
 
 result['output'] = {'patterns': patterns}
-result['success'] = len(patterns) > 0 or len(graph.edges) < 3
+result['success'] = len(patterns) > 0 or graph._graph.number_of_edges() < 3
 test_results['tests'].append(result)
 
 print("\n" + "=" * 80)

@@ -81,7 +81,7 @@ class BaseAgent:
         query_lower = query.lower()
         keywords = query_lower.split()
         
-        for node_id, node in self.graph.nodes.items():
+        for node_id, node in self.graph._graph.nodes(data=True):
             # Check if node type matches focus areas
             if node['type'] in self.focus_areas:
                 relevant.append(node_id)

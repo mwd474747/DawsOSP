@@ -90,7 +90,7 @@ class TestTrinityFullFlow:
         runtime = trinity_stack['runtime']
         graph = trinity_stack['graph']
 
-        initial_node_count = len(graph.nodes)
+        initial_node_count = graph._graph.number_of_nodes()
 
         # Execute agent through runtime
         result = runtime.execute('data_digester', {
@@ -140,7 +140,7 @@ class TestTrinityFullFlow:
         executor = trinity_stack['executor']
         graph = trinity_stack['graph']
 
-        initial_nodes = len(graph.nodes)
+        initial_nodes = graph._graph.number_of_nodes()
 
         # Create request that should trigger pattern and agent
         request = {
@@ -434,7 +434,7 @@ class TestGraphStorageVerification:
         runtime = storage_stack['runtime']
         graph = storage_stack['graph']
 
-        initial_count = len(graph.nodes)
+        initial_count = graph._graph.number_of_nodes()
 
         # Execute agent that should store data
         result = runtime.execute('data_digester', {
@@ -446,7 +446,7 @@ class TestGraphStorageVerification:
         })
 
         # Should create nodes
-        final_count = len(graph.nodes)
+        final_count = graph._graph.number_of_nodes()
 
         # Execution might create nodes
         assert final_count >= initial_count, \

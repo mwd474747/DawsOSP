@@ -25,7 +25,7 @@ class GovernanceHooks:
             return {'allowed': True}
 
         # Check if target node exists and has governance policies
-        if isinstance(target, str) and target in self.graph.nodes:
+        if isinstance(target, str) and self.graph._graph.has_node(target):
             governance_check = self.graph_governance.check_governance(target)
 
             # Block action if quality too low
@@ -62,7 +62,7 @@ class GovernanceHooks:
         }, node_id=event_id)
 
         # Connect event to target
-        if target in self.graph.nodes:
+        if self.graph._graph.has_node(target):
             self.graph.connect(event_id, target, 'affected', strength=0.8)
 
         # Update node quality based on action success
@@ -86,7 +86,7 @@ class GovernanceHooks:
 
     def _update_node_quality(self, node_id: str, action: str, result: Any):
         """Update node quality based on action outcomes"""
-        if node_id not in self.graph.nodes:
+        if not self.graph._graph.has_node(node_id):
             return
 
         # Get current quality history (safe read via get_node)
@@ -151,7 +151,7 @@ class GovernanceHooks:
             # Track inputs
             input_nodes = []
             for arg in args:
-                if isinstance(arg, str) and arg in self.graph.nodes:
+                if isinstance(arg, str) and self.graph._graph.has_node(arg):
                     input_nodes.append(arg)
 
             # Execute function
@@ -181,7 +181,7 @@ class GovernanceHooks:
 
     def outcome_tracker(self, prediction_node: str, actual_outcome: Any) -> Dict[str, Any]:
         """Track prediction outcomes to improve graph effectiveness"""
-        if prediction_node not in self.graph.nodes:
+        if not self.graph._graph.has_node(prediction_node):
             return {'error': 'Prediction node not found'}
 
         # Get current outcomes (safe read via get_node)
@@ -245,14 +245,16 @@ class GovernanceHooks:
     def _adjust_relationship_strengths(self, node_id: str, accuracy: float):
         """Adjust relationship strengths based on prediction accuracy"""
         # Strengthen relationships that led to accurate predictions
-        for edge in self.graph.edges:
-            if edge['to'] == node_id:
+        for u, v, attrs in self.graph._graph.edges(data=True):
+            if v == node_id:
                 if accuracy > 0.8:
                     # Strengthen good relationships
-                    edge['strength'] = min(1.0, edge['strength'] * 1.1)
+                    new_strength = min(1.0, attrs.get('strength', 0.5) * 1.1)
+                    self.graph._graph.edges[u, v]['strength'] = new_strength
                 elif accuracy < 0.4:
                     # Weaken poor relationships
-                    edge['strength'] = max(0.1, edge['strength'] * 0.9)
+                    new_strength = max(0.1, attrs.get('strength', 0.5) * 0.9)
+                    self.graph._graph.edges[u, v]['strength'] = new_strength
 
     def governance_score(self, node_id: str) -> float:
         """Get overall governance score for a node"""
@@ -263,7 +265,7 @@ class GovernanceHooks:
         quality = gov_check.get('quality_score', 0.5)
 
         # Factor in outcome accuracy if available
-        if node_id in self.graph.nodes:
+        if self.graph._graph.has_node(node_id):
             # Safe read via get_node
             node = self.graph.get_node(node_id)
             outcomes = node.get('data', {}).get('outcomes', [])

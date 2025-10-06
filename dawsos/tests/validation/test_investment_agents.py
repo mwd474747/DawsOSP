@@ -90,7 +90,7 @@ print("=" * 80)
 print("\n🔍 Finding value opportunities...")
 
 # Get all stock nodes
-stock_nodes = [(node_id, node) for node_id, node in graph.nodes.items()
+stock_nodes = [(node_id, node) for node_id, node in graph._graph.nodes(data=True)
                if node['type'] == 'stock']
 
 print(f"Found {len(stock_nodes)} stocks in graph")
@@ -111,7 +111,7 @@ if value_stocks:
     for stock in sorted(value_stocks, key=lambda x: x['pe']):
         # Find sector connection
         sector = None
-        for edge in graph.edges:
+        for u, v, attrs in graph._graph.edges(data=True):
             if edge['to'] == stock['symbol'] and edge['type'] == 'contains':
                 sector = edge['from']
                 break
@@ -179,7 +179,7 @@ print("\n🔮 Generating regime-aware forecasts...")
 assets_to_forecast = ['SPY', 'TECHNOLOGY', 'FINANCIALS', 'HEALTHCARE']
 
 for asset in assets_to_forecast:
-    if asset in graph.nodes:
+    if graph._graph.has_node(asset):
         forecast = graph.forecast(asset)
 
         # Check if forecast considers regime

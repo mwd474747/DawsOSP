@@ -113,7 +113,7 @@ class FinancialAnalyst(BaseAgent):
     def _find_or_create_company_node(self, symbol: str, financial_data: Dict = None) -> str:
         """Find existing company node or create a new one"""
         # Search for existing company node
-        for node_id, node in self.graph.nodes.items():
+        for node_id, node in self.graph._graph.nodes(data=True):
             if node['type'] == 'company' and node['data'].get('symbol') == symbol:
                 return node_id
 
@@ -911,7 +911,7 @@ class FinancialAnalyst(BaseAgent):
         for indicator in key_indicators:
             # Query graph for indicator node
             indicator_nodes = [
-                node_id for node_id, node in self.graph.nodes.items()
+                node_id for node_id, node in self.graph._graph.nodes(data=True)
                 if node.get('type') == 'indicator' and 
                    node.get('data', {}).get('name') == indicator
             ]

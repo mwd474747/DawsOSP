@@ -356,7 +356,7 @@ class RelationshipHunter(BaseAgent):
                 return []
 
             # Check against all other nodes
-            for other_id, other_node in self.graph.nodes.items():
+            for other_id, other_node in self.graph._graph.nodes(data=True):
                 if other_id != node_id:
                     relationship = self._check_relationship(node_id, other_id)
                     if relationship.get('exists'):
@@ -448,7 +448,7 @@ class RelationshipHunter(BaseAgent):
 
         # Sort by creation time and get most recent
         sorted_nodes = sorted(
-            self.graph.nodes.items(),
+            self.graph._graph.nodes(data=True),
             key=lambda x: x[1].get('created', ''),
             reverse=True
         )
@@ -473,7 +473,7 @@ class RelationshipHunter(BaseAgent):
         # Suggest connections based on type
         node_type = node.get('type')
 
-        for other_id, other_node in self.graph.nodes.items():
+        for other_id, other_node in self.graph._graph.nodes(data=True):
             if other_id == node_id:
                 continue
 

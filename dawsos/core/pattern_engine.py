@@ -545,7 +545,7 @@ class PatternEngine:
                 if self.graph:
                     nodes = [
                         {'id': nid, **ndata}
-                        for nid, ndata in self.graph.nodes.items()
+                        for nid, ndata in self.graph._graph.nodes(data=True)
                         if ndata.get('type') == node_type
                     ]
                     return {
@@ -559,9 +559,9 @@ class PatternEngine:
             elif data_type == "graph_node":
                 # Get single node by ID
                 node_id = query
-                if self.graph and node_id in self.graph.nodes:
+                if self.graph and self.graph._graph.has_node(node_id):
                     return {
-                        'data': {'id': node_id, **self.graph.nodes[node_id]},
+                        'data': self.graph.get_node(node_id),
                         'found': True
                     }
                 return {'data': None, 'found': False}

@@ -63,8 +63,8 @@ print(f"   After adding node: {stats_after_add['total_nodes']} nodes")
 print(f"   ✅ Knowledge Graph updates dynamically (was {initial_stats['total_nodes']}, now {stats_after_add['total_nodes']})")
 
 # Add a connection
-if len(list(graph.nodes.keys())) >= 2:
-    nodes = list(graph.nodes.keys())
+if len(list(list(graph._graph.nodes()))) >= 2:
+    nodes = list(list(graph._graph.nodes()))
     graph.connect(nodes[0], test_node1, 'test_relationship')
     stats_after_connect = graph.get_stats()
     print(f"   After adding edge: {stats_after_connect['total_edges']} edges")

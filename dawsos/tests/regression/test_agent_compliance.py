@@ -228,7 +228,7 @@ class TestGraphStorage:
 
     def test_data_digester_stores_in_graph(self, graph):
         """Test DataDigester stores results in graph"""
-        initial_node_count = len(graph.nodes)
+        initial_node_count = graph._graph.number_of_nodes()
 
         agent = DataDigester(graph)
         result = agent.digest_market_data({
@@ -238,13 +238,13 @@ class TestGraphStorage:
             'change_percent': 1.7
         })
 
-        assert len(graph.nodes) > initial_node_count, "Should add node to graph"
+        assert graph._graph.number_of_nodes() > initial_node_count, "Should add node to graph"
         assert 'node_id' in result, "Result should include node_id"
 
     def test_workflow_recorder_stores_in_graph(self, graph):
         """Test WorkflowRecorder stores results when graph available"""
         agent = WorkflowRecorder(graph)
-        initial_node_count = len(graph.nodes)
+        initial_node_count = graph._graph.number_of_nodes()
 
         interaction = {
             'intent': 'query_stock',

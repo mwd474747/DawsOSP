@@ -73,21 +73,21 @@ print("\n3. Testing knowledge graph integration...")
 
 # Query Buffett framework
 print("\n📚 Buffett Framework Nodes:")
-buffett_nodes = [node for node_id, node in graph.nodes.items()
+buffett_nodes = [node for node_id, node in graph._graph.nodes(data=True)
                  if 'Buffett' in str(node.get('data', {}).get('name', ''))]
 for node in buffett_nodes[:3]:
     print(f"   • {node['data'].get('name', 'Unknown')}: {node['type']}")
 
 # Query Dalio framework
 print("\n📚 Dalio Framework Nodes:")
-dalio_nodes = [node for node_id, node in graph.nodes.items()
+dalio_nodes = [node for node_id, node in graph._graph.nodes(data=True)
                if 'Dalio' in str(node.get('data', {}).get('name', ''))]
 for node in dalio_nodes[:3]:
     print(f"   • {node['data'].get('name', 'Unknown')}: {node['type']}")
 
 # Test tracing connections
 print("\n4. Testing knowledge connections...")
-framework_nodes = [node_id for node_id, node in graph.nodes.items()
+framework_nodes = [node_id for node_id, node in graph._graph.nodes(data=True)
                    if node['type'] == 'framework']
 
 if framework_nodes:

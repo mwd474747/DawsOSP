@@ -78,7 +78,7 @@ class GraphMind(BaseAgent):
         """
         context = {
             "node": self.graph.nodes.get(node) if self.graph else {},
-            "existing_nodes": list(self.graph.nodes.keys()) if self.graph else [],
+            "existing_nodes": list(self.list(graph._graph.nodes())) if self.graph else [],
             "question": "What should this connect to?"
         }
         return self.think(context)

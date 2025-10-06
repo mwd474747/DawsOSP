@@ -22,7 +22,7 @@ def test_persistence_wiring():
     graph.add_node('test', data={'name': 'Test Node 1', 'value': 100})
     graph.add_node('test', data={'name': 'Test Node 2', 'value': 200})
 
-    print(f"✅ Created test graph with {len(graph.nodes)} nodes")
+    print(f"✅ Created test graph with {graph._graph.number_of_nodes()} nodes")
     print()
 
     # Test save_graph_with_backup()

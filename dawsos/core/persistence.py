@@ -54,8 +54,8 @@ class PersistenceManager:
         metadata = {
             'timestamp': datetime.now().isoformat(),
             'checksum': checksum,
-            'node_count': len(graph.nodes) if hasattr(graph, 'nodes') else 0,
-            'edge_count': len(graph.edges) if hasattr(graph, 'edges') else 0,
+            'node_count': graph._graph.number_of_nodes() if hasattr(graph, 'nodes') else 0,
+            'edge_count': graph._graph.number_of_edges() if hasattr(graph, 'edges') else 0,
             'graph_version': self.graph_version,
             'saved_by': 'DawsOS PersistenceManager'
         }
@@ -185,13 +185,13 @@ class PersistenceManager:
                 logger.warning(f"Could not verify backup integrity: {e}")
 
         # Load the backup
-        original_node_count = len(graph.nodes) if hasattr(graph, 'nodes') else 0
-        original_edge_count = len(graph.edges) if hasattr(graph, 'edges') else 0
+        original_node_count = graph._graph.number_of_nodes() if hasattr(graph, 'nodes') else 0
+        original_edge_count = graph._graph.number_of_edges() if hasattr(graph, 'edges') else 0
 
         graph.load(backup_path)
 
-        new_node_count = len(graph.nodes) if hasattr(graph, 'nodes') else 0
-        new_edge_count = len(graph.edges) if hasattr(graph, 'edges') else 0
+        new_node_count = graph._graph.number_of_nodes() if hasattr(graph, 'nodes') else 0
+        new_edge_count = graph._graph.number_of_edges() if hasattr(graph, 'edges') else 0
 
         stats = {
             'success': True,
@@ -341,8 +341,8 @@ class PersistenceManager:
                     'success': True,
                     'source': 'primary',
                     'integrity_verified': True,
-                    'nodes': len(graph.nodes) if hasattr(graph, 'nodes') else 0,
-                    'edges': len(graph.edges) if hasattr(graph, 'edges') else 0
+                    'nodes': graph._graph.number_of_nodes() if hasattr(graph, 'nodes') else 0,
+                    'edges': graph._graph.number_of_edges() if hasattr(graph, 'edges') else 0
                 }
             else:
                 logger.warning(f"Graph integrity check failed: {integrity['error']}")

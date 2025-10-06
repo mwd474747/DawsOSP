@@ -1061,7 +1061,7 @@ class TrinityDashboardTabs:
         # Get recent nodes
         recent_nodes = []
         if hasattr(self.graph, 'nodes'):
-            for node_id, node_data in list(self.graph.nodes.items())[-10:]:
+            for node_id, node_data in list(self.graph._graph.nodes(data=True))[-10:]:
                 recent_nodes.append({
                     'Node ID': node_id,
                     'Type': node_data.get('type', 'unknown'),

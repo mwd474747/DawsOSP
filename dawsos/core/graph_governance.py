@@ -51,17 +51,17 @@ class GraphGovernance:
 
         # Connect policy to what it governs
         for target in applies_to:
-            if target in self.graph.nodes:
+            if self.graph._graph.has_node(target):
                 self.graph.connect(policy_id, target, 'governs', strength=1.0)
 
         return policy_id
 
     def check_governance(self, node_id: str) -> Dict[str, Any]:
         """Enhanced governance check with loaded policies"""
-        if node_id not in self.graph.nodes:
+        if not self.graph._graph.has_node(node_id):
             return {'status': 'not_found'}
 
-        node = self.graph.nodes[node_id]
+        node = self.graph._graph.nodes[node_id]
         node_type = node.get('type', 'unknown')
         violations = []
 
@@ -97,14 +97,14 @@ class GraphGovernance:
 
         # Find all policies governing this node
         policies = []
-        for edge in self.graph.edges:
-            if edge['to'] == node_id and edge['type'] == 'governs':
-                policy = self.graph.nodes[edge['from']]
-                if policy['type'] == 'data_policy':
+        for u, v, attrs in self.graph._graph.edges(data=True):
+            if v == node_id and attrs.get('type') == 'governs':
+                policy = self.graph._graph.nodes[u]
+                if policy.get('type') == 'data_policy':
                     policies.append({
-                        'policy': policy['data']['name'],
-                        'rule': policy['data']['rule'],
-                        'active': policy['data']['active']
+                        'policy': policy.get('data', {}).get('name'),
+                        'rule': policy.get('data', {}).get('rule'),
+                        'active': policy.get('data', {}).get('active')
                     })
 
         return {
@@ -118,7 +118,7 @@ class GraphGovernance:
 
     def _calculate_quality_from_graph(self, node_id: str) -> float:
         """Calculate data quality based on graph relationships"""
-        node = self.graph.nodes[node_id]
+        node = self.graph._graph.nodes[node_id]
 
         # Quality based on:
         # 1. Number of connections (more connections = more validated)
@@ -132,9 +132,9 @@ class GraphGovernance:
         # 3. Relationship strength (stronger relationships = better quality)
         avg_strength = 0
         strength_count = 0
-        for edge in self.graph.edges:
-            if edge['from'] == node_id or edge['to'] == node_id:
-                avg_strength += edge.get('strength', 0.5)
+        for u, v, attrs in self.graph._graph.edges(data=True):
+            if u == node_id or v == node_id:
+                avg_strength += attrs.get('strength', 0.5)
                 strength_count += 1
 
         strength_score = avg_strength / strength_count if strength_count > 0 else 0.5
@@ -146,7 +146,7 @@ class GraphGovernance:
 
     def trace_data_lineage(self, node_id: str, max_depth: int = 5) -> List[List[str]]:
         """Trace data lineage through graph relationships"""
-        if node_id not in self.graph.nodes:
+        if not self.graph._graph.has_node(node_id):
             return []
 
         lineage_paths = []
@@ -161,10 +161,10 @@ class GraphGovernance:
 
             # Find upstream nodes (data sources)
             has_upstream = False
-            for edge in self.graph.edges:
-                if edge['to'] == current_id and edge['type'] in ['flows_to', 'feeds', 'influences']:
+            for u, v, attrs in self.graph._graph.edges(data=True):
+                if v == current_id and attrs.get('type') in ['flows_to', 'feeds', 'influences']:
                     has_upstream = True
-                    trace_path(edge['from'], current_path, depth + 1)
+                    trace_path(u, current_path, depth + 1)
 
             # If no upstream, this is a source
             if not has_upstream and len(current_path) > 1:
@@ -217,8 +217,8 @@ class GraphGovernance:
                 applies_to = self._extract_nodes_from_request(request)
                 if not applies_to:
                     # Apply to all financial data nodes
-                    applies_to = [n for n, data in self.graph.nodes.items()
-                                if data['type'] in ['stock', 'indicator', 'sector']][:10]
+                    applies_to = [n for n, data in self.graph._graph.nodes(data=True)
+                                if data.get('type') in ['stock', 'indicator', 'sector']][:10]
 
                 policy_id = self.add_governance_policy(policy_name, rule, applies_to)
 
@@ -236,8 +236,8 @@ class GraphGovernance:
     def comprehensive_governance_check(self) -> Dict[str, Any]:
         """Run comprehensive governance check across the graph"""
         results = {
-            'total_nodes': len(self.graph.nodes),
-            'total_edges': len(self.graph.edges),
+            'total_nodes': self.graph._graph.number_of_nodes(),
+            'total_edges': self.graph._graph.number_of_edges(),
             'governance_policies': 0,
             'quality_issues': [],
             'lineage_gaps': [],
@@ -246,7 +246,7 @@ class GraphGovernance:
 
         quality_scores = []
 
-        for node_id, node in self.graph.nodes.items():
+        for node_id, node in self.graph._graph.nodes(data=True):
             # Check each node's governance
             gov_check = self.check_governance(node_id)
             quality_scores.append(gov_check['quality_score'])
@@ -255,7 +255,7 @@ class GraphGovernance:
                 results['quality_issues'].append({
                     'node': node_id,
                     'score': gov_check['quality_score'],
-                    'type': node['type']
+                    'type': node.get('type')
                 })
 
             # Count policies
@@ -265,14 +265,14 @@ class GraphGovernance:
         results['overall_health'] = round(sum(quality_scores) / len(quality_scores), 2) if quality_scores else 0
 
         # Check for orphan nodes (lineage gaps)
-        for node_id, node in self.graph.nodes.items():
+        for node_id, node in self.graph._graph.nodes(data=True):
             incoming = len(node.get('connections_in', []))
             outgoing = len(node.get('connections_out', []))
 
             if incoming == 0 and outgoing == 0:
                 results['lineage_gaps'].append({
                     'node': node_id,
-                    'type': node['type'],
+                    'type': node.get('type'),
                     'issue': 'orphan_node'
                 })
 
@@ -283,7 +283,7 @@ class GraphGovernance:
         nodes = []
 
         # Look for known node patterns
-        for node_id, node in self.graph.nodes.items():
+        for node_id, node in self.graph._graph.nodes(data=True):
             if node_id.lower() in request.lower():
                 nodes.append(node_id)
             elif 'data' in node and isinstance(node['data'], dict):
@@ -312,7 +312,7 @@ class GraphGovernance:
         """Graph evolves based on quality and usage patterns"""
         evolution_actions = []
 
-        for node_id, node in self.graph.nodes.items():
+        for node_id, node in self.graph._graph.nodes(data=True):
             quality = self._calculate_quality_from_graph(node_id)
 
             # Weak nodes get marked for refresh
@@ -336,25 +336,28 @@ class GraphGovernance:
 
             # Strong nodes strengthen their connections
             elif quality > 0.8:
-                for edge in self.graph.edges:
-                    if edge['from'] == node_id or edge['to'] == node_id:
+                for u, v, attrs in self.graph._graph.edges(data=True):
+                    if u == node_id or v == node_id:
                         # Strengthen good relationships
-                        old_strength = edge.get('strength', 0.5)
-                        edge['strength'] = min(1.0, old_strength * 1.1)
+                        old_strength = attrs.get('strength', 0.5)
+                        new_strength = min(1.0, old_strength * 1.1)
+                        self.graph._graph.edges[u, v]['strength'] = new_strength
 
-                        if old_strength != edge['strength']:
+                        if old_strength != new_strength:
                             evolution_actions.append({
                                 'action': 'strengthen_edge',
-                                'from': edge['from'],
-                                'to': edge['to'],
+                                'from': u,
+                                'to': v,
                                 'old_strength': old_strength,
-                                'new_strength': edge['strength']
+                                'new_strength': new_strength
                             })
 
         # Auto-prune very weak edges
-        original_edge_count = len(self.graph.edges)
-        self.graph.edges = [e for e in self.graph.edges if e.get('strength', 0.5) > 0.1]
-        pruned_count = original_edge_count - len(self.graph.edges)
+        original_edge_count = self.graph._graph.number_of_edges()
+        edges_to_remove = [(u, v) for u, v, attrs in self.graph._graph.edges(data=True)
+                          if attrs.get('strength', 0.5) <= 0.1]
+        self.graph._graph.remove_edges_from(edges_to_remove)
+        pruned_count = len(edges_to_remove)
 
         if pruned_count > 0:
             evolution_actions.append({

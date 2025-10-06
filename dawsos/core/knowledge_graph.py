@@ -3,10 +3,13 @@
 KnowledgeGraph - NetworkX-powered graph with legacy API compatibility
 Migrated from dict/list to NetworkX for 10x performance improvement
 Version 2.0 - October 2025
+
+Phase 3.2: Legacy properties marked with deprecation warnings.
 """
 import json
 import os
 import uuid
+import warnings
 from datetime import datetime
 from typing import Dict, List, Optional, Any, TypeAlias, Tuple, Set
 import networkx as nx
@@ -34,13 +37,25 @@ class KnowledgeGraph:
         self.version = 2  # Version 2 = NetworkX backend
 
     # ============ BACKWARD COMPATIBILITY PROPERTIES ============
+    # Phase 3.2: These properties are deprecated and will be removed in Phase 4
+    # Use get_node() and get_all_edges() instead
 
     @property
     def nodes(self) -> Dict[str, Dict]:
         """
-        Legacy nodes dict interface
+        DEPRECATED: Legacy nodes dict interface (Phase 3.2)
+
+        This property will be removed in a future release.
+        Use get_node(node_id) for single nodes or iterate with _graph.nodes(data=True).
+
         Returns: {node_id: {id, type, data, created, modified, ...}}
         """
+        warnings.warn(
+            "graph.nodes property is deprecated and will be removed in Phase 4. "
+            "Use get_node(node_id) or _graph.nodes(data=True) instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         return {
             node_id: {
                 'id': node_id,
@@ -52,9 +67,19 @@ class KnowledgeGraph:
     @property
     def edges(self) -> List[Dict]:
         """
-        Legacy edges list interface
+        DEPRECATED: Legacy edges list interface (Phase 3.2)
+
+        This property will be removed in a future release.
+        Use get_all_edges() or _graph.edges(data=True) instead.
+
         Returns: [{id, from, to, type, strength, ...}, ...]
         """
+        warnings.warn(
+            "graph.edges property is deprecated and will be removed in Phase 4. "
+            "Use get_all_edges() or _graph.edges(data=True) instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         edges_list = []
         for u, v, attrs in self._graph.edges(data=True):
             edge_dict = {
@@ -430,10 +455,20 @@ class KnowledgeGraph:
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
         # Convert NetworkX graph to legacy JSON format
+        nodes_dict = {
+            node_id: {'id': node_id, **attrs}
+            for node_id, attrs in self._graph.nodes(data=True)
+        }
+
+        edges_list = [
+            {'from': u, 'to': v, **attrs}
+            for u, v, attrs in self._graph.edges(data=True)
+        ]
+
         legacy_data = {
             'version': self.version,
-            'nodes': self.nodes,  # Uses @property
-            'edges': self.edges,  # Uses @property
+            'nodes': nodes_dict,
+            'edges': edges_list,
             'patterns': self.patterns,
             'forecasts': self.forecasts,
             'metadata': {
@@ -487,9 +522,17 @@ class KnowledgeGraph:
         total_nodes = self._graph.number_of_nodes()
 
         if total_nodes <= max_nodes:
+            nodes_dict = {
+                node_id: {'id': node_id, **attrs}
+                for node_id, attrs in self._graph.nodes(data=True)
+            }
+            edges_list = [
+                {'from': u, 'to': v, **attrs}
+                for u, v, attrs in self._graph.edges(data=True)
+            ]
             return {
-                'nodes': self.nodes,
-                'edges': self.edges,
+                'nodes': nodes_dict,
+                'edges': edges_list,
                 'sampled': False,
                 'total_nodes': total_nodes,
                 'total_edges': self._graph.number_of_edges()

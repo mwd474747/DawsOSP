@@ -141,14 +141,14 @@ test_node = graph.add_node(node_type='test_company', data={
 print(f"   ✅ Node addition: {test_node}")
 
 # Test connection creation
-if len(list(graph.nodes.keys())) >= 2:
-    nodes = list(graph.nodes.keys())
+if len(list(list(graph._graph.nodes()))) >= 2:
+    nodes = list(list(graph._graph.nodes()))
     success = graph.connect(nodes[0], nodes[1], 'test_relationship')
     print(f"   ✅ Connection creation: {success}")
 
 # Test path tracing
 if graph.nodes:
-    first_node = list(graph.nodes.keys())[0]
+    first_node = list(list(graph._graph.nodes()))[0]
     paths = graph.trace_connections(first_node, max_depth=2)
     print(f"   ✅ Path tracing: {len(paths)} paths found")
 

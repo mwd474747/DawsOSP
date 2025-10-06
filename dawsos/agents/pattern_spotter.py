@@ -230,7 +230,7 @@ class PatternSpotter(BaseAgent):
         avg_connections = stats.get('avg_connections', 0)
 
         # Find over-connected nodes
-        for node_id, node in self.graph.nodes.items():
+        for node_id, node in self.graph._graph.nodes(data=True):
             connection_count = len(node.get('connections_in', [])) + len(node.get('connections_out', []))
             if connection_count > avg_connections * 3:
                 anomalies.append({
@@ -242,7 +242,7 @@ class PatternSpotter(BaseAgent):
                 })
 
         # Find isolated nodes
-        for node_id, node in self.graph.nodes.items():
+        for node_id, node in self.graph._graph.nodes(data=True):
             connection_count = len(node.get('connections_in', [])) + len(node.get('connections_out', []))
             if connection_count == 0:
                 anomalies.append({
