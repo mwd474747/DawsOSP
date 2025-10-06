@@ -1,17 +1,43 @@
-"""RefactorElf - Keeps code simple and clean"""
+"""RefactorElf - Keeps code simple and clean
+
+Phase 3.1: Added comprehensive type hints for better type safety.
+"""
 from agents.base_agent import BaseAgent
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional, TypeAlias
+
+# Type aliases for clarity
+ContextDict: TypeAlias = Dict[str, Any]
+ResultDict: TypeAlias = Dict[str, Any]
+IssueList: TypeAlias = List[Dict[str, Any]]
 
 class RefactorElf(BaseAgent):
     """Simplifies code that gets too complex"""
 
-    def __init__(self, graph=None, llm_client=None):
-        super().__init__("RefactorElf", graph, llm_client)
-        self.vibe = "minimalist"
-        self.complexity_limit = 50  # Lines per function
-        self.file_limit = 200  # Lines per file
+    def __init__(
+        self,
+        graph: Optional[Any] = None,
+        llm_client: Optional[Any] = None
+    ) -> None:
+        """Initialize RefactorElf with optional graph and LLM client.
 
-    def get_prompt(self, context: Dict[str, Any]) -> str:
+        Args:
+            graph: Optional knowledge graph instance
+            llm_client: Optional LLM client for generation
+        """
+        super().__init__("RefactorElf", graph, llm_client)
+        self.vibe: str = "minimalist"
+        self.complexity_limit: int = 50  # Lines per function
+        self.file_limit: int = 200  # Lines per file
+
+    def get_prompt(self, context: ContextDict) -> str:
+        """Generate prompt for code refactoring suggestions.
+
+        Args:
+            context: Dictionary with code and issue
+
+        Returns:
+            Formatted prompt string
+        """
         return f"""
         You are RefactorElf, the simplifier.
 
@@ -27,8 +53,15 @@ class RefactorElf(BaseAgent):
         Suggest the action and how to do it.
         """
 
-    def scan_complexity(self, file_path: str) -> Dict[str, Any]:
-        """Scan a file for complexity issues"""
+    def scan_complexity(self, file_path: str) -> ResultDict:
+        """Scan a file for complexity issues.
+
+        Args:
+            file_path: Path to file to scan
+
+        Returns:
+            Dictionary with file, issues list, and needs_refactoring flag
+        """
         try:
             with open(file_path, 'r') as f:
                 lines = f.readlines()
@@ -71,8 +104,15 @@ class RefactorElf(BaseAgent):
         except Exception as e:
             return {"error": str(e)}
 
-    def suggest_split(self, function_code: str) -> Dict[str, Any]:
-        """Suggest how to split a function"""
+    def suggest_split(self, function_code: str) -> ResultDict:
+        """Suggest how to split a function.
+
+        Args:
+            function_code: Code of function to split
+
+        Returns:
+            Dictionary with split suggestions
+        """
         context = {
             "code": function_code,
             "issue": "function too long",
@@ -80,8 +120,15 @@ class RefactorElf(BaseAgent):
         }
         return self.think(context)
 
-    def simplify_code(self, code: str) -> Dict[str, Any]:
-        """Suggest simpler version of code"""
+    def simplify_code(self, code: str) -> ResultDict:
+        """Suggest simpler version of code.
+
+        Args:
+            code: Code to simplify
+
+        Returns:
+            Dictionary with simplification suggestions
+        """
         context = {
             "code": code,
             "issue": "too complex",
@@ -92,11 +139,24 @@ class RefactorElf(BaseAgent):
 class ComplexityScanner(BaseAgent):
     """Sub-agent that finds complex code"""
 
-    def __init__(self, llm_client=None):
-        super().__init__("ComplexityScanner", None, llm_client)
-        self.vibe = "detective"
+    def __init__(self, llm_client: Optional[Any] = None) -> None:
+        """Initialize ComplexityScanner with optional LLM client.
 
-    def get_prompt(self, context: Dict[str, Any]) -> str:
+        Args:
+            llm_client: Optional LLM client for generation
+        """
+        super().__init__("ComplexityScanner", None, llm_client)
+        self.vibe: str = "detective"
+
+    def get_prompt(self, context: ContextDict) -> str:
+        """Generate prompt for complexity detection.
+
+        Args:
+            context: Dictionary with code to analyze
+
+        Returns:
+            Formatted prompt string
+        """
         return f"""
         Find complexity in this code.
 
@@ -115,11 +175,24 @@ class ComplexityScanner(BaseAgent):
 class Splitter(BaseAgent):
     """Sub-agent that suggests how to split code"""
 
-    def __init__(self, llm_client=None):
-        super().__init__("Splitter", None, llm_client)
-        self.vibe = "surgical"
+    def __init__(self, llm_client: Optional[Any] = None) -> None:
+        """Initialize Splitter with optional LLM client.
 
-    def get_prompt(self, context: Dict[str, Any]) -> str:
+        Args:
+            llm_client: Optional LLM client for generation
+        """
+        super().__init__("Splitter", None, llm_client)
+        self.vibe: str = "surgical"
+
+    def get_prompt(self, context: ContextDict) -> str:
+        """Generate prompt for code splitting suggestions.
+
+        Args:
+            context: Dictionary with code and lines
+
+        Returns:
+            Formatted prompt string
+        """
         return f"""
         Split this code into smaller pieces.
 

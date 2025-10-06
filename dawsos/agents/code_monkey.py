@@ -1,20 +1,45 @@
-"""CodeMonkey - The agent that writes actual code"""
+"""CodeMonkey - The agent that writes actual code
+
+Phase 3.1: Added comprehensive type hints for better type safety.
+"""
 from agents.base_agent import BaseAgent
-from typing import Dict, Any
+from typing import Dict, Any, Optional, TypeAlias
 import os
 import logging
 
 logger = logging.getLogger(__name__)
 
+# Type aliases for clarity
+ContextDict: TypeAlias = Dict[str, Any]
+ResultDict: TypeAlias = Dict[str, Any]
+
 class CodeMonkey(BaseAgent):
     """Simple code writer - keeps everything simple"""
 
-    def __init__(self, graph=None, llm_client=None):
-        super().__init__("CodeMonkey", graph, llm_client)
-        self.vibe = "eager to code"
-        self.max_lines = 50  # Keep it simple!
+    def __init__(
+        self,
+        graph: Optional[Any] = None,
+        llm_client: Optional[Any] = None
+    ) -> None:
+        """Initialize CodeMonkey with graph and optional LLM client.
 
-    def get_prompt(self, context: Dict[str, Any]) -> str:
+        Args:
+            graph: Optional knowledge graph instance
+            llm_client: Optional LLM client for generation
+        """
+        super().__init__("CodeMonkey", graph, llm_client)
+        self.vibe: str = "eager to code"
+        self.max_lines: int = 50  # Keep it simple!
+
+    def get_prompt(self, context: ContextDict) -> str:
+        """Generate prompt for code writing.
+
+        Args:
+            context: Dictionary with task, file_path, language
+
+        Returns:
+            Formatted prompt string
+        """
         return f"""
         You are CodeMonkey, a simple code writer.
 
@@ -33,8 +58,17 @@ class CodeMonkey(BaseAgent):
         Write the code:
         """
 
-    def write_function(self, function_name: str, purpose: str, file_path: str) -> Dict[str, Any]:
-        """Write a single function"""
+    def write_function(self, function_name: str, purpose: str, file_path: str) -> ResultDict:
+        """Write a single function.
+
+        Args:
+            function_name: Name of function to create
+            purpose: What the function should do
+            file_path: Path to write the function
+
+        Returns:
+            Dictionary with code and status
+        """
         context = {
             "task": f"Write a function called {function_name} that {purpose}",
             "file_path": file_path,
@@ -49,8 +83,16 @@ class CodeMonkey(BaseAgent):
 
         return response
 
-    def fix_bug(self, file_path: str, bug_description: str) -> Dict[str, Any]:
-        """Fix a bug in existing code"""
+    def fix_bug(self, file_path: str, bug_description: str) -> ResultDict:
+        """Fix a bug in existing code.
+
+        Args:
+            file_path: Path to file with bug
+            bug_description: Description of the bug
+
+        Returns:
+            Dictionary with fixed code
+        """
         # Read current code
         current_code = self._read_file(file_path)
 
@@ -62,8 +104,16 @@ class CodeMonkey(BaseAgent):
 
         return self.think(context)
 
-    def simplify(self, file_path: str, function_name: str) -> Dict[str, Any]:
-        """Simplify a complex function"""
+    def simplify(self, file_path: str, function_name: str) -> ResultDict:
+        """Simplify a complex function.
+
+        Args:
+            file_path: Path to file with function
+            function_name: Name of function to simplify
+
+        Returns:
+            Dictionary with simplified code
+        """
         current_code = self._read_file(file_path)
 
         context = {
@@ -74,8 +124,16 @@ class CodeMonkey(BaseAgent):
 
         return self.think(context)
 
-    def _write_to_file(self, file_path: str, content: str):
-        """Actually write code to file"""
+    def _write_to_file(self, file_path: str, content: str) -> bool:
+        """Actually write code to file.
+
+        Args:
+            file_path: Path to write to
+            content: Code content to write
+
+        Returns:
+            True if successful, False otherwise
+        """
         try:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, 'w') as f:
@@ -86,7 +144,14 @@ class CodeMonkey(BaseAgent):
             return False
 
     def _read_file(self, file_path: str) -> str:
-        """Read existing file"""
+        """Read existing file.
+
+        Args:
+            file_path: Path to file to read
+
+        Returns:
+            File contents as string, empty string on error
+        """
         try:
             with open(file_path, 'r') as f:
                 return f.read()

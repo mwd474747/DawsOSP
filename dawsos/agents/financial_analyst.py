@@ -20,15 +20,25 @@ logger = logging.getLogger(__name__)
 class FinancialAnalyst(BaseAgent):
     """Agent specialized in financial analysis and DCF modeling"""
 
-    def __init__(self, graph=None, llm_client=None):
+    def __init__(
+        self,
+        graph: Optional[Any] = None,
+        llm_client: Optional[Any] = None
+    ) -> None:
+        """Initialize FinancialAnalyst with graph and optional LLM client.
+
+        Args:
+            graph: Optional knowledge graph instance
+            llm_client: Optional LLM client for financial analysis
+        """
         super().__init__(graph=graph, name="financial_analyst", llm_client=llm_client)
-        self.capabilities_needed = ['market', 'enriched_data']
+        self.capabilities_needed: List[str] = ['market', 'enriched_data']
 
         # Initialize analyzers (Phase 2.1 extraction - 100% complete)
-        self.dcf_analyzer = None  # Lazy initialization on first use
-        self.moat_analyzer = None  # Lazy initialization on first use
-        self.data_fetcher = None  # Lazy initialization on first use
-        self.confidence_calculator = None  # Lazy initialization on first use
+        self.dcf_analyzer: Optional[Any] = None  # Lazy initialization on first use
+        self.moat_analyzer: Optional[Any] = None  # Lazy initialization on first use
+        self.data_fetcher: Optional[Any] = None  # Lazy initialization on first use
+        self.confidence_calculator: Optional[Any] = None  # Lazy initialization on first use
 
         # Phase 2.3: Request routing table (replaces complex if/elif chain)
         # Format: (trigger_keywords, handler_method, requires_symbol, requires_context_key)
@@ -70,21 +80,21 @@ class FinancialAnalyst(BaseAgent):
              self._analyze_free_cash_flow, False, None),
         ]
 
-    def _ensure_dcf_analyzer(self):
-        """Lazy initialization of DCF analyzer (needs market capability)"""
+    def _ensure_dcf_analyzer(self) -> None:
+        """Lazy initialization of DCF analyzer (needs market capability)."""
         if self.dcf_analyzer is None and 'market' in self.capabilities:
             self.dcf_analyzer = DCFAnalyzer(
                 self.capabilities['market'],
                 self.logger
             )
 
-    def _ensure_moat_analyzer(self):
-        """Lazy initialization of moat analyzer"""
+    def _ensure_moat_analyzer(self) -> None:
+        """Lazy initialization of moat analyzer."""
         if self.moat_analyzer is None:
             self.moat_analyzer = MoatAnalyzer(self.logger)
 
-    def _ensure_data_fetcher(self):
-        """Lazy initialization of data fetcher"""
+    def _ensure_data_fetcher(self) -> None:
+        """Lazy initialization of data fetcher."""
         if self.data_fetcher is None:
             self.data_fetcher = FinancialDataFetcher(
                 market_capability=self.capabilities.get('market'),
@@ -92,8 +102,8 @@ class FinancialAnalyst(BaseAgent):
                 logger=self.logger
             )
 
-    def _ensure_confidence_calculator(self):
-        """Lazy initialization of confidence calculator"""
+    def _ensure_confidence_calculator(self) -> None:
+        """Lazy initialization of confidence calculator."""
         if self.confidence_calculator is None:
             self.confidence_calculator = FinancialConfidenceCalculator(
                 confidence_calculator_module=confidence_calculator,

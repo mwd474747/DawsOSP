@@ -1,14 +1,28 @@
-"""DataHarvester - Orchestrates data fetching from all sources"""
+"""DataHarvester - Orchestrates data fetching from all sources
+
+Phase 3.1: Comprehensive type hints added for better IDE support and type safety.
+"""
 from agents.base_agent import BaseAgent
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional, TypeAlias
+
+# Type aliases for clarity
+CapabilitiesDict: TypeAlias = Dict[str, Any]
+HarvestResult: TypeAlias = Dict[str, Any]
+SymbolList: TypeAlias = List[str]
 
 class DataHarvester(BaseAgent):
     """Fetches data from various sources"""
 
-    def __init__(self, graph, capabilities: Dict = None, llm_client=None):
+    def __init__(
+        self,
+        graph: Any,
+        capabilities: Optional[CapabilitiesDict] = None,
+        llm_client: Optional[Any] = None
+    ) -> None:
+        """Initialize DataHarvester with graph, capabilities, and optional LLM client."""
         super().__init__(graph=graph, name="DataHarvester", llm_client=llm_client)
-        self.vibe = "hungry for data"
-        self.capabilities = capabilities or {}
+        self.vibe: str = "hungry for data"
+        self.capabilities: CapabilitiesDict = capabilities or {}
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
         return f"""
@@ -30,17 +44,17 @@ class DataHarvester(BaseAgent):
         - params: any parameters needed
         """
 
-    def process(self, request: str) -> Dict[str, Any]:
-        """Process method for compatibility"""
+    def process(self, request: str) -> HarvestResult:
+        """Process method for compatibility - harvests data and stores in graph."""
         # Store result in knowledge graph
-        result = self.harvest(request)
+        result: HarvestResult = self.harvest(request)
         if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
-            node_id = self.store_result(result)
+            node_id: str = self.store_result(result)
             result['node_id'] = node_id
         return result
 
-    def harvest(self, request: str) -> Dict[str, Any]:
-        """Main harvest method - fetches requested data"""
+    def harvest(self, request: str) -> HarvestResult:
+        """Main harvest method - fetches requested data from various sources."""
         request_lower = request.lower()
 
         # Extract symbols from request
@@ -169,8 +183,8 @@ class DataHarvester(BaseAgent):
             'data': {}
         }
 
-    def _harvest_fred(self, query: str) -> Dict[str, Any]:
-        """Harvest economic data"""
+    def _harvest_fred(self, query: str) -> HarvestResult:
+        """Harvest economic data from FRED API."""
         if 'fred' not in self.capabilities:
             return {"error": "FRED capability not available"}
 
@@ -189,8 +203,8 @@ class DataHarvester(BaseAgent):
             # Try to fetch directly
             return fred.get_latest(query.upper())
 
-    def _harvest_market(self, query: str) -> Dict[str, Any]:
-        """Harvest market data"""
+    def _harvest_market(self, query: str) -> HarvestResult:
+        """Harvest market data (quotes, prices, etc.)."""
         if 'market' not in self.capabilities:
             return {"error": "Market capability not available"}
 
@@ -201,8 +215,8 @@ class DataHarvester(BaseAgent):
 
         return market.get_quote(ticker)
 
-    def _harvest_news(self, query: str) -> Dict[str, Any]:
-        """Harvest news data"""
+    def _harvest_news(self, query: str) -> HarvestResult:
+        """Harvest news data and sentiment."""
         if 'news' not in self.capabilities:
             return {"error": "News capability not available"}
 
@@ -214,7 +228,15 @@ class DataHarvester(BaseAgent):
             return {"articles": news.get_headlines()}
 
     def _calculate_sector_correlation(self, symbol1: str, symbol2: str) -> float:
-        """Calculate correlation using knowledge base sector data"""
+        """Calculate correlation using knowledge base sector data.
+
+        Args:
+            symbol1: First stock symbol
+            symbol2: Second stock symbol
+
+        Returns:
+            Correlation coefficient (-1.0 to 1.0)
+        """
         try:
             # Get sector correlations from knowledge base
             if 'enriched_data' in self.capabilities:
@@ -251,8 +273,16 @@ class DataHarvester(BaseAgent):
             print(f"Error calculating correlation: {e}")
             return 0.5  # Safe default
 
-    def _find_company_sector(self, symbol: str, companies_data: dict) -> str:
-        """Find sector for a given company symbol"""
+    def _find_company_sector(self, symbol: str, companies_data: dict) -> Optional[str]:
+        """Find sector for a given company symbol.
+
+        Args:
+            symbol: Stock ticker symbol
+            companies_data: Dictionary of sector/company mappings
+
+        Returns:
+            Sector name or None if not found
+        """
         for sector, cap_groups in companies_data.items():
             if isinstance(cap_groups, dict):
                 for cap_group, companies in cap_groups.items():
@@ -260,8 +290,8 @@ class DataHarvester(BaseAgent):
                         return sector
         return None
 
-    def _harvest_everything(self, request: str) -> Dict[str, Any]:
-        """Harvest from all sources"""
+    def _harvest_everything(self, request: str) -> HarvestResult:
+        """Harvest from all available sources (FRED, market, news)."""
         results = {}
 
         # Get economic indicators
@@ -279,8 +309,15 @@ class DataHarvester(BaseAgent):
 
         return results
 
-    def schedule_harvest(self, frequency: str = "daily") -> Dict[str, Any]:
-        """Schedule regular data harvesting"""
+    def schedule_harvest(self, frequency: str = "daily") -> HarvestResult:
+        """Schedule regular data harvesting.
+
+        Args:
+            frequency: How often to harvest (daily, hourly, etc.)
+
+        Returns:
+            Scheduling status and next harvest time
+        """
         return {
             "status": "scheduled",
             "frequency": frequency,
@@ -288,25 +325,43 @@ class DataHarvester(BaseAgent):
         }
 
 class FREDBot(BaseAgent):
-    """Sub-agent for FRED data"""
+    """Sub-agent for FRED data (Phase 3.1: Type hints added)"""
 
-    def __init__(self, capability, llm_client=None):
+    def __init__(self, capability: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize FREDBot with FRED capability.
+
+        Args:
+            capability: FRED data capability instance
+            llm_client: Optional LLM client for AI-powered responses
+        """
         super().__init__("FREDBot", None, llm_client)
-        self.vibe = "economic"
-        self.capability = capability
+        self.vibe: str = "economic"
+        self.capability: Any = capability
 
 class MarketBot(BaseAgent):
-    """Sub-agent for market data"""
+    """Sub-agent for market data (Phase 3.1: Type hints added)"""
 
-    def __init__(self, capability, llm_client=None):
+    def __init__(self, capability: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize MarketBot with market capability.
+
+        Args:
+            capability: Market data capability instance
+            llm_client: Optional LLM client for AI-powered responses
+        """
         super().__init__("MarketBot", None, llm_client)
-        self.vibe = "trader"
-        self.capability = capability
+        self.vibe: str = "trader"
+        self.capability: Any = capability
 
 class NewsBot(BaseAgent):
-    """Sub-agent for news data"""
+    """Sub-agent for news data (Phase 3.1: Type hints added)"""
 
-    def __init__(self, capability, llm_client=None):
+    def __init__(self, capability: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize NewsBot with news capability.
+
+        Args:
+            capability: News data capability instance
+            llm_client: Optional LLM client for AI-powered responses
+        """
         super().__init__("NewsBot", None, llm_client)
-        self.vibe = "informed"
-        self.capability = capability
+        self.vibe: str = "informed"
+        self.capability: Any = capability

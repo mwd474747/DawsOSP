@@ -1,15 +1,30 @@
-"""PatternSpotter - Identifies recurring patterns in the graph"""
+"""PatternSpotter - Identifies recurring patterns in the graph
+
+Phase 3.1: Comprehensive type hints added for better IDE support and type safety.
+"""
 from .base_agent import BaseAgent
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, TypeAlias
 from datetime import datetime
+
+# Type aliases for clarity
+PatternDict: TypeAlias = Dict[str, Any]
+PatternList: TypeAlias = List[PatternDict]
+AnalysisResult: TypeAlias = Dict[str, Any]
+ContextData: TypeAlias = Dict[str, Any]
 
 class PatternSpotter(BaseAgent):
     """Spots patterns in data and behavior"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize PatternSpotter.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client for AI-powered pattern recognition
+        """
         super().__init__(graph=graph, name="PatternSpotter", llm_client=llm_client)
-        self.vibe = "observant"
-        self.spotted_patterns = []
+        self.vibe: str = "observant"
+        self.spotted_patterns: PatternList = []
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
         return f"""
@@ -32,8 +47,15 @@ class PatternSpotter(BaseAgent):
         - actionable: can we trade on this?
         """
 
-    def process(self, context: Any) -> Dict[str, Any]:
-        """Process method for compatibility with patterns"""
+    def process(self, context: Any) -> AnalysisResult:
+        """Process method for compatibility with patterns.
+
+        Args:
+            context: Analysis context (can be dict or other format)
+
+        Returns:
+            Dictionary with analysis results, patterns, or regime detection
+        """
         # Extract analysis type
         if isinstance(context, dict):
             analysis_type = context.get('analysis_type', 'general')
@@ -63,8 +85,15 @@ class PatternSpotter(BaseAgent):
             'patterns': []
         }
 
-    def spot(self, lookback_days: int = 7) -> List[Dict[str, Any]]:
-        """Main pattern spotting method"""
+    def spot(self, lookback_days: int = 7) -> PatternList:
+        """Main pattern spotting method - finds all pattern types.
+
+        Args:
+            lookback_days: How many days to look back for patterns
+
+        Returns:
+            List of discovered patterns (sequences, cycles, triggers, anomalies)
+        """
         if not self.graph:
             return []
 
@@ -91,8 +120,12 @@ class PatternSpotter(BaseAgent):
 
         return patterns
 
-    def _find_sequences(self) -> List[Dict[str, Any]]:
-        """Find sequential patterns (A->B->C)"""
+    def _find_sequences(self) -> PatternList:
+        """Find sequential patterns (A->B->C).
+
+        Returns:
+            List of sequence patterns with occurrences and confidence
+        """
         sequences = []
 
         if not self.graph or not self.graph.edges:
@@ -130,8 +163,12 @@ class PatternSpotter(BaseAgent):
 
         return sequences
 
-    def _find_cycles(self) -> List[Dict[str, Any]]:
-        """Find cyclical patterns"""
+    def _find_cycles(self) -> PatternList:
+        """Find cyclical patterns (feedback loops).
+
+        Returns:
+            List of up to 5 cycle patterns
+        """
         cycles = []
 
         if not self.graph:
@@ -152,8 +189,12 @@ class PatternSpotter(BaseAgent):
 
         return cycles[:5]  # Limit to top 5 cycles
 
-    def _find_triggers(self) -> List[Dict[str, Any]]:
-        """Find trigger patterns (X causes Y)"""
+    def _find_triggers(self) -> PatternList:
+        """Find trigger patterns (X causes Y).
+
+        Returns:
+            List of causal trigger patterns with strength > 0.7
+        """
         triggers = []
 
         if not self.graph or not self.graph.edges:
@@ -174,8 +215,12 @@ class PatternSpotter(BaseAgent):
 
         return triggers
 
-    def _find_anomalies(self) -> List[Dict[str, Any]]:
-        """Find unusual patterns"""
+    def _find_anomalies(self) -> PatternList:
+        """Find unusual patterns (over-connected or isolated nodes).
+
+        Returns:
+            List of anomaly patterns
+        """
         anomalies = []
 
         if not self.graph:
@@ -210,8 +255,12 @@ class PatternSpotter(BaseAgent):
 
         return anomalies
 
-    def remember_pattern(self, pattern: Dict[str, Any]):
-        """Store a pattern for future reference"""
+    def remember_pattern(self, pattern: PatternDict) -> None:
+        """Store a pattern for future reference in graph and memory.
+
+        Args:
+            pattern: Pattern dictionary to remember
+        """
         pattern['discovered'] = datetime.now().isoformat()
         pattern['uses'] = 0
 
@@ -222,8 +271,15 @@ class PatternSpotter(BaseAgent):
 
         self.spotted_patterns.append(pattern)
 
-    def _analyze_macro_trends(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze macro economic trends using data-driven methods"""
+    def _analyze_macro_trends(self, data: ContextData) -> AnalysisResult:
+        """Analyze macro economic trends using data-driven methods.
+
+        Args:
+            data: Dictionary with economic indicators
+
+        Returns:
+            Analysis result with cycle_stage, trend_strength, divergences
+        """
         try:
             # Extract economic indicators from data
             economic_data = data.get('economic', {})
@@ -282,8 +338,15 @@ class PatternSpotter(BaseAgent):
             print(f"Error in macro trend analysis: {e}")
             return {'cycle_stage': 'Analysis Error', 'confidence': 0.0}
 
-    def _detect_market_regime(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Detect market regime using multi-factor analysis"""
+    def _detect_market_regime(self, data: ContextData) -> AnalysisResult:
+        """Detect market regime using multi-factor analysis.
+
+        Args:
+            data: Dictionary with market and economic indicators
+
+        Returns:
+            Analysis result with regime, confidence, and indicators
+        """
         try:
             # Initialize regime indicators
             risk_on_score = 0
@@ -344,23 +407,41 @@ class PatternSpotter(BaseAgent):
             return {'regime': 'Analysis Error', 'confidence': 0.0, 'indicators': []}
 
 class SequenceTracker(BaseAgent):
-    """Sub-agent that tracks event sequences"""
+    """Sub-agent that tracks event sequences (Phase 3.1: Type hints added)"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize SequenceTracker.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client
+        """
         super().__init__("SequenceTracker", graph, llm_client)
-        self.vibe = "methodical"
-        self.sequences = []
+        self.vibe: str = "methodical"
+        self.sequences: List[Any] = []
 
 class CycleFinder(BaseAgent):
-    """Sub-agent that finds cycles"""
+    """Sub-agent that finds cycles (Phase 3.1: Type hints added)"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize CycleFinder.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client
+        """
         super().__init__("CycleFinder", graph, llm_client)
-        self.vibe = "circular"
+        self.vibe: str = "circular"
 
 class AnomalyDetector(BaseAgent):
-    """Sub-agent that detects anomalies"""
+    """Sub-agent that detects anomalies (Phase 3.1: Type hints added)"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize AnomalyDetector.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client
+        """
         super().__init__("AnomalyDetector", graph, llm_client)
-        self.vibe = "suspicious"
+        self.vibe: str = "suspicious"

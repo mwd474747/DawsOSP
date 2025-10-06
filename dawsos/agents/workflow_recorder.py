@@ -1,20 +1,39 @@
-"""WorkflowRecorder - Records successful patterns for reuse"""
+"""WorkflowRecorder - Records successful patterns for reuse
+
+Phase 3.1: Comprehensive type hints added for all methods
+"""
 from agents.base_agent import BaseAgent
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, TypeAlias
 from datetime import datetime
 import json
 import logging
+
+# Type aliases for clarity
+WorkflowDict: TypeAlias = Dict[str, Any]
+PatternDict: TypeAlias = Dict[str, Any]
+InteractionDict: TypeAlias = Dict[str, Any]
+SimilarList: TypeAlias = List[Dict[str, Any]]
 
 logger = logging.getLogger(__name__)
 
 class WorkflowRecorder(BaseAgent):
     """Records successful interaction patterns"""
 
-    def __init__(self, graph=None, llm_client=None):
+    def __init__(
+        self,
+        graph: Optional[Any] = None,
+        llm_client: Optional[Any] = None
+    ) -> None:
+        """Initialize WorkflowRecorder with graph and optional LLM client.
+
+        Args:
+            graph: Optional knowledge graph instance
+            llm_client: Optional LLM client for workflow analysis
+        """
         super().__init__("WorkflowRecorder", graph, llm_client)
-        self.vibe = "studious"
-        self.workflows = []
-        self.patterns = {}
+        self.vibe: str = "studious"
+        self.workflows: List[WorkflowDict] = []
+        self.patterns: Dict[str, PatternDict] = {}
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
         return f"""
@@ -35,8 +54,15 @@ class WorkflowRecorder(BaseAgent):
         - pattern_name: short name for this pattern
         """
 
-    def record(self, interaction: Dict[str, Any]) -> Dict[str, Any]:
-        """Record a successful interaction"""
+    def record(self, interaction: InteractionDict) -> Dict[str, Any]:
+        """Record a successful interaction.
+
+        Args:
+            interaction: Dictionary containing interaction data with intent, actions, and result
+
+        Returns:
+            Dictionary with recording status and workflow ID if recorded
+        """
         context = {
             "interaction": interaction,
             "intent": interaction.get('intent'),
@@ -72,8 +98,16 @@ class WorkflowRecorder(BaseAgent):
 
         return result
 
-    def _create_workflow(self, interaction: Dict[str, Any], decision: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a workflow from an interaction"""
+    def _create_workflow(self, interaction: InteractionDict, decision: Dict[str, Any]) -> WorkflowDict:
+        """Create a workflow from an interaction.
+
+        Args:
+            interaction: Interaction data
+            decision: Analysis decision about recording
+
+        Returns:
+            Workflow dictionary with steps and metadata
+        """
         workflow = {
             "id": f"workflow_{datetime.now().timestamp()}",
             "trigger": decision.get('trigger', interaction.get('intent')),
@@ -87,8 +121,12 @@ class WorkflowRecorder(BaseAgent):
         }
         return workflow
 
-    def _identify_pattern(self, workflow: Dict[str, Any]):
-        """Check if workflow matches existing patterns"""
+    def _identify_pattern(self, workflow: WorkflowDict) -> None:
+        """Check if workflow matches existing patterns.
+
+        Args:
+            workflow: Workflow to analyze for pattern membership
+        """
         pattern_name = workflow.get('pattern_name')
 
         if pattern_name not in self.patterns:
@@ -108,8 +146,12 @@ class WorkflowRecorder(BaseAgent):
         if len(self.patterns[pattern_name]['workflows']) >= 3:
             self._save_pattern(self.patterns[pattern_name])
 
-    def _save_pattern(self, pattern: Dict[str, Any]):
-        """Save an established pattern"""
+    def _save_pattern(self, pattern: PatternDict) -> None:
+        """Save an established pattern.
+
+        Args:
+            pattern: Pattern dictionary to save to storage/patterns.json
+        """
         # Save to storage/patterns.json
         try:
             with open('storage/patterns.json', 'r') as f:
@@ -129,8 +171,15 @@ class WorkflowRecorder(BaseAgent):
         with open('storage/patterns.json', 'w') as f:
             json.dump(all_patterns, f, indent=2)
 
-    def find_similar(self, interaction: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Find workflows similar to current interaction"""
+    def find_similar(self, interaction: InteractionDict) -> SimilarList:
+        """Find workflows similar to current interaction.
+
+        Args:
+            interaction: Current interaction to find similar workflows for
+
+        Returns:
+            List of similar workflows with similarity scores, top 5
+        """
         similar = []
 
         intent = interaction.get('intent', '')
@@ -163,19 +212,37 @@ class WorkflowRecorder(BaseAgent):
 class StepLogger(BaseAgent):
     """Sub-agent that logs individual steps"""
 
-    def __init__(self, llm_client=None):
+    def __init__(self, llm_client: Optional[Any] = None) -> None:
+        """Initialize StepLogger.
+
+        Args:
+            llm_client: Optional LLM client
+        """
         super().__init__("StepLogger", None, llm_client)
-        self.vibe = "meticulous"
+        self.vibe: str = "meticulous"
 
 class SuccessJudge(BaseAgent):
     """Sub-agent that judges if something succeeded"""
 
-    def __init__(self, llm_client=None):
+    def __init__(self, llm_client: Optional[Any] = None) -> None:
+        """Initialize SuccessJudge.
+
+        Args:
+            llm_client: Optional LLM client
+        """
         super().__init__("SuccessJudge", None, llm_client)
-        self.vibe = "fair"
+        self.vibe: str = "fair"
 
     def judge(self, result: Any, expectation: Any) -> bool:
-        """Judge if result meets expectation"""
+        """Judge if result meets expectation.
+
+        Args:
+            result: Actual result to evaluate
+            expectation: Expected result
+
+        Returns:
+            True if result meets expectation
+        """
         # Simple heuristic for now
         if result is None:
             return False
@@ -188,6 +255,11 @@ class SuccessJudge(BaseAgent):
 class TemplateExtractor(BaseAgent):
     """Sub-agent that extracts reusable templates"""
 
-    def __init__(self, llm_client=None):
+    def __init__(self, llm_client: Optional[Any] = None) -> None:
+        """Initialize TemplateExtractor.
+
+        Args:
+            llm_client: Optional LLM client
+        """
         super().__init__("TemplateExtractor", None, llm_client)
-        self.vibe = "abstract"
+        self.vibe: str = "abstract"

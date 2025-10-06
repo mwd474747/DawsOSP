@@ -14,12 +14,26 @@ AnalysisResult: TypeAlias = Dict[str, Any]
 class BaseAgent:
     """Base class for all specialized agents"""
 
-    def __init__(self, graph, name: Optional[str] = None, focus_areas: Optional[List[str]] = None, llm_client=None):
-        self.graph = graph  # Shared knowledge graph
-        self.name = name or self.__class__.__name__
-        self.focus_areas = focus_areas or []
-        self.memory = []  # Agent-specific memory
-        self.llm_client = llm_client  # For LLM-based agents
+    def __init__(
+        self,
+        graph: Any,
+        name: Optional[str] = None,
+        focus_areas: Optional[List[str]] = None,
+        llm_client: Optional[Any] = None
+    ) -> None:
+        """Initialize BaseAgent with graph and optional configuration.
+
+        Args:
+            graph: Knowledge graph instance
+            name: Optional agent name (defaults to class name)
+            focus_areas: Optional list of focus areas for the agent
+            llm_client: Optional LLM client for advanced reasoning
+        """
+        self.graph: Any = graph  # Shared knowledge graph
+        self.name: str = name or self.__class__.__name__
+        self.focus_areas: List[str] = focus_areas or []
+        self.memory: List[Any] = []  # Agent-specific memory
+        self.llm_client: Optional[Any] = llm_client  # For LLM-based agents
 
     def think(self, context: AgentContext) -> AgentResult:
         """Main processing method - called by runtime"""
@@ -125,9 +139,24 @@ class BaseAgent:
             return None
         return self.graph.add_node(node_type, data, node_id)
 
-    def connect_knowledge(self, from_id: str, to_id: str,
-                          relationship: str, strength: float = 1.0) -> bool:
-        """Connect knowledge in the graph"""
+    def connect_knowledge(
+        self,
+        from_id: str,
+        to_id: str,
+        relationship: str,
+        strength: float = 1.0
+    ) -> bool:
+        """Connect knowledge in the graph.
+
+        Args:
+            from_id: Source node identifier
+            to_id: Target node identifier
+            relationship: Relationship type
+            strength: Connection strength (0.0 to 1.0)
+
+        Returns:
+            True if connection was created successfully
+        """
         if not self.graph:
             logger.warning(f"{self.name}: Cannot connect knowledge - no graph available")
             return False

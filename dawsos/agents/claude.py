@@ -1,15 +1,30 @@
-"""Claude - The main personality that interprets user intent"""
+"""Claude - The main personality that interprets user intent
+
+Phase 3.1: Comprehensive type hints added for better IDE support and type safety.
+"""
 from .base_agent import BaseAgent
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, TypeAlias
 from core.fallback_tracker import get_fallback_tracker
+
+# Type aliases for clarity
+ContextDict: TypeAlias = Dict[str, Any]
+IntentResult: TypeAlias = Dict[str, Any]
+ConversationHistory: TypeAlias = List[Dict[str, Any]]
+MemoryList: TypeAlias = List[Dict[str, Any]]
 
 class Claude(BaseAgent):
     """The conversational interface to the system"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize Claude with graph and optional LLM client.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client for AI-powered responses
+        """
         super().__init__(graph=graph, name="Claude", llm_client=llm_client)
-        self.vibe = "friendly and curious"
-        self.conversation_history = []
+        self.vibe: str = "friendly and curious"
+        self.conversation_history: ConversationHistory = []
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
         return f"""
@@ -49,8 +64,15 @@ class Claude(BaseAgent):
         Now analyze: {context.get('user_input', '')}
         """
 
-    def think(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Main method for processing context - called by runtime"""
+    def think(self, context: ContextDict) -> IntentResult:
+        """Main method for processing context - called by runtime.
+
+        Args:
+            context: Dictionary containing user_input and other context
+
+        Returns:
+            Dictionary with intent, entities, action, parameters, and friendly_response
+        """
         user_input = context.get('user_input', '')
 
         # If no LLM client, use fallback responses
@@ -94,8 +116,20 @@ class Claude(BaseAgent):
             result.update(fallback_meta)
             return result
 
-    def _fallback_response(self, user_input: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Fallback responses when LLM is unavailable"""
+    def _fallback_response(
+        self,
+        user_input: str,
+        context: Optional[ContextDict] = None
+    ) -> IntentResult:
+        """Fallback responses when LLM is unavailable.
+
+        Args:
+            user_input: User's query or command
+            context: Optional context dictionary
+
+        Returns:
+            Intent result with fallback cached response
+        """
         user_input_lower = str(user_input).lower()
 
         # Generate a clean response based on the input
@@ -260,8 +294,15 @@ SPY Correlation Analysis (FALLBACK):
             "source": "fallback"
         }
 
-    def process(self, user_input: str) -> Dict[str, Any]:
-        """Process user input and coordinate response"""
+    def process(self, user_input: str) -> IntentResult:
+        """Process user input and coordinate response.
+
+        Args:
+            user_input: User's query or command
+
+        Returns:
+            Intent result with response and optional node_id
+        """
         # Add to conversation history
         self.conversation_history.append({
             "role": "user",
@@ -286,16 +327,26 @@ SPY Correlation Analysis (FALLBACK):
         return result
 
     def _recent_history(self) -> str:
-        """Get recent conversation context"""
+        """Get recent conversation context (last 5 messages).
+
+        Returns:
+            String representation of recent conversation history
+        """
         recent = self.conversation_history[-5:] if len(self.conversation_history) > 5 else self.conversation_history
         return str(recent)
 
 class IntentParser(BaseAgent):
-    """Sub-agent that extracts intent from user input"""
+    """Sub-agent that extracts intent from user input (Phase 3.1: Type hints added)"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize IntentParser.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client
+        """
         super().__init__("IntentParser", graph, llm_client)
-        self.vibe = "analytical"
+        self.vibe: str = "analytical"
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
         return f"""
@@ -311,11 +362,17 @@ class IntentParser(BaseAgent):
         """
 
 class ResponseCrafter(BaseAgent):
-    """Sub-agent that crafts human-friendly responses"""
+    """Sub-agent that crafts human-friendly responses (Phase 3.1: Type hints added)"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize ResponseCrafter.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client
+        """
         super().__init__("ResponseCrafter", graph, llm_client)
-        self.vibe = "articulate"
+        self.vibe: str = "articulate"
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
         return f"""
@@ -330,21 +387,41 @@ class ResponseCrafter(BaseAgent):
         """
 
 class MemoryKeeper(BaseAgent):
-    """Sub-agent that maintains conversation context"""
+    """Sub-agent that maintains conversation context (Phase 3.1: Type hints added)"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize MemoryKeeper.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client
+        """
         super().__init__("MemoryKeeper", graph, llm_client)
-        self.vibe = "nostalgic"
-        self.important_memories = []
+        self.vibe: str = "nostalgic"
+        self.important_memories: MemoryList = []
 
     def should_remember(self, interaction: Dict[str, Any]) -> bool:
-        """Decide if something is worth remembering long-term"""
+        """Decide if something is worth remembering long-term.
+
+        Args:
+            interaction: Dictionary representing an interaction to evaluate
+
+        Returns:
+            True if interaction should be remembered
+        """
         context = {"interaction": interaction}
         response = self.think(context)
         return response.get("remember", False)
 
-    def recall_relevant(self, context: str) -> List[Dict[str, Any]]:
-        """Recall relevant memories for current context"""
+    def recall_relevant(self, context: str) -> MemoryList:
+        """Recall relevant memories for current context.
+
+        Args:
+            context: Current context string to match against
+
+        Returns:
+            List of up to 5 relevant memories
+        """
         relevant = []
         for memory in self.important_memories:
             if context.lower() in str(memory).lower():

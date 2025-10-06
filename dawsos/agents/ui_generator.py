@@ -2,13 +2,21 @@
 """
 UI Generator Agent - Creates Streamlit components from patterns and data
 Leverages the Trinity architecture to generate intelligent, data-driven UI components
+
+Phase 3.1: Added comprehensive type hints for better type safety.
 """
 
 import streamlit as st
 import plotly.graph_objects as go
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional, TypeAlias
 import json
 from datetime import datetime
+
+# Type aliases for clarity
+ComponentDict: TypeAlias = Dict[str, Any]
+TemplateMap: TypeAlias = Dict[str, str]
+PatternList: TypeAlias = List[Dict[str, Any]]
+AlertList: TypeAlias = List[Dict[str, Any]]
 
 class UIGeneratorAgent:
     """
@@ -16,12 +24,21 @@ class UIGeneratorAgent:
     Enables pattern-driven UI creation instead of manual coding.
     """
 
-    def __init__(self, graph=None):
-        self.graph = graph
-        self.component_templates = self._load_templates()
+    def __init__(self, graph: Optional[Any] = None) -> None:
+        """Initialize UIGeneratorAgent with optional graph.
 
-    def _load_templates(self) -> Dict[str, str]:
-        """Load UI component templates"""
+        Args:
+            graph: Optional knowledge graph instance
+        """
+        self.graph: Optional[Any] = graph
+        self.component_templates: TemplateMap = self._load_templates()
+
+    def _load_templates(self) -> TemplateMap:
+        """Load UI component templates.
+
+        Returns:
+            Dictionary mapping template names to HTML template strings
+        """
         return {
             'confidence_meter': '''
                 <div style="background: {bg_color}; padding: 15px; border-radius: 10px; margin: 10px 0;">
@@ -63,8 +80,15 @@ class UIGeneratorAgent:
             '''
         }
 
-    def process(self, request: Dict[str, Any]) -> Dict[str, Any]:
-        """Main processing method for UI generation requests"""
+    def process(self, request: ComponentDict) -> ComponentDict:
+        """Main processing method for UI generation requests.
+
+        Args:
+            request: Dictionary with component_type, data, and style
+
+        Returns:
+            Dictionary with generated component HTML/figure and metadata
+        """
         try:
             component_type = request.get('component_type', 'default')
             data = request.get('data', {})
@@ -91,8 +115,16 @@ class UIGeneratorAgent:
                 'component_html': f'<div style="color: red;">Error generating UI: {str(e)}</div>'
             }
 
-    def generate_confidence_meter(self, data: Dict[str, Any], style: str = 'default') -> Dict[str, Any]:
-        """Generate confidence meter component"""
+    def generate_confidence_meter(self, data: ComponentDict, style: str = 'default') -> ComponentDict:
+        """Generate confidence meter component.
+
+        Args:
+            data: Dictionary with confidence, title, and factors
+            style: Style variant (default: 'default')
+
+        Returns:
+            Dictionary with component HTML and metadata
+        """
         confidence = data.get('confidence', 0)
         title = data.get('title', 'Confidence')
         factors = data.get('factors', [])
@@ -137,8 +169,16 @@ class UIGeneratorAgent:
             'success': True
         }
 
-    def generate_pattern_browser(self, data: Dict[str, Any], style: str = 'searchable_list') -> Dict[str, Any]:
-        """Generate pattern browser component"""
+    def generate_pattern_browser(self, data: ComponentDict, style: str = 'searchable_list') -> ComponentDict:
+        """Generate pattern browser component.
+
+        Args:
+            data: Dictionary with patterns list
+            style: Style variant (default: 'searchable_list')
+
+        Returns:
+            Dictionary with component HTML and metadata
+        """
         patterns = data.get('patterns', [])
 
         html = "<div style='background: #262730; border-radius: 10px; padding: 20px;'>"
@@ -186,8 +226,16 @@ class UIGeneratorAgent:
             'success': True
         }
 
-    def generate_alert_feed(self, data: Dict[str, Any], style: str = 'default') -> Dict[str, Any]:
-        """Generate alert feed component"""
+    def generate_alert_feed(self, data: ComponentDict, style: str = 'default') -> ComponentDict:
+        """Generate alert feed component.
+
+        Args:
+            data: Dictionary with alerts list
+            style: Style variant (default: 'default')
+
+        Returns:
+            Dictionary with component HTML and metadata
+        """
         alerts = data.get('alerts', [])
 
         html = "<div style='background: #262730; border-radius: 10px; padding: 20px;'>"
@@ -235,8 +283,16 @@ class UIGeneratorAgent:
             'success': True
         }
 
-    def generate_risk_radar(self, data: Dict[str, Any], style: str = 'radar_chart') -> Dict[str, Any]:
-        """Generate risk radar chart component"""
+    def generate_risk_radar(self, data: ComponentDict, style: str = 'radar_chart') -> ComponentDict:
+        """Generate risk radar chart component.
+
+        Args:
+            data: Dictionary with risk_factors
+            style: Style variant (default: 'radar_chart')
+
+        Returns:
+            Dictionary with Plotly figure and metadata
+        """
         risk_factors = data.get('risk_factors', {})
 
         # Create radar chart
@@ -282,8 +338,16 @@ class UIGeneratorAgent:
             'success': True
         }
 
-    def generate_thinking_trace(self, data: Dict[str, Any], style: str = 'flowchart') -> Dict[str, Any]:
-        """Generate thinking trace visualization"""
+    def generate_thinking_trace(self, data: ComponentDict, style: str = 'flowchart') -> ComponentDict:
+        """Generate thinking trace visualization.
+
+        Args:
+            data: Dictionary with steps list
+            style: Style variant (default: 'flowchart')
+
+        Returns:
+            Dictionary with component HTML and metadata
+        """
         steps = data.get('steps', [])
 
         html = "<div style='background: #262730; border-radius: 10px; padding: 20px;'>"
@@ -330,8 +394,16 @@ class UIGeneratorAgent:
             'success': True
         }
 
-    def generate_dashboard_widget(self, data: Dict[str, Any], style: str = 'card') -> Dict[str, Any]:
-        """Generate generic dashboard widget"""
+    def generate_dashboard_widget(self, data: ComponentDict, style: str = 'card') -> ComponentDict:
+        """Generate generic dashboard widget.
+
+        Args:
+            data: Dictionary with title, value, subtitle, trend
+            style: Style variant (default: 'card')
+
+        Returns:
+            Dictionary with component HTML and metadata
+        """
         title = data.get('title', 'Widget')
         value = data.get('value', 'N/A')
         subtitle = data.get('subtitle', '')
@@ -366,8 +438,16 @@ class UIGeneratorAgent:
             'success': True
         }
 
-    def generate_default_component(self, data: Dict[str, Any], style: str = 'default') -> Dict[str, Any]:
-        """Generate default component for unknown types"""
+    def generate_default_component(self, data: ComponentDict, style: str = 'default') -> ComponentDict:
+        """Generate default component for unknown types.
+
+        Args:
+            data: Dictionary with any data to display
+            style: Style variant (default: 'default')
+
+        Returns:
+            Dictionary with component HTML and metadata
+        """
         html = f"""
         <div style="background: #262730; border-radius: 10px; padding: 20px; border: 1px solid #444;">
             <h4 style="color: #fff;">Generated Component</h4>
@@ -384,8 +464,12 @@ class UIGeneratorAgent:
             'success': True
         }
 
-    def render_component(self, component_result: Dict[str, Any]) -> None:
-        """Render a generated component in Streamlit"""
+    def render_component(self, component_result: ComponentDict) -> None:
+        """Render a generated component in Streamlit.
+
+        Args:
+            component_result: Dictionary with component_html or plotly_figure
+        """
         if 'component_html' in component_result:
             st.components.v1.html(component_result['component_html'], height=None)
         elif 'plotly_figure' in component_result:

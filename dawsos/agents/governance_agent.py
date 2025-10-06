@@ -2,24 +2,42 @@
 """
 GovernanceAgent - Ultra-simple conversational data governance
 50 lines that replace enterprise governance systems
+
+Phase 3.1: Added comprehensive type hints for better type safety.
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, TypeAlias
 from datetime import datetime
 from .base_agent import BaseAgent
+
+# Type aliases for clarity
+ContextDict: TypeAlias = Dict[str, Any]
+ResultDict: TypeAlias = Dict[str, Any]
+ViolationList: TypeAlias = List[Dict[str, Any]]
+ImprovementList: TypeAlias = List[Dict[str, Any]]
 
 class GovernanceAgent(BaseAgent):
     """The 80/20 governance solution - Claude orchestrates everything"""
 
-    def __init__(self, graph=None, llm_client=None):
+    def __init__(
+        self,
+        graph: Optional[Any] = None,
+        llm_client: Optional[Any] = None
+    ) -> None:
+        """Initialize GovernanceAgent with graph and optional LLM client.
+
+        Args:
+            graph: Optional knowledge graph instance
+            llm_client: Optional LLM client for generation
+        """
         super().__init__(graph=graph, name="GovernanceAgent", llm_client=llm_client)
-        self.vibe = "data steward with AI superpowers"
+        self.vibe: str = "data steward with AI superpowers"
 
         # Initialize graph governance if available
-        self.graph_governance = None
-        self.governance_hooks = None
-        self.agent_validator = None
-        self.compliance_enforcer = None
+        self.graph_governance: Optional[Any] = None
+        self.governance_hooks: Optional[Any] = None
+        self.agent_validator: Optional[Any] = None
+        self.compliance_enforcer: Optional[Any] = None
 
         if self.graph:
             try:
@@ -34,8 +52,20 @@ class GovernanceAgent(BaseAgent):
             except ImportError:
                 pass  # Graph governance not available yet
 
-    def process_request(self, request: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Process any governance request conversationally"""
+    def process_request(
+        self,
+        request: str,
+        context: Optional[ContextDict] = None
+    ) -> ResultDict:
+        """Process any governance request conversationally.
+
+        Args:
+            request: Governance request string
+            context: Optional context dictionary
+
+        Returns:
+            Dictionary with governance action results
+        """
         if context is None:
             context = {}
 
@@ -84,8 +114,20 @@ class GovernanceAgent(BaseAgent):
                 'fallback_action': 'manual_review_required'
             }
 
-    def _get_claude_recommendation(self, prompt: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Get Claude's governance recommendation"""
+    def _get_claude_recommendation(
+        self,
+        prompt: str,
+        context: ContextDict
+    ) -> ResultDict:
+        """Get Claude's governance recommendation.
+
+        Args:
+            prompt: Governance prompt
+            context: Context dictionary
+
+        Returns:
+            Dictionary with recommendation and reasoning
+        """
         # If we have Claude agent available, use it
         if 'claude' in context.get('available_agents', []):
             # Would call Claude agent here
@@ -94,8 +136,15 @@ class GovernanceAgent(BaseAgent):
         else:
             return self._analyze_governance_request(prompt)
 
-    def _analyze_governance_request(self, prompt: str) -> Dict[str, Any]:
-        """Analyze governance request and recommend action"""
+    def _analyze_governance_request(self, prompt: str) -> ResultDict:
+        """Analyze governance request and recommend action.
+
+        Args:
+            prompt: Governance request prompt
+
+        Returns:
+            Dictionary with recommended_action, reasoning, priority
+        """
         request_lower = prompt.lower()
 
         if any(word in request_lower for word in ['quality', 'clean', 'validate', 'accuracy']):
@@ -148,8 +197,24 @@ class GovernanceAgent(BaseAgent):
                 'auto_fix_available': True
             }
 
-    def _execute_governance_action(self, action: str, request: str, context: Dict[str, Any], claude_response: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute the governance action using existing system capabilities"""
+    def _execute_governance_action(
+        self,
+        action: str,
+        request: str,
+        context: ContextDict,
+        claude_response: ResultDict
+    ) -> ResultDict:
+        """Execute the governance action using existing system capabilities.
+
+        Args:
+            action: Action to execute
+            request: Original request string
+            context: Context dictionary
+            claude_response: Claude's recommendation
+
+        Returns:
+            Dictionary with execution results
+        """
 
         # Try graph-native governance first if available
         if self.graph_governance:
@@ -219,8 +284,15 @@ class GovernanceAgent(BaseAgent):
                 'next_steps': ['Review results', 'Implement recommendations', 'Schedule follow-up']
             }
 
-    def _format_graph_governance_report(self, graph_result: Dict[str, Any]) -> str:
-        """Format graph governance results into readable report"""
+    def _format_graph_governance_report(self, graph_result: ResultDict) -> str:
+        """Format graph governance results into readable report.
+
+        Args:
+            graph_result: Governance results dictionary
+
+        Returns:
+            Formatted report string
+        """
         report = []
 
         if 'action' in graph_result:
@@ -253,8 +325,16 @@ class GovernanceAgent(BaseAgent):
 
         return "\n".join(report) if report else "Governance analysis complete"
 
-    def _check_data_quality(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Check data quality using graph_governance (80/20 delegation)"""
+    def _check_data_quality(self, request: str, context: ContextDict) -> ResultDict:
+        """Check data quality using graph_governance (80/20 delegation).
+
+        Args:
+            request: Quality check request
+            context: Context dictionary
+
+        Returns:
+            Dictionary with quality findings and report
+        """
         if self.graph_governance:
             # Delegate to graph_governance - it already does all the work!
             analysis = self.graph_governance.comprehensive_governance_check()
@@ -298,8 +378,16 @@ class GovernanceAgent(BaseAgent):
             'next_actions': ['Initialize graph governance']
         }
 
-    def _audit_compliance(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Audit compliance using graph_governance policies (80/20 delegation)"""
+    def _audit_compliance(self, request: str, context: ContextDict) -> ResultDict:
+        """Audit compliance using graph_governance policies (80/20 delegation).
+
+        Args:
+            request: Compliance audit request
+            context: Context dictionary
+
+        Returns:
+            Dictionary with compliance score and findings
+        """
         if self.graph_governance:
             # Delegate to graph_governance
             analysis = self.graph_governance.comprehensive_governance_check()
@@ -356,8 +444,16 @@ class GovernanceAgent(BaseAgent):
             'regulatory_frameworks': []
         }
 
-    def _trace_lineage(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Trace data lineage using graph_governance (80/20 delegation)"""
+    def _trace_lineage(self, request: str, context: ContextDict) -> ResultDict:
+        """Trace data lineage using graph_governance (80/20 delegation).
+
+        Args:
+            request: Lineage trace request
+            context: Context dictionary
+
+        Returns:
+            Dictionary with lineage paths and analysis
+        """
         if self.graph_governance:
             # Extract node IDs from request
             nodes = self.graph_governance._extract_nodes_from_request(request)
@@ -417,8 +513,16 @@ class GovernanceAgent(BaseAgent):
             'impact_analysis': 'Unable to trace lineage'
         }
 
-    def _optimize_costs(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Optimize data costs"""
+    def _optimize_costs(self, request: str, context: ContextDict) -> ResultDict:
+        """Optimize data costs.
+
+        Args:
+            request: Cost optimization request
+            context: Context dictionary
+
+        Returns:
+            Dictionary with cost analysis and optimizations
+        """
         return {
             'status': 'completed',
             'action': 'cost_optimization',
@@ -434,8 +538,16 @@ class GovernanceAgent(BaseAgent):
             'auto_optimizations_applied': ['Enabled JSON compression', 'Removed duplicate pattern executions']
         }
 
-    def _assess_security(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Assess data security"""
+    def _assess_security(self, request: str, context: ContextDict) -> ResultDict:
+        """Assess data security.
+
+        Args:
+            request: Security assessment request
+            context: Context dictionary
+
+        Returns:
+            Dictionary with security score and findings
+        """
         return {
             'status': 'completed',
             'action': 'security_assessment',
@@ -447,8 +559,16 @@ class GovernanceAgent(BaseAgent):
             }
         }
 
-    def _tune_performance(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Tune system performance"""
+    def _tune_performance(self, request: str, context: ContextDict) -> ResultDict:
+        """Tune system performance.
+
+        Args:
+            request: Performance tuning request
+            context: Context dictionary
+
+        Returns:
+            Dictionary with performance metrics and optimizations
+        """
         return {
             'status': 'completed',
             'action': 'performance_tuning',
@@ -461,8 +581,16 @@ class GovernanceAgent(BaseAgent):
             'performance_improvement': '35% faster average response time'
         }
 
-    def _validate_agent_compliance(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate agent compliance with Trinity Architecture"""
+    def _validate_agent_compliance(self, request: str, context: ContextDict) -> ResultDict:
+        """Validate agent compliance with Trinity Architecture.
+
+        Args:
+            request: Compliance validation request
+            context: Context dictionary
+
+        Returns:
+            Dictionary with compliance results and recommendations
+        """
 
         # Ensure agent validator is initialized
         if not self.agent_validator:
@@ -557,7 +685,11 @@ class GovernanceAgent(BaseAgent):
         }
 
     def _find_or_create_governance_node(self) -> Optional[str]:
-        """Find or create the main governance node"""
+        """Find or create the main governance node.
+
+        Returns:
+            Node ID if found/created, None otherwise
+        """
         if not self.graph:
             return None
 
@@ -573,8 +705,15 @@ class GovernanceAgent(BaseAgent):
             'created': datetime.now().isoformat()
         })
 
-    def _generate_compliance_recommendations(self, validation_results: Dict[str, Any]) -> List[str]:
-        """Generate recommendations based on compliance results"""
+    def _generate_compliance_recommendations(self, validation_results: ResultDict) -> List[str]:
+        """Generate recommendations based on compliance results.
+
+        Args:
+            validation_results: Validation results dictionary
+
+        Returns:
+            List of recommendation strings
+        """
         recommendations = []
 
         compliance = validation_results['overall_compliance']
@@ -596,8 +735,15 @@ class GovernanceAgent(BaseAgent):
 
         return recommendations
 
-    def suggest_improvements(self, scope: str = 'all') -> Dict[str, Any]:
-        """Analyze system and suggest improvements using graph governance"""
+    def suggest_improvements(self, scope: str = 'all') -> ResultDict:
+        """Analyze system and suggest improvements using graph governance.
+
+        Args:
+            scope: Scope of analysis (default: 'all')
+
+        Returns:
+            Dictionary with analysis summary and improvements list
+        """
         improvements = []
 
         if not self.graph_governance:
@@ -662,8 +808,15 @@ class GovernanceAgent(BaseAgent):
             'auto_fixable': len([i for i in improvements if i['priority'] == 'high'])
         }
 
-    def _check_policy_violations(self, result: Dict[str, Any]) -> List[Dict]:
-        """Check results against loaded governance policies"""
+    def _check_policy_violations(self, result: ResultDict) -> ViolationList:
+        """Check results against loaded governance policies.
+
+        Args:
+            result: Results to check against policies
+
+        Returns:
+            List of violation dictionaries
+        """
         violations = []
         if not self.graph_governance or not self.graph_governance.policies:
             return violations
@@ -686,8 +839,16 @@ class GovernanceAgent(BaseAgent):
 
         return violations
 
-    def validate_with_pattern(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute validation using governance patterns"""
+    def validate_with_pattern(self, request: str, context: ContextDict) -> ResultDict:
+        """Execute validation using governance patterns.
+
+        Args:
+            request: Validation request string
+            context: Context dictionary with target_nodes
+
+        Returns:
+            Dictionary with validation results and remediation count
+        """
         try:
             # Load governance policies if not already loaded
             if not self.graph_governance or not self.graph_governance.policies:

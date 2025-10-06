@@ -1,14 +1,33 @@
-"""DataDigester - Processes raw data into graph nodes"""
+"""DataDigester - Processes raw data into graph nodes
+
+Phase 3.1: Comprehensive type hints added for all methods
+"""
 from agents.base_agent import BaseAgent
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional, TypeAlias
 from datetime import datetime
+
+# Type aliases for clarity
+NodeData: TypeAlias = Dict[str, Any]
+QuoteDict: TypeAlias = Dict[str, Any]
+IndicatorDict: TypeAlias = Dict[str, Any]
+DigestResult: TypeAlias = Dict[str, Any]
 
 class DataDigester(BaseAgent):
     """Turns raw data into knowledge graph nodes"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(
+        self,
+        graph: Any,
+        llm_client: Optional[Any] = None
+    ) -> None:
+        """Initialize DataDigester with graph and optional LLM client.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client for data analysis
+        """
         super().__init__(graph=graph, name="DataDigester", llm_client=llm_client)
-        self.vibe = "thoughtful"
+        self.vibe: str = "thoughtful"
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
         return f"""
@@ -26,8 +45,16 @@ class DataDigester(BaseAgent):
         - confidence: How confident in this data (0-1)
         """
 
-    def digest(self, raw_data: Dict[str, Any], data_type: str) -> Dict[str, Any]:
-        """Main digestion method"""
+    def digest(self, raw_data: Dict[str, Any], data_type: str) -> DigestResult:
+        """Main digestion method.
+
+        Args:
+            raw_data: Raw data dictionary to digest
+            data_type: Type of data being digested
+
+        Returns:
+            Dictionary with digestion status and node ID
+        """
         context = {
             "data": raw_data,
             "data_type": data_type
@@ -71,8 +98,15 @@ class DataDigester(BaseAgent):
 
         return result
 
-    def digest_market_data(self, quote: Dict[str, Any]) -> Dict[str, Any]:
-        """Specifically digest market quotes"""
+    def digest_market_data(self, quote: QuoteDict) -> DigestResult:
+        """Specifically digest market quotes.
+
+        Args:
+            quote: Market quote dictionary with symbol and price data
+
+        Returns:
+            Dictionary with digestion status and node ID
+        """
         if not quote or 'symbol' not in quote:
             return {"error": "Invalid quote data"}
 
@@ -105,8 +139,15 @@ class DataDigester(BaseAgent):
 
         return {"error": "No graph available"}
 
-    def digest_economic_data(self, indicator: Dict[str, Any]) -> Dict[str, Any]:
-        """Digest economic indicators"""
+    def digest_economic_data(self, indicator: IndicatorDict) -> DigestResult:
+        """Digest economic indicators.
+
+        Args:
+            indicator: Economic indicator dictionary with series and value data
+
+        Returns:
+            Dictionary with digestion status and node ID
+        """
         if not indicator or 'series' not in indicator:
             return {"error": "Invalid indicator data"}
 
@@ -134,8 +175,13 @@ class DataDigester(BaseAgent):
 
         return {"error": "No graph available"}
 
-    def _connect_economic_relationships(self, node_id: str, series: str):
-        """Create known economic relationships"""
+    def _connect_economic_relationships(self, node_id: str, series: str) -> None:
+        """Create known economic relationships.
+
+        Args:
+            node_id: Node identifier to create connections from
+            series: Economic series name to find related indicators
+        """
         if not self.graph:
             return
 
@@ -154,26 +200,63 @@ class DataDigester(BaseAgent):
 class NodeMaker(BaseAgent):
     """Sub-agent that creates node structures"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(
+        self,
+        graph: Any,
+        llm_client: Optional[Any] = None
+    ) -> None:
+        """Initialize NodeMaker.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client
+        """
         super().__init__("NodeMaker", graph, llm_client)
-        self.vibe = "structured"
+        self.vibe: str = "structured"
 
 class MetadataAdder(BaseAgent):
     """Sub-agent that adds metadata to nodes"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(
+        self,
+        graph: Any,
+        llm_client: Optional[Any] = None
+    ) -> None:
+        """Initialize MetadataAdder.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client
+        """
         super().__init__("MetadataAdder", graph, llm_client)
-        self.vibe = "detailed"
+        self.vibe: str = "detailed"
 
 class ConfidenceRater(BaseAgent):
     """Sub-agent that rates data confidence"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(
+        self,
+        graph: Any,
+        llm_client: Optional[Any] = None
+    ) -> None:
+        """Initialize ConfidenceRater.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client
+        """
         super().__init__("ConfidenceRater", graph, llm_client)
-        self.vibe = "skeptical"
+        self.vibe: str = "skeptical"
 
     def rate(self, data: Dict[str, Any]) -> float:
-        """Rate confidence in data using dynamic calculation"""
+        """Rate confidence in data using dynamic calculation.
+
+        Args:
+            data: Data dictionary to rate confidence for
+
+        Returns:
+            Confidence score between 0.0 and 1.0
+        """
         # Calculate confidence based on data quality factors
         data_quality = self._assess_source_quality(data)
         num_data_points = len([k for k, v in data.items() if v is not None])
@@ -187,7 +270,14 @@ class ConfidenceRater(BaseAgent):
         return round(confidence, 2)
 
     def _assess_source_quality(self, data: Dict[str, Any]) -> float:
-        """Assess quality of data source"""
+        """Assess quality of data source.
+
+        Args:
+            data: Data dictionary with optional source field
+
+        Returns:
+            Quality score between 0.0 and 1.0
+        """
         source = data.get('source', '').lower()
 
         # Official/authoritative sources

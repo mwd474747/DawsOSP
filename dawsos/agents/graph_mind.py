@@ -1,15 +1,38 @@
-"""GraphMind - The living intelligence that manages the knowledge graph"""
+"""GraphMind - The living intelligence that manages the knowledge graph
+
+Phase 3.1: Added comprehensive type hints for better type safety.
+"""
 from agents.base_agent import BaseAgent
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, TypeAlias
+
+# Type aliases for clarity
+ContextDict: TypeAlias = Dict[str, Any]
+ResultDict: TypeAlias = Dict[str, Any]
+ConnectionList: TypeAlias = List[Dict[str, Any]]
+NodeStats: TypeAlias = Dict[str, Any]
 
 class GraphMind(BaseAgent):
     """The consciousness of the knowledge graph"""
 
-    def __init__(self, graph, llm_client=None):
-        super().__init__(graph=graph, name="GraphMind", llm_client=llm_client)
-        self.vibe = "omniscient"
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize GraphMind with graph and optional LLM client.
 
-    def get_prompt(self, context: Dict[str, Any]) -> str:
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client for generation
+        """
+        super().__init__(graph=graph, name="GraphMind", llm_client=llm_client)
+        self.vibe: str = "omniscient"
+
+    def get_prompt(self, context: ContextDict) -> str:
+        """Generate prompt for graph operations.
+
+        Args:
+            context: Dictionary with new_info and intent
+
+        Returns:
+            Formatted prompt string
+        """
         return f"""
         You are GraphMind, the living intelligence of the knowledge graph.
 
@@ -27,8 +50,16 @@ class GraphMind(BaseAgent):
         Just tell me the action and parameters. Keep it simple.
         """
 
-    def should_connect(self, node1: str, node2: str) -> Dict[str, Any]:
-        """Decide if two nodes should connect"""
+    def should_connect(self, node1: str, node2: str) -> ResultDict:
+        """Decide if two nodes should connect.
+
+        Args:
+            node1: First node ID
+            node2: Second node ID
+
+        Returns:
+            Dictionary with connection decision
+        """
         context = {
             "node1": self.graph.nodes.get(node1) if self.graph else {},
             "node2": self.graph.nodes.get(node2) if self.graph else {},
@@ -36,8 +67,15 @@ class GraphMind(BaseAgent):
         }
         return self.think(context)
 
-    def suggest_connections(self, node: str) -> List[Dict[str, Any]]:
-        """Suggest what a node might connect to"""
+    def suggest_connections(self, node: str) -> ConnectionList:
+        """Suggest what a node might connect to.
+
+        Args:
+            node: Node ID to suggest connections for
+
+        Returns:
+            List of suggested connection dictionaries
+        """
         context = {
             "node": self.graph.nodes.get(node) if self.graph else {},
             "existing_nodes": list(self.graph.nodes.keys()) if self.graph else [],
@@ -45,8 +83,12 @@ class GraphMind(BaseAgent):
         }
         return self.think(context)
 
-    def evaluate_health(self) -> Dict[str, Any]:
-        """How's the graph doing?"""
+    def evaluate_health(self) -> NodeStats:
+        """How's the graph doing?
+
+        Returns:
+            Dictionary with health status and advice
+        """
         stats = self.graph.get_stats() if self.graph else {}
 
         if not stats:
@@ -68,11 +110,25 @@ class GraphMind(BaseAgent):
 class ConnectionVibes(BaseAgent):
     """Sub-agent that feels out the vibe between nodes"""
 
-    def __init__(self, graph, llm_client=None):
-        super().__init__("ConnectionVibes", graph, llm_client)
-        self.vibe = "intuitive"
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize ConnectionVibes with graph and optional LLM client.
 
-    def get_prompt(self, context: Dict[str, Any]) -> str:
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client
+        """
+        super().__init__("ConnectionVibes", graph, llm_client)
+        self.vibe: str = "intuitive"
+
+    def get_prompt(self, context: ContextDict) -> str:
+        """Generate prompt for connection type detection.
+
+        Args:
+            context: Dictionary with node1 and node2
+
+        Returns:
+            Formatted prompt string
+        """
         return f"""
         You sense connections between things.
 
@@ -95,11 +151,25 @@ class ConnectionVibes(BaseAgent):
 class StrengthFeeler(BaseAgent):
     """Sub-agent that feels how strong a connection is"""
 
-    def __init__(self, graph, llm_client=None):
-        super().__init__("StrengthFeeler", graph, llm_client)
-        self.vibe = "sensitive"
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize StrengthFeeler with graph and optional LLM client.
 
-    def get_prompt(self, context: Dict[str, Any]) -> str:
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client
+        """
+        super().__init__("StrengthFeeler", graph, llm_client)
+        self.vibe: str = "sensitive"
+
+    def get_prompt(self, context: ContextDict) -> str:
+        """Generate prompt for connection strength evaluation.
+
+        Args:
+            context: Dictionary with from, to, relationship, context
+
+        Returns:
+            Formatted prompt string
+        """
         return f"""
         You feel the strength of connections.
 

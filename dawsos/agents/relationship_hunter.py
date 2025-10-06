@@ -1,17 +1,38 @@
-"""RelationshipHunter - Finds connections between nodes"""
+"""RelationshipHunter - Finds connections between nodes
+
+Phase 3.1: Comprehensive type hints added for all methods
+"""
 import logging
 from agents.base_agent import BaseAgent
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional, TypeAlias
+
+# Type aliases for clarity
+CorrelationDict: TypeAlias = Dict[str, Any]
+RelationshipDict: TypeAlias = Dict[str, Any]
+NodeList: TypeAlias = List[str]
+SuggestionList: TypeAlias = List[Tuple[str, str, float]]
 
 logger = logging.getLogger(__name__)
 
 class RelationshipHunter(BaseAgent):
     """Hunts for relationships between nodes"""
 
-    def __init__(self, graph, llm_client=None, capabilities=None):
+    def __init__(
+        self,
+        graph: Any,
+        llm_client: Optional[Any] = None,
+        capabilities: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """Initialize RelationshipHunter with graph and optional capabilities.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client for advanced relationship detection
+            capabilities: Optional capabilities dictionary for market data access
+        """
         super().__init__(graph=graph, name="RelationshipHunter", llm_client=llm_client)
-        self.vibe = "curious"
-        self.capabilities = capabilities or {}
+        self.vibe: str = "curious"
+        self.capabilities: Dict[str, Any] = capabilities or {}
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
         return f"""
@@ -107,7 +128,14 @@ class RelationshipHunter(BaseAgent):
         }
 
     def _calculate_returns(self, prices: List[float]) -> List[float]:
-        """Calculate daily returns from price series"""
+        """Calculate daily returns from price series.
+
+        Args:
+            prices: List of historical prices
+
+        Returns:
+            List of daily return percentages
+        """
         if len(prices) < 2:
             return []
         returns = []
@@ -118,7 +146,15 @@ class RelationshipHunter(BaseAgent):
         return returns
 
     def _calculate_correlation(self, returns1: List[float], returns2: List[float]) -> float:
-        """Calculate Pearson correlation between two return series"""
+        """Calculate Pearson correlation between two return series.
+
+        Args:
+            returns1: First return series
+            returns2: Second return series
+
+        Returns:
+            Correlation coefficient between -1 and 1
+        """
         import numpy as np
         if not returns1 or not returns2 or len(returns1) != len(returns2):
             return 0.0
@@ -140,8 +176,16 @@ class RelationshipHunter(BaseAgent):
             logger.error(f"Unexpected error calculating correlation: {e}", exc_info=True)
             return 0.0
 
-    def _calculate_price_correlation(self, history1: List[Dict], history2: List[Dict]) -> float:
-        """Calculate correlation between two historical price series"""
+    def _calculate_price_correlation(self, history1: List[Dict[str, Any]], history2: List[Dict[str, Any]]) -> float:
+        """Calculate correlation between two historical price series.
+
+        Args:
+            history1: First historical price data
+            history2: Second historical price data
+
+        Returns:
+            Correlation coefficient between price movements
+        """
         try:
             # Extract prices and calculate returns
             prices1 = [float(item.get('close', 0)) for item in history1 if item.get('close')]
@@ -166,7 +210,15 @@ class RelationshipHunter(BaseAgent):
             return 0.0
 
     def _generate_correlation_summary(self, target: str, correlations: Dict[str, float]) -> str:
-        """Generate summary of correlation findings"""
+        """Generate summary of correlation findings.
+
+        Args:
+            target: Target symbol being analyzed
+            correlations: Dictionary of symbol to correlation values
+
+        Returns:
+            Human-readable summary of correlation patterns
+        """
         if not correlations:
             return f"{target} correlation data unavailable"
 
@@ -183,7 +235,14 @@ class RelationshipHunter(BaseAgent):
             return f"{target} shows weak correlations with tracked indices"
 
     def _get_default_correlations(self, target: str) -> Dict[str, Any]:
-        """Calculate correlations from knowledge base or real-time data"""
+        """Calculate correlations from knowledge base or real-time data.
+
+        Args:
+            target: Target symbol for correlation analysis
+
+        Returns:
+            Dictionary containing correlation results and metadata
+        """
         try:
             # Try to get correlations from knowledge base first
             if self.graph:
@@ -215,8 +274,15 @@ class RelationshipHunter(BaseAgent):
                 }
             }
 
-    def _calculate_sector_based_correlations(self, target: str) -> Dict[str, Any]:
-        """Calculate correlations based on sector relationships"""
+    def _calculate_sector_based_correlations(self, target: str) -> Optional[Dict[str, Any]]:
+        """Calculate correlations based on sector relationships.
+
+        Args:
+            target: Target symbol for sector analysis
+
+        Returns:
+            Dictionary with sector-based correlations or None if unavailable
+        """
         try:
             # Get sector data from knowledge base
             if self.graph:
@@ -251,7 +317,14 @@ class RelationshipHunter(BaseAgent):
         return None
 
     def _calculate_historical_patterns(self, target: str) -> Dict[str, Any]:
-        """Calculate correlations using historical pattern analysis"""
+        """Calculate correlations using historical pattern analysis.
+
+        Args:
+            target: Target symbol for pattern analysis
+
+        Returns:
+            Dictionary with pattern-based correlation recommendations
+        """
         return {
             'response': f'Pattern-based correlation analysis for {target}',
             'correlations': {
@@ -262,8 +335,15 @@ class RelationshipHunter(BaseAgent):
             }
         }
 
-    def hunt(self, node_id: str = None) -> List[Dict[str, Any]]:
-        """Hunt for relationships from a node or globally"""
+    def hunt(self, node_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Hunt for relationships from a node or globally.
+
+        Args:
+            node_id: Optional specific node to hunt from, or None for global hunt
+
+        Returns:
+            List of discovered relationship dictionaries
+        """
         if not self.graph:
             return []
 
@@ -298,8 +378,16 @@ class RelationshipHunter(BaseAgent):
             result['node_id'] = node_id
         return result
 
-    def _check_relationship(self, node1_id: str, node2_id: str) -> Dict[str, Any]:
-        """Check if two nodes should be related"""
+    def _check_relationship(self, node1_id: str, node2_id: str) -> RelationshipDict:
+        """Check if two nodes should be related.
+
+        Args:
+            node1_id: First node identifier
+            node2_id: Second node identifier
+
+        Returns:
+            Dictionary describing the relationship if it exists
+        """
         node1 = self.graph.nodes.get(node1_id)
         node2 = self.graph.nodes.get(node2_id)
 
@@ -346,8 +434,15 @@ class RelationshipHunter(BaseAgent):
 
         return relationship
 
-    def _get_recent_nodes(self, count: int) -> List[str]:
-        """Get most recently added nodes"""
+    def _get_recent_nodes(self, count: int) -> NodeList:
+        """Get most recently added nodes.
+
+        Args:
+            count: Number of recent nodes to retrieve
+
+        Returns:
+            List of node identifiers sorted by creation time
+        """
         if not self.graph or not self.graph.nodes:
             return []
 
@@ -360,8 +455,15 @@ class RelationshipHunter(BaseAgent):
 
         return [node_id for node_id, _ in sorted_nodes[:count]]
 
-    def suggest_connections(self, node_id: str) -> List[Tuple[str, str, float]]:
-        """Suggest what a node might connect to"""
+    def suggest_connections(self, node_id: str) -> SuggestionList:
+        """Suggest what a node might connect to.
+
+        Args:
+            node_id: Node identifier to find suggested connections for
+
+        Returns:
+            List of tuples (target_node_id, relationship_type, score)
+        """
         suggestions = []
         node = self.graph.nodes.get(node_id)
 
@@ -402,7 +504,15 @@ class RelationshipHunter(BaseAgent):
         return sorted(suggestions, key=lambda x: x[2], reverse=True)[:5]
 
     def _share_connections(self, node1: str, node2: str) -> bool:
-        """Check if two nodes share connections"""
+        """Check if two nodes share connections.
+
+        Args:
+            node1: First node identifier
+            node2: Second node identifier
+
+        Returns:
+            True if nodes share at least one connection
+        """
         if not self.graph:
             return False
 
@@ -418,7 +528,15 @@ class RelationshipHunter(BaseAgent):
         return len(connections1.intersection(connections2)) > 0
 
     def _suggest_relationship_type(self, type1: str, type2: str) -> str:
-        """Suggest relationship type based on node types"""
+        """Suggest relationship type based on node types.
+
+        Args:
+            type1: First node type
+            type2: Second node type
+
+        Returns:
+            Suggested relationship type string
+        """
         suggestions = {
             ('indicator', 'indicator'): 'correlates',
             ('indicator', 'stock'): 'influences',

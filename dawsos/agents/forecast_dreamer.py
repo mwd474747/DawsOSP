@@ -1,17 +1,41 @@
-"""ForecastDreamer - Makes predictions based on the graph"""
+"""ForecastDreamer - Makes predictions based on the graph
+
+Phase 3.1: Added comprehensive type hints for better type safety.
+"""
 from agents.base_agent import BaseAgent
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, TypeAlias
 from datetime import datetime, timedelta
+
+# Type aliases for clarity
+ContextDict: TypeAlias = Dict[str, Any]
+ForecastDict: TypeAlias = Dict[str, Any]
+ScenarioDict: TypeAlias = Dict[str, Any]
+PatternList: TypeAlias = List[Dict[str, Any]]
+PredictionList: TypeAlias = List[Dict[str, Any]]
 
 class ForecastDreamer(BaseAgent):
     """Dreams up forecasts based on graph knowledge"""
 
-    def __init__(self, graph, llm_client=None):
-        super().__init__(graph=graph, name="ForecastDreamer", llm_client=llm_client)
-        self.vibe = "prophetic"
-        self.predictions = []
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize ForecastDreamer with graph and optional LLM client.
 
-    def get_prompt(self, context: Dict[str, Any]) -> str:
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client for generation
+        """
+        super().__init__(graph=graph, name="ForecastDreamer", llm_client=llm_client)
+        self.vibe: str = "prophetic"
+        self.predictions: PredictionList = []
+
+    def get_prompt(self, context: ContextDict) -> str:
+        """Generate prompt for forecast generation.
+
+        Args:
+            context: Dictionary with target, influences, patterns, horizon
+
+        Returns:
+            Formatted prompt string
+        """
         return f"""
         You are ForecastDreamer, seeing possible futures.
 
@@ -29,8 +53,16 @@ class ForecastDreamer(BaseAgent):
         Return your prophecy.
         """
 
-    def dream(self, target: str, horizon: str = "1d") -> Dict[str, Any]:
-        """Main forecast method"""
+    def dream(self, target: str, horizon: str = "1d") -> ForecastDict:
+        """Main forecast method.
+
+        Args:
+            target: Target node/ticker to forecast
+            horizon: Time horizon (default: '1d')
+
+        Returns:
+            Dictionary with forecast, patterns, and narrative
+        """
         if not self.graph or target not in self.graph.nodes:
             return {"error": f"Cannot forecast {target} - not in graph"}
 
@@ -49,8 +81,15 @@ class ForecastDreamer(BaseAgent):
 
         return forecast
 
-    def dream_scenario(self, scenario: Dict[str, Any]) -> Dict[str, Any]:
-        """Forecast based on a scenario"""
+    def dream_scenario(self, scenario: ScenarioDict) -> ForecastDict:
+        """Forecast based on a scenario.
+
+        Args:
+            scenario: Dictionary mapping nodes to changes
+
+        Returns:
+            Dictionary with scenario effects and summary
+        """
         results = {}
 
         # Apply scenario changes
@@ -66,8 +105,15 @@ class ForecastDreamer(BaseAgent):
             "summary": self._summarize_scenario(results)
         }
 
-    def _find_relevant_patterns(self, target: str) -> List[Dict[str, Any]]:
-        """Find patterns relevant to forecast"""
+    def _find_relevant_patterns(self, target: str) -> PatternList:
+        """Find patterns relevant to forecast.
+
+        Args:
+            target: Target node to find patterns for
+
+        Returns:
+            List of relevant pattern dictionaries (up to 5)
+        """
         relevant = []
 
         if not self.graph:
@@ -80,8 +126,15 @@ class ForecastDreamer(BaseAgent):
 
         return relevant[:5]
 
-    def _create_narrative(self, forecast: Dict[str, Any]) -> str:
-        """Create a narrative explanation"""
+    def _create_narrative(self, forecast: ForecastDict) -> str:
+        """Create a narrative explanation.
+
+        Args:
+            forecast: Forecast dictionary with direction and confidence
+
+        Returns:
+            Narrative string explaining the forecast
+        """
         direction = forecast.get('forecast', 'neutral')
         confidence = forecast.get('confidence', 0)
         drivers = forecast.get('key_drivers', [])
@@ -95,8 +148,16 @@ class ForecastDreamer(BaseAgent):
         else:
             return f"Mixed signals suggest sideways movement. Watching {len(drivers)} factors."
 
-    def _trace_scenario_effects(self, start_node: str, change: float) -> Dict[str, Any]:
-        """Trace how a change propagates through the graph"""
+    def _trace_scenario_effects(self, start_node: str, change: float) -> Dict[str, float]:
+        """Trace how a change propagates through the graph.
+
+        Args:
+            start_node: Node where change originates
+            change: Magnitude of change
+
+        Returns:
+            Dictionary mapping affected nodes to effect magnitudes
+        """
         effects = {start_node: change}
 
         if not self.graph:
@@ -117,7 +178,14 @@ class ForecastDreamer(BaseAgent):
         return effects
 
     def _summarize_scenario(self, results: Dict[str, Any]) -> str:
-        """Summarize scenario analysis"""
+        """Summarize scenario analysis.
+
+        Args:
+            results: Dictionary of scenario effects
+
+        Returns:
+            Summary string describing the impact
+        """
         total_nodes = sum(len(effects) for effects in results.values())
         max_effect = max(
             [abs(e) for effects in results.values() for e in effects.values()],
@@ -131,8 +199,13 @@ class ForecastDreamer(BaseAgent):
         else:
             return f"Limited impact, affecting {total_nodes} nodes"
 
-    def _remember_prediction(self, target: str, forecast: Dict[str, Any]):
-        """Store prediction for later validation"""
+    def _remember_prediction(self, target: str, forecast: ForecastDict) -> None:
+        """Store prediction for later validation.
+
+        Args:
+            target: Target that was forecasted
+            forecast: Forecast dictionary
+        """
         prediction = {
             "target": target,
             "forecast": forecast,
@@ -150,20 +223,38 @@ class ForecastDreamer(BaseAgent):
 class PathTracer(BaseAgent):
     """Sub-agent that traces influence paths"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize PathTracer with graph and optional LLM client.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client
+        """
         super().__init__("PathTracer", graph, llm_client)
-        self.vibe = "thorough"
+        self.vibe: str = "thorough"
 
 class SignalAggregator(BaseAgent):
     """Sub-agent that combines multiple signals"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize SignalAggregator with graph and optional LLM client.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client
+        """
         super().__init__("SignalAggregator", graph, llm_client)
-        self.vibe = "balanced"
+        self.vibe: str = "balanced"
 
 class ConfidenceCalculator(BaseAgent):
     """Sub-agent that calculates forecast confidence"""
 
-    def __init__(self, graph, llm_client=None):
+    def __init__(self, graph: Any, llm_client: Optional[Any] = None) -> None:
+        """Initialize ConfidenceCalculator with graph and optional LLM client.
+
+        Args:
+            graph: Knowledge graph instance
+            llm_client: Optional LLM client
+        """
         super().__init__("ConfidenceCalculator", graph, llm_client)
-        self.vibe = "cautious"
+        self.vibe: str = "cautious"
