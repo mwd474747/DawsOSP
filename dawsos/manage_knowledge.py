@@ -5,10 +5,13 @@ Safe operations for updating knowledge without impacting system
 """
 
 import json
+import logging
 import os
 import shutil
 from datetime import datetime
 from typing import Dict, Any
+
+logger = logging.getLogger(__name__)
 
 class KnowledgeManager:
     """Manages knowledge updates with safety checks"""
@@ -253,8 +256,12 @@ def main():
             try:
                 selected = backups[int(idx)-1]
                 manager.restore_backup(selected)
-            except:
+            except (ValueError, IndexError) as e:
+                logger.debug(f"Invalid backup selection '{idx}': {e}")
                 print("Invalid selection")
+            except Exception as e:
+                logger.error(f"Unexpected error restoring backup: {e}", exc_info=True)
+                print(f"Error restoring backup: {e}")
 
         elif choice == "5":
             print("\n🔍 Checking knowledge health...")

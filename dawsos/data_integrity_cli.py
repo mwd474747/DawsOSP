@@ -6,6 +6,7 @@ Provides validation, backup, and source control operations
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 from datetime import datetime
@@ -14,6 +15,8 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).parent))
 
 from core.data_integrity_manager import get_data_integrity_manager
+
+logger = logging.getLogger(__name__)
 
 
 def cmd_validate(args):
@@ -230,7 +233,14 @@ def cmd_list_backups(args):
                     with open(manifest_path, 'r') as f:
                         manifest = json.load(f)
                     backups.append((backup_dir.name, manifest))
-                except:
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Corrupted manifest in {backup_dir.name}: {e}")
+                    backups.append((backup_dir.name, None))
+                except PermissionError as e:
+                    logger.warning(f"Permission denied reading {backup_dir.name}: {e}")
+                    backups.append((backup_dir.name, None))
+                except Exception as e:
+                    logger.error(f"Unexpected error reading manifest in {backup_dir.name}: {e}", exc_info=True)
                     backups.append((backup_dir.name, None))
 
     if not backups:
