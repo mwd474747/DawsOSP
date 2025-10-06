@@ -36,7 +36,7 @@ Request → UniversalExecutor → PatternEngine → AgentRuntime/AgentRegistry �
    - Primary action: `execute_through_registry` (Trinity-compliant)
 
 3. **AgentRuntime** (`core/agent_runtime.py`)
-   - Maintains registry of 19+ agents
+   - Maintains registry of 15 agents with 103 capabilities
    - `execute()` method routes through AgentRegistry
    - `exec_via_registry()` is the sanctioned helper (name-based routing)
    - `execute_by_capability()` enables capability-based routing (new in 2.0)

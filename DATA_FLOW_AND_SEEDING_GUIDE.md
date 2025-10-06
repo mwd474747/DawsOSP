@@ -46,7 +46,9 @@ AgentRuntime (executes pattern steps)
 
 ## 📍 Current Mock/Placeholder Locations
 
-### **1. Pattern Engine Fallbacks** ([pattern_engine.py:655-665](dawsos/core/pattern_engine.py#L655-665))
+### **1. Pattern Engine Fallbacks** (`core/pattern_engine.py`)
+**Function**: `_get_macro_regime_placeholder()`
+
 ```python
 # When macro data unavailable, returns structured placeholder
 return {
@@ -57,7 +59,9 @@ return {
 ```
 **Status**: Partially real - FRED integration works, but falls back when API fails
 
-### **2. Data Harvester Economic Fallback** ([data_harvester.py:108-119](dawsos/agents/data_harvester.py#L108-119))
+### **2. Data Harvester Economic Fallback** (`agents/data_harvester.py`)
+**Function**: `harvest_economic_data()`
+
 ```python
 # Last resort when FRED API unavailable
 return {
@@ -67,7 +71,9 @@ return {
 ```
 **Status**: Real API configured, fallback only triggers on API failure
 
-### **3. Relationship Hunter Correlation** ([relationship_hunter.py:164](dawsos/agents/relationship_hunter.py#L164))
+### **3. Relationship Hunter Correlation** (`agents/relationship_hunter.py`)
+**Function**: `find_correlations()`
+
 ```python
 return f"{target} correlation data unavailable"
 ```
@@ -86,7 +92,7 @@ return f"{target} correlation data unavailable"
 
 The system automatically seeds on first run:
 
-**Location**: [dawsos/main.py:94-109](dawsos/main.py#L94-109)
+**Location**: `main.py` startup sequence
 ```python
 # Auto-seeds if graph has < 40 nodes
 if st.session_state.graph.get_stats()['total_nodes'] < 40:
@@ -235,7 +241,7 @@ User: "Run equity analysis on TSLA"
 
 ### **1. Remove Pattern Engine Fallbacks**
 
-**Current code** ([pattern_engine.py:1754-1770](dawsos/core/pattern_engine.py#L1754-1770)):
+**Current implementation** (`core/pattern_engine.py` - `_empty_macro_data()` method):
 ```python
 def _empty_macro_data(self) -> Dict[str, Any]:
     """Return empty macro data structure when real data unavailable"""
@@ -246,7 +252,7 @@ def _empty_macro_data(self) -> Dict[str, Any]:
     }
 ```
 
-**Fix**: Raise exception instead of returning placeholders
+**Recommended fix**: Raise exception instead of returning placeholders
 ```python
 def _empty_macro_data(self) -> Dict[str, Any]:
     """Raise error when macro data unavailable"""
@@ -258,7 +264,7 @@ def _empty_macro_data(self) -> Dict[str, Any]:
 
 ### **2. Remove Data Harvester Fallbacks**
 
-**Current code** ([data_harvester.py:108-119](dawsos/agents/data_harvester.py#L108-119)):
+**Current implementation** (`agents/data_harvester.py` - `harvest_economic_data()` method):
 ```python
 return {
     'response': 'Economic data source unavailable',

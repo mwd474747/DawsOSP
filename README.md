@@ -105,19 +105,20 @@ KnowledgeGraph (core/relationships.py)
 
 ### Essential Guides
 - [README.md](README.md) - Quick start and system overview
-- [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) - Capability-based routing walkthrough
-- [CORE_INFRASTRUCTURE_STABILIZATION.md](CORE_INFRASTRUCTURE_STABILIZATION.md) - Core architecture upgrades
+- [CLAUDE.md](CLAUDE.md) - Development memory and principles for Claude Code sessions
+- [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) - Capability-based routing (100+ capabilities)
+- [DATA_FLOW_AND_SEEDING_GUIDE.md](DATA_FLOW_AND_SEEDING_GUIDE.md) - Data flow and graph seeding
+- [SYSTEM_STATUS.md](SYSTEM_STATUS.md) - Current system status and metrics
 - [docs/AgentDevelopmentGuide.md](docs/AgentDevelopmentGuide.md) - How to build and register agents
 - [docs/KnowledgeMaintenance.md](docs/KnowledgeMaintenance.md) - Dataset formats and refresh cadence
 - [docs/DisasterRecovery.md](docs/DisasterRecovery.md) - Backup and restore procedures
+- [docs/DEVELOPER_SETUP.md](docs/DEVELOPER_SETUP.md) - Developer environment setup
 
-### Assessment Reports
-- [FINAL_ROADMAP_COMPLIANCE.md](FINAL_ROADMAP_COMPLIANCE.md) - Complete compliance (A grade - 94/100)
-- [QUICK_WINS_COMPLETE.md](QUICK_WINS_COMPLETE.md) - Final improvements summary (A+ - 98/100)
-
-### Additional Documentation
+### Historical Reports (Archived)
+- [docs/archive/planning/CORE_INFRASTRUCTURE_STABILIZATION.md](docs/archive/planning/CORE_INFRASTRUCTURE_STABILIZATION.md) - Core architecture upgrades
+- [docs/archive/planning/FINAL_ROADMAP_COMPLIANCE.md](docs/archive/planning/FINAL_ROADMAP_COMPLIANCE.md) - Historical compliance report
+- [docs/archive/planning/QUICK_WINS_COMPLETE.md](docs/archive/planning/QUICK_WINS_COMPLETE.md) - Historical improvements summary
 - [docs/reports/](docs/reports/) - Interim progress reports (4 files)
-- [dawsos/docs/archive/](dawsos/docs/archive/) - Historical documentation
 
 ---
 
@@ -127,7 +128,8 @@ KnowledgeGraph (core/relationships.py)
 |--------|-------|
 | **Overall Grade** | A+ (98/100) |
 | **Agents** | 15 registered |
-| **Patterns** | 45 (0 errors) |
+| **Capabilities** | 103 unique capabilities |
+| **Patterns** | 46 (0 errors) |
 | **Knowledge Datasets** | 26 (100% coverage) |
 | **Pattern Compliance** | 100% Trinity |
 | **Error Handling** | Professional (0 bare pass) |
@@ -177,32 +179,38 @@ curl http://localhost:8502/_stcore/health
 
 ```
 DawsOSB/
-├── README.md                           # Quick start
-├── CAPABILITY_ROUTING_GUIDE.md        # Capability routing
-├── CORE_INFRASTRUCTURE_STABILIZATION.md # Architecture
-├── FINAL_ROADMAP_COMPLIANCE.md        # Compliance (A)
-├── QUICK_WINS_COMPLETE.md             # Final improvements (A+)
-├── dawsos/                            # Application
-│   ├── core/                          # Trinity runtime
+├── README.md                           # Quick start and overview
+├── CLAUDE.md                           # Development memory for Claude Code
+├── CAPABILITY_ROUTING_GUIDE.md        # Capability routing (103 capabilities)
+├── DATA_FLOW_AND_SEEDING_GUIDE.md     # Data flow and graph seeding
+├── SYSTEM_STATUS.md                   # Current system status
+├── dawsos/                            # Application root
+│   ├── core/                          # Trinity runtime (15+ modules)
 │   ├── agents/                        # 15 specialized agents
-│   ├── patterns/                      # 45 workflow patterns
+│   ├── capabilities/                  # External API integrations
+│   ├── patterns/                      # 46 workflow patterns
 │   ├── storage/knowledge/             # 26 enriched datasets
 │   ├── ui/                            # Streamlit dashboards
-│   └── tests/
+│   └── tests/                         # Test suites
 │       ├── validation/                # Automated pytest tests
-│       └── manual/                    # Diagnostic scripts
-├── docs/
+│       ├── unit/                      # Unit tests
+│       └── integration/               # Integration tests
+├── docs/                              # Documentation
+│   ├── AgentDevelopmentGuide.md       # Agent development
+│   ├── KnowledgeMaintenance.md        # Dataset maintenance
+│   ├── DisasterRecovery.md            # Backup/restore
+│   ├── DEVELOPER_SETUP.md             # Development setup
 │   ├── reports/                       # Progress reports
-│   └── archive/                       # Historical docs
-├── examples/archive/                  # Demo scripts
-└── scripts/                           # Lint and validation tools
+│   └── archive/                       # Historical documentation
+├── scripts/                           # Validation and utility scripts
+└── storage/                           # Runtime storage (gitignored)
 ```
 
 ---
 
 ## Agent Capabilities
 
-### 15 Agents with 50+ Capabilities
+### 15 Agents with 103 Capabilities
 
 **Data Pipeline**:
 - `data_harvester` - Market data, economic indicators, news
@@ -228,10 +236,10 @@ DawsOSB/
 
 ## Pattern Library
 
-### 45 Patterns (0 Errors)
+### 46 Patterns (0 Errors)
 
 **Categories**:
-- **Analysis** (14): Buffett checklist, Dalio cycles, sector rotation
+- **Analysis** (15): Buffett checklist, Dalio cycles, sector rotation
 - **System** (8): Architecture validation, capability checks
 - **Governance** (6): Policy validation, quality audits
 - **Macro** (5): Economic regime detection
@@ -240,7 +248,7 @@ DawsOSB/
 **Validation**:
 ```bash
 python3 scripts/lint_patterns.py
-# Output: 45 patterns checked, 0 errors ✅
+# Output: 46 patterns checked, 0 errors ✅
 ```
 
 ---

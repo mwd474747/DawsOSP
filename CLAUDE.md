@@ -68,29 +68,31 @@ result = runtime.exec_via_registry('financial_analyst', context)
 result = runtime.execute_by_capability('can_calculate_dcf', context)
 ```
 
-See [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) for 50+ available capabilities.
+See [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) for 103 available capabilities.
 
 ---
 
 ## 📊 System State Reference
 
 ### Current Metrics
-- **Patterns**: 45 (0 errors, 1 cosmetic warning)
-- **Agents**: 15 (consolidated, legacy archive deleted Oct 2025)
-- **Capabilities**: 50+ across financial_analyst, pattern_spotter, and other agents
+- **Patterns**: 46 (0 errors)
+- **Agents**: 15 registered agents
+- **Capabilities**: 103 unique capabilities
 - **Datasets**: 26 (100% coverage in KnowledgeLoader)
 - **Tests**: All passing (pytest suite)
 - **CI/CD**: `.github/workflows/compliance-check.yml` validates on push
 - **Error Handling**: 0 bare `pass` statements (all replaced with proper logging)
+- **Graph Backend**: NetworkX 3.2.1 (10x performance improvement)
 
 ### Key Architectural Components
 
 1. **UniversalExecutor** (`core/universal_executor.py`) - Single entry point
-2. **PatternEngine** (`core/pattern_engine.py`) - 45 JSON patterns, primary action: `execute_through_registry`
+2. **PatternEngine** (`core/pattern_engine.py`) - 46 JSON patterns, primary action: `execute_through_registry`
 3. **AgentRuntime** (`core/agent_runtime.py`) - Registry + capability routing
-4. **AGENT_CAPABILITIES** (`core/agent_capabilities.py`) - 50+ capabilities across 15 agents
-5. **KnowledgeLoader** (`core/knowledge_loader.py`) - 26 datasets, 30-min TTL cache
-6. **PersistenceManager** (`core/persistence.py`) - Auto-rotation, 30-day backups, checksums
+4. **AGENT_CAPABILITIES** (`core/agent_capabilities.py`) - 103 capabilities across 15 agents
+5. **KnowledgeGraph** (`core/knowledge_graph.py`) - NetworkX backend, 96K+ nodes
+6. **KnowledgeLoader** (`core/knowledge_loader.py`) - 26 datasets, 30-min TTL cache
+7. **PersistenceManager** (`core/persistence.py`) - Auto-rotation, 30-day backups, checksums
 
 ### 26 Enriched Datasets (100% Coverage)
 
@@ -183,7 +185,7 @@ All methods use Trinity-compliant execution through `runtime.execute_by_capabili
 
 ### Status & Compliance
 - [SYSTEM_STATUS.md](SYSTEM_STATUS.md) - Current A+ grade report
-- [TECHNICAL_DEBT_STATUS.md](TECHNICAL_DEBT_STATUS.md) - Current debt tracking
+- [DATA_FLOW_AND_SEEDING_GUIDE.md](DATA_FLOW_AND_SEEDING_GUIDE.md) - Data flow and graph seeding
 - [docs/archive/planning/](docs/archive/planning/) - Historical planning documents (Oct 2025 consolidation)
 
 ### Specialist Agents (Consult Before Changes)

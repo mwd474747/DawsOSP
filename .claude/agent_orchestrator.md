@@ -159,7 +159,7 @@ if agent.graph:
 return result
 ```
 
-## Registered Agents (19)
+## Registered Agents (15)
 
 ### Core Agents
 
