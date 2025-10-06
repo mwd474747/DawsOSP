@@ -428,37 +428,82 @@ class FinancialAnalyst(BaseAgent):
         return {}
 
     def _get_company_financials(self, symbol: str) -> Dict[str, Any]:
-        """Get company financial data from market capabilities"""
+        """Get company financial data from FMP API via market capability"""
         if 'market' not in self.capabilities:
             return {"error": "Market capability not available"}
 
         try:
             market = self.capabilities['market']
-            # Get basic quote data
-            quote = market.get_quote(symbol)
 
-            if 'error' in quote:
-                return quote
+            # Get latest financial statements from FMP API
+            income_statements = market.get_financials(symbol, statement='income', period='annual')
+            balance_sheets = market.get_financials(symbol, statement='balance', period='annual')
+            cash_flow_statements = market.get_financials(symbol, statement='cash-flow', period='annual')
+            company_profile = market.get_company_profile(symbol)
 
-            # For demonstration, return realistic financial data structure
-            # In production, would fetch actual financial statements
+            # Check for errors in any response
+            if not income_statements or 'error' in income_statements[0]:
+                return {"error": f"Failed to fetch income statement for {symbol}"}
+            if not balance_sheets or 'error' in balance_sheets[0]:
+                return {"error": f"Failed to fetch balance sheet for {symbol}"}
+            if not cash_flow_statements or 'error' in cash_flow_statements[0]:
+                return {"error": f"Failed to fetch cash flow statement for {symbol}"}
+
+            # Get most recent period (index 0)
+            income = income_statements[0]
+            balance = balance_sheets[0]
+            cash_flow = cash_flow_statements[0]
+
+            # Calculate derived metrics
+            total_debt = balance.get('debt', 0) or 0
+            total_equity = balance.get('total_equity', 0) or 0
+            total_capital = total_debt + total_equity
+
+            # Get or calculate free cash flow
+            free_cash_flow = cash_flow.get('free_cash_flow')
+            if not free_cash_flow:
+                # Calculate: Operating Cash Flow - Capital Expenditures
+                operating_cf = cash_flow.get('operating_cash_flow', 0) or 0
+                capex = abs(cash_flow.get('capex', 0) or 0)  # CapEx is usually negative
+                free_cash_flow = operating_cf - capex
+
+            # Build comprehensive financial data structure
             return {
                 "symbol": symbol,
-                "free_cash_flow": quote.get('market_cap', 1000) * 0.05,  # 5% of market cap
-                "net_income": quote.get('market_cap', 1000) * 0.08,
-                "ebit": quote.get('market_cap', 1000) * 0.12,
-                "depreciation_amortization": quote.get('market_cap', 1000) * 0.03,
-                "capital_expenditures": quote.get('market_cap', 1000) * 0.04,
-                "working_capital": quote.get('market_cap', 1000) * 0.15,
-                "working_capital_change": quote.get('market_cap', 1000) * 0.01,
-                "property_plant_equipment": quote.get('market_cap', 1000) * 0.4,
-                "goodwill": quote.get('market_cap', 1000) * 0.2,
-                "intangible_assets": quote.get('market_cap', 1000) * 0.1,
-                "tax_rate": 0.21,
-                "beta": 1.2
+                # Core metrics for DCF
+                "free_cash_flow": free_cash_flow or 0,
+                "net_income": income.get('net_income', 0) or 0,
+                "ebit": income.get('operating_income', 0) or 0,  # Operating income = EBIT
+                "ebitda": income.get('ebitda', 0) or 0,
+                "revenue": income.get('revenue', 0) or 0,
+
+                # Cash flow components
+                "operating_cash_flow": cash_flow.get('operating_cash_flow', 0) or 0,
+                "capital_expenditures": abs(cash_flow.get('capex', 0) or 0),
+                "depreciation_amortization": income.get('ebitda', 0) - income.get('operating_income', 0) if income.get('ebitda') and income.get('operating_income') else 0,
+
+                # Balance sheet items
+                "total_debt": total_debt,
+                "total_equity": total_equity,
+                "cash": balance.get('cash', 0) or 0,
+                "total_assets": balance.get('total_assets', 0) or 0,
+                "total_liabilities": balance.get('total_liabilities', 0) or 0,
+                "working_capital": (balance.get('total_assets', 0) or 0) - (balance.get('total_liabilities', 0) or 0),
+                "working_capital_change": 0,  # Would need historical data to calculate
+
+                # Additional metrics from profile
+                "tax_rate": 0.21,  # Default US corporate tax rate
+                "beta": company_profile.get('beta', 1.0) if company_profile and 'error' not in company_profile else 1.0,
+                "market_cap": company_profile.get('mktCap', 0) if company_profile and 'error' not in company_profile else 0,
+
+                # Metadata
+                "period": income.get('date', 'Unknown'),
+                "data_source": "FMP API",
+                "fetched_at": datetime.now().isoformat()
             }
 
         except Exception as e:
+            logger.error(f"Failed to get financial data for {symbol}: {e}", exc_info=True)
             return {"error": f"Failed to get financial data: {str(e)}"}
 
     def _calculate_confidence(self, financial_data: Dict, symbol: str) -> float:
