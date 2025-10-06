@@ -463,122 +463,34 @@ class FinancialAnalyst(BaseAgent):
 
     def _get_calculation_knowledge(self) -> Dict[str, Any]:
         """Get financial calculation knowledge from enriched data"""
-        # Phase 2.1: Delegate to FinancialDataFetcher
+        # Phase 2.2: Pure delegation to FinancialDataFetcher
         self._ensure_data_fetcher()
-        if self.data_fetcher:
-            return self.data_fetcher.get_calculation_knowledge()
-
-        # Fallback to legacy implementation
-        if 'enriched_data' in self.capabilities:
-            return self.capabilities['enriched_data'].get('financial_calculations', {})
-        return {}
+        return self.data_fetcher.get_calculation_knowledge()
 
     def _get_company_financials(self, symbol: str) -> Dict[str, Any]:
         """Get company financial data from FMP API via market capability"""
-        # Phase 2.1: Delegate to FinancialDataFetcher
+        # Phase 2.2: Pure delegation to FinancialDataFetcher
         self._ensure_data_fetcher()
-        if self.data_fetcher:
-            return self.data_fetcher.get_company_financials(symbol)
-
-        # Fallback to legacy implementation
-        if 'market' not in self.capabilities:
-            return {"error": "Market capability not available"}
-
-        # Legacy inline implementation (kept for safety, should not reach here)
-        try:
-            market = self.capabilities['market']
-            income_statements = market.get_financials(symbol, statement='income', period='annual')
-            balance_sheets = market.get_financials(symbol, statement='balance', period='annual')
-            cash_flow_statements = market.get_financials(symbol, statement='cash-flow', period='annual')
-            company_profile = market.get_company_profile(symbol)
-
-            if not income_statements or 'error' in income_statements[0]:
-                return {"error": f"Failed to fetch income statement for {symbol}"}
-            if not balance_sheets or 'error' in balance_sheets[0]:
-                return {"error": f"Failed to fetch balance sheet for {symbol}"}
-            if not cash_flow_statements or 'error' in cash_flow_statements[0]:
-                return {"error": f"Failed to fetch cash flow statement for {symbol}"}
-
-            income = income_statements[0]
-            balance = balance_sheets[0]
-            cash_flow = cash_flow_statements[0]
-
-            total_debt = balance.get('debt', 0) or 0
-            total_equity = balance.get('total_equity', 0) or 0
-
-            free_cash_flow = cash_flow.get('free_cash_flow')
-            if not free_cash_flow:
-                operating_cf = cash_flow.get('operating_cash_flow', 0) or 0
-                capex = abs(cash_flow.get('capex', 0) or 0)
-                free_cash_flow = operating_cf - capex
-
-            return {
-                "symbol": symbol,
-                "free_cash_flow": free_cash_flow or 0,
-                "net_income": income.get('net_income', 0) or 0,
-                "ebit": income.get('operating_income', 0) or 0,
-                "ebitda": income.get('ebitda', 0) or 0,
-                "revenue": income.get('revenue', 0) or 0,
-                "operating_cash_flow": cash_flow.get('operating_cash_flow', 0) or 0,
-                "capital_expenditures": abs(cash_flow.get('capex', 0) or 0),
-                "depreciation_amortization": income.get('ebitda', 0) - income.get('operating_income', 0) if income.get('ebitda') and income.get('operating_income') else 0,
-                "total_debt": total_debt,
-                "total_equity": total_equity,
-                "cash": balance.get('cash', 0) or 0,
-                "total_assets": balance.get('total_assets', 0) or 0,
-                "total_liabilities": balance.get('total_liabilities', 0) or 0,
-                "working_capital": (balance.get('total_assets', 0) or 0) - (balance.get('total_liabilities', 0) or 0),
-                "working_capital_change": 0,
-                "tax_rate": 0.21,
-                "beta": company_profile.get('beta', 1.0) if company_profile and 'error' not in company_profile else 1.0,
-                "market_cap": company_profile.get('mktCap', 0) if company_profile and 'error' not in company_profile else 0,
-                "period": income.get('date', 'Unknown'),
-                "data_source": "FMP API",
-                "fetched_at": datetime.now().isoformat()
-            }
-        except Exception as e:
-            logger.error(f"Failed to get financial data for {symbol}: {e}", exc_info=True)
-            return {"error": f"Failed to get financial data: {str(e)}"}
+        return self.data_fetcher.get_company_financials(symbol)
 
     def _calculate_confidence(self, financial_data: Dict, symbol: str) -> float:
         """Calculate confidence score based on data quality and business predictability"""
-        # Phase 2.1: Delegate to FinancialConfidenceCalculator
+        # Phase 2.2: Pure delegation to FinancialConfidenceCalculator
         self._ensure_confidence_calculator()
-        if self.confidence_calculator:
-            # Get confidence factors from knowledge base
-            calc_knowledge = self._get_calculation_knowledge()
-            confidence_factors = calc_knowledge.get('valuation_methodologies', {}).get('confidence_factors', {})
 
-            # Get data quality from FinancialDataFetcher
-            data_quality = self._assess_data_quality(financial_data)
+        # Get confidence factors from knowledge base
+        calc_knowledge = self._get_calculation_knowledge()
+        confidence_factors = calc_knowledge.get('valuation_methodologies', {}).get('confidence_factors', {})
 
-            return self.confidence_calculator.calculate_confidence(
-                financial_data=financial_data,
-                symbol=symbol,
-                confidence_factors=confidence_factors,
-                data_quality=data_quality
-            )
+        # Get data quality from FinancialDataFetcher
+        data_quality = self._assess_data_quality(financial_data)
 
-        # Fallback to legacy implementation
-        try:
-            calc_knowledge = self._get_calculation_knowledge()
-            confidence_factors = calc_knowledge.get('valuation_methodologies', {}).get('confidence_factors', {})
-            data_quality = self._assess_data_quality(financial_data)
-            business_predictability = self._assess_business_predictability(financial_data, symbol)
-
-            confidence_result = confidence_calculator.calculate_confidence(
-                data_quality=data_quality,
-                model_accuracy=business_predictability,
-                historical_success_rate=confidence_factors.get('dcf_success_rate', 0.68),
-                num_data_points=len([k for k, v in financial_data.items() if v is not None]),
-                analysis_type='dcf'
-            )
-            return confidence_result['confidence']
-        except Exception:
-            return confidence_calculator.calculate_confidence(
-                data_quality=0.6,
-                analysis_type='dcf'
-            )['confidence']
+        return self.confidence_calculator.calculate_confidence(
+            financial_data=financial_data,
+            symbol=symbol,
+            confidence_factors=confidence_factors,
+            data_quality=data_quality
+        )
 
     def _analyze_moat(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze economic moat (competitive advantage) for a company"""
@@ -592,138 +504,61 @@ class FinancialAnalyst(BaseAgent):
             if 'error' in financial_data:
                 return financial_data
 
-            # Phase 2.1: Delegate to MoatAnalyzer
+            # Phase 2.2: Pure delegation to MoatAnalyzer
             self._ensure_moat_analyzer()
-            if self.moat_analyzer:
-                # Use MoatAnalyzer for moat calculation
-                moat_analysis = self.moat_analyzer.analyze_moat(symbol, financial_data)
 
-                # Extract results for backward compatibility
-                moat_rating = moat_analysis['moat_rating']
-                total_score = moat_analysis['overall_score']
-                moat_scores = moat_analysis['factors']
+            # Use MoatAnalyzer for moat calculation
+            moat_analysis = self.moat_analyzer.analyze_moat(symbol, financial_data)
 
-                # Store moat analysis in knowledge graph
-                moat_node_data = {
-                    'symbol': symbol,
-                    'moat_rating': moat_rating,
-                    'moat_score': total_score,
-                    'brand_score': moat_scores['brand'],
-                    'network_effects_score': moat_scores['network_effects'],
-                    'cost_advantages_score': moat_scores['cost_advantages'],
-                    'switching_costs_score': moat_scores['switching_costs'],
-                    'intangible_assets_score': moat_scores['intangible_assets'],
-                    'gross_margin': financial_data.get('gross_margin', 0),
-                    'operating_margin': financial_data.get('operating_margin', 0),
-                    'timestamp': moat_analysis['timestamp']
-                }
+            # Extract results for backward compatibility
+            moat_rating = moat_analysis['moat_rating']
+            total_score = moat_analysis['overall_score']
+            moat_scores = moat_analysis['factors']
 
-                # Add moat analysis node to graph if graph is available
-                moat_node_id = None
-                if self.graph:
-                    moat_node_id = self.add_knowledge('moat_analysis', moat_node_data)
+            # Store moat analysis in knowledge graph
+            moat_node_data = {
+                'symbol': symbol,
+                'moat_rating': moat_rating,
+                'moat_score': total_score,
+                'brand_score': moat_scores['brand'],
+                'network_effects_score': moat_scores['network_effects'],
+                'cost_advantages_score': moat_scores['cost_advantages'],
+                'switching_costs_score': moat_scores['switching_costs'],
+                'intangible_assets_score': moat_scores['intangible_assets'],
+                'gross_margin': financial_data.get('gross_margin', 0),
+                'operating_margin': financial_data.get('operating_margin', 0),
+                'timestamp': moat_analysis['timestamp']
+            }
 
-                    # Find or create company node
-                    company_node_id = self._find_or_create_company_node(symbol, financial_data)
+            # Add moat analysis node to graph if graph is available
+            moat_node_id = None
+            if self.graph:
+                moat_node_id = self.add_knowledge('moat_analysis', moat_node_data)
 
-                    # Connect moat analysis to company
-                    self.connect_knowledge(moat_node_id, company_node_id, 'analyzes', strength=0.9)
+                # Find or create company node
+                company_node_id = self._find_or_create_company_node(symbol, financial_data)
 
-                    # If this was from a query, connect to query node
-                    if context.get('query_node_id'):
-                        self.connect_knowledge(context['query_node_id'], moat_node_id, 'resulted_in', strength=0.95)
+                # Connect moat analysis to company
+                self.connect_knowledge(moat_node_id, company_node_id, 'analyzes', strength=0.9)
 
-                return {
-                    "symbol": symbol,
-                    "moat_analysis": {
-                        "moat_rating": moat_rating,
-                        "overall_score": total_score,
-                        "factors": moat_scores,
-                        "financial_evidence": moat_analysis['financial_evidence']
-                    },
-                    "node_id": moat_node_id,
-                    "response": f"{symbol} has a {moat_rating} moat with score {total_score:.1f}/50"
-                }
-            else:
-                # Fallback to legacy inline implementation (should not happen)
-                self.logger.warning("MoatAnalyzer not available, using fallback")
-                return self._analyze_moat_legacy(symbol, financial_data, context)
+                # If this was from a query, connect to query node
+                if context.get('query_node_id'):
+                    self.connect_knowledge(context['query_node_id'], moat_node_id, 'resulted_in', strength=0.95)
+
+            return {
+                "symbol": symbol,
+                "moat_analysis": {
+                    "moat_rating": moat_rating,
+                    "overall_score": total_score,
+                    "factors": moat_scores,
+                    "financial_evidence": moat_analysis['financial_evidence']
+                },
+                "node_id": moat_node_id,
+                "response": f"{symbol} has a {moat_rating} moat with score {total_score:.1f}/50"
+            }
 
         except Exception as e:
             return {"error": f"Moat analysis failed: {str(e)}"}
-
-    def _analyze_moat_legacy(self, symbol: str, financial_data: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
-        """Legacy moat analysis implementation (fallback only)"""
-        # Calculate moat factors (inline legacy version)
-        moat_scores = {
-            'brand': 0,
-            'network_effects': 0,
-            'cost_advantages': 0,
-            'switching_costs': 0,
-            'intangible_assets': 0
-        }
-
-        # Brand moat (based on gross margin)
-        gross_margin = financial_data.get('gross_margin', 0)
-        if gross_margin > 0.5:
-            moat_scores['brand'] = min(10, gross_margin * 15)
-
-        # Network effects (for tech companies)
-        if financial_data.get('sector') in ['Technology', 'Communication Services']:
-            revenue_growth = financial_data.get('revenue_growth', 0)
-            if revenue_growth > 0.2:
-                moat_scores['network_effects'] = min(10, revenue_growth * 30)
-
-        # Cost advantages (based on operating margin)
-        operating_margin = financial_data.get('operating_margin', 0)
-        if operating_margin > 0.2:
-            moat_scores['cost_advantages'] = min(10, operating_margin * 30)
-
-        # Switching costs
-        if financial_data.get('recurring_revenue_pct', 0) > 0.7:
-            moat_scores['switching_costs'] = 8
-
-        # Calculate overall moat score
-        total_score = sum(moat_scores.values())
-        moat_rating = 'Wide' if total_score > 30 else 'Narrow' if total_score > 15 else 'None'
-
-        # Store in graph
-        moat_node_data = {
-            'symbol': symbol,
-            'moat_rating': moat_rating,
-            'moat_score': total_score,
-            'brand_score': moat_scores['brand'],
-            'network_effects_score': moat_scores['network_effects'],
-            'cost_advantages_score': moat_scores['cost_advantages'],
-            'switching_costs_score': moat_scores['switching_costs'],
-            'intangible_assets_score': moat_scores['intangible_assets'],
-            'gross_margin': gross_margin,
-            'operating_margin': operating_margin,
-            'timestamp': datetime.now().isoformat()
-        }
-
-        moat_node_id = None
-        if self.graph:
-            moat_node_id = self.add_knowledge('moat_analysis', moat_node_data)
-            company_node_id = self._find_or_create_company_node(symbol, financial_data)
-            self.connect_knowledge(moat_node_id, company_node_id, 'analyzes', strength=0.9)
-            if context.get('query_node_id'):
-                self.connect_knowledge(context['query_node_id'], moat_node_id, 'resulted_in', strength=0.95)
-
-        return {
-            "symbol": symbol,
-            "moat_analysis": {
-                "moat_rating": moat_rating,
-                "overall_score": total_score,
-                "factors": moat_scores,
-                "financial_evidence": {
-                    "gross_margin": f"{gross_margin:.1%}",
-                    "operating_margin": f"{operating_margin:.1%}"
-                }
-            },
-            "node_id": moat_node_id,
-            "response": f"{symbol} has a {moat_rating} moat with score {total_score:.1f}/50"
-        }
 
     def _analyze_free_cash_flow(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze free cash flow trends and quality"""
@@ -770,97 +605,27 @@ class FinancialAnalyst(BaseAgent):
 
     def _extract_symbol(self, request: str, context: Dict[str, Any]) -> Optional[str]:
         """Extract stock symbol from request or context"""
-        # Phase 2.1: Delegate to FinancialDataFetcher
+        # Phase 2.2: Pure delegation to FinancialDataFetcher
         self._ensure_data_fetcher()
-        if self.data_fetcher:
-            return self.data_fetcher.extract_symbol(request, context)
-
-        # Fallback to legacy implementation
-        if context and 'symbol' in context:
-            return context['symbol']
-
-        words = request.upper().split()
-        for word in words:
-            if len(word) >= 1 and len(word) <= 5 and word.isalpha():
-                return word
-
-        return None
+        return self.data_fetcher.extract_symbol(request, context)
 
     def _assess_data_quality(self, financial_data: Dict[str, Any]) -> float:
         """Assess the quality of financial data"""
-        # Phase 2.1: Delegate to FinancialDataFetcher
+        # Phase 2.2: Pure delegation to FinancialDataFetcher
         self._ensure_data_fetcher()
-        if self.data_fetcher:
-            return self.data_fetcher.assess_data_quality(financial_data)
-
-        # Fallback to legacy implementation
-        if not financial_data:
-            return 0.3
-
-        required_fields = ['free_cash_flow', 'net_income', 'revenue', 'ebit']
-        present_fields = sum(1 for field in required_fields if financial_data.get(field) is not None)
-        completeness_score = present_fields / len(required_fields)
-
-        consistency_score = 0.8
-        fcf = financial_data.get('free_cash_flow', 0)
-        net_income = financial_data.get('net_income', 0)
-
-        if fcf and net_income:
-            fcf_ratio = abs(fcf / net_income) if net_income != 0 else 0
-            if fcf_ratio > 3:
-                consistency_score -= 0.2
-
-        data_quality = (completeness_score * 0.6 + consistency_score * 0.4)
-        return min(1.0, max(0.0, data_quality))
+        return self.data_fetcher.assess_data_quality(financial_data)
 
     def _assess_business_predictability(self, financial_data: Dict[str, Any], symbol: str) -> float:
         """Assess business predictability based on financial metrics"""
-        # Phase 2.1: Delegate to FinancialConfidenceCalculator
+        # Phase 2.2: Pure delegation to FinancialConfidenceCalculator
         self._ensure_confidence_calculator()
-        if self.confidence_calculator:
-            return self.confidence_calculator.assess_business_predictability(financial_data, symbol)
-
-        # Fallback to legacy implementation
-        predictability = 0.7
-        roic = self._calculate_roic_internal(financial_data)
-        if roic and roic > 0.15:
-            predictability += 0.1
-        elif roic and roic < 0.05:
-            predictability -= 0.1
-
-        debt_equity = financial_data.get('debt_to_equity', 0.5)
-        if debt_equity > 1.0:
-            predictability -= 0.1
-        elif debt_equity < 0.3:
-            predictability += 0.05
-
-        return min(1.0, max(0.3, predictability))
+        return self.confidence_calculator.assess_business_predictability(financial_data, symbol)
 
     def _calculate_roic_internal(self, financial_data: Dict[str, Any]) -> Optional[float]:
         """Internal ROIC calculation for predictability assessment"""
-        # Phase 2.1: Delegate to FinancialConfidenceCalculator
+        # Phase 2.2: Pure delegation to FinancialConfidenceCalculator
         self._ensure_confidence_calculator()
-        if self.confidence_calculator:
-            return self.confidence_calculator.calculate_roic_internal(financial_data)
-
-        # Fallback to legacy implementation
-        try:
-            ebit = financial_data.get('ebit', 0)
-            tax_rate = financial_data.get('tax_rate', 0.21)
-            invested_capital = (financial_data.get('working_capital', 0) +
-                              financial_data.get('property_plant_equipment', 0) +
-                              financial_data.get('goodwill', 0))
-
-            if invested_capital > 0:
-                nopat = ebit * (1 - tax_rate)
-                return nopat / invested_capital
-        except (KeyError, TypeError, ValueError) as e:
-            logger.warning(f"Failed to calculate internal ROIC: {e}")
-            return None
-        except Exception as e:
-            logger.error(f"Unexpected error in ROIC calculation: {e}", exc_info=True)
-            return None
-        return None
+        return self.confidence_calculator.calculate_roic_internal(financial_data)
 
     # ==================== MIGRATED FROM ARCHIVED AGENTS ====================
     # The following methods were migrated from equity_agent, macro_agent, and risk_agent
