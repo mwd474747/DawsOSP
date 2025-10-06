@@ -1,13 +1,24 @@
+"""News Capability - NewsAPI integration for market news and sentiment analysis.
+
+Phase 3.1: Comprehensive type hints added for improved type safety.
+"""
 import urllib.request
 import urllib.parse
 import json
 import time
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any, TypeAlias, Set
 from collections import deque
 from core.credentials import get_credential_manager
 from core.api_helper import APIHelper
+
+# Type aliases for clarity
+ArticleList: TypeAlias = List[Dict[str, Any]]
+SentimentData: TypeAlias = Dict[str, Any]
+TrendingTopics: TypeAlias = Dict[str, Any]
+CacheStats: TypeAlias = Dict[str, Any]
+RateLimitStatus: TypeAlias = Dict[str, Any]
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -31,8 +42,8 @@ class RateLimiter:
         self.backoff_until = None
         self.daily_reset_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
 
-    def _clean_old_requests(self):
-        """Remove requests older than 24 hours"""
+    def _clean_old_requests(self) -> None:
+        """Remove requests older than 24 hours."""
         now = time.time()
         twenty_four_hours_ago = now - 86400  # 24 hours in seconds
 
@@ -40,17 +51,29 @@ class RateLimiter:
             self.requests.popleft()
 
     def get_requests_remaining(self) -> int:
-        """Calculate requests remaining in current 24-hour window"""
+        """Calculate requests remaining in current 24-hour window.
+
+        Returns:
+            Number of API requests remaining
+        """
         self._clean_old_requests()
         return max(0, self.max_requests - len(self.requests))
 
     def get_usage_percentage(self) -> float:
-        """Get current usage percentage"""
+        """Get current usage percentage.
+
+        Returns:
+            Percentage of daily quota used (0-100)
+        """
         self._clean_old_requests()
         return (len(self.requests) / self.max_requests * 100) if self.max_requests > 0 else 0
 
-    def wait_if_needed(self):
-        """Wait if approaching rate limit or in backoff period"""
+    def wait_if_needed(self) -> None:
+        """Wait if approaching rate limit or in backoff period.
+
+        Raises:
+            Exception: If daily rate limit is exceeded
+        """
         now = time.time()
 
         # Check if we're in backoff period
@@ -84,8 +107,12 @@ class RateLimiter:
         # Record this request
         self.requests.append(now)
 
-    def set_backoff(self, retry_count: int = 1):
-        """Set exponential backoff period"""
+    def set_backoff(self, retry_count: int = 1) -> None:
+        """Set exponential backoff period.
+
+        Args:
+            retry_count: Number of retry attempts (default: 1)
+        """
         backoff_seconds = min(2 ** retry_count, 60)  # Max 60 seconds
         self.backoff_until = time.time() + backoff_seconds
         logger.warning(f"Setting backoff for {backoff_seconds} seconds (retry {retry_count})")
@@ -95,7 +122,7 @@ class NewsCapability(APIHelper):
     """News and sentiment analysis capability with retry, fallback tracking, and caching"""
 
     # Spam/low-quality domains to filter out
-    SPAM_DOMAINS = {
+    SPAM_DOMAINS: Set[str] = {
         'biztoc.com',
         'zerohedge.com',
         'benzinga.com',
@@ -107,21 +134,21 @@ class NewsCapability(APIHelper):
     }
 
     # Positive and negative sentiment keywords (expanded)
-    POSITIVE_KEYWORDS = [
+    POSITIVE_KEYWORDS: List[str] = [
         'surge', 'gain', 'profit', 'growth', 'rally', 'boom', 'strong', 'beat', 'exceed',
         'record', 'high', 'optimistic', 'bullish', 'success', 'breakthrough', 'soar',
         'rise', 'jump', 'advance', 'outperform', 'upgrade', 'innovative', 'expansion',
         'recover', 'rebound', 'accelerate', 'robust', 'thrive', 'prosper'
     ]
 
-    NEGATIVE_KEYWORDS = [
+    NEGATIVE_KEYWORDS: List[str] = [
         'crash', 'fall', 'loss', 'decline', 'drop', 'weak', 'miss', 'concern', 'fear',
         'risk', 'low', 'pessimistic', 'bearish', 'failure', 'plunge', 'tumble', 'slump',
         'collapse', 'downgrade', 'warning', 'cut', 'slash', 'underperform', 'struggle',
         'recession', 'crisis', 'trouble', 'deteriorate', 'shrink'
     ]
 
-    def __init__(self, api_key: str = None, max_requests_per_day: int = 100):
+    def __init__(self, api_key: Optional[str] = None, max_requests_per_day: int = 100) -> None:
         """
         Initialize NewsCapability
 
@@ -135,16 +162,16 @@ class NewsCapability(APIHelper):
         # Using NewsAPI (free tier available)
         # Get key at: https://newsapi.org/register
         if api_key:
-            self.api_key = api_key
+            self.api_key: Optional[str] = api_key
         else:
             credentials = get_credential_manager()
-            self.api_key = credentials.get('NEWSAPI_KEY', required=False)
+            self.api_key: Optional[str] = credentials.get('NEWSAPI_KEY', required=False)
 
-        self.base_url = 'https://newsapi.org/v2'
-        self.cache = {}
+        self.base_url: str = 'https://newsapi.org/v2'
+        self.cache: Dict[str, Dict[str, Any]] = {}
 
         # Configurable TTL by data type (in seconds)
-        self.cache_ttl = {
+        self.cache_ttl: Dict[str, int] = {
             'headlines': 3600,      # 1 hour - top headlines change frequently
             'search': 21600,        # 6 hours - search results are more stable
             'company': 21600,       # 6 hours - company-specific news
@@ -152,16 +179,16 @@ class NewsCapability(APIHelper):
         }
 
         # Rate limiter (configurable for different plans)
-        self.rate_limiter = RateLimiter(max_requests_per_day=max_requests_per_day)
+        self.rate_limiter: RateLimiter = RateLimiter(max_requests_per_day=max_requests_per_day)
 
         # Cache statistics
-        self.cache_stats = {
+        self.cache_stats: Dict[str, int] = {
             'hits': 0,
             'misses': 0,
             'expired_fallbacks': 0
         }
 
-    def _get_from_cache(self, cache_key: str, data_type: str) -> Optional[Tuple[List[Dict], bool]]:
+    def _get_from_cache(self, cache_key: str, data_type: str) -> Optional[Tuple[ArticleList, bool]]:
         """
         Get data from cache
 
@@ -187,14 +214,19 @@ class NewsCapability(APIHelper):
             # Data exists but is expired
             return (cached['data'], False)
 
-    def _update_cache(self, cache_key: str, data: List[Dict]):
-        """Update cache with new data"""
+    def _update_cache(self, cache_key: str, data: ArticleList) -> None:
+        """Update cache with new data.
+
+        Args:
+            cache_key: Key for cache storage
+            data: Article list to cache
+        """
         self.cache[cache_key] = {
             'data': data,
             'time': datetime.now()
         }
 
-    def _fetch_url(self, url: str) -> Dict:
+    def _fetch_url(self, url: str) -> Dict[str, Any]:
         """
         Internal method to fetch URL (wrapped by api_call for retry/fallback)
 
@@ -220,7 +252,7 @@ class NewsCapability(APIHelper):
             logger.debug(f"API call successful: {url[:100]}...")
             return data
 
-    def _make_api_call(self, url: str, max_retries: int = 3) -> Optional[Dict]:
+    def _make_api_call(self, url: str, max_retries: int = 3) -> Optional[Dict[str, Any]]:
         """
         Make API call with retry logic and fallback tracking (uses APIHelper)
 
@@ -240,7 +272,7 @@ class NewsCapability(APIHelper):
             component_name='news_api'
         )
 
-    def _is_spam_or_low_quality(self, article: Dict) -> bool:
+    def _is_spam_or_low_quality(self, article: Dict[str, Any]) -> bool:
         """
         Check if article is from spam/low-quality source
 
@@ -269,7 +301,7 @@ class NewsCapability(APIHelper):
 
         return False
 
-    def _filter_duplicates(self, articles: List[Dict]) -> List[Dict]:
+    def _filter_duplicates(self, articles: ArticleList) -> ArticleList:
         """
         Filter duplicate articles based on title similarity
 
@@ -292,7 +324,7 @@ class NewsCapability(APIHelper):
 
         return filtered
 
-    def _calculate_quality_score(self, article: Dict) -> float:
+    def _calculate_quality_score(self, article: Dict[str, Any]) -> float:
         """
         Calculate quality score for article (0-1)
 
@@ -322,7 +354,7 @@ class NewsCapability(APIHelper):
         # Ensure score is between 0 and 1
         return min(1.0, max(0.0, score))
 
-    def get_headlines(self, query: str = None, category: str = 'business') -> List[Dict]:
+    def get_headlines(self, query: Optional[str] = None, category: str = 'business') -> ArticleList:
         """
         Get top headlines
 
@@ -400,7 +432,7 @@ class NewsCapability(APIHelper):
 
         return [{'error': 'No data available'}]
     
-    def search_news(self, query: str, from_date: str = None, days: int = 7) -> List[Dict]:
+    def search_news(self, query: str, from_date: Optional[str] = None, days: int = 7) -> ArticleList:
         """
         Search news articles
 
@@ -480,7 +512,7 @@ class NewsCapability(APIHelper):
 
         return [{'error': 'No data available'}]
 
-    def analyze_sentiment(self, article: Dict) -> Dict:
+    def analyze_sentiment(self, article: Dict[str, Any]) -> SentimentData:
         """
         Enhanced sentiment analysis with score
 
@@ -520,7 +552,7 @@ class NewsCapability(APIHelper):
             'negative_count': negative_count
         }
     
-    def get_company_news(self, symbol: str, days: int = 7) -> List[Dict]:
+    def get_company_news(self, symbol: str, days: int = 7) -> ArticleList:
         """
         Get company-specific news
 
@@ -542,7 +574,7 @@ class NewsCapability(APIHelper):
         from_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
         return self.search_news(query=symbol, from_date=from_date, days=days)
 
-    def get_market_news(self, category: str = 'business', days: int = 7) -> List[Dict]:
+    def get_market_news(self, category: str = 'business', days: int = 7) -> ArticleList:
         """
         Get market or sector-wide news
 
@@ -563,7 +595,7 @@ class NewsCapability(APIHelper):
         # Get headlines
         return self.get_headlines(category=category)
 
-    def extract_key_events(self, articles: List[Dict]) -> List[Dict]:
+    def extract_key_events(self, articles: ArticleList) -> List[Dict[str, Any]]:
         """
         Extract key events from articles and create timeline
 
@@ -602,7 +634,7 @@ class NewsCapability(APIHelper):
 
         return events
 
-    def get_trending_topics(self, days: int = 7) -> Dict:
+    def get_trending_topics(self, days: int = 7) -> TrendingTopics:
         """
         Get trending topics from recent news
 
@@ -656,8 +688,12 @@ class NewsCapability(APIHelper):
             'timestamp': datetime.now().isoformat()
         }
 
-    def get_cache_stats(self) -> Dict:
-        """Get cache statistics"""
+    def get_cache_stats(self) -> CacheStats:
+        """Get cache statistics.
+
+        Returns:
+            Dictionary with cache hit rate and usage metrics
+        """
         total_requests = self.cache_stats['hits'] + self.cache_stats['misses']
         hit_rate = (self.cache_stats['hits'] / total_requests * 100) if total_requests > 0 else 0
 
@@ -669,8 +705,12 @@ class NewsCapability(APIHelper):
             'cached_items': len(self.cache)
         }
 
-    def get_rate_limit_status(self) -> Dict:
-        """Get rate limit status"""
+    def get_rate_limit_status(self) -> RateLimitStatus:
+        """Get rate limit status.
+
+        Returns:
+            Dictionary with rate limit usage information
+        """
         return {
             'requests_remaining': self.rate_limiter.get_requests_remaining(),
             'usage_percentage': f"{self.rate_limiter.get_usage_percentage():.1f}%",
@@ -678,8 +718,12 @@ class NewsCapability(APIHelper):
             'requests_used': len(self.rate_limiter.requests)
         }
 
-    def get_market_sentiment(self) -> Dict:
-        """Get overall market sentiment"""
+    def get_market_sentiment(self) -> SentimentData:
+        """Get overall market sentiment.
+
+        Returns:
+            Dictionary with aggregated sentiment analysis
+        """
         # Get headlines for market analysis
         headlines = self.get_headlines(category='business')
 
@@ -713,8 +757,17 @@ class NewsCapability(APIHelper):
             'timestamp': datetime.now().isoformat()
         }
 
-    def search(self, query: str, limit: int = 10, from_date: str = None) -> List[Dict]:
-        """Search news articles (alias for search_news with limit)"""
+    def search(self, query: str, limit: int = 10, from_date: Optional[str] = None) -> ArticleList:
+        """Search news articles (alias for search_news with limit).
+
+        Args:
+            query: Search query string
+            limit: Maximum number of results to return
+            from_date: Optional start date in YYYY-MM-DD format
+
+        Returns:
+            List of matching articles (limited to specified count)
+        """
         articles = self.search_news(query, from_date)
         if isinstance(articles, list) and len(articles) > 0 and 'error' not in articles[0]:
             return articles[:limit]

@@ -1,12 +1,24 @@
+"""Market Data Capability - Financial Modeling Prep API integration.
+
+Phase 3.1: Comprehensive type hints added for improved type safety.
+"""
 import urllib.request
 import urllib.parse
 import json
 import time
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any, TypeAlias
 from collections import deque
 from core.credentials import get_credential_manager
+
+# Type aliases for clarity
+QuoteData: TypeAlias = Dict[str, Any]
+ProfileData: TypeAlias = Dict[str, Any]
+HistoricalData: TypeAlias = List[Dict[str, Any]]
+FinancialData: TypeAlias = List[Dict[str, Any]]
+ScreenerResults: TypeAlias = List[Dict[str, Any]]
+CacheStats: TypeAlias = Dict[str, Any]
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -25,8 +37,8 @@ class RateLimiter:
         self.requests = deque()
         self.backoff_until = None
 
-    def wait_if_needed(self):
-        """Wait if approaching rate limit or in backoff period"""
+    def wait_if_needed(self) -> None:
+        """Wait if approaching rate limit or in backoff period."""
         now = time.time()
 
         # Check if we're in backoff period
@@ -53,8 +65,12 @@ class RateLimiter:
         # Record this request
         self.requests.append(now)
 
-    def set_backoff(self, retry_count: int = 1):
-        """Set exponential backoff period"""
+    def set_backoff(self, retry_count: int = 1) -> None:
+        """Set exponential backoff period.
+
+        Args:
+            retry_count: Number of retry attempts (default: 1)
+        """
         backoff_seconds = min(2 ** retry_count, 60)  # Max 60 seconds
         self.backoff_until = time.time() + backoff_seconds
         logger.warning(f"Setting backoff for {backoff_seconds} seconds (retry {retry_count})")
@@ -63,15 +79,16 @@ class RateLimiter:
 class MarketDataCapability:
     """Financial Modeling Prep API integration (Pro version)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize Market Data Capability with FMP API key and cache configuration."""
         # Get FMP API key from credential manager
         credentials = get_credential_manager()
-        self.api_key = credentials.get('FMP_API_KEY', required=False)
-        self.base_url = 'https://financialmodelingprep.com/api'
-        self.cache = {}
+        self.api_key: Optional[str] = credentials.get('FMP_API_KEY', required=False)
+        self.base_url: str = 'https://financialmodelingprep.com/api'
+        self.cache: Dict[str, Dict[str, Any]] = {}
 
         # Configurable TTL by data type (in seconds)
-        self.cache_ttl = {
+        self.cache_ttl: Dict[str, int] = {
             'quotes': 60,           # 1 minute - real-time data
             'fundamentals': 86400,  # 24 hours - daily updates
             'news': 21600,          # 6 hours
@@ -80,10 +97,10 @@ class MarketDataCapability:
         }
 
         # Rate limiter (FMP Pro = 750 req/min)
-        self.rate_limiter = RateLimiter(max_requests_per_minute=750)
+        self.rate_limiter: RateLimiter = RateLimiter(max_requests_per_minute=750)
 
         # Cache statistics
-        self.cache_stats = {
+        self.cache_stats: Dict[str, int] = {
             'hits': 0,
             'misses': 0,
             'expired_fallbacks': 0
@@ -115,14 +132,19 @@ class MarketDataCapability:
             # Data exists but is expired
             return (cached['data'], False)
 
-    def _update_cache(self, cache_key: str, data: Dict):
-        """Update cache with new data"""
+    def _update_cache(self, cache_key: str, data: Dict[str, Any]) -> None:
+        """Update cache with new data.
+
+        Args:
+            cache_key: Key for cache storage
+            data: Data to cache
+        """
         self.cache[cache_key] = {
             'data': data,
             'time': datetime.now()
         }
 
-    def _make_api_call(self, url: str, max_retries: int = 3) -> Optional[Dict]:
+    def _make_api_call(self, url: str, max_retries: int = 3) -> Optional[Dict[str, Any]]:
         """
         Make API call with retry logic and error handling
 
@@ -195,8 +217,12 @@ class MarketDataCapability:
 
         return None
 
-    def get_cache_stats(self) -> Dict:
-        """Get cache statistics"""
+    def get_cache_stats(self) -> CacheStats:
+        """Get cache statistics.
+
+        Returns:
+            Dictionary with cache hit rate and usage metrics
+        """
         total_requests = self.cache_stats['hits'] + self.cache_stats['misses']
         hit_rate = (self.cache_stats['hits'] / total_requests * 100) if total_requests > 0 else 0
 
@@ -208,7 +234,7 @@ class MarketDataCapability:
             'cached_items': len(self.cache)
         }
 
-    def get_quote(self, symbol: str) -> Dict:
+    def get_quote(self, symbol: str) -> QuoteData:
         """
         Get real-time stock quote
 
@@ -266,10 +292,16 @@ class MarketDataCapability:
 
         return {'symbol': symbol, 'error': 'No data available'}
     
-    def get_historical(self, symbol: str, period: str = '1M', interval: str = '1d') -> List[Dict]:
-        """Get historical price data
-        period: 1D, 5D, 1M, 3M, 6M, 1Y, 3Y, 5Y, 10Y, max
-        interval: 1min, 5min, 15min, 30min, 1hour, 4hour, 1d
+    def get_historical(self, symbol: str, period: str = '1M', interval: str = '1d') -> HistoricalData:
+        """Get historical price data.
+
+        Args:
+            symbol: Stock symbol (e.g., 'AAPL', 'TSLA')
+            period: Time period (1D, 5D, 1M, 3M, 6M, 1Y, 3Y, 5Y, 10Y, max)
+            interval: Data interval (1min, 5min, 15min, 30min, 1hour, 4hour, 1d)
+
+        Returns:
+            List of historical price data dictionaries
         """
         # Map period to FMP format
         period_map = {
@@ -326,7 +358,7 @@ class MarketDataCapability:
         except Exception as e:
             return [{'error': str(e)}]
     
-    def get_company_profile(self, symbol: str) -> Dict:
+    def get_company_profile(self, symbol: str) -> ProfileData:
         """
         Get comprehensive company profile
 
@@ -384,10 +416,16 @@ class MarketDataCapability:
 
         return {'symbol': symbol, 'error': 'No profile data available'}
     
-    def get_financials(self, symbol: str, statement: str = 'income', period: str = 'annual') -> List[Dict]:
-        """Get financial statements
-        statement: income, balance, cash-flow
-        period: annual, quarter
+    def get_financials(self, symbol: str, statement: str = 'income', period: str = 'annual') -> FinancialData:
+        """Get financial statements.
+
+        Args:
+            symbol: Stock symbol (e.g., 'AAPL', 'TSLA')
+            statement: Financial statement type (income, balance, cash-flow)
+            period: Reporting period (annual, quarter)
+
+        Returns:
+            List of financial statement data dictionaries
         """
         endpoint_map = {
             'income': 'income-statement',
@@ -443,8 +481,16 @@ class MarketDataCapability:
         except Exception as e:
             return [{'error': str(e)}]
     
-    def get_key_metrics(self, symbol: str, period: str = 'annual') -> List[Dict]:
-        """Get key financial metrics (Pro feature)"""
+    def get_key_metrics(self, symbol: str, period: str = 'annual') -> FinancialData:
+        """Get key financial metrics (Pro feature).
+
+        Args:
+            symbol: Stock symbol (e.g., 'AAPL', 'TSLA')
+            period: Reporting period (annual, quarter)
+
+        Returns:
+            List of key metrics dictionaries
+        """
         url = f"{self.base_url}/v3/key-metrics/{symbol}?period={period}&apikey={self.api_key}"
         
         try:
@@ -473,8 +519,15 @@ class MarketDataCapability:
         except Exception as e:
             return [{'error': str(e)}]
     
-    def get_analyst_estimates(self, symbol: str) -> List[Dict]:
-        """Get analyst estimates (Pro feature)"""
+    def get_analyst_estimates(self, symbol: str) -> FinancialData:
+        """Get analyst estimates (Pro feature).
+
+        Args:
+            symbol: Stock symbol (e.g., 'AAPL', 'TSLA')
+
+        Returns:
+            List of analyst estimate dictionaries
+        """
         url = f"{self.base_url}/v3/analyst-estimates/{symbol}?apikey={self.api_key}"
         
         try:
@@ -500,8 +553,15 @@ class MarketDataCapability:
         except Exception as e:
             return [{'error': str(e)}]
     
-    def get_insider_trading(self, symbol: str) -> List[Dict]:
-        """Get insider trading data (Pro feature)"""
+    def get_insider_trading(self, symbol: str) -> FinancialData:
+        """Get insider trading data (Pro feature).
+
+        Args:
+            symbol: Stock symbol (e.g., 'AAPL', 'TSLA')
+
+        Returns:
+            List of insider trading transaction dictionaries
+        """
         url = f"{self.base_url}/v4/insider-trading?symbol={symbol}&apikey={self.api_key}"
         
         try:
@@ -526,8 +586,15 @@ class MarketDataCapability:
         except Exception as e:
             return [{'error': str(e)}]
     
-    def get_institutional_holders(self, symbol: str) -> List[Dict]:
-        """Get institutional ownership (Pro feature)"""
+    def get_institutional_holders(self, symbol: str) -> FinancialData:
+        """Get institutional ownership (Pro feature).
+
+        Args:
+            symbol: Stock symbol (e.g., 'AAPL', 'TSLA')
+
+        Returns:
+            List of institutional holder dictionaries
+        """
         url = f"{self.base_url}/v3/institutional-holder/{symbol}?apikey={self.api_key}"
         
         try:
@@ -549,8 +616,15 @@ class MarketDataCapability:
         except Exception as e:
             return [{'error': str(e)}]
     
-    def screen_stocks(self, criteria: Dict) -> List[Dict]:
-        """Advanced stock screener (Pro feature)"""
+    def screen_stocks(self, criteria: Dict[str, Any]) -> ScreenerResults:
+        """Advanced stock screener (Pro feature).
+
+        Args:
+            criteria: Screening criteria dictionary with filters
+
+        Returns:
+            List of stocks matching criteria
+        """
         # Build query parameters
         params = {
             'apikey': self.api_key,
@@ -598,9 +672,14 @@ class MarketDataCapability:
         except Exception as e:
             return [{'error': str(e)}]
     
-    def get_market_movers(self, type: str = 'gainers') -> List[Dict]:
-        """Get market movers
-        type: gainers, losers, actives
+    def get_market_movers(self, type: str = 'gainers') -> ScreenerResults:
+        """Get market movers.
+
+        Args:
+            type: Mover type (gainers, losers, actives)
+
+        Returns:
+            List of market mover dictionaries
         """
         url = f"{self.base_url}/v3/{type}?apikey={self.api_key}"
         

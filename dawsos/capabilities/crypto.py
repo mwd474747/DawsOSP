@@ -1,23 +1,42 @@
-"""Crypto capability - Cryptocurrency data integration"""
+"""Crypto capability - Cryptocurrency data integration.
+
+Phase 3.1: Comprehensive type hints added for improved type safety.
+"""
 import urllib.request
 import json
 import logging
-from typing import Dict
+from typing import Dict, Any, Optional, TypeAlias
+
+# Type aliases for clarity
+CryptoPrice: TypeAlias = Dict[str, Any]
+CoinID: TypeAlias = str
 
 logger = logging.getLogger(__name__)
 
 class CryptoCapability:
     """Cryptocurrency market data"""
 
-    def __init__(self, api_key: str = None):
-        # Can use CoinGecko (free tier available)
-        self.base_url = 'https://api.coingecko.com/api/v3'
-        self.cache = {}
+    def __init__(self, api_key: Optional[str] = None) -> None:
+        """Initialize Crypto Capability with CoinGecko API.
 
-    def get_price(self, symbol: str) -> Dict:
-        """Get crypto price"""
+        Args:
+            api_key: Optional API key for CoinGecko (not required for free tier)
+        """
+        # Can use CoinGecko (free tier available)
+        self.base_url: str = 'https://api.coingecko.com/api/v3'
+        self.cache: Dict[str, Any] = {}
+
+    def get_price(self, symbol: str) -> CryptoPrice:
+        """Get crypto price.
+
+        Args:
+            symbol: Cryptocurrency symbol (e.g., 'BTC', 'ETH', 'SOL')
+
+        Returns:
+            Dictionary with price and 24h change data
+        """
         # Map common symbols
-        coin_map = {
+        coin_map: Dict[str, CoinID] = {
             'BTC': 'bitcoin',
             'ETH': 'ethereum',
             'SOL': 'solana',

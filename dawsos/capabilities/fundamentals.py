@@ -1,27 +1,50 @@
-"""Fundamentals capability - Company fundamental data"""
+"""Fundamentals capability - Company fundamental data.
+
+Phase 3.1: Comprehensive type hints added for improved type safety.
+"""
 import urllib.request
 import urllib.parse
 import json
-from typing import Dict
+from typing import Dict, Any, Optional, TypeAlias
 from datetime import datetime
 from core.api_helper import APIHelper
+
+# Type aliases for clarity
+CompanyOverview: TypeAlias = Dict[str, Any]
+SymbolStr: TypeAlias = str
 
 class FundamentalsCapability(APIHelper):
     """Company fundamentals and financial data with retry and fallback tracking"""
 
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: Optional[str] = None) -> None:
+        """Initialize Fundamentals Capability with Alpha Vantage API.
+
+        Args:
+            api_key: Optional Alpha Vantage API key (defaults to 'demo')
+        """
         # Initialize APIHelper mixin
         super().__init__()
 
         # Using Alpha Vantage (free tier available)
         # Get key at: https://www.alphavantage.co/support/#api-key
-        self.api_key = api_key or 'demo'  # Demo key for testing
-        self.base_url = 'https://www.alphavantage.co/query'
-        self.cache = {}
-        self.cache_ttl = 3600  # 1 hour for fundamentals
+        self.api_key: str = api_key or 'demo'  # Demo key for testing
+        self.base_url: str = 'https://www.alphavantage.co/query'
+        self.cache: Dict[str, Dict[str, Any]] = {}
+        self.cache_ttl: int = 3600  # 1 hour for fundamentals
 
-    def _fetch_overview(self, symbol: str, url: str) -> Dict:
-        """Internal method to fetch overview (wrapped by api_call for retry/fallback)"""
+    def _fetch_overview(self, symbol: SymbolStr, url: str) -> CompanyOverview:
+        """Internal method to fetch overview (wrapped by api_call for retry/fallback).
+
+        Args:
+            symbol: Stock symbol
+            url: Full API URL to fetch
+
+        Returns:
+            Dictionary with company overview data
+
+        Raises:
+            ValueError: If no data is available in response
+        """
         with urllib.request.urlopen(url, timeout=10) as response:
             data = json.loads(response.read())
 
@@ -40,8 +63,15 @@ class FundamentalsCapability(APIHelper):
             else:
                 raise ValueError("No data available in response")
 
-    def get_overview(self, symbol: str) -> Dict:
-        """Get company overview and key metrics with retry and fallback"""
+    def get_overview(self, symbol: SymbolStr) -> CompanyOverview:
+        """Get company overview and key metrics with retry and fallback.
+
+        Args:
+            symbol: Stock symbol (e.g., 'AAPL', 'MSFT')
+
+        Returns:
+            Dictionary with company overview and fundamental metrics
+        """
         cache_key = f"overview_{symbol}"
 
         # Check cache

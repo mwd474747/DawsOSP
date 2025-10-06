@@ -1,13 +1,23 @@
+"""FRED Data Capability - Federal Reserve Economic Data API integration.
+
+Phase 3.1: Comprehensive type hints added for improved type safety.
+"""
 import urllib.request
 import urllib.error
 import json
 import time
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any, TypeAlias
 from collections import deque
 from core.credentials import get_credential_manager
 from core.api_helper import APIHelper
+
+# Type aliases for clarity
+APIResponse: TypeAlias = Dict[str, Any]
+SeriesData: TypeAlias = Dict[str, Any]
+IndicatorData: TypeAlias = Dict[str, Any]
+CacheStats: TypeAlias = Dict[str, Any]
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -27,8 +37,8 @@ class RateLimiter:
         self.requests = deque()
         self.backoff_until = None
 
-    def wait_if_needed(self):
-        """Wait if approaching rate limit or in backoff period"""
+    def wait_if_needed(self) -> None:
+        """Wait if approaching rate limit or in backoff period."""
         now = time.time()
 
         # Check if we're in backoff period
@@ -55,8 +65,12 @@ class RateLimiter:
         # Record this request
         self.requests.append(now)
 
-    def set_backoff(self, retry_count: int = 1):
-        """Set exponential backoff period"""
+    def set_backoff(self, retry_count: int = 1) -> None:
+        """Set exponential backoff period.
+
+        Args:
+            retry_count: Number of retry attempts (default: 1)
+        """
         backoff_seconds = min(2 ** retry_count, 60)  # Max 60 seconds
         self.backoff_until = time.time() + backoff_seconds
         logger.warning(f"Setting backoff for {backoff_seconds} seconds (retry {retry_count})")
@@ -64,36 +78,37 @@ class RateLimiter:
 class FredDataCapability(APIHelper):
     """Federal Reserve Economic Data (FRED) API integration with retry and fallback tracking"""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize FRED Data Capability with API key and cache configuration."""
         # Initialize APIHelper mixin
         super().__init__()
 
         # Get FRED API key from credential manager
         credentials = get_credential_manager()
-        self.api_key = credentials.get('FRED_API_KEY', required=False)
-        self.base_url = 'https://api.stlouisfed.org/fred'
-        self.cache = {}
+        self.api_key: Optional[str] = credentials.get('FRED_API_KEY', required=False)
+        self.base_url: str = 'https://api.stlouisfed.org/fred'
+        self.cache: Dict[str, Dict[str, Any]] = {}
 
         # Configurable TTL by data type (in seconds)
         # Economic data changes daily at most, so 24 hours is safe
-        self.cache_ttl = {
+        self.cache_ttl: Dict[str, int] = {
             'series': 86400,      # 24 hours - economic data
             'metadata': 604800,   # 1 week - series metadata rarely changes
             'latest': 86400       # 24 hours - latest values
         }
 
         # Rate limiter (FRED has no strict limit, but 1000/min is safe)
-        self.rate_limiter = RateLimiter(max_requests_per_minute=1000)
+        self.rate_limiter: RateLimiter = RateLimiter(max_requests_per_minute=1000)
 
         # Cache statistics
-        self.cache_stats = {
+        self.cache_stats: Dict[str, int] = {
             'hits': 0,
             'misses': 0,
             'expired_fallbacks': 0
         }
 
         # Common economic indicators with T10Y2Y spread included
-        self.indicators = {
+        self.indicators: Dict[str, str] = {
             'GDP': 'GDP',  # Gross Domestic Product
             'CPI': 'CPIAUCSL',  # Consumer Price Index
             'UNEMPLOYMENT': 'UNRATE',  # Unemployment Rate
@@ -144,14 +159,19 @@ class FredDataCapability(APIHelper):
             # Data exists but is expired
             return (cached['data'], False)
 
-    def _update_cache(self, cache_key: str, data: Dict):
-        """Update cache with new data"""
+    def _update_cache(self, cache_key: str, data: SeriesData) -> None:
+        """Update cache with new data.
+
+        Args:
+            cache_key: Key for cache storage
+            data: Data to cache
+        """
         self.cache[cache_key] = {
             'data': data,
             'time': datetime.now()
         }
 
-    def _fetch_url(self, url: str) -> Dict:
+    def _fetch_url(self, url: str) -> APIResponse:
         """
         Internal method to fetch URL (wrapped by api_call for retry/fallback)
 
@@ -177,7 +197,7 @@ class FredDataCapability(APIHelper):
             logger.debug(f"API call successful: {url[:100]}...")
             return data
 
-    def _make_api_call(self, url: str, max_retries: int = 3) -> Optional[Dict]:
+    def _make_api_call(self, url: str, max_retries: int = 3) -> Optional[APIResponse]:
         """
         Make API call with retry logic and fallback tracking (uses APIHelper)
 
@@ -197,8 +217,12 @@ class FredDataCapability(APIHelper):
             component_name='fred_api'
         )
 
-    def get_cache_stats(self) -> Dict:
-        """Get cache statistics"""
+    def get_cache_stats(self) -> CacheStats:
+        """Get cache statistics.
+
+        Returns:
+            Dictionary with cache hit rate and usage metrics
+        """
         total_requests = self.cache_stats['hits'] + self.cache_stats['misses']
         hit_rate = (self.cache_stats['hits'] / total_requests * 100) if total_requests > 0 else 0
 
@@ -210,7 +234,7 @@ class FredDataCapability(APIHelper):
             'cached_items': len(self.cache)
         }
 
-    def get_health_status(self) -> Dict:
+    def get_health_status(self) -> CacheStats:
         """
         Get API health status for observability
 
@@ -253,7 +277,7 @@ class FredDataCapability(APIHelper):
             'cache_size': len(self.cache)
         }
 
-    def get_series(self, series_id: str, start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict:
+    def get_series(self, series_id: str, start_date: Optional[str] = None, end_date: Optional[str] = None) -> SeriesData:
         """
         Get time series data for a specific indicator
 
@@ -341,8 +365,15 @@ class FredDataCapability(APIHelper):
         logger.error(f"❌ FRED API FAILURE - No cached data available for {series_id}")
         return {'error': 'No data available', 'series_id': series_id}
 
-    def get_latest(self, indicator: str) -> Dict:
-        """Get latest value for an indicator"""
+    def get_latest(self, indicator: str) -> IndicatorData:
+        """Get latest value for an indicator.
+
+        Args:
+            indicator: Indicator name (e.g., 'GDP', 'CPI', 'UNEMPLOYMENT')
+
+        Returns:
+            Dictionary with latest indicator value and metadata
+        """
 
         # Map indicator name to series ID
         series_id = self.indicators.get(indicator.upper(), indicator)
@@ -397,8 +428,12 @@ class FredDataCapability(APIHelper):
             'date': data.get('latest_date')
         }
 
-    def get_all_indicators(self) -> Dict:
-        """Get latest values for all common indicators"""
+    def get_all_indicators(self) -> Dict[str, IndicatorData]:
+        """Get latest values for all common indicators.
+
+        Returns:
+            Dictionary mapping indicator names to their data
+        """
 
         results = {}
 
@@ -427,8 +462,12 @@ class FredDataCapability(APIHelper):
 
         return results
 
-    def get_recession_indicators(self) -> Dict:
-        """Get recession probability indicators"""
+    def get_recession_indicators(self) -> Dict[str, Any]:
+        """Get recession probability indicators.
+
+        Returns:
+            Dictionary with recession risk metrics and signals
+        """
 
         indicators = {}
 
@@ -488,8 +527,12 @@ class FredDataCapability(APIHelper):
 
         return indicators
 
-    def get_inflation_data(self) -> Dict:
-        """Get comprehensive inflation metrics"""
+    def get_inflation_data(self) -> Dict[str, Any]:
+        """Get comprehensive inflation metrics.
+
+        Returns:
+            Dictionary with CPI, inflation expectations, and regime analysis
+        """
 
         metrics = {}
 
@@ -539,7 +582,7 @@ class FredDataCapability(APIHelper):
 
         return metrics
 
-    def series_info(self, series_id: str) -> Dict:
+    def series_info(self, series_id: str) -> SeriesData:
         """
         Get metadata for a FRED series
 
@@ -609,7 +652,7 @@ class FredDataCapability(APIHelper):
         logger.error(f"❌ FRED API FAILURE - No cached metadata available for {series_id}")
         return {'error': 'No metadata available', 'series_id': series_id}
 
-    def get_multiple_series(self, series_ids: List[str], start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict:
+    def get_multiple_series(self, series_ids: List[str], start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict[str, SeriesData]:
         """
         Fetch multiple series in one call
 
@@ -633,7 +676,7 @@ class FredDataCapability(APIHelper):
 
         return results
 
-    def get_latest_value(self, series_id: str) -> Dict:
+    def get_latest_value(self, series_id: str) -> SeriesData:
         """
         Get just the most recent data point for a series
 
@@ -666,7 +709,7 @@ class FredDataCapability(APIHelper):
 
         return {'error': 'No observations available', 'series_id': series_id}
 
-    def get_series_with_dates(self, series_id: str, start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict:
+    def get_series_with_dates(self, series_id: str, start_date: Optional[str] = None, end_date: Optional[str] = None) -> SeriesData:
         """
         Get series data with datetime objects instead of strings
 
@@ -701,7 +744,14 @@ class FredDataCapability(APIHelper):
         return data
 
     def _get_series_name(self, series_id: str) -> str:
-        """Get human-readable name for series"""
+        """Get human-readable name for series.
+
+        Args:
+            series_id: FRED series ID
+
+        Returns:
+            Human-readable series name
+        """
 
         # Reverse lookup in indicators dict
         for name, sid in self.indicators.items():
@@ -711,7 +761,14 @@ class FredDataCapability(APIHelper):
         return series_id
 
     def _get_recession_description(self, score: int) -> str:
-        """Get description based on recession score"""
+        """Get description based on recession score.
+
+        Args:
+            score: Recession risk score (0-100)
+
+        Returns:
+            Human-readable recession risk description
+        """
 
         if score >= 70:
             return "Very high recession risk. Multiple indicators flashing red."
