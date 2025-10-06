@@ -2,6 +2,9 @@
 from agents.base_agent import BaseAgent
 from typing import Dict, Any
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CodeMonkey(BaseAgent):
     """Simple code writer - keeps everything simple"""
@@ -87,7 +90,14 @@ class CodeMonkey(BaseAgent):
         try:
             with open(file_path, 'r') as f:
                 return f.read()
-        except:
+        except FileNotFoundError:
+            logger.debug(f"File not found: {file_path}, returning empty string")
+            return ""
+        except PermissionError as e:
+            logger.warning(f"Permission denied reading {file_path}: {e}")
+            return ""
+        except Exception as e:
+            logger.error(f"Unexpected error reading {file_path}: {e}", exc_info=True)
             return ""
 
 class FunctionWriter(BaseAgent):
