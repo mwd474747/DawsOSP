@@ -86,24 +86,25 @@ class GovernanceHooks:
         if node_id not in self.graph.nodes:
             return
 
-        node = self.graph.nodes[node_id]
+        # Get current quality history (safe read via get_node)
+        node = self.graph.get_node(node_id)
+        quality_history = node.get('data', {}).get('quality_history', [])
 
-        # Track quality history
-        if 'quality_history' not in node['data']:
-            node['data']['quality_history'] = []
-
+        # Add new quality entry
         quality_score = self._assess_result_quality(result)
-        node['data']['quality_history'].append({
+        quality_history.append({
             'timestamp': datetime.now().isoformat(),
             'action': action,
             'quality': quality_score
         })
 
         # Keep only last 10 quality assessments
-        node['data']['quality_history'] = node['data']['quality_history'][-10:]
+        quality_history = quality_history[-10:]
 
-        # Update modification time to reflect fresh data
-        node['modified'] = datetime.now().isoformat()
+        # Update via new method (persists to NetworkX)
+        self.graph.update_node_data(node_id, {
+            'quality_history': quality_history
+        })
 
     def quality_gate(self, min_quality: float = 0.7):
         """Decorator for agent methods that require quality gates"""
@@ -180,21 +181,32 @@ class GovernanceHooks:
         if prediction_node not in self.graph.nodes:
             return {'error': 'Prediction node not found'}
 
-        node = self.graph.nodes[prediction_node]
+        # Get current outcomes (safe read via get_node)
+        node = self.graph.get_node(prediction_node)
+        outcomes = node.get('data', {}).get('outcomes', [])
+        predicted_value = node.get('data', {}).get('value')
 
-        # Store outcome
-        if 'outcomes' not in node['data']:
-            node['data']['outcomes'] = []
+        # Calculate accuracy
+        accuracy = self._calculate_accuracy(predicted_value, actual_outcome)
 
-        node['data']['outcomes'].append({
-            'predicted': node['data'].get('value'),
+        # Add new outcome
+        outcomes.append({
+            'predicted': predicted_value,
             'actual': actual_outcome,
             'timestamp': datetime.now().isoformat(),
-            'accuracy': self._calculate_accuracy(node['data'].get('value'), actual_outcome)
+            'accuracy': accuracy
+        })
+
+        # Keep only last 10 outcomes
+        outcomes = outcomes[-10:]
+
+        # Update via new method (persists to NetworkX)
+        self.graph.update_node_data(prediction_node, {
+            'outcomes': outcomes
         })
 
         # Calculate rolling accuracy
-        accuracies = [o['accuracy'] for o in node['data']['outcomes'][-10:]]
+        accuracies = [o['accuracy'] for o in outcomes]
         avg_accuracy = sum(accuracies) / len(accuracies) if accuracies else 0
 
         # Update relationships based on accuracy
@@ -202,7 +214,7 @@ class GovernanceHooks:
 
         return {
             'outcome_recorded': True,
-            'accuracy': accuracies[-1] if accuracies else 0,
+            'accuracy': accuracy,
             'rolling_accuracy': avg_accuracy,
             'improvements_made': avg_accuracy > 0.7
         }
@@ -245,9 +257,11 @@ class GovernanceHooks:
 
         # Factor in outcome accuracy if available
         if node_id in self.graph.nodes:
-            node = self.graph.nodes[node_id]
-            if 'outcomes' in node['data'] and node['data']['outcomes']:
-                accuracies = [o['accuracy'] for o in node['data']['outcomes'][-5:]]
+            # Safe read via get_node
+            node = self.graph.get_node(node_id)
+            outcomes = node.get('data', {}).get('outcomes', [])
+            if outcomes:
+                accuracies = [o['accuracy'] for o in outcomes[-5:]]
                 avg_accuracy = sum(accuracies) / len(accuracies)
                 # Weighted average of quality and accuracy
                 return (quality * 0.6 + avg_accuracy * 0.4)
