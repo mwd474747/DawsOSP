@@ -5,7 +5,8 @@ Phase 3.1: Comprehensive type hints added for improved type safety.
 import urllib.request
 import json
 import logging
-from typing import Dict, Any, Optional, TypeAlias
+from typing import Dict, Any, Optional
+from core.typing_compat import TypeAlias
 
 # Type aliases for clarity
 CryptoPrice: TypeAlias = Dict[str, Any]

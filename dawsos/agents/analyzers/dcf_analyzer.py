@@ -15,12 +15,13 @@ Key Methods:
 Phase 2.4: Uses FinancialConstants for all magic numbers.
 """
 
-from typing import Dict, List, Any, TypeAlias
+from typing import Dict, List, Any
+from core.typing_compat import TypeAlias
 from datetime import datetime
 import logging
 
 # Phase 2.4: Import financial constants
-from ...config.financial_constants import FinancialConstants
+from config.financial_constants import FinancialConstants
 
 # Type aliases
 FinancialData: TypeAlias = Dict[str, Any]

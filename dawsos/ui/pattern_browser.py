@@ -7,7 +7,8 @@ Phase 3.1: Comprehensive type hints added
 """
 
 import streamlit as st
-from typing import Dict, Any, List, Optional, Tuple, TypeAlias
+from typing import Dict, Any, List, Optional, Tuple
+from core.typing_compat import TypeAlias
 from datetime import datetime
 
 # Type aliases for clarity

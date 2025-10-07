@@ -1,4 +1,5 @@
-from typing import Dict, List, Any, TypeAlias, Optional
+from typing import Dict, List, Any, Optional
+from core.typing_compat import TypeAlias
 from datetime import datetime
 import json
 import logging

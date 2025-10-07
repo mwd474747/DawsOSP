@@ -13,16 +13,26 @@
 git clone <your-repo-url>
 cd DawsOSB
 
-# 2. Install dependencies (Python 3.10+ required)
+# 2. Create virtual environment (Python 3.10+ required, 3.13+ recommended)
+python3 -m venv dawsos/venv
+source dawsos/venv/bin/activate  # On Windows: dawsos\venv\Scripts\activate
+
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 3. Generate knowledge graph (first run only, ~30 seconds)
-python scripts/seed_minimal_graph.py
+# 4. Set up environment (optional - app works without API keys)
+cp .env.example .env
+# Edit .env to add API keys if desired
 
-# 4. Run the application
-streamlit run dawsos/main.py
+# 5. Run the application
+dawsos/venv/bin/streamlit run dawsos/main.py --server.port=8501
 
-# 5. Open browser at http://localhost:8502
+# 6. Open browser at http://localhost:8501
+```
+
+**Quick Launch Script** (see [start.sh](start.sh)):
+```bash
+./start.sh
 ```
 
 **Note**: System works fully without API keys using cached data and enriched datasets.

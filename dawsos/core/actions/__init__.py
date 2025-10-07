@@ -21,7 +21,8 @@ Usage:
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, TypeAlias, Optional
+from typing import Dict, Any, Optional
+from core.typing_compat import TypeAlias
 import logging
 
 logger = logging.getLogger(__name__)

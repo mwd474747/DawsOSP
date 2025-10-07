@@ -3,6 +3,7 @@
 **System Version**: 2.0 (Trinity Architecture)
 **Grade**: A+ (98/100)
 **Last Updated**: October 6, 2025
+**Streamlit App**: ✅ Fully Operational (all launch errors fixed)
 
 This file provides persistent context for all Claude Code sessions working on DawsOS.
 
@@ -90,9 +91,10 @@ See [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) for all 103 avail
 2. **PatternEngine** (`core/pattern_engine.py`) - 46 JSON patterns, primary action: `execute_through_registry`
 3. **AgentRuntime** (`core/agent_runtime.py`) - Registry + capability routing
 4. **AGENT_CAPABILITIES** (`core/agent_capabilities.py`) - 103 capabilities across 15 agents
-5. **KnowledgeGraph** (`core/knowledge_graph.py`) - NetworkX backend, 96K+ nodes
+5. **KnowledgeGraph** (`core/knowledge_graph.py`) - NetworkX backend, 96K+ nodes, **get_all_edges()** method
 6. **KnowledgeLoader** (`core/knowledge_loader.py`) - 26 datasets, 30-min TTL cache
 7. **PersistenceManager** (`core/persistence.py`) - Auto-rotation, 30-day backups, checksums
+8. **TypingCompat** (`core/typing_compat.py`) - Python 3.9+ TypeAlias compatibility shim
 
 ### 26 Enriched Datasets (100% Coverage)
 
@@ -136,6 +138,39 @@ All methods use Trinity-compliant execution through `runtime.execute_by_capabili
 ---
 
 ## 🚀 Common Development Tasks
+
+### Launching the Streamlit App
+
+**Quick Launch**:
+```bash
+./start.sh  # Handles everything automatically
+```
+
+**Manual Launch**:
+```bash
+# 1. Ensure venv exists and has dependencies
+python3 -m venv dawsos/venv  # If venv doesn't exist
+dawsos/venv/bin/pip install -r requirements.txt
+
+# 2. Create .env if needed (optional - app works without it)
+cp .env.example .env
+
+# 3. Launch app
+dawsos/venv/bin/streamlit run dawsos/main.py --server.port=8501
+
+# 4. Open http://localhost:8501
+```
+
+**Troubleshooting**:
+- Port conflict: `lsof -ti:8501 | xargs kill -9`
+- Import errors: See [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+- Python version: 3.10+ required, 3.13+ recommended
+
+**Important Notes**:
+- NEVER use relative imports (use absolute: `from core.X` not `from ..core.X`)
+- ALWAYS use `self.logger` in class methods (not bare `logger`)
+- ALWAYS use `get_stats()`, `get_all_edges()` for graph access (not direct `.nodes`, `.edges`)
+- ALL imports from `dawsos/` use absolute paths from package root
 
 ### Adding a New Pattern
 

@@ -9,7 +9,8 @@ Phase 3.1: Comprehensive type hints added
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from typing import Dict, Any, List, Optional, TypeAlias
+from typing import Dict, Any, List, Optional
+from core.typing_compat import TypeAlias
 
 # Plotly imports with error handling
 try:

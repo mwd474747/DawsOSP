@@ -14,7 +14,7 @@ import logging
 from typing import Dict, Any, Optional
 
 # Phase 2.4: Import constants
-from ...config.financial_constants import FinancialConstants
+from config.financial_constants import FinancialConstants
 
 # Type aliases for clarity
 FinancialData = Dict[str, Any]

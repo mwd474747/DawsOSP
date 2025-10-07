@@ -6,7 +6,8 @@ GovernanceAgent - Ultra-simple conversational data governance
 Phase 3.1: Added comprehensive type hints for better type safety.
 """
 
-from typing import Dict, List, Any, Optional, TypeAlias
+from typing import Dict, List, Any, Optional
+from core.typing_compat import TypeAlias
 from datetime import datetime
 from .base_agent import BaseAgent
 

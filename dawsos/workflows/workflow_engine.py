@@ -1,7 +1,8 @@
 # workflows/workflow_engine.py
 # Phase 3.1: Comprehensive type hints added
 from datetime import datetime
-from typing import Dict, Any, List, Optional, TypeAlias
+from typing import Dict, Any, List, Optional
+from core.typing_compat import TypeAlias
 
 # Type aliases for clarity
 WorkflowDict: TypeAlias = Dict[str, Any]

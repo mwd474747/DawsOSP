@@ -3,7 +3,8 @@
 Phase 3.1: Added comprehensive type hints for better type safety.
 """
 from agents.base_agent import BaseAgent
-from typing import Dict, Any, Optional, TypeAlias
+from typing import Dict, Any, Optional
+from core.typing_compat import TypeAlias
 import os
 import logging
 

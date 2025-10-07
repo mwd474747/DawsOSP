@@ -3,7 +3,8 @@
 Phase 3.1: Comprehensive type hints added for better IDE support and type safety.
 """
 from .base_agent import BaseAgent
-from typing import Dict, Any, List, Optional, TypeAlias
+from typing import Dict, Any, List, Optional
+from core.typing_compat import TypeAlias
 from core.fallback_tracker import get_fallback_tracker
 
 # Type aliases for clarity

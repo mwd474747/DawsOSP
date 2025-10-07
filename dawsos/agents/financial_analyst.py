@@ -5,13 +5,13 @@ Leverages Trinity architecture to provide sophisticated financial analysis
 """
 
 from typing import Dict, List, Any, Optional
-from .base_agent import BaseAgent
+from agents.base_agent import BaseAgent
 from datetime import datetime
-from ..core.confidence_calculator import confidence_calculator
-from .analyzers.dcf_analyzer import DCFAnalyzer
-from .analyzers.moat_analyzer import MoatAnalyzer
-from .analyzers.financial_data_fetcher import FinancialDataFetcher
-from .analyzers.financial_confidence_calculator import FinancialConfidenceCalculator
+from core.confidence_calculator import confidence_calculator
+from agents.analyzers.dcf_analyzer import DCFAnalyzer
+from agents.analyzers.moat_analyzer import MoatAnalyzer
+from agents.analyzers.financial_data_fetcher import FinancialDataFetcher
+from agents.analyzers.financial_confidence_calculator import FinancialConfidenceCalculator
 import logging
 
 logger = logging.getLogger(__name__)

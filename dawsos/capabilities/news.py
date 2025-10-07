@@ -8,7 +8,8 @@ import json
 import time
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Any, TypeAlias, Set
+from typing import Dict, List, Optional, Tuple, Any, Set
+from core.typing_compat import TypeAlias
 from collections import deque
 from core.credentials import get_credential_manager
 from core.api_helper import APIHelper

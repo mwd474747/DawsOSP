@@ -4,7 +4,8 @@ Phase 3.1: Comprehensive type hints added for all methods
 """
 import logging
 from agents.base_agent import BaseAgent
-from typing import Dict, Any, List, Tuple, Optional, TypeAlias
+from typing import Dict, Any, List, Tuple, Optional
+from core.typing_compat import TypeAlias
 
 # Type aliases for clarity
 CorrelationDict: TypeAlias = Dict[str, Any]

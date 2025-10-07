@@ -117,7 +117,7 @@ class TrinityDashboardTabs:
         st.markdown("### 🧠 Trinity Knowledge Graph - Pattern-Enhanced Intelligence")
 
         # Sampling controls for large graphs
-        total_nodes = len(self.graph.nodes)
+        total_nodes = self.graph.get_stats()['total_nodes']
         if total_nodes > 500:
             st.info(f"📊 Large graph detected ({total_nodes:,} nodes). Using intelligent sampling for performance.")
 
@@ -138,7 +138,7 @@ class TrinityDashboardTabs:
 
         with col1:
             # Enhanced graph visualization
-            if self.graph.nodes:
+            if total_nodes > 0:
                 fig = self._create_enhanced_graph_viz(max_nodes=max_nodes, strategy=strategy)
                 st.plotly_chart(fig, width="stretch")
             else:

@@ -2,7 +2,8 @@
 Agent Adapter - Provides consistent interface for all agents
 This allows agents with different method signatures to work uniformly
 """
-from typing import Dict, Any, Optional, Protocol, runtime_checkable, List, TypeAlias
+from typing import Dict, Any, Optional, Protocol, runtime_checkable, List
+from core.typing_compat import TypeAlias
 from datetime import datetime
 
 

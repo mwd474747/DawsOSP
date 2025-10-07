@@ -12,7 +12,8 @@ import os
 import uuid
 import warnings
 from datetime import datetime
-from typing import Dict, List, Optional, Any, TypeAlias, Tuple, Set
+from typing import Dict, List, Optional, Any, Tuple, Set
+from core.typing_compat import TypeAlias
 from functools import lru_cache
 import networkx as nx
 
@@ -382,6 +383,17 @@ class KnowledgeGraph:
             'to': to_id,
             **edge_attrs
         }
+
+    def get_all_edges(self) -> List[EdgeData]:
+        """Get all edges in the graph"""
+        edges = []
+        for from_id, to_id, attrs in self._graph.edges(data=True):
+            edges.append({
+                'from': from_id,
+                'to': to_id,
+                **attrs
+            })
+        return edges
 
     def safe_query(self, pattern: QueryPattern, default: Any = None) -> List[NodeID]:
         """Query nodes with safe fallback"""

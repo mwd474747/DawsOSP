@@ -9,7 +9,8 @@ Phase 3.1: Comprehensive type hints added
 
 import streamlit as st
 import streamlit.components.v1 as components
-from typing import Dict, Any, List, Optional, TypeAlias
+from typing import Dict, Any, List, Optional
+from core.typing_compat import TypeAlias
 from datetime import datetime
 from agents.ui_generator import UIGeneratorAgent
 from core.pattern_engine import PatternEngine

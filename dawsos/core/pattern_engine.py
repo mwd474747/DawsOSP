@@ -5,7 +5,8 @@ This enables DawsOS to work through JSON-defined patterns rather than hard-coded
 """
 import json
 import re
-from typing import Dict, List, Any, Optional, TypeAlias, Iterator, Tuple
+from typing import Dict, List, Any, Optional, Iterator, Tuple
+from core.typing_compat import TypeAlias
 from pathlib import Path
 from datetime import datetime
 from core.logger import get_logger

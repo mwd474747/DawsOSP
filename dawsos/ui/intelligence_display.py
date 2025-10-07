@@ -14,7 +14,8 @@ Phase 3.1: Comprehensive type hints added
 """
 
 import streamlit as st
-from typing import Dict, List, Optional, Tuple, Any, TypeAlias
+from typing import Dict, List, Optional, Tuple, Any
+from core.typing_compat import TypeAlias
 from datetime import datetime
 import plotly.graph_objects as go
 import plotly.express as px

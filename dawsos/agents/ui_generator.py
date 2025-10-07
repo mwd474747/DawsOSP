@@ -8,7 +8,8 @@ Phase 3.1: Added comprehensive type hints for better type safety.
 
 import streamlit as st
 import plotly.graph_objects as go
-from typing import Dict, Any, List, Optional, TypeAlias
+from typing import Dict, Any, List, Optional
+from core.typing_compat import TypeAlias
 import json
 from datetime import datetime
 

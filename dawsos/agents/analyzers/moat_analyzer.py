@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import Dict, Any, Callable
 
 # Phase 2.4: Import financial constants
-from ...config.financial_constants import FinancialConstants
+from config.financial_constants import FinancialConstants
 
 # Type aliases for clarity
 FinancialData = Dict[str, Any]

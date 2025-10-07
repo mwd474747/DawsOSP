@@ -1,5 +1,6 @@
 """Agent Runtime - Executes and coordinates agents"""
-from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union, Callable, TypeAlias
+from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union, Callable
+from core.typing_compat import TypeAlias
 from types import MappingProxyType
 import json
 import os
@@ -60,7 +61,7 @@ class AgentRuntime:
         if self.use_adapter:
             self.agent_registry.register(name, agent, capabilities)
 
-        logger.info(f"Registered agent: {name}")
+        self.logger.info(f"Registered agent: {name}")
 
     def execute(self, agent_name: AgentName, context: AgentContext) -> AgentResult:
         """Execute agent through unified adapter with automatic Trinity compliance"""
@@ -180,7 +181,7 @@ class AgentRuntime:
             with open(memory_file, 'w') as f:
                 json.dump(decisions, f, indent=2)
         except Exception as e:
-            logger.error(f"Error saving to agent memory for {agent_name}: {e}", exc_info=True)
+            self.logger.error(f"Error saving to agent memory for {agent_name}: {e}", exc_info=True)
 
     def track_execution(self, metrics: ExecutionMetrics) -> None:
         """
@@ -304,7 +305,7 @@ class AgentRuntime:
 
     def shutdown(self):
         """Graceful shutdown"""
-        logger.info("Shutting down agent runtime...")
+        self.logger.info("Shutting down agent runtime...")
         # Save final state
         self._save_state()
 
@@ -320,7 +321,7 @@ class AgentRuntime:
             with open('storage/agent_memory/runtime_state.json', 'w') as f:
                 json.dump(state, f, indent=2)
         except Exception as e:
-            logger.error(f"Error saving runtime state: {e}", exc_info=True)
+            self.logger.error(f"Error saving runtime state: {e}", exc_info=True)
 
     def execute_by_capability(self, capability: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Execute using an agent with specific capability"""

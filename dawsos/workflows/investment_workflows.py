@@ -7,7 +7,8 @@ Phase 3.1: Comprehensive type hints added
 """
 
 import logging
-from typing import Dict, List, Any, Optional, TypeAlias
+from typing import Dict, List, Any, Optional
+from core.typing_compat import TypeAlias
 from datetime import datetime
 import json
 
