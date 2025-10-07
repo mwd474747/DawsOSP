@@ -113,7 +113,7 @@ class FinancialAnalyst(BaseAgent):
     def _find_or_create_company_node(self, symbol: str, financial_data: Dict = None) -> str:
         """Find existing company node or create a new one"""
         # Search for existing company node
-        for node_id, node in self.graph._graph.nodes(data=True):
+        for node_id, node in self.graph.get_all_nodes():
             if node['type'] == 'company' and node['data'].get('symbol') == symbol:
                 return node_id
 
@@ -737,8 +737,8 @@ class FinancialAnalyst(BaseAgent):
 
         for path in connections:
             for edge in path:
-                from_node = self.graph.nodes.get(edge['from'], {})
-                from_type = from_node.get('type', '')
+                from_node = self.graph.get_node(edge['from'])
+                from_type = from_node.get('type', '') if from_node else ''
 
                 # Check if node is a macro/economic indicator
                 if from_type in ['indicator', 'economic', 'macro']:
@@ -764,7 +764,7 @@ class FinancialAnalyst(BaseAgent):
         Migrated from equity_agent._analyze_sector_position()
         """
         # Find sector connections (PART_OF relationship)
-        for edge in self.graph.edges:
+        for edge in self.graph.get_all_edges():
             if edge['from'] == stock_node and edge.get('type') == 'PART_OF':
                 sector_node = edge['to']
 
@@ -775,15 +775,16 @@ class FinancialAnalyst(BaseAgent):
 
                 # Find peer companies in same sector
                 peers = []
-                for other_edge in self.graph.edges:
+                for other_edge in self.graph.get_all_edges():
                     if (other_edge.get('to') == sector_node and
                         other_edge.get('type') == 'PART_OF' and
                         other_edge['from'] != stock_node):
                         peers.append(other_edge['from'])
 
+                sector_node_data = self.graph.get_node(sector_node)
                 return {
                     'sector': sector_node,
-                    'sector_name': self.graph.nodes.get(sector_node, {}).get('data', {}).get('name', sector_node),
+                    'sector_name': sector_node_data.get('data', {}).get('name', sector_node) if sector_node_data else sector_node,
                     'sector_outlook': sector_forecast.get('forecast', 'neutral'),
                     'peer_count': len(peers),
                     'peers': peers[:5]  # Top 5 peers
@@ -814,8 +815,8 @@ class FinancialAnalyst(BaseAgent):
                     # Negative relationship types
                     if relationship in ['PRESSURES', 'WEAKENS', 'THREATENS', 'COMPETES_WITH']:
                         from_node_id = edge['from']
-                        from_node = self.graph.nodes.get(from_node_id, {})
-                        from_name = from_node.get('data', {}).get('name', from_node_id)
+                        from_node = self.graph.get_node(from_node_id)
+                        from_name = from_node.get('data', {}).get('name', from_node_id) if from_node else from_node_id
                         strength = edge.get('strength', 0.5)
 
                         risks.append(f"{from_name} {relationship.lower()} stock (strength: {strength:.2f})")
@@ -840,8 +841,8 @@ class FinancialAnalyst(BaseAgent):
                     # Positive relationship types
                     if relationship in ['SUPPORTS', 'STRENGTHENS', 'BENEFITS_FROM', 'ALIGNED_WITH']:
                         from_node_id = edge['from']
-                        from_node = self.graph.nodes.get(from_node_id, {})
-                        from_name = from_node.get('data', {}).get('name', from_node_id)
+                        from_node = self.graph.get_node(from_node_id)
+                        from_name = from_node.get('data', {}).get('name', from_node_id) if from_node else from_node_id
                         strength = edge.get('strength', 0.5)
 
                         catalysts.append(f"{from_name} {relationship.lower()} stock (strength: {strength:.2f})")
@@ -911,14 +912,14 @@ class FinancialAnalyst(BaseAgent):
         for indicator in key_indicators:
             # Query graph for indicator node
             indicator_nodes = [
-                node_id for node_id, node in self.graph._graph.nodes(data=True)
-                if node.get('type') == 'indicator' and 
+                node_id for node_id, node in self.graph.get_all_nodes()
+                if node.get('type') == 'indicator' and
                    node.get('data', {}).get('name') == indicator
             ]
 
             if indicator_nodes:
                 node_id = indicator_nodes[0]
-                node = self.graph.nodes.get(node_id, {})
+                node = self.graph.get_node(node_id)
                 value = node.get('data', {}).get('value')
 
                 # Get forecast if available
@@ -1095,8 +1096,8 @@ class FinancialAnalyst(BaseAgent):
         for symbol in holdings.keys():
             # Find company node
             company_node = self._find_or_create_company_node(symbol)
-            node_data = self.graph.nodes.get(company_node, {})
-            sector = node_data.get('data', {}).get('sector', 'Unknown')
+            node_data = self.graph.get_node(company_node)
+            sector = node_data.get('data', {}).get('sector', 'Unknown') if node_data else 'Unknown'
 
             sector_exposure[sector] = sector_exposure.get(sector, 0) + holdings[symbol]
 

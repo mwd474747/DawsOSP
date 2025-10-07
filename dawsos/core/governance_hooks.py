@@ -245,7 +245,7 @@ class GovernanceHooks:
     def _adjust_relationship_strengths(self, node_id: str, accuracy: float):
         """Adjust relationship strengths based on prediction accuracy"""
         # Strengthen relationships that led to accurate predictions
-        for u, v, attrs in self.graph._graph.edges(data=True):
+        for u, v, attrs in self.graph.get_all_edges_with_data():
             if v == node_id:
                 if accuracy > 0.8:
                     # Strengthen good relationships

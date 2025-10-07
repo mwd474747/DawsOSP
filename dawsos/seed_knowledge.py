@@ -93,7 +93,7 @@ else:
     regime_description = "Mixed signals, regime uncertain"
 
 # Update regime node
-regime_node = graph.nodes.get('ECONOMIC_REGIME')
+regime_node = graph.get_node('ECONOMIC_REGIME')
 if regime_node:
     regime_node['data']['current_state'] = current_regime
     regime_node['data']['description'] = regime_description
@@ -187,7 +187,7 @@ relationships = [
 
 created = 0
 for from_node, to_node, rel_type, strength in relationships:
-    if from_node in graph.nodes and to_node in graph.nodes:
+    if graph._graph.has_node(from_node) and graph._graph.has_node(to_node):
         graph.connect(from_node, to_node, rel_type, strength)
         created += 1
         print(f"✅ {from_node} → {rel_type}({strength}) → {to_node}")
@@ -210,7 +210,7 @@ print("\n🎯 ACTIONABLE INSIGHTS")
 print("-" * 80)
 
 # Run a forecast on SPY based on regime
-if 'SPY' in graph.nodes:
+if graph._graph.has_node('SPY'):
     forecast = graph.forecast('SPY')
     print("\nSPY Forecast based on regime:")
     print(f"  Direction: {forecast.get('forecast', 'Unknown')}")
@@ -218,8 +218,8 @@ if 'SPY' in graph.nodes:
     print(f"  Key Drivers: {forecast.get('influences', 0)} influences detected")
 
 # Find value opportunities
-value_signals = [node for node_id, node in graph.nodes.items()
-                if node['type'] == 'signal' and node['data'].get('type') == 'VALUE']
+value_signals = [node for node_id, node in graph._graph.nodes(data=True)
+                if node.get('type') == 'signal' and node.get('data', {}).get('type') == 'VALUE']
 
 if value_signals:
     print("\n💎 Value Opportunities Found:")

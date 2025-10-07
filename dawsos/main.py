@@ -254,11 +254,11 @@ def visualize_graph():
     G = nx.DiGraph()
     
     # Add nodes
-    for node_id, node_data in graph.nodes.items():
+    for node_id, node_data in graph._graph.nodes(data=True):
         G.add_node(node_id, **node_data)
     
     # Add edges
-    for edge in graph.edges:
+    for edge in graph.get_all_edges():
         G.add_edge(
             edge['from'], 
             edge['to'], 
@@ -314,7 +314,7 @@ def visualize_graph():
         node_trace['text'] += tuple([node])
         
         # Color by node type
-        node_data = graph.nodes[node]
+        node_data = graph.get_node(node)
         if node_data['type'] == 'indicator':
             color = '#3498db'
         elif node_data['type'] == 'sector':
@@ -663,7 +663,7 @@ def main():
         else:
             # Fallback to original implementation
             st.markdown("### Living Knowledge Graph")
-            if st.session_state.graph.nodes:
+            if st.session_state.graph._graph.number_of_nodes() > 0:
                 fig = visualize_graph()
                 st.plotly_chart(fig, width="stretch")
             else:

@@ -185,7 +185,7 @@ graph.connect('CPI', 'AAPL', 'pressures', 0.5)
 
 print(f"   Initial edges: {initial_edges}")
 print(f"   Final edges: {graph._graph.number_of_edges()}")
-print(f"   Connections: {[(e['from'], e['to'], e['type']) for e in graph.edges]}")
+print(f"   Connections: {[(u, v, attrs.get('type')) for u, v, attrs in graph._graph.edges(data=True)]}")
 
 result['output'] = {'edges_added': graph._graph.number_of_edges() - initial_edges}
 result['success'] = graph._graph.number_of_edges() > initial_edges

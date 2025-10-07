@@ -694,7 +694,7 @@ class GovernanceAgent(BaseAgent):
             return None
 
         # Search for existing governance node
-        for node_id, node in self.graph._graph.nodes(data=True):
+        for node_id, node in self.graph.get_all_nodes():
             if node['type'] == 'governance' and node['data'].get('primary'):
                 return node_id
 
@@ -786,8 +786,8 @@ class GovernanceAgent(BaseAgent):
             })
 
         # Pattern suggestions if few patterns executed
-        if hasattr(self.graph, 'nodes'):
-            pattern_nodes = [n for n, data in self.graph._graph.nodes(data=True) if data.get('type') == 'pattern_execution']
+        if self.graph:
+            pattern_nodes = [n for n, data in self.graph.get_all_nodes() if data.get('type') == 'pattern_execution']
             if len(pattern_nodes) < 5:
                 improvements.append({
                     'type': 'pattern_suggestion',
@@ -859,7 +859,7 @@ class GovernanceAgent(BaseAgent):
             target_nodes = context.get('target_nodes', [])
             if not target_nodes and self.graph:
                 # Get sample nodes for validation
-                target_nodes = list(self.list(graph._graph.nodes()))[:10]
+                target_nodes = [n for n, _ in self.graph.get_all_nodes()[:10]]
 
             validation_results = {
                 'compliant_count': 0,
@@ -883,12 +883,14 @@ class GovernanceAgent(BaseAgent):
                             if violation.get('severity') in ['high', 'critical']:
                                 # Trigger data refresh for stale data
                                 if 'freshness' in violation.get('policy', '').lower():
-                                    self.graph.nodes[node_id]['modified'] = datetime.now().isoformat()
-                                    validation_results['remediated'].append({
-                                        'node': node_id,
-                                        'action': 'data_refresh',
-                                        'policy': violation['policy']
-                                    })
+                                    node = self.graph.get_node(node_id)
+                                    if node:
+                                        node['modified'] = datetime.now().isoformat()
+                                        validation_results['remediated'].append({
+                                            'node': node_id,
+                                            'action': 'data_refresh',
+                                            'policy': violation['policy']
+                                        })
 
             return {
                 'status': 'success',

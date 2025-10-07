@@ -93,7 +93,7 @@ framework_nodes = [node_id for node_id, node in graph._graph.nodes(data=True)
 if framework_nodes:
     start_node = framework_nodes[0]
     paths = graph.trace_connections(start_node, max_depth=2)
-    print(f"\n   From {graph.nodes[start_node]['data']['name']}:")
+    print(f"\n   From {graph.get_node(start_node)['data']['name']}:")
     print(f"   Found {len(paths)} connection paths")
 
     if paths and len(paths) > 0:
@@ -101,7 +101,7 @@ if framework_nodes:
         for path in paths[:3]:
             if path:
                 edge = path[0]
-                to_node = graph.nodes.get(edge['to'])
+                to_node = graph.get_node(edge['to'])
                 if to_node:
                     print(f"   → {edge['type']} → {to_node['data'].get('name', 'Unknown')}")
 

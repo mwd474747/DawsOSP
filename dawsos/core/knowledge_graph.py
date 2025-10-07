@@ -36,60 +36,6 @@ class KnowledgeGraph:
         self.forecasts = {}
         self.version = 2  # Version 2 = NetworkX backend
 
-    # ============ BACKWARD COMPATIBILITY PROPERTIES ============
-    # Phase 3.2: These properties are deprecated and will be removed in Phase 4
-    # Use get_node() and get_all_edges() instead
-
-    @property
-    def nodes(self) -> Dict[str, Dict]:
-        """
-        DEPRECATED: Legacy nodes dict interface (Phase 3.2)
-
-        This property will be removed in a future release.
-        Use get_node(node_id) for single nodes or iterate with _graph.nodes(data=True).
-
-        Returns: {node_id: {id, type, data, created, modified, ...}}
-        """
-        warnings.warn(
-            "graph.nodes property is deprecated and will be removed in Phase 4. "
-            "Use get_node(node_id) or _graph.nodes(data=True) instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return {
-            node_id: {
-                'id': node_id,
-                **attrs
-            }
-            for node_id, attrs in self._graph.nodes(data=True)
-        }
-
-    @property
-    def edges(self) -> List[Dict]:
-        """
-        DEPRECATED: Legacy edges list interface (Phase 3.2)
-
-        This property will be removed in a future release.
-        Use get_all_edges() or _graph.edges(data=True) instead.
-
-        Returns: [{id, from, to, type, strength, ...}, ...]
-        """
-        warnings.warn(
-            "graph.edges property is deprecated and will be removed in Phase 4. "
-            "Use get_all_edges() or _graph.edges(data=True) instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        edges_list = []
-        for u, v, attrs in self._graph.edges(data=True):
-            edge_dict = {
-                'from': u,
-                'to': v,
-                **attrs
-            }
-            edges_list.append(edge_dict)
-        return edges_list
-
     # ============ PUBLIC API (16 methods - preserve exactly) ============
 
     def add_node(self, node_type: NodeType, data: NodeData, node_id: Optional[NodeID] = None) -> NodeID:

@@ -63,7 +63,7 @@ class ForecastDreamer(BaseAgent):
         Returns:
             Dictionary with forecast, patterns, and narrative
         """
-        if not self.graph or target not in self.graph.nodes:
+        if not self.graph or not self.graph._graph.has_node(target):
             return {"error": f"Cannot forecast {target} - not in graph"}
 
         # Use graph's built-in forecast
@@ -94,7 +94,7 @@ class ForecastDreamer(BaseAgent):
 
         # Apply scenario changes
         for node, change in scenario.items():
-            if node in self.graph.nodes:
+            if self.graph._graph.has_node(node):
                 # Trace effects through graph
                 effects = self._trace_scenario_effects(node, change)
                 results[node] = effects

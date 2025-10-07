@@ -1049,8 +1049,8 @@ class TrinityDashboardTabs:
 
         # Get most connected nodes
         node_connections = {}
-        if hasattr(self.graph, 'edges'):
-            for edge in self.graph.edges:
+        if self.graph:
+            for edge in self.graph.get_all_edges():
                 source = edge.get('source', edge.get('from'))
                 target = edge.get('target', edge.get('to'))
                 node_connections[source] = node_connections.get(source, 0) + 1

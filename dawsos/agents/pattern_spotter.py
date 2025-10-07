@@ -128,12 +128,12 @@ class PatternSpotter(BaseAgent):
         """
         sequences = []
 
-        if not self.graph or not self.graph.edges:
+        if not self.graph:
             return sequences
 
         # Group edges by time
         edge_sequences = {}
-        for edge in self.graph.edges:
+        for edge in self.graph.get_all_edges():
             # Group by day
             created = edge.get('created', '')
             if created:
@@ -175,7 +175,7 @@ class PatternSpotter(BaseAgent):
             return cycles
 
         # Look for nodes that connect back to themselves through other nodes
-        for node_id in self.graph.nodes:
+        for node_id, _ in self.graph.get_all_nodes():
             paths = self.graph.trace_connections(node_id, max_depth=4)
             for path in paths:
                 if path and path[-1].get('to') == node_id:
@@ -197,11 +197,11 @@ class PatternSpotter(BaseAgent):
         """
         triggers = []
 
-        if not self.graph or not self.graph.edges:
+        if not self.graph:
             return triggers
 
         # Look for strong causal relationships
-        for edge in self.graph.edges:
+        for edge in self.graph.get_all_edges():
             if edge.get('type') in ['causes', 'triggers'] and edge.get('strength', 0) > 0.7:
                 triggers.append({
                     "pattern_type": "trigger",
@@ -230,7 +230,7 @@ class PatternSpotter(BaseAgent):
         avg_connections = stats.get('avg_connections', 0)
 
         # Find over-connected nodes
-        for node_id, node in self.graph._graph.nodes(data=True):
+        for node_id, node in self.graph.get_all_nodes():
             connection_count = len(node.get('connections_in', [])) + len(node.get('connections_out', []))
             if connection_count > avg_connections * 3:
                 anomalies.append({
@@ -242,7 +242,7 @@ class PatternSpotter(BaseAgent):
                 })
 
         # Find isolated nodes
-        for node_id, node in self.graph._graph.nodes(data=True):
+        for node_id, node in self.graph.get_all_nodes():
             connection_count = len(node.get('connections_in', [])) + len(node.get('connections_out', []))
             if connection_count == 0:
                 anomalies.append({

@@ -194,7 +194,7 @@ class DataDigester(BaseAgent):
 
         if series in relationships:
             for target, rel_type, strength in relationships[series]:
-                if target in self.graph.nodes:
+                if self.graph._graph.has_node(target):
                     self.graph.connect(node_id, target, rel_type, strength)
 
 class NodeMaker(BaseAgent):

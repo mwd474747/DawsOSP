@@ -217,17 +217,23 @@ class InvestmentWorkflows:
 
         # Route to specific implementations
         if agent_name == 'claude' and action == 'summarize_regime':
-            regime = self.graph.nodes.get('ECONOMIC_REGIME', {})
-            return {
-                'regime': regime.get('data', {}).get('current_state', 'Unknown'),
-                'description': regime.get('data', {}).get('description', 'No description')
-            }
+            regime = self.graph.get_node('ECONOMIC_REGIME')
+            if regime:
+                return {
+                    'regime': regime.get('data', {}).get('current_state', 'Unknown'),
+                    'description': regime.get('data', {}).get('description', 'No description')
+                }
+            return {'regime': 'Unknown', 'description': 'No regime data available'}
 
         elif agent_name == 'pattern_spotter' and action == 'identify_regime':
             # Analyze current indicators to determine regime
-            gdp = self.graph.nodes.get('GDP', {}).get('data', {}).get('value', 0)
-            cpi = self.graph.nodes.get('CPI', {}).get('data', {}).get('value', 0)
-            fed_rate = self.graph.nodes.get('FED_RATE', {}).get('data', {}).get('value', 0)
+            gdp_node = self.graph.get_node('GDP')
+            cpi_node = self.graph.get_node('CPI')
+            fed_node = self.graph.get_node('FED_RATE')
+
+            gdp = gdp_node.get('data', {}).get('value', 0) if gdp_node else 0
+            cpi = cpi_node.get('data', {}).get('value', 0) if cpi_node else 0
+            fed_rate = fed_node.get('data', {}).get('value', 0) if fed_node else 0
 
             if gdp > 28000 and cpi < 350 and fed_rate > 3:
                 return {'regime': 'GOLDILOCKS', 'confidence': 0.8}
@@ -239,14 +245,14 @@ class InvestmentWorkflows:
         elif agent_name == 'data_harvester' and action == 'fetch_fundamentals':
             # Return cached value stocks
             value_stocks = []
-            for node_id, node in self.graph.nodes.items():
-                if node['type'] == 'stock':
-                    pe = node['data'].get('pe', 999)
+            for node_id, node in self.graph._graph.nodes(data=True):
+                if node.get('type') == 'stock':
+                    pe = node.get('data', {}).get('pe', 999)
                     if 0 < pe < 20:
                         value_stocks.append({
                             'symbol': node_id,
                             'pe': pe,
-                            'price': node['data'].get('price', 0)
+                            'price': node.get('data', {}).get('price', 0)
                         })
             return {'value_stocks': value_stocks}
 

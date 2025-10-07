@@ -584,7 +584,7 @@ def render_governance_tab(runtime: Any, graph: Any) -> None:
             selected_node = st.selectbox(
                 "Select node to trace lineage:",
                 options=node_options,
-                format_func=lambda x: f"{x} ({graph.nodes[x]['type']})"
+                format_func=lambda x: f"{x} ({graph.get_node(x)['type'] if graph.get_node(x) else 'unknown'})"
             )
 
             if st.button("🔍 Trace Lineage"):
@@ -601,7 +601,9 @@ def render_governance_tab(runtime: Any, graph: Any) -> None:
                                     for j, node in enumerate(path):
                                         if j > 0:
                                             st.write("↓")
-                                        st.write(f"**{node}** ({graph.nodes[node]['type']})")
+                                        node_data = graph.get_node(node)
+                                        node_type = node_data['type'] if node_data else 'unknown'
+                                        st.write(f"**{node}** ({node_type})")
                         else:
                             st.info("No lineage paths found - node may be a source")
                     except Exception as e:

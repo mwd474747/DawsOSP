@@ -282,7 +282,7 @@ print(f"   Edges restored: {restore_stats['edges_restored']}")
 # Verify data
 if 'BACKUP_TEST' in graph_restore.nodes:
     print("✅ Data verification passed")
-    print(f"   Restored node: {graph_restore.nodes['BACKUP_TEST']['data']}")
+    print(f"   Restored node: {graph_restore.get_node('BACKUP_TEST')['data']}")
 else:
     print("❌ Data verification failed")
 

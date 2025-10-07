@@ -351,12 +351,12 @@ class RelationshipHunter(BaseAgent):
 
         if node_id:
             # Hunt from specific node
-            node = self.graph.nodes.get(node_id)
+            node = self.graph.get_node(node_id)
             if not node:
                 return []
 
             # Check against all other nodes
-            for other_id, other_node in self.graph._graph.nodes(data=True):
+            for other_id, other_node in self.graph.get_all_nodes():
                 if other_id != node_id:
                     relationship = self._check_relationship(node_id, other_id)
                     if relationship.get('exists'):
@@ -388,8 +388,8 @@ class RelationshipHunter(BaseAgent):
         Returns:
             Dictionary describing the relationship if it exists
         """
-        node1 = self.graph.nodes.get(node1_id)
-        node2 = self.graph.nodes.get(node2_id)
+        node1 = self.graph.get_node(node1_id)
+        node2 = self.graph.get_node(node2_id)
 
         # Use heuristics for now (will use LLM later)
         relationship = {"exists": False}
@@ -443,12 +443,12 @@ class RelationshipHunter(BaseAgent):
         Returns:
             List of node identifiers sorted by creation time
         """
-        if not self.graph or not self.graph.nodes:
+        if not self.graph:
             return []
 
         # Sort by creation time and get most recent
         sorted_nodes = sorted(
-            self.graph._graph.nodes(data=True),
+            self.graph.get_all_nodes(),
             key=lambda x: x[1].get('created', ''),
             reverse=True
         )
@@ -465,7 +465,7 @@ class RelationshipHunter(BaseAgent):
             List of tuples (target_node_id, relationship_type, score)
         """
         suggestions = []
-        node = self.graph.nodes.get(node_id)
+        node = self.graph.get_node(node_id)
 
         if not node:
             return suggestions
@@ -473,7 +473,7 @@ class RelationshipHunter(BaseAgent):
         # Suggest connections based on type
         node_type = node.get('type')
 
-        for other_id, other_node in self.graph._graph.nodes(data=True):
+        for other_id, other_node in self.graph.get_all_nodes():
             if other_id == node_id:
                 continue
 
@@ -519,7 +519,7 @@ class RelationshipHunter(BaseAgent):
         connections1 = set()
         connections2 = set()
 
-        for edge in self.graph.edges:
+        for edge in self.graph.get_all_edges():
             if edge['from'] == node1:
                 connections1.add(edge['to'])
             if edge['from'] == node2:

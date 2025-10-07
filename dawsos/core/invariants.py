@@ -180,7 +180,7 @@ class ErrorCorrection:
 
         # Remove orphan nodes (no connections after 7 days)
         nodes_to_remove = []
-        for node_id, node in graph._graph.nodes(data=True):
+        for node_id, node in graph.get_all_nodes():
             connections = len(node.get('connections_in', [])) + len(node.get('connections_out', []))
             if connections == 0:
                 created = node.get('created', datetime.now().isoformat())
@@ -192,7 +192,7 @@ class ErrorCorrection:
 
         # Fix strength overflow and remove weak edges
         edges_to_remove = []
-        for u, v, attrs in graph._graph.edges(data=True):
+        for u, v, attrs in graph.get_all_edges_with_data():
             if attrs.get('strength', 0.5) > 1.0:
                 graph._graph.edges[u, v]['strength'] = 1.0
                 fixes.append(f"Clamped edge strength: {u}->{v}")
@@ -204,7 +204,7 @@ class ErrorCorrection:
         # Remove duplicate edges
         seen = set()
         edges_to_remove = []
-        for u, v, attrs in graph._graph.edges(data=True):
+        for u, v, attrs in graph.get_all_edges_with_data():
             key = (u, v, attrs.get('type'))
             if key in seen:
                 edges_to_remove.append((u, v))
@@ -214,7 +214,7 @@ class ErrorCorrection:
 
         # Validate all nodes
         nodes_to_remove = []
-        for node_id, node in graph._graph.nodes(data=True):
+        for node_id, node in graph.get_all_nodes():
             # Add 'id' to node dict for validation (NetworkX doesn't store it)
             node_with_id = {'id': node_id, **node}
             valid, reason = GraphInvariants.validate_node(node_with_id)

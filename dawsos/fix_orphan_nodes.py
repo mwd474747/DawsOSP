@@ -15,7 +15,7 @@ def fix_orphan_nodes():
 
     # Find orphan nodes
     orphans = []
-    for node_id, node in graph.nodes.items():
+    for node_id, node in graph._graph.nodes(data=True):
         incoming = len(node.get('connections_in', []))
         outgoing = len(node.get('connections_out', []))
         if incoming == 0 and outgoing == 0:
@@ -44,8 +44,8 @@ def fix_orphan_nodes():
             # Create sector node if not exists
             sector_name = quote.get('sector', 'Technology')
             sector_node = None
-            for nid, n in graph.nodes.items():
-                if n['type'] == 'sector' and n['data'].get('name') == sector_name:
+            for nid, n in graph._graph.nodes(data=True):
+                if n.get('type') == 'sector' and n.get('data', {}).get('name') == sector_name:
                     sector_node = nid
                     break
 
@@ -81,8 +81,8 @@ def fix_orphan_nodes():
 
             # Find corresponding company node
             company_node = None
-            for nid, n in graph.nodes.items():
-                if n['type'] == 'company' and n['data'].get('symbol') == symbol:
+            for nid, n in graph._graph.nodes(data=True):
+                if n.get('type') == 'company' and n.get('data', {}).get('symbol') == symbol:
                     company_node = nid
                     break
 
@@ -91,8 +91,8 @@ def fix_orphan_nodes():
                 graph.connect(node_id, company_node, 'queries', strength=0.7)
 
                 # Find moat analysis result
-                for nid, n in graph.nodes.items():
-                    if n['type'] == 'moat_analysis' and n['data'].get('symbol') == symbol:
+                for nid, n in graph._graph.nodes(data=True):
+                    if n.get('type') == 'moat_analysis' and n.get('data', {}).get('symbol') == symbol:
                         # Connect query to result
                         graph.connect(node_id, nid, 'resulted_in', strength=0.9)
                         break
@@ -105,8 +105,8 @@ def fix_orphan_nodes():
     # Report connections
     fixed_count = 0
     for node_id, node in orphans:
-        incoming = len(graph.nodes[node_id].get('connections_in', []))
-        outgoing = len(graph.nodes[node_id].get('connections_out', []))
+        incoming = len(graph.get_node(node_id).get('connections_in', []))
+        outgoing = len(graph.get_node(node_id).get('connections_out', []))
         if incoming > 0 or outgoing > 0:
             fixed_count += 1
 

@@ -111,7 +111,7 @@ if value_stocks:
     for stock in sorted(value_stocks, key=lambda x: x['pe']):
         # Find sector connection
         sector = None
-        for u, v, attrs in graph._graph.edges(data=True):
+        for u, v, attrs in graph.get_all_edges_with_data():
             if edge['to'] == stock['symbol'] and edge['type'] == 'contains':
                 sector = edge['from']
                 break
@@ -238,7 +238,7 @@ success_metrics = {
     'regime_awareness': regime_node is not None,
     'value_discovery': len(value_stocks) > 0,
     'pattern_detection': len(regime_patterns) > 0,
-    'forecast_capability': 'SPY' in graph.nodes,
+    'forecast_capability': graph._graph.has_node('SPY'),
     'multi_agent_coordination': len(agents) > 5
 }
 
