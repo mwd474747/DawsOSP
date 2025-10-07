@@ -13,22 +13,19 @@
 git clone <your-repo-url>
 cd DawsOSB
 
-# 2. Create virtual environment
-python3 -m venv dawsos/venv
-source dawsos/venv/bin/activate
-
-# 3. Install dependencies
+# 2. Install dependencies (Python 3.10+ required)
 pip install -r requirements.txt
 
-# 4. Generate knowledge graph (first run only, ~30 seconds)
+# 3. Generate knowledge graph (first run only, ~30 seconds)
 python scripts/seed_minimal_graph.py
 
-# 5. Run the application
+# 4. Run the application
 streamlit run dawsos/main.py
 
-# 6. Open browser
-# http://localhost:8502
+# 5. Open browser at http://localhost:8502
 ```
+
+**Note**: System works fully without API keys using cached data and enriched datasets.
 
 ### Environment Configuration (Optional)
 
@@ -36,11 +33,11 @@ streamlit run dawsos/main.py
 
 **Setup `.env` file** (optional):
 ```bash
-# 1. Copy example template to dawsos/ directory
-cp .env.example dawsos/.env
+# 1. Copy example template (provided in repo)
+cp .env.example .env
 
 # 2. Edit with your API keys
-nano dawsos/.env
+nano .env
 
 # 3. Restart the application
 streamlit run dawsos/main.py
@@ -59,7 +56,7 @@ streamlit run dawsos/main.py
 **System Configuration**:
 - `TRINITY_STRICT_MODE=true` - Enforce strict architecture compliance (default: false)
 
-**Important**: Place `.env` file in `dawsos/.env` (not root directory)
+**Important**: Place `.env` file in root directory (template: `.env.example`)
 
 ---
 
@@ -118,19 +115,25 @@ KnowledgeGraph (core/relationships.py)
 ### Essential Guides
 - [README.md](README.md) - Quick start and system overview
 - [CLAUDE.md](CLAUDE.md) - Development memory and principles for Claude Code sessions
-- [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) - Capability-based routing (100+ capabilities)
-- [DATA_FLOW_AND_SEEDING_GUIDE.md](DATA_FLOW_AND_SEEDING_GUIDE.md) - Data flow and graph seeding
+- [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) - Capability-based routing (103 capabilities)
 - [SYSTEM_STATUS.md](SYSTEM_STATUS.md) - Current system status and metrics
 - [docs/AgentDevelopmentGuide.md](docs/AgentDevelopmentGuide.md) - How to build and register agents
 - [docs/KnowledgeMaintenance.md](docs/KnowledgeMaintenance.md) - Dataset formats and refresh cadence
 - [docs/DisasterRecovery.md](docs/DisasterRecovery.md) - Backup and restore procedures
+- [docs/ErrorHandlingGuide.md](docs/ErrorHandlingGuide.md) - Error handling patterns and best practices
 - [docs/DEVELOPER_SETUP.md](docs/DEVELOPER_SETUP.md) - Developer environment setup
 
-### Historical Reports (Archived)
-- [docs/archive/planning/CORE_INFRASTRUCTURE_STABILIZATION.md](docs/archive/planning/CORE_INFRASTRUCTURE_STABILIZATION.md) - Core architecture upgrades
-- [docs/archive/planning/FINAL_ROADMAP_COMPLIANCE.md](docs/archive/planning/FINAL_ROADMAP_COMPLIANCE.md) - Historical compliance report
-- [docs/archive/planning/QUICK_WINS_COMPLETE.md](docs/archive/planning/QUICK_WINS_COMPLETE.md) - Historical improvements summary
-- [docs/reports/](docs/reports/) - Interim progress reports (4 files)
+### Specialist Agents
+- [.claude/README.md](.claude/README.md) - Specialist agent system overview
+- [.claude/trinity_architect.md](.claude/trinity_architect.md) - Architecture compliance expert
+- [.claude/pattern_specialist.md](.claude/pattern_specialist.md) - Pattern development expert
+- [.claude/knowledge_curator.md](.claude/knowledge_curator.md) - Knowledge graph expert
+- [.claude/agent_orchestrator.md](.claude/agent_orchestrator.md) - Agent system expert
+
+### Recent Completion Reports
+- [PHASE3_COMPLETE.md](PHASE3_COMPLETE.md) - Phase 3 refactoring completion report
+- [TECHNICAL_DEBT_AUDIT.md](TECHNICAL_DEBT_AUDIT.md) - Technical debt audit and recommendations
+- [DOCUMENTATION_ACCURACY_ASSESSMENT.md](DOCUMENTATION_ACCURACY_ASSESSMENT.md) - Documentation validation report
 
 ---
 
@@ -139,13 +142,13 @@ KnowledgeGraph (core/relationships.py)
 | Metric | Value |
 |--------|-------|
 | **Overall Grade** | A+ (98/100) |
-| **Agents** | 15 registered |
+| **Agents** | 15 registered (21 files total) |
 | **Capabilities** | 103 unique capabilities |
-| **Patterns** | 46 (0 errors) |
+| **Patterns** | 46 files (45 executable + schema) |
 | **Knowledge Datasets** | 26 (100% coverage) |
-| **Pattern Compliance** | 100% Trinity |
-| **Error Handling** | Professional (0 bare pass) |
-| **Repository** | Clean (5 essential docs) |
+| **Pattern Compliance** | 100% Trinity-compliant |
+| **Error Handling** | Standardized (5 patterns) |
+| **Type Coverage** | 85%+ (320+ methods) |
 
 ---
 
@@ -194,26 +197,29 @@ DawsOSB/
 ├── README.md                           # Quick start and overview
 ├── CLAUDE.md                           # Development memory for Claude Code
 ├── CAPABILITY_ROUTING_GUIDE.md        # Capability routing (103 capabilities)
-├── DATA_FLOW_AND_SEEDING_GUIDE.md     # Data flow and graph seeding
 ├── SYSTEM_STATUS.md                   # Current system status
+├── PHASE3_COMPLETE.md                 # Phase 3 completion report
+├── TECHNICAL_DEBT_AUDIT.md            # Technical debt audit
+├── .claude/                           # Specialist agents (9 files)
+│   ├── README.md                      # Agent system overview
+│   ├── trinity_architect.md           # Architecture expert
+│   └── ...                            # 7 more specialist agents
 ├── dawsos/                            # Application root
-│   ├── core/                          # Trinity runtime (15+ modules)
-│   ├── agents/                        # 15 specialized agents
+│   ├── core/                          # Trinity runtime (25 modules)
+│   ├── agents/                        # 15 registered agents (21 files)
 │   ├── capabilities/                  # External API integrations
-│   ├── patterns/                      # 46 workflow patterns
 │   ├── storage/knowledge/             # 26 enriched datasets
 │   ├── ui/                            # Streamlit dashboards
 │   └── tests/                         # Test suites
-│       ├── validation/                # Automated pytest tests
+│       ├── manual/                    # Manual validation scripts
 │       ├── unit/                      # Unit tests
 │       └── integration/               # Integration tests
-├── docs/                              # Documentation
+├── patterns/                          # 46 workflow patterns (root level)
+├── docs/                              # Core documentation (5 files)
 │   ├── AgentDevelopmentGuide.md       # Agent development
 │   ├── KnowledgeMaintenance.md        # Dataset maintenance
-│   ├── DisasterRecovery.md            # Backup/restore
-│   ├── DEVELOPER_SETUP.md             # Development setup
-│   ├── reports/                       # Progress reports
-│   └── archive/                       # Historical documentation
+│   ├── ErrorHandlingGuide.md          # Error patterns
+│   └── ...                            # 2 more guides
 ├── scripts/                           # Validation and utility scripts
 └── storage/                           # Runtime storage (gitignored)
 ```
