@@ -461,7 +461,8 @@ class FinancialAnalyst(BaseAgent):
 
             return projected_fcf
 
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Error projecting cash flows for {symbol}: {e}")
             # Fallback to conservative estimates
             return [100, 105, 110, 115, 120]  # Million USD
 
@@ -479,7 +480,8 @@ class FinancialAnalyst(BaseAgent):
             # Assume mostly equity financed for simplicity
             return cost_of_equity
 
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Error calculating WACC for {symbol}: {e}")
             return 0.10  # 10% default discount rate
 
     def _calculate_present_values(self, projected_fcf: List[float], discount_rate: float) -> List[float]:
@@ -1138,8 +1140,9 @@ class FinancialAnalyst(BaseAgent):
 
                     macro_exposures[factor] = macro_exposures.get(factor, 0) + strength
 
-            except Exception:
-                pass  # Skip stocks with errors
+            except Exception as e:
+                logger.warning(f"Error analyzing macro sensitivity for {symbol}: {e}")
+                # Skip stocks with errors
 
         # Sort by exposure strength
         sorted_exposures = sorted(macro_exposures.items(), key=lambda x: x[1], reverse=True)

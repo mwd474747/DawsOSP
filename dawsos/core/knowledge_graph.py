@@ -147,7 +147,9 @@ class KnowledgeGraph:
                 except nx.NetworkXNoPath:
                     continue
         except Exception as e:
-            print(f"Error in trace_connections: {e}")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in trace_connections for {start_node}: {e}", exc_info=True)
 
         return paths
 
@@ -338,7 +340,9 @@ class KnowledgeGraph:
             results = self.query(pattern)
             return results if results else (default if default is not None else [])
         except Exception as e:
-            print(f"Query failed: {e}")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Query failed with pattern {pattern}: {e}")
             return default if default is not None else []
 
     def get_node_data(self, node_id: NodeID, key: str, default: Any = None) -> Any:
@@ -458,7 +462,9 @@ class KnowledgeGraph:
 
             return True
         except Exception as e:
-            print(f"Error loading graph: {e}")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error loading graph from {filepath}: {e}", exc_info=True)
             return False
 
     def sample_for_visualization(self, max_nodes: int = 500, strategy: str = 'importance') -> Dict:

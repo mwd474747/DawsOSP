@@ -1,8 +1,11 @@
 """LLM Client - Wrapper for Claude API"""
 import json
+import logging
 from typing import Dict, Any, Optional
 import re
 from .credentials import get_credential_manager
+
+logger = logging.getLogger(__name__)
 
 # Optional import guard for anthropic
 try:
@@ -34,7 +37,7 @@ class LLMClient:
             )
 
         self.client = Anthropic(api_key=self.api_key)
-        print("Claude API connected successfully!")
+        logger.info("Claude API connected successfully!")
 
         # Default settings
         self.model = "claude-3-haiku-20240307"  # Cheaper, faster model for agents
@@ -65,7 +68,7 @@ class LLMClient:
             return text
 
         except Exception as e:
-            print(f"Claude API error: {e}")
+            logger.error(f"Claude API error: {e}", exc_info=True)
             return {"error": str(e)}
 
     def _parse_json_response(self, text: str) -> Dict[str, Any]:

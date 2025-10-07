@@ -219,7 +219,7 @@ class PatternEngine:
                             pattern['_source_file'] = str(pattern_file)
                             self.patterns[pattern_id] = pattern
                             loaded_count += 1
-                            print(f"Loaded pattern: {pattern_id} (replaced duplicate)")
+                            self.logger.debug(f"Loaded pattern: {pattern_id} (replaced duplicate)")
                         else:
                             # Keep existing pattern
                             continue
@@ -228,7 +228,7 @@ class PatternEngine:
                         pattern['_source_file'] = str(pattern_file)
                         self.patterns[pattern_id] = pattern
                         loaded_count += 1
-                        print(f"Loaded pattern: {pattern_id}")
+                        self.logger.debug(f"Loaded pattern: {pattern_id}")
 
             except json.JSONDecodeError as e:
                 error_count += 1
@@ -276,8 +276,8 @@ class PatternEngine:
                 agents_dict = self.runtime.agents  # Will trigger bypass warning
                 if agent_name in agents_dict:
                     return agents_dict[agent_name]
-            except Exception:
-                pass
+            except Exception as e:
+                self.logger.warning(f"Error accessing agent {agent_name} via legacy fallback: {e}")
 
         return None
 
@@ -1572,7 +1572,7 @@ class PatternEngine:
                 }
 
         except Exception as e:
-            print(f"Error extracting enriched section: {e}")
+            self.logger.error(f"Error extracting enriched section '{query}': {e}", exc_info=True)
 
         return {
             'data': f"Query '{query}' not found in enriched data",
@@ -1598,7 +1598,8 @@ class PatternEngine:
             # Fallback to reasonable defaults
             return 6.5 if cycle_type == 'short_term' else 7.8
 
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f"Error calculating cycle score for {cycle_type}: {e}")
             return 6.5 if cycle_type == 'short_term' else 7.8
 
     def _calculate_dcf_value(self, context: ContextDict) ->float:
@@ -1616,7 +1617,8 @@ class PatternEngine:
 
             return 100.0
 
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f"Error calculating DCF value for {context.get('symbol')}: {e}")
             return 100.0
 
     def _calculate_roic_spread(self, context: ContextDict) ->float:
@@ -1637,7 +1639,8 @@ class PatternEngine:
 
             return 8.5
 
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f"Error calculating ROIC spread for {context.get('symbol')}: {e}")
             return 8.5
 
     def _calculate_fcf_yield(self, context: ContextDict) ->float:
@@ -1656,7 +1659,8 @@ class PatternEngine:
 
             return 4.2
 
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f"Error calculating FCF yield for {context.get('symbol')}: {e}")
             return 4.2
 
     def _calculate_roic(self, context: ContextDict) ->float:
@@ -1674,7 +1678,8 @@ class PatternEngine:
 
             return 15.8
 
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f"Error calculating ROIC for {context.get('symbol')}: {e}")
             return 15.8
 
     def _calculate_owner_earnings(self, context: ContextDict) ->float:
@@ -1694,7 +1699,8 @@ class PatternEngine:
 
             return 25.0
 
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f"Error calculating owner earnings for {context.get('symbol')}: {e}")
             return 25.0
 
     def _get_company_moat_analysis(self, symbol: str, context: ContextDict) ->Dict[str, str]:
@@ -1921,7 +1927,8 @@ class PatternEngine:
 
             return sector_moats.get(sector, sector_moats.get('consumer'))  # Default to consumer
 
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f"Error loading moat templates for sector {sector}: {e}")
             return {
                 'brand': "• Brand analysis needed",
                 'network': "• Network effects assessment required",
