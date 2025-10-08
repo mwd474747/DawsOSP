@@ -422,9 +422,11 @@ class PatternEngine:
                 else:
                     result = {"error": "No valid agent or action found in step"}
 
-                # Store the outputs
-                outputs = step.get('outputs', step.get('output', []))
+                # Store the outputs (support 'outputs', 'output', and 'save_as')
+                outputs = step.get('outputs', step.get('output', step.get('save_as')))
                 if isinstance(outputs, str):
+                    outputs = [outputs]
+                elif outputs and not isinstance(outputs, list):
                     outputs = [outputs]
 
                 # Store result for each output variable
@@ -1350,7 +1352,7 @@ class PatternEngine:
             template = pattern['response'].get('template')
 
         if template:
-            # Substitute variables in template
+            # Substitute variables in template from outputs
             for key, value in outputs.items():
                 # Extract the actual response from agent output
                 if isinstance(value, dict):
@@ -1369,6 +1371,13 @@ class PatternEngine:
                         template = template.replace(f"{{{key}}}", str(value))
                 else:
                     template = template.replace(f"{{{key}}}", str(value))
+
+            # Also substitute context values (like {TICKERS}, {TICKER}, etc.)
+            for key, value in context.items():
+                if isinstance(value, (str, int, float)):
+                    template = template.replace(f"{{{key}}}", str(value))
+                elif isinstance(value, list):
+                    template = template.replace(f"{{{key}}}", ', '.join(str(v) for v in value))
 
             # Extract symbol from context if available
             symbol = context.get('symbol', 'AAPL')
