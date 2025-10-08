@@ -543,8 +543,15 @@ class TrinityDashboardTabs:
             pattern = self.pattern_engine.find_pattern(prompt)
 
             if pattern:
-                # Execute pattern
-                result = self.pattern_engine.execute_pattern(pattern, {'user_input': prompt})
+                # Extract entities from user input
+                entities = self.pattern_engine.extract_entities(pattern, prompt)
+
+                # Build context with user input and extracted entities
+                context = {'user_input': prompt}
+                context.update(entities)  # Add extracted entities to context
+
+                # Execute pattern with enriched context
+                result = self.pattern_engine.execute_pattern(pattern, context)
                 result['pattern'] = pattern.get('name', pattern.get('id', 'Unknown'))
                 return result
             else:

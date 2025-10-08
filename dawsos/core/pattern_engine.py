@@ -381,6 +381,37 @@ class PatternEngine:
             self.logger.error("Error finding pattern", error=e, user_input=user_input)
             return None
 
+    def extract_entities(self, pattern: PatternDict, user_input: str) -> Dict[str, Any]:
+        """
+        Extract entity values from user input based on pattern definition
+
+        Args:
+            pattern: The pattern with entity definitions
+            user_input: The user's input text
+
+        Returns:
+            Dictionary of extracted entity values
+        """
+        entities = {}
+        entity_defs = pattern.get('entities', [])
+
+        # Stock symbol pattern (1-5 uppercase letters)
+        symbol_pattern = r'\b([A-Z]{1,5})\b'
+
+        for entity_def in entity_defs:
+            if entity_def in ['TICKER', 'SYMBOL']:
+                # Extract single ticker
+                match = re.search(symbol_pattern, user_input)
+                if match:
+                    entities[entity_def] = match.group(1)
+            elif entity_def in ['TICKERS', 'SYMBOLS']:
+                # Extract multiple tickers
+                matches = re.findall(symbol_pattern, user_input)
+                if matches:
+                    entities[entity_def] = matches if len(matches) > 1 else matches[0]
+
+        return entities
+
     def execute_pattern(self, pattern: PatternDict, context: Optional[ContextDict] = None) -> ResultDict:
         """
         Execute a pattern by running its steps in sequence
