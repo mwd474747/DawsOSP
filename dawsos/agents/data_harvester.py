@@ -325,6 +325,61 @@ class DataHarvester(BaseAgent):
             "next_harvest": "tomorrow at market open"
         }
 
+    # ============================================================================
+    # OPTIONS DATA METHODS (Added for options trading capabilities)
+    # ============================================================================
+
+    def fetch_options_flow(self, tickers: SymbolList) -> HarvestResult:
+        """Fetch options flow data for multiple tickers.
+
+        Args:
+            tickers: List of stock symbols (e.g., ['SPY', 'QQQ', 'IWM'])
+
+        Returns:
+            Dictionary with flow_data and tickers
+        """
+        if 'polygon' not in self.capabilities:
+            return {
+                'error': 'Polygon capability not available',
+                'note': 'Configure POLYGON_API_KEY to enable options data'
+            }
+
+        polygon = self.capabilities['polygon']
+        flow_data = {}
+
+        for ticker in tickers:
+            chain = polygon.get_option_chain(ticker)
+            flow_data[ticker] = chain
+
+        return {
+            'flow_data': flow_data,
+            'tickers': tickers,
+            'timestamp': 'now'
+        }
+
+    def fetch_unusual_options(self, min_premium: float = 10000) -> HarvestResult:
+        """Fetch unusual options activity.
+
+        Args:
+            min_premium: Minimum premium threshold (default: $10,000)
+
+        Returns:
+            Dictionary with unusual_activities
+        """
+        if 'polygon' not in self.capabilities:
+            return {
+                'error': 'Polygon capability not available',
+                'note': 'Configure POLYGON_API_KEY to enable options data'
+            }
+
+        polygon = self.capabilities['polygon']
+        unusual = polygon.detect_unusual_activity(min_premium=min_premium)
+
+        return {
+            'unusual_activities': unusual,
+            'min_premium': min_premium
+        }
+
 class FREDBot(BaseAgent):
     """Sub-agent for FRED data (Phase 3.1: Type hints added)"""
 

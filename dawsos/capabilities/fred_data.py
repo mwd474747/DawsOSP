@@ -79,8 +79,18 @@ class RateLimiter:
 class FredDataCapability(APIHelper):
     """Federal Reserve Economic Data (FRED) API integration with retry and fallback tracking"""
 
+    # Class-level cache statistics (shared across all instances)
+    _cache_stats: Dict[str, int] = {
+        'hits': 0,
+        'misses': 0,
+        'expired_fallbacks': 0
+    }
+
+    # Class-level cache (shared across all instances)
+    _cache: Dict[str, Dict[str, Any]] = {}
+
     def __init__(self) -> None:
-        """Initialize FRED Data Capability with API key and cache configuration."""
+        """Initialize FRED Data Capability with API key and configuration."""
         # Initialize APIHelper mixin
         super().__init__()
 
@@ -88,7 +98,10 @@ class FredDataCapability(APIHelper):
         credentials = get_credential_manager()
         self.api_key: Optional[str] = credentials.get('FRED_API_KEY', required=False)
         self.base_url: str = 'https://api.stlouisfed.org/fred'
-        self.cache: Dict[str, Dict[str, Any]] = {}
+
+        # Use class-level cache (shared across instances)
+        self.cache = FredDataCapability._cache
+        self.cache_stats = FredDataCapability._cache_stats
 
         # Configurable TTL by data type (in seconds)
         # Economic data changes daily at most, so 24 hours is safe
@@ -100,13 +113,6 @@ class FredDataCapability(APIHelper):
 
         # Rate limiter (FRED has no strict limit, but 1000/min is safe)
         self.rate_limiter: RateLimiter = RateLimiter(max_requests_per_minute=1000)
-
-        # Cache statistics
-        self.cache_stats: Dict[str, int] = {
-            'hits': 0,
-            'misses': 0,
-            'expired_fallbacks': 0
-        }
 
         # Common economic indicators with T10Y2Y spread included
         self.indicators: Dict[str, str] = {

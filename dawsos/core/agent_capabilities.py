@@ -65,7 +65,7 @@ AGENT_CAPABILITIES: Dict[str, Dict[str, Any]] = {
     # === DATA AGENTS ===
 
     'data_harvester': {
-        'description': 'Fetches data from external sources (market, economic, news)',
+        'description': 'Fetches data from external sources (market, economic, news, options)',
         'capabilities': [
             'can_fetch_stock_quotes',
             'can_fetch_economic_data',
@@ -73,13 +73,16 @@ AGENT_CAPABILITIES: Dict[str, Dict[str, Any]] = {
             'can_fetch_fundamentals',
             'can_fetch_market_movers',
             'can_fetch_crypto_data',
-            'can_calculate_correlations'
+            'can_calculate_correlations',
+            'can_fetch_options_flow',
+            'can_fetch_unusual_options'
         ],
         'requires': [
             'requires_market_capability',
             'requires_fred_capability',
             'requires_news_capability',
-            'requires_fundamentals_capability'
+            'requires_fundamentals_capability',
+            'requires_polygon_capability'
         ],
         'provides': [
             'provides_market_data',
@@ -223,7 +226,7 @@ AGENT_CAPABILITIES: Dict[str, Dict[str, Any]] = {
     },
 
     'financial_analyst': {
-        'description': 'Specialized financial analysis and valuation agent',
+        'description': 'Specialized financial analysis, valuation, and options analysis agent',
         'capabilities': [
             'can_calculate_dcf',
             'can_calculate_roic',
@@ -233,12 +236,17 @@ AGENT_CAPABILITIES: Dict[str, Dict[str, Any]] = {
             'can_project_cash_flows',
             'can_calculate_wacc',
             'can_value_companies',
-            'can_analyze_financials'
+            'can_analyze_financials',
+            'can_analyze_greeks',
+            'can_analyze_options_flow',
+            'can_detect_unusual_activity',
+            'can_calculate_iv_rank'
         ],
         'requires': [
             'requires_knowledge_graph',
             'requires_market_capability',
-            'requires_financial_data'
+            'requires_financial_data',
+            'requires_polygon_capability'
         ],
         'provides': [
             'provides_dcf_valuations',

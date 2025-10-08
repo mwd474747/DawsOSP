@@ -15,6 +15,7 @@ from core.persistence import PersistenceManager
 from core.pattern_engine import PatternEngine
 from core.universal_executor import UniversalExecutor
 from core.agent_capabilities import AGENT_CAPABILITIES
+from core.llm_client import LLMClient
 
 # Agent imports
 from agents.graph_mind import GraphMind
@@ -39,6 +40,7 @@ from capabilities.fred_data import FredDataCapability
 from capabilities.news import NewsCapability
 from capabilities.crypto import CryptoCapability
 from capabilities.fundamentals import FundamentalsCapability
+from capabilities.polygon_options import PolygonOptionsCapability
 
 # Workflow imports
 from workflows.investment_workflows import InvestmentWorkflows
@@ -116,8 +118,18 @@ def init_session_state():
             'market': MarketDataCapability(),
             'news': NewsCapability(),
             'crypto': CryptoCapability(),
-            'fundamentals': FundamentalsCapability()
+            'fundamentals': FundamentalsCapability(),
+            'polygon': PolygonOptionsCapability()  # Options data capability
         }
+
+    # Initialize LLM client (optional - system works without it)
+    if 'llm_client' not in st.session_state:
+        try:
+            st.session_state.llm_client = LLMClient()
+            print("✅ LLM Client initialized successfully")
+        except Exception as e:
+            st.session_state.llm_client = None
+            print(f"⚠️ LLM Client not available: {e}")
 
     if 'agent_runtime' not in st.session_state:
         # Initialize agent runtime
@@ -137,7 +149,7 @@ def init_session_state():
         )
         runtime.register_agent(
             'claude',
-            Claude(st.session_state.graph),
+            Claude(st.session_state.graph, llm_client=st.session_state.llm_client),
             capabilities=AGENT_CAPABILITIES['claude']
         )
         runtime.register_agent(

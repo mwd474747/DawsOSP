@@ -39,6 +39,7 @@ class FinancialAnalyst(BaseAgent):
         self.moat_analyzer: Optional[Any] = None  # Lazy initialization on first use
         self.data_fetcher: Optional[Any] = None  # Lazy initialization on first use
         self.confidence_calculator: Optional[Any] = None  # Lazy initialization on first use
+        self.options_analyzer: Optional[Any] = None  # Lazy initialization on first use (options analysis)
 
         # Phase 2.3: Request routing table (replaces complex if/elif chain)
         # Format: (trigger_keywords, handler_method, requires_symbol, requires_context_key)
@@ -100,6 +101,15 @@ class FinancialAnalyst(BaseAgent):
                 market_capability=self.capabilities.get('market'),
                 enriched_data_capability=self.capabilities.get('enriched_data'),
                 logger=self.logger
+            )
+
+    def _ensure_options_analyzer(self) -> None:
+        """Lazy initialization of options analyzer (needs polygon capability)."""
+        if self.options_analyzer is None and 'polygon' in self.capabilities:
+            from agents.analyzers.options_analyzer import OptionsAnalyzer
+            self.options_analyzer = OptionsAnalyzer(
+                self.capabilities['polygon'],
+                self.logger
             )
 
     def _ensure_confidence_calculator(self) -> None:
@@ -1176,3 +1186,103 @@ class FinancialAnalyst(BaseAgent):
             recommendations.append("Portfolio shows reasonable diversification")
 
         return recommendations
+
+    # ============================================================================
+    # OPTIONS ANALYSIS METHODS (Added for options trading capabilities)
+    # ============================================================================
+
+    def analyze_options_greeks(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze Greeks for options positioning.
+
+        Args:
+            context: Must contain 'ticker' and optionally 'expiration'
+
+        Returns:
+            Dictionary with net_delta, total_gamma, max_pain, positioning, etc.
+        """
+        self._ensure_options_analyzer()
+
+        if not self.options_analyzer:
+            return {
+                'error': 'Polygon capability not available',
+                'note': 'Configure POLYGON_API_KEY to enable options analysis'
+            }
+
+        ticker = context.get('ticker', '')
+        if not ticker:
+            return {'error': 'Ticker required for Greeks analysis'}
+
+        expiration = context.get('expiration')
+        return self.options_analyzer.analyze_greeks(ticker, expiration)
+
+    def analyze_options_flow(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze options flow for market sentiment.
+
+        Args:
+            context: Must contain 'tickers' (list of symbols)
+
+        Returns:
+            Dictionary with put_call_ratio, sentiment, confidence, direction, flow_data
+        """
+        self._ensure_options_analyzer()
+
+        if not self.options_analyzer:
+            return {
+                'error': 'Polygon capability not available',
+                'note': 'Configure POLYGON_API_KEY to enable options analysis'
+            }
+
+        tickers = context.get('tickers', [])
+        if not tickers:
+            tickers = ['SPY']  # Default to SPY
+
+        return self.options_analyzer.analyze_flow_sentiment(tickers)
+
+    def detect_unusual_options(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Detect unusual options activity (smart money signals).
+
+        Args:
+            context: May contain 'min_premium', 'volume_oi_ratio'
+
+        Returns:
+            Dictionary with unusual_activities, top_tickers, sentiment_score
+        """
+        self._ensure_options_analyzer()
+
+        if not self.options_analyzer:
+            return {
+                'error': 'Polygon capability not available',
+                'note': 'Configure POLYGON_API_KEY to enable options analysis'
+            }
+
+        min_premium = context.get('min_premium', 10000)
+        volume_oi_ratio = context.get('volume_oi_ratio', 3.0)
+
+        return self.options_analyzer.detect_unusual_activity(
+            min_premium=min_premium,
+            volume_oi_ratio=volume_oi_ratio
+        )
+
+    def calculate_options_iv_rank(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Calculate IV rank and suggest strategies.
+
+        Args:
+            context: Must contain 'ticker', optionally 'lookback_days'
+
+        Returns:
+            Dictionary with iv_rank, iv_percentile, regime, suggested_strategies
+        """
+        self._ensure_options_analyzer()
+
+        if not self.options_analyzer:
+            return {
+                'error': 'Polygon capability not available',
+                'note': 'Configure POLYGON_API_KEY to enable options analysis'
+            }
+
+        ticker = context.get('ticker', '')
+        if not ticker:
+            return {'error': 'Ticker required for IV rank calculation'}
+
+        lookback_days = context.get('lookback_days', 252)
+        return self.options_analyzer.calculate_iv_rank(ticker, lookback_days)
