@@ -380,6 +380,73 @@ class DataHarvester(BaseAgent):
             'min_premium': min_premium
         }
 
+    # ========================================
+    # Capability Routing Wrapper Methods
+    # ========================================
+    # These public methods match the capabilities declared in AGENT_CAPABILITIES
+    # and delegate to the existing harvest() method with appropriate queries.
+
+    def fetch_stock_quotes(self, symbols: SymbolList, context: Dict[str, Any] = None) -> HarvestResult:
+        """
+        Public wrapper for stock quotes fetching capability.
+        Maps to: can_fetch_stock_quotes
+        """
+        if isinstance(symbols, str):
+            symbols = [symbols]
+        query = f"Get stock quotes for {', '.join(symbols)}"
+        return self.harvest(query)
+
+    def fetch_economic_data(self, indicators: Optional[List[str]] = None, context: Dict[str, Any] = None) -> HarvestResult:
+        """
+        Public wrapper for economic data fetching capability.
+        Maps to: can_fetch_economic_data
+        """
+        if indicators:
+            query = f"Fetch economic indicators: {', '.join(indicators)}"
+        else:
+            query = "Fetch key economic indicators"
+        return self._harvest_fred(query)
+
+    def fetch_news(self, symbols: Optional[SymbolList] = None, context: Dict[str, Any] = None) -> HarvestResult:
+        """
+        Public wrapper for news fetching capability.
+        Maps to: can_fetch_news
+        """
+        if symbols:
+            if isinstance(symbols, str):
+                symbols = [symbols]
+            query = f"Get latest news for {', '.join(symbols)}"
+        else:
+            query = "Get latest market news"
+        return self._harvest_news(query)
+
+    def fetch_fundamentals(self, symbol: str, context: Dict[str, Any] = None) -> HarvestResult:
+        """
+        Public wrapper for fundamentals fetching capability.
+        Maps to: can_fetch_fundamentals
+        """
+        query = f"Fetch fundamental data for {symbol}"
+        return self.harvest(query)
+
+    def fetch_market_movers(self, context: Dict[str, Any] = None) -> HarvestResult:
+        """
+        Public wrapper for market movers fetching capability.
+        Maps to: can_fetch_market_movers
+        """
+        query = "Get today's market movers and top gainers/losers"
+        return self._harvest_market(query)
+
+    def fetch_crypto_data(self, symbols: Optional[List[str]] = None, context: Dict[str, Any] = None) -> HarvestResult:
+        """
+        Public wrapper for crypto data fetching capability.
+        Maps to: can_fetch_crypto_data
+        """
+        if symbols:
+            query = f"Fetch crypto data for {', '.join(symbols)}"
+        else:
+            query = "Fetch major cryptocurrency data"
+        return self.harvest(query)
+
 class FREDBot(BaseAgent):
     """Sub-agent for FRED data (Phase 3.1: Type hints added)"""
 

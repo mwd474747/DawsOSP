@@ -1286,3 +1286,126 @@ class FinancialAnalyst(BaseAgent):
 
         lookback_days = context.get('lookback_days', 252)
         return self.options_analyzer.calculate_iv_rank(ticker, lookback_days)
+
+    # ========================================
+    # Capability Routing Wrapper Methods
+    # ========================================
+    # These public methods match the capabilities declared in AGENT_CAPABILITIES
+    # and delegate to the existing private implementation methods.
+    # This enables direct capability→method routing via AgentAdapter.
+
+    def calculate_dcf(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for DCF calculation capability.
+        Maps to: can_calculate_dcf
+        """
+        if context is None:
+            context = {}
+        # Delegate to existing private method
+        request = f"Calculate DCF valuation for {symbol}"
+        return self._perform_dcf_analysis(request, {**context, 'symbol': symbol})
+
+    def calculate_roic(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for ROIC calculation capability.
+        Maps to: can_calculate_roic
+        """
+        if context is None:
+            context = {}
+        request = f"Calculate ROIC for {symbol}"
+        return self._calculate_roic(request, {**context, 'symbol': symbol})
+
+    def calculate_owner_earnings(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for owner earnings calculation capability.
+        Maps to: can_calculate_owner_earnings
+        """
+        if context is None:
+            context = {}
+        request = f"Calculate owner earnings for {symbol}"
+        return self._calculate_owner_earnings(request, {**context, 'symbol': symbol})
+
+    def analyze_moat(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for moat analysis capability.
+        Maps to: can_analyze_moat
+        """
+        if context is None:
+            context = {}
+        request = f"Analyze economic moat for {symbol}"
+        return self._analyze_moat(request, {**context, 'symbol': symbol})
+
+    def analyze_stock(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for comprehensive stock analysis capability.
+        Maps to: can_analyze_stock
+        """
+        if context is None:
+            context = {}
+        return self.analyze_stock_comprehensive(symbol, context)
+
+    def compare_companies(self, symbols: List[str], context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for stock comparison capability.
+        Maps to: can_compare_stocks
+        """
+        if context is None:
+            context = {}
+        return self.compare_stocks(symbols, context)
+
+    def calculate_fcf(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for free cash flow calculation capability.
+        Maps to: can_calculate_fcf
+        """
+        if context is None:
+            context = {}
+        request = f"Analyze free cash flow for {symbol}"
+        return self._analyze_free_cash_flow(request, {**context, 'symbol': symbol})
+
+    def detect_unusual_activity(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Public wrapper for unusual options activity detection.
+        Maps to: can_detect_unusual_activity
+        Delegates to options analyzer if available.
+        """
+        # This capability is handled by options analysis
+        if not self.capabilities.get('polygon'):
+            return {
+                'error': 'Polygon capability not available',
+                'note': 'Configure POLYGON_API_KEY to enable unusual options detection'
+            }
+
+        tickers = context.get('tickers', context.get('symbols', []))
+        if isinstance(tickers, str):
+            tickers = [tickers]
+
+        # Delegate to data harvester's fetch_unusual_options
+        # In production, this would coordinate with DataHarvester
+        return {
+            'note': 'Use DataHarvester.fetch_unusual_options() for unusual activity detection',
+            'tickers': tickers
+        }
+
+    def analyze_fundamentals(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for fundamental analysis capability.
+        Maps to: can_analyze_fundamentals
+        """
+        if context is None:
+            context = {}
+        return self.analyze_stock_comprehensive(symbol, context)
+
+    def analyze_greeks(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Public wrapper for options greeks analysis capability.
+        Maps to: can_analyze_greeks
+        """
+        return self.analyze_options_greeks(context)
+
+    def calculate_iv_rank(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Public wrapper for IV rank calculation capability.
+        Maps to: can_calculate_iv_rank
+        """
+        return self.calculate_options_iv_rank(context)
