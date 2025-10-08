@@ -58,6 +58,11 @@ class CredentialManager:
             'required': False,
             'description': 'Alpha Vantage API key (optional fallback)',
             'prefix': None
+        },
+        'POLYGON_API_KEY': {
+            'required': False,
+            'description': 'Polygon.io API key for options data',
+            'prefix': None
         }
     }
 
