@@ -343,6 +343,80 @@ class AgentRuntime:
 
         return {'error': f'No agent found with capability: {capability}'}
 
+    def get_agents_with_capability(self, capability: str) -> List[str]:
+        """
+        Get all agents that support a specific capability
+
+        Args:
+            capability: Capability to search for (e.g., 'can_calculate_dcf')
+
+        Returns:
+            List of agent names that support this capability
+        """
+        from core.agent_capabilities import AGENT_CAPABILITIES
+
+        agents = []
+        for agent_name, metadata in AGENT_CAPABILITIES.items():
+            if capability in metadata.get('capabilities', []):
+                # Check if agent is actually registered
+                if self.has_agent(agent_name):
+                    agents.append(agent_name)
+
+        return agents
+
+    def get_capabilities_for_agent(self, agent_name: str) -> List[str]:
+        """
+        Get all capabilities for a specific agent
+
+        Args:
+            agent_name: Name of the agent
+
+        Returns:
+            List of capabilities this agent supports
+        """
+        from core.agent_capabilities import AGENT_CAPABILITIES
+
+        if agent_name not in AGENT_CAPABILITIES:
+            return []
+
+        return AGENT_CAPABILITIES[agent_name].get('capabilities', [])
+
+    def validate_capability(self, capability: str) -> Dict[str, Any]:
+        """
+        Validate if capability exists and which agents support it
+
+        Args:
+            capability: Capability to validate
+
+        Returns:
+            Dict with 'exists', 'agents', 'count' keys
+        """
+        agents = self.get_agents_with_capability(capability)
+
+        return {
+            'capability': capability,
+            'exists': len(agents) > 0,
+            'agents': agents,
+            'count': len(agents)
+        }
+
+    def list_all_capabilities(self) -> Dict[str, List[str]]:
+        """
+        Get all capabilities organized by agent
+
+        Returns:
+            Dict mapping agent names to their capability lists
+        """
+        from core.agent_capabilities import AGENT_CAPABILITIES
+
+        capabilities_map = {}
+
+        for agent_name, metadata in AGENT_CAPABILITIES.items():
+            if self.has_agent(agent_name):
+                capabilities_map[agent_name] = metadata.get('capabilities', [])
+
+        return capabilities_map
+
     def get_agent_capabilities(self) -> Dict[str, Any]:
         """Get capabilities of all registered agents"""
         if self.use_adapter:

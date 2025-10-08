@@ -67,6 +67,13 @@ class AgentAdapter:
         # Add capabilities to context
         context_with_caps = {**context, 'capabilities': self.capabilities}
 
+        # NEW: Check for capability-based routing
+        if 'capability' in context:
+            capability_result = self._execute_by_capability(context)
+            if capability_result:
+                return capability_result
+            # If capability routing fails, fall through to legacy routing
+
         # Try methods in priority order
         for method_name in self.method_priority:
             if method_name in self.available_methods:
@@ -136,6 +143,100 @@ class AgentAdapter:
             'available_methods': list(self.available_methods.keys()),
             'agent': self.agent.__class__.__name__
         }
+
+    def _execute_by_capability(self, context: AgentContext) -> Optional[AgentResult]:
+        """
+        Execute agent method via capability routing
+
+        Maps capability to method name and extracts parameters using introspection.
+        Returns None if capability routing fails (allows fallback to legacy routing).
+        """
+        import inspect
+        import logging
+
+        logger = logging.getLogger('AgentAdapter')
+        capability = context.get('capability', '')
+
+        # Map capability to method name (remove 'can_' prefix)
+        method_name = capability.replace('can_', '') if capability.startswith('can_') else capability
+
+        # Check if agent has this method
+        if not hasattr(self.agent, method_name) or not callable(getattr(self.agent, method_name)):
+            logger.warning(f"Agent {self.agent.__class__.__name__} does not have method '{method_name}' for capability '{capability}'")
+            return None
+
+        method = getattr(self.agent, method_name)
+
+        try:
+            # Extract method parameters using introspection
+            sig = inspect.signature(method)
+            params = {}
+
+            for param_name, param in sig.parameters.items():
+                if param_name == 'self':
+                    continue
+
+                # Try exact match first
+                if param_name in context:
+                    params[param_name] = context[param_name]
+                # Try common variations
+                elif param_name == 'symbol' and 'ticker' in context:
+                    params[param_name] = context['ticker']
+                elif param_name == 'ticker' and 'symbol' in context:
+                    params[param_name] = context['symbol']
+                elif param_name == 'tickers' and 'symbols' in context:
+                    params[param_name] = context['symbols']
+                elif param_name == 'symbols' and 'tickers' in context:
+                    params[param_name] = context['tickers']
+                # Use default if available
+                elif param.default != inspect.Parameter.empty:
+                    params[param_name] = param.default
+                # If context is expected, pass full context
+                elif param_name == 'context':
+                    params[param_name] = context
+
+            # Call method with extracted parameters
+            result = method(**params)
+
+            # Ensure result is a dictionary
+            if not isinstance(result, dict):
+                result = {'response': str(result)}
+
+            # Add metadata
+            result['agent'] = self.agent.__class__.__name__
+            result['method_used'] = method_name
+            result['capability'] = capability
+            result['timestamp'] = datetime.now().isoformat()
+
+            # AUTO-STORE RESULT IN GRAPH (Trinity Compliance)
+            if hasattr(self.agent, 'graph') and self.agent.graph:
+                try:
+                    if hasattr(self.agent, 'store_result'):
+                        node_id = self.agent.store_result(result, context)
+                    elif hasattr(self.agent, 'add_knowledge'):
+                        node_id = self.agent.add_knowledge(
+                            f'{self.agent.__class__.__name__.lower()}_result',
+                            result
+                        )
+                    else:
+                        node_id = self.agent.graph.add_node(
+                            f'{self.agent.__class__.__name__.lower()}_result',
+                            {'result': result, 'context': context, 'timestamp': result['timestamp']}
+                        )
+
+                    if node_id:
+                        result['node_id'] = node_id
+                        result['graph_stored'] = True
+                except Exception as e:
+                    logger.warning(f"Failed to store result in graph: {e}")
+                    result['graph_stored'] = False
+
+            logger.info(f"Successfully executed capability '{capability}' via method '{method_name}'")
+            return result
+
+        except Exception as e:
+            logger.error(f"Error executing capability '{capability}' via method '{method_name}': {e}")
+            return None
 
     def get_capabilities(self) -> Dict[str, Any]:
         """Get agent's declared capabilities"""
