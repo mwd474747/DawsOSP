@@ -1350,6 +1350,24 @@ class PatternEngine:
                             value = value.replace('{SYMBOL}', resolved_symbol)
 
                 resolved[key] = value
+            elif isinstance(value, dict):
+                # Recursively resolve nested dictionaries
+                resolved[key] = self._resolve_params(value, context, outputs)
+            elif isinstance(value, list):
+                # Handle lists of values
+                resolved_list = []
+                for item in value:
+                    if isinstance(item, dict):
+                        resolved_list.append(self._resolve_params(item, context, outputs))
+                    elif isinstance(item, str):
+                        resolved_item = item
+                        # Replace context variables in list items
+                        for ctx_key, ctx_value in context.items():
+                            resolved_item = resolved_item.replace(f"{{{ctx_key}}}", str(ctx_value))
+                        resolved_list.append(resolved_item)
+                    else:
+                        resolved_list.append(item)
+                resolved[key] = resolved_list
             else:
                 resolved[key] = value
 
