@@ -9,7 +9,7 @@
     "block trades"
   ],
   "entities": [],
-  "priority": 7,
+  "priority": 85,
   "steps": [
     {
       "action": "execute_through_registry",
