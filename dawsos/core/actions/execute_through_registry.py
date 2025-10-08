@@ -43,7 +43,7 @@ class ExecuteThroughRegistryAction(ActionHandler):
         Execute agent via registry for Trinity compliance.
 
         Args:
-            params: Must contain 'agent' (agent name), optional 'method', 'context'
+            params: Must contain 'agent' OR 'capability', optional 'method', 'context'
             context: Current execution context
             outputs: Previous step outputs
 
@@ -51,17 +51,18 @@ class ExecuteThroughRegistryAction(ActionHandler):
             Agent execution result
 
         Raises:
-            ValueError: If runtime not available or agent name missing
+            ValueError: If runtime not available or routing parameter missing
         """
-        # Extract parameters
+        # Extract parameters - support both agent and capability routing
         agent_name = params.get('agent')
+        capability = params.get('capability')
         method = params.get('method', 'process')  # Default method (legacy)
         agent_context = params.get('context', {})
 
-        # Validation
-        if not agent_name:
-            self.logger.error("execute_through_registry requires 'agent' parameter")
-            return {"error": "'agent' parameter is required"}
+        # Validation - require either agent or capability
+        if not agent_name and not capability:
+            self.logger.error("execute_through_registry requires 'agent' or 'capability' parameter")
+            return {"error": "'agent' or 'capability' parameter is required"}
 
         if not self.runtime:
             self.logger.error("Runtime not available for execute_through_registry")
@@ -80,6 +81,14 @@ class ExecuteThroughRegistryAction(ActionHandler):
 
         # Execute through registry (Trinity-compliant)
         try:
+            # Route by capability if provided (modern pattern style)
+            if capability:
+                self.logger.debug(f"Executing by capability: '{capability}'")
+                result = self.runtime.execute_by_capability(capability, agent_context)
+                self.logger.debug(f"Capability '{capability}' execution completed")
+                return result
+
+            # Route by agent name (legacy pattern style)
             # Prefer execute_with_tracking if available (full Trinity compliance)
             if hasattr(self.runtime, 'agent_registry'):
                 self.logger.debug(
