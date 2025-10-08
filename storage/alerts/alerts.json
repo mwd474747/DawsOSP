@@ -10,10 +10,10 @@
     },
     "severity": "critical",
     "enabled": true,
-    "status": "active",
+    "status": "triggered",
     "created_at": "2025-10-03T13:02:26.245399",
-    "last_triggered": null,
-    "trigger_count": 0,
+    "last_triggered": "2025-10-07T22:15:58.364685",
+    "trigger_count": 1,
     "metadata": {
       "template": "compliance_violation"
     }
@@ -29,10 +29,10 @@
     },
     "severity": "critical",
     "enabled": true,
-    "status": "active",
+    "status": "triggered",
     "created_at": "2025-10-03T16:39:43.448366",
-    "last_triggered": null,
-    "trigger_count": 0,
+    "last_triggered": "2025-10-07T22:15:58.367961",
+    "trigger_count": 1,
     "metadata": {
       "template": "compliance_violation"
     }
@@ -48,10 +48,10 @@
     },
     "severity": "critical",
     "enabled": true,
-    "status": "active",
+    "status": "triggered",
     "created_at": "2025-10-03T21:31:51.553670",
-    "last_triggered": null,
-    "trigger_count": 0,
+    "last_triggered": "2025-10-07T22:15:58.371179",
+    "trigger_count": 1,
     "metadata": {
       "template": "compliance_violation"
     }
@@ -67,10 +67,10 @@
     },
     "severity": "critical",
     "enabled": true,
-    "status": "active",
+    "status": "triggered",
     "created_at": "2025-10-03T21:41:14.245409",
-    "last_triggered": null,
-    "trigger_count": 0,
+    "last_triggered": "2025-10-07T22:15:58.371618",
+    "trigger_count": 1,
     "metadata": {
       "template": "compliance_violation"
     }
@@ -86,10 +86,10 @@
     },
     "severity": "critical",
     "enabled": true,
-    "status": "active",
+    "status": "triggered",
     "created_at": "2025-10-03T21:41:52.025759",
-    "last_triggered": null,
-    "trigger_count": 0,
+    "last_triggered": "2025-10-07T22:15:58.371995",
+    "trigger_count": 1,
     "metadata": {
       "template": "compliance_violation"
     }
@@ -105,10 +105,10 @@
     },
     "severity": "critical",
     "enabled": true,
-    "status": "active",
+    "status": "triggered",
     "created_at": "2025-10-03T23:07:01.033607",
-    "last_triggered": null,
-    "trigger_count": 0,
+    "last_triggered": "2025-10-07T22:15:58.372381",
+    "trigger_count": 1,
     "metadata": {
       "template": "compliance_violation"
     }
@@ -124,10 +124,10 @@
     },
     "severity": "critical",
     "enabled": true,
-    "status": "active",
+    "status": "triggered",
     "created_at": "2025-10-03T23:07:19.042528",
-    "last_triggered": null,
-    "trigger_count": 0,
+    "last_triggered": "2025-10-07T22:15:58.372760",
+    "trigger_count": 1,
     "metadata": {
       "template": "compliance_violation"
     }
@@ -143,8 +143,160 @@
     },
     "severity": "critical",
     "enabled": true,
-    "status": "active",
+    "status": "triggered",
     "created_at": "2025-10-03T23:08:04.405484",
+    "last_triggered": "2025-10-07T22:15:58.373129",
+    "trigger_count": 1,
+    "metadata": {
+      "template": "compliance_violation"
+    }
+  },
+  "alert_trinity_compliance_violation_alert_20251006213657": {
+    "alert_id": "alert_trinity_compliance_violation_alert_20251006213657",
+    "name": "Trinity Compliance Violation Alert",
+    "alert_type": "trinity_compliance",
+    "condition": {
+      "field": "compliance.bypass_warnings",
+      "operator": ">",
+      "value": 0
+    },
+    "severity": "critical",
+    "enabled": true,
+    "status": "triggered",
+    "created_at": "2025-10-06T21:36:57.800526",
+    "last_triggered": "2025-10-07T22:15:58.373544",
+    "trigger_count": 1,
+    "metadata": {
+      "template": "compliance_violation"
+    }
+  },
+  "alert_trinity_compliance_violation_alert_20251006213929": {
+    "alert_id": "alert_trinity_compliance_violation_alert_20251006213929",
+    "name": "Trinity Compliance Violation Alert",
+    "alert_type": "trinity_compliance",
+    "condition": {
+      "field": "compliance.bypass_warnings",
+      "operator": ">",
+      "value": 0
+    },
+    "severity": "critical",
+    "enabled": true,
+    "status": "triggered",
+    "created_at": "2025-10-06T21:39:29.827180",
+    "last_triggered": "2025-10-07T22:15:58.373923",
+    "trigger_count": 1,
+    "metadata": {
+      "template": "compliance_violation"
+    }
+  },
+  "alert_trinity_compliance_violation_alert_20251007083811": {
+    "alert_id": "alert_trinity_compliance_violation_alert_20251007083811",
+    "name": "Trinity Compliance Violation Alert",
+    "alert_type": "trinity_compliance",
+    "condition": {
+      "field": "compliance.bypass_warnings",
+      "operator": ">",
+      "value": 0
+    },
+    "severity": "critical",
+    "enabled": true,
+    "status": "triggered",
+    "created_at": "2025-10-07T08:38:11.468043",
+    "last_triggered": "2025-10-07T22:15:58.374322",
+    "trigger_count": 1,
+    "metadata": {
+      "template": "compliance_violation"
+    }
+  },
+  "alert_trinity_compliance_violation_alert_20251007084519": {
+    "alert_id": "alert_trinity_compliance_violation_alert_20251007084519",
+    "name": "Trinity Compliance Violation Alert",
+    "alert_type": "trinity_compliance",
+    "condition": {
+      "field": "compliance.bypass_warnings",
+      "operator": ">",
+      "value": 0
+    },
+    "severity": "critical",
+    "enabled": true,
+    "status": "triggered",
+    "created_at": "2025-10-07T08:45:19.543657",
+    "last_triggered": "2025-10-07T22:15:58.374723",
+    "trigger_count": 1,
+    "metadata": {
+      "template": "compliance_violation"
+    }
+  },
+  "alert_trinity_compliance_violation_alert_20251007084819": {
+    "alert_id": "alert_trinity_compliance_violation_alert_20251007084819",
+    "name": "Trinity Compliance Violation Alert",
+    "alert_type": "trinity_compliance",
+    "condition": {
+      "field": "compliance.bypass_warnings",
+      "operator": ">",
+      "value": 0
+    },
+    "severity": "critical",
+    "enabled": true,
+    "status": "triggered",
+    "created_at": "2025-10-07T08:48:19.991196",
+    "last_triggered": "2025-10-07T22:15:58.375198",
+    "trigger_count": 1,
+    "metadata": {
+      "template": "compliance_violation"
+    }
+  },
+  "alert_trinity_compliance_violation_alert_20251007190217": {
+    "alert_id": "alert_trinity_compliance_violation_alert_20251007190217",
+    "name": "Trinity Compliance Violation Alert",
+    "alert_type": "trinity_compliance",
+    "condition": {
+      "field": "compliance.bypass_warnings",
+      "operator": ">",
+      "value": 0
+    },
+    "severity": "critical",
+    "enabled": true,
+    "status": "triggered",
+    "created_at": "2025-10-07T19:02:17.394175",
+    "last_triggered": "2025-10-07T22:15:58.375662",
+    "trigger_count": 1,
+    "metadata": {
+      "template": "compliance_violation"
+    }
+  },
+  "alert_trinity_compliance_violation_alert_20251007221255": {
+    "alert_id": "alert_trinity_compliance_violation_alert_20251007221255",
+    "name": "Trinity Compliance Violation Alert",
+    "alert_type": "trinity_compliance",
+    "condition": {
+      "field": "compliance.bypass_warnings",
+      "operator": ">",
+      "value": 0
+    },
+    "severity": "critical",
+    "enabled": true,
+    "status": "triggered",
+    "created_at": "2025-10-07T22:12:55.995018",
+    "last_triggered": "2025-10-07T22:15:58.376149",
+    "trigger_count": 1,
+    "metadata": {
+      "template": "compliance_violation"
+    }
+  },
+  "alert_trinity_compliance_violation_alert_20251007221722": {
+    "alert_id": "alert_trinity_compliance_violation_alert_20251007221722",
+    "name": "Trinity Compliance Violation Alert",
+    "alert_type": "trinity_compliance",
+    "condition": {
+      "field": "compliance.bypass_warnings",
+      "operator": ">",
+      "value": 0
+    },
+    "severity": "critical",
+    "enabled": true,
+    "status": "active",
+    "created_at": "2025-10-07T22:17:22.402923",
     "last_triggered": null,
     "trigger_count": 0,
     "metadata": {

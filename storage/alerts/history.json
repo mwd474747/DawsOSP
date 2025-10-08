@@ -1,0 +1,242 @@
+[
+  {
+    "event_id": "event_20251007221558364662",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251003130226",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.364685",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  },
+  {
+    "event_id": "event_20251007221558367949",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251003163943",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.367961",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  },
+  {
+    "event_id": "event_20251007221558371170",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251003213151",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.371179",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  },
+  {
+    "event_id": "event_20251007221558371609",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251003214114",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.371618",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  },
+  {
+    "event_id": "event_20251007221558371989",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251003214152",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.371995",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  },
+  {
+    "event_id": "event_20251007221558372374",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251003230701",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.372381",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  },
+  {
+    "event_id": "event_20251007221558372755",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251003230719",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.372760",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  },
+  {
+    "event_id": "event_20251007221558373124",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251003230804",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.373129",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  },
+  {
+    "event_id": "event_20251007221558373540",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251006213657",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.373544",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  },
+  {
+    "event_id": "event_20251007221558373919",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251006213929",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.373923",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  },
+  {
+    "event_id": "event_20251007221558374319",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251007083811",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.374322",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  },
+  {
+    "event_id": "event_20251007221558374715",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251007084519",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.374723",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  },
+  {
+    "event_id": "event_20251007221558375195",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251007084819",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.375198",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  },
+  {
+    "event_id": "event_20251007221558375657",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251007190217",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.375662",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  },
+  {
+    "event_id": "event_20251007221558376145",
+    "alert_id": "alert_trinity_compliance_violation_alert_20251007221255",
+    "alert_name": "Trinity Compliance Violation Alert",
+    "severity": "critical",
+    "timestamp": "2025-10-07T22:15:58.376149",
+    "message": "Trinity Compliance Violation Alert: compliance.bypass_warnings (2) exceeded threshold (0)",
+    "details": {
+      "compliance": {
+        "bypass_warnings": 2,
+        "violations": 2
+      }
+    },
+    "acknowledged": false,
+    "acknowledged_at": null
+  }
+]

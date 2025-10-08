@@ -113,8 +113,10 @@ def render_api_health_tab() -> None:
     api_keys = [
         ('ANTHROPIC_API_KEY', 'Claude AI', '🤖'),
         ('FRED_API_KEY', 'Economic Data (FRED)', '📊'),
-        ('FINANCIAL_MODELING_PREP_API_KEY', 'Market Data (FMP)', '📈'),
-        ('NEWS_API_KEY', 'News Data', '📰')
+        ('FMP_API_KEY', 'Market Data (FMP)', '📈'),
+        ('NEWSAPI_KEY', 'News Data', '📰'),
+        ('POLYGON_API_KEY', 'Options Data (Polygon.io)', '📊'),
+        ('OPENAI_API_KEY', 'OpenAI (Optional)', '🔮')
     ]
 
     for key_name, description, icon in api_keys:
@@ -192,6 +194,108 @@ def render_api_health_tab() -> None:
         st.info("FRED API capability not available or not initialized")
 
     # ========================================================================
+    # POLYGON OPTIONS API HEALTH (if available)
+    # ========================================================================
+
+    st.subheader("📊 Polygon Options Data API")
+
+    try:
+        from capabilities.polygon_options import PolygonOptionsCapability
+        polygon = PolygonOptionsCapability()
+        cache_stats = polygon.get_cache_stats()
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            total_requests = cache_stats['total_requests']
+            st.metric(
+                "Total Requests",
+                total_requests,
+                help="Total number of Polygon API requests made"
+            )
+
+        with col2:
+            hit_rate = cache_stats['hit_rate']
+            st.metric(
+                "Cache Hit Rate",
+                f"{hit_rate:.1f}%",
+                help="Percentage of requests served from cache (15min TTL)"
+            )
+
+        with col3:
+            st.metric(
+                "Cache Hits",
+                cache_stats['cache_hits'],
+                help="Requests served from cache"
+            )
+
+        with col4:
+            st.metric(
+                "Expired Fallbacks",
+                cache_stats.get('expired_fallbacks', 0),
+                help="Times stale cache was used due to API unavailability"
+            )
+
+        # API key status
+        if polygon.api_key:
+            st.success("✓ Polygon API key configured")
+            if total_requests > 0:
+                st.info(f"ℹ️ {total_requests} requests made - Rate limit: 300 req/min (Starter plan)")
+            else:
+                st.info("ℹ️ No requests yet - Options features ready to use")
+        else:
+            st.warning("⚠️ Polygon API key not configured - Options features will show placeholder data")
+            st.caption("💡 Add POLYGON_API_KEY to .env to enable options analysis")
+
+    except Exception as e:
+        st.info("Polygon API capability not available or not initialized")
+
+    # ========================================================================
+    # MARKET DATA API HEALTH (FMP)
+    # ========================================================================
+
+    st.subheader("📈 Market Data API (FMP)")
+
+    try:
+        from capabilities.market_data import MarketDataCapability
+        market = MarketDataCapability()
+        cache_stats = market.get_cache_stats()
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            total_requests = cache_stats['total_requests']
+            st.metric(
+                "Total Requests",
+                total_requests,
+                help="Total number of FMP API requests made"
+            )
+
+        with col2:
+            hit_rate = cache_stats['hit_rate']
+            st.metric(
+                "Cache Hit Rate",
+                f"{hit_rate:.1f}%",
+                help="Percentage of requests served from cache"
+            )
+
+        with col3:
+            st.metric(
+                "Cache Hits",
+                cache_stats['cache_hits'],
+                help="Requests served from cache"
+            )
+
+        # API key status
+        if market.api_key:
+            st.success("✓ FMP API key configured")
+        else:
+            st.warning("⚠️ FMP API key not configured")
+
+    except Exception as e:
+        st.info("Market Data API capability not available or not initialized")
+
+    # ========================================================================
     # DATA FRESHNESS GUIDELINES
     # ========================================================================
 
@@ -200,7 +304,8 @@ def render_api_health_tab() -> None:
 
     freshness_data = {
         "Economic Indicators (FRED)": "Daily - 24 hour cache",
-        "Stock Quotes": "15 minutes - market hours",
+        "Stock Quotes (FMP)": "15 minutes - market hours",
+        "Options Data (Polygon)": "15 minutes - market hours (15min cache)",
         "Company Fundamentals": "Quarterly - earnings cycle",
         "News Data": "Hourly - breaking news",
         "AI Analysis": "On-demand - cached for session",
