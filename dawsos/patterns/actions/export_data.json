@@ -2,6 +2,7 @@
   "id": "export_data",
   "name": "Export Data",
   "description": "Exports data or analysis to various formats (Trinity 2.0 capability routing)",
+  "category": "actions",
   "triggers": [
     "export",
     "download",

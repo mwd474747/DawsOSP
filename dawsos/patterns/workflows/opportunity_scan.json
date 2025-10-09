@@ -2,6 +2,7 @@
   "id": "opportunity_scan",
   "name": "Market Opportunity Scanner",
   "description": "Scans markets for trading and investment opportunities (Trinity 2.0 capability routing)",
+  "category": "workflows",
   "triggers": [
     "scan",
     "opportunities",
@@ -52,6 +53,7 @@
       "save_as": "opportunity_report"
     }
   ],
+  "template": "🔎 **Market Opportunity Scanner**\n\n{opportunity_report.response}\n\n---\n\n🏆 **Top 5 Opportunities Ranked**\n\n{opportunity_report.top_opportunities}\n\n📊 **Ranking Criteria**\n• Risk/Reward Ratio\n• Technical Setup Quality\n• Fundamental Strength\n• Catalyst Timing\n\n💡 **Opportunity #1: {opportunities.top1_symbol}**\n• Entry: ${opportunities.top1_entry}\n• Target: ${opportunities.top1_target}\n• Stop Loss: ${opportunities.top1_stop}\n• Risk/Reward: {opportunities.top1_rr}\n• Setup: {opportunities.top1_setup}\n\n💡 **Opportunity #2: {opportunities.top2_symbol}**\n• Entry: ${opportunities.top2_entry}\n• Target: ${opportunities.top2_target}\n• Stop Loss: ${opportunities.top2_stop}\n• Risk/Reward: {opportunities.top2_rr}\n• Setup: {opportunities.top2_setup}\n\n💡 **Opportunity #3: {opportunities.top3_symbol}**\n• Entry: ${opportunities.top3_entry}\n• Target: ${opportunities.top3_target}\n• Stop Loss: ${opportunities.top3_stop}\n• Risk/Reward: {opportunities.top3_rr}\n• Setup: {opportunities.top3_setup}\n\n⚠️ **Market Conditions**\n{market_scan.conditions}\n\n*Opportunity scanner powered by DawsOS Trinity Architecture*",
   "response_type": "opportunities",
   "response_template": "{opportunity_report}",
   "cache_ttl": 600,

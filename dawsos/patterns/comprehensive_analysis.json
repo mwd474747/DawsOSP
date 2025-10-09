@@ -2,6 +2,7 @@
   "id": "comprehensive_analysis",
   "name": "Comprehensive Stock Analysis",
   "description": "Complete analysis combining fundamentals, technicals, and sentiment (Trinity 2.0 capability routing)",
+  "category": "workflows",
   "triggers": [
     "comprehensive analysis",
     "full analysis",

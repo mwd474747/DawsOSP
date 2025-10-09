@@ -2,6 +2,7 @@
   "id": "portfolio_review",
   "name": "Portfolio Review",
   "description": "Comprehensive portfolio analysis and rebalancing suggestions (Trinity 2.0 capability routing)",
+  "category": "workflows",
   "triggers": [
     "review portfolio",
     "rebalance",
@@ -62,6 +63,7 @@
       "save_as": "portfolio_review"
     }
   ],
+  "template": "📊 **Portfolio Review & Rebalancing**\n\n{portfolio_review.response}\n\n---\n\n📈 **Performance Summary**\n{portfolio_review.performance}\n\n⚠️ **Risk Analysis**\n• Portfolio Beta: {health_metrics.beta}\n• Volatility: {health_metrics.volatility}%\n• Sharpe Ratio: {health_metrics.sharpe}\n• Max Drawdown: {health_metrics.max_drawdown}%\n• Correlation Risk: {correlations.risk_score}\n\n🎯 **Diversification Score**: {portfolio_review.diversification_score}/10\n\n{portfolio_review.diversification_analysis}\n\n⚠️ **Problem Holdings**\n{portfolio_review.problem_holdings}\n\n🔄 **Rebalancing Recommendations**\n{portfolio_review.rebalancing_plan}\n\n💡 **New Ideas to Consider**\n{portfolio_review.new_ideas}\n\n📋 **Current Holdings**\n{holdings.summary}\n\n🔗 **Correlation Matrix**\n{correlations.matrix}\n\n*Portfolio review powered by DawsOS Trinity Architecture*",
   "response_type": "portfolio_analysis",
   "response_template": "{portfolio_review}",
   "cache_ttl": 1800,

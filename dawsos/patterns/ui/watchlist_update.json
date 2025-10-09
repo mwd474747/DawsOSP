@@ -2,6 +2,7 @@
   "id": "watchlist_update",
   "name": "Watchlist Update",
   "description": "Updates watchlist with current prices and changes (Trinity 2.0 capability routing)",
+  "category": "ui",
   "triggers": [
     "watchlist",
     "watch list",

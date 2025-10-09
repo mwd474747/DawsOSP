@@ -2,6 +2,7 @@
   "id": "macro_analysis",
   "name": "Macro Economic Analysis",
   "description": "Analyzes macroeconomic indicators and trends (Trinity 2.0 capability routing)",
+  "category": "queries",
   "triggers": [
     "macro",
     "economy",

@@ -2,6 +2,7 @@
   "id": "risk_assessment",
   "name": "Risk Assessment",
   "description": "Comprehensive risk analysis for assets or portfolio (Trinity 2.0 capability routing)",
+  "category": "analysis",
   "triggers": [
     "risk",
     "volatility",
@@ -47,6 +48,7 @@
       "save_as": "risk_report"
     }
   ],
+  "template": "⚠️ **Risk Assessment: {SYMBOL}**\n\n{risk_report.response}\n\n---\n\n📊 **Risk Metrics**\n• Risk Score: {risk_metrics.score}/10\n• Volatility (30d): {risk_data.volatility}%\n• Beta: {risk_data.beta}\n• Max Drawdown: {risk_data.max_drawdown}%\n• Value at Risk (95%): {risk_metrics.var}%\n• Sharpe Ratio: {risk_metrics.sharpe}\n\n🔻 **Downside Risks**\n{risk_report.downside_risks}\n\n🌪️ **Black Swan Events**\n{risk_report.black_swan}\n\n🛡️ **Risk Mitigation Strategies**\n{risk_report.mitigation}\n\n*Risk assessment powered by DawsOS Trinity Architecture*",
   "response_type": "analysis",
   "response_template": "{risk_report}",
   "cache_ttl": 600,

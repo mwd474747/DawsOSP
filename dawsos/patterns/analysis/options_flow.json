@@ -2,6 +2,7 @@
   "id": "options_flow_analysis",
   "name": "Options Flow Analysis",
   "description": "Analyzes put/call flow across multiple tickers for market sentiment",
+  "category": "analysis",
   "triggers": [
     "options flow",
     "put call ratio",
@@ -53,6 +54,6 @@
   "response_type": "analysis",
   "response_template": "Options Flow Analysis for {TICKERS}:\n\nPut/Call Ratio: {flow_sentiment.put_call_ratio}\nSentiment: {flow_sentiment.sentiment}\nConfidence: {flow_sentiment.confidence}\nDirection: {flow_sentiment.direction}",
   "cache_ttl": 300,
-  "version": "2.0.0",
+  "version": "2.0",
   "last_updated": "2025-10-07"
 }

@@ -2,6 +2,7 @@
   "id": "add_to_graph",
   "name": "Add to Knowledge Graph",
   "description": "Adds data, entities, or relationships to the knowledge graph (Trinity 2.0 capability routing)",
+  "category": "actions",
   "triggers": [
     "add",
     "save",

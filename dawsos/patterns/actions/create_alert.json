@@ -2,6 +2,7 @@
   "id": "create_alert",
   "name": "Create Price Alert",
   "description": "Sets up price or condition alerts for assets (Trinity 2.0 capability routing)",
+  "category": "actions",
   "triggers": [
     "alert",
     "notify",

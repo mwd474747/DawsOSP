@@ -3,7 +3,9 @@
   "name": "DCF Valuation Analysis",
   "description": "Comprehensive DCF (Discounted Cash Flow) valuation using Trinity 2.0 capability routing",
   "category": "analysis",
-  "entities": ["SYMBOL"],
+  "entities": [
+    "SYMBOL"
+  ],
   "input_schema": {
     "required": [
       "symbol"
@@ -40,5 +42,12 @@
       },
       "save_as": "dcf_analysis"
     }
+  ],
+  "triggers": [
+    "dcf valuation",
+    "discounted cash flow",
+    "intrinsic value",
+    "fair value calculation",
+    "calculate dcf"
   ]
 }

@@ -2,6 +2,7 @@
   "id": "sector_performance",
   "name": "Sector Performance Analysis",
   "description": "Analyzes performance and trends across market sectors (Trinity 2.0 capability routing)",
+  "category": "queries",
   "triggers": [
     "sector",
     "sectors",

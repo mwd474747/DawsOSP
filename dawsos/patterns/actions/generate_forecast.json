@@ -2,6 +2,7 @@
   "id": "generate_forecast",
   "name": "Generate Forecast",
   "description": "Creates price or trend forecasts using multiple models (Trinity 2.0 capability routing)",
+  "category": "actions",
   "triggers": [
     "forecast",
     "predict",

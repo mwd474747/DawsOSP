@@ -2,12 +2,12 @@
   "id": "company_analysis",
   "name": "Company Analysis",
   "description": "Comprehensive analysis of a company's fundamentals and performance (Trinity 2.0 capability routing)",
+  "category": "queries",
   "triggers": [
     "analyze",
     "company",
     "fundamental",
-    "earnings",
-    "revenue",
+    "company fundamentals",
     "valuation"
   ],
   "entities": [

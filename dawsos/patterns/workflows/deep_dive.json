@@ -2,9 +2,10 @@
   "id": "deep_dive",
   "name": "Company Deep Dive",
   "description": "Comprehensive analysis using Buffett-Ackman-Dalio framework (Trinity 2.0 capability routing)",
+  "category": "workflows",
   "triggers": [
     "deep dive",
-    "full analysis",
+    "deep dive analysis",
     "investment thesis",
     "research"
   ],
@@ -76,6 +77,7 @@
       "save_as": "investment_thesis"
     }
   ],
+  "template": "🔍 **Company Deep Dive: {SYMBOL}**\n\n{investment_thesis.response}\n\n---\n\n📋 **Executive Summary**\n{investment_thesis.executive_summary}\n\n🏢 **Business Analysis**\n{structured_analysis.business_model}\n\n💰 **Financial Health**\n{quality_metrics.financial_health}\n\n📊 **Valuation**\n{investment_thesis.valuation}\n\n⚠️ **Key Risks**\n{investment_thesis.risks}\n\n⚡ **Catalysts**\n{forecast.catalysts}\n\n🎯 **Investment Recommendation**\n• Decision: **{investment_thesis.recommendation}**\n• Conviction Level: {investment_thesis.conviction}/10\n• Target Price: ${investment_thesis.target_price}\n• Time Horizon: {investment_thesis.time_horizon}\n\n🔗 **Related Opportunities**\n{relationships.related_companies}\n\n*Deep dive analysis powered by DawsOS Trinity Architecture using Buffett-Ackman-Dalio frameworks*",
   "response_type": "deep_analysis",
   "response_template": "{investment_thesis}",
   "cache_ttl": 3600,

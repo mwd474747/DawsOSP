@@ -2,6 +2,7 @@
   "id": "sector_rotation",
   "name": "Sector Rotation Analysis",
   "description": "Identify which sectors to rotate into based on economic cycle (Trinity 2.0 capability routing)",
+  "category": "analysis",
   "triggers": [
     "sector rotation",
     "which sectors",

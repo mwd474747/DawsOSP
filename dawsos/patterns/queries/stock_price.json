@@ -2,6 +2,7 @@
   "id": "stock_price",
   "name": "Get Stock Price",
   "description": "Fetches current stock price and displays key metrics (Trinity 2.0 capability routing)",
+  "category": "queries",
   "triggers": [
     "stock price",
     "price",

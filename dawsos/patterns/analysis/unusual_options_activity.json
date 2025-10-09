@@ -2,6 +2,7 @@
   "id": "unusual_options_activity",
   "name": "Unusual Options Activity Scanner",
   "description": "Detects smart money activity via unusual volume and premium",
+  "category": "analysis",
   "triggers": [
     "unusual options",
     "smart money",
@@ -53,6 +54,6 @@
   "response_type": "analysis",
   "response_template": "Unusual Options Activity:\n\nSignals Found: {smart_money_signals.unusual_activities.length}\nTop Tickers: {smart_money_signals.top_tickers}\nSentiment Score: {smart_money_signals.sentiment_score}",
   "cache_ttl": 300,
-  "version": "2.0.0",
+  "version": "2.0",
   "last_updated": "2025-10-07"
 }

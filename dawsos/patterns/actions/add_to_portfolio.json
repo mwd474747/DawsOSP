@@ -2,6 +2,7 @@
   "id": "add_to_portfolio",
   "name": "Add to Portfolio",
   "description": "Adds a position to the tracked portfolio (Trinity 2.0 capability routing)",
+  "category": "actions",
   "triggers": [
     "buy",
     "purchase",

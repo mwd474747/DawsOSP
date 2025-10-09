@@ -2,12 +2,13 @@
   "id": "market_regime",
   "name": "Detect Market Regime",
   "description": "Analyzes current market conditions and identifies the regime (Trinity 2.0 capability routing)",
+  "category": "queries",
   "triggers": [
     "regime",
     "market condition",
     "bull",
     "bear",
-    "risk",
+    "market risk",
     "environment"
   ],
   "entities": [],

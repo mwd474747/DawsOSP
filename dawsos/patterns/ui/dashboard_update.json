@@ -2,6 +2,7 @@
   "id": "dashboard_update",
   "name": "Dashboard Update",
   "description": "Updates dashboard with latest market data (Trinity 2.0 capability routing)",
+  "category": "ui",
   "triggers": [
     "refresh",
     "update dashboard",

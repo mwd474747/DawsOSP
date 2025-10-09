@@ -2,6 +2,7 @@
   "id": "correlation_finder",
   "name": "Find Correlations",
   "description": "Discovers correlations between assets, indicators, or economic variables (Trinity 2.0 capability routing)",
+  "category": "queries",
   "triggers": [
     "correlation",
     "correlate",

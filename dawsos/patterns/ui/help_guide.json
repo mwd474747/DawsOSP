@@ -2,6 +2,7 @@
   "id": "help_guide",
   "name": "Help and Guidance",
   "description": "Provides help and usage guidance (Trinity 2.0 capability routing)",
+  "category": "ui",
   "triggers": [
     "help",
     "how to",

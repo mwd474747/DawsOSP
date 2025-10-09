@@ -2,6 +2,7 @@
   "id": "morning_briefing",
   "name": "Morning Market Briefing",
   "description": "Comprehensive morning market overview and analysis (Trinity 2.0 capability routing)",
+  "category": "workflows",
   "triggers": [
     "morning",
     "briefing",
@@ -60,6 +61,7 @@
       "save_as": "briefing"
     }
   ],
+  "template": "☀️ **Morning Market Briefing**\n\n{briefing.response}\n\n---\n\n📊 **Market Regime & Sentiment**\n• Current Regime: {regime_status.regime}\n• Market Sentiment: {regime_status.sentiment}\n• VIX: {market_overview.vix}\n• Major Indices:\n  - S&P 500: {market_overview.sp500}\n  - Nasdaq: {market_overview.nasdaq}\n  - Dow Jones: {market_overview.dow}\n\n🎯 **Key Levels to Watch**\n{briefing.key_levels}\n\n📅 **Economic Events Today**\n{calendar_data.events}\n\n📈 **Earnings Releases Today**\n{calendar_data.earnings}\n\n📰 **Top Market News**\n{news_data.headlines}\n\n💡 **Trading Ideas for Today**\n{briefing.trading_ideas}\n\n⚡ **Quick Action Items**\n{briefing.action_items}\n\n*Morning briefing powered by DawsOS Trinity Architecture*",
   "response_type": "briefing",
   "response_template": "{briefing}",
   "cache_ttl": 1800,

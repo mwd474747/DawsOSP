@@ -2,12 +2,13 @@
   "id": "portfolio_analysis",
   "name": "Portfolio Analysis",
   "description": "Analyzes portfolio composition, risk, and performance (Trinity 2.0 capability routing)",
+  "category": "analysis",
   "triggers": [
     "portfolio",
     "holdings",
     "allocation",
     "diversification",
-    "risk"
+    "portfolio risk"
   ],
   "entities": [],
   "priority": 8,
@@ -53,6 +54,7 @@
       "save_as": "portfolio_report"
     }
   ],
+  "template": "📊 **Portfolio Analysis**\n\n{portfolio_report.response}\n\n---\n\n📈 **Asset Allocation**\n{portfolio_report.allocation}\n\n⚠️ **Risk Assessment**\n• Portfolio Beta: {risk_metrics.beta}\n• Volatility: {risk_metrics.volatility}%\n• Sharpe Ratio: {risk_metrics.sharpe}\n• Max Drawdown: {risk_metrics.drawdown}%\n\n🎯 **Diversification Score**: {portfolio_report.diversification}/10\n\n📊 **Performance Attribution**\n{portfolio_report.attribution}\n\n🔄 **Rebalancing Suggestions**\n{portfolio_report.rebalancing}\n\n💡 **Top Holdings**\n{holdings.top_holdings}\n\n*Portfolio analysis powered by DawsOS Trinity Architecture*",
   "response_type": "analysis",
   "response_template": "{portfolio_report}",
   "cache_ttl": 600,

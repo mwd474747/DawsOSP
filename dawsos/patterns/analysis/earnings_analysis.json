@@ -2,6 +2,7 @@
   "id": "earnings_analysis",
   "name": "Earnings Analysis",
   "description": "Analyzes company earnings, guidance, and estimates (Trinity 2.0 capability routing)",
+  "category": "analysis",
   "triggers": [
     "earnings",
     "eps",
@@ -47,6 +48,7 @@
       "save_as": "earnings_report"
     }
   ],
+  "template": "💰 **Earnings Analysis: {SYMBOL}**\n\n{earnings_report.response}\n\n---\n\n📊 **Latest Earnings**\n• EPS (Actual): ${earnings_data.eps_actual}\n• EPS (Expected): ${earnings_data.eps_expected}\n• Beat/Miss: {earnings_data.surprise}%\n• Revenue: ${earnings_data.revenue}M\n• Revenue Growth: {earnings_data.revenue_growth}%\n\n📈 **Beat/Miss History**\n{earnings_report.history}\n\n🎯 **Growth Trajectory**\n{earnings_report.growth}\n\n📢 **Guidance Analysis**\n{earnings_report.guidance}\n\n🔄 **Estimate Revisions**\n{earnings_patterns.revisions}\n\n💡 **Trading Implications**\n{earnings_report.trading_ideas}\n\n*Earnings analysis powered by DawsOS Trinity Architecture*",
   "response_type": "analysis",
   "response_template": "{earnings_report}",
   "cache_ttl": 1800,

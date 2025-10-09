@@ -2,6 +2,7 @@
   "id": "greeks_analysis",
   "name": "Greeks Positioning Analysis",
   "description": "Analyzes Greeks to determine market positioning and gamma exposure",
+  "category": "analysis",
   "triggers": [
     "analyze greeks",
     "gamma exposure",
@@ -49,6 +50,6 @@
   "response_type": "analysis",
   "response_template": "Greeks Analysis for {TICKER}:\n\nNet Delta: {greeks_data.net_delta}\nTotal Gamma: {greeks_data.total_gamma}\nMax Pain: ${greeks_data.max_pain_strike}\nGamma Flip: ${greeks_data.gamma_flip_point}\nPositioning: {greeks_data.positioning}\nConfidence: {greeks_data.confidence}",
   "cache_ttl": 900,
-  "version": "2.0.0",
+  "version": "2.0",
   "last_updated": "2025-10-07"
 }
