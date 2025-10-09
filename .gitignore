@@ -58,3 +58,8 @@ patterns.backup*/
 # Test files (development only)
 test_*.py
 analyze_*.py
+migrate_*.py
+
+# Streamlit process management
+.streamlit.pid
+streamlit.log
