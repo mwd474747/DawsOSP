@@ -1,7 +1,7 @@
 {
   "id": "stock_price",
   "name": "Get Stock Price",
-  "description": "Fetches current stock price and displays key metrics",
+  "description": "Fetches current stock price and displays key metrics (Trinity 2.0 capability routing)",
   "triggers": [
     "stock price",
     "price",
@@ -16,11 +16,12 @@
   "priority": 10,
   "steps": [
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
+        "capability": "can_fetch_stock_quotes",
         "context": {
-          "request": "Get quote for {SYMBOL}"
+          "symbol": "{SYMBOL}"
         }
       },
       "save_as": "quote_data"
@@ -40,6 +41,6 @@
   "response_template": "{SYMBOL} is trading at ${quote_data.price} ({quote_data.change_percent}%)",
   "error_handling": "stop",
   "cache_ttl": 60,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

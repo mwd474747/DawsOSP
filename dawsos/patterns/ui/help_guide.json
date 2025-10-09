@@ -1,7 +1,7 @@
 {
   "id": "help_guide",
   "name": "Help and Guidance",
-  "description": "Provides help and usage guidance",
+  "description": "Provides help and usage guidance (Trinity 2.0 capability routing)",
   "triggers": [
     "help",
     "how to",
@@ -26,6 +26,6 @@
   "response_type": "help",
   "response_template": "{help_text}",
   "cache_ttl": 3600,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

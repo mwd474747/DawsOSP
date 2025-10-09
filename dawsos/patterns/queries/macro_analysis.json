@@ -1,7 +1,7 @@
 {
   "id": "macro_analysis",
   "name": "Macro Economic Analysis",
-  "description": "Analyzes macroeconomic indicators and trends",
+  "description": "Analyzes macroeconomic indicators and trends (Trinity 2.0 capability routing)",
   "triggers": [
     "macro",
     "economy",
@@ -15,12 +15,11 @@
   "priority": 8,
   "steps": [
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
-        "context": {
-          "request": "Get latest GDP, CPI, unemployment, fed funds rate, 10Y yield data"
-        }
+        "capability": "can_fetch_economic_data",
+        "context": {}
       },
       "save_as": "macro_data"
     },
@@ -49,6 +48,6 @@
   "response_type": "analysis",
   "response_template": "{macro_report}",
   "cache_ttl": 600,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

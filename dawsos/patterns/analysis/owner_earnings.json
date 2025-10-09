@@ -8,12 +8,16 @@
     "true earnings",
     "cash earnings"
   ],
-  "description": "Calculate Buffett's owner earnings metric - true cash available to owners",
+  "description": "Calculate Buffett's owner earnings metric - true cash available to owners (Trinity 2.0 capability routing)",
   "category": "analysis",
   "priority": 80,
   "input_schema": {
-    "required": ["symbol"],
-    "optional": ["years"]
+    "required": [
+      "symbol"
+    ],
+    "optional": [
+      "years"
+    ]
   },
   "steps": [
     {
@@ -34,11 +38,10 @@
       "description": "Gather financial data for owner earnings",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
+        "capability": "can_fetch_stock_quotes",
         "context": {
           "task": "financial_data",
-          "symbol": "{symbol}",
-          "request": "Get financial data for {symbol}: net income, depreciation & amortization, capital expenditures, working capital changes, stock-based compensation, market cap"
+          "symbol": "{SYMBOL}"
         }
       },
       "save_as": "step_2"
@@ -111,8 +114,11 @@
       "save_as": "step_6"
     }
   ],
-  "template": "💰 **Owner Earnings Analysis: {symbol}**\n\n📊 **Calculation Breakdown**\n```\nNet Income:           ${step_4.net_income}M\n+ D&A:               ${step_4.depreciation}M\n- Maintenance CapEx:  ${step_4.maintenance_capex}M\n+/- Working Capital:  ${step_4.working_capital}M\n- Stock Comp Adj:     ${step_4.stock_comp}M\n────────────────────────────\nOwner Earnings:       ${step_4.owner_earnings}M\n```\n\n📈 **Key Metrics**\n• Owner Earnings Yield: {step_4.owner_yield}%\n• vs Net Income: {step_4.oe_vs_ni}%\n• 3-Year Growth: {step_4.growth_rate}%\n• Market Cap: ${step_2.market_cap}B\n\n✅ **Quality Assessment**\n{step_5.response}\n\n💡 **What This Means for Investors**\n{step_6.response}\n\n---\n\n📚 **Buffett's Owner Earnings Concept**\nOwner earnings represents the true cash that could be extracted from the business by owners each year - a more accurate measure of profitability than reported earnings.\n\n*Owner earnings analysis powered by DawsOS Trinity Architecture*",
+  "template": "\ud83d\udcb0 **Owner Earnings Analysis: {SYMBOL}**\n\n\ud83d\udcca **Calculation Breakdown**\n```\nNet Income:           ${step_4.net_income}M\n+ D&A:               ${step_4.depreciation}M\n- Maintenance CapEx:  ${step_4.maintenance_capex}M\n+/- Working Capital:  ${step_4.working_capital}M\n- Stock Comp Adj:     ${step_4.stock_comp}M\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nOwner Earnings:       ${step_4.owner_earnings}M\n```\n\n\ud83d\udcc8 **Key Metrics**\n\u2022 Owner Earnings Yield: {step_4.owner_yield}%\n\u2022 vs Net Income: {step_4.oe_vs_ni}%\n\u2022 3-Year Growth: {step_4.growth_rate}%\n\u2022 Market Cap: ${step_2.market_cap}B\n\n\u2705 **Quality Assessment**\n{step_5.response}\n\n\ud83d\udca1 **What This Means for Investors**\n{step_6.response}\n\n---\n\n\ud83d\udcda **Buffett's Owner Earnings Concept**\nOwner earnings represents the true cash that could be extracted from the business by owners each year - a more accurate measure of profitability than reported earnings.\n\n*Owner earnings analysis powered by DawsOS Trinity Architecture*",
   "version": "2.0",
-  "last_updated": "2025-10-03",
-  "notes": "Converted from legacy action types to Trinity-compliant execute_through_registry pattern"
+  "last_updated": "2025-10-08",
+  "notes": "Converted from legacy action types to Trinity-compliant execute_through_registry pattern",
+  "entities": [
+    "SYMBOL"
+  ]
 }

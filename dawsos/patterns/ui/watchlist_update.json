@@ -1,7 +1,7 @@
 {
   "id": "watchlist_update",
   "name": "Watchlist Update",
-  "description": "Updates watchlist with current prices and changes",
+  "description": "Updates watchlist with current prices and changes (Trinity 2.0 capability routing)",
   "triggers": [
     "watchlist",
     "watch list",
@@ -21,12 +21,11 @@
       "save_as": "watchlist"
     },
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
-        "context": {
-          "request": "Get quotes for watchlist: {watchlist}"
-        }
+        "capability": "can_fetch_stock_quotes",
+        "context": {}
       },
       "save_as": "watchlist_data"
     },
@@ -55,6 +54,6 @@
   "response_type": "ui_update",
   "response_template": "{watchlist_display}",
   "cache_ttl": 60,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

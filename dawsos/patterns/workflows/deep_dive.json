@@ -1,7 +1,7 @@
 {
   "id": "deep_dive",
   "name": "Company Deep Dive",
-  "description": "Comprehensive analysis using Buffett-Ackman-Dalio framework",
+  "description": "Comprehensive analysis using Buffett-Ackman-Dalio framework (Trinity 2.0 capability routing)",
   "triggers": [
     "deep dive",
     "full analysis",
@@ -14,11 +14,12 @@
   "priority": 9,
   "steps": [
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
+        "capability": "can_fetch_news",
         "context": {
-          "request": "Get all available data for {SYMBOL}: financials, ratios, earnings, news, insider trading, institutional holdings"
+          "symbol": "{SYMBOL}"
         }
       },
       "save_as": "company_data"
@@ -82,6 +83,6 @@
   "response_type": "deep_analysis",
   "response_template": "{investment_thesis}",
   "cache_ttl": 3600,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

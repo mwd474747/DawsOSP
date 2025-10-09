@@ -1,7 +1,7 @@
 {
   "id": "earnings_analysis",
   "name": "Earnings Analysis",
-  "description": "Analyzes company earnings, guidance, and estimates",
+  "description": "Analyzes company earnings, guidance, and estimates (Trinity 2.0 capability routing)",
   "triggers": [
     "earnings",
     "eps",
@@ -50,6 +50,6 @@
   "response_type": "analysis",
   "response_template": "{earnings_report}",
   "cache_ttl": 1800,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

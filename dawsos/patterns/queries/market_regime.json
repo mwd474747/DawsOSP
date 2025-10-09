@@ -1,7 +1,7 @@
 {
   "id": "market_regime",
   "name": "Detect Market Regime",
-  "description": "Analyzes current market conditions and identifies the regime",
+  "description": "Analyzes current market conditions and identifies the regime (Trinity 2.0 capability routing)",
   "triggers": [
     "regime",
     "market condition",
@@ -64,6 +64,6 @@
   "response_type": "regime_analysis",
   "response_template": "{regime_report}",
   "cache_ttl": 300,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

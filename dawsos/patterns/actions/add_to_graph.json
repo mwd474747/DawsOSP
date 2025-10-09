@@ -1,7 +1,7 @@
 {
   "id": "add_to_graph",
   "name": "Add to Knowledge Graph",
-  "description": "Adds data, entities, or relationships to the knowledge graph",
+  "description": "Adds data, entities, or relationships to the knowledge graph (Trinity 2.0 capability routing)",
   "triggers": [
     "add",
     "save",
@@ -37,9 +37,10 @@
       "save_as": "structured_data"
     },
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "relationship_hunter",
+        "capability": "can_find_relationships",
         "context": {
           "data": "{structured_data}"
         }
@@ -60,6 +61,6 @@
   "response_type": "action",
   "response_template": "{confirmation}",
   "cache_ttl": 0,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

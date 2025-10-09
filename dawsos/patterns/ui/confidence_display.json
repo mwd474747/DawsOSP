@@ -1,15 +1,15 @@
 {
   "id": "confidence_display",
   "name": "Confidence Meter Display",
-  "description": "Shows prediction confidence with historical accuracy context",
+  "description": "Shows prediction confidence with historical accuracy context (Trinity 2.0 capability routing)",
   "category": "ui",
   "triggers": [
     "confidence",
     "accuracy",
     "trust"
   ],
-  "version": "1.0",
-  "last_updated": "2025-10-02",
+  "version": "2.0",
+  "last_updated": "2025-10-08",
   "steps": [
     {
       "action": "get_execution_log",

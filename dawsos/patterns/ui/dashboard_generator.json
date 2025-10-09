@@ -1,15 +1,15 @@
 {
   "id": "dashboard_generator",
   "name": "Dynamic Dashboard Generator",
-  "description": "Generates personalized dashboard based on user patterns and preferences",
+  "description": "Generates personalized dashboard based on user patterns and preferences (Trinity 2.0 capability routing)",
   "category": "ui",
   "triggers": [
     "dashboard",
     "home",
     "overview"
   ],
-  "version": "1.0",
-  "last_updated": "2025-10-02",
+  "version": "2.0",
+  "last_updated": "2025-10-08",
   "steps": [
     {
       "action": "enriched_lookup",

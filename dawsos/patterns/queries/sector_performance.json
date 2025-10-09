@@ -1,7 +1,7 @@
 {
   "id": "sector_performance",
   "name": "Sector Performance Analysis",
-  "description": "Analyzes performance and trends across market sectors",
+  "description": "Analyzes performance and trends across market sectors (Trinity 2.0 capability routing)",
   "triggers": [
     "sector",
     "sectors",
@@ -47,6 +47,6 @@
   "response_type": "analysis",
   "response_template": "{sector_report}",
   "cache_ttl": 600,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

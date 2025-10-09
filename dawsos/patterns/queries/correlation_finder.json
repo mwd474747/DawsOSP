@@ -1,7 +1,7 @@
 {
   "id": "correlation_finder",
   "name": "Find Correlations",
-  "description": "Discovers correlations between assets, indicators, or economic variables",
+  "description": "Discovers correlations between assets, indicators, or economic variables (Trinity 2.0 capability routing)",
   "triggers": [
     "correlation",
     "correlate",
@@ -15,19 +15,21 @@
   "priority": 7,
   "steps": [
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
+        "capability": "can_fetch_economic_data",
         "context": {
-          "request": "Get historical data for {SYMBOL} and major assets: SPY QQQ DXY GLD TLT VIX"
+          "symbol": "{SYMBOL}"
         }
       },
       "save_as": "price_data"
     },
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "relationship_hunter",
+        "capability": "can_calculate_correlations",
         "context": {
           "data": "{price_data}",
           "target": "{SYMBOL}"
@@ -49,6 +51,6 @@
   "response_type": "analysis",
   "response_template": "{correlation_report}",
   "cache_ttl": 1800,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

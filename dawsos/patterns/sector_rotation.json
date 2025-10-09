@@ -1,7 +1,7 @@
 {
   "id": "sector_rotation",
   "name": "Sector Rotation Analysis",
-  "description": "Identify which sectors to rotate into based on economic cycle",
+  "description": "Identify which sectors to rotate into based on economic cycle (Trinity 2.0 capability routing)",
   "triggers": [
     "sector rotation",
     "which sectors",
@@ -9,16 +9,15 @@
     "sector allocation"
   ],
   "response_template": "## Sector Rotation Strategy\n\n### Economic Cycle Position\nWe are currently in the **{cycle_phase.phase}** phase of the economic cycle.\n\n### Historical Performance in {cycle_phase.phase} Phase\n{historical_performance.data}\n\n### Recommended Sectors\nBased on historical performance in this phase:\n- **Outperformers**: {sector_recommendations.data.outperformers}\n- **Underperformers**: {sector_recommendations.data.underperformers}\n\n### Current Momentum\n{momentum_analysis.response}\n\n### Rotation Strategy\n{rotation_strategy.recommendation}",
-  "version": "1.0",
-  "last_updated": "2025-10-02",
+  "version": "2.0",
+  "last_updated": "2025-10-08",
   "steps": [
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
-        "context": {
-          "request": "Get economic indicators GDP, CPI, unemployment, yield curve"
-        }
+        "capability": "can_fetch_economic_data",
+        "context": {}
       },
       "save_as": "economic_data"
     },
@@ -49,12 +48,11 @@
       "save_as": "sector_recommendations"
     },
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
-        "context": {
-          "request": "Get sector ETFs XLF XLK XLE XLV XLI XLY XLP XLB XLU"
-        }
+        "capability": "can_fetch_economic_data",
+        "context": {}
       },
       "save_as": "sector_data"
     },

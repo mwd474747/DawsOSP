@@ -1,7 +1,7 @@
 {
   "id": "opportunity_scan",
   "name": "Market Opportunity Scanner",
-  "description": "Scans markets for trading and investment opportunities",
+  "description": "Scans markets for trading and investment opportunities (Trinity 2.0 capability routing)",
   "triggers": [
     "scan",
     "opportunities",
@@ -13,12 +13,11 @@
   "priority": 8,
   "steps": [
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
-        "context": {
-          "request": "Get top movers, unusual volume, breakouts, and oversold stocks"
-        }
+        "capability": "can_fetch_stock_quotes",
+        "context": {}
       },
       "save_as": "market_scan"
     },
@@ -34,12 +33,11 @@
       "save_as": "opportunities"
     },
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
-        "context": {
-          "request": "Get fundamentals for top opportunities: {opportunities}"
-        }
+        "capability": "can_fetch_fundamentals",
+        "context": {}
       },
       "save_as": "opportunity_data"
     },
@@ -57,6 +55,6 @@
   "response_type": "opportunities",
   "response_template": "{opportunity_report}",
   "cache_ttl": 600,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

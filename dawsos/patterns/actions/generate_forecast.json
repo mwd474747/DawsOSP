@@ -1,7 +1,7 @@
 {
   "id": "generate_forecast",
   "name": "Generate Forecast",
-  "description": "Creates price or trend forecasts using multiple models",
+  "description": "Creates price or trend forecasts using multiple models (Trinity 2.0 capability routing)",
   "triggers": [
     "forecast",
     "predict",
@@ -26,9 +26,10 @@
       "save_as": "historical_data"
     },
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "forecast_dreamer",
+        "capability": "can_generate_forecast",
         "context": {
           "data": "{historical_data}",
           "target": "{SYMBOL}",
@@ -51,6 +52,6 @@
   "response_type": "forecast",
   "response_template": "{forecast_report}",
   "cache_ttl": 3600,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

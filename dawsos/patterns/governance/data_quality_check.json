@@ -1,7 +1,7 @@
 {
   "id": "data_quality_check",
   "name": "Data Quality Governance",
-  "description": "Comprehensive data quality assessment and improvement",
+  "description": "Comprehensive data quality assessment and improvement (Trinity 2.0 capability routing)",
   "category": "governance",
   "triggers": [
     "check data quality",
@@ -53,7 +53,7 @@
       "description": "Spot data quality issues and patterns",
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
+        "capability": "can_detect_patterns",
         "context": {
           "task": "identify_governance_patterns",
           "governance_type": "data_quality",
@@ -83,6 +83,6 @@
     }
   ],
   "template": "**Data Quality Governance Report**\n\n**Quality Request**: {request}\n\n**Overall Quality Score**: {step_4.findings.overall_score:.0%}\n\n**Issues Found**:\n{#step_4.findings.issues_found}\n- {.}\n{/step_4.findings.issues_found}\n\n**Auto-Fixes Applied**:\n{#step_4.findings.auto_fixes_applied}\n- {.}\n{/step_4.findings.auto_fixes_applied}\n\n**Recommendations**:\n{#step_4.findings.recommendations}\n- {.}\n{/step_4.findings.recommendations}\n\n**Next Actions**:\n{#step_4.next_actions}\n- {.}\n{/step_4.next_actions}\n\n*Quality monitoring powered by DawsOS Trinity Architecture*",
-  "version": "1.0",
-  "last_updated": "2025-10-03"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

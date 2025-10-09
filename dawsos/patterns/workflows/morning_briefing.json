@@ -1,7 +1,7 @@
 {
   "id": "morning_briefing",
   "name": "Morning Market Briefing",
-  "description": "Comprehensive morning market overview and analysis",
+  "description": "Comprehensive morning market overview and analysis (Trinity 2.0 capability routing)",
   "triggers": [
     "morning",
     "briefing",
@@ -12,22 +12,20 @@
   "priority": 9,
   "steps": [
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
-        "context": {
-          "request": "Get futures, major indices, VIX, DXY, commodities, crypto"
-        }
+        "capability": "can_fetch_crypto_data",
+        "context": {}
       },
       "save_as": "market_overview"
     },
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
-        "context": {
-          "request": "Get latest economic calendar and earnings today"
-        }
+        "capability": "can_fetch_economic_data",
+        "context": {}
       },
       "save_as": "calendar_data"
     },
@@ -43,12 +41,11 @@
       "save_as": "regime_status"
     },
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
-        "context": {
-          "request": "Get top market news and sentiment"
-        }
+        "capability": "can_fetch_news",
+        "context": {}
       },
       "save_as": "news_data"
     },
@@ -66,6 +63,6 @@
   "response_type": "briefing",
   "response_template": "{briefing}",
   "cache_ttl": 1800,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

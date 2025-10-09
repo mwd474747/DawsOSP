@@ -88,6 +88,6 @@
     "compliance_score": "{report.compliance_score}",
     "report": "{report}"
   },
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

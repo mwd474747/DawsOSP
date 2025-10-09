@@ -1,15 +1,15 @@
 {
   "id": "alert_manager",
   "name": "Smart Alert System",
-  "description": "Monitors thresholds and generates contextual alerts",
+  "description": "Monitors thresholds and generates contextual alerts (Trinity 2.0 capability routing)",
   "category": "ui",
   "triggers": [
     "alerts",
     "notifications",
     "warnings"
   ],
-  "version": "1.0",
-  "last_updated": "2025-10-02",
+  "version": "2.0",
+  "last_updated": "2025-10-08",
   "steps": [
     {
       "action": "enriched_lookup",

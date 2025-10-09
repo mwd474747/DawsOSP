@@ -1,7 +1,7 @@
 {
   "id": "dashboard_update",
   "name": "Dashboard Update",
-  "description": "Updates dashboard with latest market data",
+  "description": "Updates dashboard with latest market data (Trinity 2.0 capability routing)",
   "triggers": [
     "refresh",
     "update dashboard",
@@ -45,6 +45,6 @@
   "response_type": "ui_update",
   "response_template": "{dashboard_update}",
   "cache_ttl": 60,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

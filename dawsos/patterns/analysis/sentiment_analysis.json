@@ -1,7 +1,7 @@
 {
   "id": "sentiment_analysis",
   "name": "Market Sentiment Analysis",
-  "description": "Analyzes market sentiment from news and social signals",
+  "description": "Analyzes market sentiment from news and social signals (Trinity 2.0 capability routing)",
   "triggers": [
     "sentiment",
     "news",
@@ -15,19 +15,21 @@
   "priority": 6,
   "steps": [
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
+        "capability": "can_fetch_news",
         "context": {
-          "request": "Get news sentiment and social mentions for {SYMBOL}"
+          "symbol": "{SYMBOL}"
         }
       },
       "save_as": "sentiment_data"
     },
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
+        "capability": "can_identify_signals",
         "context": {
           "data": "{sentiment_data}",
           "analysis_type": "sentiment_trend"
@@ -49,6 +51,6 @@
   "response_type": "analysis",
   "response_template": "{sentiment_report}",
   "cache_ttl": 300,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

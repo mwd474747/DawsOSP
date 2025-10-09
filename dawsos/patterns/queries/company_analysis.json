@@ -1,7 +1,7 @@
 {
   "id": "company_analysis",
   "name": "Company Analysis",
-  "description": "Comprehensive analysis of a company's fundamentals and performance",
+  "description": "Comprehensive analysis of a company's fundamentals and performance (Trinity 2.0 capability routing)",
   "triggers": [
     "analyze",
     "company",
@@ -16,11 +16,12 @@
   "priority": 8,
   "steps": [
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
+        "capability": "can_fetch_fundamentals",
         "context": {
-          "request": "Get complete fundamentals for {SYMBOL}: financials, ratios, earnings, revenue"
+          "symbol": "{SYMBOL}"
         }
       },
       "save_as": "company_data"
@@ -69,6 +70,6 @@
   "response_type": "analysis",
   "response_template": "{analysis_report}",
   "cache_ttl": 1800,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

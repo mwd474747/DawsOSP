@@ -1,7 +1,7 @@
 {
   "id": "portfolio_review",
   "name": "Portfolio Review",
-  "description": "Comprehensive portfolio analysis and rebalancing suggestions",
+  "description": "Comprehensive portfolio analysis and rebalancing suggestions (Trinity 2.0 capability routing)",
   "triggers": [
     "review portfolio",
     "rebalance",
@@ -21,12 +21,11 @@
       "save_as": "holdings"
     },
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
-        "context": {
-          "request": "Get current prices, fundamentals, and news for all holdings: {holdings}"
-        }
+        "capability": "can_fetch_news",
+        "context": {}
       },
       "save_as": "portfolio_data"
     },
@@ -66,6 +65,6 @@
   "response_type": "portfolio_analysis",
   "response_template": "{portfolio_review}",
   "cache_ttl": 1800,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

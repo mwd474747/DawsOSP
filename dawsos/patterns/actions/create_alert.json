@@ -1,7 +1,7 @@
 {
   "id": "create_alert",
   "name": "Create Price Alert",
-  "description": "Sets up price or condition alerts for assets",
+  "description": "Sets up price or condition alerts for assets (Trinity 2.0 capability routing)",
   "triggers": [
     "alert",
     "notify",
@@ -54,6 +54,6 @@
   "response_type": "action",
   "response_template": "{confirmation}",
   "cache_ttl": 0,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

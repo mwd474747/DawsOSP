@@ -1,7 +1,7 @@
 {
   "id": "add_to_portfolio",
   "name": "Add to Portfolio",
-  "description": "Adds a position to the tracked portfolio",
+  "description": "Adds a position to the tracked portfolio (Trinity 2.0 capability routing)",
   "triggers": [
     "buy",
     "purchase",
@@ -16,11 +16,12 @@
   "priority": 6,
   "steps": [
     {
+      "description": "",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
+        "capability": "can_fetch_fundamentals",
         "context": {
-          "request": "Get current price and fundamentals for {SYMBOL}"
+          "symbol": "{SYMBOL}"
         }
       },
       "save_as": "asset_data"
@@ -56,6 +57,6 @@
   "response_type": "action",
   "response_template": "{confirmation}",
   "cache_ttl": 0,
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

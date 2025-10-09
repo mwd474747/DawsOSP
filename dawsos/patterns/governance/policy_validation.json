@@ -1,7 +1,7 @@
 {
   "id": "policy_validation",
   "name": "Policy-Based Validation Pattern",
-  "description": "Validate data against governance policies loaded from configuration",
+  "description": "Validate data against governance policies loaded from configuration (Trinity 2.0 capability routing)",
   "category": "governance",
   "extends": "governance_template",
   "input_schema": {
@@ -74,6 +74,6 @@
     "remediation_effectiveness": 0.3
   },
   "template": "**Policy Validation Report**\n\n**Nodes Validated**: {target_nodes}\n**Policies Applied**: {step_1.policies|length}\n\n**Validation Results**:\n\u2705 Compliant: {step_2.compliant_count}\n\u26a0\ufe0f Violations: {step_2.violations|length}\n\n{#step_2.violations}\n**Violation {index}**:\n- Node: {.node}\n- Policy: {.policy}\n- Severity: {.severity}\n- Message: {.message}\n{#step_3.fixed}\n\u2713 Auto-remediated\n{/step_3.fixed}\n{/step_2.violations}\n\n**Graph Governance Updated**: {step_4.success}\n\n*Powered by DawsOS Trinity Architecture with policy-driven governance*",
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

@@ -1,7 +1,7 @@
 {
   "id": "audit_everything",
   "name": "Comprehensive Audit Trail",
-  "description": "Track every action, decision, and data change for full transparency",
+  "description": "Track every action, decision, and data change for full transparency (Trinity 2.0 capability routing)",
   "category": "governance",
   "steps": [
     {
@@ -45,6 +45,6 @@
     "full transparency"
   ],
   "template": "**Audit Mode Enabled**\n\nTracking:\n- All agent decisions with reasoning\n- Data lineage and transformations\n- Pattern execution paths\n- Confidence levels and alternatives considered\n\nAccess audit logs in: /storage/audit_trail/",
-  "version": "1.0",
-  "last_updated": "2025-10-02"
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

@@ -1,7 +1,7 @@
 {
   "id": "compliance_audit",
   "name": "Compliance Audit Governance",
-  "description": "Regulatory compliance assessment and reporting",
+  "description": "Regulatory compliance assessment and reporting (Trinity 2.0 capability routing)",
   "category": "governance",
   "triggers": [
     "compliance audit",
@@ -53,7 +53,7 @@
       "description": "Identify compliance patterns and violations",
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
+        "capability": "can_detect_patterns",
         "context": {
           "task": "identify_governance_patterns",
           "governance_type": "compliance",
@@ -66,10 +66,9 @@
       "description": "Execute compliance audit",
       "action": "execute_through_registry",
       "params": {
-        "agent": "governance_agent",
+        "capability": "can_audit_data_quality",
         "context": {
           "governance_type": "compliance",
-          "request": "{request}",
           "compliance_framework": "{compliance_framework|SOX}",
           "priority": "critical",
           "analysis_data": {
@@ -82,7 +81,7 @@
       "save_as": "step_4"
     }
   ],
-  "template": "**Compliance Audit Report**\n\n**Audit Request**: {request}\n\n**Compliance Score**: {step_4.compliance_score:.0%}\n\n**Regulatory Frameworks**:\n{#step_4.regulatory_frameworks}\n- {.}\n{/step_4.regulatory_frameworks}\n\n**Compliant Areas**:\n{#step_4.findings.compliant_areas}\n- ✅ {.}\n{/step_4.findings.compliant_areas}\n\n**Violations Found**:\n{#step_4.findings.violations}\n- ❌ {.}\n{/step_4.findings.violations}\n\n**Remediation Recommendations**:\n{#step_4.findings.recommendations}\n- {.}\n{/step_4.findings.recommendations}\n\n*Compliance monitoring powered by DawsOS Trinity Architecture*",
-  "version": "1.0",
-  "last_updated": "2025-10-03"
+  "template": "**Compliance Audit Report**\n\n**Audit Request**: {request}\n\n**Compliance Score**: {step_4.compliance_score:.0%}\n\n**Regulatory Frameworks**:\n{#step_4.regulatory_frameworks}\n- {.}\n{/step_4.regulatory_frameworks}\n\n**Compliant Areas**:\n{#step_4.findings.compliant_areas}\n- \u2705 {.}\n{/step_4.findings.compliant_areas}\n\n**Violations Found**:\n{#step_4.findings.violations}\n- \u274c {.}\n{/step_4.findings.violations}\n\n**Remediation Recommendations**:\n{#step_4.findings.recommendations}\n- {.}\n{/step_4.findings.recommendations}\n\n*Compliance monitoring powered by DawsOS Trinity Architecture*",
+  "version": "2.0",
+  "last_updated": "2025-10-08"
 }

@@ -8,26 +8,29 @@
     "stock fundamentals",
     "evaluate company"
   ],
-  "description": "Comprehensive fundamental analysis using Buffett and Dalio frameworks",
+  "description": "Comprehensive fundamental analysis using Buffett and Dalio frameworks (Trinity 2.0 capability routing)",
   "category": "analysis",
   "priority": 90,
   "input_schema": {
-    "required": ["symbol"],
-    "optional": ["framework"]
+    "required": [
+      "symbol"
+    ],
+    "optional": [
+      "framework"
+    ]
   },
   "steps": [
     {
       "description": "Load investment frameworks",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
+        "capability": "can_fetch_fundamentals",
         "context": {
           "task": "load_knowledge",
           "knowledge_files": [
             "buffett_checklist.json",
             "dalio_cycles.json"
-          ],
-          "request": "Load Buffett and Dalio investment frameworks"
+          ]
         }
       },
       "save_as": "step_1"
@@ -36,11 +39,10 @@
       "description": "Gather comprehensive financial data",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
+        "capability": "can_fetch_fundamentals",
         "context": {
           "task": "financial_data",
-          "symbol": "{symbol}",
-          "request": "Get comprehensive financial data for {symbol}: revenue, earnings, FCF, debt, equity, margins, ROIC, ROE, price, valuation multiples"
+          "symbol": "{SYMBOL}"
         }
       },
       "save_as": "step_2"
@@ -64,18 +66,17 @@
       "description": "Calculate key financial metrics",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
+        "capability": "can_fetch_fundamentals",
         "context": {
           "task": "calculate_metrics",
-          "symbol": "{symbol}",
+          "symbol": "{SYMBOL}",
           "data": "{step_2}",
           "metrics": [
             "Owner Earnings = Net Income + D&A - Maintenance CapEx",
             "ROIC = NOPAT / Invested Capital",
             "FCF Yield = FCF / Market Cap",
             "ROIC-WACC Spread"
-          ],
-          "request": "Calculate Buffett-style financial metrics for {symbol}"
+          ]
         }
       },
       "save_as": "step_4"
@@ -134,8 +135,11 @@
       "save_as": "step_7"
     }
   ],
-  "template": "📊 **Fundamental Analysis: {symbol}**\n\n{step_7.response}\n\n---\n\n🏰 **Economic Moat Assessment**\n{step_3.response}\n\n💰 **Key Financial Metrics**\n• Owner Earnings: ${step_4.owner_earnings}M\n• ROIC: {step_4.roic}%\n• ROIC-WACC Spread: {step_4.roic_spread}%\n• FCF Yield: {step_4.fcf_yield}%\n\n📈 **Valuation**\n• Intrinsic Value: ${step_5.intrinsic_value}\n• Current Price: ${step_2.current_price}\n• Margin of Safety: {step_5.margin_of_safety}%\n• Recommendation: **{step_7.recommendation}**\n\n👔 **Management Quality**\n{step_6.response}\n\n🎯 **Investment Decision**\n{step_7.investment_thesis}\n\n⚠️ **Key Risks**\n{step_7.risks}\n\n*Fundamental analysis powered by DawsOS Trinity Architecture using Buffett and Dalio frameworks*",
+  "template": "\ud83d\udcca **Fundamental Analysis: {SYMBOL}**\n\n{step_7.response}\n\n---\n\n\ud83c\udff0 **Economic Moat Assessment**\n{step_3.response}\n\n\ud83d\udcb0 **Key Financial Metrics**\n\u2022 Owner Earnings: ${step_4.owner_earnings}M\n\u2022 ROIC: {step_4.roic}%\n\u2022 ROIC-WACC Spread: {step_4.roic_spread}%\n\u2022 FCF Yield: {step_4.fcf_yield}%\n\n\ud83d\udcc8 **Valuation**\n\u2022 Intrinsic Value: ${step_5.intrinsic_value}\n\u2022 Current Price: ${step_2.current_price}\n\u2022 Margin of Safety: {step_5.margin_of_safety}%\n\u2022 Recommendation: **{step_7.recommendation}**\n\n\ud83d\udc54 **Management Quality**\n{step_6.response}\n\n\ud83c\udfaf **Investment Decision**\n{step_7.investment_thesis}\n\n\u26a0\ufe0f **Key Risks**\n{step_7.risks}\n\n*Fundamental analysis powered by DawsOS Trinity Architecture using Buffett and Dalio frameworks*",
   "version": "2.0",
-  "last_updated": "2025-10-03",
-  "notes": "Converted from legacy action types to Trinity-compliant execute_through_registry pattern"
+  "last_updated": "2025-10-08",
+  "notes": "Converted from legacy action types to Trinity-compliant execute_through_registry pattern",
+  "entities": [
+    "SYMBOL"
+  ]
 }
