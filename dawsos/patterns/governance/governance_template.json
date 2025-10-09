@@ -36,12 +36,12 @@
       "description": "Gather relevant data for governance analysis",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
           "task": "gather_governance_data",
           "governance_type": "{governance_type}",
           "scope": "system_wide"
-        }
+        },
+        "capability": "can_fetch_stock_quotes"
       },
       "save_as": "step_2"
     },
@@ -62,7 +62,6 @@
       "description": "Execute governance action and provide recommendations",
       "action": "execute_through_registry",
       "params": {
-        "agent": "governance_agent",
         "context": {
           "governance_type": "{governance_type}",
           "request": "{request}",
@@ -73,7 +72,8 @@
             "step_2": "{step_2}",
             "step_3": "{step_3}"
           }
-        }
+        },
+        "capability": "can_enforce_governance"
       },
       "save_as": "step_4"
     }

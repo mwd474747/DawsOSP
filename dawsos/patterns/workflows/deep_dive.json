@@ -27,45 +27,41 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_digester",
         "context": {
-          "data": "{company_data}",
-          "data_type": "deep_analysis"
-        }
+          "data": "{company_data}"
+        },
+        "capability": "can_summarize_data"
       },
       "save_as": "structured_analysis"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "data": "{structured_analysis}",
           "analysis_type": "investment_quality"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "quality_metrics"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "relationship_hunter",
         "context": {
-          "data": "{structured_analysis}",
-          "target": "{SYMBOL}"
-        }
+          "data": "{structured_analysis}"
+        },
+        "capability": "can_find_relationships"
       },
       "save_as": "relationships"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "forecast_dreamer",
         "context": {
-          "data": "{company_data}",
-          "target": "{SYMBOL}",
-          "horizon": "1y"
-        }
+          "data": "{company_data}"
+        },
+        "capability": "can_generate_forecast"
       },
       "save_as": "forecast"
     },

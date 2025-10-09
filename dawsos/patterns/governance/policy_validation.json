@@ -22,10 +22,6 @@
       "action": "execute_through_registry",
       "parameters": {
         "policy_file": "{policy_file}"
-      },
-      "params": {
-        "agent": "governance",
-        "context": {}
       }
     },
     {
@@ -33,10 +29,6 @@
       "parameters": {
         "nodes": "{target_nodes}",
         "policies": "{step_1.policies}"
-      },
-      "params": {
-        "agent": "governance",
-        "context": {}
       }
     },
     {
@@ -45,21 +37,13 @@
         "violations": "{step_2.violations}",
         "auto_fix": "{auto_remediate}"
       },
-      "condition": "{step_2.violations_found}",
-      "params": {
-        "agent": "governance",
-        "context": {}
-      }
+      "condition": "{step_2.violations_found}"
     },
     {
       "action": "execute_through_registry",
       "parameters": {
         "validation_results": "{step_2}",
         "remediation_results": "{step_3}"
-      },
-      "params": {
-        "agent": "governance",
-        "context": {}
       }
     }
   ],

@@ -18,27 +18,21 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
-          "request": "Get {SYMBOL} historical prices, volatility, and market data"
-        }
+          "symbol": "{SYMBOL}"
+        },
+        "capability": "can_fetch_market_data"
       },
       "save_as": "risk_data"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "data": "{risk_data}",
-          "analysis_type": "risk_metrics",
-          "calculations": [
-            "volatility",
-            "beta",
-            "var",
-            "max_drawdown"
-          ]
-        }
+          "analysis_type": "risk_metrics"
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "risk_metrics"
     },

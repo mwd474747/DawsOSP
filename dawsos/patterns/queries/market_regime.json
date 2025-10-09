@@ -16,21 +16,21 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
           "request": "Get SPY VIX DXY TLT data"
-        }
+        },
+        "capability": "can_fetch_market_data"
       },
       "save_as": "market_data"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "data": "{market_data}",
           "analysis_type": "regime"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "regime_analysis"
     },

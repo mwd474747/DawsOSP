@@ -24,11 +24,11 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "data": "{market_scan}",
           "analysis_type": "opportunity_detection"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "opportunities"
     },

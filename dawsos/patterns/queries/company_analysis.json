@@ -48,11 +48,10 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_digester",
         "context": {
-          "data": "{company_data}",
-          "data_type": "company_fundamentals"
-        }
+          "data": "{company_data}"
+        },
+        "capability": "can_summarize_data"
       },
       "save_as": "digested_data"
     },

@@ -13,21 +13,21 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
           "request": "Get SPY QQQ DIA IWM VIX DXY BTC-USD"
-        }
+        },
+        "capability": "can_fetch_market_data"
       },
       "save_as": "market_data"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "data": "{market_data}",
           "analysis_type": "quick_regime"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "regime"
     },

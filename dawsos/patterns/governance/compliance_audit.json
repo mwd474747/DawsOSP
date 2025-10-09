@@ -41,11 +41,11 @@
       "description": "Gather compliance data",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
           "task": "gather_governance_data",
           "governance_type": "compliance"
-        }
+        },
+        "capability": "can_fetch_stock_quotes"
       },
       "save_as": "step_2"
     },
@@ -81,7 +81,7 @@
       "save_as": "step_4"
     }
   ],
-  "template": "**Compliance Audit Report**\n\n**Audit Request**: {request}\n\n**Compliance Score**: {step_4.compliance_score:.0%}\n\n**Regulatory Frameworks**:\n{#step_4.regulatory_frameworks}\n- {.}\n{/step_4.regulatory_frameworks}\n\n**Compliant Areas**:\n{#step_4.findings.compliant_areas}\n- \u2705 {.}\n{/step_4.findings.compliant_areas}\n\n**Violations Found**:\n{#step_4.findings.violations}\n- \u274c {.}\n{/step_4.findings.violations}\n\n**Remediation Recommendations**:\n{#step_4.findings.recommendations}\n- {.}\n{/step_4.findings.recommendations}\n\n*Compliance monitoring powered by DawsOS Trinity Architecture*",
+  "template": "**Compliance Audit Report**\n\n**Audit Request**: {request}\n\n**Compliance Score**: {step_4.compliance_score:.0%}\n\n**Regulatory Frameworks**:\n{#step_4.regulatory_frameworks}\n- {.}\n{/step_4.regulatory_frameworks}\n\n**Compliant Areas**:\n{#step_4.findings.compliant_areas}\n- ✅ {.}\n{/step_4.findings.compliant_areas}\n\n**Violations Found**:\n{#step_4.findings.violations}\n- ❌ {.}\n{/step_4.findings.violations}\n\n**Remediation Recommendations**:\n{#step_4.findings.recommendations}\n- {.}\n{/step_4.findings.recommendations}\n\n*Compliance monitoring powered by DawsOS Trinity Architecture*",
   "version": "2.0",
   "last_updated": "2025-10-08"
 }

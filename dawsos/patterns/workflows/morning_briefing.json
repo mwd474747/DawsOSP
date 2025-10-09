@@ -32,11 +32,11 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "data": "{market_overview}",
           "analysis_type": "regime"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "regime_status"
     },

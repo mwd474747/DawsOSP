@@ -18,17 +18,16 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
-          "request": "Get current price for {SYMBOL}"
-        }
+          "symbol": "{SYMBOL}"
+        },
+        "capability": "can_fetch_stock_quotes"
       },
       "save_as": "current_price"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "workflow_recorder",
         "context": {
           "workflow": {
             "type": "alert",
@@ -36,7 +35,8 @@
             "condition": "{user_input}",
             "current_price": "{current_price}"
           }
-        }
+        },
+        "capability": "can_record_workflow"
       },
       "save_as": "alert_id"
     },

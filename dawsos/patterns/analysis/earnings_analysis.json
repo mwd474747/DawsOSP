@@ -18,21 +18,21 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
-          "request": "Get {SYMBOL} earnings history, estimates, and guidance"
-        }
+          "symbol": "{SYMBOL}"
+        },
+        "capability": "can_fetch_stock_quotes"
       },
       "save_as": "earnings_data"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "data": "{earnings_data}",
           "analysis_type": "earnings_trend"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "earnings_patterns"
     },

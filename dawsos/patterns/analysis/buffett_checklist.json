@@ -24,12 +24,12 @@
       "description": "Load Buffett investment framework",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
           "task": "load_knowledge",
           "knowledge_file": "buffett_checklist.json",
           "request": "Load Warren Buffett investment checklist framework"
-        }
+        },
+        "capability": "can_fetch_stock_quotes"
       },
       "save_as": "step_1"
     },
@@ -70,20 +70,11 @@
       "description": "Analyze economic moat",
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
-          "task": "evaluate_investment_criteria",
           "symbol": "{symbol}",
-          "category": "Economic Moat",
-          "questions": [
-            "Does it have pricing power?",
-            "Are customers sticky (>80% retention)?",
-            "Could a competitor with $10B replicate this?",
-            "Will the advantage exist in 10 years?"
-          ],
-          "data": "{step_2}",
-          "request": "Identify competitive advantages and moat strength for {symbol}. Score each factor 0-4."
-        }
+          "data": "{step_2}"
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "step_4"
     },
@@ -168,7 +159,7 @@
       "save_as": "step_8"
     }
   ],
-  "template": "\u2705 **Buffett Investment Checklist: {SYMBOL}**\n\n{step_8.response}\n\n---\n\n\ud83d\udca1 **Key Buffett Principles Applied**:\n\u2022 Circle of competence - only invest in businesses you understand\n\u2022 Economic moat - durable competitive advantage is essential\n\u2022 Management matters - integrity and capital allocation skills\n\u2022 Price is what you pay, value is what you get\n\u2022 Margin of safety - always demand a discount to intrinsic value\n\n*Analysis powered by DawsOS Trinity Architecture*",
+  "template": "✅ **Buffett Investment Checklist: {SYMBOL}**\n\n{step_8.response}\n\n---\n\n💡 **Key Buffett Principles Applied**:\n• Circle of competence - only invest in businesses you understand\n• Economic moat - durable competitive advantage is essential\n• Management matters - integrity and capital allocation skills\n• Price is what you pay, value is what you get\n• Margin of safety - always demand a discount to intrinsic value\n\n*Analysis powered by DawsOS Trinity Architecture*",
   "version": "2.0",
   "last_updated": "2025-10-08",
   "notes": "Converted from legacy action types to Trinity-compliant execute_through_registry pattern",

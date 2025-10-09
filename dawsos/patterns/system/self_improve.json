@@ -20,8 +20,8 @@
       "description": "Run comprehensive governance check",
       "action": "execute_through_registry",
       "params": {
-        "agent": "governance_agent",
-        "context": {}
+        "context": {},
+        "capability": "can_enforce_governance"
       }
     },
     {
@@ -44,16 +44,16 @@
       "description": "Refresh stale data",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
-        "context": {}
+        "context": {},
+        "capability": "can_fetch_stock_quotes"
       }
     },
     {
       "description": "Apply improvements",
       "action": "execute_through_registry",
       "params": {
-        "agent": "governance_agent",
-        "context": {}
+        "context": {},
+        "capability": "can_enforce_governance"
       }
     }
   ],

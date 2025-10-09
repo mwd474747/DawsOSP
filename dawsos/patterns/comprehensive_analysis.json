@@ -34,22 +34,21 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "relationship_hunter",
         "context": {
-          "target": "{SYMBOL}",
           "data": "{fundamentals}"
-        }
+        },
+        "capability": "can_find_relationships"
       },
       "save_as": "correlations"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "analysis_type": "stock_patterns",
           "data": "{fundamentals}"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "patterns"
     },

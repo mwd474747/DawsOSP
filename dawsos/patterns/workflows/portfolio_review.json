@@ -13,10 +13,10 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
           "request": "Get all portfolio holdings from knowledge graph"
-        }
+        },
+        "capability": "can_fetch_stock_quotes"
       },
       "save_as": "holdings"
     },
@@ -32,22 +32,22 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "data": "{portfolio_data}",
           "analysis_type": "portfolio_health"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "health_metrics"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "relationship_hunter",
         "context": {
           "data": "{portfolio_data}",
           "analysis_type": "correlation_matrix"
-        }
+        },
+        "capability": "can_find_relationships"
       },
       "save_as": "correlations"
     },

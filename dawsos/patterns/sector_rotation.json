@@ -59,11 +59,11 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "analysis_type": "momentum",
           "data": "{sector_data}"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "momentum_analysis"
     },

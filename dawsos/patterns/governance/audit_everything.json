@@ -10,10 +10,6 @@
         "log_level": "detailed",
         "track_decisions": true,
         "track_data_changes": true
-      },
-      "params": {
-        "agent": "governance",
-        "context": {}
       }
     },
     {
@@ -21,10 +17,6 @@
       "parameters": {
         "include_reasoning": true,
         "include_confidence": true
-      },
-      "params": {
-        "agent": "workflow_recorder",
-        "context": {}
       }
     },
     {
@@ -32,10 +24,6 @@
       "parameters": {
         "show_alternatives": true,
         "show_confidence_levels": true
-      },
-      "params": {
-        "agent": "graph_mind",
-        "context": {}
       }
     }
   ],

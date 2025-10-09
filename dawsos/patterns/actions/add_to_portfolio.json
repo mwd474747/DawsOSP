@@ -29,7 +29,6 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_digester",
         "context": {
           "data": {
             "action": "add_position",
@@ -37,9 +36,9 @@
             "quantity": "{QUANTITY}",
             "price": "{PRICE}",
             "asset_data": "{asset_data}"
-          },
-          "data_type": "portfolio_transaction"
-        }
+          }
+        },
+        "capability": "can_summarize_data"
       },
       "save_as": "position"
     },

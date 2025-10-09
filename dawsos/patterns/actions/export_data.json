@@ -16,10 +16,10 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
           "request": "Gather all relevant data from current context and graph"
-        }
+        },
+        "capability": "can_fetch_stock_quotes"
       },
       "save_as": "export_data"
     },

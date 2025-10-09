@@ -22,35 +22,26 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "relationship_hunter",
         "context": {
-          "analysis_type": "risk",
-          "include_correlations": true,
-          "timeframe": "1M"
-        }
+          "analysis_type": "risk"
+        },
+        "capability": "can_find_relationships"
       },
       "save_as": "current_risk"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
-          "analysis_type": "macro",
-          "indicators": [
-            "VIX",
-            "DXY",
-            "TNX"
-          ],
-          "include_trends": true
-        }
+          "analysis_type": "macro"
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "market_metrics"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "thresholds": "{thresholds}",
           "current_data": {
@@ -62,21 +53,20 @@
             "critical",
             "info"
           ]
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "alert_list"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "ui_generator",
         "context": {
-          "component_type": "alert_feed",
           "data": {
             "alerts": "{alert_list}"
-          },
-          "style": "default"
-        }
+          }
+        },
+        "capability": "can_generate_ui"
       },
       "save_as": "alert_component"
     }

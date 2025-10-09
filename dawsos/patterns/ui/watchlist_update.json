@@ -13,10 +13,10 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
           "request": "Get watchlist from knowledge graph"
-        }
+        },
+        "capability": "can_fetch_stock_quotes"
       },
       "save_as": "watchlist"
     },
@@ -32,11 +32,11 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "data": "{watchlist_data}",
           "analysis_type": "quick_signals"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "signals"
     },

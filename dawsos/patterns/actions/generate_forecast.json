@@ -18,10 +18,10 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
-          "request": "Get historical data for {SYMBOL} - 2 years daily"
-        }
+          "symbol": "{SYMBOL}"
+        },
+        "capability": "can_fetch_stock_quotes"
       },
       "save_as": "historical_data"
     },

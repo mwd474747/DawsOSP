@@ -18,21 +18,20 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
-          "request": "Get comprehensive data for {SYMBOL} or {user_input}"
-        }
+          "symbol": "{SYMBOL}"
+        },
+        "capability": "can_fetch_stock_quotes"
       },
       "save_as": "raw_data"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_digester",
         "context": {
-          "data": "{raw_data}",
-          "data_type": "auto_detect"
-        }
+          "data": "{raw_data}"
+        },
+        "capability": "can_summarize_data"
       },
       "save_as": "structured_data"
     },

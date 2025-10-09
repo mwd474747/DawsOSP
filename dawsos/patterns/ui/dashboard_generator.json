@@ -30,16 +30,14 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "ui_generator",
         "context": {
-          "component_type": "dashboard_widget",
           "data": {
             "widgets": "{widget_config}",
             "layout": "{layout}",
             "theme": "dark_theme"
-          },
-          "style": "grid"
-        }
+          }
+        },
+        "capability": "can_generate_ui"
       },
       "save_as": "dashboard_html"
     }

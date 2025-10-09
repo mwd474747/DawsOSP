@@ -19,10 +19,10 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
-          "request": "Get {SYMBOL} price data with volume for last 6 months"
-        }
+          "symbol": "{SYMBOL}"
+        },
+        "capability": "can_fetch_stock_quotes"
       },
       "save_as": "price_data"
     },

@@ -15,21 +15,21 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
           "request": "Get sector ETFs performance: XLK XLF XLE XLV XLI XLY XLP XLRE XLU XLB"
-        }
+        },
+        "capability": "can_fetch_market_data"
       },
       "save_as": "sector_data"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "data": "{sector_data}",
           "analysis_type": "sector_rotation"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "rotation_analysis"
     },

@@ -26,11 +26,11 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "data": "{macro_data}",
           "analysis_type": "macro_trends"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "macro_patterns"
     },

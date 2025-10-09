@@ -30,28 +30,26 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "data": "{prediction_data}",
           "analysis_type": "confidence_breakdown"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "confidence_factors"
     },
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "ui_generator",
         "context": {
-          "component_type": "confidence_meter",
           "data": {
             "confidence": 85,
             "title": "Prediction Confidence",
             "factors": "{confidence_factors}",
             "styles": "{confidence_styles}"
-          },
-          "style": "default"
-        }
+          }
+        },
+        "capability": "can_generate_ui"
       },
       "save_as": "confidence_component"
     }

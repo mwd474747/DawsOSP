@@ -23,7 +23,7 @@
   "category": "analysis",
   "priority": 90,
   "response": {
-    "template": "\ud83d\udd04 **Dalio Economic Cycle Analysis**\n\n\ud83d\udcca **Short-Term Debt Cycle**\nPosition: {short_cycle_position}\nPhase: {short_cycle_phase}\nIndicators:\n\u2022 Credit Growth: {credit_growth}%\n\u2022 Unemployment: {unemployment}%\n\u2022 Fed Policy: {fed_stance}\n\n\ud83d\udcc8 **Long-Term Debt Cycle**\nPosition: {long_cycle_position}\nPhase: {long_cycle_phase}\nIndicators:\n\u2022 Debt/GDP: {debt_to_gdp}%\n\u2022 Interest Rates: {rates_level}\n\u2022 Wealth Gap: {wealth_inequality}\n\n\u26a0\ufe0f **Paradigm Shift Risk**: {paradigm_risk}\n\n\ud83d\udca1 **Portfolio Positioning**\n{recommendations}\n\n\ud83c\udfaf **All-Weather Allocation**\n\u2022 Stocks: 30%\n\u2022 Bonds: 55%\n\u2022 Gold: 7.5%\n\u2022 Commodities: 7.5%",
+    "template": "🔄 **Dalio Economic Cycle Analysis**\n\n📊 **Short-Term Debt Cycle**\nPosition: {short_cycle_position}\nPhase: {short_cycle_phase}\nIndicators:\n• Credit Growth: {credit_growth}%\n• Unemployment: {unemployment}%\n• Fed Policy: {fed_stance}\n\n📈 **Long-Term Debt Cycle**\nPosition: {long_cycle_position}\nPhase: {long_cycle_phase}\nIndicators:\n• Debt/GDP: {debt_to_gdp}%\n• Interest Rates: {rates_level}\n• Wealth Gap: {wealth_inequality}\n\n⚠️ **Paradigm Shift Risk**: {paradigm_risk}\n\n💡 **Portfolio Positioning**\n{recommendations}\n\n🎯 **All-Weather Allocation**\n• Stocks: 30%\n• Bonds: 55%\n• Gold: 7.5%\n• Commodities: 7.5%",
     "format": "markdown"
   },
   "version": "2.0",
@@ -79,11 +79,11 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "request": "What are portfolio implications given cycle position?",
           "cycle_context": "{short_cycle}, {long_cycle}"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "outputs": [
         "recommendations"

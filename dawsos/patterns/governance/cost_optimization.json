@@ -41,11 +41,11 @@
       "description": "Gather cost data",
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
           "task": "gather_governance_data",
           "governance_type": "cost_optimization"
-        }
+        },
+        "capability": "can_fetch_stock_quotes"
       },
       "save_as": "step_2"
     },
@@ -66,7 +66,6 @@
       "description": "Execute cost optimization",
       "action": "execute_through_registry",
       "params": {
-        "agent": "governance_agent",
         "context": {
           "governance_type": "cost_optimization",
           "request": "{request}",
@@ -77,12 +76,13 @@
             "step_2": "{step_2}",
             "step_3": "{step_3}"
           }
-        }
+        },
+        "capability": "can_enforce_governance"
       },
       "save_as": "step_4"
     }
   ],
-  "template": "**Cost Optimization Report**\n\n**Optimization Request**: {request}\n\n**Current Monthly Cost**: {step_4.cost_analysis.current_monthly_cost}\n\n**Optimization Potential**: {step_4.cost_analysis.optimization_potential}\n\n**Cost Reduction Recommendations**:\n{#step_4.cost_analysis.recommendations}\n- {.}\n{/step_4.cost_analysis.recommendations}\n\n**Auto-Optimizations Applied**:\n{#step_4.auto_optimizations_applied}\n- \u2705 {.}\n{/step_4.auto_optimizations_applied}\n\n*Cost optimization powered by DawsOS Trinity Architecture*",
+  "template": "**Cost Optimization Report**\n\n**Optimization Request**: {request}\n\n**Current Monthly Cost**: {step_4.cost_analysis.current_monthly_cost}\n\n**Optimization Potential**: {step_4.cost_analysis.optimization_potential}\n\n**Cost Reduction Recommendations**:\n{#step_4.cost_analysis.recommendations}\n- {.}\n{/step_4.cost_analysis.recommendations}\n\n**Auto-Optimizations Applied**:\n{#step_4.auto_optimizations_applied}\n- ✅ {.}\n{/step_4.auto_optimizations_applied}\n\n*Cost optimization powered by DawsOS Trinity Architecture*",
   "version": "2.0",
   "last_updated": "2025-10-08"
 }

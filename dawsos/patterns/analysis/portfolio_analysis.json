@@ -15,10 +15,10 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "data_harvester",
         "context": {
           "request": "Get portfolio holdings from knowledge graph"
-        }
+        },
+        "capability": "can_fetch_stock_quotes"
       },
       "save_as": "holdings"
     },
@@ -34,11 +34,11 @@
     {
       "action": "execute_through_registry",
       "params": {
-        "agent": "pattern_spotter",
         "context": {
           "data": "{portfolio_data}",
           "analysis_type": "portfolio_risk"
-        }
+        },
+        "capability": "can_detect_patterns"
       },
       "save_as": "risk_metrics"
     },
