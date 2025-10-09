@@ -44,3 +44,17 @@ storage/*_test_*.json
 dawsos/storage/graph.json
 dawsos/storage/graph_backup_*.json
 dawsos/storage/*_test_*.json
+
+# Runtime metadata files (Trinity 2.0 Hardening)
+storage/*.meta
+storage/graph.json.meta
+storage/alerts/
+storage/alerts/*.json
+
+# Pattern backups (generated during migration)
+dawsos/patterns.backup*/
+patterns.backup*/
+
+# Test files (development only)
+test_*.py
+analyze_*.py
