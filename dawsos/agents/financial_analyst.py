@@ -1029,6 +1029,260 @@ class FinancialAnalyst(BaseAgent):
 
         return opportunities
 
+    def analyze_macro_context(self, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Analyze macroeconomic context using FRED data (Trinity 3.0 GDP Refresh Flow).
+
+        This method is mapped to can_analyze_macro_data capability and provides:
+        - GDP Quarter-over-Quarter growth rate
+        - CPI Year-over-Year inflation rate
+        - Economic cycle phase detection (expansion/peak/contraction/trough)
+        - Regime classification (goldilocks/stagflation/recession/overheating)
+        - Macro risks and sector opportunities
+
+        Args:
+            context: Optional dict with 'series', 'start_date', 'end_date' for custom queries
+
+        Returns:
+            Dict with:
+            - gdp_qoq: Float - GDP quarterly growth rate (%)
+            - cpi_yoy: Float - CPI year-over-year change (%)
+            - cycle_phase: Str - expansion|peak|contraction|trough
+            - regime: Str - goldilocks|stagflation|recession|overheating
+            - macro_risks: List[str] - Identified macro risks
+            - opportunities: List[str] - Sector opportunities
+            - indicators: Dict - Raw indicator data
+            - _metadata: Dict - Analysis metadata
+
+        Example:
+            >>> result = analyst.analyze_macro_context()
+            >>> print(result['regime'])
+            'goldilocks'
+            >>> print(result['gdp_qoq'])
+            2.5
+        """
+        if context is None:
+            context = {}
+
+        # Fetch economic data using capability routing (Trinity 3.0)
+        if not hasattr(self, 'runtime') or not self.runtime:
+            return {
+                'error': 'Runtime not available for capability routing',
+                'note': 'This method requires AgentRuntime for execute_by_capability'
+            }
+
+        # Execute through capability routing to get FRED data
+        fred_data = self.runtime.execute_by_capability(
+            'can_fetch_economic_data',
+            context={'series': context.get('series'), 'start_date': context.get('start_date'), 'end_date': context.get('end_date')}
+        )
+
+        if 'error' in fred_data:
+            return {
+                'error': f"Failed to fetch economic data: {fred_data['error']}",
+                'note': 'Configure FRED_API_KEY environment variable'
+            }
+
+        # Extract series data
+        series = fred_data.get('series', {})
+        gdp_data = series.get('GDP', {})
+        cpi_data = series.get('CPIAUCSL', {})
+        unemployment_data = series.get('UNRATE', {})
+        fed_funds_data = series.get('DFF', {})
+
+        # Calculate GDP QoQ (Quarter-over-Quarter)
+        gdp_qoq = self._calculate_gdp_qoq(gdp_data)
+
+        # Calculate CPI YoY (Year-over-Year)
+        cpi_yoy = self._calculate_cpi_yoy(cpi_data)
+
+        # Detect economic cycle phase
+        cycle_phase = self._detect_cycle_phase(gdp_qoq, unemployment_data, fed_funds_data)
+
+        # Determine economic regime
+        regime = self._determine_regime_from_data(gdp_qoq, cpi_yoy, cycle_phase)
+
+        # Identify macro risks
+        macro_risks = self._identify_macro_risks_from_data(gdp_qoq, cpi_yoy, unemployment_data, fred_data)
+
+        # Identify sector opportunities
+        opportunities = self._identify_opportunities_from_regime(regime, gdp_qoq, cpi_yoy)
+
+        # Build analysis result
+        analysis = {
+            'timestamp': datetime.now().isoformat(),
+            'gdp_qoq': round(gdp_qoq, 2) if gdp_qoq is not None else None,
+            'cpi_yoy': round(cpi_yoy, 2) if cpi_yoy is not None else None,
+            'cycle_phase': cycle_phase,
+            'regime': regime,
+            'macro_risks': macro_risks,
+            'opportunities': opportunities,
+            'indicators': {
+                'gdp': {
+                    'latest': gdp_data.get('latest_value'),
+                    'date': gdp_data.get('latest_date'),
+                    'qoq_growth': gdp_qoq
+                },
+                'cpi': {
+                    'latest': cpi_data.get('latest_value'),
+                    'date': cpi_data.get('latest_date'),
+                    'yoy_change': cpi_yoy
+                },
+                'unemployment': {
+                    'latest': unemployment_data.get('latest_value'),
+                    'date': unemployment_data.get('latest_date')
+                },
+                'fed_funds': {
+                    'latest': fed_funds_data.get('latest_value'),
+                    'date': fed_funds_data.get('latest_date')
+                }
+            },
+            '_metadata': {
+                'source': fred_data.get('source', 'unknown'),
+                'cache_age_seconds': fred_data.get('cache_age_seconds', 0),
+                'health': fred_data.get('health', {}),
+                'analysis_type': 'macro_context'
+            }
+        }
+
+        # Store in knowledge graph if available
+        if self.graph and hasattr(self, 'store_result'):
+            node_id = self.store_result(analysis)
+            analysis['node_id'] = node_id
+
+        return analysis
+
+    def _calculate_gdp_qoq(self, gdp_data: Dict) -> Optional[float]:
+        """Calculate GDP Quarter-over-Quarter growth rate"""
+        observations = gdp_data.get('observations', [])
+        if len(observations) < 2:
+            return None
+
+        # Get last two quarters
+        latest = observations[-1]['value']
+        previous = observations[-2]['value']
+
+        # Calculate QoQ growth rate
+        qoq = ((latest - previous) / previous) * 100 if previous != 0 else 0
+        return qoq
+
+    def _calculate_cpi_yoy(self, cpi_data: Dict) -> Optional[float]:
+        """Calculate CPI Year-over-Year inflation rate"""
+        observations = cpi_data.get('observations', [])
+        if len(observations) < 12:
+            return None
+
+        # Get latest and 12 months ago
+        latest = observations[-1]['value']
+        year_ago = observations[-12]['value']
+
+        # Calculate YoY change
+        yoy = ((latest - year_ago) / year_ago) * 100 if year_ago != 0 else 0
+        return yoy
+
+    def _detect_cycle_phase(self, gdp_qoq: Optional[float], unemployment_data: Dict, fed_funds_data: Dict) -> str:
+        """Detect economic cycle phase based on indicators"""
+        if gdp_qoq is None:
+            return 'unknown'
+
+        unemployment_rate = unemployment_data.get('latest_value')
+        fed_funds_rate = fed_funds_data.get('latest_value')
+
+        # Expansion: positive GDP growth, falling unemployment
+        if gdp_qoq > 2.0:
+            return 'expansion'
+        # Peak: slowing growth, tight labor market, high rates
+        elif gdp_qoq > 0 and gdp_qoq <= 2.0 and unemployment_rate and unemployment_rate < 4.0:
+            return 'peak'
+        # Contraction: negative GDP growth
+        elif gdp_qoq < 0:
+            return 'contraction'
+        # Trough: weak growth, high unemployment, low rates
+        elif gdp_qoq >= 0 and unemployment_rate and unemployment_rate > 6.0:
+            return 'trough'
+        else:
+            return 'transitional'
+
+    def _determine_regime_from_data(self, gdp_qoq: Optional[float], cpi_yoy: Optional[float], cycle_phase: str) -> str:
+        """Determine economic regime from raw data"""
+        if gdp_qoq is None or cpi_yoy is None:
+            return 'insufficient_data'
+
+        # Goldilocks: good growth (>2%), moderate inflation (1.5-3%)
+        if gdp_qoq > 2.0 and 1.5 < cpi_yoy < 3.0:
+            return 'goldilocks'
+        # Stagflation: weak growth (<1%), high inflation (>4%)
+        elif gdp_qoq < 1.0 and cpi_yoy > 4.0:
+            return 'stagflation'
+        # Recession: negative growth, any inflation
+        elif gdp_qoq < 0:
+            return 'recession'
+        # Overheating: strong growth (>3%), high inflation (>3%)
+        elif gdp_qoq > 3.0 and cpi_yoy > 3.0:
+            return 'overheating'
+        else:
+            return 'transitional'
+
+    def _identify_macro_risks_from_data(
+        self,
+        gdp_qoq: Optional[float],
+        cpi_yoy: Optional[float],
+        unemployment_data: Dict,
+        fred_data: Dict
+    ) -> List[str]:
+        """Identify macro risks from economic data"""
+        risks = []
+
+        # GDP risks
+        if gdp_qoq is not None:
+            if gdp_qoq < 0:
+                risks.append(f"Negative GDP growth ({gdp_qoq:.1f}% QoQ) - recession risk")
+            elif gdp_qoq < 1.0:
+                risks.append(f"Weak GDP growth ({gdp_qoq:.1f}% QoQ) - stagnation risk")
+
+        # Inflation risks
+        if cpi_yoy is not None:
+            if cpi_yoy > 4.0:
+                risks.append(f"Elevated inflation ({cpi_yoy:.1f}% YoY) - purchasing power erosion")
+            elif cpi_yoy > 3.0:
+                risks.append(f"Above-target inflation ({cpi_yoy:.1f}% YoY) - Fed hawkish risk")
+
+        # Unemployment risks
+        unemployment_rate = unemployment_data.get('latest_value')
+        if unemployment_rate and unemployment_rate > 6.0:
+            risks.append(f"Elevated unemployment ({unemployment_rate:.1f}%) - weak labor market")
+
+        # Data quality risks
+        if fred_data.get('source') == 'fallback':
+            risks.append("Using stale economic data - API unavailable")
+
+        return risks
+
+    def _identify_opportunities_from_regime(self, regime: str, gdp_qoq: Optional[float], cpi_yoy: Optional[float]) -> List[str]:
+        """Identify sector opportunities based on regime and conditions"""
+        opportunities = []
+
+        if regime == 'goldilocks':
+            opportunities.append("Technology - benefits from growth with low rates")
+            opportunities.append("Consumer Discretionary - strong demand environment")
+            opportunities.append("Industrials - capital expenditure cycle")
+        elif regime == 'stagflation':
+            opportunities.append("Energy - inflation hedge and supply constraints")
+            opportunities.append("Commodities - real asset protection")
+            opportunities.append("Utilities - defensive with pricing power")
+        elif regime == 'recession':
+            opportunities.append("Healthcare - defensive, inelastic demand")
+            opportunities.append("Consumer Staples - non-cyclical necessities")
+            opportunities.append("Quality dividend stocks - cash flow stability")
+        elif regime == 'overheating':
+            opportunities.append("Financials - benefit from rising rates")
+            opportunities.append("Materials - pricing power in tight supply")
+            opportunities.append("Real Estate - inflation hedge")
+        else:
+            opportunities.append("Diversification - uncertain regime transition")
+
+        return opportunities
+
     # ==================== PORTFOLIO RISK ANALYSIS ====================
     # Migrated from risk_agent.py
 

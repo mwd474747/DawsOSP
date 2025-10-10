@@ -283,6 +283,19 @@ class AgentRegistry:
         self.execution_metrics = {}  # Track compliance metrics
         self.bypass_warnings = []  # Track registry bypasses
 
+    @property
+    def adapters(self) -> Dict[str, AgentAdapter]:
+        """
+        Backward compatibility property for accessing agents.
+
+        Note: In Trinity 2.0, the internal attribute is 'agents' not 'adapters',
+        but this property maintains compatibility with documentation and legacy code.
+
+        Returns:
+            Dict mapping agent names to AgentAdapter instances
+        """
+        return self.agents
+
     def register(self, name: AgentName, agent: Any, capabilities: Optional[CapabilityDict] = None) -> None:
         """Register an agent with optional capabilities"""
         adapter = AgentAdapter(agent, capabilities)

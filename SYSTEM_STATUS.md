@@ -304,7 +304,7 @@ python3 scripts/lint_patterns.py
 python3 -c "
 from dawsos.main import runtime
 print(f'Registered agents: {len(runtime._agents)}')
-print(f'Registry agents: {len(runtime.agent_registry.adapters)}')
+print(f'Registry agents: {len(runtime.agent_registry.agents)}')
 "
 # Output: 15 agents in both ✅
 ```

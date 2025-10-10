@@ -16,6 +16,7 @@ from core.knowledge_loader import get_knowledge_loader
 # Import action registry system
 from core.actions.registry import ActionRegistry
 from core.actions.execute_through_registry import ExecuteThroughRegistryAction
+from core.actions.execute_by_capability import ExecuteByCapabilityAction
 from core.actions.normalize_response import NormalizeResponseAction
 from core.actions.store_in_graph import StoreInGraphAction
 from core.actions.fix_constructor_args import FixConstructorArgsAction
@@ -86,14 +87,15 @@ class PatternEngine:
         """
         Register action handlers with the action registry.
 
-        Phase 1.4: Complete - all 22 actions migrated to handler system.
+        Phase 1.4: Complete - all 23 actions migrated to handler system.
         Legacy execute_action_legacy() method can be deprecated.
         """
         try:
-            # Register all Phase 1.4 handlers (22/22 actions - 100% complete)
+            # Register all Phase 1.4 handlers (23/23 actions - 100% complete)
             handlers = [
                 # Trinity compliance (most critical)
                 ExecuteThroughRegistryAction(self),
+                ExecuteByCapabilityAction(self),  # Trinity 2.0 capability routing
 
                 # Response formatting and storage
                 NormalizeResponseAction(self),

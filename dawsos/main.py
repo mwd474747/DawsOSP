@@ -56,6 +56,7 @@ from ui.trinity_ui_components import get_trinity_ui
 from ui.data_integrity_tab import render_data_integrity_tab
 from ui.trinity_dashboard_tabs import get_trinity_dashboard_tabs
 from ui.api_health_tab import render_api_health_tab
+from ui.economic_dashboard import render_economic_dashboard
 
 # Page config
 st.set_page_config(
@@ -753,7 +754,11 @@ def _render_main_tabs(trinity_tabs):
         if trinity_tabs:
             trinity_tabs.render_trinity_economy()
         else:
-            display_economic_indicators()
+            # New Trinity 3.0 GDP Refresh Flow dashboard
+            render_economic_dashboard(
+                st.session_state.agent_runtime,
+                st.session_state.capabilities
+            )
 
     with tab6:
         if trinity_tabs:

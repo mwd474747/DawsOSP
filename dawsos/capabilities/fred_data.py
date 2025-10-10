@@ -683,6 +683,126 @@ class FredDataCapability(APIHelper):
 
         return results
 
+    def fetch_economic_indicators(
+        self,
+        series: Optional[List[str]] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        frequency: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Fetch economic indicators for Trinity 3.0 GDP Refresh Flow.
+
+        This is the primary method used by DataHarvester for capability-based routing
+        (can_fetch_economic_data). Implements three-tier fallback: live → cache → static.
+
+        Args:
+            series: List of series IDs (default: key indicators - GDP, CPI, UNRATE, DFF)
+            start_date: Start date in YYYY-MM-DD format (default: 5 years ago)
+            end_date: End date in YYYY-MM-DD format (default: today)
+            frequency: Optional frequency filter (not implemented yet, reserved for future)
+
+        Returns:
+            Dictionary with:
+            - series: Dict[series_id, SeriesData] - All series data
+            - source: 'live' | 'cache' | 'fallback' - Data source used
+            - timestamp: ISO timestamp of when data was fetched
+            - cache_age_seconds: Age of cached data (0 if live)
+            - health: API health status dict
+            - _metadata: Dict with fetch context
+
+        Example:
+            >>> fred = FredDataCapability()
+            >>> result = fred.fetch_economic_indicators(['GDP', 'UNRATE'])
+            >>> print(result['series']['GDP']['latest_value'])
+            25000.0
+            >>> print(result['source'])
+            'live'
+        """
+        # Default to key economic indicators
+        if not series:
+            series = ['GDP', 'CPIAUCSL', 'UNRATE', 'DFF']
+
+        # Resolve indicator names to series IDs
+        resolved_series = []
+        for s in series:
+            series_id = self.indicators.get(s.upper(), s)
+            resolved_series.append(series_id)
+
+        # Set default date range
+        if not end_date:
+            end_date = datetime.now().strftime('%Y-%m-%d')
+        if not start_date:
+            start_date = (datetime.now() - timedelta(days=365*5)).strftime('%Y-%m-%d')
+
+        # Fetch all series (uses internal caching and fallback)
+        series_data = self.get_multiple_series(resolved_series, start_date, end_date)
+
+        # Determine data source (live, cache, or fallback)
+        source = 'live'
+        max_cache_age = 0
+        has_errors = False
+        has_stale = False
+
+        for sid, data in series_data.items():
+            if 'error' in data:
+                has_errors = True
+            if data.get('_stale'):
+                has_stale = True
+                cache_age = data.get('_cache_age_days', 0) * 86400  # Convert days to seconds
+                max_cache_age = max(max_cache_age, cache_age)
+            elif data.get('_cached'):
+                # Fresh cache hit
+                cache_key = f"series_{sid}:{start_date}:{end_date}"
+                if cache_key in self.cache:
+                    cache_age = (datetime.now() - self.cache[cache_key]['time']).total_seconds()
+                    max_cache_age = max(max_cache_age, cache_age)
+
+        # Set source based on data state
+        if has_stale:
+            source = 'fallback'
+        elif max_cache_age > 0:
+            source = 'cache'
+        elif has_errors:
+            source = 'fallback'
+
+        # Get health status
+        health = self.get_health_status()
+
+        # Build response
+        result = {
+            'series': series_data,
+            'source': source,
+            'timestamp': datetime.now().isoformat(),
+            'cache_age_seconds': int(max_cache_age),
+            'health': health,
+            '_metadata': {
+                'series_requested': series,
+                'series_resolved': resolved_series,
+                'start_date': start_date,
+                'end_date': end_date,
+                'total_series': len(series_data),
+                'errors': sum(1 for d in series_data.values() if 'error' in d),
+                'stale_count': sum(1 for d in series_data.values() if d.get('_stale')),
+            }
+        }
+
+        # Add warning if using degraded data
+        if source == 'fallback':
+            result['_warning'] = (
+                f"Using expired cached data ({max_cache_age/86400:.1f} days old) "
+                "due to API unavailability. Data may be stale."
+            )
+        elif source == 'cache':
+            logger.debug(f"Using cached FRED data (age: {max_cache_age:.0f}s)")
+
+        logger.info(
+            f"Fetched {len(resolved_series)} economic indicators from {source} "
+            f"(cache_age: {max_cache_age:.0f}s, errors: {result['_metadata']['errors']})"
+        )
+
+        return result
+
     def get_latest_value(self, series_id: str) -> SeriesData:
         """
         Get just the most recent data point for a series

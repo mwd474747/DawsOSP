@@ -68,7 +68,7 @@ AGENT_CAPABILITIES: Dict[str, Dict[str, Any]] = {
         'description': 'Fetches data from external sources (market, economic, news, options)',
         'capabilities': [
             'can_fetch_stock_quotes',
-            'can_fetch_economic_data',
+            'can_fetch_economic_data',  # ← FRED economic indicators (GDP, CPI, UNRATE, FEDFUNDS)
             'can_fetch_news',
             'can_fetch_fundamentals',
             'can_fetch_market_movers',
@@ -240,7 +240,8 @@ AGENT_CAPABILITIES: Dict[str, Dict[str, Any]] = {
             'can_analyze_greeks',
             'can_analyze_options_flow',
             'can_detect_unusual_activity',
-            'can_calculate_iv_rank'
+            'can_calculate_iv_rank',
+            'can_analyze_macro_data'  # ← NEW: Compute GDP QoQ, CPI change, cycle phase detection
         ],
         'requires': [
             'requires_knowledge_graph',

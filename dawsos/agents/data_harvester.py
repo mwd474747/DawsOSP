@@ -400,7 +400,55 @@ class DataHarvester(BaseAgent):
         """
         Public wrapper for economic data fetching capability.
         Maps to: can_fetch_economic_data
+
+        This is the primary method for Trinity 3.0 GDP Refresh Flow, implementing
+        three-tier fallback (live → cache → static) via FredDataCapability.
+
+        Args:
+            indicators: List of indicator names or series IDs (default: ['GDP', 'CPI', 'UNRATE', 'DFF'])
+            context: Optional context with 'series', 'start_date', 'end_date', 'frequency'
+
+        Returns:
+            Dict with series data, source, timestamp, cache age, and health status
         """
+        # FRED capability is required for economic data
+        if 'fred' not in self.capabilities:
+            return {
+                'error': 'FRED capability not available',
+                'note': 'Configure FRED_API_KEY environment variable for economic data'
+            }
+
+        fred = self.capabilities['fred']
+
+        # Extract parameters from context if provided
+        series = indicators
+        start_date = None
+        end_date = None
+        frequency = None
+
+        if context:
+            series = context.get('series') or indicators
+            start_date = context.get('start_date')
+            end_date = context.get('end_date')
+            frequency = context.get('frequency')
+
+        # Use new fetch_economic_indicators method (Trinity 3.0)
+        if hasattr(fred, 'fetch_economic_indicators'):
+            result = fred.fetch_economic_indicators(
+                series=series,
+                start_date=start_date,
+                end_date=end_date,
+                frequency=frequency
+            )
+
+            # Store in knowledge graph if available
+            if self.graph and hasattr(self, 'store_result') and isinstance(result, dict):
+                node_id = self.store_result(result)
+                result['node_id'] = node_id
+
+            return result
+
+        # Fallback to legacy _harvest_fred method
         if indicators:
             query = f"Fetch economic indicators: {', '.join(indicators)}"
         else:

@@ -72,6 +72,26 @@ class KnowledgeLoader:
 
         self.logger.info(f"Knowledge Loader initialized with {len(self.datasets)} datasets")
 
+    @property
+    def ttl_seconds(self) -> int:
+        """
+        Get cache TTL in seconds for consistency.
+
+        Returns:
+            Cache TTL in seconds (default: 1800 = 30 minutes)
+        """
+        return int(self.cache_ttl.total_seconds())
+
+    @property
+    def _cache(self) -> Dict[str, Any]:
+        """
+        Backward compatibility property for accessing cache.
+
+        Returns:
+            Cache dictionary
+        """
+        return self.cache
+
     def get_dataset(self, name: str, force_reload: bool = False) -> Optional[Dict[str, Any]]:
         """
         Get a dataset by name, using cache when available.
