@@ -132,7 +132,8 @@ def _render_api_configuration_status() -> None:
             st.code(key_name, language="text")
 
         with col3:
-            has_key = creds.get(key_name, required=False) is not None
+            # Fix: Use bool() to correctly detect empty strings
+            has_key = bool(creds.get(key_name, required=False))
             if has_key:
                 st.success("✓ Configured")
             else:

@@ -435,5 +435,100 @@
     "metadata": {
       "template": "compliance_violation"
     }
+  },
+  "alert_trinity_compliance_violation_alert_20251010135607": {
+    "alert_id": "alert_trinity_compliance_violation_alert_20251010135607",
+    "name": "Trinity Compliance Violation Alert",
+    "alert_type": "trinity_compliance",
+    "condition": {
+      "field": "compliance.bypass_warnings",
+      "operator": ">",
+      "value": 0
+    },
+    "severity": "critical",
+    "enabled": true,
+    "status": "active",
+    "created_at": "2025-10-10T13:56:07.424140",
+    "last_triggered": null,
+    "trigger_count": 0,
+    "metadata": {
+      "template": "compliance_violation"
+    }
+  },
+  "alert_trinity_compliance_violation_alert_20251010140516": {
+    "alert_id": "alert_trinity_compliance_violation_alert_20251010140516",
+    "name": "Trinity Compliance Violation Alert",
+    "alert_type": "trinity_compliance",
+    "condition": {
+      "field": "compliance.bypass_warnings",
+      "operator": ">",
+      "value": 0
+    },
+    "severity": "critical",
+    "enabled": true,
+    "status": "active",
+    "created_at": "2025-10-10T14:05:16.048207",
+    "last_triggered": null,
+    "trigger_count": 0,
+    "metadata": {
+      "template": "compliance_violation"
+    }
+  },
+  "alert_trinity_compliance_violation_alert_20251010140911": {
+    "alert_id": "alert_trinity_compliance_violation_alert_20251010140911",
+    "name": "Trinity Compliance Violation Alert",
+    "alert_type": "trinity_compliance",
+    "condition": {
+      "field": "compliance.bypass_warnings",
+      "operator": ">",
+      "value": 0
+    },
+    "severity": "critical",
+    "enabled": true,
+    "status": "active",
+    "created_at": "2025-10-10T14:09:11.695019",
+    "last_triggered": null,
+    "trigger_count": 0,
+    "metadata": {
+      "template": "compliance_violation"
+    }
+  },
+  "alert_trinity_compliance_violation_alert_20251010141005": {
+    "alert_id": "alert_trinity_compliance_violation_alert_20251010141005",
+    "name": "Trinity Compliance Violation Alert",
+    "alert_type": "trinity_compliance",
+    "condition": {
+      "field": "compliance.bypass_warnings",
+      "operator": ">",
+      "value": 0
+    },
+    "severity": "critical",
+    "enabled": true,
+    "status": "active",
+    "created_at": "2025-10-10T14:10:05.534562",
+    "last_triggered": null,
+    "trigger_count": 0,
+    "metadata": {
+      "template": "compliance_violation"
+    }
+  },
+  "alert_trinity_compliance_violation_alert_20251010141039": {
+    "alert_id": "alert_trinity_compliance_violation_alert_20251010141039",
+    "name": "Trinity Compliance Violation Alert",
+    "alert_type": "trinity_compliance",
+    "condition": {
+      "field": "compliance.bypass_warnings",
+      "operator": ">",
+      "value": 0
+    },
+    "severity": "critical",
+    "enabled": true,
+    "status": "active",
+    "created_at": "2025-10-10T14:10:39.142235",
+    "last_triggered": null,
+    "trigger_count": 0,
+    "metadata": {
+      "template": "compliance_violation"
+    }
   }
 }
