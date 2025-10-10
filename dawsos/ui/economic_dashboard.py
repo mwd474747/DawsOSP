@@ -12,7 +12,7 @@ import plotly.graph_objects as go
 import pandas as pd
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
-from ui.utils.common import get_agent_safely
+# from ui.utils.common import get_agent_safely  # No longer needed - using capability routing
 
 
 def render_economic_dashboard(runtime, capabilities: Dict):
@@ -52,18 +52,17 @@ def render_economic_dashboard(runtime, capabilities: Dict):
     # Fetch economic data
     with st.spinner("Fetching economic indicators from FRED..."):
         try:
-            # Use capability routing through runtime
-            data_harvester = get_agent_safely(runtime, 'data_harvester')
+            # Use Trinity-compliant capability routing
+            fred_result = runtime.execute_by_capability(
+                'can_fetch_economic_data',
+                {
+                    'indicators': ['GDP', 'CPIAUCSL', 'UNRATE', 'DFF'],
+                    'start_date': start_date.strftime('%Y-%m-%d'),
+                    'end_date': end_date.strftime('%Y-%m-%d')
+                }
+            )
 
-            if data_harvester:
-                # Fetch data using new fetch_economic_indicators method
-                fred_result = data_harvester.fetch_economic_data(
-                    indicators=['GDP', 'CPIAUCSL', 'UNRATE', 'DFF'],
-                    context={
-                        'start_date': start_date.strftime('%Y-%m-%d'),
-                        'end_date': end_date.strftime('%Y-%m-%d')
-                    }
-                )
+            if fred_result and 'error' not in fred_result:
 
                 # Display data source indicator
                 source = fred_result.get('source', 'unknown')
@@ -92,33 +91,33 @@ def render_economic_dashboard(runtime, capabilities: Dict):
                 st.markdown("---")
                 st.subheader("🎯 Economic Analysis")
 
-                financial_analyst = get_agent_safely(runtime, 'financial_analyst')
+                # Use Trinity-compliant capability routing with pre-fetched data
+                analysis = runtime.execute_by_capability(
+                    'can_analyze_economy',
+                    {
+                        'gdp_data': gdp_data,
+                        'cpi_data': cpi_data,
+                        'unemployment_data': unemployment_data,
+                        'fed_funds_data': fed_funds_data
+                    }
+                )
 
-                if financial_analyst:
-                    # Set runtime on analyst for capability routing
-                    financial_analyst.runtime = runtime
-
-                    # Analyze macro context using fetched data directly
-                    # This bypasses runtime.execute_by_capability since we already have the data
-                    analysis = analyze_macro_data_directly(
-                        gdp_data, cpi_data, unemployment_data, fed_funds_data, financial_analyst
-                    )
-
-                    if analysis and 'error' not in analysis:
-                        render_macro_analysis(analysis)
-                    else:
-                        st.error(f"Analysis error: {analysis.get('error') if analysis else 'Unknown error'}")
-                        if analysis:
-                            st.info(analysis.get('note', ''))
+                if analysis and 'error' not in analysis:
+                    render_macro_analysis(analysis)
                 else:
-                    st.warning("Financial Analyst not available for macro analysis")
+                    error_msg = analysis.get('error', 'Unknown error') if analysis else 'No result'
+                    st.error(f"❌ Analysis error: {error_msg}")
+                    st.info("Economic analysis capability may not be available. Check agent registration.")
 
                 # Display daily events section
                 st.markdown("---")
                 render_daily_events()
 
             else:
-                st.error("DataHarvester agent not found in runtime")
+                # Handle capability routing error
+                error_msg = fred_result.get('error', 'Unknown error') if fred_result else 'No result returned'
+                st.error(f"❌ Failed to fetch economic data: {error_msg}")
+                st.info("Economic data fetching capability may not be available. Check agent registration.")
 
         except Exception as e:
             st.error(f"Error fetching economic data: {e}")
@@ -360,86 +359,8 @@ def render_macro_analysis(analysis: Dict):
         st.warning(f"⚠️ Data is {metadata.get('cache_age_seconds', 0) // 86400} days old - FRED API unavailable")
 
 
-def analyze_macro_data_directly(
-    gdp_data: Dict,
-    cpi_data: Dict,
-    unemployment_data: Dict,
-    fed_funds_data: Dict,
-    financial_analyst
-) -> Optional[Dict]:
-    """
-    Analyze macro data directly using FinancialAnalyst methods.
-
-    This bypasses runtime.execute_by_capability() and works with already-fetched data.
-    """
-    from datetime import datetime
-
-    try:
-        # Calculate GDP QoQ
-        gdp_qoq = financial_analyst._calculate_gdp_qoq(gdp_data)
-
-        # Calculate CPI YoY
-        cpi_yoy = financial_analyst._calculate_cpi_yoy(cpi_data)
-
-        # Detect cycle phase
-        cycle_phase = financial_analyst._detect_cycle_phase(gdp_qoq, unemployment_data, fed_funds_data)
-
-        # Determine regime
-        regime = financial_analyst._determine_regime_from_data(gdp_qoq, cpi_yoy, cycle_phase)
-
-        # Identify macro risks
-        fred_data = {'source': 'live', 'cache_age_seconds': 0}
-        macro_risks = financial_analyst._identify_macro_risks_from_data(
-            gdp_qoq, cpi_yoy, unemployment_data, fred_data
-        )
-
-        # Identify opportunities
-        opportunities = financial_analyst._identify_opportunities_from_regime(regime, gdp_qoq, cpi_yoy)
-
-        # Build analysis result
-        analysis = {
-            'timestamp': datetime.now().isoformat(),
-            'gdp_qoq': round(gdp_qoq, 2) if gdp_qoq is not None else None,
-            'cpi_yoy': round(cpi_yoy, 2) if cpi_yoy is not None else None,
-            'cycle_phase': cycle_phase,
-            'regime': regime,
-            'macro_risks': macro_risks,
-            'opportunities': opportunities,
-            'indicators': {
-                'gdp': {
-                    'latest': gdp_data.get('latest_value'),
-                    'date': gdp_data.get('latest_date'),
-                    'qoq_growth': gdp_qoq
-                },
-                'cpi': {
-                    'latest': cpi_data.get('latest_value'),
-                    'date': cpi_data.get('latest_date'),
-                    'yoy_change': cpi_yoy
-                },
-                'unemployment': {
-                    'latest': unemployment_data.get('latest_value'),
-                    'date': unemployment_data.get('latest_date')
-                },
-                'fed_funds': {
-                    'latest': fed_funds_data.get('latest_value'),
-                    'date': fed_funds_data.get('latest_date')
-                }
-            },
-            '_metadata': {
-                'source': 'live',
-                'cache_age_seconds': 0,
-                'analysis_type': 'macro_context'
-            }
-        }
-
-        return analysis
-
-    except Exception as e:
-        import traceback
-        return {
-            'error': f'Analysis failed: {str(e)}',
-            'traceback': traceback.format_exc()
-        }
+# analyze_macro_data_directly() removed - was a workaround for broken capability routing
+# Now using proper Trinity-compliant runtime.execute_by_capability() instead
 
 
 def render_daily_events():

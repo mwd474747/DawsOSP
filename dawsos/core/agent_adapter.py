@@ -36,10 +36,11 @@ class AgentAdapter:
 
         Args:
             agent: The agent to wrap
-            capabilities: Optional capabilities to inject
+            capabilities: Optional capabilities metadata from AGENT_CAPABILITIES
         """
         self.agent = agent
-        self.capabilities = capabilities or {}
+        self.metadata_capabilities = capabilities  # Store metadata separately for capability routing
+        self.capabilities = capabilities or {}  # Keep for backward compatibility
         self.method_priority = ['process', 'think', 'analyze', 'interpret', 'harvest', 'execute']
         self._detect_methods()
 
@@ -239,11 +240,28 @@ class AgentAdapter:
             return None
 
     def get_capabilities(self) -> Dict[str, Any]:
-        """Get agent's declared capabilities"""
-        if hasattr(self.agent, 'capabilities'):
-            return self.agent.capabilities
+        """
+        Get agent's declared capabilities for capability-based routing.
 
-        # Infer capabilities from class name and methods
+        Returns metadata capabilities (strings) instead of runtime capabilities (objects)
+        to enable proper capability lookups in AgentRegistry.find_capable_agent().
+        """
+        # PRIORITY 1: Return metadata capabilities if available
+        if self.metadata_capabilities:
+            # Convert list format to dict format for compatibility
+            if isinstance(self.metadata_capabilities.get('capabilities'), list):
+                caps_dict = {cap: True for cap in self.metadata_capabilities['capabilities']}
+                return caps_dict
+            return self.metadata_capabilities
+
+        # PRIORITY 2: Use agent.capabilities only if it's capability strings (not objects)
+        if hasattr(self.agent, 'capabilities'):
+            caps = self.agent.capabilities
+            # Check if it's capability objects (has 'market', 'fred', etc.) vs strings
+            if caps and not isinstance(next(iter(caps.values()), None), type):
+                return caps  # It's already capability strings
+
+        # PRIORITY 3: Infer capabilities from class name and methods
         capabilities = {
             'name': self.agent.__class__.__name__,
             'methods': list(self.available_methods.keys()),
@@ -307,9 +325,17 @@ class AgentRegistry:
         return self.agents.get(name)
 
     def find_capable_agent(self, capability: str) -> Optional[str]:
-        """Find agent with specific capability"""
+        """
+        Find agent with specific capability.
+
+        Handles both dict and list capability formats for robustness.
+        """
         for name, caps in self.capabilities_map.items():
-            if caps.get(capability):
+            # Handle dict format: {'can_fetch_data': True, 'can_analyze': True}
+            if isinstance(caps, dict) and (capability in caps or caps.get(capability)):
+                return name
+            # Handle list format: ['can_fetch_data', 'can_analyze']
+            elif isinstance(caps, list) and capability in caps:
                 return name
         return None
 
