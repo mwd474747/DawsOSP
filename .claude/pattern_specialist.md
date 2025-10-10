@@ -16,15 +16,18 @@ You specialize in:
 
 ### Pattern Location
 All patterns live in `dawsos/patterns/` with subdirectories:
-- `analysis/` - Analytical workflows (14 patterns)
-- `ui/` - UI interaction patterns (6 patterns)
+- `analysis/` - Analytical workflows (15 patterns)
+- `workflows/` - Multi-step workflows (5 patterns)
 - `governance/` - Compliance and quality (6 patterns)
 - `queries/` - Data retrieval patterns (6 patterns)
-- `workflows/` - Multi-step workflows (4 patterns)
-- `actions/` - Discrete actions (4 patterns)
+- `ui/` - UI interaction patterns (6 patterns)
+- `actions/` - Discrete actions (5 patterns)
 - `system/meta/` - Meta-execution patterns (5 patterns)
 
-**Total**: 45 patterns (0 errors, 1 cosmetic warning)
+**Total**: 48 patterns (0 errors, 1 cosmetic warning)
+**Organization**: 90% categorized (44/49 patterns, excluding schema.json and system/meta)
+**Templates**: 9 critical templates added (markdown-formatted output)
+**Capability Routing**: 68% converted (60 legacy steps → capability-based)
 **Validation**: `python3 scripts/lint_patterns.py` integrated in CI/CD
 
 ### Pattern Engine (`core/pattern_engine.py`)

@@ -30,7 +30,10 @@ Request → UniversalExecutor → PatternEngine → AgentRuntime/AgentRegistry �
 
 2. **PatternEngine** (`core/pattern_engine.py`)
    - Executes JSON-defined workflows from `dawsos/patterns/`
-   - 45 patterns (0 errors) across categories: analysis, ui, governance, queries, workflows, system/meta
+   - 48 patterns (0 errors, 1 cosmetic warning) across 7 categories
+   - 90% categorized (44/49 patterns)
+   - 68% use capability-based routing (60 legacy steps converted)
+   - 9 critical templates added for markdown output
    - Loads enriched knowledge via KnowledgeLoader
    - Resolves parameters with variable substitution
    - Primary action: `execute_through_registry` (Trinity-compliant)
