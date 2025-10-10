@@ -504,204 +504,19 @@ def _process_user_input(user_input):
                 st.rerun()
 
 
-def display_chat_interface():
-    """Main chat interface with Claude.
-
-    Displays chat history and handles user input through the orchestration system.
-    """
-    st.markdown("### Chat with DawsOS")
-
-    # Display chat history
-    _display_chat_history()
-
-    # Chat input and processing
-    user_input = st.chat_input("Ask anything about markets, economics, or stocks...")
-
-    if user_input:
-        _process_user_input(user_input)
-
-def display_intelligence_dashboard():
-    """Display key metrics and insights"""
-    graph = st.session_state.graph
-    stats = graph.get_stats()
-
-    # Display real market data at top
-    st.markdown("### 📊 Market Overview")
-
-    market = st.session_state.capabilities.get('market')
-    if market:
-        # Get major indices
-        indices = ['SPY', 'QQQ', 'DIA', 'IWM']
-        cols = st.columns(len(indices))
-
-        for i, symbol in enumerate(indices):
-            quote = market.get_quote(symbol)
-            if 'error' not in quote:
-                with cols[i]:
-                    change = quote.get('change_percent', 0)
-                    color = "green" if change >= 0 else "red"
-                    st.metric(
-                        symbol,
-                        f"${quote.get('price', 0):.2f}",
-                        f"{change:.2f}%",
-                        delta_color="normal" if change >= 0 else "inverse"
-                    )
-
-    st.markdown("### 🧠 Knowledge Graph Metrics")
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.metric("Total Nodes", stats['total_nodes'])
-        st.caption("Knowledge entities")
-
-    with col2:
-        st.metric("Total Edges", stats['total_edges'])
-        st.caption("Relationships")
-
-    with col3:
-        st.metric("Patterns", len(graph.patterns))
-        st.caption("Discovered patterns")
-
-    with col4:
-        avg_conn = stats.get('avg_connections', 0)
-        st.metric("Avg Connections", f"{avg_conn:.2f}")
-        st.caption("Network density")
-    
-    # Node type distribution
-    st.markdown("#### Node Distribution")
-    if stats['node_types']:
-        df_nodes = pd.DataFrame(
-            list(stats['node_types'].items()),
-            columns=['Type', 'Count']
-        )
-        st.bar_chart(df_nodes.set_index('Type'))
-    
-    # Recent patterns
-    st.markdown("#### Recent Patterns")
-    if graph.patterns:
-        for pattern_id, pattern in list(graph.patterns.items())[:5]:
-            with st.expander(f"{pattern.get('name', pattern_id)}"):
-                st.write(f"Type: {pattern.get('type')}")
-                st.write(f"Strength: {pattern.get('strength', 'N/A')}")
-                st.write(f"Discovered: {pattern.get('discovered', 'Unknown')}")
-
-def display_market_data():
-    """Display live market data"""
-    st.markdown("### Market Data")
-    
-    market = st.session_state.capabilities['market']
-    
-    # Quick quote lookup
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        symbol = st.text_input("Enter symbol:", value="AAPL")
-    with col2:
-        if st.button("Get Quote"):
-            quote = market.get_quote(symbol)
-            if 'error' not in quote:
-                st.success(f"Added {symbol} to graph")
-                # Add to graph
-                node_id = st.session_state.graph.add_node(
-                    'stock',
-                    {'ticker': symbol, 'price': quote['price']},
-                    node_id=symbol
-                )
-    
-    # Market movers
-    tab1, tab2, tab3 = st.tabs(["Gainers", "Losers", "Most Active"])
-    
-    with tab1:
-        gainers = market.get_market_movers('gainers')
-        if gainers and not any('error' in g for g in gainers):
-            df_gainers = pd.DataFrame(gainers[:10])
-            st.dataframe(df_gainers, hide_index=True)
-    
-    with tab2:
-        losers = market.get_market_movers('losers')
-        if losers and not any('error' in l for l in losers):
-            df_losers = pd.DataFrame(losers[:10])
-            st.dataframe(df_losers, hide_index=True)
-    
-    with tab3:
-        actives = market.get_market_movers('actives')
-        if actives and not any('error' in a for a in actives):
-            df_actives = pd.DataFrame(actives[:10])
-            st.dataframe(df_actives, hide_index=True)
-
-def display_economic_indicators():
-    """Display economic indicators with real FRED data"""
-    st.markdown("### 📊 Economic Dashboard")
-
-    fred = st.session_state.capabilities.get('fred')
-    if not fred:
-        st.warning("Economic data not available - set FRED_API_KEY")
-        return
-
-    # Main economic indicators
-    st.markdown("#### Key Economic Indicators")
-
-    indicators = ['GDP', 'CPI', 'UNEMPLOYMENT', 'FED_FUNDS']
-    cols = st.columns(len(indicators))
-
-    for i, indicator in enumerate(indicators):
-        with cols[i]:
-            data = fred.get_latest(indicator)
-            if data and 'error' not in data:
-                value = data.get('value', 0)
-                change = data.get('change', 0)
-                trend = data.get('trend', 'stable')
-                date = data.get('date', 'N/A')
-
-                # Format values appropriately
-                if value is not None:
-                    if indicator in ['GDP', 'CPI', 'UNEMPLOYMENT']:
-                        display_value = f"{value:.1f}%"
-                    else:
-                        display_value = f"{value:.2f}%"
-                else:
-                    display_value = "N/A"
-
-                # Determine delta color
-                if indicator == 'UNEMPLOYMENT':
-                    delta_color = "inverse"  # Lower is better
-                elif indicator == 'GDP':
-                    delta_color = "normal"   # Higher is better
-                else:
-                    delta_color = "off"      # Neutral
-
-                st.metric(
-                    indicator.replace('_', ' '),
-                    display_value,
-                    f"{change:+.2f}",
-                    delta_color=delta_color
-                )
-                st.caption(f"{trend.capitalize()} • {date}")
-
-def _initialize_trinity_tabs():
-    """Initialize Trinity dashboard tabs.
-
-    Returns:
-        Trinity dashboard tabs object or None if initialization fails
-    """
-    try:
-        trinity_tabs = get_trinity_dashboard_tabs(
-            st.session_state.agent_runtime.pattern_engine,
-            st.session_state.agent_runtime,
-            st.session_state.graph
-        )
-        return trinity_tabs
-    except Exception as e:
-        st.error(f"Failed to initialize Trinity tabs: {str(e)}")
-        return None
+# Legacy display_* functions removed - now using Trinity dashboard tabs directly
 
 
-def _render_main_tabs(trinity_tabs):
-    """Render all main application tabs.
 
-    Args:
-        trinity_tabs: Trinity dashboard tabs object (may be None)
-    """
+def _render_main_tabs():
+    """Render all main application tabs using Trinity architecture."""
+    # Initialize Trinity tabs for tabs that use it
+    trinity_tabs = get_trinity_dashboard_tabs(
+        st.session_state.agent_runtime.pattern_engine,
+        st.session_state.agent_runtime,
+        st.session_state.graph
+    )
+
     # Create tabs
     tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs([
         "Chat",
@@ -719,56 +534,26 @@ def _render_main_tabs(trinity_tabs):
     ])
 
     with tab1:
-        if trinity_tabs:
-            trinity_tabs.render_trinity_chat_interface()
-        else:
-            display_chat_interface()
+        trinity_tabs.render_trinity_chat_interface()
 
     with tab2:
-        if trinity_tabs:
-            trinity_tabs.render_trinity_knowledge_graph()
-        else:
-            # Fallback to original implementation
-            st.markdown("### Living Knowledge Graph")
-            if st.session_state.graph._graph.number_of_nodes() > 0:
-                fig = visualize_graph()
-                st.plotly_chart(fig, width="stretch")
-            else:
-                st.info("Start chatting to build the knowledge graph!")
-            stats = st.session_state.graph.get_stats()
-            st.json(stats)
+        trinity_tabs.render_trinity_knowledge_graph()
 
     with tab3:
-        if trinity_tabs:
-            trinity_tabs.render_trinity_dashboard()
-        else:
-            display_intelligence_dashboard()
+        trinity_tabs.render_trinity_dashboard()
 
     with tab4:
-        if trinity_tabs:
-            trinity_tabs.render_trinity_markets()
-        else:
-            display_market_data()
+        trinity_tabs.render_trinity_markets()
 
     with tab5:
-        if trinity_tabs:
-            trinity_tabs.render_trinity_economy()
-        else:
-            # New Trinity 3.0 GDP Refresh Flow dashboard
-            render_economic_dashboard(
-                st.session_state.agent_runtime,
-                st.session_state.capabilities
-            )
+        # Trinity 3.0 GDP Refresh Flow dashboard with FRED data
+        render_economic_dashboard(
+            st.session_state.agent_runtime,
+            st.session_state.capabilities
+        )
 
     with tab6:
-        if trinity_tabs:
-            trinity_tabs.render_trinity_workflows()
-        else:
-            render_workflows_tab(
-                st.session_state.workflows,
-                st.session_state.graph,
-                st.session_state.agent_runtime
-            )
+        trinity_tabs.render_trinity_workflows()
 
     with tab7:
         # Trinity UI Tab - Pattern-Knowledge-Agent powered interface
@@ -1033,11 +818,8 @@ def main():
     st.markdown("# DawsOS - Living Knowledge Graph Intelligence")
     st.markdown("*Every interaction makes me smarter*")
 
-    # Initialize Trinity dashboard tabs
-    trinity_tabs = _initialize_trinity_tabs()
-
     # Render main tabs
-    _render_main_tabs(trinity_tabs)
+    _render_main_tabs()
 
     # Render sidebar
     _render_sidebar()
