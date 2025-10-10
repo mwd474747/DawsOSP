@@ -627,15 +627,30 @@ def display_economic_indicators():
                 )
                 st.caption(f"{trend.capitalize()} • {date}")
 
-def main():
-    """Main application"""
-    # Initialize
-    init_session_state()
-    
-    # Header
-    st.markdown("# DawsOS - Living Knowledge Graph Intelligence")
-    st.markdown("*Every interaction makes me smarter*")
-    
+def _initialize_trinity_tabs():
+    """Initialize Trinity dashboard tabs.
+
+    Returns:
+        Trinity dashboard tabs object or None if initialization fails
+    """
+    try:
+        trinity_tabs = get_trinity_dashboard_tabs(
+            st.session_state.agent_runtime.pattern_engine,
+            st.session_state.agent_runtime,
+            st.session_state.graph
+        )
+        return trinity_tabs
+    except Exception as e:
+        st.error(f"Failed to initialize Trinity tabs: {str(e)}")
+        return None
+
+
+def _render_main_tabs(trinity_tabs):
+    """Render all main application tabs.
+
+    Args:
+        trinity_tabs: Trinity dashboard tabs object (may be None)
+    """
     # Create tabs
     tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs([
         "Chat",
@@ -651,17 +666,6 @@ def main():
         "Alerts",
         "API Health"
     ])
-    
-    # Initialize Trinity dashboard tabs
-    try:
-        trinity_tabs = get_trinity_dashboard_tabs(
-            st.session_state.agent_runtime.pattern_engine,
-            st.session_state.agent_runtime,
-            st.session_state.graph
-        )
-    except Exception as e:
-        st.error(f"Failed to initialize Trinity tabs: {str(e)}")
-        trinity_tabs = None
 
     with tab1:
         if trinity_tabs:
@@ -795,13 +799,148 @@ def main():
             st.markdown("- 📅 Data freshness guidelines")
             st.markdown("- 🔧 Quick template-based alert creation")
 
-    # Sidebar
+
+def _execute_chat_action(user_msg: str, success_msg: str) -> None:
+    """Execute a chat action and display feedback.
+
+    Args:
+        user_msg: User message to send to agent runtime
+        success_msg: Success message to display to user
+    """
+    st.session_state.chat_history.append({"role": "user", "content": user_msg})
+    response = st.session_state.agent_runtime.orchestrate(user_msg)
+    st.session_state.chat_history.append({"role": "assistant", "content": response})
+    st.success(success_msg)
+    st.rerun()
+
+
+def _render_quick_actions():
+    """Render quick action buttons in sidebar."""
+    st.markdown("### Quick Actions")
+
+    if st.button("Analyze Macro Environment"):
+        _execute_chat_action("Show me macro analysis", "Analysis complete! Check the chat tab.")
+
+    if st.button("Detect Market Regime"):
+        _execute_chat_action("Detect the market regime", "Regime detected! Check the chat tab.")
+
+    if st.button("Find Patterns"):
+        _execute_chat_action("Show sector performance", "Patterns discovered! Check the chat tab.")
+
+    if st.button("Hunt Relationships"):
+        _execute_chat_action("Find correlations for SPY", "Relationships found! Check the chat tab.")
+
+
+def _render_fundamental_analysis():
+    """Render fundamental analysis buttons in sidebar."""
+    st.markdown("### Fundamental Analysis")
+
+    if st.button("🏰 Analyze Moat"):
+        _execute_chat_action("Analyze economic moat for AAPL", "Moat analysis complete!")
+
+    if st.button("✅ Buffett Checklist"):
+        _execute_chat_action("Run Buffett checklist for MSFT", "Checklist complete!")
+
+    if st.button("💰 Owner Earnings"):
+        _execute_chat_action("Calculate owner earnings", "Calculation complete!")
+
+    if st.button("🔄 Debt Cycle"):
+        _execute_chat_action("Where are we in the debt cycle?", "Cycle analysis complete!")
+
+
+def _render_pattern_library():
+    """Render available patterns browser in sidebar."""
+    st.markdown("### Available Patterns")
+
+    if not hasattr(st.session_state.agent_runtime, 'pattern_engine'):
+        return
+
+    pattern_engine = st.session_state.agent_runtime.pattern_engine
+    pattern_categories = {
+        'Queries': [],
+        'Analysis': [],
+        'Actions': [],
+        'Workflows': [],
+        'UI': []
+    }
+
+    for pattern_id, pattern in pattern_engine.patterns.items():
+        if pattern_id == 'schema':
+            continue
+
+        # Categorize patterns
+        if pattern_id in ['stock_price', 'market_regime', 'macro_analysis', 'company_analysis', 'sector_performance', 'correlation_finder']:
+            pattern_categories['Queries'].append(pattern['name'])
+        elif pattern_id in ['technical_analysis', 'portfolio_analysis', 'earnings_analysis', 'risk_assessment', 'sentiment_analysis']:
+            pattern_categories['Analysis'].append(pattern['name'])
+        elif pattern_id in ['add_to_graph', 'create_alert', 'generate_forecast', 'add_to_portfolio', 'export_data']:
+            pattern_categories['Actions'].append(pattern['name'])
+        elif pattern_id in ['morning_briefing', 'deep_dive', 'opportunity_scan', 'portfolio_review']:
+            pattern_categories['Workflows'].append(pattern['name'])
+        elif pattern_id in ['dashboard_update', 'watchlist_update', 'help_guide']:
+            pattern_categories['UI'].append(pattern['name'])
+
+    with st.expander("📚 Pattern Library", expanded=False):
+        for category, patterns in pattern_categories.items():
+            if patterns:
+                st.caption(f"**{category}** ({len(patterns)})")
+                for pattern_name in patterns:
+                    st.text(f"  • {pattern_name}")
+
+
+def _render_graph_controls():
+    """Render graph control buttons in sidebar."""
+    st.markdown("### Graph Controls")
+
+    if st.button("Save Graph"):
+        save_result = st.session_state.persistence.save_graph_with_backup(st.session_state.graph)
+        st.success(f"Graph saved with backup! Checksum: {save_result['checksum'][:16]}...")
+
+    if st.button("Load Graph"):
+        if st.session_state.graph.load('storage/graph.json'):
+            st.success("Graph loaded!")
+            st.rerun()
+
+    if st.button("Clear Graph"):
+        if st.checkbox("Confirm clear"):
+            st.session_state.graph = KnowledgeGraph()
+            st.session_state.chat_history = []
+            st.success("Graph cleared!")
+            st.rerun()
+
+
+def _render_api_status():
+    """Render API status indicators in sidebar."""
+    st.markdown("### API Status")
+
+    api_status = {
+        "Claude": "Active" if os.getenv('ANTHROPIC_API_KEY') else "Missing",
+        "FMP": "Active" if os.getenv('FMP_API_KEY') else "Missing",
+        "FRED": "Active",  # Free API
+        "News": "Warning",  # Needs key
+    }
+
+    for api, status in api_status.items():
+        if status == "Active":
+            st.write(f"[Active] {api}")
+        elif status == "Missing":
+            st.write(f"[Missing] {api}")
+        else:
+            st.write(f"[Warning] {api}")
+
+
+def _render_sidebar():
+    """Render complete sidebar with all sections."""
     with st.sidebar:
-        st.markdown("### Quick Actions")
+        _render_quick_actions()
 
         # API Health Status
         st.markdown("---")
         try:
+            trinity_ui = get_trinity_ui(
+                pattern_engine=st.session_state.agent_runtime.pattern_engine,
+                runtime=st.session_state.agent_runtime
+            )
             trinity_ui.render_api_health_status()
         except Exception as e:
             st.warning(f"API health status unavailable: {str(e)}")
@@ -816,181 +955,37 @@ def main():
             alert_panel.render_alert_notifications()
         except Exception:
             pass  # Silent fail for sidebar notifications
-        
-        if st.button("Analyze Macro Environment"):
-            # Add user message to chat
-            user_msg = "Show me macro analysis"
-            st.session_state.chat_history.append({"role": "user", "content": user_msg})
-
-            # Get response
-            response = st.session_state.agent_runtime.orchestrate(user_msg)
-
-            # Add assistant response to chat
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
-
-            # Show brief feedback
-            st.success("Analysis complete! Check the chat tab.")
-            st.rerun()
-
-        if st.button("Detect Market Regime"):
-            # Add user message to chat
-            user_msg = "Detect the market regime"
-            st.session_state.chat_history.append({"role": "user", "content": user_msg})
-
-            # Get response
-            response = st.session_state.agent_runtime.orchestrate(user_msg)
-
-            # Add assistant response to chat
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
-
-            # Show brief feedback
-            st.success("Regime detected! Check the chat tab.")
-            st.rerun()
-
-        if st.button("Find Patterns"):
-            # Add user message to chat
-            user_msg = "Show sector performance"
-            st.session_state.chat_history.append({"role": "user", "content": user_msg})
-
-            # Get response
-            response = st.session_state.agent_runtime.orchestrate(user_msg)
-
-            # Add assistant response to chat
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
-
-            # Show brief feedback
-            st.success("Patterns discovered! Check the chat tab.")
-            st.rerun()
-
-        if st.button("Hunt Relationships"):
-            # Add user message to chat
-            user_msg = "Find correlations for SPY"
-            st.session_state.chat_history.append({"role": "user", "content": user_msg})
-
-            # Get response
-            response = st.session_state.agent_runtime.orchestrate(user_msg)
-
-            # Add assistant response to chat
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
-
-            # Show brief feedback
-            st.success("Relationships found! Check the chat tab.")
-            st.rerun()
-        
-        st.markdown("---")
-
-        # Fundamental Analysis section
-        st.markdown("### Fundamental Analysis")
-
-        if st.button("🏰 Analyze Moat"):
-            user_msg = "Analyze economic moat for AAPL"
-            st.session_state.chat_history.append({"role": "user", "content": user_msg})
-            response = st.session_state.agent_runtime.orchestrate(user_msg)
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
-            st.success("Moat analysis complete!")
-            st.rerun()
-
-        if st.button("✅ Buffett Checklist"):
-            user_msg = "Run Buffett checklist for MSFT"
-            st.session_state.chat_history.append({"role": "user", "content": user_msg})
-            response = st.session_state.agent_runtime.orchestrate(user_msg)
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
-            st.success("Checklist complete!")
-            st.rerun()
-
-        if st.button("💰 Owner Earnings"):
-            user_msg = "Calculate owner earnings"
-            st.session_state.chat_history.append({"role": "user", "content": user_msg})
-            response = st.session_state.agent_runtime.orchestrate(user_msg)
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
-            st.success("Calculation complete!")
-            st.rerun()
-
-        if st.button("🔄 Debt Cycle"):
-            user_msg = "Where are we in the debt cycle?"
-            st.session_state.chat_history.append({"role": "user", "content": user_msg})
-            response = st.session_state.agent_runtime.orchestrate(user_msg)
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
-            st.success("Cycle analysis complete!")
-            st.rerun()
 
         st.markdown("---")
-
-        # Pattern Browser
-        st.markdown("### Available Patterns")
-        if hasattr(st.session_state.agent_runtime, 'pattern_engine'):
-            pattern_engine = st.session_state.agent_runtime.pattern_engine
-            pattern_categories = {
-                'Queries': [],
-                'Analysis': [],
-                'Actions': [],
-                'Workflows': [],
-                'UI': []
-            }
-
-            for pattern_id, pattern in pattern_engine.patterns.items():
-                if pattern_id == 'schema':
-                    continue
-
-                # Categorize patterns
-                if pattern_id in ['stock_price', 'market_regime', 'macro_analysis', 'company_analysis', 'sector_performance', 'correlation_finder']:
-                    pattern_categories['Queries'].append(pattern['name'])
-                elif pattern_id in ['technical_analysis', 'portfolio_analysis', 'earnings_analysis', 'risk_assessment', 'sentiment_analysis']:
-                    pattern_categories['Analysis'].append(pattern['name'])
-                elif pattern_id in ['add_to_graph', 'create_alert', 'generate_forecast', 'add_to_portfolio', 'export_data']:
-                    pattern_categories['Actions'].append(pattern['name'])
-                elif pattern_id in ['morning_briefing', 'deep_dive', 'opportunity_scan', 'portfolio_review']:
-                    pattern_categories['Workflows'].append(pattern['name'])
-                elif pattern_id in ['dashboard_update', 'watchlist_update', 'help_guide']:
-                    pattern_categories['UI'].append(pattern['name'])
-
-            with st.expander("📚 Pattern Library", expanded=False):
-                for category, patterns in pattern_categories.items():
-                    if patterns:
-                        st.caption(f"**{category}** ({len(patterns)})")
-                        for pattern_name in patterns:
-                            st.text(f"  • {pattern_name}")
+        _render_fundamental_analysis()
 
         st.markdown("---")
+        _render_pattern_library()
 
-        # Graph controls
-        st.markdown("### Graph Controls")
-        
-        if st.button("Save Graph"):
-            save_result = st.session_state.persistence.save_graph_with_backup(st.session_state.graph)
-            st.success(f"Graph saved with backup! Checksum: {save_result['checksum'][:16]}...")
-            
-        if st.button("Load Graph"):
-            if st.session_state.graph.load('storage/graph.json'):
-                st.success("Graph loaded!")
-                st.rerun()
-                
-        if st.button("Clear Graph"):
-            if st.checkbox("Confirm clear"):
-                st.session_state.graph = KnowledgeGraph()
-                st.session_state.chat_history = []
-                st.success("Graph cleared!")
-                st.rerun()
-        
-        # API Status
         st.markdown("---")
-        st.markdown("### API Status")
-        
-        # Check API keys
-        api_status = {
-            "Claude": "Active" if os.getenv('ANTHROPIC_API_KEY') else "Missing",
-            "FMP": "Active" if os.getenv('FMP_API_KEY') else "Missing",
-            "FRED": "Active",  # Free API
-            "News": "Warning",  # Needs key
-        }
-        
-        for api, status in api_status.items():
-            if status == "Active":
-                st.write(f"[Active] {api}")
-            elif status == "Missing":
-                st.write(f"[Missing] {api}")
-            else:
-                st.write(f"[Warning] {api}")
+        _render_graph_controls()
+
+        st.markdown("---")
+        _render_api_status()
+
+
+def main():
+    """Main Streamlit application entry point."""
+    # Initialize system
+    init_session_state()
+
+    # Render header
+    st.markdown("# DawsOS - Living Knowledge Graph Intelligence")
+    st.markdown("*Every interaction makes me smarter*")
+
+    # Initialize Trinity dashboard tabs
+    trinity_tabs = _initialize_trinity_tabs()
+
+    # Render main tabs
+    _render_main_tabs(trinity_tabs)
+
+    # Render sidebar
+    _render_sidebar()
 
 if __name__ == "__main__":
     main()
