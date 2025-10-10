@@ -1,0 +1,471 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "last_updated": "2025-10-10",
+    "source": "Federal Reserve, BLS, Census Bureau, Treasury",
+    "description": "Economic data releases and policy events calendar",
+    "update_frequency": "monthly",
+    "coverage": "Q4 2025 - Q2 2026"
+  },
+  "events": [
+    {
+      "date": "2025-10-11",
+      "event": "CPI (Consumer Price Index)",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "CPIAUCSL",
+      "agency": "Bureau of Labor Statistics",
+      "description": "Inflation measure tracking consumer goods and services"
+    },
+    {
+      "date": "2025-10-15",
+      "event": "Retail Sales",
+      "type": "data_release",
+      "importance": "medium",
+      "indicator": "RETAIL",
+      "agency": "Census Bureau",
+      "description": "Monthly change in retail and food services sales"
+    },
+    {
+      "date": "2025-10-18",
+      "event": "Industrial Production",
+      "type": "data_release",
+      "importance": "medium",
+      "indicator": "INDPRO",
+      "agency": "Federal Reserve",
+      "description": "Manufacturing, mining, and utilities output"
+    },
+    {
+      "date": "2025-10-22",
+      "event": "Existing Home Sales",
+      "type": "data_release",
+      "importance": "medium",
+      "indicator": "EXHOSLUSM495S",
+      "agency": "National Association of Realtors",
+      "description": "Sales of previously owned homes"
+    },
+    {
+      "date": "2025-10-30",
+      "event": "GDP Advance Estimate Q3",
+      "type": "data_release",
+      "importance": "critical",
+      "indicator": "GDP",
+      "agency": "Bureau of Economic Analysis",
+      "description": "First estimate of Q3 GDP growth"
+    },
+    {
+      "date": "2025-11-01",
+      "event": "Employment Situation (NFP)",
+      "type": "data_release",
+      "importance": "critical",
+      "indicator": "UNRATE",
+      "agency": "Bureau of Labor Statistics",
+      "description": "Non-farm payrolls, unemployment rate, wage growth"
+    },
+    {
+      "date": "2025-11-06",
+      "event": "FOMC Meeting Begins",
+      "type": "policy",
+      "importance": "critical",
+      "indicator": "DFF",
+      "agency": "Federal Reserve",
+      "description": "Federal Open Market Committee 2-day meeting"
+    },
+    {
+      "date": "2025-11-07",
+      "event": "FOMC Rate Decision",
+      "type": "policy",
+      "importance": "critical",
+      "indicator": "DFF",
+      "agency": "Federal Reserve",
+      "description": "Interest rate decision and policy statement"
+    },
+    {
+      "date": "2025-11-13",
+      "event": "CPI (Consumer Price Index)",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "CPIAUCSL",
+      "agency": "Bureau of Labor Statistics",
+      "description": "Monthly inflation report"
+    },
+    {
+      "date": "2025-11-14",
+      "event": "PPI (Producer Price Index)",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "PPIACO",
+      "agency": "Bureau of Labor Statistics",
+      "description": "Wholesale inflation measure"
+    },
+    {
+      "date": "2025-11-15",
+      "event": "Retail Sales",
+      "type": "data_release",
+      "importance": "medium",
+      "indicator": "RETAIL",
+      "agency": "Census Bureau",
+      "description": "Monthly retail sales data"
+    },
+    {
+      "date": "2025-11-20",
+      "event": "Housing Starts",
+      "type": "data_release",
+      "importance": "medium",
+      "indicator": "HOUST",
+      "agency": "Census Bureau",
+      "description": "New residential construction"
+    },
+    {
+      "date": "2025-11-26",
+      "event": "Durable Goods Orders",
+      "type": "data_release",
+      "importance": "medium",
+      "indicator": "DGORDER",
+      "agency": "Census Bureau",
+      "description": "Orders for long-lasting manufactured goods"
+    },
+    {
+      "date": "2025-11-27",
+      "event": "GDP Second Estimate Q3",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "GDP",
+      "agency": "Bureau of Economic Analysis",
+      "description": "Revised Q3 GDP estimate"
+    },
+    {
+      "date": "2025-12-06",
+      "event": "Employment Situation",
+      "type": "data_release",
+      "importance": "critical",
+      "indicator": "UNRATE",
+      "agency": "Bureau of Labor Statistics",
+      "description": "November jobs report"
+    },
+    {
+      "date": "2025-12-10",
+      "event": "CPI (Consumer Price Index)",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "CPIAUCSL",
+      "agency": "Bureau of Labor Statistics",
+      "description": "November inflation data"
+    },
+    {
+      "date": "2025-12-11",
+      "event": "PPI (Producer Price Index)",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "PPIACO",
+      "agency": "Bureau of Labor Statistics",
+      "description": "November wholesale prices"
+    },
+    {
+      "date": "2025-12-17",
+      "event": "FOMC Meeting Begins",
+      "type": "policy",
+      "importance": "critical",
+      "indicator": "DFF",
+      "agency": "Federal Reserve",
+      "description": "Final FOMC meeting of 2025"
+    },
+    {
+      "date": "2025-12-18",
+      "event": "FOMC Rate Decision & Projections",
+      "type": "policy",
+      "importance": "critical",
+      "indicator": "DFF",
+      "agency": "Federal Reserve",
+      "description": "Rate decision, dot plot, economic projections"
+    },
+    {
+      "date": "2025-12-20",
+      "event": "GDP Final Estimate Q3",
+      "type": "data_release",
+      "importance": "medium",
+      "indicator": "GDP",
+      "agency": "Bureau of Economic Analysis",
+      "description": "Final Q3 GDP revision"
+    },
+    {
+      "date": "2025-12-23",
+      "event": "PCE Inflation",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "PCEPI",
+      "agency": "Bureau of Economic Analysis",
+      "description": "Fed's preferred inflation gauge"
+    },
+    {
+      "date": "2026-01-10",
+      "event": "Employment Situation",
+      "type": "data_release",
+      "importance": "critical",
+      "indicator": "UNRATE",
+      "agency": "Bureau of Labor Statistics",
+      "description": "December jobs report"
+    },
+    {
+      "date": "2026-01-15",
+      "event": "CPI (Consumer Price Index)",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "CPIAUCSL",
+      "agency": "Bureau of Labor Statistics",
+      "description": "December inflation data"
+    },
+    {
+      "date": "2026-01-16",
+      "event": "Retail Sales",
+      "type": "data_release",
+      "importance": "medium",
+      "indicator": "RETAIL",
+      "agency": "Census Bureau",
+      "description": "Holiday season sales data"
+    },
+    {
+      "date": "2026-01-17",
+      "event": "Industrial Production",
+      "type": "data_release",
+      "importance": "medium",
+      "indicator": "INDPRO",
+      "agency": "Federal Reserve",
+      "description": "December manufacturing output"
+    },
+    {
+      "date": "2026-01-28",
+      "event": "FOMC Meeting Begins",
+      "type": "policy",
+      "importance": "critical",
+      "indicator": "DFF",
+      "agency": "Federal Reserve",
+      "description": "First FOMC meeting of 2026"
+    },
+    {
+      "date": "2026-01-29",
+      "event": "FOMC Rate Decision",
+      "type": "policy",
+      "importance": "critical",
+      "indicator": "DFF",
+      "agency": "Federal Reserve",
+      "description": "First rate decision of 2026"
+    },
+    {
+      "date": "2026-01-30",
+      "event": "GDP Advance Estimate Q4 2025",
+      "type": "data_release",
+      "importance": "critical",
+      "indicator": "GDP",
+      "agency": "Bureau of Economic Analysis",
+      "description": "First estimate of Q4 GDP"
+    },
+    {
+      "date": "2026-02-07",
+      "event": "Employment Situation",
+      "type": "data_release",
+      "importance": "critical",
+      "indicator": "UNRATE",
+      "agency": "Bureau of Labor Statistics",
+      "description": "January jobs report"
+    },
+    {
+      "date": "2026-02-12",
+      "event": "CPI (Consumer Price Index)",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "CPIAUCSL",
+      "agency": "Bureau of Labor Statistics",
+      "description": "January inflation data"
+    },
+    {
+      "date": "2026-02-13",
+      "event": "PPI (Producer Price Index)",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "PPIACO",
+      "agency": "Bureau of Labor Statistics",
+      "description": "January wholesale prices"
+    },
+    {
+      "date": "2026-02-14",
+      "event": "Retail Sales",
+      "type": "data_release",
+      "importance": "medium",
+      "indicator": "RETAIL",
+      "agency": "Census Bureau",
+      "description": "January retail sales"
+    },
+    {
+      "date": "2026-02-27",
+      "event": "GDP Second Estimate Q4 2025",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "GDP",
+      "agency": "Bureau of Economic Analysis",
+      "description": "Revised Q4 GDP estimate"
+    },
+    {
+      "date": "2026-03-06",
+      "event": "Employment Situation",
+      "type": "data_release",
+      "importance": "critical",
+      "indicator": "UNRATE",
+      "agency": "Bureau of Labor Statistics",
+      "description": "February jobs report"
+    },
+    {
+      "date": "2026-03-11",
+      "event": "CPI (Consumer Price Index)",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "CPIAUCSL",
+      "agency": "Bureau of Labor Statistics",
+      "description": "February inflation data"
+    },
+    {
+      "date": "2026-03-12",
+      "event": "PPI (Producer Price Index)",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "PPIACO",
+      "agency": "Bureau of Labor Statistics",
+      "description": "February wholesale prices"
+    },
+    {
+      "date": "2026-03-17",
+      "event": "FOMC Meeting Begins",
+      "type": "policy",
+      "importance": "critical",
+      "indicator": "DFF",
+      "agency": "Federal Reserve",
+      "description": "March FOMC meeting"
+    },
+    {
+      "date": "2026-03-18",
+      "event": "FOMC Rate Decision & Projections",
+      "type": "policy",
+      "importance": "critical",
+      "indicator": "DFF",
+      "agency": "Federal Reserve",
+      "description": "Rate decision with quarterly projections"
+    },
+    {
+      "date": "2026-03-26",
+      "event": "GDP Final Estimate Q4 2025",
+      "type": "data_release",
+      "importance": "medium",
+      "indicator": "GDP",
+      "agency": "Bureau of Economic Analysis",
+      "description": "Final Q4 GDP revision"
+    },
+    {
+      "date": "2026-03-27",
+      "event": "Durable Goods Orders",
+      "type": "data_release",
+      "importance": "medium",
+      "indicator": "DGORDER",
+      "agency": "Census Bureau",
+      "description": "February durable goods"
+    },
+    {
+      "date": "2026-04-03",
+      "event": "Employment Situation",
+      "type": "data_release",
+      "importance": "critical",
+      "indicator": "UNRATE",
+      "agency": "Bureau of Labor Statistics",
+      "description": "March jobs report"
+    },
+    {
+      "date": "2026-04-10",
+      "event": "CPI (Consumer Price Index)",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "CPIAUCSL",
+      "agency": "Bureau of Labor Statistics",
+      "description": "March inflation data"
+    },
+    {
+      "date": "2026-04-15",
+      "event": "Retail Sales",
+      "type": "data_release",
+      "importance": "medium",
+      "indicator": "RETAIL",
+      "agency": "Census Bureau",
+      "description": "March retail sales"
+    },
+    {
+      "date": "2026-04-30",
+      "event": "GDP Advance Estimate Q1 2026",
+      "type": "data_release",
+      "importance": "critical",
+      "indicator": "GDP",
+      "agency": "Bureau of Economic Analysis",
+      "description": "First estimate of Q1 GDP"
+    },
+    {
+      "date": "2026-05-02",
+      "event": "Employment Situation",
+      "type": "data_release",
+      "importance": "critical",
+      "indicator": "UNRATE",
+      "agency": "Bureau of Labor Statistics",
+      "description": "April jobs report"
+    },
+    {
+      "date": "2026-05-06",
+      "event": "FOMC Meeting Begins",
+      "type": "policy",
+      "importance": "critical",
+      "indicator": "DFF",
+      "agency": "Federal Reserve",
+      "description": "May FOMC meeting"
+    },
+    {
+      "date": "2026-05-07",
+      "event": "FOMC Rate Decision",
+      "type": "policy",
+      "importance": "critical",
+      "indicator": "DFF",
+      "agency": "Federal Reserve",
+      "description": "Spring rate decision"
+    },
+    {
+      "date": "2026-05-13",
+      "event": "CPI (Consumer Price Index)",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "CPIAUCSL",
+      "agency": "Bureau of Labor Statistics",
+      "description": "April inflation data"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "GDP Second Estimate Q1 2026",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "GDP",
+      "agency": "Bureau of Economic Analysis",
+      "description": "Revised Q1 GDP estimate"
+    },
+    {
+      "date": "2026-06-05",
+      "event": "Employment Situation",
+      "type": "data_release",
+      "importance": "critical",
+      "indicator": "UNRATE",
+      "agency": "Bureau of Labor Statistics",
+      "description": "May jobs report"
+    },
+    {
+      "date": "2026-06-10",
+      "event": "CPI (Consumer Price Index)",
+      "type": "data_release",
+      "importance": "high",
+      "indicator": "CPIAUCSL",
+      "agency": "Bureau of Labor Statistics",
+      "description": "May inflation data"
+    }
+  ]
+}

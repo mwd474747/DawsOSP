@@ -67,7 +67,10 @@ class KnowledgeLoader:
             'yield_curve': 'yield_curve_history.json',
 
             # System metadata
-            'agent_capabilities': 'agent_capabilities.json'
+            'agent_capabilities': 'agent_capabilities.json',
+
+            # Economic calendar
+            'economic_calendar': 'economic_calendar.json'
         }
 
         self.logger.info(f"Knowledge Loader initialized with {len(self.datasets)} datasets")

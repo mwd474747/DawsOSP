@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 import pandas as pd
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
+from ui.utils.common import get_agent_safely
 
 
 def render_economic_dashboard(runtime, capabilities: Dict):
@@ -52,11 +53,7 @@ def render_economic_dashboard(runtime, capabilities: Dict):
     with st.spinner("Fetching economic indicators from FRED..."):
         try:
             # Use capability routing through runtime
-            data_harvester = None
-            for agent_name, agent in runtime.registry.agents.items():
-                if agent_name == 'data_harvester':
-                    data_harvester = agent.agent
-                    break
+            data_harvester = get_agent_safely(runtime, 'data_harvester')
 
             if data_harvester:
                 # Fetch data using new fetch_economic_indicators method
@@ -95,25 +92,24 @@ def render_economic_dashboard(runtime, capabilities: Dict):
                 st.markdown("---")
                 st.subheader("🎯 Economic Analysis")
 
-                financial_analyst = None
-                for agent_name, agent in runtime.registry.agents.items():
-                    if agent_name == 'financial_analyst':
-                        financial_analyst = agent.agent
-                        break
+                financial_analyst = get_agent_safely(runtime, 'financial_analyst')
 
                 if financial_analyst:
-                    # Analyze macro context
-                    analysis = financial_analyst.analyze_macro_context(context={
-                        'series': ['GDP', 'CPIAUCSL', 'UNRATE', 'DFF'],
-                        'start_date': start_date.strftime('%Y-%m-%d'),
-                        'end_date': end_date.strftime('%Y-%m-%d')
-                    })
+                    # Set runtime on analyst for capability routing
+                    financial_analyst.runtime = runtime
 
-                    if 'error' not in analysis:
+                    # Analyze macro context using fetched data directly
+                    # This bypasses runtime.execute_by_capability since we already have the data
+                    analysis = analyze_macro_data_directly(
+                        gdp_data, cpi_data, unemployment_data, fed_funds_data, financial_analyst
+                    )
+
+                    if analysis and 'error' not in analysis:
                         render_macro_analysis(analysis)
                     else:
-                        st.error(f"Analysis error: {analysis.get('error')}")
-                        st.info(analysis.get('note', ''))
+                        st.error(f"Analysis error: {analysis.get('error') if analysis else 'Unknown error'}")
+                        if analysis:
+                            st.info(analysis.get('note', ''))
                 else:
                     st.warning("Financial Analyst not available for macro analysis")
 
@@ -364,14 +360,186 @@ def render_macro_analysis(analysis: Dict):
         st.warning(f"⚠️ Data is {metadata.get('cache_age_seconds', 0) // 86400} days old - FRED API unavailable")
 
 
-def render_daily_events():
-    """Render daily events section (placeholder for future implementation)."""
-    st.subheader("📅 Daily Events")
-    st.markdown("Track daily market indicators")
+def analyze_macro_data_directly(
+    gdp_data: Dict,
+    cpi_data: Dict,
+    unemployment_data: Dict,
+    fed_funds_data: Dict,
+    financial_analyst
+) -> Optional[Dict]:
+    """
+    Analyze macro data directly using FinancialAnalyst methods.
 
-    col1, col2 = st.columns([3, 1])
+    This bypasses runtime.execute_by_capability() and works with already-fetched data.
+    """
+    from datetime import datetime
+
+    try:
+        # Calculate GDP QoQ
+        gdp_qoq = financial_analyst._calculate_gdp_qoq(gdp_data)
+
+        # Calculate CPI YoY
+        cpi_yoy = financial_analyst._calculate_cpi_yoy(cpi_data)
+
+        # Detect cycle phase
+        cycle_phase = financial_analyst._detect_cycle_phase(gdp_qoq, unemployment_data, fed_funds_data)
+
+        # Determine regime
+        regime = financial_analyst._determine_regime_from_data(gdp_qoq, cpi_yoy, cycle_phase)
+
+        # Identify macro risks
+        fred_data = {'source': 'live', 'cache_age_seconds': 0}
+        macro_risks = financial_analyst._identify_macro_risks_from_data(
+            gdp_qoq, cpi_yoy, unemployment_data, fred_data
+        )
+
+        # Identify opportunities
+        opportunities = financial_analyst._identify_opportunities_from_regime(regime, gdp_qoq, cpi_yoy)
+
+        # Build analysis result
+        analysis = {
+            'timestamp': datetime.now().isoformat(),
+            'gdp_qoq': round(gdp_qoq, 2) if gdp_qoq is not None else None,
+            'cpi_yoy': round(cpi_yoy, 2) if cpi_yoy is not None else None,
+            'cycle_phase': cycle_phase,
+            'regime': regime,
+            'macro_risks': macro_risks,
+            'opportunities': opportunities,
+            'indicators': {
+                'gdp': {
+                    'latest': gdp_data.get('latest_value'),
+                    'date': gdp_data.get('latest_date'),
+                    'qoq_growth': gdp_qoq
+                },
+                'cpi': {
+                    'latest': cpi_data.get('latest_value'),
+                    'date': cpi_data.get('latest_date'),
+                    'yoy_change': cpi_yoy
+                },
+                'unemployment': {
+                    'latest': unemployment_data.get('latest_value'),
+                    'date': unemployment_data.get('latest_date')
+                },
+                'fed_funds': {
+                    'latest': fed_funds_data.get('latest_value'),
+                    'date': fed_funds_data.get('latest_date')
+                }
+            },
+            '_metadata': {
+                'source': 'live',
+                'cache_age_seconds': 0,
+                'analysis_type': 'macro_context'
+            }
+        }
+
+        return analysis
+
+    except Exception as e:
+        import traceback
+        return {
+            'error': f'Analysis failed: {str(e)}',
+            'traceback': traceback.format_exc()
+        }
+
+
+def render_daily_events():
+    """Render daily events calendar with economic data releases and policy events."""
+    st.subheader("📅 Economic Events Calendar")
+    st.markdown("Upcoming economic data releases and policy events")
+
+    # Load economic calendar from KnowledgeLoader
+    from core.knowledge_loader import get_knowledge_loader
+    loader = get_knowledge_loader()
+    calendar_data = loader.get_dataset('economic_calendar')
+
+    if not calendar_data or 'events' not in calendar_data:
+        st.warning("Economic calendar data not available")
+        return
+
+    # Filter controls
+    col1, col2, col3 = st.columns([2, 2, 2])
+
+    with col1:
+        days_ahead = st.selectbox("Time window:", [7, 14, 30, 60, 90], index=2, key="events_days")
 
     with col2:
-        days_to_show = st.selectbox("Days to show:", [30, 90, 180, 365], index=3)
+        importance_filter = st.multiselect(
+            "Importance:",
+            ["critical", "high", "medium"],
+            default=["critical", "high"],
+            key="events_importance"
+        )
 
-    st.info("Daily event tracking coming soon. This will show scheduled FOMC meetings, economic data releases, earnings calendars, etc.")
+    with col3:
+        type_filter = st.multiselect(
+            "Event type:",
+            ["policy", "data_release"],
+            default=["policy", "data_release"],
+            key="events_type"
+        )
+
+    # Filter events
+    from datetime import datetime, timedelta
+    today = datetime.now().date()
+    end_date = today + timedelta(days=days_ahead)
+
+    filtered_events = []
+    for event in calendar_data['events']:
+        event_date = datetime.strptime(event['date'], '%Y-%m-%d').date()
+        if (today <= event_date <= end_date and
+            event['importance'] in importance_filter and
+            event['type'] in type_filter):
+            filtered_events.append(event)
+
+    # Sort by date
+    filtered_events.sort(key=lambda x: x['date'])
+
+    # Display events
+    if not filtered_events:
+        st.info(f"No events in the next {days_ahead} days matching your filters")
+        return
+
+    st.markdown(f"**{len(filtered_events)} upcoming events**")
+    st.markdown("---")
+
+    # Group events by week
+    current_week = None
+    for event in filtered_events:
+        event_date = datetime.strptime(event['date'], '%Y-%m-%d').date()
+        week_start = event_date - timedelta(days=event_date.weekday())
+
+        # Week header
+        if current_week != week_start:
+            current_week = week_start
+            week_end = week_start + timedelta(days=6)
+            st.markdown(f"### Week of {week_start.strftime('%b %d')} - {week_end.strftime('%b %d, %Y')}")
+
+        # Event card
+        col_date, col_event = st.columns([1, 4])
+
+        with col_date:
+            # Date badge with importance color
+            importance_colors = {
+                'critical': '🔴',
+                'high': '🟠',
+                'medium': '🟡'
+            }
+            icon = importance_colors.get(event['importance'], '⚪')
+            st.markdown(f"**{icon} {event_date.strftime('%b %d')}**")
+            st.caption(event_date.strftime('%A'))
+
+        with col_event:
+            # Event details
+            type_badges = {
+                'policy': '🏛️ Policy',
+                'data_release': '📊 Data'
+            }
+            type_badge = type_badges.get(event['type'], event['type'])
+
+            st.markdown(f"**{event['event']}** {type_badge}")
+            st.caption(f"{event['agency']} • {event['description']}")
+
+            if event.get('indicator'):
+                st.caption(f"Indicator: {event['indicator']}")
+
+        st.markdown("---")
