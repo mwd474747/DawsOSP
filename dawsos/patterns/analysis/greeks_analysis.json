@@ -51,5 +51,6 @@
   "response_template": "Greeks Analysis for {TICKER}:\n\nNet Delta: {greeks_data.net_delta}\nTotal Gamma: {greeks_data.total_gamma}\nMax Pain: ${greeks_data.max_pain_strike}\nGamma Flip: ${greeks_data.gamma_flip_point}\nPositioning: {greeks_data.positioning}\nConfidence: {greeks_data.confidence}",
   "cache_ttl": 900,
   "version": "2.0",
-  "last_updated": "2025-10-07"
+  "last_updated": "2025-10-07",
+  "template": "## Greeks Positioning Analysis: {TICKER}\n\n**Net Delta**: {greeks_data.net_delta}\n**Total Gamma**: {greeks_data.total_gamma}\n**Max Pain Strike**: ${greeks_data.max_pain_strike}\n**Gamma Flip Point**: ${greeks_data.gamma_flip_point}\n\n**Market Positioning**: {greeks_data.positioning}\n\n**Confidence**: {greeks_data.confidence}%\n\n*Greeks analysis powered by DawsOS Trinity 2.0*"
 }

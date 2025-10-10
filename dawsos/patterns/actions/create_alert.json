@@ -56,5 +56,6 @@
   "response_template": "{confirmation}",
   "cache_ttl": 0,
   "version": "2.0",
-  "last_updated": "2025-10-08"
+  "last_updated": "2025-10-08",
+  "template": "## Price Alert Created\n\n**Symbol**: {SYMBOL}\n**Current Price**: ${current_price.price}\n**Alert Condition**: {user_input}\n\n**Alert Details**:\n\u2022 Alert ID: {alert_id.id}\n\u2022 Status: Active\n\u2022 Created: {alert_id.timestamp}\n\n{confirmation.response}\n\n**You will be notified when the alert condition is met.**\n\n*Alert monitoring powered by DawsOS Trinity 2.0*"
 }

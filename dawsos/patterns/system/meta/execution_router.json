@@ -63,5 +63,6 @@
     "compliant": true
   },
   "version": "1.0",
-  "last_updated": "2025-10-02"
+  "last_updated": "2025-10-02",
+  "template": "## Execution Complete\n\n**Agent**: {agent_name}\n**Method**: {method}\n**Status**: \u2705 Trinity Compliant\n\n**Result**:\n{normalized.response}\n\n**Graph Node**: {node_id}\n\n*Execution via DawsOS Trinity 2.0 Registry*"
 }

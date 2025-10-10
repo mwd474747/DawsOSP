@@ -76,5 +76,6 @@
   ],
   "entities": [
     "SYMBOL"
-  ]
+  ],
+  "template": "## Comprehensive Analysis: {SYMBOL}\n\n**Economic Moat Assessment**:\n{moat_analysis.response}\n\n**Correlations**:\n{correlations.response}\n\n**Patterns Detected**:\n{patterns.response}\n\n**Valuation**:\n{valuation.assessment}\n\n**Summary**:\n{final_analysis.summary}\n\n*Comprehensive analysis powered by DawsOS Trinity 2.0*"
 }

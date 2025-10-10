@@ -66,5 +66,6 @@
     "no_errors": true
   },
   "version": "2.0",
-  "last_updated": "2025-10-08"
+  "last_updated": "2025-10-08",
+  "template": "## System Self-Improvement Report\n\n**Governance Analysis**:\n\u2022 Total Nodes: {total_nodes}\n\u2022 Quality Issues: {quality_issues_count}\n\u2022 Orphan Nodes: {orphan_nodes_count}\n\n**Improvements Applied**:\n{improvements_list}\n\n**Next Steps**:\n{recommendations}\n\n*Self-improvement powered by DawsOS Trinity 2.0*"
 }

@@ -53,5 +53,6 @@
   "response_template": "{correlation_report}",
   "cache_ttl": 1800,
   "version": "2.0",
-  "last_updated": "2025-10-08"
+  "last_updated": "2025-10-08",
+  "template": "## Correlation Analysis: {SYMBOL}\n\n**Strong Correlations Found**:\n{correlations.top_correlations}\n\n**Inverse Relationships**:\n{correlations.negative_correlations}\n\n**Analysis**:\n{correlation_report.response}\n\n*Correlation analysis powered by DawsOS Trinity 2.0*"
 }

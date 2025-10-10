@@ -55,5 +55,6 @@
   "response_template": "Options Flow Analysis for {TICKERS}:\n\nPut/Call Ratio: {flow_sentiment.put_call_ratio}\nSentiment: {flow_sentiment.sentiment}\nConfidence: {flow_sentiment.confidence}\nDirection: {flow_sentiment.direction}",
   "cache_ttl": 300,
   "version": "2.0",
-  "last_updated": "2025-10-07"
+  "last_updated": "2025-10-07",
+  "template": "## Options Flow Analysis\n\n**Tickers Analyzed**: {TICKERS}\n\n**Put/Call Ratio**: {flow_sentiment.put_call_ratio}\n**Market Sentiment**: {flow_sentiment.sentiment}\n**Directional Bias**: {flow_sentiment.direction}\n\n**Confidence**: {flow_sentiment.confidence}%\n\n*Flow analysis powered by DawsOS Trinity 2.0*"
 }

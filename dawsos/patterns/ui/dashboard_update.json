@@ -47,5 +47,6 @@
   "response_template": "{dashboard_update}",
   "cache_ttl": 60,
   "version": "2.0",
-  "last_updated": "2025-10-08"
+  "last_updated": "2025-10-08",
+  "template": "## Dashboard Update\n\n**Market Overview**:\n{market_data.summary}\n\n**Current Regime**: {regime.regime_type}\n\n{dashboard_update.response}\n\n**Last Updated**: {market_data.timestamp}\n\n*Dashboard powered by DawsOS Trinity 2.0*"
 }

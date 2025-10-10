@@ -43,5 +43,6 @@
   "error_handling": "stop",
   "cache_ttl": 60,
   "version": "2.0",
-  "last_updated": "2025-10-08"
+  "last_updated": "2025-10-08",
+  "template": "## Stock Quote: {SYMBOL}\n\n**Current Price**: ${quote_data.price}\n**Change**: {quote_data.change} ({quote_data.change_percent}%)\n\n**Today's Range**: ${quote_data.low} - ${quote_data.high}\n**Volume**: {quote_data.volume}\n\n{formatted_response.response}\n\n*Real-time data powered by DawsOS Trinity 2.0*"
 }

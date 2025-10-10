@@ -70,5 +70,6 @@
       },
       "save_as": "alert_component"
     }
-  ]
+  ],
+  "template": "## Smart Alerts\n\n**Active Alerts**: {alert_list.count}\n\n**Alert Summary**:\n{alert_list.summary}\n\n**Current Risk Level**: {current_risk.level}\n\n{alert_component.display}\n\n*Alert system powered by DawsOS Trinity 2.0*"
 }

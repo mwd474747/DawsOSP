@@ -54,5 +54,6 @@
   "response_template": "{forecast_report}",
   "cache_ttl": 3600,
   "version": "2.0",
-  "last_updated": "2025-10-08"
+  "last_updated": "2025-10-08",
+  "template": "## Price Forecast: {SYMBOL}\n\n**Forecast Horizon**: {TIMEFRAME}\n\n**Price Targets**:\n\u2022 Bull Case: ${forecast.bull_target}\n\u2022 Base Case: ${forecast.base_target}\n\u2022 Bear Case: ${forecast.bear_target}\n\n**Confidence Level**: {forecast.confidence}%\n\n**Key Assumptions**:\n{forecast.assumptions}\n\n**Risk Factors**:\n{forecast.risks}\n\n{forecast_report.response}\n\n*Forecast powered by DawsOS Trinity 2.0*"
 }

@@ -70,5 +70,6 @@
   "response_template": "{analysis_report}",
   "cache_ttl": 1800,
   "version": "2.0",
-  "last_updated": "2025-10-08"
+  "last_updated": "2025-10-08",
+  "template": "## Company Analysis: {SYMBOL}\n\n**Business Overview**:\n{digested_data.business_summary}\n\n**Sector**: {company_data.sector}\n\n**Peer Companies**:\n{peer_companies.data}\n\n**Supply Chain Analysis**:\n{supply_chain.data}\n\n**Investment Analysis**:\n{analysis_report.response}\n\n*Analysis powered by DawsOS Trinity 2.0 using Buffett-Ackman-Dalio frameworks*"
 }

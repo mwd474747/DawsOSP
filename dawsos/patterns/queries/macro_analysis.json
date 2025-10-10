@@ -50,5 +50,6 @@
   "response_template": "{macro_report}",
   "cache_ttl": 600,
   "version": "2.0",
-  "last_updated": "2025-10-08"
+  "last_updated": "2025-10-08",
+  "template": "## Macroeconomic Analysis\n\n**Economic Cycle Stage**: {macro_patterns.cycle_stage}\n\n**Key Indicators**:\n\u2022 GDP Growth: {macro_data.gdp_growth}%\n\u2022 Inflation: {macro_data.inflation}%\n\u2022 Unemployment: {macro_data.unemployment}%\n\u2022 Fed Funds Rate: {macro_data.fed_funds_rate}%\n\n**Trends & Patterns**:\n{macro_patterns.summary}\n\n**Investment Implications**:\n{macro_report.response}\n\n*Macro analysis powered by DawsOS Trinity 2.0*"
 }

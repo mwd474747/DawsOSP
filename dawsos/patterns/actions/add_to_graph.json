@@ -62,5 +62,6 @@
   "response_template": "{confirmation}",
   "cache_ttl": 0,
   "version": "2.0",
-  "last_updated": "2025-10-08"
+  "last_updated": "2025-10-08",
+  "template": "## Knowledge Graph Update\n\n**Entity Added**: {SYMBOL}\n\n**Data Stored**: {structured_data.summary}\n\n**Relationships Created**:\n{relationships.summary}\n\n**Status**: \u2705 Successfully added to knowledge graph\n\n{confirmation.response}\n\n*Powered by DawsOS Trinity 2.0*"
 }

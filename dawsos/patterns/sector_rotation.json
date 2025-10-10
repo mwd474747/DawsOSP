@@ -77,5 +77,6 @@
       },
       "save_as": "rotation_strategy"
     }
-  ]
+  ],
+  "template": "## Sector Rotation Strategy\n\n**Economic Cycle Phase**: {cycle_phase.phase}\n\n**Historical Performance in {cycle_phase.phase}**:\n{historical_performance.data}\n\n**Recommended Actions**:\n\u2022 **Overweight**: {sector_recommendations.data.outperformers}\n\u2022 **Underweight**: {sector_recommendations.data.underperformers}\n\n**Current Momentum**:\n{momentum_analysis.response}\n\n**Strategy**:\n{rotation_strategy.recommendation}\n\n*Rotation strategy powered by DawsOS Trinity 2.0*"
 }

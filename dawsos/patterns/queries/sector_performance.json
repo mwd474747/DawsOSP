@@ -49,5 +49,6 @@
   "response_template": "{sector_report}",
   "cache_ttl": 600,
   "version": "2.0",
-  "last_updated": "2025-10-08"
+  "last_updated": "2025-10-08",
+  "template": "## Sector Performance Analysis\n\n**Leading Sectors**:\n{rotation_analysis.leaders}\n\n**Lagging Sectors**:\n{rotation_analysis.laggards}\n\n**Rotation Pattern Detected**: {rotation_analysis.pattern}\n\n**Analysis**:\n{sector_report.response}\n\n*Sector analysis powered by DawsOS Trinity 2.0*"
 }

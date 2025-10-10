@@ -55,5 +55,6 @@
   "response_template": "Unusual Options Activity:\n\nSignals Found: {smart_money_signals.unusual_activities.length}\nTop Tickers: {smart_money_signals.top_tickers}\nSentiment Score: {smart_money_signals.sentiment_score}",
   "cache_ttl": 300,
   "version": "2.0",
-  "last_updated": "2025-10-07"
+  "last_updated": "2025-10-07",
+  "template": "## Unusual Options Activity Scanner\n\n**Signals Detected**: {smart_money_signals.unusual_activities.length}\n\n**Top Tickers**:\n{smart_money_signals.top_tickers}\n\n**Sentiment Score**: {smart_money_signals.sentiment_score}/10\n\n**Smart Money Signals**:\n{smart_money_signals.summary}\n\n*Smart money detection powered by DawsOS Trinity 2.0*"
 }

@@ -66,5 +66,6 @@
   "response_template": "{regime_report}",
   "cache_ttl": 300,
   "version": "2.0",
-  "last_updated": "2025-10-08"
+  "last_updated": "2025-10-08",
+  "template": "## Market Regime Analysis\n\n**Current Regime**: {regime_analysis.regime}\n\n**Regime Confidence**: {regime_analysis.confidence}%\n\n**Key Indicators**:\n\u2022 VIX: {market_data.vix}\n\u2022 Dollar (DXY): {market_data.dxy}\n\u2022 Treasuries (TLT): {market_data.tlt}\n\n**Historical Comparison**:\n{historical_cycles.data}\n\n**Sector Recommendations**:\n{regime_report.response}\n\n*Regime analysis powered by DawsOS Trinity 2.0*"
 }

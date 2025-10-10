@@ -58,5 +58,6 @@
   "response_template": "{confirmation}",
   "cache_ttl": 0,
   "version": "2.0",
-  "last_updated": "2025-10-08"
+  "last_updated": "2025-10-08",
+  "template": "## Portfolio Position Added\n\n**Symbol**: {SYMBOL}\n**Quantity**: {QUANTITY} shares\n**Entry Price**: ${PRICE}\n**Total Value**: ${position.total_value}\n\n**Company Details**:\n\u2022 Sector: {asset_data.sector}\n\u2022 Market Cap: ${asset_data.market_cap}B\n\u2022 PE Ratio: {asset_data.pe_ratio}\n\n{confirmation.response}\n\n*Position tracked in DawsOS Trinity 2.0*"
 }

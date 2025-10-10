@@ -47,5 +47,6 @@
   ],
   "response_template": "{result}",
   "version": "1.0",
-  "last_updated": "2025-10-02"
+  "last_updated": "2025-10-02",
+  "template": "## Execution Routed\n\n**Execution Type**: {exec_type}\n**Router Pattern**: {selected_pattern}\n\n**Result**:\n{result.response}\n\n*Meta execution powered by DawsOS Trinity 2.0*"
 }

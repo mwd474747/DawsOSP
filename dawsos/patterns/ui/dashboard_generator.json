@@ -41,5 +41,6 @@
       },
       "save_as": "dashboard_html"
     }
-  ]
+  ],
+  "template": "## Dashboard\n\n{dashboard_html.content}\n\n*Dashboard powered by DawsOS Trinity 2.0*"
 }
