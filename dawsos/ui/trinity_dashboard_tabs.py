@@ -672,46 +672,93 @@ class TrinityDashboardTabs:
             if st.button(f"▶️ {pattern_name}", key=f"{group_name}_{pattern_id}"):
                 self._execute_pattern(pattern_id)
 
-    def _create_enhanced_graph_viz(self, max_nodes: int = 500, strategy: str = 'importance'):
-        """
-        Create enhanced graph visualization with intelligent sampling for large graphs
-
-        Args:
-            max_nodes: Maximum nodes to display (default 500)
-            strategy: Sampling strategy - 'importance', 'recent', 'random', or 'connected'
-        """
-        import random
-
-        # Sample graph if it's large
-        sampled = self.graph.sample_for_visualization(max_nodes=max_nodes, strategy=strategy)
-
-        fig = go.Figure()
-
-        # Show sampling info if graph was sampled
-        title = "Trinity Knowledge Graph"
-        if sampled['sampled']:
-            title += f" (Showing {sampled['sampled_nodes']:,} of {sampled['total_nodes']:,} nodes - {strategy} strategy)"
-
-        # Add edges first (so they appear behind nodes)
-        edge_x = []
-        edge_y = []
-
-        # Build position lookup
+    def _calculate_node_positions(self, nodes: Dict[str, Any]) -> Dict[str, tuple]:
+        """Calculate deterministic node positions based on hash."""
         node_positions = {}
-        for i, (node_id, node_data) in enumerate(sampled['nodes'].items()):
-            # Deterministic layout based on node_id hash for consistency
+        for node_id in nodes.keys():
             hash_val = hash(node_id)
             x = (hash_val % 1000) / 100
             y = ((hash_val // 1000) % 1000) / 100
             node_positions[node_id] = (x, y)
+        return node_positions
 
-        # Draw edges
-        for edge in sampled['edges']:
+    def _create_edge_traces(self, edges: List[Dict], node_positions: Dict[str, tuple]) -> tuple:
+        """Create edge coordinates for visualization."""
+        edge_x = []
+        edge_y = []
+
+        for edge in edges:
             if edge['from'] in node_positions and edge['to'] in node_positions:
                 x0, y0 = node_positions[edge['from']]
                 x1, y1 = node_positions[edge['to']]
                 edge_x.extend([x0, x1, None])
                 edge_y.extend([y0, y1, None])
+
+        return edge_x, edge_y
+
+    def _get_node_color(self, node_type: str) -> str:
+        """Get color for node based on type."""
+        type_colors = {
+            'company': '#1f77b4',
+            'sector': '#ff7f0e',
+            'indicator': '#2ca02c',
+            'pattern': '#d62728',
+            'relationship': '#9467bd',
+            'forecast': '#8c564b'
+        }
+        return type_colors.get(node_type, '#888')
+
+    def _calculate_node_size(self, node_data: Dict[str, Any]) -> int:
+        """Calculate node size based on connection count."""
+        connections = len(node_data.get('connections_in', [])) + len(node_data.get('connections_out', []))
+        return min(20 + connections * 2, 50)
+
+    def _create_node_traces(self, nodes: Dict[str, Any], node_positions: Dict[str, tuple]) -> tuple:
+        """Create node coordinates, colors, and sizes for visualization."""
+        node_x = []
+        node_y = []
+        node_text = []
+        node_colors = []
+        node_sizes = []
+
+        for node_id, node_data in nodes.items():
+            x, y = node_positions[node_id]
+            node_x.append(x)
+            node_y.append(y)
+
+            node_type = node_data.get('type', 'unknown')
+            node_text.append(f"{node_id}<br>Type: {node_type}")
+
+            node_colors.append(self._get_node_color(node_type))
+            node_sizes.append(self._calculate_node_size(node_data))
+
+        return node_x, node_y, node_text, node_colors, node_sizes
+
+    def _create_enhanced_graph_viz(self, max_nodes: int = 500, strategy: str = 'importance'):
+        """Create enhanced graph visualization with intelligent sampling for large graphs.
+
+        Args:
+            max_nodes: Maximum nodes to display (default 500)
+            strategy: Sampling strategy - 'importance', 'recent', 'random', or 'connected'
+
+        Returns:
+            Plotly figure object
+        """
+        # Sample graph if it's large
+        sampled = self.graph.sample_for_visualization(max_nodes=max_nodes, strategy=strategy)
+
+        fig = go.Figure()
+
+        # Create title with sampling info
+        title = "Trinity Knowledge Graph"
+        if sampled['sampled']:
+            title += f" (Showing {sampled['sampled_nodes']:,} of {sampled['total_nodes']:,} nodes - {strategy} strategy)"
+
+        # Calculate node positions
+        node_positions = self._calculate_node_positions(sampled['nodes'])
+
+        # Add edges
+        edge_x, edge_y = self._create_edge_traces(sampled['edges'], node_positions)
 
         if edge_x:
             fig.add_trace(go.Scatter(
@@ -723,36 +770,9 @@ class TrinityDashboardTabs:
             ))
 
         # Add nodes
-        node_x = []
-        node_y = []
-        node_text = []
-        node_colors = []
-        node_sizes = []
-
-        # Color map for node types
-        type_colors = {
-            'company': '#1f77b4',
-            'sector': '#ff7f0e',
-            'indicator': '#2ca02c',
-            'pattern': '#d62728',
-            'relationship': '#9467bd',
-            'forecast': '#8c564b'
-        }
-
-        for node_id, node_data in sampled['nodes'].items():
-            x, y = node_positions[node_id]
-            node_x.append(x)
-            node_y.append(y)
-
-            node_type = node_data.get('type', 'unknown')
-            node_text.append(f"{node_id}<br>Type: {node_type}")
-
-            # Color by type
-            node_colors.append(type_colors.get(node_type, '#888'))
-
-            # Size by connection count
-            connections = len(node_data.get('connections_in', [])) + len(node_data.get('connections_out', []))
-            node_sizes.append(min(20 + connections * 2, 50))  # Scale size by connections
+        node_x, node_y, node_text, node_colors, node_sizes = self._create_node_traces(
+            sampled['nodes'], node_positions
+        )
 
         fig.add_trace(go.Scatter(
             x=node_x, y=node_y,
@@ -767,6 +787,7 @@ class TrinityDashboardTabs:
             name='Knowledge Nodes'
         ))
 
+        # Update layout
         fig.update_layout(
             title=title,
             showlegend=False,

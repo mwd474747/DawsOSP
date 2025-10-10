@@ -77,186 +77,190 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-def init_session_state():
-    """Initialize session state variables"""
-    if 'graph' not in st.session_state:
-        st.session_state.graph = KnowledgeGraph()
+def _init_knowledge_graph():
+    """Initialize knowledge graph with loading and seeding logic."""
+    st.session_state.graph = KnowledgeGraph()
 
-        # First, try to load existing graph
-        loaded_from_file = False
-        if os.path.exists('storage/graph.json'):
-            try:
-                st.session_state.graph.load('storage/graph.json')
-                loaded_from_file = True
-                print(f"Loaded graph with {st.session_state.graph.get_stats()['total_nodes']} nodes from file")
-            except Exception as e:
-                print(f"Error loading graph: {e}")
-
-        # Then seed with fundamental analysis knowledge if not enough nodes
-        # This ensures we always have the base knowledge
-        if st.session_state.graph.get_stats()['total_nodes'] < 40:
-            try:
-                import seed_knowledge_graph
-                seed_knowledge_graph.seed_buffett_framework(st.session_state.graph)
-                seed_knowledge_graph.seed_dalio_framework(st.session_state.graph)
-                seed_knowledge_graph.seed_financial_calculations(st.session_state.graph)
-                seed_knowledge_graph.seed_investment_examples(st.session_state.graph)
-                print(f"Seeded knowledge graph to {st.session_state.graph.get_stats()['total_nodes']} nodes")
-
-                # Save the seeded graph with backup for next time
-                if 'persistence' in st.session_state:
-                    st.session_state.persistence.save_graph_with_backup(st.session_state.graph)
-                else:
-                    st.session_state.graph.save('storage/graph.json')
-            except Exception as e:
-                print(f"Note: Knowledge seeding skipped: {e}")
-
-    # Initialize capabilities FIRST (before agent_runtime that uses it)
-    if 'capabilities' not in st.session_state:
-        st.session_state.capabilities = {
-            'fred': FredDataCapability(),  # Use our improved FRED capability
-            'market': MarketDataCapability(),
-            'news': NewsCapability(),
-            'crypto': CryptoCapability(),
-            'fundamentals': FundamentalsCapability(),
-            'polygon': PolygonOptionsCapability()  # Options data capability
-        }
-
-    # Initialize LLM client (optional - system works without it)
-    if 'llm_client' not in st.session_state:
+    # Try to load existing graph
+    if os.path.exists('storage/graph.json'):
         try:
-            st.session_state.llm_client = LLMClient()
-            print("✅ LLM Client initialized successfully")
+            st.session_state.graph.load('storage/graph.json')
+            print(f"Loaded graph with {st.session_state.graph.get_stats()['total_nodes']} nodes from file")
+            return
         except Exception as e:
-            st.session_state.llm_client = None
-            print(f"⚠️ LLM Client not available: {e}")
+            print(f"Error loading graph: {e}")
+
+    # Seed with fundamental analysis knowledge if not enough nodes
+    if st.session_state.graph.get_stats()['total_nodes'] < 40:
+        try:
+            import seed_knowledge_graph
+            seed_knowledge_graph.seed_buffett_framework(st.session_state.graph)
+            seed_knowledge_graph.seed_dalio_framework(st.session_state.graph)
+            seed_knowledge_graph.seed_financial_calculations(st.session_state.graph)
+            seed_knowledge_graph.seed_investment_examples(st.session_state.graph)
+            print(f"Seeded knowledge graph to {st.session_state.graph.get_stats()['total_nodes']} nodes")
+
+            # Save the seeded graph with backup
+            if 'persistence' in st.session_state:
+                st.session_state.persistence.save_graph_with_backup(st.session_state.graph)
+            else:
+                st.session_state.graph.save('storage/graph.json')
+        except Exception as e:
+            print(f"Note: Knowledge seeding skipped: {e}")
+
+
+def _init_capabilities():
+    """Initialize external capabilities for agents."""
+    st.session_state.capabilities = {
+        'fred': FredDataCapability(),
+        'market': MarketDataCapability(),
+        'news': NewsCapability(),
+        'crypto': CryptoCapability(),
+        'fundamentals': FundamentalsCapability(),
+        'polygon': PolygonOptionsCapability()
+    }
+
+
+def _init_llm_client():
+    """Initialize LLM client (optional - system works without it)."""
+    try:
+        st.session_state.llm_client = LLMClient()
+        print("✅ LLM Client initialized successfully")
+    except Exception as e:
+        st.session_state.llm_client = None
+        print(f"⚠️ LLM Client not available: {e}")
+
+
+def _register_all_agents(runtime, caps):
+    """Register all agents with their capabilities."""
+    runtime.graph = st.session_state.graph
+
+    # Core agents
+    runtime.register_agent('graph_mind', GraphMind(st.session_state.graph),
+                          capabilities=AGENT_CAPABILITIES['graph_mind'])
+    runtime.register_agent('claude', Claude(st.session_state.graph, llm_client=st.session_state.llm_client),
+                          capabilities=AGENT_CAPABILITIES['claude'])
+
+    # Data agents
+    runtime.register_agent('data_harvester', DataHarvester(st.session_state.graph, caps),
+                          capabilities=AGENT_CAPABILITIES['data_harvester'])
+    runtime.register_agent('data_digester', DataDigester(st.session_state.graph),
+                          capabilities=AGENT_CAPABILITIES['data_digester'])
+
+    # Analysis agents
+    runtime.register_agent('relationship_hunter', RelationshipHunter(st.session_state.graph, capabilities=caps),
+                          capabilities=AGENT_CAPABILITIES['relationship_hunter'])
+    runtime.register_agent('pattern_spotter', PatternSpotter(st.session_state.graph),
+                          capabilities=AGENT_CAPABILITIES['pattern_spotter'])
+    runtime.register_agent('forecast_dreamer', ForecastDreamer(st.session_state.graph),
+                          capabilities=AGENT_CAPABILITIES['forecast_dreamer'])
+
+    # Development agents
+    runtime.register_agent('code_monkey', CodeMonkey(st.session_state.graph),
+                          capabilities=AGENT_CAPABILITIES['code_monkey'])
+    runtime.register_agent('structure_bot', StructureBot(st.session_state.graph),
+                          capabilities=AGENT_CAPABILITIES['structure_bot'])
+    runtime.register_agent('refactor_elf', RefactorElf(st.session_state.graph),
+                          capabilities=AGENT_CAPABILITIES['refactor_elf'])
+
+    # Workflow agents
+    runtime.register_agent('workflow_recorder', WorkflowRecorder(st.session_state.graph),
+                          capabilities=AGENT_CAPABILITIES['workflow_recorder'])
+    runtime.register_agent('workflow_player', WorkflowPlayer(st.session_state.graph),
+                          capabilities=AGENT_CAPABILITIES['workflow_player'])
+
+    # UI and business agents
+    runtime.register_agent('ui_generator', UIGeneratorAgent(st.session_state.graph),
+                          capabilities=AGENT_CAPABILITIES['ui_generator'])
+    runtime.register_agent('financial_analyst', FinancialAnalyst(st.session_state.graph),
+                          capabilities=AGENT_CAPABILITIES['financial_analyst'])
+    runtime.register_agent('governance_agent', GovernanceAgent(st.session_state.graph),
+                          capabilities=AGENT_CAPABILITIES['governance_agent'])
+
+
+def _init_agent_runtime():
+    """Initialize agent runtime with all agents and pattern engine."""
+    st.session_state.agent_runtime = AgentRuntime()
+
+    # Register all agents
+    _register_all_agents(st.session_state.agent_runtime, st.session_state.capabilities)
+
+    # Initialize PatternEngine after agents are registered
+    st.session_state.agent_runtime.pattern_engine = PatternEngine(
+        'dawsos/patterns',
+        runtime=st.session_state.agent_runtime,
+        graph=st.session_state.graph
+    )
+    print(f"PatternEngine initialized with {len(st.session_state.agent_runtime.pattern_engine.patterns)} patterns")
+
+
+def _init_executor():
+    """Initialize Universal Executor for Trinity execution flow."""
+    st.session_state.executor = UniversalExecutor(
+        st.session_state.graph,
+        st.session_state.agent_runtime.agent_registry,
+        runtime=st.session_state.agent_runtime
+    )
+    print("Universal Executor initialized - ALL execution now routes through Trinity path")
+    st.session_state.agent_runtime.executor = st.session_state.executor
+
+
+def _init_workflows():
+    """Initialize investment workflows."""
+    st.session_state.workflows = InvestmentWorkflows(
+        st.session_state.agent_runtime,
+        st.session_state.graph
+    )
+
+
+def _init_persistence():
+    """Initialize persistence manager."""
+    st.session_state.persistence = PersistenceManager()
+
+
+def _init_alert_manager():
+    """Initialize alert manager with default alerts."""
+    st.session_state.alert_manager = AlertManager()
+    st.session_state.alert_manager.create_template_alert('compliance_violation', threshold=0)
+
+
+def init_session_state():
+    """Initialize session state variables.
+
+    Orchestrates initialization of all core components in correct order:
+    1. Knowledge graph (load or seed)
+    2. Capabilities (external APIs)
+    3. LLM client (optional)
+    4. Agent runtime (with all agents)
+    5. Universal executor (Trinity flow)
+    6. Supporting systems (workflows, persistence, alerts, chat)
+    """
+    if 'graph' not in st.session_state:
+        _init_knowledge_graph()
+
+    if 'capabilities' not in st.session_state:
+        _init_capabilities()
+
+    if 'llm_client' not in st.session_state:
+        _init_llm_client()
 
     if 'agent_runtime' not in st.session_state:
-        # Initialize agent runtime
-        st.session_state.agent_runtime = AgentRuntime()
+        _init_agent_runtime()
 
-        # Now capabilities exists and can be used
-        caps = st.session_state.capabilities
-
-        # Register agents with explicit capabilities
-        runtime = st.session_state.agent_runtime
-        # Expose graph reference on runtime for meta-pattern storage/telemetry
-        runtime.graph = st.session_state.graph
-        runtime.register_agent(
-            'graph_mind',
-            GraphMind(st.session_state.graph),
-            capabilities=AGENT_CAPABILITIES['graph_mind']
-        )
-        runtime.register_agent(
-            'claude',
-            Claude(st.session_state.graph, llm_client=st.session_state.llm_client),
-            capabilities=AGENT_CAPABILITIES['claude']
-        )
-        runtime.register_agent(
-            'data_harvester',
-            DataHarvester(st.session_state.graph, caps),
-            capabilities=AGENT_CAPABILITIES['data_harvester']
-        )
-        runtime.register_agent(
-            'data_digester',
-            DataDigester(st.session_state.graph),
-            capabilities=AGENT_CAPABILITIES['data_digester']
-        )
-        runtime.register_agent(
-            'relationship_hunter',
-            RelationshipHunter(st.session_state.graph, capabilities=caps),
-            capabilities=AGENT_CAPABILITIES['relationship_hunter']
-        )
-        runtime.register_agent(
-            'pattern_spotter',
-            PatternSpotter(st.session_state.graph),
-            capabilities=AGENT_CAPABILITIES['pattern_spotter']
-        )
-        runtime.register_agent(
-            'forecast_dreamer',
-            ForecastDreamer(st.session_state.graph),
-            capabilities=AGENT_CAPABILITIES['forecast_dreamer']
-        )
-        runtime.register_agent(
-            'code_monkey',
-            CodeMonkey(st.session_state.graph),
-            capabilities=AGENT_CAPABILITIES['code_monkey']
-        )
-        runtime.register_agent(
-            'structure_bot',
-            StructureBot(st.session_state.graph),
-            capabilities=AGENT_CAPABILITIES['structure_bot']
-        )
-        runtime.register_agent(
-            'refactor_elf',
-            RefactorElf(st.session_state.graph),
-            capabilities=AGENT_CAPABILITIES['refactor_elf']
-        )
-        runtime.register_agent(
-            'workflow_recorder',
-            WorkflowRecorder(st.session_state.graph),
-            capabilities=AGENT_CAPABILITIES['workflow_recorder']
-        )
-        runtime.register_agent(
-            'workflow_player',
-            WorkflowPlayer(st.session_state.graph),
-            capabilities=AGENT_CAPABILITIES['workflow_player']
-        )
-        runtime.register_agent(
-            'ui_generator',
-            UIGeneratorAgent(st.session_state.graph),
-            capabilities=AGENT_CAPABILITIES['ui_generator']
-        )
-        runtime.register_agent(
-            'financial_analyst',
-            FinancialAnalyst(st.session_state.graph),
-            capabilities=AGENT_CAPABILITIES['financial_analyst']
-        )
-        runtime.register_agent(
-            'governance_agent',
-            GovernanceAgent(st.session_state.graph),
-            capabilities=AGENT_CAPABILITIES['governance_agent']
-        )
-
-        # Initialize PatternEngine after agents are registered
-        runtime.pattern_engine = PatternEngine(
-            'dawsos/patterns',
-            runtime=runtime,
-            graph=st.session_state.graph
-        )
-        print(f"PatternEngine initialized with {len(runtime.pattern_engine.patterns)} patterns")
-
-    # Initialize Universal Executor AFTER agent_runtime
     if 'executor' not in st.session_state:
-        st.session_state.executor = UniversalExecutor(
-            st.session_state.graph,
-            st.session_state.agent_runtime.agent_registry,
-            runtime=st.session_state.agent_runtime
-        )
-        print("Universal Executor initialized - ALL execution now routes through Trinity path")
-        # Share executor with runtime for centralized orchestration
-        st.session_state.agent_runtime.executor = st.session_state.executor
+        _init_executor()
 
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
 
     if 'workflows' not in st.session_state:
-        st.session_state.workflows = InvestmentWorkflows(
-            st.session_state.agent_runtime,
-            st.session_state.graph
-        )
-        
-    if 'persistence' not in st.session_state:
-        st.session_state.persistence = PersistenceManager()
+        _init_workflows()
 
-    # Initialize alert manager
+    if 'persistence' not in st.session_state:
+        _init_persistence()
+
     if 'alert_manager' not in st.session_state:
-        st.session_state.alert_manager = AlertManager()
-        # Create default alerts
-        st.session_state.alert_manager.create_template_alert(
-            'compliance_violation',
-            threshold=0
-        )
+        _init_alert_manager()
 
 def visualize_graph():
     """Create interactive graph visualization"""
@@ -359,72 +363,79 @@ def visualize_graph():
     
     return fig
 
-def display_chat_interface():
-    """Main chat interface with Claude"""
-    st.markdown("### Chat with DawsOS")
-    
-    # Display chat history
+def _display_user_message(content):
+    """Display user message in chat."""
+    st.write(content)
+
+
+def _display_forecast_result(result):
+    """Display forecast result with metrics."""
+    forecast = result.get('result', {})
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Forecast", forecast.get('forecast', 'Unknown'))
+    col2.metric("Confidence", f"{forecast.get('confidence', 0)*100:.1f}%")
+    col3.metric("Signal", f"{forecast.get('signal_strength', 0):.2f}")
+
+
+def _display_action_result(result):
+    """Display action results (add_node, connect, etc)."""
+    if result.get('action') == 'explain':
+        st.write(result.get('text', ''))
+    elif result.get('action') == 'forecast':
+        _display_forecast_result(result)
+    elif result.get('action') == 'add_node':
+        st.success(f"Added node: {result.get('node_id')}")
+    elif result.get('action') == 'connect':
+        st.info(f"Connected: {result.get('from')} to {result.get('to')}")
+    elif 'error' in result:
+        st.error(f"Error: {result['error']}")
+    elif 'response' in result:
+        st.write(result['response'])
+
+
+def _display_assistant_message(content):
+    """Display assistant message with pattern info."""
+    if isinstance(content, dict):
+        # Show pattern badge if available
+        if 'pattern' in content:
+            st.caption(f"🔮 Pattern: {content.get('pattern', 'Unknown')}")
+
+        # Display response content
+        if 'formatted_response' in content:
+            st.write(content['formatted_response'])
+        elif 'response' in content:
+            st.write(content['response'])
+        elif 'results' in content:
+            for result in content['results']:
+                if isinstance(result, dict):
+                    _display_action_result(result)
+        elif 'friendly_response' in content:
+            st.write(content['friendly_response'])
+        else:
+            st.json(content)
+    else:
+        st.write(content)
+
+
+def _display_chat_history():
+    """Display complete chat history."""
     for message in st.session_state.chat_history:
         with st.chat_message(message["role"]):
             if message["role"] == "user":
-                st.write(message["content"])
+                _display_user_message(message["content"])
             else:
-                if isinstance(message["content"], dict):
-                    # Display pattern-based responses
-                    if 'pattern' in message["content"]:
-                        st.caption(f"🔮 Pattern: {message['content'].get('pattern', 'Unknown')}")
+                _display_assistant_message(message["content"])
 
-                    if 'formatted_response' in message["content"]:
-                        st.write(message["content"]['formatted_response'])
-                    elif 'response' in message["content"]:
-                        st.write(message["content"]['response'])
-                    elif 'results' in message["content"]:
-                        for result in message["content"]['results']:
-                            if isinstance(result, dict):
-                                if result.get('action') == 'explain':
-                                    st.write(result.get('text', ''))
-                                elif result.get('action') == 'forecast':
-                                    forecast = result.get('result', {})
-                                    col1, col2, col3 = st.columns(3)
-                                    col1.metric("Forecast", forecast.get('forecast', 'Unknown'))
-                                    col2.metric("Confidence", f"{forecast.get('confidence', 0)*100:.1f}%")
-                                    col3.metric("Signal", f"{forecast.get('signal_strength', 0):.2f}")
-                                elif result.get('action') == 'add_node':
-                                    st.success(f"Added node: {result.get('node_id')}")
-                                elif result.get('action') == 'connect':
-                                    st.info(f"Connected: {result.get('from')} to {result.get('to')}")
-                                elif 'error' in result:
-                                    st.error(f"Error: {result['error']}")
-                                elif 'response' in result:
-                                    st.write(result['response'])
-                    elif 'friendly_response' in message["content"]:
-                        st.write(message["content"]['friendly_response'])
-                    else:
-                        st.json(message["content"])
-                else:
-                    st.write(message["content"])
-    
-    # Chat input
-    user_input = st.chat_input("Ask anything about markets, economics, or stocks...")
-    
-    if user_input:
-        # Add user message
-        st.session_state.chat_history.append({"role": "user", "content": user_input})
-        
-        # Get response from agent system
-        with st.chat_message("assistant"):
-            with st.spinner("DawsOS is thinking..."):
-                response = st.session_state.agent_runtime.orchestrate(user_input)
 
-                # Check for fallback/cached data warning
-                if response.get('source') == 'fallback':
-                    ui_message = response.get('ui_message', '⚠️ Using cached data')
-                    st.warning(ui_message)
+def _show_fallback_warning(response):
+    """Show fallback/cached data warning if applicable."""
+    if response.get('source') == 'fallback':
+        ui_message = response.get('ui_message', '⚠️ Using cached data')
+        st.warning(ui_message)
 
-                    # Show explanation in expander
-                    with st.expander("ℹ️ Why am I seeing cached data?"):
-                        reason = response.get('fallback_reason', 'Unknown')
-                        st.markdown(f"""
+        with st.expander("ℹ️ Why am I seeing cached data?"):
+            reason = response.get('fallback_reason', 'Unknown')
+            st.markdown(f"""
 **Reason**: {reason}
 
 **To enable live AI responses**:
@@ -432,42 +443,81 @@ def display_chat_interface():
 2. Restart the application
 
 **Note**: Cached responses are still useful for analysis and are updated regularly.
-                        """)
+            """)
 
-                # Display response
-                if 'error' in response:
-                    st.error(f"Error: {response['error']}")
-                else:
-                    # Display pattern-based response
-                    if 'pattern' in response:
-                        st.caption(f"🔮 Pattern: {response.get('pattern', 'Unknown')}")
 
-                    if 'formatted_response' in response:
-                        st.write(response['formatted_response'])
-                    elif 'response' in response:
-                        st.write(response['response'])
-                    elif 'results' in response and response['results']:
-                        # Display results from pattern execution
-                        for i, result in enumerate(response['results']):
-                            if isinstance(result, dict):
-                                if 'error' in result:
-                                    st.error(f"Step {i+1} error: {result['error']}")
-                                elif 'response' in result:
-                                    st.write(result['response'])
-                                elif 'data' in result:
-                                    st.json(result['data'])
-                    elif 'friendly_response' in response:
-                        st.write(response['friendly_response'])
-                    else:
-                        st.json(response)
+def _display_response_content(response):
+    """Display main response content."""
+    if 'error' in response:
+        st.error(f"Error: {response['error']}")
+        return
 
-                    st.session_state.chat_history.append({"role": "assistant", "content": response})
+    # Show pattern info
+    if 'pattern' in response:
+        st.caption(f"🔮 Pattern: {response.get('pattern', 'Unknown')}")
 
-                    # Save graph with backup after changes
-                    st.session_state.persistence.save_graph_with_backup(st.session_state.graph)
+    # Display main content
+    if 'formatted_response' in response:
+        st.write(response['formatted_response'])
+    elif 'response' in response:
+        st.write(response['response'])
+    elif 'results' in response and response['results']:
+        for i, result in enumerate(response['results']):
+            if isinstance(result, dict):
+                if 'error' in result:
+                    st.error(f"Step {i+1} error: {result['error']}")
+                elif 'response' in result:
+                    st.write(result['response'])
+                elif 'data' in result:
+                    st.json(result['data'])
+    elif 'friendly_response' in response:
+        st.write(response['friendly_response'])
+    else:
+        st.json(response)
 
-                    # Force rerun to update graph
-                    st.rerun()
+
+def _process_user_input(user_input):
+    """Process user input and generate response."""
+    # Add user message to history
+    st.session_state.chat_history.append({"role": "user", "content": user_input})
+
+    # Get response from agent system
+    with st.chat_message("assistant"):
+        with st.spinner("DawsOS is thinking..."):
+            response = st.session_state.agent_runtime.orchestrate(user_input)
+
+            # Show fallback warning if needed
+            _show_fallback_warning(response)
+
+            # Display response
+            _display_response_content(response)
+
+            # Add to history if successful
+            if 'error' not in response:
+                st.session_state.chat_history.append({"role": "assistant", "content": response})
+
+                # Save graph with backup after changes
+                st.session_state.persistence.save_graph_with_backup(st.session_state.graph)
+
+                # Force rerun to update graph
+                st.rerun()
+
+
+def display_chat_interface():
+    """Main chat interface with Claude.
+
+    Displays chat history and handles user input through the orchestration system.
+    """
+    st.markdown("### Chat with DawsOS")
+
+    # Display chat history
+    _display_chat_history()
+
+    # Chat input and processing
+    user_input = st.chat_input("Ask anything about markets, economics, or stocks...")
+
+    if user_input:
+        _process_user_input(user_input)
 
 def display_intelligence_dashboard():
     """Display key metrics and insights"""

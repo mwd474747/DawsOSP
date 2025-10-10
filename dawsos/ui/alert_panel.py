@@ -115,53 +115,40 @@ class AlertPanel:
                      delta="High priority" if critical_count > 0 else None,
                      delta_color="inverse")
 
-    def _render_alert_dashboard(self) -> None:
-        """Render alert dashboard with visualizations."""
-        st.markdown("#### 📊 Alert Analytics Dashboard")
-
-        summary = self.alert_manager.get_alert_summary()
-
-        # Severity distribution
-        col1, col2 = st.columns([2, 1])
-
-        with col1:
-            st.markdown("**Alert Distribution by Severity**")
-            severity_data = summary['severity_counts']
-            if sum(severity_data.values()) > 0:
-                if PLOTLY_AVAILABLE and go is not None:
-                    fig = go.Figure(data=[go.Pie(
-                        labels=['Info', 'Warning', 'Critical'],
-                        values=[severity_data['info'], severity_data['warning'], severity_data['critical']],
-                        marker=dict(colors=['#3498db', '#f39c12', '#e74c3c']),
-                        hole=0.4
-                    )])
-                    fig.update_layout(height=300)
-                    st.plotly_chart(fig, width="stretch")
-                else:
-                    # Fallback to simple metrics
-                    st.metric("Info", severity_data['info'])
-                    st.metric("Warning", severity_data['warning'])
-                    st.metric("Critical", severity_data['critical'])
+    def _render_severity_distribution(self, severity_data: Dict[str, int]) -> None:
+        """Render severity distribution chart or metrics."""
+        if sum(severity_data.values()) > 0:
+            if PLOTLY_AVAILABLE and go is not None:
+                fig = go.Figure(data=[go.Pie(
+                    labels=['Info', 'Warning', 'Critical'],
+                    values=[severity_data['info'], severity_data['warning'], severity_data['critical']],
+                    marker=dict(colors=['#3498db', '#f39c12', '#e74c3c']),
+                    hole=0.4
+                )])
+                fig.update_layout(height=300)
+                st.plotly_chart(fig, width="stretch")
             else:
-                st.info("No alerts configured yet")
+                st.metric("Info", severity_data['info'])
+                st.metric("Warning", severity_data['warning'])
+                st.metric("Critical", severity_data['critical'])
+        else:
+            st.info("No alerts configured yet")
 
-        with col2:
-            st.markdown("**Alert Type Breakdown**")
-            alert_types = {}
-            for alert in self.alert_manager.alerts.values():
-                alert_type = alert.alert_type.value
-                alert_types[alert_type] = alert_types.get(alert_type, 0) + 1
+    def _render_alert_type_breakdown(self) -> None:
+        """Render breakdown of alert types."""
+        alert_types = {}
+        for alert in self.alert_manager.alerts.values():
+            alert_type = alert.alert_type.value
+            alert_types[alert_type] = alert_types.get(alert_type, 0) + 1
 
-            if alert_types:
-                for alert_type, count in sorted(alert_types.items(), key=lambda x: x[1], reverse=True):
-                    st.metric(alert_type.replace('_', ' ').title(), count)
-            else:
-                st.info("No alerts yet")
+        if alert_types:
+            for alert_type, count in sorted(alert_types.items(), key=lambda x: x[1], reverse=True):
+                st.metric(alert_type.replace('_', ' ').title(), count)
+        else:
+            st.info("No alerts yet")
 
-        # Recent activity timeline
-        st.markdown("**Recent Alert Activity**")
-        recent_events = summary['recent_events']
-
+    def _render_activity_timeline(self, recent_events: EventList) -> None:
+        """Render recent alert activity timeline."""
         if recent_events:
             timeline_data = []
             for event in recent_events:
@@ -175,7 +162,6 @@ class AlertPanel:
             df = pd.DataFrame(timeline_data)
             df['timestamp'] = pd.to_datetime(df['timestamp'])
 
-            # Create timeline chart
             if PLOTLY_AVAILABLE and px is not None:
                 fig = px.scatter(df, x='timestamp', y='alert',
                                color='severity',
@@ -185,50 +171,85 @@ class AlertPanel:
                                    'critical': '#e74c3c'
                                },
                                title="Alert Timeline (Last 10 Events)")
-
                 fig.update_traces(marker=dict(size=12))
                 st.plotly_chart(fig, width="stretch")
             else:
-                # Fallback to table view
                 st.dataframe(df)
         else:
             st.info("No recent alert activity")
 
-        # Alert effectiveness metrics
-        st.markdown("**Alert Effectiveness**")
+    def _calculate_effectiveness_metrics(self, recent_events: EventList) -> Dict[str, Any]:
+        """Calculate alert effectiveness metrics."""
+        # Calculate average acknowledgment time
+        ack_times = []
+        for event in recent_events:
+            if event['acknowledged'] and event.get('acknowledged_at'):
+                trigger_time = datetime.fromisoformat(event['timestamp'])
+                ack_time = datetime.fromisoformat(event['acknowledged_at'])
+                ack_times.append((ack_time - trigger_time).total_seconds() / 60)
+
+        avg_ack_time = sum(ack_times) / len(ack_times) if ack_times else 0
+
+        # Find most triggered alert
+        trigger_counts = {}
+        for event in recent_events:
+            alert_name = event['alert_name']
+            trigger_counts[alert_name] = trigger_counts.get(alert_name, 0) + 1
+
+        most_triggered = max(trigger_counts, key=trigger_counts.get) if trigger_counts else "N/A"
+        if most_triggered != "N/A" and len(most_triggered) > 20:
+            most_triggered = most_triggered[:20] + "..."
+
+        # Calculate response rate
+        total_events = len(recent_events)
+        ack_events = sum(1 for e in recent_events if e['acknowledged'])
+        response_rate = (ack_events / total_events * 100) if total_events > 0 else 0
+
+        return {
+            'avg_ack_time': avg_ack_time,
+            'most_triggered': most_triggered,
+            'response_rate': response_rate
+        }
+
+    def _render_effectiveness_metrics(self, recent_events: EventList) -> None:
+        """Render alert effectiveness metrics."""
+        metrics = self._calculate_effectiveness_metrics(recent_events)
+
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            # Calculate average response time (time to acknowledge)
-            ack_times = []
-            for event in recent_events:
-                if event['acknowledged'] and event.get('acknowledged_at'):
-                    trigger_time = datetime.fromisoformat(event['timestamp'])
-                    ack_time = datetime.fromisoformat(event['acknowledged_at'])
-                    ack_times.append((ack_time - trigger_time).total_seconds() / 60)
-
-            avg_ack_time = sum(ack_times) / len(ack_times) if ack_times else 0
-            st.metric("Avg Acknowledgment Time", f"{avg_ack_time:.1f} min")
+            st.metric("Avg Acknowledgment Time", f"{metrics['avg_ack_time']:.1f} min")
 
         with col2:
-            # Most triggered alert
-            trigger_counts = {}
-            for event in recent_events:
-                alert_name = event['alert_name']
-                trigger_counts[alert_name] = trigger_counts.get(alert_name, 0) + 1
-
-            if trigger_counts:
-                most_triggered = max(trigger_counts, key=trigger_counts.get)
-                st.metric("Most Triggered", most_triggered[:20] + "..." if len(most_triggered) > 20 else most_triggered)
-            else:
-                st.metric("Most Triggered", "N/A")
+            st.metric("Most Triggered", metrics['most_triggered'])
 
         with col3:
-            # Response rate
-            total_events = len(recent_events)
-            ack_events = sum(1 for e in recent_events if e['acknowledged'])
-            response_rate = (ack_events / total_events * 100) if total_events > 0 else 0
-            st.metric("Response Rate", f"{response_rate:.1f}%")
+            st.metric("Response Rate", f"{metrics['response_rate']:.1f}%")
+
+    def _render_alert_dashboard(self) -> None:
+        """Render alert dashboard with visualizations."""
+        st.markdown("#### 📊 Alert Analytics Dashboard")
+
+        summary = self.alert_manager.get_alert_summary()
+
+        # Severity distribution
+        col1, col2 = st.columns([2, 1])
+
+        with col1:
+            st.markdown("**Alert Distribution by Severity**")
+            self._render_severity_distribution(summary['severity_counts'])
+
+        with col2:
+            st.markdown("**Alert Type Breakdown**")
+            self._render_alert_type_breakdown()
+
+        # Recent activity timeline
+        st.markdown("**Recent Alert Activity**")
+        self._render_activity_timeline(summary['recent_events'])
+
+        # Alert effectiveness metrics
+        st.markdown("**Alert Effectiveness**")
+        self._render_effectiveness_metrics(summary['recent_events'])
 
     def _render_alert_creation_form(self) -> None:
         """Render alert creation form."""
@@ -510,94 +531,78 @@ class AlertPanel:
                         st.success("Event acknowledged")
                         st.rerun()
 
-    def _render_alert_templates(self) -> None:
-        """Render alert templates for quick creation."""
-        st.markdown("#### 🔧 Alert Templates")
-        st.markdown("Quickly create alerts from common templates")
+    def _render_stock_price_template(self) -> None:
+        """Render stock price alert template form."""
+        with st.form("stock_price_template"):
+            st.markdown("**Stock Price Alert**")
+            symbol = st.text_input("Symbol", value="AAPL", key="template_symbol")
+            direction = st.radio("Alert when price is", ["Above", "Below"], key="template_direction")
+            threshold = st.number_input("Threshold ($)", value=150.0, key="template_threshold")
 
-        # Template categories
-        col1, col2 = st.columns(2)
+            if st.form_submit_button("Create Stock Price Alert"):
+                template_name = 'stock_price_above' if direction == "Above" else 'stock_price_below'
+                try:
+                    alert = self.alert_manager.create_template_alert(
+                        template_name,
+                        symbol=symbol,
+                        threshold=threshold
+                    )
+                    st.success(f"✅ Created alert: {alert.name}")
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
 
-        with col1:
-            st.markdown("**📈 Stock & Market Alerts**")
+    def _render_system_health_template(self) -> None:
+        """Render system health alert template form."""
+        with st.form("system_health_template"):
+            st.markdown("**Response Time Alert**")
+            response_threshold = st.number_input("Max Response Time (seconds)", value=5.0, key="response_threshold")
 
-            with st.form("stock_price_template"):
-                st.markdown("**Stock Price Alert**")
-                symbol = st.text_input("Symbol", value="AAPL", key="template_symbol")
-                direction = st.radio("Alert when price is", ["Above", "Below"], key="template_direction")
-                threshold = st.number_input("Threshold ($)", value=150.0, key="template_threshold")
+            if st.form_submit_button("Create Response Time Alert"):
+                try:
+                    alert = self.alert_manager.create_template_alert(
+                        'response_time',
+                        threshold=response_threshold
+                    )
+                    st.success(f"✅ Created alert: {alert.name}")
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
 
-                if st.form_submit_button("Create Stock Price Alert"):
-                    template_name = 'stock_price_above' if direction == "Above" else 'stock_price_below'
-                    try:
-                        alert = self.alert_manager.create_template_alert(
-                            template_name,
-                            symbol=symbol,
-                            threshold=threshold
-                        )
-                        st.success(f"✅ Created alert: {alert.name}")
-                    except Exception as e:
-                        st.error(f"Error: {str(e)}")
+    def _render_data_freshness_template(self) -> None:
+        """Render data freshness alert template form."""
+        with st.form("data_freshness_template"):
+            st.markdown("**Data Freshness Alert**")
+            dataset = st.selectbox("Dataset", ["FRED", "Market Sectors", "Economic Cycles"], key="dataset_select")
+            max_age = st.number_input("Max Age (hours)", value=24, key="max_age")
 
-        with col2:
-            st.markdown("**🔧 System Health Alerts**")
+            if st.form_submit_button("Create Data Freshness Alert"):
+                try:
+                    alert = self.alert_manager.create_template_alert(
+                        'data_freshness',
+                        dataset=dataset,
+                        max_age_hours=max_age
+                    )
+                    st.success(f"✅ Created alert: {alert.name}")
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
 
-            with st.form("system_health_template"):
-                st.markdown("**Response Time Alert**")
-                response_threshold = st.number_input("Max Response Time (seconds)", value=5.0, key="response_threshold")
+    def _render_compliance_template(self) -> None:
+        """Render compliance alert template form."""
+        with st.form("compliance_template"):
+            st.markdown("**Trinity Compliance Alert**")
+            bypass_threshold = st.number_input("Max Bypass Warnings", value=0, key="bypass_threshold")
 
-                if st.form_submit_button("Create Response Time Alert"):
-                    try:
-                        alert = self.alert_manager.create_template_alert(
-                            'response_time',
-                            threshold=response_threshold
-                        )
-                        st.success(f"✅ Created alert: {alert.name}")
-                    except Exception as e:
-                        st.error(f"Error: {str(e)}")
+            if st.form_submit_button("Create Compliance Alert"):
+                try:
+                    alert = self.alert_manager.create_template_alert(
+                        'compliance_violation',
+                        threshold=bypass_threshold
+                    )
+                    st.success(f"✅ Created alert: {alert.name}")
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
 
-        st.markdown("---")
-
-        col3, col4 = st.columns(2)
-
-        with col3:
-            st.markdown("**📊 Data Quality Alerts**")
-
-            with st.form("data_freshness_template"):
-                st.markdown("**Data Freshness Alert**")
-                dataset = st.selectbox("Dataset", ["FRED", "Market Sectors", "Economic Cycles"], key="dataset_select")
-                max_age = st.number_input("Max Age (hours)", value=24, key="max_age")
-
-                if st.form_submit_button("Create Data Freshness Alert"):
-                    try:
-                        alert = self.alert_manager.create_template_alert(
-                            'data_freshness',
-                            dataset=dataset,
-                            max_age_hours=max_age
-                        )
-                        st.success(f"✅ Created alert: {alert.name}")
-                    except Exception as e:
-                        st.error(f"Error: {str(e)}")
-
-        with col4:
-            st.markdown("**🛡️ Compliance Alerts**")
-
-            with st.form("compliance_template"):
-                st.markdown("**Trinity Compliance Alert**")
-                bypass_threshold = st.number_input("Max Bypass Warnings", value=0, key="bypass_threshold")
-
-                if st.form_submit_button("Create Compliance Alert"):
-                    try:
-                        alert = self.alert_manager.create_template_alert(
-                            'compliance_violation',
-                            threshold=bypass_threshold
-                        )
-                        st.success(f"✅ Created alert: {alert.name}")
-                    except Exception as e:
-                        st.error(f"Error: {str(e)}")
-
-        # One-click common templates
-        st.markdown("---")
+    def _render_quick_templates(self) -> None:
+        """Render one-click quick template buttons."""
         st.markdown("**⚡ Quick Templates (One-Click)**")
 
         quick_col1, quick_col2, quick_col3, quick_col4 = st.columns(4)
@@ -633,6 +638,38 @@ class AlertPanel:
                     st.success(f"✅ Created: {alert.name}")
                 except Exception as e:
                     st.error(str(e))
+
+    def _render_alert_templates(self) -> None:
+        """Render alert templates for quick creation."""
+        st.markdown("#### 🔧 Alert Templates")
+        st.markdown("Quickly create alerts from common templates")
+
+        # Template categories
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("**📈 Stock & Market Alerts**")
+            self._render_stock_price_template()
+
+        with col2:
+            st.markdown("**🔧 System Health Alerts**")
+            self._render_system_health_template()
+
+        st.markdown("---")
+
+        col3, col4 = st.columns(2)
+
+        with col3:
+            st.markdown("**📊 Data Quality Alerts**")
+            self._render_data_freshness_template()
+
+        with col4:
+            st.markdown("**🛡️ Compliance Alerts**")
+            self._render_compliance_template()
+
+        # One-click common templates
+        st.markdown("---")
+        self._render_quick_templates()
 
     def _check_and_show_notifications(self) -> None:
         """Check alerts and show real-time notifications."""
