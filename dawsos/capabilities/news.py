@@ -419,7 +419,9 @@ class NewsCapability(APIHelper):
 
             # Cache results
             self._update_cache(cache_key, articles)
-            return articles
+
+            # VALIDATE with Pydantic before returning
+            return self._validate_articles(articles, "headlines")
 
         # API call failed - try to return expired cache data
         if cached:
@@ -429,7 +431,7 @@ class NewsCapability(APIHelper):
             for article in result:
                 article['_cached'] = True
                 article['_warning'] = 'Using expired cached data due to API failure'
-            return result
+            return self._validate_articles(result, "cached headlines")
 
         return [{'error': 'No data available'}]
     
@@ -773,3 +775,55 @@ class NewsCapability(APIHelper):
         if isinstance(articles, list) and len(articles) > 0 and 'error' not in articles[0]:
             return articles[:limit]
         return articles
+
+    def _validate_articles(self, articles: ArticleList, context: str = "articles") -> ArticleList:
+        """Validate news articles with Pydantic before returning.
+
+        Args:
+            articles: List of article dictionaries
+            context: Context for error messages
+
+        Returns:
+            Validated articles list or error list with validation details
+        """
+        try:
+            from models.news import NewsArticle
+            from pydantic import ValidationError as PydanticValidationError
+
+            validated_articles = []
+            errors = []
+
+            for i, article_data in enumerate(articles):
+                # Skip if this is an error dict
+                if 'error' in article_data:
+                    return articles
+
+                try:
+                    validated = NewsArticle(**article_data)
+                    validated_articles.append(validated.model_dump())
+                except PydanticValidationError as e:
+                    logger.warning(f"Article {i} validation failed: {e}")
+                    errors.append({
+                        'article_index': i,
+                        'title': article_data.get('title', 'Unknown'),
+                        'validation_errors': [
+                            {'field': '.'.join(str(loc) for loc in err['loc']), 'message': err['msg']}
+                            for err in e.errors()
+                        ]
+                    })
+
+            if validated_articles:
+                logger.info(f"✓ Validated {len(validated_articles)}/{len(articles)} {context}")
+                if errors:
+                    logger.warning(f"⚠ {len(errors)} articles failed validation and were filtered")
+                return validated_articles
+            else:
+                logger.error(f"❌ All {context} failed validation")
+                return [{
+                    'error': f'All {context} failed validation',
+                    'validation_errors': errors
+                }]
+
+        except ImportError as e:
+            logger.warning(f"Pydantic models not available, skipping validation: {e}")
+            return articles
