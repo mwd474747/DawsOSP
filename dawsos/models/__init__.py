@@ -48,6 +48,15 @@ from models.fundamentals import (
     FinancialStatement,
 )
 
+# Options data models (Polygon.io)
+from models.options import (
+    OptionsContract,
+    GreeksData,
+    OptionChainResponse,
+    UnusualActivityAlert,
+    IVRankData,
+)
+
 __all__ = [
     # Base models
     'APIResponse',
@@ -76,6 +85,12 @@ __all__ = [
     'FinancialRatios',
     'KeyMetrics',
     'FinancialStatement',
+    # Options data
+    'OptionsContract',
+    'GreeksData',
+    'OptionChainResponse',
+    'UnusualActivityAlert',
+    'IVRankData',
 ]
 
-__version__ = '1.3.0'
+__version__ = '1.4.0'

@@ -311,6 +311,9 @@ class PolygonOptionsCapability:
             'timestamp': datetime.now().isoformat()
         }
 
+        # VALIDATE response with Pydantic before caching
+        result = self._validate_option_chain(result)
+
         # Update cache
         self._update_cache(cache_key, result)
 
@@ -437,9 +440,117 @@ class PolygonOptionsCapability:
             # Greeks would be in contract details
             pass
 
-        return {
+        result = {
             'ticker': ticker,
             'net_delta': net_delta,
             'total_gamma': total_gamma,
             'note': 'Placeholder - requires detailed contract data'
         }
+
+        # VALIDATE response with Pydantic
+        result = self._validate_greeks(result)
+
+        return result
+
+    def _validate_option_chain(self, chain_data: dict) -> dict:
+        """Validate option chain data with Pydantic before returning.
+
+        Args:
+            chain_data: Raw option chain data
+
+        Returns:
+            Validated chain dict or error dict with validation details
+        """
+        try:
+            from models.options import OptionChainResponse, OptionsContract
+            from pydantic import ValidationError as PydanticValidationError
+
+            try:
+                # Validate individual contracts first (with intelligent filtering)
+                validated_calls = []
+                validated_puts = []
+                contract_errors = []
+
+                for i, call_data in enumerate(chain_data.get('calls', [])):
+                    try:
+                        validated = OptionsContract(**call_data)
+                        validated_calls.append(validated.model_dump())
+                    except PydanticValidationError as e:
+                        logger.warning(f"Call contract {i} validation failed: {e}")
+                        contract_errors.append({'index': i, 'type': 'call', 'errors': e.errors()})
+
+                for i, put_data in enumerate(chain_data.get('puts', [])):
+                    try:
+                        validated = OptionsContract(**put_data)
+                        validated_puts.append(validated.model_dump())
+                    except PydanticValidationError as e:
+                        logger.warning(f"Put contract {i} validation failed: {e}")
+                        contract_errors.append({'index': i, 'type': 'put', 'errors': e.errors()})
+
+                # Update chain_data with validated contracts
+                validated_chain_data = {
+                    **chain_data,
+                    'calls': validated_calls,
+                    'puts': validated_puts,
+                    'total_contracts': len(validated_calls) + len(validated_puts)
+                }
+
+                # Validate the full chain response
+                validated_chain = OptionChainResponse(**validated_chain_data)
+                logger.info(f"✓ Validated option chain: {len(validated_calls)} calls, {len(validated_puts)} puts")
+
+                if contract_errors:
+                    logger.warning(f"⚠ {len(contract_errors)} contracts failed validation and were filtered")
+
+                return validated_chain.model_dump()
+
+            except PydanticValidationError as e:
+                logger.error(f"❌ Option chain validation failed: {e}")
+                return {
+                    'ticker': chain_data.get('ticker', 'UNKNOWN'),
+                    'error': 'Option chain validation failed',
+                    'validation_errors': [
+                        {'field': '.'.join(str(loc) for loc in err['loc']), 'message': err['msg']}
+                        for err in e.errors()
+                    ],
+                    'calls': [],
+                    'puts': [],
+                    'total_contracts': 0,
+                    'timestamp': datetime.now().isoformat()
+                }
+        except ImportError as e:
+            logger.warning(f"Pydantic models not available, skipping validation: {e}")
+            return chain_data
+
+    def _validate_greeks(self, greeks_data: dict) -> dict:
+        """Validate Greeks data with Pydantic before returning.
+
+        Args:
+            greeks_data: Raw Greeks data
+
+        Returns:
+            Validated Greeks dict or error dict with validation details
+        """
+        try:
+            from models.options import GreeksData
+            from pydantic import ValidationError as PydanticValidationError
+
+            try:
+                validated = GreeksData(**greeks_data)
+                logger.info(f"✓ Validated Greeks for {greeks_data.get('ticker', 'UNKNOWN')}")
+                return validated.model_dump()
+            except PydanticValidationError as e:
+                logger.error(f"❌ Greeks validation failed: {e}")
+                return {
+                    'ticker': greeks_data.get('ticker', 'UNKNOWN'),
+                    'error': 'Greeks validation failed',
+                    'validation_errors': [
+                        {'field': '.'.join(str(loc) for loc in err['loc']), 'message': err['msg']}
+                        for err in e.errors()
+                    ],
+                    'net_delta': 0.0,
+                    'total_gamma': 0.0
+                }
+        except ImportError as e:
+            logger.warning(f"Pydantic models not available, skipping validation: {e}")
+            return greeks_data
