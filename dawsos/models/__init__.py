@@ -49,12 +49,23 @@ from models.fundamentals import (
 )
 
 # Options data models (Polygon.io)
+
+# Crypto data models (CoinGecko)
+from models.crypto import (
+    CryptoPrice,
+    CryptoQuote,
+    CryptoMarketSummary,
+)
 from models.options import (
     OptionsContract,
     GreeksData,
     OptionChainResponse,
     UnusualActivityAlert,
     IVRankData,
+    # Crypto data
+    'CryptoPrice',
+    'CryptoQuote',
+    'CryptoMarketSummary',
 )
 
 __all__ = [
@@ -93,4 +104,4 @@ __all__ = [
     'IVRankData',
 ]
 
-__version__ = '1.4.0'
+__version__ = '1.5.0'
