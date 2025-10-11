@@ -801,7 +801,33 @@ class FredDataCapability(APIHelper):
             f"(cache_age: {max_cache_age:.0f}s, errors: {result['_metadata']['errors']})"
         )
 
-        return result
+        # VALIDATE response with Pydantic before returning
+        try:
+            from models.economic_data import EconomicDataResponse
+            from pydantic import ValidationError as PydanticValidationError
+
+            try:
+                validated = EconomicDataResponse(**result)
+                logger.info(f"✓ Validated {len(validated.series)} series with Pydantic")
+                return validated.model_dump()
+            except PydanticValidationError as e:
+                logger.error(f"❌ Pydantic validation failed for FRED data: {e}")
+                # Return structured error instead of corrupt data
+                return {
+                    'error': 'Data validation failed',
+                    'validation_errors': [
+                        {'field': '.'.join(str(loc) for loc in err['loc']), 'message': err['msg']}
+                        for err in e.errors()
+                    ],
+                    'series': {},
+                    'source': 'error',
+                    'timestamp': datetime.now().isoformat(),
+                    'cache_age_seconds': 0,
+                    'health': self.get_health_status()
+                }
+        except ImportError as e:
+            logger.warning(f"Pydantic models not available, skipping validation: {e}")
+            return result
 
     def get_latest_value(self, series_id: str) -> SeriesData:
         """

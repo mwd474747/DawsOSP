@@ -1,0 +1,46 @@
+"""Pydantic models for DawsOS API validation.
+
+This package provides runtime type validation for all external API integrations,
+ensuring data integrity and preventing format incompatibility issues.
+
+Phase 2 of comprehensive remediation plan (Week 2-3).
+"""
+
+# Base models
+from models.base import (
+    APIResponse,
+    DataQuality,
+    ValidationError,
+    HealthStatus,
+    CacheMetadata,
+    Observation,
+    TimeSeriesMetadata,
+)
+
+# Economic data models (FRED)
+from models.economic_data import (
+    FREDObservation,
+    SeriesData,
+    EconomicDataResponse,
+    FREDHealthStatus,
+    EconomicIndicator,
+)
+
+__all__ = [
+    # Base models
+    'APIResponse',
+    'DataQuality',
+    'ValidationError',
+    'HealthStatus',
+    'CacheMetadata',
+    'Observation',
+    'TimeSeriesMetadata',
+    # Economic data
+    'FREDObservation',
+    'SeriesData',
+    'EconomicDataResponse',
+    'FREDHealthStatus',
+    'EconomicIndicator',
+]
+
+__version__ = '1.0.0'
