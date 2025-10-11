@@ -1858,15 +1858,12 @@ class PatternEngine:
             }
 
     def _get_macro_economic_data(self, context: ContextDict) ->Dict[str, Any]:
-        """Get real macroeconomic data from FRED via data_harvester agent"""
+        """Get real macroeconomic data from FRED via capability routing (Trinity 3.0 compliant)"""
         try:
-            from core.api_normalizer import get_normalizer
+            from datetime import datetime, timedelta
 
-            # Get data_harvester agent (has FRED integration)
-            data_harvester = self._get_agent('data_harvester') if self.runtime else None
-
-            if not data_harvester:
-                self.logger.warning("data_harvester agent not available - cannot fetch macro data")
+            if not self.runtime:
+                self.logger.warning("Runtime not available - cannot fetch macro data")
                 return self._empty_macro_data()
 
             # Fetch key economic indicators from FRED
@@ -1877,26 +1874,62 @@ class PatternEngine:
                 'FEDFUNDS': 'FEDFUNDS'  # Federal Funds Rate
             }
 
-            normalizer = get_normalizer()
+            # Use Trinity 3.0 capability-based routing
+            result = self.runtime.execute_by_capability(
+                'can_fetch_economic_data',
+                {
+                    'indicators': list(indicators_to_fetch.values()),
+                    'start_date': (datetime.now() - timedelta(days=365*5)).strftime('%Y-%m-%d'),
+                    'end_date': datetime.now().strftime('%Y-%m-%d')
+                }
+            )
+
+            if not result or 'error' in result:
+                self.logger.error(f"Failed to fetch economic data: {result.get('error', 'Unknown error')}")
+                return self._empty_macro_data()
+
             normalized_indicators = {}
 
-            # Fetch and normalize each indicator
-            for name, series_id in indicators_to_fetch.items():
-                try:
-                    # Use data_harvester to get FRED data
-                    result = data_harvester.harvest(series_id)
-                    raw_data = result.get('data', {}).get(series_id, {})
+            # Extract series data from Trinity 3.0 response (already normalized by FredDataCapability)
+            series_data = result.get('series', {})
 
-                    # Normalize the payload
-                    normalized = normalizer.normalize_economic_indicator(raw_data, name, 'fred')
-                    if normalized.get('data_quality') != 'none':
-                        normalized_indicators[name] = normalized
+            # Process each series from the capability response
+            for series_id, series_info in series_data.items():
+                try:
+                    # Skip series with errors
+                    if 'error' in series_info:
+                        self.logger.warning(f"Series {series_id} has error: {series_info.get('error')}")
+                        continue
+
+                    # Find the indicator name (GDP, CPI, etc.) for this series_id
+                    indicator_name = next((k for k, v in indicators_to_fetch.items() if v == series_id), series_id)
+
+                    # Direct consumption of FredDataCapability output (NO double normalization)
+                    if series_info.get('observations') and series_info.get('latest_value') is not None:
+                        observations = series_info['observations']
+                        change_percent = self._calculate_change_percent(observations)
+
+                        normalized_indicators[indicator_name] = {
+                            'indicator': indicator_name,
+                            'value': series_info['latest_value'],
+                            'date': series_info['latest_date'],
+                            'change_percent': change_percent,
+                            'unit': series_info.get('units', 'Index'),
+                            'frequency': series_info.get('frequency', 'Unknown'),
+                            'observations_count': len(observations),
+                            'source': result.get('source', 'unknown'),
+                            'data_quality': 'high'
+                        }
+                        self.logger.info(f"✓ Loaded {indicator_name}: {series_info['latest_value']} ({change_percent}% change)")
+                    else:
+                        self.logger.error(f"✗ {indicator_name} has no valid data: {series_info.keys()}")
+
                 except Exception as e:
-                    self.logger.warning(f"Could not fetch {name}: {e}")
+                    self.logger.error(f"Error processing {series_id}: {e}", exc_info=True)
 
             # Generate macro context from normalized indicators
             if normalized_indicators:
-                macro_context = normalizer.normalize_macro_context(normalized_indicators)
+                macro_context = self._compute_macro_context(normalized_indicators)
 
                 # Build comprehensive macro data dict
                 unemployment_val = normalized_indicators.get('UNRATE', {}).get('value')
@@ -1935,6 +1968,85 @@ class PatternEngine:
             import traceback
             traceback.print_exc()
             return self._empty_macro_data()
+
+    def _calculate_change_percent(self, observations: List[Dict]) -> Optional[float]:
+        """Calculate percent change from last two observations"""
+        if len(observations) < 2:
+            return None
+        try:
+            current = float(observations[-1]['value'])
+            previous = float(observations[-2]['value'])
+            if previous != 0:
+                return round(((current - previous) / previous) * 100, 2)
+        except (ValueError, TypeError, KeyError) as e:
+            self.logger.debug(f"Could not calculate change: {e}")
+        return None
+
+    def _compute_macro_context(self, economic_data: Dict[str, Dict]) -> Dict[str, Any]:
+        """
+        Compute macro context from multiple economic indicators
+
+        Args:
+            economic_data: Dict of normalized indicators keyed by name (GDP, CPI, etc.)
+
+        Returns:
+            Macro context with derived insights
+        """
+        try:
+            # Extract key indicators
+            gdp = economic_data.get('GDP', {})
+            cpi = economic_data.get('CPI', {})
+            unemployment = economic_data.get('UNRATE', {})
+            fed_rate = economic_data.get('FEDFUNDS', {})
+
+            # Determine economic regime
+            regime = 'transitional'
+            gdp_change = gdp.get('change_percent', 0) or 0
+            cpi_change = cpi.get('change_percent', 0) or 0
+
+            if gdp_change > 2 and cpi_change < 3:
+                regime = 'goldilocks'
+            elif cpi_change > 4:
+                regime = 'overheating'
+            elif gdp_change < 0:
+                regime = 'recession'
+            elif gdp_change < 1 and cpi_change > 3:
+                regime = 'stagflation'
+
+            # Map regime to cycle
+            cycle_mapping = {
+                'goldilocks': ('Mid Expansion', 'Sustained Growth'),
+                'overheating': ('Late Expansion', 'Overheating'),
+                'stagflation': ('Late Expansion', 'Slowing Growth'),
+                'recession': ('Contraction', 'Economic Decline'),
+                'transitional': ('Uncertain', 'Mixed Signals')
+            }
+
+            short_cycle, short_phase = cycle_mapping.get(regime, ('Data Pending', 'Analysis Required'))
+
+            return {
+                'regime': regime,
+                'short_cycle_position': short_cycle,
+                'short_cycle_phase': short_phase,
+                'gdp_growth': gdp.get('change_percent'),
+                'inflation_rate': cpi.get('change_percent'),
+                'unemployment_rate': unemployment.get('value'),
+                'fed_funds_rate': fed_rate.get('value'),
+                'credit_growth': cpi.get('change_percent'),  # Proxy
+                'indicators_available': len(economic_data),
+                'data_quality': 'high' if len(economic_data) >= 4 else 'medium',
+                'last_updated': max([ind.get('date', '1900-01-01') for ind in economic_data.values()] or ['1900-01-01'])
+            }
+
+        except Exception as e:
+            self.logger.error(f"Error computing macro context: {e}", exc_info=True)
+            return {
+                'regime': 'error',
+                'short_cycle_position': 'Data Error',
+                'short_cycle_phase': 'Unable to determine',
+                'data_quality': 'low',
+                'error': str(e)
+            }
 
     def _empty_macro_data(self) -> Dict[str, Any]:
         """Return empty macro data structure when real data unavailable"""
