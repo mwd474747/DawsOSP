@@ -40,6 +40,14 @@ from models.news import (
     SentimentSummary,
 )
 
+# Fundamentals data models (FMP)
+from models.fundamentals import (
+    CompanyOverview,
+    FinancialRatios,
+    KeyMetrics,
+    FinancialStatement,
+)
+
 __all__ = [
     # Base models
     'APIResponse',
@@ -63,6 +71,11 @@ __all__ = [
     'NewsArticle',
     'NewsResponse',
     'SentimentSummary',
+    # Fundamentals data
+    'CompanyOverview',
+    'FinancialRatios',
+    'KeyMetrics',
+    'FinancialStatement',
 ]
 
-__version__ = '1.2.0'
+__version__ = '1.3.0'

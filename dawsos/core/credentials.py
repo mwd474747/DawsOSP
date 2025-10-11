@@ -26,10 +26,10 @@ class CredentialManager:
 
     Supported API Keys:
     - ANTHROPIC_API_KEY: Claude API (required for core functionality)
-    - FMP_API_KEY: Financial Modeling Prep
+    - FMP_API_KEY: Financial Modeling Prep (market data & fundamentals)
     - FRED_API_KEY: Federal Reserve Economic Data
     - NEWSAPI_KEY: News API
-    - ALPHA_VANTAGE_KEY: Alpha Vantage (optional fallback)
+    - POLYGON_API_KEY: Polygon.io (options data)
     """
 
     # Define all supported credentials
@@ -41,7 +41,7 @@ class CredentialManager:
         },
         'FMP_API_KEY': {
             'required': False,
-            'description': 'Financial Modeling Prep API key for market data',
+            'description': 'Financial Modeling Prep API key for market data and fundamentals',
             'prefix': None
         },
         'FRED_API_KEY': {
@@ -52,11 +52,6 @@ class CredentialManager:
         'NEWSAPI_KEY': {
             'required': False,
             'description': 'News API key for news and sentiment analysis',
-            'prefix': None
-        },
-        'ALPHA_VANTAGE_KEY': {
-            'required': False,
-            'description': 'Alpha Vantage API key (optional fallback)',
             'prefix': None
         },
         'POLYGON_API_KEY': {
