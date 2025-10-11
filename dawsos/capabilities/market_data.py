@@ -280,7 +280,9 @@ class MarketDataCapability:
 
             # Update cache
             self._update_cache(cache_key, quote)
-            return quote
+
+            # VALIDATE with Pydantic before returning
+            return self._validate_stock_quote(quote, symbol)
 
         # API call failed - try to return expired cache data
         if cached:
@@ -289,7 +291,7 @@ class MarketDataCapability:
             result = cached[0].copy()
             result['_cached'] = True
             result['_warning'] = 'Using expired cached data due to API failure'
-            return result
+            return self._validate_stock_quote(result, symbol)
 
         return {'symbol': symbol, 'error': 'No data available'}
     
@@ -700,6 +702,39 @@ class MarketDataCapability:
                     })
                 
                 return movers
-                
+
         except Exception as e:
             return [{'error': str(e)}]
+
+    def _validate_stock_quote(self, quote_data: dict, symbol: str) -> dict:
+        """Validate stock quote data with Pydantic before returning.
+
+        Args:
+            quote_data: Raw quote dictionary from API
+            symbol: Stock symbol for error reporting
+
+        Returns:
+            Validated quote dict or error dict with validation details
+        """
+        try:
+            from models.market_data import StockQuote
+            from pydantic import ValidationError as PydanticValidationError
+
+            try:
+                validated = StockQuote(**quote_data)
+                logger.info(f"✓ Validated stock quote for {symbol}")
+                return validated.model_dump()
+            except PydanticValidationError as e:
+                logger.error(f"❌ Stock quote validation failed for {symbol}: {e}")
+                # Return structured error instead of corrupt data
+                return {
+                    'symbol': symbol,
+                    'error': 'Quote data validation failed',
+                    'validation_errors': [
+                        {'field': '.'.join(str(loc) for loc in err['loc']), 'message': err['msg']}
+                        for err in e.errors()
+                    ]
+                }
+        except ImportError as e:
+            logger.warning(f"Pydantic models not available, skipping validation: {e}")
+            return quote_data
