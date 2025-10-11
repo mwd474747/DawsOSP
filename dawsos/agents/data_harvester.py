@@ -427,7 +427,8 @@ class DataHarvester(BaseAgent):
         frequency = None
 
         if context:
-            series = context.get('series') or indicators
+            # Support both 'indicators' (from pattern_engine) and 'series' (legacy) parameter names
+            series = context.get('indicators') or context.get('series') or indicators
             start_date = context.get('start_date')
             end_date = context.get('end_date')
             frequency = context.get('frequency')
