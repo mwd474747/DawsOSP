@@ -26,6 +26,13 @@ from models.economic_data import (
     EconomicIndicator,
 )
 
+# Market data models (FMP stocks)
+from models.market_data import (
+    StockQuote,
+    CompanyProfile,
+    HistoricalPrice,
+)
+
 __all__ = [
     # Base models
     'APIResponse',
@@ -41,6 +48,10 @@ __all__ = [
     'EconomicDataResponse',
     'FREDHealthStatus',
     'EconomicIndicator',
+    # Market data
+    'StockQuote',
+    'CompanyProfile',
+    'HistoricalPrice',
 ]
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'
