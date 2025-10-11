@@ -339,6 +339,50 @@ class PatternSpotter(BaseAgent):
             print(f"Error in macro trend analysis: {e}")
             return {'cycle_stage': 'Analysis Error', 'confidence': 0.0}
 
+    def detect_patterns(
+        self,
+        data: Optional[Dict[str, Any]] = None,
+        analysis_type: Optional[str] = None,
+        indicators: Optional[List[str]] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Capability routing method for can_detect_patterns.
+
+        This method is the entry point for capability-based routing, mapping to
+        internal pattern detection methods based on analysis_type.
+
+        Args:
+            data: Data to analyze (market/economic/price data)
+            analysis_type: Type of analysis ('regime', 'macro', 'signals', 'general')
+            indicators: Optional list of specific indicators to analyze
+            context: Full context dict (fallback for all params)
+
+        Returns:
+            Dictionary with detected patterns, regime, or analysis results
+        """
+        # Extract from context if not provided directly
+        context = context or {}
+        data = data or context.get('data') or context.get('current_data', {})
+        analysis_type = analysis_type or context.get('analysis_type', 'general')
+        indicators = indicators or context.get('indicators', [])
+
+        # Route based on analysis type
+        if analysis_type == 'regime' or analysis_type == 'quick_regime':
+            return self._detect_market_regime(data)
+        elif analysis_type == 'macro' or analysis_type == 'macro_trends':
+            return self._analyze_macro_trends(data)
+        elif analysis_type in ['quick_signals', 'signals']:
+            # Quick pattern detection using spot() method
+            patterns = self.spot(lookback_days=7)
+            return {
+                'patterns': patterns,
+                'count': len(patterns),
+                'analysis_type': analysis_type
+            }
+        else:
+            # Default to general processing
+            return self.process(context)
+
     def _detect_market_regime(self, data: ContextData) -> AnalysisResult:
         """Detect market regime using multi-factor analysis.
 

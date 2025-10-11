@@ -386,15 +386,52 @@ class DataHarvester(BaseAgent):
     # These public methods match the capabilities declared in AGENT_CAPABILITIES
     # and delegate to the existing harvest() method with appropriate queries.
 
-    def fetch_stock_quotes(self, symbols: SymbolList, context: Dict[str, Any] = None) -> HarvestResult:
+    def fetch_stock_quotes(self, symbols: Optional[SymbolList] = None, context: Dict[str, Any] = None) -> HarvestResult:
         """
         Public wrapper for stock quotes fetching capability.
         Maps to: can_fetch_stock_quotes
+
+        Args:
+            symbols: Stock symbols to fetch (accepts symbols, symbol, ticker, tickers from context)
+            context: Optional context with 'symbols', 'symbol', 'ticker', 'tickers', or 'request'
+
+        Returns:
+            Dict with stock quotes data
         """
+        # Extract symbols from multiple possible parameter names
+        context = context or {}
+        symbols = (
+            symbols or
+            context.get('symbols') or
+            context.get('symbol') or
+            context.get('ticker') or
+            context.get('tickers') or
+            self._parse_request_for_symbols(context.get('request', '')) or
+            ['SPY']  # Sensible default: S&P 500 ETF
+        )
+
+        # Ensure list format
         if isinstance(symbols, str):
             symbols = [symbols]
+
         query = f"Get stock quotes for {', '.join(symbols)}"
         return self.harvest(query)
+
+    def _parse_request_for_symbols(self, request: str) -> Optional[List[str]]:
+        """Extract stock symbols from a natural language request.
+
+        Args:
+            request: Natural language request string
+
+        Returns:
+            List of extracted symbols or None
+        """
+        if not request:
+            return None
+        import re
+        # Match 1-5 uppercase letters (typical stock ticker format)
+        symbols = re.findall(r'\b[A-Z]{1,5}\b', request)
+        return symbols if symbols else None
 
     def fetch_economic_data(self, indicators: Optional[List[str]] = None, context: Dict[str, Any] = None) -> HarvestResult:
         """
@@ -460,7 +497,26 @@ class DataHarvester(BaseAgent):
         """
         Public wrapper for news fetching capability.
         Maps to: can_fetch_news
+
+        Args:
+            symbols: Stock symbols for news (accepts symbols, symbol, ticker from context)
+            context: Optional context with 'symbols', 'symbol', 'ticker', or 'request'
+
+        Returns:
+            Dict with news articles and headlines
         """
+        # Extract symbols from multiple possible parameter names
+        context = context or {}
+        symbols = (
+            symbols or
+            context.get('symbols') or
+            context.get('symbol') or
+            context.get('ticker') or
+            self._parse_request_for_symbols(context.get('request', ''))
+            # No default - general market news if None
+        )
+
+        # Build query based on whether symbols provided
         if symbols:
             if isinstance(symbols, str):
                 symbols = [symbols]
@@ -469,11 +525,29 @@ class DataHarvester(BaseAgent):
             query = "Get latest market news"
         return self._harvest_news(query)
 
-    def fetch_fundamentals(self, symbol: str, context: Dict[str, Any] = None) -> HarvestResult:
+    def fetch_fundamentals(self, symbol: Optional[str] = None, context: Dict[str, Any] = None) -> HarvestResult:
         """
         Public wrapper for fundamentals fetching capability.
         Maps to: can_fetch_fundamentals
+
+        Args:
+            symbol: Stock symbol (accepts symbol, ticker, symbols from context)
+            context: Optional context with 'symbol', 'ticker', 'symbols', or 'request'
+
+        Returns:
+            Dict with fundamental data (financials, ratios, metrics)
         """
+        # Extract symbol from multiple possible parameter names
+        context = context or {}
+        symbol = (
+            symbol or
+            context.get('symbol') or
+            context.get('ticker') or
+            (context.get('symbols', [])[0] if context.get('symbols') else None) or
+            (self._parse_request_for_symbols(context.get('request', '')) or [None])[0] or
+            'AAPL'  # Sensible default: Apple as example company
+        )
+
         query = f"Fetch fundamental data for {symbol}"
         return self.harvest(query)
 
