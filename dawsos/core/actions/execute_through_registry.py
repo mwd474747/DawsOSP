@@ -83,6 +83,8 @@ class ExecuteThroughRegistryAction(ActionHandler):
         try:
             # Route by capability if provided (modern pattern style)
             if capability:
+                # CRITICAL: Add capability to context for AgentAdapter introspection
+                agent_context['capability'] = capability
                 self.logger.debug(f"Executing by capability: '{capability}'")
                 result = self.runtime.execute_by_capability(capability, agent_context)
                 self.logger.debug(f"Capability '{capability}' execution completed")
