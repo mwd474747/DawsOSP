@@ -94,6 +94,48 @@ def safe_get(
         return default
 
 
+def require_graph(
+    graph: Any,
+    logger_instance: logging.Logger,
+    return_value: Any = None,
+    error_dict: bool = False
+) -> Optional[Any]:
+    """
+    Validate graph availability, return default on failure.
+
+    Consolidated pattern for graph validation across agents and actions.
+    Replaces 31+ duplicate "if not self.graph:" checks.
+
+    Args:
+        graph: Graph instance to check
+        logger_instance: Logger for warnings
+        return_value: Value to return if graph unavailable (default: None)
+        error_dict: If True, return error dict instead of return_value
+
+    Returns:
+        None if graph is available (continue execution),
+        return_value or error dict if graph is unavailable
+
+    Example:
+        >>> # Before (3 lines):
+        >>> if not self.graph:
+        >>>     self.logger.warning("Graph not available")
+        >>>     return []
+        >>>
+        >>> # After (2 lines):
+        >>> if err := require_graph(self.graph, self.logger, return_value=[]):
+        >>>     return err
+
+    See: Safe refactoring Phase 2
+    """
+    if not graph:
+        logger_instance.warning("Graph not available for operation")
+        if error_dict:
+            return {"error": "Graph not available", "success": False}
+        return return_value
+    return None  # Graph is available, continue execution
+
+
 def retry_on_failure(
     func: Callable[[], T],
     max_attempts: int = 3,
