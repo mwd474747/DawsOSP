@@ -33,6 +33,13 @@ from models.market_data import (
     HistoricalPrice,
 )
 
+# News data models (NewsAPI)
+from models.news import (
+    NewsArticle,
+    NewsResponse,
+    SentimentSummary,
+)
+
 __all__ = [
     # Base models
     'APIResponse',
@@ -52,6 +59,10 @@ __all__ = [
     'StockQuote',
     'CompanyProfile',
     'HistoricalPrice',
+    # News data
+    'NewsArticle',
+    'NewsResponse',
+    'SentimentSummary',
 ]
 
-__version__ = '1.1.0'
+__version__ = '1.2.0'
