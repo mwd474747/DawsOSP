@@ -11,6 +11,20 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 
 
+def get_agent_safely(runtime, agent_name: str):
+    """Safely retrieve an agent from runtime registry.
+
+    Args:
+        runtime: AgentRuntime instance
+        agent_name: Name of agent to retrieve
+
+    Returns:
+        Agent instance or None if not found
+    """
+    adapter = runtime.agent_registry.get_agent(agent_name)
+    return adapter.agent if adapter else None
+
+
 def render_confidence_display(confidence: float, label: str = "Confidence") -> None:
     """
     Render a confidence score with appropriate styling.
@@ -240,6 +254,7 @@ def render_data_table(
 # render_thinking_trace function stays in its dedicated module
 
 __all__ = [
+    'get_agent_safely',
     'render_confidence_display',
     'format_timestamp',
     'render_metric_card',

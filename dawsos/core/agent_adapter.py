@@ -177,8 +177,11 @@ class AgentAdapter:
                 if param_name == 'self':
                     continue
 
+                # If context is expected, ALWAYS pass full context dict
+                if param_name == 'context':
+                    params[param_name] = context
                 # Try exact match first
-                if param_name in context:
+                elif param_name in context:
                     params[param_name] = context[param_name]
                 # Try common variations
                 elif param_name == 'symbol' and 'ticker' in context:
@@ -192,9 +195,6 @@ class AgentAdapter:
                 # Use default if available
                 elif param.default != inspect.Parameter.empty:
                     params[param_name] = param.default
-                # If context is expected, pass full context
-                elif param_name == 'context':
-                    params[param_name] = context
 
             # Call method with extracted parameters
             result = method(**params)

@@ -93,7 +93,7 @@ def render_economic_dashboard(runtime, capabilities: Dict):
 
                 # Use Trinity-compliant capability routing with pre-fetched data
                 analysis = runtime.execute_by_capability(
-                    'can_analyze_economy',
+                    'can_analyze_macro_data',
                     {
                         'gdp_data': gdp_data,
                         'cpi_data': cpi_data,
