@@ -13,10 +13,22 @@ def _safe_print(message: str) -> None:
 
 def load_env():
     """Load environment variables from .env file if it exists"""
-    env_path = Path('.env')
+    # Try multiple locations for .env file
+    current_dir = Path(__file__).parent  # dawsos/ directory
+    possible_paths = [
+        current_dir / '.env',  # dawsos/.env (preferred)
+        Path('.env'),  # Current working directory
+        Path('..') / '.env',  # Parent directory
+    ]
 
-    if env_path.exists():
-        _safe_print("Loading environment from .env file...")
+    env_path = None
+    for path in possible_paths:
+        if path.exists():
+            env_path = path
+            break
+
+    if env_path and env_path.exists():
+        _safe_print(f"Loading environment from {env_path}...")
         with open(env_path) as f:
             for line in f:
                 line = line.strip()
