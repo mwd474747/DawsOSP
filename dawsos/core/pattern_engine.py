@@ -1875,23 +1875,30 @@ class PatternEngine:
             }
 
             # Use Trinity 3.0 capability-based routing
-            result = self.runtime.execute_by_capability(
-                'can_fetch_economic_data',
-                {
-                    'indicators': list(indicators_to_fetch.values()),
-                    'start_date': (datetime.now() - timedelta(days=365*5)).strftime('%Y-%m-%d'),
-                    'end_date': datetime.now().strftime('%Y-%m-%d')
-                }
-            )
+            context = {
+                'indicators': list(indicators_to_fetch.values()),
+                'start_date': (datetime.now() - timedelta(days=365*5)).strftime('%Y-%m-%d'),
+                'end_date': datetime.now().strftime('%Y-%m-%d')
+            }
+            self.logger.info(f"🔍 Calling execute_by_capability with context: {context}")
+
+            result = self.runtime.execute_by_capability('can_fetch_economic_data', context)
+
+            self.logger.info(f"🔍 Got result type: {type(result)}, keys: {list(result.keys()) if isinstance(result, dict) else 'NOT A DICT'}")
+            if isinstance(result, dict):
+                self.logger.info(f"🔍 Result has 'series': {'YES' if 'series' in result else 'NO'}")
+                self.logger.info(f"🔍 Result has 'error': {'YES - ' + str(result.get('error')) if 'error' in result else 'NO'}")
 
             if not result or 'error' in result:
                 self.logger.error(f"Failed to fetch economic data: {result.get('error', 'Unknown error')}")
+                self.logger.error(f"Full result: {result}")
                 return self._empty_macro_data()
 
             normalized_indicators = {}
 
             # Extract series data from Trinity 3.0 response (already normalized by FredDataCapability)
             series_data = result.get('series', {})
+            self.logger.info(f"🔍 series_data has {len(series_data)} series: {list(series_data.keys())}")
 
             # Process each series from the capability response
             for series_id, series_info in series_data.items():
