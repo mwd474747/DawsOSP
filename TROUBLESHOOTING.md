@@ -226,6 +226,158 @@ python3 scripts/compact_graph.py
 
 ---
 
+### Template Fields Not Rendering
+
+**Problem**: Pattern output shows `{field}` literal strings instead of actual values
+
+**Example Output**:
+```
+**Intrinsic Value:** ${dcf_analysis.intrinsic_value}
+**Confidence:** {dcf_analysis.confidence}
+```
+
+**Root Cause**: Template references fields that don't exist in agent response
+
+**Solution**:
+1. Check agent response structure matches template expectations
+2. Verify nested field paths are correct (e.g., `{step_3.score}` requires `step_3` to return dict with 'score' key)
+3. Use fallback pattern `{step_3}` instead of `{step_3.nested.field}` if unsure of structure
+
+**Pattern Engine Behavior**:
+- Tries common keys: 'response', 'friendly_response', 'result.synthesis', 'result'
+- If field not found, variable stays as literal `{field}` string
+- No error thrown (silent failure)
+
+**Affected Patterns**: buffett_checklist, deep_dive, moat_analyzer, fundamental_analysis, and 30+ others
+
+**Workaround**: Modify pattern template to use top-level variables instead of nested paths
+
+**Fix Needed**: See KNOWN_PATTERN_ISSUES.md for patterns requiring template updates
+
+---
+
+### Capability Not Found Error
+
+**Problem**: `No agent found with capability: can_xyz`
+
+**Example**:
+```
+Error: No agent found with capability: can_fetch_options_flow
+Suggestion: Check AGENT_CAPABILITIES for available capabilities
+```
+
+**Root Causes**:
+1. **Missing Implementation**: Capability listed in `AGENT_CAPABILITIES` but method not implemented in agent
+2. **Wrong Capability**: Pattern uses incorrect capability for task (e.g., `can_fetch_economic_data` for knowledge loading)
+3. **Typo**: Capability name misspelled in pattern
+
+**Solution**:
+```bash
+# Check if capability exists
+grep -r "can_fetch_options_flow" dawsos/core/agent_capabilities.py
+# Output shows it's registered
+
+# Check if method exists in agent
+grep -r "def fetch_options_flow" dawsos/agents/
+# If no output, method not implemented
+
+# Find correct capability
+cat CAPABILITY_ROUTING_GUIDE.md | grep -A2 "knowledge"
+# Shows enriched_lookup for knowledge files
+```
+
+**Known Missing Implementations**:
+- `can_fetch_options_flow` - Registered to MacroAnalystAgent, method not implemented
+- `can_analyze_options_flow` - Registered to OptionsAnalystAgent, method not implemented
+
+**Workaround**: Use alternative capability or implement missing method
+
+---
+
+### Wrong Capability for Task
+
+**Problem**: Pattern uses API capability for knowledge file loading, causing unnecessary API calls or failures
+
+**Example**:
+```json
+{
+  "action": "execute_through_registry",
+  "params": {
+    "capability": "can_fetch_economic_data",  // WRONG - this calls FRED API
+    "context": {
+      "task": "load_knowledge",
+      "knowledge_file": "buffett_checklist.json"  // Should use enriched_lookup
+    }
+  }
+}
+```
+
+**Impact**:
+- Wastes API quota
+- Slower execution
+- May return wrong data or fail
+
+**Correct Approach**:
+```json
+{
+  "action": "enriched_lookup",
+  "params": {
+    "knowledge_file": "buffett_checklist.json"
+  }
+}
+```
+
+**Common Mistakes**:
+- `can_fetch_economic_data` → Use `enriched_lookup` for knowledge files
+- `can_fetch_fundamentals` → Use for stock data, not framework loading
+- `can_fetch_stock_quotes` → Use for quotes, not knowledge
+
+**Affected Patterns**: moat_analyzer, fundamental_analysis, buffett_checklist
+
+**Reference**: See CAPABILITY_ROUTING_GUIDE.md for correct capability selection
+
+---
+
+### Variable Not Resolving in Pattern
+
+**Problem**: Pattern parameters contain literal `{SYMBOL}` or `{step_1.field}` strings instead of resolved values
+
+**Example**:
+```python
+# User input: "analyze Apple"
+# Pattern parameter sent to agent:
+{"symbol": "{SYMBOL}"}  # ❌ Wrong - should be "AAPL"
+```
+
+**Root Causes**:
+1. Symbol not detected (user said "Apple" not "AAPL")
+2. Step output doesn't have expected field structure
+3. Variable name typo in pattern
+
+**Solutions**:
+```bash
+# Check symbol detection
+python3 -c "
+from dawsos.core.pattern_engine import PatternEngine
+pe = PatternEngine()
+# Symbol extraction tries aliases, company names, uppercase words
+"
+
+# Verify step output structure
+# Check agent logs to see actual response format
+```
+
+**Variable Resolution Priority**:
+1. Direct context match: `{user_input}`, `{SYMBOL}`
+2. Previous step output: `{step_1}`, `{quote_data}`
+3. Nested path: `{step_1.price}`, `{quote_data.symbol}`
+
+**Workarounds**:
+- Use `{step_1}` instead of `{step_1.nested.field}` if unsure
+- Ensure user input contains clear symbol (e.g., "AAPL" not "that stock I mentioned")
+
+---
+
 ## Data Issues
 
 ### Graph Won't Load
