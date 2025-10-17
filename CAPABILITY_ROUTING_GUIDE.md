@@ -1,7 +1,7 @@
 # Capability-Based Routing Guide
 
-**Date**: October 4, 2025 (Updated with migrated capabilities)
-**Status**: ✅ Implemented & Ready to Use
+**Date**: October 17, 2025 (Updated with capability selection guidelines)
+**Status**: ✅ Implemented - See "Common Mistakes" section for correct usage
 
 ---
 
@@ -30,10 +30,12 @@ result = runtime.execute_by_capability('can_calculate_dcf', context)
 ## Available Capabilities
 
 ### Data Capabilities
-- `can_fetch_stock_quotes` - Get market data (data_harvester)
-- `can_fetch_economic_data` - FRED indicators (data_harvester)
-- `can_fetch_news` - News articles (data_harvester)
-- `can_fetch_fundamentals` - Financial statements (data_harvester)
+- `can_fetch_stock_quotes` - Get **live market data** from APIs (data_harvester, macro_analyst)
+- `can_fetch_economic_data` - Get **FRED economic indicators** from API (macro_analyst) ⚠️ **NOT for knowledge files**
+- `can_fetch_news` - Get **live news articles** from APIs (data_harvester)
+- `can_fetch_fundamentals` - Get **live financial statements** from APIs (financial_analyst)
+
+**⚠️ Important**: For loading **knowledge files** (like `buffett_checklist.json`), use the `enriched_lookup` action instead of data capabilities
 
 ### Analysis Capabilities
 
@@ -113,6 +115,124 @@ result = runtime.execute_by_capability('can_calculate_dcf', context)
   ]
 }
 ```
+
+---
+
+## ⚠️ Common Mistakes & Correct Usage
+
+### Mistake #1: Using Data Capabilities for Knowledge File Loading
+
+**❌ WRONG** - Uses API capability to load knowledge file:
+```json
+{
+  "action": "execute_by_capability",
+  "params": {
+    "capability": "can_fetch_economic_data",
+    "context": {
+      "task": "load_knowledge",
+      "knowledge_file": "buffett_checklist.json"
+    }
+  }
+}
+```
+
+**Why Wrong**: 
+- `can_fetch_economic_data` routes to MacroAnalystAgent which calls FRED API
+- Wastes API quota
+- Slower than file loading
+- May return wrong data or fail
+
+**✅ CORRECT** - Use `enriched_lookup` action:
+```json
+{
+  "action": "enriched_lookup",
+  "params": {
+    "knowledge_file": "buffett_checklist.json"
+  }
+}
+```
+
+---
+
+### Mistake #2: Wrong Capability for Fundamentals Loading
+
+**❌ WRONG** - Uses fetch capability for framework loading:
+```json
+{
+  "action": "execute_by_capability",
+  "params": {
+    "capability": "can_fetch_fundamentals",
+    "context": {
+      "task": "load_knowledge",
+      "knowledge_files": ["buffett_checklist.json", "dalio_cycles.json"]
+    }
+  }
+}
+```
+
+**Why Wrong**:
+- `can_fetch_fundamentals` fetches **live stock data** from APIs, not knowledge files
+- Pattern will fail or return irrelevant data
+
+**✅ CORRECT** - Use `enriched_lookup` action:
+```json
+{
+  "action": "enriched_lookup",
+  "params": {
+    "knowledge_file": "buffett_checklist.json"
+  }
+}
+```
+
+---
+
+### Mistake #3: Using Stock Quote Capability for Frameworks
+
+**❌ WRONG**:
+```json
+{
+  "description": "Load Buffett investment framework",
+  "action": "execute_by_capability",
+  "params": {
+    "capability": "can_fetch_stock_quotes",
+    "context": {
+      "task": "load_knowledge",
+      "knowledge_file": "buffett_checklist.json"
+    }
+  }
+}
+```
+
+**Why Wrong**:
+- `can_fetch_stock_quotes` fetches **live stock prices**, not knowledge files
+
+**✅ CORRECT**:
+```json
+{
+  "description": "Load Buffett investment framework",
+  "action": "enriched_lookup",
+  "params": {
+    "knowledge_file": "buffett_checklist.json"
+  }
+}
+```
+
+---
+
+### Quick Reference: When to Use What
+
+| Task | Use This | NOT This |
+|------|----------|----------|
+| Load knowledge file (buffett_checklist.json) | `enriched_lookup` action | `can_fetch_economic_data` |
+| Load framework (dalio_cycles.json) | `enriched_lookup` action | `can_fetch_fundamentals` |
+| Get live economic data (GDP, CPI) | `can_fetch_economic_data` capability | `enriched_lookup` |
+| Get live stock quote (AAPL price) | `can_fetch_stock_quotes` capability | `enriched_lookup` |
+| Get live financial statements | `can_fetch_fundamentals` capability | `enriched_lookup` |
+| Get market news | `can_fetch_news` capability | `enriched_lookup` |
+
+**Rule of Thumb**: 
+- **Live data from APIs** → Use `can_fetch_*` capabilities
+- **Static knowledge files** → Use `enriched_lookup` action
 
 ---
 
