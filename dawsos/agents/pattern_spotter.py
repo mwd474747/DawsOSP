@@ -461,7 +461,7 @@ class SequenceTracker(BaseAgent):
             graph: Knowledge graph instance
             llm_client: Optional LLM client
         """
-        super().__init__("SequenceTracker", graph, llm_client)
+        super().__init__(graph=graph, name="SequenceTracker", llm_client=llm_client)
         self.vibe: str = "methodical"
         self.sequences: List[Any] = []
 
@@ -475,7 +475,7 @@ class CycleFinder(BaseAgent):
             graph: Knowledge graph instance
             llm_client: Optional LLM client
         """
-        super().__init__("CycleFinder", graph, llm_client)
+        super().__init__(graph=graph, name="CycleFinder", llm_client=llm_client)
         self.vibe: str = "circular"
 
 class AnomalyDetector(BaseAgent):
@@ -488,5 +488,5 @@ class AnomalyDetector(BaseAgent):
             graph: Knowledge graph instance
             llm_client: Optional LLM client
         """
-        super().__init__("AnomalyDetector", graph, llm_client)
+        super().__init__(graph=graph, name="AnomalyDetector", llm_client=llm_client)
         self.vibe: str = "suspicious"

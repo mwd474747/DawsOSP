@@ -1,38 +1,9 @@
-#!/usr/bin/env python3
 """
-UI Utilities Package
+UI utilities for DawsOS.
 
-Common UI components and helpers shared across DawsOS UI modules.
+This module contains reusable UI components and helpers.
 """
 
-from .common import (
-    render_confidence_display,
-    format_timestamp,
-    render_metric_card,
-    render_status_badge,
-    render_expandable_json,
-    render_progress_bar,
-    render_error_message,
-    render_success_message,
-    render_warning_message,
-    render_info_message,
-    render_key_value_pair,
-    render_section_header,
-    render_data_table
-)
+from dawsos.ui.utils.cache_helper import CacheManager
 
-__all__ = [
-    'render_confidence_display',
-    'format_timestamp',
-    'render_metric_card',
-    'render_status_badge',
-    'render_expandable_json',
-    'render_progress_bar',
-    'render_error_message',
-    'render_success_message',
-    'render_warning_message',
-    'render_info_message',
-    'render_key_value_pair',
-    'render_section_header',
-    'render_data_table'
-]
+__all__ = ['CacheManager']

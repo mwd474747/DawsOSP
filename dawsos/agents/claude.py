@@ -346,7 +346,7 @@ class IntentParser(BaseAgent):
             graph: Knowledge graph instance
             llm_client: Optional LLM client
         """
-        super().__init__("IntentParser", graph, llm_client)
+        super().__init__(graph=graph, name="IntentParser", llm_client=llm_client)
         self.vibe: str = "analytical"
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
@@ -372,7 +372,7 @@ class ResponseCrafter(BaseAgent):
             graph: Knowledge graph instance
             llm_client: Optional LLM client
         """
-        super().__init__("ResponseCrafter", graph, llm_client)
+        super().__init__(graph=graph, name="ResponseCrafter", llm_client=llm_client)
         self.vibe: str = "articulate"
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
@@ -397,7 +397,7 @@ class MemoryKeeper(BaseAgent):
             graph: Knowledge graph instance
             llm_client: Optional LLM client
         """
-        super().__init__("MemoryKeeper", graph, llm_client)
+        super().__init__(graph=graph, name="MemoryKeeper", llm_client=llm_client)
         self.vibe: str = "nostalgic"
         self.important_memories: MemoryList = []
 

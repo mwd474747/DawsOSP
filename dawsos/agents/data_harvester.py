@@ -396,7 +396,7 @@ class DataHarvester(BaseAgent):
             context: Optional context with 'symbols', 'symbol', 'ticker', 'tickers', or 'request'
 
         Returns:
-            Dict with stock quotes data
+            Dict with stock quotes data in format: {'quotes': {symbol: quote_data}}
         """
         # Extract symbols from multiple possible parameter names
         context = context or {}
@@ -414,8 +414,35 @@ class DataHarvester(BaseAgent):
         if isinstance(symbols, str):
             symbols = [symbols]
 
-        query = f"Get stock quotes for {', '.join(symbols)}"
-        return self.harvest(query)
+        # Check if market capability is available
+        if 'market' not in self.capabilities:
+            self.logger.error("Market Data API capability not available or not initialized")
+            return {
+                'error': 'Market Data API (FMP) capability not available',
+                'quotes': {},
+                'note': 'Configure FMP_API_KEY environment variable for market data'
+            }
+
+        market = self.capabilities['market']
+        quotes = {}
+
+        # Fetch quotes for each symbol
+        for symbol in symbols[:10]:  # Limit to 10 symbols
+            try:
+                quote = market.get_quote(symbol)
+                if 'error' not in quote:
+                    quotes[symbol] = quote
+                else:
+                    self.logger.warning(f"Error fetching quote for {symbol}: {quote.get('error')}")
+            except Exception as e:
+                self.logger.error(f"Exception fetching quote for {symbol}: {e}")
+
+        return {
+            'quotes': quotes,
+            'symbols_requested': symbols,
+            'symbols_returned': list(quotes.keys()),
+            'success': len(quotes) > 0
+        }
 
     def _parse_request_for_symbols(self, request: str) -> Optional[List[str]]:
         """Extract stock symbols from a natural language request.
@@ -555,9 +582,45 @@ class DataHarvester(BaseAgent):
         """
         Public wrapper for market movers fetching capability.
         Maps to: can_fetch_market_movers
+
+        Args:
+            context: Dict with 'mover_type' ('gainers' or 'losers')
+
+        Returns:
+            Dict with movers data in format: {'movers': [list of stocks]}
         """
-        query = "Get today's market movers and top gainers/losers"
-        return self._harvest_market(query)
+        context = context or {}
+        mover_type = context.get('mover_type', 'gainers')
+
+        # Check if market capability is available
+        if 'market' not in self.capabilities:
+            self.logger.error("Market Data API capability not available or not initialized")
+            return {
+                'error': 'Market Data API (FMP) capability not available',
+                'movers': [],
+                'note': 'Configure FMP_API_KEY environment variable for market data'
+            }
+
+        market = self.capabilities['market']
+
+        try:
+            # Fetch market movers from FMP API
+            movers = market.get_market_movers(mover_type)
+
+            return {
+                'movers': movers,
+                'type': mover_type,
+                'count': len(movers),
+                'success': True
+            }
+        except Exception as e:
+            self.logger.error(f"Error fetching market movers ({mover_type}): {e}")
+            return {
+                'error': str(e),
+                'movers': [],
+                'type': mover_type,
+                'success': False
+            }
 
     def fetch_crypto_data(self, symbols: Optional[List[str]] = None, context: Dict[str, Any] = None) -> HarvestResult:
         """
@@ -580,7 +643,7 @@ class FREDBot(BaseAgent):
             capability: FRED data capability instance
             llm_client: Optional LLM client for AI-powered responses
         """
-        super().__init__("FREDBot", None, llm_client)
+        super().__init__(graph=None, name="FREDBot", llm_client=llm_client)
         self.vibe: str = "economic"
         self.capability: Any = capability
 
@@ -594,7 +657,7 @@ class MarketBot(BaseAgent):
             capability: Market data capability instance
             llm_client: Optional LLM client for AI-powered responses
         """
-        super().__init__("MarketBot", None, llm_client)
+        super().__init__(graph=None, name="MarketBot", llm_client=llm_client)
         self.vibe: str = "trader"
         self.capability: Any = capability
 
@@ -608,6 +671,6 @@ class NewsBot(BaseAgent):
             capability: News data capability instance
             llm_client: Optional LLM client for AI-powered responses
         """
-        super().__init__("NewsBot", None, llm_client)
+        super().__init__(graph=None, name="NewsBot", llm_client=llm_client)
         self.vibe: str = "informed"
         self.capability: Any = capability

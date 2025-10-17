@@ -25,7 +25,7 @@ class RefactorElf(BaseAgent):
             graph: Optional knowledge graph instance
             llm_client: Optional LLM client for generation
         """
-        super().__init__("RefactorElf", graph, llm_client)
+        super().__init__(graph=graph, name="RefactorElf", llm_client=llm_client)
         self.vibe: str = "minimalist"
         self.complexity_limit: int = 50  # Lines per function
         self.file_limit: int = 200  # Lines per file
@@ -146,7 +146,7 @@ class ComplexityScanner(BaseAgent):
         Args:
             llm_client: Optional LLM client for generation
         """
-        super().__init__("ComplexityScanner", None, llm_client)
+        super().__init__(graph=None, name="ComplexityScanner", llm_client=llm_client)
         self.vibe: str = "detective"
 
     def get_prompt(self, context: ContextDict) -> str:
@@ -182,7 +182,7 @@ class Splitter(BaseAgent):
         Args:
             llm_client: Optional LLM client for generation
         """
-        super().__init__("Splitter", None, llm_client)
+        super().__init__(graph=None, name="Splitter", llm_client=llm_client)
         self.vibe: str = "surgical"
 
     def get_prompt(self, context: ContextDict) -> str:

@@ -258,10 +258,20 @@ class MarketDataCapability:
 
         if data and len(data) > 0:
             quote_data = data[0]
+
+            # Convert avg_volume from float to int (FMP returns float, but Pydantic expects int)
+            avg_vol = quote_data.get('avgVolume')
+            if avg_vol is not None:
+                try:
+                    avg_vol = int(float(avg_vol))
+                except (ValueError, TypeError):
+                    avg_vol = None
+
             quote = {
                 'symbol': quote_data.get('symbol'),
                 'name': quote_data.get('name'),
                 'price': quote_data.get('price'),
+                'open': quote_data.get('open'),  # Added missing open field
                 'previous_close': quote_data.get('previousClose'),
                 'change': quote_data.get('change'),
                 'change_percent': quote_data.get('changesPercentage'),
@@ -274,7 +284,7 @@ class MarketDataCapability:
                 'year_high': quote_data.get('yearHigh'),
                 'pe': quote_data.get('pe'),
                 'eps': quote_data.get('eps'),
-                'avg_volume': quote_data.get('avgVolume'),
+                'avg_volume': avg_vol,
                 'timestamp': quote_data.get('timestamp')
             }
 
@@ -514,7 +524,12 @@ class MarketDataCapability:
                         'roa': item.get('roa'),
                         'debt_to_equity': item.get('debtToEquity'),
                         'current_ratio': item.get('currentRatio'),
-                        'dividend_yield': item.get('dividendYield')
+                        'dividend_yield': item.get('dividendYield'),
+                        # Additional fields for comprehensive metrics
+                        'net_profit_margin': item.get('netProfitMargin'),
+                        'operating_margin': item.get('operatingProfitMargin'),
+                        'revenue_growth': item.get('revenuePerShareGrowth'),  # Year-over-year growth
+                        'eps_growth': item.get('netIncomePerShareGrowth')
                     })
                 
                 return metrics
@@ -682,28 +697,33 @@ class MarketDataCapability:
             type: Mover type (gainers, losers, actives)
 
         Returns:
-            List of market mover dictionaries
+            List of market mover dictionaries with standardized field names
         """
         url = f"{self.base_url}/v3/{type}?apikey={self.api_key}"
-        
+
         try:
+            self.rate_limiter.wait_if_needed()
+
             with urllib.request.urlopen(url) as response:
                 data = json.loads(response.read())
-                
+
                 movers = []
-                for item in data[:20]:
+                for item in data[:20]:  # Limit to top 20
+                    # FMP API uses different field names, standardize them
                     movers.append({
-                        'symbol': item.get('symbol'),
-                        'name': item.get('name'),
+                        'symbol': item.get('ticker'),  # FMP uses 'ticker' not 'symbol'
+                        'name': item.get('companyName'),  # FMP uses 'companyName' not 'name'
                         'price': item.get('price'),
-                        'change': item.get('change'),
-                        'change_percent': item.get('changesPercentage'),
-                        'volume': item.get('volume')
+                        'change': item.get('changes'),  # FMP uses 'changes' not 'change'
+                        'changesPercentage': item.get('changesPercentage'),  # Keep original key name
+                        'volume': item.get('volume', 'N/A')  # Volume not provided in gainers/losers endpoint
                     })
-                
+
+                logger.info(f"Fetched {len(movers)} market {type}")
                 return movers
 
         except Exception as e:
+            logger.error(f"Error fetching market movers ({type}): {e}")
             return [{'error': str(e)}]
 
     def _validate_stock_quote(self, quote_data: dict, symbol: str) -> dict:

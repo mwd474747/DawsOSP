@@ -294,6 +294,7 @@ class FinancialAnalyst(BaseAgent):
             }
 
         except Exception as e:
+            self.logger.error(f"🔴 DCF analysis failed for {context.get('symbol', 'unknown')}: {str(e)}", exc_info=True)
             return {"error": f"DCF analysis failed: {str(e)}"}
 
     def _calculate_roic(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -1029,11 +1030,45 @@ class FinancialAnalyst(BaseAgent):
 
         return opportunities
 
+    def analyze_macro_data(self, context: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+        """
+        Analyze macroeconomic data (capability method for can_analyze_macro_data).
+
+        This is the capability routing method that accepts pre-fetched FRED data
+        and provides comprehensive macro analysis.
+
+        Args:
+            context: Dict with gdp_data, cpi_data, unemployment_data, fed_funds_data
+            **kwargs: Individual data series (gdp_data, cpi_data, etc.)
+
+        Returns:
+            Dict with regime, cycle_phase, risks, opportunities, indicators
+        """
+        # Accept data from either context or kwargs
+        context = context or {}
+        gdp_data = kwargs.get('gdp_data') or context.get('gdp_data', {})
+        cpi_data = kwargs.get('cpi_data') or context.get('cpi_data', {})
+        unemployment_data = kwargs.get('unemployment_data') or context.get('unemployment_data', {})
+        fed_funds_data = kwargs.get('fed_funds_data') or context.get('fed_funds_data', {})
+
+        # Build context for analyze_macro_context
+        analysis_context = {
+            'gdp_data': gdp_data,
+            'cpi_data': cpi_data,
+            'unemployment_data': unemployment_data,
+            'fed_funds_data': fed_funds_data
+        }
+
+        # Delegate to analyze_macro_context
+        return self.analyze_macro_context(analysis_context)
+
     def analyze_macro_context(self, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Analyze macroeconomic context using FRED data (Trinity 3.0 GDP Refresh Flow).
 
-        This method is mapped to can_analyze_macro_data capability and provides:
+        Internal implementation method. Use analyze_macro_data() for capability routing.
+
+        This method provides:
         - GDP Quarter-over-Quarter growth rate
         - CPI Year-over-Year inflation rate
         - Economic cycle phase detection (expansion/peak/contraction/trough)
@@ -1041,54 +1076,53 @@ class FinancialAnalyst(BaseAgent):
         - Macro risks and sector opportunities
 
         Args:
-            context: Optional dict with 'series', 'start_date', 'end_date' for custom queries
+            context: Dict with either:
+                     - Pre-fetched data: gdp_data, cpi_data, unemployment_data, fed_funds_data
+                     - OR query params: series, start_date, end_date (will fetch data)
 
         Returns:
-            Dict with:
-            - gdp_qoq: Float - GDP quarterly growth rate (%)
-            - cpi_yoy: Float - CPI year-over-year change (%)
-            - cycle_phase: Str - expansion|peak|contraction|trough
-            - regime: Str - goldilocks|stagflation|recession|overheating
-            - macro_risks: List[str] - Identified macro risks
-            - opportunities: List[str] - Sector opportunities
-            - indicators: Dict - Raw indicator data
-            - _metadata: Dict - Analysis metadata
-
-        Example:
-            >>> result = analyst.analyze_macro_context()
-            >>> print(result['regime'])
-            'goldilocks'
-            >>> print(result['gdp_qoq'])
-            2.5
+            Dict with regime, cycle_phase, risks, opportunities, indicators
         """
         if context is None:
             context = {}
 
-        # Fetch economic data using capability routing (Trinity 3.0)
-        if not hasattr(self, 'runtime') or not self.runtime:
-            return {
-                'error': 'Runtime not available for capability routing',
-                'note': 'This method requires AgentRuntime for execute_by_capability'
-            }
+        # Check if we have pre-fetched data (from economic_dashboard.py)
+        gdp_data = context.get('gdp_data')
+        cpi_data = context.get('cpi_data')
+        unemployment_data = context.get('unemployment_data')
+        fed_funds_data = context.get('fed_funds_data')
 
-        # Execute through capability routing to get FRED data
-        fred_data = self.runtime.execute_by_capability(
-            'can_fetch_economic_data',
-            context={'series': context.get('series'), 'start_date': context.get('start_date'), 'end_date': context.get('end_date')}
-        )
+        # If data not provided, fetch it using capability routing
+        if not (gdp_data and cpi_data and unemployment_data and fed_funds_data):
+            if not hasattr(self, 'runtime') or not self.runtime:
+                return {
+                    'error': 'Runtime not available for capability routing',
+                    'note': 'Either provide pre-fetched data or ensure runtime is set'
+                }
 
-        if 'error' in fred_data:
-            return {
-                'error': f"Failed to fetch economic data: {fred_data['error']}",
-                'note': 'Configure FRED_API_KEY environment variable'
-            }
+            # Execute through capability routing to get FRED data
+            fred_data = self.runtime.execute_by_capability(
+                'can_fetch_economic_data',
+                context={
+                    'capability': 'can_fetch_economic_data',
+                    'series': context.get('series'),
+                    'start_date': context.get('start_date'),
+                    'end_date': context.get('end_date')
+                }
+            )
 
-        # Extract series data
-        series = fred_data.get('series', {})
-        gdp_data = series.get('GDP', {})
-        cpi_data = series.get('CPIAUCSL', {})
-        unemployment_data = series.get('UNRATE', {})
-        fed_funds_data = series.get('DFF', {})
+            if 'error' in fred_data:
+                return {
+                    'error': f"Failed to fetch economic data: {fred_data['error']}",
+                    'note': 'Configure FRED_API_KEY environment variable'
+                }
+
+            # Extract series data from fetch result
+            series = fred_data.get('series', {})
+            gdp_data = series.get('GDP', {})
+            cpi_data = series.get('CPIAUCSL', {})
+            unemployment_data = series.get('UNRATE', {})
+            fed_funds_data = series.get('DFF', {})
 
         # Calculate GDP QoQ (Quarter-over-Quarter)
         gdp_qoq = self._calculate_gdp_qoq(gdp_data)
@@ -1103,7 +1137,14 @@ class FinancialAnalyst(BaseAgent):
         regime = self._determine_regime_from_data(gdp_qoq, cpi_yoy, cycle_phase)
 
         # Identify macro risks
-        macro_risks = self._identify_macro_risks_from_data(gdp_qoq, cpi_yoy, unemployment_data, fred_data)
+        macro_risks = self._identify_macro_risks_from_data(gdp_qoq, cpi_yoy, unemployment_data, {
+            'series': {
+                'GDP': gdp_data,
+                'CPIAUCSL': cpi_data,
+                'UNRATE': unemployment_data,
+                'DFF': fed_funds_data
+            }
+        })
 
         # Identify sector opportunities
         opportunities = self._identify_opportunities_from_regime(regime, gdp_qoq, cpi_yoy)
@@ -1138,9 +1179,9 @@ class FinancialAnalyst(BaseAgent):
                 }
             },
             '_metadata': {
-                'source': fred_data.get('source', 'unknown'),
-                'cache_age_seconds': fred_data.get('cache_age_seconds', 0),
-                'health': fred_data.get('health', {}),
+                'source': 'pre-fetched',
+                'cache_age_seconds': 0,
+                'health': {},
                 'analysis_type': 'macro_context'
             }
         }
@@ -1552,12 +1593,31 @@ class FinancialAnalyst(BaseAgent):
         """
         Public wrapper for DCF calculation capability.
         Maps to: can_calculate_dcf
+
+        Returns the dcf_analysis dict directly (not wrapped) for pattern template substitution.
         """
         if context is None:
             context = {}
         # Delegate to existing private method
         request = f"Calculate DCF valuation for {symbol}"
-        return self._perform_dcf_analysis(request, {**context, 'symbol': symbol})
+        full_result = self._perform_dcf_analysis(request, {**context, 'symbol': symbol})
+
+        # DEBUG: Log what we got
+        self.logger.info(f"🔍 calculate_dcf full_result keys: {list(full_result.keys()) if isinstance(full_result, dict) else type(full_result)}")
+
+        # For pattern compatibility, return just the dcf_analysis portion
+        # Template expects outputs['dcf_analysis'] = {intrinsic_value, confidence, ...}
+        if 'dcf_analysis' in full_result:
+            # Add symbol to the dcf_analysis dict for template access
+            dcf_data = full_result['dcf_analysis'].copy()
+            dcf_data['symbol'] = full_result.get('symbol', symbol)
+            dcf_data['SYMBOL'] = full_result.get('symbol', symbol)  # For template {SYMBOL}
+            self.logger.info(f"🔍 Returning unwrapped dcf_data with keys: {list(dcf_data.keys())}")
+            return dcf_data
+        else:
+            # Return full result if structure is different (error case)
+            self.logger.warning(f"🔍 No 'dcf_analysis' key found, returning full_result")
+            return full_result
 
     def calculate_roic(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """

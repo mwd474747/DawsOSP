@@ -291,7 +291,8 @@ class KnowledgeGraph:
         """Query nodes matching a pattern"""
         results = []
 
-        for node_id in self._graph.nodes():
+        # Convert to list first to avoid "dictionary changed size during iteration" in Python 3.13
+        for node_id in list(self._graph.nodes()):
             node = self._graph.nodes[node_id]
             match = True
 
@@ -320,13 +321,14 @@ class KnowledgeGraph:
 
     def get_stats(self) -> StatsDict:
         """Get graph statistics"""
+        # Convert to list first to avoid "dictionary changed size during iteration" in Python 3.13
         node_types = {}
-        for node_id in self._graph.nodes():
+        for node_id in list(self._graph.nodes()):
             node_type = self._graph.nodes[node_id].get('type', 'unknown')
             node_types[node_type] = node_types.get(node_type, 0) + 1
 
         edge_types = {}
-        for u, v in self._graph.edges():
+        for u, v in list(self._graph.edges()):
             edge_type = self._graph.edges[u, v].get('type', 'unknown')
             edge_types[edge_type] = edge_types.get(edge_type, 0) + 1
 

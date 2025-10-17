@@ -158,12 +158,28 @@ class AgentAdapter:
         logger = logging.getLogger('AgentAdapter')
         capability = context.get('capability', '')
 
+        # Validate capability exists - this is critical for proper routing
+        if not capability:
+            logger.error(
+                f"❌ Capability routing failed for {self.agent.__class__.__name__}: "
+                f"'capability' key missing from context. "
+                f"Context keys: {list(context.keys())}. "
+                f"Common cause: execute_by_capability() called without adding "
+                f"context['capability'] = '<capability_name>' first. "
+                f"Check if caller is using execute_through_registry action or calling directly."
+            )
+            return None
+
         # Map capability to method name (remove 'can_' prefix)
         method_name = capability.replace('can_', '') if capability.startswith('can_') else capability
 
         # Check if agent has this method
         if not hasattr(self.agent, method_name) or not callable(getattr(self.agent, method_name)):
-            logger.warning(f"Agent {self.agent.__class__.__name__} does not have method '{method_name}' for capability '{capability}'")
+            logger.warning(
+                f"⚠️ Agent {self.agent.__class__.__name__} does not have method '{method_name}' "
+                f"for capability '{capability}'. "
+                f"Available methods: {[m for m in dir(self.agent) if not m.startswith('_')]}"
+            )
             return None
 
         method = getattr(self.agent, method_name)

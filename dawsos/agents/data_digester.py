@@ -212,7 +212,7 @@ class NodeMaker(BaseAgent):
             graph: Knowledge graph instance
             llm_client: Optional LLM client
         """
-        super().__init__("NodeMaker", graph, llm_client)
+        super().__init__(graph=graph, name="NodeMaker", llm_client=llm_client)
         self.vibe: str = "structured"
 
 class MetadataAdder(BaseAgent):
@@ -229,7 +229,7 @@ class MetadataAdder(BaseAgent):
             graph: Knowledge graph instance
             llm_client: Optional LLM client
         """
-        super().__init__("MetadataAdder", graph, llm_client)
+        super().__init__(graph=graph, name="MetadataAdder", llm_client=llm_client)
         self.vibe: str = "detailed"
 
 class ConfidenceRater(BaseAgent):
@@ -246,7 +246,7 @@ class ConfidenceRater(BaseAgent):
             graph: Knowledge graph instance
             llm_client: Optional LLM client
         """
-        super().__init__("ConfidenceRater", graph, llm_client)
+        super().__init__(graph=graph, name="ConfidenceRater", llm_client=llm_client)
         self.vibe: str = "skeptical"
 
     def rate(self, data: Dict[str, Any]) -> float:

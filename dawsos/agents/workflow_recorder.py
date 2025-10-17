@@ -31,7 +31,7 @@ class WorkflowRecorder(BaseAgent):
             graph: Optional knowledge graph instance
             llm_client: Optional LLM client for workflow analysis
         """
-        super().__init__("WorkflowRecorder", graph, llm_client)
+        super().__init__(graph=graph, name="WorkflowRecorder", llm_client=llm_client)
         self.vibe: str = "studious"
         self.workflows: List[WorkflowDict] = []
         self.patterns: Dict[str, PatternDict] = {}
@@ -219,7 +219,7 @@ class StepLogger(BaseAgent):
         Args:
             llm_client: Optional LLM client
         """
-        super().__init__("StepLogger", None, llm_client)
+        super().__init__(graph=None, name="StepLogger", llm_client=llm_client)
         self.vibe: str = "meticulous"
 
 class SuccessJudge(BaseAgent):
@@ -231,7 +231,7 @@ class SuccessJudge(BaseAgent):
         Args:
             llm_client: Optional LLM client
         """
-        super().__init__("SuccessJudge", None, llm_client)
+        super().__init__(graph=None, name="SuccessJudge", llm_client=llm_client)
         self.vibe: str = "fair"
 
     def judge(self, result: Any, expectation: Any) -> bool:
@@ -262,5 +262,5 @@ class TemplateExtractor(BaseAgent):
         Args:
             llm_client: Optional LLM client
         """
-        super().__init__("TemplateExtractor", None, llm_client)
+        super().__init__(graph=None, name="TemplateExtractor", llm_client=llm_client)
         self.vibe: str = "abstract"

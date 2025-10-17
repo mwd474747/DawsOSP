@@ -118,7 +118,7 @@ class ConnectionVibes(BaseAgent):
             graph: Knowledge graph instance
             llm_client: Optional LLM client
         """
-        super().__init__("ConnectionVibes", graph, llm_client)
+        super().__init__(graph=graph, name="ConnectionVibes", llm_client=llm_client)
         self.vibe: str = "intuitive"
 
     def get_prompt(self, context: ContextDict) -> str:
@@ -159,7 +159,7 @@ class StrengthFeeler(BaseAgent):
             graph: Knowledge graph instance
             llm_client: Optional LLM client
         """
-        super().__init__("StrengthFeeler", graph, llm_client)
+        super().__init__(graph=graph, name="StrengthFeeler", llm_client=llm_client)
         self.vibe: str = "sensitive"
 
     def get_prompt(self, context: ContextDict) -> str:

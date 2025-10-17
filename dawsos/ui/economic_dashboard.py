@@ -31,6 +31,11 @@ def render_economic_dashboard(runtime, capabilities: Dict):
         st.error("⚠️ FRED capability not configured. Set FRED_API_KEY environment variable.")
         st.info("The dashboard will work with cached data if available.")
 
+    # Initialize economic data cache in session state
+    if 'economic_data' not in st.session_state:
+        st.session_state.economic_data = None
+        st.session_state.economic_data_timestamp = None
+
     # Fetch button
     col1, col2, col3 = st.columns([1, 1, 2])
     with col1:
@@ -49,25 +54,49 @@ def render_economic_dashboard(runtime, capabilities: Dict):
     else:  # 5 years
         start_date = end_date - timedelta(days=1825)
 
+    # Auto-fetch on first load or when refresh button clicked
+    should_fetch = (
+        st.session_state.economic_data is None or  # First load
+        refresh or  # Manual refresh
+        (st.session_state.economic_data_timestamp and
+         (datetime.now() - st.session_state.economic_data_timestamp).total_seconds() > 3600)  # Data older than 1 hour
+    )
+
     # Fetch economic data
-    with st.spinner("Fetching economic indicators from FRED..."):
-        try:
-            # Use Trinity-compliant capability routing
-            fred_result = runtime.execute_by_capability(
+    if should_fetch:
+        with st.spinner("Fetching economic indicators from FRED..."):
+            try:
+                # Use Trinity-compliant capability routing
+                fred_result = runtime.execute_by_capability(
                 'can_fetch_economic_data',
                 {
+                    'capability': 'can_fetch_economic_data',  # CRITICAL: Required for AgentAdapter introspection
                     'indicators': ['GDP', 'CPIAUCSL', 'UNRATE', 'DFF'],
                     'start_date': start_date.strftime('%Y-%m-%d'),
                     'end_date': end_date.strftime('%Y-%m-%d')
                 }
-            )
+                )
 
-            if fred_result and 'error' not in fred_result:
+                # Cache the result
+                st.session_state.economic_data = fred_result
+                st.session_state.economic_data_timestamp = datetime.now()
 
-                # Display data source indicator
-                source = fred_result.get('source', 'unknown')
-                cache_age = fred_result.get('cache_age_seconds', 0)
+            except Exception as e:
+                st.error(f"❌ Error fetching economic data: {str(e)}")
+                st.session_state.economic_data = None
 
+    # Use cached data for display
+    fred_result = st.session_state.economic_data
+
+    if fred_result and 'error' not in fred_result:
+        try:
+            # Display data source indicator
+            source = fred_result.get('source', 'unknown')
+            cache_age = fred_result.get('cache_age_seconds', 0)
+            data_timestamp = st.session_state.economic_data_timestamp
+
+            col_status1, col_status2 = st.columns([3, 1])
+            with col_status1:
                 if source == 'live':
                     st.success(f"✅ Live data from FRED API")
                 elif source == 'cache':
@@ -75,54 +104,64 @@ def render_economic_dashboard(runtime, capabilities: Dict):
                 elif source == 'fallback':
                     st.warning(f"⚠️ Using stale cached data ({cache_age // 86400} days old) - API unavailable")
 
-                # Extract series data
-                series = fred_result.get('series', {})
-                gdp_data = series.get('GDP', {})
-                cpi_data = series.get('CPIAUCSL', {})
-                unemployment_data = series.get('UNRATE', {})
-                fed_funds_data = series.get('DFF', {})
+            with col_status2:
+                if data_timestamp:
+                    age_seconds = (datetime.now() - data_timestamp).total_seconds()
+                    if age_seconds < 60:
+                        st.caption(f"📍 {int(age_seconds)}s ago")
+                    elif age_seconds < 3600:
+                        st.caption(f"📍 {int(age_seconds/60)}m ago")
+                    else:
+                        st.caption(f"📍 {int(age_seconds/3600)}h ago")
 
-                # Create the multi-indicator chart
-                render_economic_indicators_chart(
-                    gdp_data, cpi_data, unemployment_data, fed_funds_data
-                )
+            # Extract series data
+            series = fred_result.get('series', {})
+            gdp_data = series.get('GDP', {})
+            cpi_data = series.get('CPIAUCSL', {})
+            unemployment_data = series.get('UNRATE', {})
+            fed_funds_data = series.get('DFF', {})
 
-                # Get macro analysis
-                st.markdown("---")
-                st.subheader("🎯 Economic Analysis")
+            # Create the multi-indicator chart
+            render_economic_indicators_chart(
+                gdp_data, cpi_data, unemployment_data, fed_funds_data
+            )
 
-                # Use Trinity-compliant capability routing with pre-fetched data
-                analysis = runtime.execute_by_capability(
-                    'can_analyze_macro_data',
-                    {
-                        'gdp_data': gdp_data,
-                        'cpi_data': cpi_data,
-                        'unemployment_data': unemployment_data,
-                        'fed_funds_data': fed_funds_data
-                    }
-                )
+            # Get macro analysis
+            st.markdown("---")
+            st.subheader("🎯 Economic Analysis")
 
-                if analysis and 'error' not in analysis:
-                    render_macro_analysis(analysis)
-                else:
-                    error_msg = analysis.get('error', 'Unknown error') if analysis else 'No result'
-                    st.error(f"❌ Analysis error: {error_msg}")
-                    st.info("Economic analysis capability may not be available. Check agent registration.")
+            # Use Trinity-compliant capability routing with pre-fetched data
+            analysis = runtime.execute_by_capability(
+                'can_analyze_macro_data',
+                {
+                    'capability': 'can_analyze_macro_data',  # CRITICAL: Required for AgentAdapter introspection
+                    'gdp_data': gdp_data,
+                    'cpi_data': cpi_data,
+                    'unemployment_data': unemployment_data,
+                    'fed_funds_data': fed_funds_data
+                }
+            )
 
-                # Display daily events section
-                st.markdown("---")
-                render_daily_events()
-
+            if analysis and 'error' not in analysis:
+                render_macro_analysis(analysis)
             else:
-                # Handle capability routing error
-                error_msg = fred_result.get('error', 'Unknown error') if fred_result else 'No result returned'
-                st.error(f"❌ Failed to fetch economic data: {error_msg}")
-                st.info("Economic data fetching capability may not be available. Check agent registration.")
+                error_msg = analysis.get('error', 'Unknown error') if analysis else 'No result'
+                st.error(f"❌ Analysis error: {error_msg}")
+                st.info("Economic analysis capability may not be available. Check agent registration.")
+
+            # Display daily events section
+            st.markdown("---")
+            render_daily_events()
 
         except Exception as e:
-            st.error(f"Error fetching economic data: {e}")
+            st.error(f"❌ Error rendering economic dashboard: {str(e)}")
             import traceback
-            st.code(traceback.format_exc())
+            with st.expander("View error details"):
+                st.code(traceback.format_exc())
+    else:
+        # No data available
+        st.warning("📊 No economic data available yet")
+        st.info("Data will load automatically on first visit or click '🔄 Fetch Latest Data' to refresh")
 
 
 def render_economic_indicators_chart(
@@ -239,7 +278,7 @@ def render_economic_indicators_chart(
         margin=dict(l=60, r=60, t=80, b=60)
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 def render_macro_analysis(analysis: Dict):

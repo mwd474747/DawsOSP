@@ -231,7 +231,7 @@ class PathTracer(BaseAgent):
             graph: Knowledge graph instance
             llm_client: Optional LLM client
         """
-        super().__init__("PathTracer", graph, llm_client)
+        super().__init__(graph=graph, name="PathTracer", llm_client=llm_client)
         self.vibe: str = "thorough"
 
 class SignalAggregator(BaseAgent):
@@ -244,7 +244,7 @@ class SignalAggregator(BaseAgent):
             graph: Knowledge graph instance
             llm_client: Optional LLM client
         """
-        super().__init__("SignalAggregator", graph, llm_client)
+        super().__init__(graph=graph, name="SignalAggregator", llm_client=llm_client)
         self.vibe: str = "balanced"
 
 class ConfidenceCalculator(BaseAgent):
@@ -257,5 +257,5 @@ class ConfidenceCalculator(BaseAgent):
             graph: Knowledge graph instance
             llm_client: Optional LLM client
         """
-        super().__init__("ConfidenceCalculator", graph, llm_client)
+        super().__init__(graph=graph, name="ConfidenceCalculator", llm_client=llm_client)
         self.vibe: str = "cautious"

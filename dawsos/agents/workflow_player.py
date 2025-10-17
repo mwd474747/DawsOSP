@@ -30,7 +30,7 @@ class WorkflowPlayer(BaseAgent):
             graph: Optional knowledge graph instance
             llm_client: Optional LLM client for workflow adaptation
         """
-        super().__init__("WorkflowPlayer", graph, llm_client)
+        super().__init__(graph=graph, name="WorkflowPlayer", llm_client=llm_client)
         self.vibe: str = "efficient"
         self.loaded_workflows: Dict[str, WorkflowDict] = {}
         self.load_workflows()
@@ -346,7 +346,7 @@ class ContextMatcher(BaseAgent):
         Args:
             llm_client: Optional LLM client
         """
-        super().__init__("ContextMatcher", None, llm_client)
+        super().__init__(graph=None, name="ContextMatcher", llm_client=llm_client)
         self.vibe: str = "precise"
 
 class ParameterFiller(BaseAgent):
@@ -358,7 +358,7 @@ class ParameterFiller(BaseAgent):
         Args:
             llm_client: Optional LLM client
         """
-        super().__init__("ParameterFiller", None, llm_client)
+        super().__init__(graph=None, name="ParameterFiller", llm_client=llm_client)
         self.vibe: str = "adaptive"
 
 class Executor(BaseAgent):
@@ -370,5 +370,5 @@ class Executor(BaseAgent):
         Args:
             llm_client: Optional LLM client
         """
-        super().__init__("Executor", None, llm_client)
+        super().__init__(graph=None, name="Executor", llm_client=llm_client)
         self.vibe: str = "action-oriented"

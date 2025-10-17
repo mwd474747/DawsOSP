@@ -552,6 +552,12 @@ def _render_main_tabs():
             st.session_state.capabilities
         )
 
+        # === MACRO FORECASTS (Auto-Loading) ===
+        st.markdown("---")
+        st.markdown("### 🔮 Forward Macro Projections")
+        st.caption("AI-powered forecasts for unemployment, Fed funds, inflation, and GDP growth")
+        trinity_tabs._render_macro_forecasts()
+
     with tab6:
         trinity_tabs.render_trinity_workflows()
 

@@ -28,7 +28,7 @@ class CodeMonkey(BaseAgent):
             graph: Optional knowledge graph instance
             llm_client: Optional LLM client for generation
         """
-        super().__init__("CodeMonkey", graph, llm_client)
+        super().__init__(graph=graph, name="CodeMonkey", llm_client=llm_client)
         self.vibe: str = "eager to code"
         self.max_lines: int = 50  # Keep it simple!
 
@@ -170,7 +170,7 @@ class FunctionWriter(BaseAgent):
     """Sub-agent that writes individual functions"""
 
     def __init__(self, graph=None, llm_client=None):
-        super().__init__("FunctionWriter", graph, llm_client)
+        super().__init__(graph=graph, name="FunctionWriter", llm_client=llm_client)
         self.vibe = "focused"
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
@@ -189,7 +189,7 @@ class ImportManager(BaseAgent):
     """Sub-agent that manages imports"""
 
     def __init__(self, graph=None, llm_client=None):
-        super().__init__("ImportManager", graph, llm_client)
+        super().__init__(graph=graph, name="ImportManager", llm_client=llm_client)
         self.vibe = "organized"
 
     def get_prompt(self, context: Dict[str, Any]) -> str:
@@ -207,7 +207,7 @@ class DocStringBot(BaseAgent):
     """Sub-agent that adds simple docstrings"""
 
     def __init__(self, graph=None, llm_client=None):
-        super().__init__("DocStringBot", graph, llm_client)
+        super().__init__(graph=graph, name="DocStringBot", llm_client=llm_client)
         self.vibe = "helpful"
 
     def get_prompt(self, context: Dict[str, Any]) -> str:

@@ -1375,6 +1375,90 @@ class PatternEngine:
 
         return resolved
 
+    def _substitute_template_variables(self, template: str, outputs: Dict[str, Any]) -> str:
+        """
+        Enhanced template variable substitution with deep path resolution.
+
+        Handles complex nested structures like:
+        - {step_8.result.synthesis}
+        - {step_8.response}
+        - {fundamentals}
+
+        Args:
+            template: Template string with variables
+            outputs: Step outputs dictionary
+
+        Returns:
+            Template with variables substituted
+        """
+        import re
+
+        # Find all template variables {key} or {key.nested.path}
+        pattern = r'\{([^}]+)\}'
+        matches = re.findall(pattern, template)
+
+        for match in matches:
+            parts = match.split('.')
+            base_key = parts[0]
+
+            if base_key not in outputs:
+                continue
+
+            value = outputs[base_key]
+
+            # Navigate nested path if present
+            if len(parts) > 1:
+                for part in parts[1:]:
+                    if isinstance(value, dict) and part in value:
+                        value = value[part]
+                    else:
+                        # Path doesn't exist, try smart fallback
+                        value = self._smart_extract_value(outputs[base_key])
+                        break
+            else:
+                # No nested path - use smart extraction for base key
+                value = self._smart_extract_value(value)
+
+            # Replace the variable in template
+            template = template.replace(f"{{{match}}}", str(value))
+
+        return template
+
+    def _smart_extract_value(self, data: Any) -> Any:
+        """
+        Intelligently extract the most relevant value from agent output.
+
+        Tries common patterns:
+        1. data['response']
+        2. data['friendly_response']
+        3. data['result']['synthesis']
+        4. data['result']
+        5. data (as-is)
+
+        Args:
+            data: Agent output data
+
+        Returns:
+            Best extracted value
+        """
+        if not isinstance(data, dict):
+            return data
+
+        # Try common response patterns in order of preference
+        if 'response' in data:
+            return data['response']
+        elif 'friendly_response' in data:
+            return data['friendly_response']
+        elif 'result' in data:
+            result = data['result']
+            # If result is a dict with 'synthesis', prefer that
+            if isinstance(result, dict) and 'synthesis' in result:
+                return result['synthesis']
+            return result
+
+        # No standard pattern - return whole dict
+        return data
+
     def format_response(self, pattern: PatternDict, results: List[ResultDict], outputs: OutputsDict, context: Optional[ContextDict] = None) -> ResultDict:
         """
         Format the final response based on pattern template
@@ -1403,25 +1487,17 @@ class PatternEngine:
             template = pattern['response'].get('template')
 
         if template:
-            # Substitute variables in template from outputs
-            for key, value in outputs.items():
-                # Extract the actual response from agent output
-                if isinstance(value, dict):
-                    # Check if this is an agent response with 'response' field
-                    if 'response' in value:
-                        template = template.replace(f"{{{key}}}", str(value['response']))
-                    elif 'friendly_response' in value:
-                        template = template.replace(f"{{{key}}}", str(value['friendly_response']))
-                    elif 'result' in value:
-                        template = template.replace(f"{{{key}}}", str(value['result']))
-                    else:
-                        # Handle nested references
-                        for nested_key, nested_value in value.items():
-                            template = template.replace(f"{{{key}.{nested_key}}}", str(nested_value))
-                        # Also replace the whole object reference
-                        template = template.replace(f"{{{key}}}", str(value))
+            # DEBUG: Log outputs structure
+            self.logger.info(f"🔍 format_response outputs keys: {list(outputs.keys())}")
+            for key in outputs.keys():
+                val = outputs[key]
+                if isinstance(val, dict):
+                    self.logger.info(f"🔍   {key}: dict with keys {list(val.keys())[:10]}")
                 else:
-                    template = template.replace(f"{{{key}}}", str(value))
+                    self.logger.info(f"🔍   {key}: {type(val)}")
+
+            # Substitute variables in template from outputs with enhanced path resolution
+            template = self._substitute_template_variables(template, outputs)
 
             # Also substitute context values (like {TICKERS}, {TICKER}, etc.)
             for key, value in context.items():
@@ -1876,6 +1952,7 @@ class PatternEngine:
 
             # Use Trinity 3.0 capability-based routing
             context = {
+                'capability': 'can_fetch_economic_data',  # CRITICAL: Required for AgentAdapter introspection
                 'indicators': list(indicators_to_fetch.values()),
                 'start_date': (datetime.now() - timedelta(days=365*5)).strftime('%Y-%m-%d'),
                 'end_date': datetime.now().strftime('%Y-%m-%d')

@@ -32,6 +32,8 @@ class BaseAgent:
         """
         self.graph: Any = graph  # Shared knowledge graph
         self.name: str = name or self.__class__.__name__
+        # ✅ CRITICAL FIX: Initialize logger (ensure name is string first)
+        self.logger: logging.Logger = logging.getLogger(str(self.name))
         self.focus_areas: List[str] = focus_areas or []
         self.memory: List[Any] = []  # Agent-specific memory
         self.llm_client: Optional[Any] = llm_client  # For LLM-based agents

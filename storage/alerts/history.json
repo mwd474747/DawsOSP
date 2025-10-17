@@ -236,7 +236,7 @@
         "violations": 2
       }
     },
-    "acknowledged": false,
-    "acknowledged_at": null
+    "acknowledged": true,
+    "acknowledged_at": "2025-10-15T14:50:31.285749"
   }
 ]

@@ -26,7 +26,7 @@ class StructureBot(BaseAgent):
             graph: Optional knowledge graph instance
             llm_client: Optional LLM client for generation
         """
-        super().__init__("StructureBot", graph, llm_client)
+        super().__init__(graph=graph, name="StructureBot", llm_client=llm_client)
         self.vibe: str = "organized"
         self.project_root: str = "/Users/mdawson/Dawson/DawsOSB/dawsos"
 
@@ -141,7 +141,7 @@ class FileCreator(BaseAgent):
         Args:
             llm_client: Optional LLM client for generation
         """
-        super().__init__("FileCreator", None, llm_client)
+        super().__init__(graph=None, name="FileCreator", llm_client=llm_client)
         self.vibe: str = "creative"
 
     def get_prompt(self, context: ContextDict) -> str:
@@ -177,7 +177,7 @@ class FolderOrganizer(BaseAgent):
         Args:
             llm_client: Optional LLM client for generation
         """
-        super().__init__("FolderOrganizer", None, llm_client)
+        super().__init__(graph=None, name="FolderOrganizer", llm_client=llm_client)
         self.vibe: str = "systematic"
 
     def get_prompt(self, context: ContextDict) -> str:
