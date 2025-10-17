@@ -1,9 +1,9 @@
 # DawsOS System Status Report
 
-**Date**: October 17, 2025
-**Time**: Current Status
+**Date**: October 17, 2025  
+**Time**: Current Status (Post-Pattern Analysis)
 **Version**: 3.0 (Trinity Architecture)
-**Grade**: A+ (98-100/100)
+**Grade**: A- (92/100) - Operational with documented technical debt
 
 ---
 
@@ -100,21 +100,21 @@ print(f"Datasets: {len(loader.datasets)}")  # Output: 26
 
 ---
 
-### ✅ Pattern Library (100% Complete)
+### ✅ Pattern Library (Operational with Known Issues)
 
 **Pattern Compliance**:
-- ✅ 48 patterns total (+ schema.json = 49 files)
-- ✅ 68% use capability-based routing (60 steps converted)
-- ✅ 90% categorized (44/49 patterns)
-- ✅ 9 critical templates added (markdown-formatted output)
+- ✅ 50 patterns total (including schema.json)
+- ⚠️ **~85% use capability routing** (most patterns use capabilities, but ~40% have hybrid agent calls mixed in)
+- ✅ 90% categorized (44/50 patterns)
+- ⚠️ 34 patterns have template fields without validation (risk of undefined field references)
 - ✅ Enriched data via `enriched_lookup`
 - ✅ Template-only flows allowlisted
 
 **Pattern Categories**:
 - Analysis: 15 patterns (Buffett, Dalio, DCF, sector rotation, options)
-- Workflows: 5 patterns (deep_dive, morning_briefing, portfolio_review)
+- Workflows: 4 patterns (deep_dive, morning_briefing, portfolio_review, opportunity_scan)
 - Governance: 6 patterns (policy validation, quality audits, compliance)
-- Queries: 6 patterns (company analysis, market regime, sector performance)
+- Queries: 7 patterns (company analysis, market regime, sector performance, stock price)
 - UI: 6 patterns (dashboards, alerts, watchlists)
 - Actions: 5 patterns (add to graph, create alerts, export data)
 - System: 5 patterns (meta-execution, self-improvement)
@@ -124,13 +124,14 @@ print(f"Datasets: {len(loader.datasets)}")  # Output: 26
   - Schema compliance
   - Metadata validation
   - Agent reference checks
-- ✅ **0 errors** across all 48 patterns
-- ⚠️ **1 cosmetic warning** (intentional 'condition' field)
+- ✅ **0 structural errors** across all 50 patterns
+- ⚠️ **Linter does not validate**: Template field existence, capability selection correctness, variable resolution
 
 **Verification**:
 ```bash
 python3 scripts/lint_patterns.py
-# Output: 48 patterns checked, 0 errors, 1 warning ✅
+# Output: 50 patterns checked, 0 errors, 1 warning ✅
+# Note: Passes syntax checks, but see KNOWN_PATTERN_ISSUES.md for runtime concerns
 ```
 
 ---
@@ -156,9 +157,155 @@ python3 scripts/lint_patterns.py
 
 ---
 
+## Known Issues & Technical Debt
+
+### ⚠️ 1. Template Field Reference Fragility (Medium Priority)
+
+**Status**: 34 patterns reference nested fields without validation
+
+**Problem**: Patterns use template fields like `{step_3.score}`, `{investment_thesis.target_price}` that may not exist in agent responses, causing broken UI output.
+
+**Affected Patterns**:
+- `buffett_checklist.json` - References 12+ unvalidated fields
+- `deep_dive.json` - References 10+ nested fields  
+- `moat_analyzer.json` - References 15+ nested fields
+- `fundamental_analysis.json` - References 8+ fields
+- Plus 30 other analysis/workflow patterns
+
+**Root Cause**: 
+- Template substitution uses `_smart_extract_value()` fallback for common keys ('response', 'result')
+- No validation that specific nested paths exist before substitution
+- If field missing, variable stays as `{field}` literal string in output
+
+**Impact**: 
+- Broken UI rendering if agent response structure changes
+- Silent failures (no error thrown, just `{missing_field}` in output)
+- Affects user-facing display quality
+
+**Workaround**: `_smart_extract_value()` handles common patterns, reduces but doesn't eliminate issue
+
+**Fix Required**: 
+1. Add template field validation before substitution
+2. Provide default values for missing fields
+3. Update pattern linter to detect unvalidated references
+
+**References**: See `KNOWN_PATTERN_ISSUES.md` for full pattern inventory
+
+---
+
+### ⚠️ 2. Capability Misuse (Medium Priority)
+
+**Status**: 8-10 patterns use wrong capabilities for their tasks
+
+**Problem**: Patterns use API capabilities (like `can_fetch_economic_data`) for knowledge file loading tasks, causing unnecessary API calls or failures.
+
+**Examples**:
+- `moat_analyzer.json` lines 29, 93, 132: Uses `can_fetch_economic_data` to load `buffett_checklist.json` and calculate metrics
+- `fundamental_analysis.json` line 27: Uses `can_fetch_fundamentals` to load knowledge files
+- `buffett_checklist.json` line 32: Uses `can_fetch_stock_quotes` to load framework
+
+**Root Cause**:
+- Pattern authors unclear which capability does what
+- `can_fetch_economic_data` routes to MacroAnalystAgent (FRED API), not knowledge loader
+- No validation that capability matches task type
+
+**Impact**:
+- Unnecessary API calls (waste API quota)
+- May fail if API keys missing
+- Slower execution than file-based lookup
+- Incorrect data returned
+
+**Correct Approach**: Use `enriched_lookup` action or `knowledge_lookup` for framework files
+
+**Fix Required**: Update 8-10 patterns to use correct capabilities (see `CAPABILITY_ROUTING_GUIDE.md`)
+
+---
+
+### ⚠️ 3. Hybrid Agent/Capability Routing (Low Priority)
+
+**Status**: ~40% of patterns mix direct agent calls with capability routing
+
+**Problem**: Patterns use both `"agent": "claude"` and capability-based routing, creating inconsistency.
+
+**Examples**:
+- `buffett_checklist.json`: Steps 3, 5, 7, 8 use `"agent": "claude"`
+- `moat_analyzer.json`: Steps 3, 6, 8 use `"agent": "claude"`  
+- `fundamental_analysis.json`: Steps 5, 6, 7 use `"agent": "claude"`
+
+**Impact**:
+- Bypasses Trinity Architecture routing for some steps
+- Hard-codes dependency on Claude agent
+- Reduces flexibility (can't swap LLM providers easily)
+- Inconsistent with stated "capability-first" architecture
+
+**Documentation Says** (CLAUDE.md line 87): "ALWAYS prefer capability-based over name-based routing"
+
+**Reality**: Many patterns still use name-based for complex reasoning tasks
+
+**Fix Required**: Convert `"agent": "claude"` to capability-based calls (e.g., `can_reason_about_data`, `can_synthesize_analysis`)
+
+---
+
+### ⚠️ 4. Missing Capabilities (Low Priority)
+
+**Status**: 2 capabilities referenced in patterns don't exist
+
+**Problem**: Patterns reference capabilities that aren't implemented in any agent.
+
+**Missing**:
+- `can_fetch_options_flow` - Referenced in `options_flow.json` (line 20)
+- `can_analyze_options_flow` - Referenced in `options_flow.json` (line 30)
+
+**Listed in AGENT_CAPABILITIES**:
+- `can_fetch_options_flow` - Line 77 (MacroAnalystAgent)
+- `can_analyze_options_flow` - Line 241 (OptionsAnalystAgent)
+
+**Root Cause**: Capabilities registered but methods not implemented in agents
+
+**Impact**: 
+- Patterns fail at runtime with "No agent found with capability" error
+- Options flow analysis is non-functional
+
+**Fix Required**: Implement missing methods or remove from capability registry
+
+---
+
+### ⚠️ 5. Variable Resolution Edge Cases (Low Priority)
+
+**Status**: {SYMBOL} and nested variable resolution can fail silently
+
+**Problem**: Pattern variables like `{SYMBOL}`, `{step_1.data}` may not resolve if input doesn't match expected format.
+
+**Examples**:
+- If user says "analyze Apple" instead of "AAPL", `{SYMBOL}` may not resolve
+- If step returns dict without expected key, `{step_1.field}` stays literal
+
+**Current Mitigation**:
+- Symbol extraction tries company name aliases
+- Falls back to first uppercase word
+- But edge cases remain (e.g., "analyze meta platforms")
+
+**Impact**: Parameters sent to agents contain literal `{SYMBOL}` strings → agent errors or garbage responses
+
+**Fix Required**: Add validation that all variables resolved before step execution
+
+---
+
+### ⚠️ 6. Template vs Response_Template Duplication (Low Priority)
+
+**Status**: 34 patterns have both `template` and `response_template` fields
+
+**Problem**: Schema defines `response_template`, but patterns also use `template`. Unclear which takes precedence.
+
+**Impact**: Confusion for pattern authors, potential for inconsistent rendering
+
+**Fix Required**: Audit UI code to determine which field is actually used, remove unused field from patterns
+
+---
+
 ## Remaining Cleanup Items
 
-### ⚠️ 1. Bare Pass Statements (Low Priority)
+### ⚠️ 7. Bare Pass Statements (Low Priority)
 
 **Status**: Minimal remaining (already addressed in UI/governance)
 
@@ -173,7 +320,7 @@ find dawsos -name "*.py" -exec grep -l "except.*:\s*pass" {} \;
 # Output: None in core modules ✅
 ```
 
-### ⚠️ 2. Duplicate Storage Directory (Cosmetic)
+### ⚠️ 8. Duplicate Storage Directory (Cosmetic)
 
 **Status**: Empty duplicate exists
 
@@ -215,7 +362,7 @@ find dawsos -name "*.py" -exec grep -l "except.*:\s*pass" {} \;
 
 **Action**: ✅ Complete
 
-### ⚠️ 4. Test Migration (Optional)
+### ⚠️ 9. Test Migration (Optional)
 
 **Status**: Pytest partially adopted
 
@@ -283,7 +430,7 @@ find dawsos -name "*.py" -exec grep -l "except.*:\s*pass" {} \;
 | **Testing** | ✅ Complete | 85% | 39 test modules |
 | **Repository** | ✅ Clean | 98% | Well-organized |
 
-**Overall Grade**: **A+ (98/100)**
+**Overall Grade**: **A- (92/100)** - System operational, 6 categories of technical debt documented
 
 ---
 
@@ -406,7 +553,9 @@ KnowledgeGraph (storage)
 **Telemetry**: ✅ Comprehensive tracking
 **Documentation**: ✅ Professional and complete
 
-**Overall Status**: 🎉 **PRODUCTION READY - A+ GRADE (98/100)**
+**Overall Status**: ✅ **OPERATIONAL - A- GRADE (92/100)**
+
+**Note**: System is functional and stable. Grade reflects documented technical debt (template fragility, capability misuse, hybrid routing) that should be addressed before scaling production usage. See "Known Issues & Technical Debt" section for details.
 
 ---
 
@@ -418,11 +567,12 @@ KnowledgeGraph (storage)
 
 ---
 
-**Report Generated**: October 9, 2025
-**System Version**: 2.0 (Trinity Architecture + NetworkX)
+**Report Generated**: October 17, 2025 (Updated with pattern analysis findings)
+**System Version**: 3.0 (Trinity Architecture + NetworkX)
 **Active Agents**: 15 agents with 103 capabilities
-**Active Patterns**: 48 (0 errors, 1 cosmetic warning)
-**Root Documentation**: 11 essential files (completion reports included)
-**Commits (Oct 2025)**: 137 commits
+**Active Patterns**: 50 (0 structural errors, 6 categories of runtime concerns documented)
+**Root Documentation**: 6 essential files (+ archive/legacy/ with 113 historical files)
+**Commits (Oct 2025)**: 140+ commits
 **Functions Refactored**: 49+ functions decomposed (1,738 → 85 lines)
-**Ready for**: Immediate Production Deployment
+**Technical Debt**: 6 categories documented (see Known Issues section)
+**Ready for**: Continued development with focus on pattern quality improvements
