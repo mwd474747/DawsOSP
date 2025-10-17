@@ -30,10 +30,13 @@ Request → UniversalExecutor → PatternEngine → AgentRuntime/AgentRegistry �
 
 2. **PatternEngine** (`core/pattern_engine.py`)
    - Executes JSON-defined workflows from `dawsos/patterns/`
-   - 48 patterns (0 errors, 1 cosmetic warning) across 7 categories
-   - 90% categorized (44/49 patterns)
-   - 68% use capability-based routing (60 legacy steps converted)
-   - 9 critical templates added for markdown output
+   - **50 patterns** across 7 categories (all operational)
+   - **Known Issues** (Oct 17, 2025 audit):
+     * **Template fragility**: 34 patterns use unvalidated nested field references (e.g., `{step_3.score}`)
+     * **Capability misuse**: 8-10 patterns use wrong capabilities (API fetch for knowledge loading)
+     * **Hybrid routing**: ~40% mix capability routing with direct agent calls
+     * **Missing capabilities**: 2 registered capabilities not implemented (options_flow)
+   - Template fallback via `_smart_extract_value()` tries common keys (response, friendly_response, etc.)
    - Loads enriched knowledge via KnowledgeLoader
    - Resolves parameters with variable substitution
    - Primary action: `execute_through_registry` (Trinity-compliant)
@@ -196,7 +199,52 @@ Utility agents:
 **Architecture References**:
 - [CAPABILITY_ROUTING_GUIDE.md](../CAPABILITY_ROUTING_GUIDE.md) - Capability-based routing walkthrough
 - [CORE_INFRASTRUCTURE_STABILIZATION.md](../CORE_INFRASTRUCTURE_STABILIZATION.md) - Core architecture upgrades
-- [SYSTEM_STATUS.md](../SYSTEM_STATUS.md) - Current system state (A+ grade)
+- [SYSTEM_STATUS.md](../SYSTEM_STATUS.md) - Current system state (A- grade, 92/100)
+- [KNOWN_PATTERN_ISSUES.md](../KNOWN_PATTERN_ISSUES.md) - Pattern-specific technical debt inventory
+- [PATTERN_AUTHORING_GUIDE.md](../PATTERN_AUTHORING_GUIDE.md) - Pattern authoring best practices
+
+## Architectural Technical Debt (Oct 17, 2025)
+
+### Pattern System Debt
+
+**High Priority**:
+1. **Template Fragility** - 34 patterns use nested field references without validation
+   - **Risk**: Agent response structure changes break templates
+   - **Example**: `{step_3.score}` renders as literal string if field missing
+   - **Files Affected**: buffett_checklist.json, moat_analyzer.json, deep_dive.json, +31 others
+   - **Mitigation**: `_smart_extract_value()` fallback (incomplete solution)
+
+2. **Capability Misuse** - 8-10 patterns use wrong capabilities
+   - **Issue**: Using API capabilities (`can_fetch_economic_data`) to load knowledge files
+   - **Impact**: Unnecessary API calls, slower execution, potential failures
+   - **Files Affected**: moat_analyzer.json, fundamental_analysis.json, buffett_checklist.json
+   - **Correct Approach**: Use `enriched_lookup` action for knowledge files
+
+**Medium Priority**:
+3. **Hybrid Routing** - ~40% of patterns mix capability + direct agent calls
+   - **Issue**: Steps use both `"agent": "claude"` and capability routing
+   - **Impact**: Inconsistent architecture, bypasses capability layer benefits
+   - **Example**: Step 1 uses `execute_by_capability`, Step 2 uses `"agent": "claude"`
+
+4. **Missing Capabilities** - 2 registered but not implemented
+   - `can_fetch_options_flow` - options_flow.json fails at runtime
+   - `can_analyze_options_flow` - options_flow.json fails at runtime
+
+**Low Priority**:
+5. **Variable Resolution Edge Cases** - Symbol extraction may fail for informal inputs
+   - **Example**: "analyze meta platforms" may not resolve to META ticker
+6. **Template Duplication** - 34 patterns have both `template` and `response_template`
+
+### Remediation Plan (Not Yet Executed)
+1. Add template validation to PatternEngine
+2. Create pattern migration script for capability corrections
+3. Audit and fix all hybrid routing patterns
+4. Implement missing capabilities or remove from registry
+5. Add comprehensive variable resolution fallbacks
+
+**Full Details**: See KNOWN_PATTERN_ISSUES.md for pattern-by-pattern analysis
+
+---
 
 ## Code Review Checklist
 
@@ -208,6 +256,13 @@ When reviewing code:
 - [ ] Are new patterns validated with the linter?
 - [ ] Do agent references exist in the registry?
 - [ ] Is telemetry being tracked (success/failure times)?
+
+When reviewing patterns:
+- [ ] Does it use `enriched_lookup` for knowledge files (not `can_fetch_*` capabilities)?
+- [ ] Are template fields validated to exist in response structure?
+- [ ] Does it use capability routing consistently (not hybrid with `"agent": "claude"`)?
+- [ ] Are variable references clear and resolvable from user input?
+- [ ] Does it have either `template` OR `response_template` (not both)?
 
 ## Response Style
 
