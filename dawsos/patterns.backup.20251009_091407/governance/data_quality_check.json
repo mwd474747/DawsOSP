@@ -1,0 +1,88 @@
+{
+  "id": "data_quality_check",
+  "name": "Data Quality Governance",
+  "description": "Comprehensive data quality assessment and improvement (Trinity 2.0 capability routing)",
+  "category": "governance",
+  "triggers": [
+    "check data quality",
+    "data quality assessment",
+    "validate data quality",
+    "audit data quality"
+  ],
+  "input_schema": {
+    "required": [
+      "request"
+    ],
+    "optional": [
+      "auto_fix",
+      "quality_threshold"
+    ]
+  },
+  "default_parameters": {
+    "governance_type": "data_quality",
+    "auto_fix": "true",
+    "priority_level": "high"
+  },
+  "steps": [
+    {
+      "description": "Understand data quality request",
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "task": "analyze_governance_request",
+          "governance_type": "data_quality",
+          "user_request": "{request}"
+        }
+      },
+      "save_as": "step_1"
+    },
+    {
+      "description": "Gather system data for quality assessment",
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "data_harvester",
+        "context": {
+          "task": "gather_governance_data",
+          "governance_type": "data_quality"
+        }
+      },
+      "save_as": "step_2"
+    },
+    {
+      "description": "Spot data quality issues and patterns",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_detect_patterns",
+        "context": {
+          "task": "identify_governance_patterns",
+          "governance_type": "data_quality",
+          "data_source": "{step_2}"
+        }
+      },
+      "save_as": "step_3"
+    },
+    {
+      "description": "Execute data quality governance",
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "governance_agent",
+        "context": {
+          "governance_type": "data_quality",
+          "request": "{request}",
+          "auto_fix": "{auto_fix|true}",
+          "priority": "high",
+          "analysis_data": {
+            "step_1": "{step_1}",
+            "step_2": "{step_2}",
+            "step_3": "{step_3}"
+          }
+        }
+      },
+      "save_as": "step_4"
+    }
+  ],
+  "template": "**Data Quality Governance Report**\n\n**Quality Request**: {request}\n\n**Overall Quality Score**: {step_4.findings.overall_score:.0%}\n\n**Issues Found**:\n{#step_4.findings.issues_found}\n- {.}\n{/step_4.findings.issues_found}\n\n**Auto-Fixes Applied**:\n{#step_4.findings.auto_fixes_applied}\n- {.}\n{/step_4.findings.auto_fixes_applied}\n\n**Recommendations**:\n{#step_4.findings.recommendations}\n- {.}\n{/step_4.findings.recommendations}\n\n**Next Actions**:\n{#step_4.next_actions}\n- {.}\n{/step_4.next_actions}\n\n*Quality monitoring powered by DawsOS Trinity Architecture*",
+  "version": "2.0",
+  "last_updated": "2025-10-08"
+}

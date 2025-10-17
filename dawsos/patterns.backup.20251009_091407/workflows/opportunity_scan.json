@@ -1,0 +1,60 @@
+{
+  "id": "opportunity_scan",
+  "name": "Market Opportunity Scanner",
+  "description": "Scans markets for trading and investment opportunities (Trinity 2.0 capability routing)",
+  "triggers": [
+    "scan",
+    "opportunities",
+    "find trades",
+    "screening",
+    "ideas"
+  ],
+  "entities": [],
+  "priority": 8,
+  "steps": [
+    {
+      "description": "",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_stock_quotes",
+        "context": {}
+      },
+      "save_as": "market_scan"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{market_scan}",
+          "analysis_type": "opportunity_detection"
+        }
+      },
+      "save_as": "opportunities"
+    },
+    {
+      "description": "",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_fundamentals",
+        "context": {}
+      },
+      "save_as": "opportunity_data"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "user_input": "Analyze opportunities from {opportunities} with data {opportunity_data}. Rank by: 1) Risk/Reward 2) Technical Setup 3) Fundamental Quality 4) Catalyst. Provide top 5 ideas with entry/exit/stop levels"
+        }
+      },
+      "save_as": "opportunity_report"
+    }
+  ],
+  "response_type": "opportunities",
+  "response_template": "{opportunity_report}",
+  "cache_ttl": 600,
+  "version": "2.0",
+  "last_updated": "2025-10-08"
+}

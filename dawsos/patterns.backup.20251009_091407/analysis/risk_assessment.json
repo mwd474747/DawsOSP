@@ -1,0 +1,61 @@
+{
+  "id": "risk_assessment",
+  "name": "Risk Assessment",
+  "description": "Comprehensive risk analysis for assets or portfolio (Trinity 2.0 capability routing)",
+  "triggers": [
+    "risk",
+    "volatility",
+    "var",
+    "drawdown",
+    "beta",
+    "sharpe"
+  ],
+  "entities": [
+    "SYMBOL"
+  ],
+  "priority": 7,
+  "steps": [
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get {SYMBOL} historical prices, volatility, and market data"
+        }
+      },
+      "save_as": "risk_data"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{risk_data}",
+          "analysis_type": "risk_metrics",
+          "calculations": [
+            "volatility",
+            "beta",
+            "var",
+            "max_drawdown"
+          ]
+        }
+      },
+      "save_as": "risk_metrics"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "user_input": "Assess risk for {SYMBOL} using {risk_metrics}. Provide: 1) Risk score (1-10) 2) Volatility analysis 3) Downside risks 4) Black swan events 5) Risk mitigation strategies"
+        }
+      },
+      "save_as": "risk_report"
+    }
+  ],
+  "response_type": "analysis",
+  "response_template": "{risk_report}",
+  "cache_ttl": 600,
+  "version": "2.0",
+  "last_updated": "2025-10-08"
+}

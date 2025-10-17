@@ -1,0 +1,70 @@
+{
+  "id": "portfolio_review",
+  "name": "Portfolio Review",
+  "description": "Comprehensive portfolio analysis and rebalancing suggestions (Trinity 2.0 capability routing)",
+  "triggers": [
+    "review portfolio",
+    "rebalance",
+    "portfolio check"
+  ],
+  "entities": [],
+  "priority": 8,
+  "steps": [
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get all portfolio holdings from knowledge graph"
+        }
+      },
+      "save_as": "holdings"
+    },
+    {
+      "description": "",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_news",
+        "context": {}
+      },
+      "save_as": "portfolio_data"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{portfolio_data}",
+          "analysis_type": "portfolio_health"
+        }
+      },
+      "save_as": "health_metrics"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "relationship_hunter",
+        "context": {
+          "data": "{portfolio_data}",
+          "analysis_type": "correlation_matrix"
+        }
+      },
+      "save_as": "correlations"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "user_input": "Review portfolio {holdings} with metrics {health_metrics} and correlations {correlations}. Provide: 1) Performance Summary 2) Risk Analysis 3) Diversification Score 4) Problem Holdings 5) Rebalancing Recommendations 6) New Ideas to Consider"
+        }
+      },
+      "save_as": "portfolio_review"
+    }
+  ],
+  "response_type": "portfolio_analysis",
+  "response_template": "{portfolio_review}",
+  "cache_ttl": 1800,
+  "version": "2.0",
+  "last_updated": "2025-10-08"
+}

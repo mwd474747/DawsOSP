@@ -1,0 +1,31 @@
+{
+  "id": "help_guide",
+  "name": "Help and Guidance",
+  "description": "Provides help and usage guidance (Trinity 2.0 capability routing)",
+  "triggers": [
+    "help",
+    "how to",
+    "guide",
+    "tutorial",
+    "what can you do"
+  ],
+  "entities": [],
+  "priority": 5,
+  "steps": [
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "user_input": "Provide help for DawsOS. List capabilities: 1) Market Analysis (regime detection, sector analysis) 2) Company Research (deep dives, earnings) 3) Portfolio Management (tracking, analysis) 4) Forecasting 5) Alerts. Include example commands."
+        }
+      },
+      "save_as": "help_text"
+    }
+  ],
+  "response_type": "help",
+  "response_template": "{help_text}",
+  "cache_ttl": 3600,
+  "version": "2.0",
+  "last_updated": "2025-10-08"
+}

@@ -1,0 +1,103 @@
+{
+  "version": 2,
+  "nodes": {
+    "stock_d50e911f": {
+      "id": "stock_d50e911f",
+      "type": "stock",
+      "data": {
+        "symbol": "AAPL",
+        "price": 150
+      },
+      "created": "2025-10-06T08:10:33.068494",
+      "modified": "2025-10-06T08:10:33.068502",
+      "connections_in": [],
+      "connections_out": [
+        "edge_39202648"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "stock_b4e69a7e": {
+      "id": "stock_b4e69a7e",
+      "type": "stock",
+      "data": {
+        "symbol": "GOOGL",
+        "price": 2800
+      },
+      "created": "2025-10-06T08:10:33.068511",
+      "modified": "2025-10-06T08:10:33.068512",
+      "connections_in": [],
+      "connections_out": [
+        "edge_3b8f604c"
+      ],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    },
+    "sector_5ff4e1b1": {
+      "id": "sector_5ff4e1b1",
+      "type": "sector",
+      "data": {
+        "name": "Technology"
+      },
+      "created": "2025-10-06T08:10:33.068518",
+      "modified": "2025-10-06T08:10:33.068518",
+      "connections_in": [
+        "edge_39202648",
+        "edge_3b8f604c"
+      ],
+      "connections_out": [],
+      "metadata": {
+        "access_count": 0,
+        "last_accessed": null,
+        "confidence": 1.0
+      }
+    }
+  },
+  "edges": [
+    {
+      "from": "stock_d50e911f",
+      "to": "sector_5ff4e1b1",
+      "id": "edge_39202648",
+      "type": "belongs_to",
+      "strength": 0.9,
+      "metadata": {},
+      "created": "2025-10-06T08:10:33.068525",
+      "activations": 0
+    },
+    {
+      "from": "stock_b4e69a7e",
+      "to": "sector_5ff4e1b1",
+      "id": "edge_3b8f604c",
+      "type": "belongs_to",
+      "strength": 0.95,
+      "metadata": {},
+      "created": "2025-10-06T08:10:33.068541",
+      "activations": 0
+    }
+  ],
+  "patterns": {},
+  "forecasts": {},
+  "metadata": {
+    "last_saved": "2025-10-06T08:10:33.947158",
+    "stats": {
+      "total_nodes": 3,
+      "total_edges": 2,
+      "total_patterns": 0,
+      "node_types": {
+        "stock": 2,
+        "sector": 1
+      },
+      "edge_types": {
+        "belongs_to": 2
+      },
+      "avg_connections": 0.6666666666666666
+    },
+    "backend": "networkx"
+  }
+}

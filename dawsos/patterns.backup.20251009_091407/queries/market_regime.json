@@ -1,0 +1,69 @@
+{
+  "id": "market_regime",
+  "name": "Detect Market Regime",
+  "description": "Analyzes current market conditions and identifies the regime (Trinity 2.0 capability routing)",
+  "triggers": [
+    "regime",
+    "market condition",
+    "bull",
+    "bear",
+    "risk",
+    "environment"
+  ],
+  "entities": [],
+  "priority": 9,
+  "steps": [
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get SPY VIX DXY TLT data"
+        }
+      },
+      "save_as": "market_data"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{market_data}",
+          "analysis_type": "regime"
+        }
+      },
+      "save_as": "regime_analysis"
+    },
+    {
+      "action": "enriched_lookup",
+      "params": {
+        "data_type": "economic_cycles",
+        "query": "historical_phases"
+      },
+      "save_as": "historical_cycles"
+    },
+    {
+      "action": "enriched_lookup",
+      "params": {
+        "data_type": "economic_cycles",
+        "query": "cycle_indicators"
+      },
+      "save_as": "cycle_indicators"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "user_input": "Based on current analysis {regime_analysis}, historical cycles {historical_cycles.data}, and cycle indicators {cycle_indicators.data}, determine: 1) Current market regime (Risk-On/Risk-Off/Transitioning) 2) Which historical period (from {historical_cycles.data}) most resembles current conditions 3) Key indicators and confidence level 4) Sector rotation recommendations based on regime"
+        }
+      },
+      "save_as": "regime_report"
+    }
+  ],
+  "response_type": "regime_analysis",
+  "response_template": "{regime_report}",
+  "cache_ttl": 300,
+  "version": "2.0",
+  "last_updated": "2025-10-08"
+}

@@ -1,0 +1,50 @@
+{
+  "id": "dashboard_update",
+  "name": "Dashboard Update",
+  "description": "Updates dashboard with latest market data (Trinity 2.0 capability routing)",
+  "triggers": [
+    "refresh",
+    "update dashboard",
+    "latest data"
+  ],
+  "entities": [],
+  "priority": 7,
+  "steps": [
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get SPY QQQ DIA IWM VIX DXY BTC-USD"
+        }
+      },
+      "save_as": "market_data"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{market_data}",
+          "analysis_type": "quick_regime"
+        }
+      },
+      "save_as": "regime"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "user_input": "Format dashboard update: Market data: {market_data}, Regime: {regime}"
+        }
+      },
+      "save_as": "dashboard_update"
+    }
+  ],
+  "response_type": "ui_update",
+  "response_template": "{dashboard_update}",
+  "cache_ttl": 60,
+  "version": "2.0",
+  "last_updated": "2025-10-08"
+}

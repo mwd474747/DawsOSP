@@ -1,0 +1,93 @@
+{
+  "id": "architecture_validator",
+  "name": "Architecture Validator",
+  "description": "Validates and auto-fixes Trinity Architecture compliance issues on startup",
+  "trigger": "startup",
+  "steps": [
+    {
+      "action": "scan_agents",
+      "params": {},
+      "save_as": "agents"
+    },
+    {
+      "action": "check_constructor_compliance",
+      "params": {
+        "agents": "{agents}"
+      },
+      "save_as": "constructor_issues"
+    },
+    {
+      "action": "check_registry_usage",
+      "params": {
+        "scan_paths": [
+          "core/claude_orchestrator.py",
+          "ui/trinity_ui.py",
+          "workflows/investment_workflows.py"
+        ]
+      },
+      "save_as": "registry_issues"
+    },
+    {
+      "action": "check_graph_methods",
+      "params": {
+        "required_methods": [
+          "get_node",
+          "get_nodes_by_type",
+          "add_node",
+          "connect"
+        ]
+      },
+      "save_as": "graph_issues"
+    },
+    {
+      "action": "check_duplicate_code",
+      "params": {
+        "patterns": [
+          "enriched_lookup",
+          "execute_agent",
+          "normalize_response"
+        ]
+      },
+      "save_as": "duplicates"
+    },
+    {
+      "action": "generate_fix_pattern",
+      "params": {
+        "issues": {
+          "constructors": "{constructor_issues}",
+          "registry": "{registry_issues}",
+          "graph": "{graph_issues}",
+          "duplicates": "{duplicates}"
+        }
+      },
+      "save_as": "fixes"
+    },
+    {
+      "action": "apply_fixes",
+      "params": {
+        "fixes": "{fixes}",
+        "auto_fix": true
+      },
+      "save_as": "fix_results"
+    },
+    {
+      "action": "generate_compliance_report",
+      "params": {
+        "agents": "{agents}",
+        "issues_found": "{constructor_issues}",
+        "issues_fixed": "{fix_results}"
+      },
+      "save_as": "report"
+    }
+  ],
+  "response_template": {
+    "validation_complete": true,
+    "agents_scanned": "{agents.length}",
+    "issues_found": "{constructor_issues.length}",
+    "issues_fixed": "{fix_results.fixed_count}",
+    "compliance_score": "{report.compliance_score}",
+    "report": "{report}"
+  },
+  "version": "2.0",
+  "last_updated": "2025-10-08"
+}

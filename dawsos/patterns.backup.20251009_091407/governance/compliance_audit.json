@@ -1,0 +1,87 @@
+{
+  "id": "compliance_audit",
+  "name": "Compliance Audit Governance",
+  "description": "Regulatory compliance assessment and reporting (Trinity 2.0 capability routing)",
+  "category": "governance",
+  "triggers": [
+    "compliance audit",
+    "check compliance",
+    "regulatory audit",
+    "audit compliance"
+  ],
+  "input_schema": {
+    "required": [
+      "request"
+    ],
+    "optional": [
+      "compliance_framework",
+      "audit_scope"
+    ]
+  },
+  "default_parameters": {
+    "governance_type": "compliance",
+    "priority_level": "critical",
+    "compliance_framework": "SOX"
+  },
+  "steps": [
+    {
+      "description": "Understand compliance audit request",
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "task": "analyze_governance_request",
+          "governance_type": "compliance",
+          "user_request": "{request}"
+        }
+      },
+      "save_as": "step_1"
+    },
+    {
+      "description": "Gather compliance data",
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "data_harvester",
+        "context": {
+          "task": "gather_governance_data",
+          "governance_type": "compliance"
+        }
+      },
+      "save_as": "step_2"
+    },
+    {
+      "description": "Identify compliance patterns and violations",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_detect_patterns",
+        "context": {
+          "task": "identify_governance_patterns",
+          "governance_type": "compliance",
+          "data_source": "{step_2}"
+        }
+      },
+      "save_as": "step_3"
+    },
+    {
+      "description": "Execute compliance audit",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_audit_data_quality",
+        "context": {
+          "governance_type": "compliance",
+          "compliance_framework": "{compliance_framework|SOX}",
+          "priority": "critical",
+          "analysis_data": {
+            "step_1": "{step_1}",
+            "step_2": "{step_2}",
+            "step_3": "{step_3}"
+          }
+        }
+      },
+      "save_as": "step_4"
+    }
+  ],
+  "template": "**Compliance Audit Report**\n\n**Audit Request**: {request}\n\n**Compliance Score**: {step_4.compliance_score:.0%}\n\n**Regulatory Frameworks**:\n{#step_4.regulatory_frameworks}\n- {.}\n{/step_4.regulatory_frameworks}\n\n**Compliant Areas**:\n{#step_4.findings.compliant_areas}\n- \u2705 {.}\n{/step_4.findings.compliant_areas}\n\n**Violations Found**:\n{#step_4.findings.violations}\n- \u274c {.}\n{/step_4.findings.violations}\n\n**Remediation Recommendations**:\n{#step_4.findings.recommendations}\n- {.}\n{/step_4.findings.recommendations}\n\n*Compliance monitoring powered by DawsOS Trinity Architecture*",
+  "version": "2.0",
+  "last_updated": "2025-10-08"
+}

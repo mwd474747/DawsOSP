@@ -1,0 +1,59 @@
+{
+  "id": "confidence_display",
+  "name": "Confidence Meter Display",
+  "description": "Shows prediction confidence with historical accuracy context (Trinity 2.0 capability routing)",
+  "category": "ui",
+  "triggers": [
+    "confidence",
+    "accuracy",
+    "trust"
+  ],
+  "version": "2.0",
+  "last_updated": "2025-10-08",
+  "steps": [
+    {
+      "action": "get_execution_log",
+      "params": {
+        "limit": 1,
+        "filter": "predictions"
+      },
+      "save_as": "prediction_data"
+    },
+    {
+      "action": "enriched_lookup",
+      "params": {
+        "data_type": "ui_configurations",
+        "query": "component_styles.confidence_meter"
+      },
+      "save_as": "confidence_styles"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{prediction_data}",
+          "analysis_type": "confidence_breakdown"
+        }
+      },
+      "save_as": "confidence_factors"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "ui_generator",
+        "context": {
+          "component_type": "confidence_meter",
+          "data": {
+            "confidence": 85,
+            "title": "Prediction Confidence",
+            "factors": "{confidence_factors}",
+            "styles": "{confidence_styles}"
+          },
+          "style": "default"
+        }
+      },
+      "save_as": "confidence_component"
+    }
+  ]
+}

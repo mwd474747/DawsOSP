@@ -1,0 +1,51 @@
+{
+  "id": "meta_executor",
+  "name": "Meta Executor",
+  "description": "Universal router that ensures all execution flows through the correct Trinity path",
+  "triggers": [
+    "*"
+  ],
+  "steps": [
+    {
+      "action": "detect_execution_type",
+      "params": {
+        "request": "{request}"
+      },
+      "save_as": "exec_type"
+    },
+    {
+      "action": "select_router",
+      "params": {
+        "type": "{exec_type}",
+        "routes": {
+          "agent_direct": "execution_router",
+          "pattern": "pattern_executor",
+          "ui_action": "ui_router",
+          "api_call": "api_router",
+          "legacy": "legacy_migrator"
+        }
+      },
+      "save_as": "selected_pattern"
+    },
+    {
+      "action": "execute_pattern",
+      "params": {
+        "pattern": "{selected_pattern}",
+        "context": "{context}",
+        "original_request": "{request}"
+      },
+      "save_as": "result"
+    },
+    {
+      "action": "track_execution",
+      "params": {
+        "type": "{exec_type}",
+        "pattern": "{selected_pattern}",
+        "result": "{result}"
+      }
+    }
+  ],
+  "response_template": "{result}",
+  "version": "1.0",
+  "last_updated": "2025-10-02"
+}

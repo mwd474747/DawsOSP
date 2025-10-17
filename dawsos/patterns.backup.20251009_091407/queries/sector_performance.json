@@ -1,0 +1,52 @@
+{
+  "id": "sector_performance",
+  "name": "Sector Performance Analysis",
+  "description": "Analyzes performance and trends across market sectors (Trinity 2.0 capability routing)",
+  "triggers": [
+    "sector",
+    "sectors",
+    "industry",
+    "rotation",
+    "performance"
+  ],
+  "entities": [],
+  "priority": 7,
+  "steps": [
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "data_harvester",
+        "context": {
+          "request": "Get sector ETFs performance: XLK XLF XLE XLV XLI XLY XLP XLRE XLU XLB"
+        }
+      },
+      "save_as": "sector_data"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "pattern_spotter",
+        "context": {
+          "data": "{sector_data}",
+          "analysis_type": "sector_rotation"
+        }
+      },
+      "save_as": "rotation_analysis"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "user_input": "Analyze sector performance {sector_data} and rotation {rotation_analysis}. Identify: 1) Leading/lagging sectors 2) Rotation patterns 3) Market implications 4) Opportunities"
+        }
+      },
+      "save_as": "sector_report"
+    }
+  ],
+  "response_type": "analysis",
+  "response_template": "{sector_report}",
+  "cache_ttl": 600,
+  "version": "2.0",
+  "last_updated": "2025-10-08"
+}

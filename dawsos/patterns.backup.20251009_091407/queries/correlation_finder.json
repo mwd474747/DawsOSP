@@ -1,0 +1,56 @@
+{
+  "id": "correlation_finder",
+  "name": "Find Correlations",
+  "description": "Discovers correlations between assets, indicators, or economic variables (Trinity 2.0 capability routing)",
+  "triggers": [
+    "correlation",
+    "correlate",
+    "relationship",
+    "related",
+    "connected"
+  ],
+  "entities": [
+    "SYMBOL"
+  ],
+  "priority": 7,
+  "steps": [
+    {
+      "description": "",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_economic_data",
+        "context": {
+          "symbol": "{SYMBOL}"
+        }
+      },
+      "save_as": "price_data"
+    },
+    {
+      "description": "",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_calculate_correlations",
+        "context": {
+          "data": "{price_data}",
+          "target": "{SYMBOL}"
+        }
+      },
+      "save_as": "correlations"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "user_input": "Analyze correlations for {SYMBOL}: {correlations}. Explain: 1) Strong correlations found 2) Inverse relationships 3) Trading implications 4) Hedge opportunities"
+        }
+      },
+      "save_as": "correlation_report"
+    }
+  ],
+  "response_type": "analysis",
+  "response_template": "{correlation_report}",
+  "cache_ttl": 1800,
+  "version": "2.0",
+  "last_updated": "2025-10-08"
+}

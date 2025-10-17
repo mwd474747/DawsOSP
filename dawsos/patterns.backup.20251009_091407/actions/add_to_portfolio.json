@@ -1,0 +1,62 @@
+{
+  "id": "add_to_portfolio",
+  "name": "Add to Portfolio",
+  "description": "Adds a position to the tracked portfolio (Trinity 2.0 capability routing)",
+  "triggers": [
+    "buy",
+    "purchase",
+    "add position",
+    "portfolio add"
+  ],
+  "entities": [
+    "SYMBOL",
+    "QUANTITY",
+    "PRICE"
+  ],
+  "priority": 6,
+  "steps": [
+    {
+      "description": "",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_fundamentals",
+        "context": {
+          "symbol": "{SYMBOL}"
+        }
+      },
+      "save_as": "asset_data"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "data_digester",
+        "context": {
+          "data": {
+            "action": "add_position",
+            "symbol": "{SYMBOL}",
+            "quantity": "{QUANTITY}",
+            "price": "{PRICE}",
+            "asset_data": "{asset_data}"
+          },
+          "data_type": "portfolio_transaction"
+        }
+      },
+      "save_as": "position"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "user_input": "Added {SYMBOL} to portfolio: {position}. Current data: {asset_data}"
+        }
+      },
+      "save_as": "confirmation"
+    }
+  ],
+  "response_type": "action",
+  "response_template": "{confirmation}",
+  "cache_ttl": 0,
+  "version": "2.0",
+  "last_updated": "2025-10-08"
+}

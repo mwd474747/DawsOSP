@@ -1,0 +1,58 @@
+{
+  "id": "unusual_options_activity",
+  "name": "Unusual Options Activity Scanner",
+  "description": "Detects smart money activity via unusual volume and premium",
+  "triggers": [
+    "unusual options",
+    "smart money",
+    "option sweeps",
+    "block trades"
+  ],
+  "entities": [],
+  "priority": 85,
+  "steps": [
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_unusual_options",
+        "context": {
+          "min_premium": "{min_premium|10000}",
+          "volume_oi_ratio": "{volume_oi_ratio|3.0}"
+        }
+      },
+      "save_as": "unusual_data"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_detect_unusual_activity",
+        "context": {
+          "min_premium": "{min_premium|10000}",
+          "volume_oi_ratio": "{volume_oi_ratio|3.0}",
+          "unusual_data": "{unusual_data}"
+        }
+      },
+      "save_as": "smart_money_signals"
+    },
+    {
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_add_nodes",
+        "context": {
+          "node_type": "unusual_options_signal",
+          "data": "{smart_money_signals}",
+          "metadata": {
+            "timestamp": "{now}",
+            "signal_type": "smart_money"
+          }
+        }
+      },
+      "save_as": "graph_node"
+    }
+  ],
+  "response_type": "analysis",
+  "response_template": "Unusual Options Activity:\n\nSignals Found: {smart_money_signals.unusual_activities.length}\nTop Tickers: {smart_money_signals.top_tickers}\nSentiment Score: {smart_money_signals.sentiment_score}",
+  "cache_ttl": 300,
+  "version": "2.0.0",
+  "last_updated": "2025-10-07"
+}
