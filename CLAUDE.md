@@ -1,9 +1,9 @@
 # DawsOS Development Memory
 
 **System Version**: 3.0 (Trinity Architecture)  
-**Grade**: A+ (98-100/100)  
-**Last Updated**: October 17, 2025  
-**Status**: ✅ Production Ready
+**Grade**: A- (92/100)  
+**Last Updated**: October 17, 2025 (Post-Pattern Analysis)  
+**Status**: ✅ Operational - Technical debt documented
 
 This file provides persistent context for all AI assistant sessions working on DawsOS.
 
@@ -25,11 +25,33 @@ This file provides persistent context for all AI assistant sessions working on D
 - ✅ **NewsAPI** - Financial news
 - **Critical Fix**: load_env.py no longer overwrites Replit secrets with empty .env values
 
-### Known Issues (Active)
-1. **LSP Warnings**: 29 diagnostics in `dawsos/ui/trinity_dashboard_tabs.py` (type hints)
-2. **Hybrid Routing**: 88 pattern instances use `agent + capability` instead of pure `capability`
-3. **Missing Templates**: 38 patterns lack response templates (users see raw JSON)
-4. **Underutilized Functions**: Options analysis, portfolio risk, backtesting not exposed in patterns
+### Known Issues (Active - Oct 17, 2025)
+
+**High Priority**:
+1. **Template Field Fragility** - 34 patterns reference unvalidated nested fields (e.g., `{step_3.score}`, `{investment_thesis.target_price}`)
+   - **Risk**: If agent response structure changes, fields render as literal `{field}` strings
+   - **Affected**: buffett_checklist, deep_dive, moat_analyzer, fundamental_analysis + 30 others
+   - **Mitigation**: `_smart_extract_value()` fallback handles common keys but doesn't eliminate issue
+
+2. **Capability Misuse** - 8-10 patterns use wrong capabilities for tasks
+   - **Example**: `can_fetch_economic_data` (FRED API) used to load knowledge files  
+   - **Impact**: Unnecessary API calls, slower execution, potential failures
+   - **Affected**: moat_analyzer, fundamental_analysis, buffett_checklist
+
+**Medium Priority**:
+3. **Hybrid Routing** - ~40% of patterns mix `"agent": "claude"` with capability routing
+   - **Impact**: Bypasses Trinity routing, hard-codes Claude dependency
+   - **Inconsistent** with documented "capability-first" architecture
+
+4. **Missing Capabilities** - 2 capabilities registered but not implemented:
+   - `can_fetch_options_flow` - options_flow.json fails at runtime
+   - `can_analyze_options_flow` - options_flow.json fails at runtime
+
+**Low Priority**:
+5. **Variable Resolution Edge Cases** - `{SYMBOL}` may not resolve if user says "Apple" instead of "AAPL"
+6. **Template Field Duplication** - 34 patterns have both `template` and `response_template` (unclear which is used)
+
+**Full Details**: See SYSTEM_STATUS.md "Known Issues & Technical Debt" section and KNOWN_PATTERN_ISSUES.md
 
 ### Past Issues (Resolved - See archive/legacy/)
 - **Double Normalization** (Fixed Oct 10) - FredDataCapability → PatternEngine mismatch
@@ -160,6 +182,32 @@ dawsos/venv/bin/streamlit run dawsos/main.py --server.port=8501
 4. Primary action: `execute_through_registry` (not direct agent calls)
 5. Validate: `python scripts/lint_patterns.py`
 
+**⚠️ Template Authoring Edge Cases**:
+
+Pattern templates use `_smart_extract_value()` fallback that tries common response keys:
+1. `data['response']` - Claude/LLM responses
+2. `data['friendly_response']` - Formatted outputs
+3. `data['result']['synthesis']` - Nested synthesis
+4. `data['result']` - Raw result
+5. `data` - Entire dict (as-is)
+
+**Common Pitfalls**:
+- **Nested Field References**: `{step_3.score}` requires `step_3` returns dict with 'score' key
+  - If field missing → renders as literal `{step_3.score}` string
+  - **Solution**: Use `{step_3}` instead of nested paths unless you control agent response structure
+  
+- **Capability Selection**: 
+  - ❌ WRONG: `can_fetch_economic_data` to load knowledge files (calls FRED API)
+  - ✅ CORRECT: `enriched_lookup` action for knowledge files
+  - See [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) for mapping
+
+- **Variable Resolution**:
+  - `{SYMBOL}` tries: exact ticker → company aliases → company names → first uppercase word
+  - **Edge case**: "analyze meta platforms" may not resolve (no ticker, name mismatch)
+  - **Solution**: Document pattern expects clear symbol in input
+
+**Best Practice**: Use top-level variables (`{step_1}`) instead of nested paths (`{step_1.nested.field}`) unless you're certain of agent response structure
+
 ### Adding a New Agent
 1. **Read** [.claude/agent_orchestrator.md](.claude/agent_orchestrator.md)
 2. **Read** [docs/AgentDevelopmentGuide.md](docs/AgentDevelopmentGuide.md)
@@ -180,10 +228,12 @@ dawsos/venv/bin/streamlit run dawsos/main.py --server.port=8501
 
 1. **Registry Bypass** - Never call `agent.method()` directly, use `runtime.exec_via_registry()`
 2. **Ad-hoc File Loading** - Never use `json.load()` for knowledge files, use `KnowledgeLoader`
-3. **Pattern Direct Agent Calls** - Use `execute_through_registry` action
+3. **Pattern Direct Agent Calls** - Use `execute_through_registry` action (not `"agent": "claude"`)
 4. **Missing Capabilities** - Register agents with `AGENT_CAPABILITIES` metadata
 5. **Graph Unsafe Access** - Use `get_node()` not `nodes[id]`, use `safe_query()` with defaults
 6. **Dataset Without _meta** - All knowledge files need `_meta.version`, `_meta.last_updated`, `_meta.source`
+7. **Template Nested Fields** - Avoid `{step_3.score}` unless certain of response structure (use `{step_3}`)
+8. **Wrong Capability** - Use `enriched_lookup` for knowledge loading (not `can_fetch_economic_data`)
 
 ---
 
@@ -191,9 +241,10 @@ dawsos/venv/bin/streamlit run dawsos/main.py --server.port=8501
 
 ### Active Documentation (Project Root)
 - [README.md](README.md) - Project overview & quickstart
-- [SYSTEM_STATUS.md](SYSTEM_STATUS.md) - Current A+ grade status
+- [SYSTEM_STATUS.md](SYSTEM_STATUS.md) - Current A- grade (92/100) with known issues documented
 - [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) - 103 capabilities reference
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Active issue tracking
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Active issue tracking & pattern edge cases
+- [KNOWN_PATTERN_ISSUES.md](KNOWN_PATTERN_ISSUES.md) - Inventory of patterns needing fixes
 
 ### Specialist Agents (.claude/)
 - [.claude/trinity_architect.md](.claude/trinity_architect.md) - Architecture expert
