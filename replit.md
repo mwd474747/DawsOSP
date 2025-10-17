@@ -43,6 +43,8 @@ The system works fully without API keys using cached data:
 - Removed hardcoded API keys from .env for security
 - Set up workflow to run on port 5000 with webview output
 - Created .streamlit/config.toml for proper proxy handling
+- **Fixed API key integration**: Modified `load_env.py` to preserve Replit secrets (doesn't overwrite existing env vars)
+- **Verified working**: FRED API, FMP API, Anthropic Claude API all operational
 
 ## Known Issues
 - FRED API warnings appear in logs when API key not configured (expected behavior - app uses cached data)

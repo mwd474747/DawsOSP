@@ -36,9 +36,12 @@ def load_env():
                     key, value = line.split('=', 1)
                     # Remove quotes if present
                     value = value.strip().strip("'").strip('"')
-                    os.environ[key] = value
-                    # Don't print the actual key value for security
-                    _safe_print(f"  Set {key}")
+                    # Only set if not already in environment (preserves Replit secrets)
+                    if key not in os.environ or not os.environ[key]:
+                        os.environ[key] = value
+                        _safe_print(f"  Set {key}")
+                    else:
+                        _safe_print(f"  {key} already set (using existing value)")
         _safe_print("Environment loaded!")
         return True
     else:
