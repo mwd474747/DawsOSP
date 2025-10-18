@@ -27,11 +27,15 @@
       }
     }
   ],
+  "response_type": "governance",
+  "response_template": "{step_4}",
   "triggers": [
     "audit mode",
     "track everything",
     "full transparency"
   ],
+  "response_type": "governance",
+  "response_template": "{step_4}",
   "template": "**Audit Mode Enabled**\n\nTracking:\n- All agent decisions with reasoning\n- Data lineage and transformations\n- Pattern execution paths\n- Confidence levels and alternatives considered\n\nAccess audit logs in: /storage/audit_trail/",
   "version": "2.0",
   "last_updated": "2025-10-08"

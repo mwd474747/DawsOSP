@@ -158,6 +158,8 @@
       "save_as": "step_8"
     }
   ],
+  "response_type": "analysis",
+  "response_template": "{step_8}",
   "template": "\ud83c\udff0 **Economic Moat Analysis: {SYMBOL}**\n\n{step_8.response}\n\n---\n\n\ud83d\udcca **Moat Sources Evaluated**\n\n\ud83c\udff7\ufe0f **Brand Moat**: {step_3.score}/10\n{step_3.summary}\n\n\ud83c\udf10 **Network Effects**: {step_4.score}/10\n{step_4.summary}\n\n\ud83d\udcb0 **Cost Advantages**: {step_5.score}/10\n{step_5.summary}\n\n\ud83d\udd12 **Switching Costs**: {step_6.score}/10\n{step_6.summary}\n\n\ud83d\udcc8 **Financial Evidence**\n\u2022 ROIC-WACC Spread: {step_7.spread}%\n\u2022 10-Year Avg ROIC: {step_7.avg_roic}%\n\u2022 Margin Stability: {step_7.margin_stability}\n\n\ud83c\udfaf **Overall Moat Rating**: {step_8.moat_rating}\n\u2022 Width: {step_8.moat_width}\n\u2022 Durability: {step_8.moat_durability}\n\u2022 Trend: {step_8.moat_trend}\n\n\ud83d\udca1 **Investment Implications**\n{step_8.investment_action}\n\n*Moat analysis powered by DawsOS Trinity Architecture*",
   "version": "2.0",
   "last_updated": "2025-10-08",

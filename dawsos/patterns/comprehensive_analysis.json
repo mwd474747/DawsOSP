@@ -9,6 +9,7 @@
     "complete assessment",
     "deep dive"
   ],
+  "response_type": "deep_analysis",
   "response_template": "## Comprehensive Analysis: {SYMBOL}\n\n### Economic Moat\n{moat_analysis.response}\n\n### Correlations\n{correlations.response}\n\n### Patterns Detected\n{patterns.response}\n\n### Valuation\nCurrent valuation metrics suggest {valuation.assessment}\n\n### Summary\n{final_analysis}",
   "version": "2.0",
   "last_updated": "2025-10-08",

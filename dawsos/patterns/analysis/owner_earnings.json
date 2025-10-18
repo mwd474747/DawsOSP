@@ -103,6 +103,8 @@
       "save_as": "step_6"
     }
   ],
+  "response_type": "analysis",
+  "response_template": "{step_6}",
   "template": "💰 **Owner Earnings Analysis: {SYMBOL}**\n\n📊 **Calculation Breakdown**\n```\nNet Income:           ${step_4.net_income}M\n+ D&A:               ${step_4.depreciation}M\n- Maintenance CapEx:  ${step_4.maintenance_capex}M\n+/- Working Capital:  ${step_4.working_capital}M\n- Stock Comp Adj:     ${step_4.stock_comp}M\n────────────────────────────\nOwner Earnings:       ${step_4.owner_earnings}M\n```\n\n📈 **Key Metrics**\n• Owner Earnings Yield: {step_4.owner_yield}%\n• vs Net Income: {step_4.oe_vs_ni}%\n• 3-Year Growth: {step_4.growth_rate}%\n• Market Cap: ${step_2.market_cap}B\n\n✅ **Quality Assessment**\n{step_5.response}\n\n💡 **What This Means for Investors**\n{step_6.response}\n\n---\n\n📚 **Buffett's Owner Earnings Concept**\nOwner earnings represents the true cash that could be extracted from the business by owners each year - a more accurate measure of profitability than reported earnings.\n\n*Owner earnings analysis powered by DawsOS Trinity Architecture*",
   "version": "2.0",
   "last_updated": "2025-10-08",

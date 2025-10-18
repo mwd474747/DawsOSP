@@ -54,5 +54,7 @@
       "save_as": "confidence_component"
     }
   ],
+  "response_type": "ui_component",
+  "response_template": "{confidence_component}",
   "template": "## Prediction Confidence\n\n**Confidence Level**: {prediction_data.confidence}%\n\n**Confidence Breakdown**:\n{confidence_factors.breakdown}\n\n**Historical Accuracy**: {prediction_data.historical_accuracy}%\n\n{confidence_component.display}\n\n*Confidence tracking powered by DawsOS Trinity 2.0*"
 }

@@ -159,6 +159,8 @@
       "save_as": "step_8"
     }
   ],
+  "response_type": "analysis",
+  "response_template": "{step_8}",
   "template": "✅ **Buffett Investment Checklist: {SYMBOL}**\n\n{step_8.response}\n\n---\n\n💡 **Key Buffett Principles Applied**:\n• Circle of competence - only invest in businesses you understand\n• Economic moat - durable competitive advantage is essential\n• Management matters - integrity and capital allocation skills\n• Price is what you pay, value is what you get\n• Margin of safety - always demand a discount to intrinsic value\n\n*Analysis powered by DawsOS Trinity Architecture*",
   "version": "2.0",
   "last_updated": "2025-10-08",
