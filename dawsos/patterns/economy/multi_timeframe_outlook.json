@@ -42,10 +42,7 @@
       "params": {
         "capability": "can_analyze_macro_data",
         "context": {
-          "gdp_data": "{economic_data.series.GDP}",
-          "cpi_data": "{economic_data.series.CPIAUCSL}",
-          "unemployment_data": "{economic_data.series.UNRATE}",
-          "fed_funds_data": "{economic_data.series.FEDFUNDS}"
+          "data": "{economic_data}"
         }
       },
       "save_as": "current_analysis"
@@ -56,10 +53,7 @@
       "params": {
         "capability": "can_analyze_systemic_risk",
         "context": {
-          "gdp_data": "{economic_data.series.GDP}",
-          "cpi_data": "{economic_data.series.CPIAUCSL}",
-          "unemployment_data": "{economic_data.series.UNRATE}",
-          "fed_funds_data": "{economic_data.series.FEDFUNDS}"
+          "data": "{economic_data}"
         }
       },
       "save_as": "systemic_factors"
