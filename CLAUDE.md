@@ -13,7 +13,7 @@ This file provides persistent context for all AI assistant sessions working on D
 
 ### Architecture
 - **Trinity Execution Flow**: Request → UniversalExecutor → PatternEngine → AgentRegistry → KnowledgeGraph
-- **48 Patterns** (JSON-defined workflows in `dawsos/patterns/`)
+- **50 Patterns** (JSON-defined workflows in `dawsos/patterns/`)
 - **15 Agents** with 103 capabilities (registered in `AGENT_CAPABILITIES`)
 - **NetworkX Graph** (96K+ nodes, 10x performance vs legacy)
 - **27 Datasets** via KnowledgeLoader (30-min cache)
