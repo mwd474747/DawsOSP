@@ -478,3 +478,434 @@ def render_grid_layout(items: List[Dict[str, Any]], columns: int = 4) -> None:
                 item['render_func']()
             else:
                 st.write(item)
+
+
+def render_gauge_chart(
+    value: float,
+    title: str,
+    min_value: float = 0,
+    max_value: float = 100,
+    thresholds: Optional[Dict[str, float]] = None,
+    colors: Optional[List[str]] = None,
+    unit: str = "",
+    subtitle: Optional[str] = None
+) -> None:
+    """Render a gauge chart for scores, risk levels, confidence, etc.
+    
+    Args:
+        value: Current value to display
+        title: Chart title
+        min_value: Minimum value on scale
+        max_value: Maximum value on scale
+        thresholds: Dict with threshold names and values (e.g., {'low': 30, 'medium': 70})
+        colors: List of colors for each threshold range
+        unit: Unit label (%, score, etc.)
+        subtitle: Optional subtitle/description
+    """
+    if thresholds is None:
+        thresholds = {'low': 30, 'medium': 70}
+    
+    if colors is None:
+        colors = ['#22c55e', '#eab308', '#ef4444']  # green, yellow, red
+    
+    # Create gauge chart
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number+delta",
+        value=value,
+        title={'text': title, 'font': {'size': 20}},
+        number={'suffix': unit, 'font': {'size': 32}},
+        gauge={
+            'axis': {'range': [min_value, max_value], 'tickwidth': 1, 'tickcolor': "darkgray"},
+            'bar': {'color': "darkblue"},
+            'bgcolor': "white",
+            'borderwidth': 2,
+            'bordercolor': "gray",
+            'steps': [
+                {'range': [min_value, thresholds.get('low', 30)], 'color': colors[0]},
+                {'range': [thresholds.get('low', 30), thresholds.get('medium', 70)], 'color': colors[1]},
+                {'range': [thresholds.get('medium', 70), max_value], 'color': colors[2]}
+            ],
+            'threshold': {
+                'line': {'color': "red", 'width': 4},
+                'thickness': 0.75,
+                'value': value
+            }
+        }
+    ))
+    
+    fig.update_layout(
+        height=300,
+        margin=dict(l=20, r=20, t=60, b=20),
+        font={'family': "Arial"}
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    if subtitle:
+        st.caption(subtitle)
+
+
+def render_time_series_chart(
+    data: Union[pd.DataFrame, Dict[str, Any]],
+    title: str,
+    x_col: str = 'date',
+    y_cols: Union[str, List[str]] = 'value',
+    chart_type: str = 'line',
+    show_markers: bool = False,
+    colors: Optional[List[str]] = None,
+    height: int = 400,
+    show_rangeslider: bool = True
+) -> None:
+    """Render a time series chart for stocks, economic indicators, etc.
+    
+    Args:
+        data: DataFrame or dict with time series data
+        title: Chart title
+        x_col: Column name for x-axis (typically date/time)
+        y_cols: Column name(s) for y-axis (single string or list)
+        chart_type: 'line', 'area', or 'bar'
+        show_markers: Whether to show data point markers
+        colors: List of colors for each series
+        height: Chart height in pixels
+        show_rangeslider: Whether to show range slider below chart
+    """
+    # Convert dict to DataFrame if needed
+    if isinstance(data, dict):
+        data = pd.DataFrame(data)
+    
+    if data.empty:
+        st.warning("⚠️ No time series data available")
+        return
+    
+    # Ensure y_cols is a list
+    if isinstance(y_cols, str):
+        y_cols = [y_cols]
+    
+    # Create figure
+    fig = go.Figure()
+    
+    for i, y_col in enumerate(y_cols):
+        if y_col not in data.columns:
+            continue
+        
+        color = colors[i] if colors and i < len(colors) else None
+        
+        if chart_type == 'line':
+            fig.add_trace(go.Scatter(
+                x=data[x_col],
+                y=data[y_col],
+                mode='lines+markers' if show_markers else 'lines',
+                name=y_col,
+                line=dict(color=color) if color else None
+            ))
+        elif chart_type == 'area':
+            fig.add_trace(go.Scatter(
+                x=data[x_col],
+                y=data[y_col],
+                fill='tozeroy',
+                name=y_col,
+                line=dict(color=color) if color else None
+            ))
+        elif chart_type == 'bar':
+            fig.add_trace(go.Bar(
+                x=data[x_col],
+                y=data[y_col],
+                name=y_col,
+                marker_color=color
+            ))
+    
+    fig.update_layout(
+        title=title,
+        xaxis_title=x_col.capitalize(),
+        yaxis_title="Value",
+        height=height,
+        hovermode='x unified',
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    
+    if show_rangeslider and chart_type == 'line':
+        fig.update_xaxes(rangeslider_visible=True)
+    
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def render_allocation_pie(
+    allocations: Union[Dict[str, float], pd.DataFrame],
+    title: str,
+    value_col: str = 'value',
+    label_col: str = 'name',
+    colors: Optional[List[str]] = None,
+    show_percentages: bool = True,
+    height: int = 400
+) -> None:
+    """Render a pie chart for portfolio allocations, sector breakdowns, etc.
+    
+    Args:
+        allocations: Dict of {label: value} or DataFrame with label and value columns
+        title: Chart title
+        value_col: Column name for values (if DataFrame)
+        label_col: Column name for labels (if DataFrame)
+        colors: List of colors for each slice
+        show_percentages: Whether to show percentages in labels
+        height: Chart height in pixels
+    """
+    # Convert dict to lists
+    if isinstance(allocations, dict):
+        labels = list(allocations.keys())
+        values = list(allocations.values())
+    elif isinstance(allocations, pd.DataFrame):
+        labels = allocations[label_col].tolist()
+        values = allocations[value_col].tolist()
+    else:
+        st.warning("⚠️ Invalid allocation data format")
+        return
+    
+    if not labels or not values:
+        st.warning("⚠️ No allocation data available")
+        return
+    
+    # Create pie chart
+    fig = go.Figure(data=[go.Pie(
+        labels=labels,
+        values=values,
+        marker=dict(colors=colors) if colors else None,
+        textinfo='label+percent' if show_percentages else 'label',
+        hole=0.3  # Donut chart
+    )])
+    
+    fig.update_layout(
+        title=title,
+        height=height,
+        showlegend=True,
+        legend=dict(orientation="v", yanchor="middle", y=0.5, xanchor="left", x=1.05)
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def render_comparison_bars(
+    data: Union[Dict[str, float], pd.DataFrame, List[Dict[str, Any]]],
+    title: str,
+    orientation: str = 'horizontal',
+    colors: Optional[List[str]] = None,
+    show_values: bool = True,
+    height: int = 400,
+    sort_by_value: bool = False
+) -> None:
+    """Render a bar chart for comparing metrics across items
+    
+    Args:
+        data: Dict of {label: value}, DataFrame, or list of dicts
+        title: Chart title
+        orientation: 'horizontal' or 'vertical'
+        colors: List of colors for bars
+        show_values: Whether to show value labels on bars
+        height: Chart height in pixels
+        sort_by_value: Whether to sort bars by value
+    """
+    # Normalize data to DataFrame
+    if isinstance(data, dict):
+        df = pd.DataFrame(list(data.items()), columns=['label', 'value'])
+    elif isinstance(data, list):
+        df = pd.DataFrame(data)
+    else:
+        df = data.copy()
+    
+    if df.empty:
+        st.warning("⚠️ No comparison data available")
+        return
+    
+    # Sort if requested
+    if sort_by_value and 'value' in df.columns:
+        df = df.sort_values('value', ascending=(orientation == 'horizontal'))
+    
+    # Create bar chart
+    if orientation == 'horizontal':
+        fig = go.Figure(go.Bar(
+            x=df['value'],
+            y=df['label'],
+            orientation='h',
+            marker=dict(color=colors) if colors else None,
+            text=df['value'] if show_values else None,
+            textposition='auto'
+        ))
+        fig.update_xaxes(title="Value")
+        fig.update_yaxes(title="")
+    else:
+        fig = go.Figure(go.Bar(
+            x=df['label'],
+            y=df['value'],
+            marker=dict(color=colors) if colors else None,
+            text=df['value'] if show_values else None,
+            textposition='auto'
+        ))
+        fig.update_xaxes(title="")
+        fig.update_yaxes(title="Value")
+    
+    fig.update_layout(
+        title=title,
+        height=height,
+        showlegend=False
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def render_metric_grid(
+    metrics: List[Dict[str, Any]],
+    columns: int = 4,
+    title: Optional[str] = None,
+    show_icons: bool = True
+) -> None:
+    """Render a grid of metrics with consistent styling
+    
+    Args:
+        metrics: List of metric dicts with 'title', 'value', 'change', 'icon', etc.
+        columns: Number of columns in grid
+        title: Optional section title
+        show_icons: Whether to display icons
+    """
+    if title:
+        st.markdown(f"### {title}")
+    
+    cols = st.columns(columns)
+    
+    for i, metric in enumerate(metrics):
+        with cols[i % columns]:
+            render_metric_card(
+                title=metric.get('title', 'Metric'),
+                value=metric.get('value', 'N/A'),
+                icon=metric.get('icon', '📊') if show_icons else "",
+                change=metric.get('change'),
+                change_label=metric.get('change_label', 'Change'),
+                subtitle=metric.get('subtitle'),
+                help_text=metric.get('help_text')
+            )
+
+
+def render_heatmap(
+    data: Union[pd.DataFrame, List[List[float]]],
+    x_labels: Optional[List[str]] = None,
+    y_labels: Optional[List[str]] = None,
+    title: str = "Heatmap",
+    colorscale: str = "RdYlGn",
+    show_values: bool = True,
+    height: int = 500
+) -> None:
+    """Render a heatmap for correlation matrices, risk grids, etc.
+    
+    Args:
+        data: 2D array or DataFrame with heatmap values
+        x_labels: Labels for x-axis
+        y_labels: Labels for y-axis
+        title: Chart title
+        colorscale: Plotly colorscale name
+        show_values: Whether to show values in cells
+        height: Chart height in pixels
+    """
+    # Convert to numpy array if DataFrame
+    if isinstance(data, pd.DataFrame):
+        if x_labels is None:
+            x_labels = data.columns.tolist()
+        if y_labels is None:
+            y_labels = data.index.tolist()
+        z_values = data.values
+    else:
+        z_values = data
+    
+    if z_values is None or len(z_values) == 0:
+        st.warning("⚠️ No heatmap data available")
+        return
+    
+    # Create heatmap
+    fig = go.Figure(data=go.Heatmap(
+        z=z_values,
+        x=x_labels,
+        y=y_labels,
+        colorscale=colorscale,
+        text=z_values if show_values else None,
+        texttemplate='%{text:.2f}' if show_values else None,
+        textfont={"size": 10},
+        hoverongaps=False
+    ))
+    
+    fig.update_layout(
+        title=title,
+        height=height,
+        xaxis=dict(side='bottom'),
+        yaxis=dict(side='left')
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def render_candlestick_chart(
+    data: pd.DataFrame,
+    title: str,
+    date_col: str = 'date',
+    open_col: str = 'open',
+    high_col: str = 'high',
+    low_col: str = 'low',
+    close_col: str = 'close',
+    volume_col: Optional[str] = 'volume',
+    height: int = 500
+) -> None:
+    """Render a candlestick chart for stock price data
+    
+    Args:
+        data: DataFrame with OHLCV data
+        title: Chart title
+        date_col: Column name for dates
+        open_col: Column name for open prices
+        high_col: Column name for high prices
+        low_col: Column name for low prices
+        close_col: Column name for close prices
+        volume_col: Optional column name for volume
+        height: Chart height in pixels
+    """
+    if data.empty:
+        st.warning("⚠️ No price data available")
+        return
+    
+    # Create candlestick chart
+    fig = go.Figure()
+    
+    fig.add_trace(go.Candlestick(
+        x=data[date_col],
+        open=data[open_col],
+        high=data[high_col],
+        low=data[low_col],
+        close=data[close_col],
+        name='Price'
+    ))
+    
+    # Add volume bars if available
+    if volume_col and volume_col in data.columns:
+        fig.add_trace(go.Bar(
+            x=data[date_col],
+            y=data[volume_col],
+            name='Volume',
+            yaxis='y2',
+            marker=dict(color='rgba(100, 100, 100, 0.3)')
+        ))
+        
+        # Create secondary y-axis for volume
+        fig.update_layout(
+            yaxis2=dict(
+                title="Volume",
+                overlaying='y',
+                side='right',
+                showgrid=False
+            )
+        )
+    
+    fig.update_layout(
+        title=title,
+        yaxis_title='Price',
+        xaxis_title='Date',
+        height=height,
+        xaxis_rangeslider_visible=False,
+        hovermode='x unified'
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
