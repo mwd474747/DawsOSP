@@ -16,11 +16,16 @@ DawsOS is a **pattern-driven financial intelligence system** built with Python a
 - **API Integration**: Optional APIs for real-time data (FRED, FMP, NewsAPI, etc.)
 
 ## Key Features
-- 15 specialized AI agents with 103 capabilities
-- 50 pre-defined analysis patterns (Buffett checklist, Dalio cycles, etc.)
+- 15 specialized AI agents with 104 capabilities (NEW: `can_analyze_systemic_risk`)
+- 51 pre-defined analysis patterns (NEW: deep_macro_analysis with systemic risk)
 - Knowledge graph for relationship mapping
 - Economic dashboard and market analysis
 - Pattern-based workflow execution
+- **Systemic Risk Analysis** (October 2025):
+  - Credit cycle tracking (expansion/peak/contraction phases)
+  - Empire cycle analysis (Ray Dalio's Big Debt Cycle framework)
+  - Multi-timeframe predictions (near-term + long-term structural outlook)
+  - Confidence adjustment based on systemic risk factors
 
 ## Configuration
 ### Required Files
@@ -36,12 +41,60 @@ The system works fully without API keys using cached data:
 - `OPENAI_API_KEY` - Optional fallback LLM
 - `TRINITY_STRICT_MODE` - Architecture compliance enforcement (default: false)
 
+### FRED Economic Data Series
+**Base Indicators** (used by all patterns):
+- `GDP` - Gross Domestic Product (quarterly growth)
+- `CPIAUCSL` - Consumer Price Index (inflation)
+- `UNRATE` - Unemployment Rate
+- `DFF` - Federal Funds Effective Rate
+
+**Systemic Risk Indicators** (used by deep_macro_analysis pattern):
+- `GFDEGDQ188S` - Federal Debt as % of GDP (debt sustainability)
+- `SIPOVGINIUSA` - Gini Coefficient (income inequality, 0-1 scale)
+- `HDTGPDUSQ163N` - Household Debt as % of GDP (consumer leverage)
+- `TDSP` - Household Debt Service Payments as % of Disposable Income
+- `DRCCLACBS` - Delinquency Rate on Credit Card Loans (credit stress)
+- `EPUSOVDEBT` - Economic Policy Uncertainty Index: Sovereign Debt/Currency Crises
+
+**Interpretation Guide**:
+- **Credit Cycle Phases**:
+  - Expansion: Debt/GDP < 90%, low delinquency, rising credit growth
+  - Peak: Debt/GDP 90-110%, elevated delinquency (>3%), slowing credit growth
+  - Contraction: Debt/GDP > 110%, high delinquency (>4%), negative credit growth
+  - Trough: Deleveraging complete, low debt levels, credit growth resuming
+
+- **Empire Cycle Stages** (Ray Dalio Framework):
+  - Rising Empire: Debt/GDP < 80%, Gini < 0.40, low policy uncertainty
+  - Peak Empire: Debt/GDP 80-100%, Gini 0.40-0.45, moderate uncertainty
+  - Declining Empire: Debt/GDP > 100%, Gini > 0.45, high uncertainty
+  - Crisis: Debt/GDP > 120%, Gini > 0.50, extreme uncertainty
+
+- **Systemic Risk Score** (0-100 scale):
+  - 0-30: Low risk - Normal economic conditions
+  - 31-50: Moderate risk - Some vulnerabilities present
+  - 51-70: Elevated risk - Multiple warning signals active
+  - 71-100: High risk - Crisis conditions likely within 1-3 years
+
 ## Recent Changes
+### Systemic Risk Analysis Enhancement (October 18, 2025)
+- **NEW Pattern**: `deep_macro_analysis.json` - Comprehensive macroeconomic analysis with systemic risk overlay
+- **NEW Capability**: `can_analyze_systemic_risk` - FinancialAnalyst method for credit/empire cycle analysis
+- **NEW Methods**: 5 systemic risk analysis methods in FinancialAnalyst:
+  - `_analyze_credit_cycle()` - Tracks debt leverage and credit stress indicators
+  - `_analyze_empire_cycle()` - Ray Dalio's framework with debt/GDP, inequality, sovereignty proxies
+  - `_calculate_systemic_risk_score()` - Composite 0-100 risk score
+  - `_adjust_forecast_confidence()` - Reduces confidence when systemic risks are elevated
+  - `analyze_systemic_risk()` - Public capability routing method
+- **NEW FRED Series**: 6 additional indicators (GFDEGDQ188S, SIPOVGINIUSA, HDTGPDUSQ163N, TDSP, DRCCLACBS, EPUSOVDEBT)
+- **Backward Compatible**: Existing patterns continue using base 4 indicators (GDP, CPI, Unemployment, Fed Funds)
+- **Pattern Count**: 51 patterns total (was 50)
+- **Capability Count**: 104 total (was 103)
+
 ### Documentation Consolidation (October 18, 2025)
 - **Created PROJECT_ROADMAP.md**: Comprehensive roadmap consolidating all TODOs, plans, and phases
-- **Validated system metrics**: Confirmed 50 patterns, 27 datasets, 15 agents, 103 capabilities
-- **Updated documentation consistency**: All core docs now reflect accurate facts (A- grade, 50 patterns, 27 datasets)
-- **Created pattern inventory**: Detailed breakdown of all 50 patterns with issues and priorities
+- **Validated system metrics**: Confirmed 51 patterns, 27 datasets, 15 agents, 104 capabilities
+- **Updated documentation consistency**: All core docs now reflect accurate facts (A- grade, 51 patterns, 27 datasets)
+- **Created pattern inventory**: Detailed breakdown of patterns with issues and priorities
 - **Documented remediation plan**: 3-phase plan (Weeks 1-3) to address 6 categories of technical debt
 
 ### Replit Setup (October 17, 2025)
@@ -57,9 +110,9 @@ The system works fully without API keys using cached data:
 **A- (92/100)** - Operational with documented technical debt
 
 **Key Metrics**:
-- ✅ 50 patterns operational (8% clean, 74% need fixes, 14% template only, 4% missing capabilities)
+- ✅ 51 patterns operational (NEW: deep_macro_analysis with systemic risk)
 - ✅ 27 datasets in knowledge graph (96K+ nodes)
-- ✅ 15 agents with 103 capabilities
+- ✅ 15 agents with 104 capabilities (NEW: can_analyze_systemic_risk)
 - ⚠️ 6 categories of technical debt documented (template fragility, capability misuse, hybrid routing, etc.)
 
 **See**: PROJECT_ROADMAP.md for complete remediation plan
@@ -80,7 +133,7 @@ dawsos/
 ├── core/                 # Trinity runtime engine
 ├── agents/              # 15 specialized agents
 ├── capabilities/        # External API integrations
-├── patterns/           # 50 JSON workflow patterns
+├── patterns/           # 51 JSON workflow patterns
 ├── storage/            # Knowledge graph and session data
 ├── ui/                 # Streamlit dashboard components
 ├── tests/              # Test suites
