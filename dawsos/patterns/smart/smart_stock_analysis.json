@@ -1,0 +1,94 @@
+{
+  "id": "smart_stock_analysis",
+  "name": "Smart Stock Analysis",
+  "description": "Intelligent stock analysis that adapts to user intent with dynamic routing based on extracted entities (analysis_type, depth, timeframe)",
+  "category": "smart",
+  "triggers": [
+    "analyze",
+    "analysis",
+    "look at",
+    "check out",
+    "tell me about",
+    "what do you think",
+    "should i buy"
+  ],
+  "entities": [
+    "SYMBOL"
+  ],
+  "priority": 15,
+  "steps": [
+    {
+      "description": "Fetch current stock quote and market data",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_stock_quotes",
+        "context": {
+          "symbol": "{SYMBOL}"
+        }
+      },
+      "save_as": "quote_data"
+    },
+    {
+      "description": "Fetch fundamental data if requested",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_fundamentals",
+        "context": {
+          "symbol": "{SYMBOL}"
+        }
+      },
+      "save_as": "fundamentals",
+      "condition": "{analysis_type} in ['fundamental', 'valuation', 'comprehensive']"
+    },
+    {
+      "description": "Perform technical analysis if requested",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_detect_patterns",
+        "context": {
+          "symbol": "{SYMBOL}",
+          "analysis_type": "technical"
+        }
+      },
+      "save_as": "technical",
+      "condition": "{analysis_type} in ['technical', 'comprehensive']"
+    },
+    {
+      "description": "Assess risk if requested",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_calculate_risk_metrics",
+        "context": {
+          "symbol": "{SYMBOL}"
+        }
+      },
+      "save_as": "risk_metrics",
+      "condition": "{analysis_type} in ['risk', 'comprehensive']"
+    },
+    {
+      "description": "Generate intelligent synthesis based on depth level",
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "user_input": "Provide a {depth} {analysis_type} analysis of {SYMBOL}. Quote: {quote_data}. Fundamentals: {fundamentals}. Technical: {technical}. Risk: {risk_metrics}. Timeframe: {timeframe}. Format with clear sections and actionable insights.",
+          "conversation_context": "{conversation_context}"
+        }
+      },
+      "save_as": "analysis"
+    }
+  ],
+  "response_type": "analysis",
+  "response_template": "{analysis}",
+  "error_handling": "continue",
+  "cache_ttl": 300,
+  "version": "3.0",
+  "last_updated": "2025-10-18",
+  "template": "# Smart Stock Analysis: {SYMBOL}\n\n## Overview\n**Analysis Type**: {analysis_type}\n**Depth**: {depth}\n**Timeframe**: {timeframe}\n\n## Market Data\n**Price**: ${quote_data.price}\n**Change**: {quote_data.change} ({quote_data.change_percent}%)\n**Volume**: {quote_data.volume}\n\n{analysis.response}\n\n---\n*Smart analysis powered by DawsOS Trinity 3.0 with entity extraction*",
+  "metadata": {
+    "uses_entity_extraction": true,
+    "supports_streaming": true,
+    "memory_aware": true,
+    "dynamic_routing": true
+  }
+}
