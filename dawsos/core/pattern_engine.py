@@ -1479,12 +1479,21 @@ class PatternEngine:
             'results': results
         }
 
-        # Use pattern's response template if available (support 'response_template', 'template', and 'response.template')
-        template = pattern.get('response_template')
-        if not template:
-            template = pattern.get('template')  # Support root-level 'template' field
-        if not template and isinstance(pattern.get('response'), dict):
-            template = pattern['response'].get('template')
+        # Use pattern's response template if available
+        # For smart patterns, prioritize 'template' for rich structured output
+        # For traditional patterns, use 'response_template' first
+        pattern_category = pattern.get('category', '')
+        
+        if pattern_category == 'smart' and pattern.get('template'):
+            # Smart patterns: use full template for rich output
+            template = pattern.get('template')
+        else:
+            # Traditional patterns: prefer response_template
+            template = pattern.get('response_template')
+            if not template:
+                template = pattern.get('template')  # Support root-level 'template' field
+            if not template and isinstance(pattern.get('response'), dict):
+                template = pattern['response'].get('template')
 
         if template:
             # DEBUG: Log outputs structure
