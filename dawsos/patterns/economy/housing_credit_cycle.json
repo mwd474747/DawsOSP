@@ -5,12 +5,16 @@
   "category": "economy",
   "priority": 80,
   "triggers": [
+    "housing",
+    "house",
     "housing market",
     "real estate analysis",
     "housing cycle",
     "real estate investment",
     "housing credit",
-    "mortgage market"
+    "mortgage market",
+    "buy a house",
+    "real estate"
   ],
   "steps": [
     {

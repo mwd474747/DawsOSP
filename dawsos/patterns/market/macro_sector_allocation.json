@@ -5,12 +5,16 @@
   "category": "market",
   "priority": 85,
   "triggers": [
+    "sectors",
+    "sector",
     "sector allocation",
     "which sectors to invest",
     "sector strategy",
     "best sectors now",
     "sector recommendations",
-    "where to invest by sector"
+    "where to invest by sector",
+    "sector rotation",
+    "what sectors"
   ],
   "steps": [
     {

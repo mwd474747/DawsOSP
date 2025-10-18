@@ -5,11 +5,15 @@
   "category": "economy",
   "priority": 85,
   "triggers": [
+    "outlook",
+    "economic outlook",
     "multi timeframe outlook",
     "short and long term outlook",
     "economic timeline",
     "economic roadmap",
-    "future economic scenarios"
+    "future economic scenarios",
+    "forecast",
+    "economic forecast"
   ],
   "steps": [
     {
