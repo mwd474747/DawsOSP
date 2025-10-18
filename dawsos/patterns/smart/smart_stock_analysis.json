@@ -84,7 +84,7 @@
   "cache_ttl": 300,
   "version": "3.0",
   "last_updated": "2025-10-18",
-  "template": "# Smart Stock Analysis: {SYMBOL}\n\n## Overview\n**Analysis Type**: {analysis_type}\n**Depth**: {depth}\n**Timeframe**: {timeframe}\n\n## Market Data\n**Price**: ${quote_data.price}\n**Change**: {quote_data.change} ({quote_data.change_percent}%)\n**Volume**: {quote_data.volume}\n\n{analysis.response}\n\n---\n*Smart analysis powered by DawsOS Trinity 3.0 with entity extraction*",
+  "template": "# Smart Stock Analysis: {SYMBOL}\n\n## Overview\n**Analysis Type**: {analysis_type}  \n**Depth**: {depth}  \n\n## Analysis\n\n{analysis}\n\n---\n*Smart analysis powered by DawsOS Trinity 3.0 with entity extraction*",
   "metadata": {
     "uses_entity_extraction": true,
     "supports_streaming": true,
