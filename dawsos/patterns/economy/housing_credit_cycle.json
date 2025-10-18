@@ -1,0 +1,85 @@
+{
+  "id": "housing_credit_cycle_analysis",
+  "name": "Housing Market & Credit Cycle Analysis",
+  "description": "Sophisticated housing market analysis integrated with credit cycle dynamics, debt sustainability, and systemic risk assessment",
+  "category": "economy",
+  "priority": 80,
+  "triggers": [
+    "housing market",
+    "real estate analysis",
+    "housing cycle",
+    "real estate investment",
+    "housing credit",
+    "mortgage market"
+  ],
+  "steps": [
+    {
+      "description": "Fetch housing market indicators",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_economic_data",
+        "context": {
+          "indicators": ["HOUST", "MORTGAGE30US", "CSUSHPISA", "RRVRUSQ156N", "PERMIT"],
+          "start_date": "2000-01-01"
+        }
+      },
+      "save_as": "housing_data"
+    },
+    {
+      "description": "Fetch credit and affordability indicators",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_economic_data",
+        "context": {
+          "indicators": ["DRCCLACBS", "DRSFRMACBS", "HOWNRATEQ156N", "MDSP", "MSPUS"],
+          "start_date": "2000-01-01"
+        }
+      },
+      "save_as": "credit_data"
+    },
+    {
+      "description": "Fetch economic context indicators",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_economic_data",
+        "context": {
+          "indicators": ["GDP", "UNRATE", "FEDFUNDS", "PAYEMS", "PCEPILFE"],
+          "start_date": "2000-01-01"
+        }
+      },
+      "save_as": "economic_context"
+    },
+    {
+      "description": "Analyze systemic risk and debt cycle",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_analyze_systemic_risk",
+        "context": {
+          "gdp_data": "{economic_context.series.GDP}",
+          "cpi_data": "{economic_context.series.PCEPILFE}",
+          "unemployment_data": "{economic_context.series.UNRATE}",
+          "fed_funds_data": "{economic_context.series.FEDFUNDS}"
+        }
+      },
+      "save_as": "systemic_risk"
+    },
+    {
+      "description": "Generate comprehensive housing and credit cycle analysis",
+      "action": "synthesize",
+      "params": {
+        "template": "# Housing Market & Credit Cycle Analysis\n\n## Housing Market Indicators\n**Housing Starts**: {housing_data.series.HOUST.latest}\n**30Y Mortgage Rate**: {housing_data.series.MORTGAGE30US.latest}%\n**Case-Shiller Index**: {housing_data.series.CSUSHPISA.latest}\n**Rental Vacancy**: {housing_data.series.RRVRUSQ156N.latest}%\n**Building Permits**: {housing_data.series.PERMIT.latest}\n\n## Credit & Affordability\n**Credit Card Delinquencies**: {credit_data.series.DRCCLACBS.latest}%\n**Mortgage Delinquencies**: {credit_data.series.DRSFRMACBS.latest}%\n**Homeownership Rate**: {credit_data.series.HOWNRATEQ156N.latest}%\n**Median Sales Price**: ${credit_data.series.MDSP.latest}\n**Median Sales Price (US)**: ${credit_data.series.MSPUS.latest}\n\n## Economic Context\n**GDP Growth**: {economic_context.series.GDP.latest}\n**Unemployment**: {economic_context.series.UNRATE.latest}%\n**Fed Funds**: {economic_context.series.FEDFUNDS.latest}%\n**Employment**: {economic_context.series.PAYEMS.latest}\n**Core PCE**: {economic_context.series.PCEPILFE.latest}\n\n## Systemic Risk Assessment\n{systemic_risk}\n\n---\n\nProvide SOPHISTICATED housing market analysis integrated with credit cycle framework:\n\n## 1. Housing Market Cycle Position\n\n### Where Are We in the Housing Cycle?\n**Identify current phase:**\n- Recovery (bottoming, prices stabilizing)\n- Expansion (rising prices, strong demand)\n- Hyper Supply (overbuilding, inventory accumulation)\n- Recession (falling prices, distressed sales)\n\n**Current Phase Analysis:**\n- Phase: [X]\n- Time in phase: X months/years\n- Typical phase duration: Y months/years\n- % complete: Z%\n- Next phase timing: [estimate]\n\n**Historical Context:**\n- Compare to 2000-2007 boom\n- Compare to 2008-2012 bust\n- Compare to 2012-2020 recovery\n- Current cycle uniqueness\n\n### Supply-Demand Dynamics\n\n**Supply Side:**\n- Housing starts trend: {housing_data.series.HOUST.latest}\n- YoY change: X%\n- Building permits: {housing_data.series.PERMIT.latest}\n- Permit-to-start ratio (leading indicator)\n- Inventory levels: X months supply\n- New vs existing home ratio\n\n**Demand Side:**\n- First-time buyer share: X%\n- Investor share: Y%\n- Demographics (millennials, boomers downsizing)\n- Household formation rate\n- Pent-up demand estimate\n\n**Equilibrium Assessment:**\n- Current: Undersupplied/Balanced/Oversupplied\n- Pressure building in which direction?\n- Time to equilibrium: X quarters\n\n## 2. Affordability Crisis Deep Dive\n\n### Mortgage Rate Impact\n**Historical Perspective:**\n- Current 30Y rate: {housing_data.series.MORTGAGE30US.latest}%\n- vs 10-year avg: X%\n- vs 30-year avg: Y%\n- Percentile ranking: Xth percentile\n\n**Rate Sensitivity Analysis:**\n- Monthly payment on median home at current rate: $X,XXX\n- At 5% rate: $Y,YYY (difference: $ZZZ)\n- At 4% rate: $W,WWW (difference: $VVV)\n- Each 25bps = $XXX/month impact\n\n### Price-to-Income Analysis\n**Affordability metrics:**\n- Median home price: ${credit_data.series.MSPUS.latest}\n- Median household income: $X,XXX\n- Price-to-income ratio: X.Xx\n- Historical average: Y.Yy\n- Deviation: Z% above/below trend\n\n**Affordability index:**\n- Current: XXX (100 = balanced)\n- Interpretation: Most/least affordable in X years\n- Key drivers: prices vs incomes vs rates\n\n### Payment-to-Income Ratio\n**The real affordability picture:**\n- Monthly mortgage payment: $X,XXX\n- Median monthly income: $Y,YYY\n- Payment ratio: ZZ%\n- Historical average: WW%\n- Sustainable threshold: <28%\n- Current vs sustainable: [assessment]\n\n## 3. Credit Cycle Integration (Ray Dalio Framework)\n\n### Where Are We in the Debt Cycle?\n**From systemic risk analysis:**\n{systemic_risk}\n\n**Housing-Specific Credit Analysis:**\n\n**Mortgage Credit Availability:**\n- Lending standards: Tight/Normal/Loose\n- Average FICO for approval: XXX\n- Down payment requirements: X%\n- Debt-to-income limits: X%\n- vs 2005-2007 (subprime era): Much tighter/looser?\n\n**Credit Quality:**\n- Mortgage delinquency rate: {credit_data.series.DRSFRMACBS.latest}%\n- vs 2008 peak: X.X%\n- vs historical average: Y.Y%\n- Trend: Improving/Stable/Deteriorating\n\n**Household Debt Burden:**\n- Mortgage debt to GDP: X%\n- Total household debt: $X.X trillion\n- Debt service ratio: Y.Y%\n- Sustainability assessment\n\n### Credit Cycle Stage Implications\n\n**If Early Cycle (Credit Expansion Beginning):**\n- Housing typically responds positively\n- Lending loosening ahead\n- Price appreciation likely\n- Opportunity to enter market\n\n**If Mid Cycle (Credit Flowing Freely):**\n- Peak affordability concerns\n- Speculative activity increasing\n- Caution warranted on timing\n\n**If Late Cycle (Credit Peaking):**\n- Affordability crisis intensifying\n- Delinquencies starting to rise\n- Credit tightening ahead\n- Defensive positioning\n\n**If Deleveraging (Credit Contracting):**\n- Housing under pressure\n- Distressed opportunities emerging\n- Patient capital advantage\n- Bottom-fishing timing critical\n\n## 4. Regional Market Analysis\n\n**Tier 1 Markets (Major Metros):**\n- Price trends\n- Affordability\n- Supply constraints\n- Migration patterns\n\n**Tier 2 Markets (Secondary Cities):**\n- Relative value\n- Growth dynamics\n- Inbound migration from Tier 1\n\n**Sunbelt vs Snowbelt:**\n- Demographic shifts\n- Climate migration\n- Remote work impact\n\n**Strongest Markets (Top 5):**\n1. [City] - Why strong, outlook\n2-5. [...]\n\n**Weakest Markets (Top 5):**\n1. [City] - Why weak, outlook\n2-5. [...]\n\n## 5. Price Projection Scenarios\n\n### Base Case (X% probability)\n**Assumptions:**\n- Mortgage rates: X.X% - Y.Y%\n- GDP growth: Z.Z%\n- Employment: Stable/Growing/Weakening\n- Credit availability: [...]\n\n**Price Forecast:**\n- Next 6 months: +/-X%\n- Next 12 months: +/-Y%\n- Next 24 months: +/-Z%\n\n### Bull Case (Y% probability)\n**Catalysts:**\n- Fed cuts rates aggressively\n- Supply remains constrained\n- Strong employment\n\n**Price Forecast:**\n- Next 12 months: +X%\n- Next 24 months: +Y%\n\n### Bear Case (Z% probability)\n**Catalysts:**\n- Recession hits\n- Unemployment spikes\n- Forced selling increases\n\n**Price Forecast:**\n- Next 12 months: -X%\n- Next 24 months: -Y%\n\n## 6. Investment Strategy by Horizon\n\n### For Home Buyers\n\n**Buy Now If:**\n- Planning to hold 7+ years\n- Stable income/employment\n- Found right home\n- Can afford payment comfortably\n- Don't need perfect timing\n\n**Wait If:**\n- Short-term horizon (<3 years)\n- Job instability\n- Expecting rates to fall significantly\n- Recession fears high\n- Can continue renting affordably\n\n**Timing Recommendation:**\n- Best entry: [timeframe]\n- Key triggers to watch: [...]\n- Rate thresholds: Under X%\n\n### For Investors\n\n**Residential Rental:**\n- Cap rates: X.X%\n- vs 10Y Treasury: Y.Y% (spread: Z.Z%)\n- Rental demand: Strong/Moderate/Weak\n- Price appreciation potential: [...]\n- Verdict: Attractive/Neutral/Unattractive\n\n**Commercial Real Estate:**\n- Office: [outlook]\n- Retail: [outlook]\n- Industrial: [outlook]\n- Multifamily: [outlook]\n\n**REITs vs Direct Ownership:**\n- REIT advantages now: [...]\n- Direct ownership advantages: [...]\n- Recommendation: [...]\n\n## 7. Sector-Specific Implications\n\n**Homebuilders:**\n- Earnings outlook: [...]\n- Stock recommendations: Buy/Hold/Sell\n- Key stocks: [ticker list]\n- Margin pressures: Land/Labor/Materials\n\n**Building Materials:**\n- Demand trajectory: [...]\n- Stock impact: [...]\n\n**Mortgage REITs:**\n- Rate environment impact: [...]\n- Credit spread dynamics: [...]\n- Dividend safety: [...]\n\n**Banks (Mortgage Lending):**\n- Origination volume: [...]\n- Credit quality: [...]\n- Earnings impact: [...]\n\n**Home Improvement:**\n- Existing home sales → renovation activity\n- Outlook: [...]\n\n## 8. Policy Impact Analysis\n\n### Fed Policy\n**Rate Cut Scenarios:**\n- -25bps → Mortgage rate: -X bps → Home price: +Y%\n- -50bps → Mortgage rate: -W bps → Home price: +Z%\n\n**Effectiveness:**\n- Transmission to mortgage rates: X% passthrough\n- Demand elasticity: Y% price increase per Z% rate decrease\n\n### Fiscal Policy\n**First-Time Buyer Credits:**\n- If reinstated: [...]\n- Demand impact: [...]\n- Price impact: [...]\n\n**Housing Supply Initiatives:**\n- Zoning reform potential: [...]\n- Impact timeline: [...]\n\n## 9. Risk Factors & Warning Signs\n\n**Monitor These Signals:**\n\n1. **Affordability Breakdown**\n   - Trigger: Payment-to-income >35%\n   - Status: Currently X%\n   - Time to trigger: X quarters\n\n2. **Delinquency Spike**\n   - Trigger: >3% mortgage delinquency\n   - Status: Currently {credit_data.series.DRSFRMACBS.latest}%\n   - Trend: [...]\n\n3. **Inventory Surge**\n   - Trigger: >8 months supply\n   - Status: Currently X months\n   - Building: Yes/No\n\n4. **Credit Tightening**\n   - Trigger: Lending standards index spikes\n   - Status: [...]\n\n5. **Unemployment Rising**\n   - Trigger: >5% unemployment\n   - Status: Currently {economic_context.series.UNRATE.latest}%\n\n## 10. Historical Parallels & Lessons\n\n**Compare current situation to:**\n\n**2005-2007 Housing Bubble:**\n- Similarities: [...]\n- Differences: [...]\n- Key lesson: [...]\n- Today's risk level: X/10\n\n**2020-2021 COVID Boom:**\n- Similarities: [...]\n- Differences: [...]\n- What happened next: [...]\n- Applicability to today: [...]\n\n**1989-1991 S&L Crisis:**\n- Lessons: [...]\n\n## 11. Actionable Recommendations\n\n### For Different Stakeholders:\n\n**Home Buyers:**\n- Timing: Buy now/Wait X months/Hold off\n- Offer strategy: Full price/X% under asking\n- Financing: Lock rate now or float?\n- Markets to target: [...]\n\n**Sellers:**\n- Timing: Sell now/Wait\n- Pricing strategy: [...]\n- Time on market expectation: [...]\n\n**Investors:**\n- Allocation: X% real estate\n- Geography: Focus on [...]\n- Strategy: Buy-and-hold/Flip/Rent\n- Entry timing: [...]\n\n**Homebuilder Stocks:**\n- Recommendation: Buy/Hold/Sell\n- Top picks: [tickers]\n- Timeline: [...]\n\n### 12-Month Outlook Timeline\n\n**Q1 [Next Year]:**\n- Expected developments: [...]\n- Price forecast: +/-X%\n- Action items: [...]\n\n**Q2-Q4:**\n- [...]\n\nProvide SPECIFIC forecasts, clear decision frameworks, and actionable guidance integrating housing dynamics with macro credit cycle.",
+        "outputs": {
+          "housing_data": "{housing_data}",
+          "credit_data": "{credit_data}",
+          "economic_context": "{economic_context}",
+          "systemic_risk": "{systemic_risk}"
+        }
+      },
+      "save_as": "housing_analysis"
+    }
+  ],
+  "template": "# 🏠 Housing Market & Credit Cycle Analysis\n\n{housing_analysis}\n\n---\n\n*Comprehensive housing analysis • Credit cycle integration • Ray Dalio debt framework • Powered by DawsOS • Claude synthesis*",
+  "response_type": "housing_analysis",
+  "version": "1.0",
+  "last_updated": "2025-10-18"
+}
