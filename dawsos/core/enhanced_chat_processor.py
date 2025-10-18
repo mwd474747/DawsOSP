@@ -101,11 +101,25 @@ class EnhancedChatProcessor:
                 if extracted and extracted['entities']:
                     context.update(extracted['entities'])
                 
-                # Execute smart pattern
+                # Validate required entities for smart patterns
                 pattern = self.pattern_engine.patterns.get(smart_pattern_id)
                 if pattern:
-                    result = self.pattern_engine.execute_pattern(pattern, context)
-                    pattern_used = smart_pattern_id
+                    # Check if pattern requires specific entities
+                    required_entities = pattern.get('entities', [])
+                    missing_entities = [e for e in required_entities if not context.get(e.lower())]
+                    
+                    if missing_entities:
+                        # Ask user for missing information
+                        result = {
+                            'response': f"I'd like to help with that analysis, but I need more information. Please specify: {', '.join(missing_entities)}",
+                            'missing_entities': missing_entities,
+                            'pattern_attempted': smart_pattern_id
+                        }
+                        pattern_used = 'missing_entities'
+                    else:
+                        # Execute smart pattern
+                        result = self.pattern_engine.execute_pattern(pattern, context)
+                        pattern_used = smart_pattern_id
             except Exception as e:
                 print(f"Smart pattern execution failed: {e}")
                 result = None
