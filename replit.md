@@ -46,7 +46,7 @@ The system works fully without API keys using cached data:
 - `GDP` - Gross Domestic Product (quarterly growth)
 - `CPIAUCSL` - Consumer Price Index (inflation)
 - `UNRATE` - Unemployment Rate
-- `DFF` - Federal Funds Effective Rate
+- `FEDFUNDS` - Federal Funds Effective Rate
 
 **Systemic Risk Indicators** (used by deep_macro_analysis pattern):
 - `GFDEGDQ188S` - Federal Debt as % of GDP (debt sustainability)
@@ -76,6 +76,25 @@ The system works fully without API keys using cached data:
   - 71-100: High risk - Crisis conditions likely within 1-3 years
 
 ## Recent Changes
+### Economic Dashboard UI Reorganization (October 18, 2025)
+- **NEW Executive Summary**: 4 prominent metric cards at top of Economy tab (GDP Growth, Inflation, Unemployment, Fed Funds Rate)
+  - Color-coded deltas (green/red) for quick visual assessment
+  - Helpful tooltips explaining each metric
+  - Latest value + change vs previous period
+- **Improved Information Architecture**:
+  - Compact header with 4-column layout: Refresh button, Time range selector, Data source status, Last updated
+  - Section 1: "📈 Economic Overview" - Always-visible executive summary with key metrics
+  - Section 2: "📊 Historical Trends" - Collapsible chart view (collapsed by default to reduce clutter)
+  - Section 3: "🎯 Regime & Cycle Analysis" - Collapsible macro analysis (expanded by default)
+  - Section 4: "⚠️ Systemic Risk Analysis" - Collapsible Ray Dalio panel (expanded by default)
+  - Section 5: "📅 Economic Events Calendar" - Collapsible calendar (collapsed by default)
+- **UX Enhancements**:
+  - Better scannability - users see key metrics immediately without scrolling
+  - Default expand states optimize for most important info (Overview + Regime + Systemic visible, Trends + Calendar collapsed)
+  - Clear visual hierarchy with section dividers and markdown headers
+  - Removed duplicate headers from wrapped sections for cleaner appearance
+- **Data Consistency Fix**: Changed Fed Funds series key from 'DFF' to 'FEDFUNDS' throughout to match capability output
+
 ### Systemic Risk UI Dashboard Integration (October 18, 2025)
 - **NEW UI Panel**: `render_systemic_risk_panel()` in economic_dashboard.py - Comprehensive visual dashboard for systemic risk monitoring
 - **Visual Components**:
