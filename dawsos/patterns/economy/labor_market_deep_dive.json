@@ -67,10 +67,8 @@
       "params": {
         "capability": "can_analyze_systemic_risk",
         "context": {
-          "gdp_data": "{economic_context.series.GDP}",
-          "cpi_data": "{economic_context.series.CPIAUCSL}",
-          "unemployment_data": "{labor_data.series.UNRATE}",
-          "fed_funds_data": "{economic_context.series.FEDFUNDS}"
+          "economic_context": "{economic_context}",
+          "labor_data": "{labor_data}"
         }
       },
       "save_as": "systemic_assessment"

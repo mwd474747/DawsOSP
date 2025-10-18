@@ -43,10 +43,8 @@
       "params": {
         "capability": "can_analyze_macro_data",
         "context": {
-          "gdp_data": "{sensitivity_data.series.GDP}",
-          "cpi_data": "{policy_data.series.CPIAUCSL}",
-          "unemployment_data": "{sensitivity_data.series.UNRATE}",
-          "fed_funds_data": "{policy_data.series.FEDFUNDS}"
+          "policy_data": "{policy_data}",
+          "sensitivity_data": "{sensitivity_data}"
         }
       },
       "save_as": "macro_state"
@@ -57,10 +55,8 @@
       "params": {
         "capability": "can_analyze_systemic_risk",
         "context": {
-          "gdp_data": "{sensitivity_data.series.GDP}",
-          "cpi_data": "{policy_data.series.CPIAUCSL}",
-          "unemployment_data": "{sensitivity_data.series.UNRATE}",
-          "fed_funds_data": "{policy_data.series.FEDFUNDS}"
+          "policy_data": "{policy_data}",
+          "sensitivity_data": "{sensitivity_data}"
         }
       },
       "save_as": "policy_constraints"

@@ -55,10 +55,7 @@
       "params": {
         "capability": "can_analyze_systemic_risk",
         "context": {
-          "gdp_data": "{economic_context.series.GDP}",
-          "cpi_data": "{economic_context.series.PCEPILFE}",
-          "unemployment_data": "{economic_context.series.UNRATE}",
-          "fed_funds_data": "{economic_context.series.FEDFUNDS}"
+          "data": "{economic_context}"
         }
       },
       "save_as": "systemic_risk"
