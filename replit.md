@@ -76,6 +76,20 @@ The system works fully without API keys using cached data:
   - 71-100: High risk - Crisis conditions likely within 1-3 years
 
 ## Recent Changes
+### Systemic Risk UI Dashboard Integration (October 18, 2025)
+- **NEW UI Panel**: `render_systemic_risk_panel()` in economic_dashboard.py - Comprehensive visual dashboard for systemic risk monitoring
+- **Visual Components**:
+  - Plotly gauge chart for systemic risk score (0-100) with color-coded thresholds (green/yellow/orange/red)
+  - Credit cycle phase indicators (expansion/peak/contraction/trough) with emoji color coding
+  - Empire cycle stage displays (rising/peak/declining/crisis) following Ray Dalio framework
+  - 8 key metrics: Fed Debt/GDP, Household Debt/GDP, Credit Card Delinquency, Debt Service Ratio, Gini Index, Sovereign Stress
+  - Component score breakdown chart (credit cycle + empire cycle + amplifier)
+  - Forecast confidence adjustment display
+  - Interpretation guide with risk range explanations
+- **Auto-Loading**: Panel integrates into Economy tab, auto-fetches on page load with 1-hour cache TTL
+- **Data Flow**: Fetches 6 systemic FRED series → calls can_analyze_systemic_risk → renders visual panel
+- **Placement**: Appears between macro analysis and daily events calendar for consolidated economic view
+
 ### Systemic Risk Analysis Enhancement (October 18, 2025)
 - **NEW Pattern**: `deep_macro_analysis.json` - Comprehensive macroeconomic analysis with systemic risk overlay
 - **NEW Capability**: `can_analyze_systemic_risk` - FinancialAnalyst method for credit/empire cycle analysis
