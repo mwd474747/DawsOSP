@@ -313,8 +313,20 @@ The target field is required."""
         elif intent.intent_type == "risk_analysis":
             entities = self.extract_risk_analysis_entities(query)
         
+        # Ensure enums are serialized as values, not class names
+        entities_dict = {}
+        if entities:
+            raw_dict = entities.model_dump()
+            for key, value in raw_dict.items():
+                # Convert enum representations to plain string values
+                if isinstance(value, str) and '.' in value:
+                    # Handle "AnalysisType.COMPREHENSIVE" -> "comprehensive"
+                    entities_dict[key] = value.split('.')[-1].lower()
+                else:
+                    entities_dict[key] = value
+        
         return {
             "intent": intent.model_dump(),
-            "entities": entities.model_dump() if entities else {},
+            "entities": entities_dict,
             "original_query": query
         }

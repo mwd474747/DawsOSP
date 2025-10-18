@@ -67,12 +67,14 @@
     },
     {
       "description": "Generate intelligent synthesis based on depth level",
-      "action": "execute_through_registry",
+      "action": "synthesize",
       "params": {
-        "agent": "claude",
-        "context": {
-          "user_input": "Provide a {depth} {analysis_type} analysis of {SYMBOL}. Quote: {quote_data}. Fundamentals: {fundamentals}. Technical: {technical}. Risk: {risk_metrics}. Timeframe: {timeframe}. Format with clear sections and actionable insights.",
-          "conversation_context": "{conversation_context}"
+        "template": "# Stock Analysis: {SYMBOL}\n\n## Current Quote\n{quote_data.response}\n\n## Fundamentals\n{fundamentals.response}\n\n## Technical Analysis\n{technical.response}\n\n## Risk Assessment\n{risk_metrics}\n\n## Executive Summary\nProvide a {depth} {analysis_type} executive summary of {SYMBOL} based on the data above. Include:\n1. Key Investment Thesis (2-3 sentences)\n2. Primary Strengths (bullet points)\n3. Main Risks (bullet points)\n4. Actionable Recommendation (BUY/HOLD/SELL with clear reasoning)\n\nFormat professionally with clear sections.",
+        "outputs": {
+          "quote_data": "{quote_data}",
+          "fundamentals": "{fundamentals}",
+          "technical": "{technical}",
+          "risk_metrics": "{risk_metrics}"
         }
       },
       "save_as": "analysis"
