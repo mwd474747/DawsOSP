@@ -5,12 +5,16 @@
   "category": "economy",
   "priority": 80,
   "triggers": [
+    "labor",
+    "jobs",
     "labor market",
     "job market",
     "employment analysis",
     "wage analysis",
     "labor market deep dive",
-    "jobs report analysis"
+    "jobs report analysis",
+    "unemployment",
+    "employment"
   ],
   "steps": [
     {

@@ -5,12 +5,16 @@
   "category": "economy",
   "priority": 80,
   "triggers": [
+    "fed",
+    "fed policy",
     "fed impact",
     "fed policy analysis",
     "what if fed cuts rates",
     "what if fed hikes",
     "fed decision impact",
-    "monetary policy impact"
+    "monetary policy impact",
+    "rate cut",
+    "rate hike"
   ],
   "steps": [
     {

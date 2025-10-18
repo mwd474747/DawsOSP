@@ -5,12 +5,16 @@
   "category": "economy",
   "priority": 85,
   "triggers": [
+    "recession",
     "recession risk",
     "are we heading to recession",
     "recession probability",
     "recession dashboard",
     "will there be a recession",
-    "recession analysis"
+    "recession analysis",
+    "economic downturn",
+    "crash coming",
+    "market crash risk"
   ],
   "steps": [
     {
