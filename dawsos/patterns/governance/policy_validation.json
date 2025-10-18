@@ -8,6 +8,8 @@
     "required": [
       "target_nodes"
     ],
+  "response_type": "governance",
+  "response_template": "{step_4}",
     "optional": [
       "policy_file",
       "auto_remediate"
@@ -47,11 +49,15 @@
       }
     }
   ],
+  "response_type": "governance",
+  "response_template": "{step_4}",
   "triggers": [
     "validate data",
     "check policies",
     "enforce governance"
   ],
+  "response_type": "governance",
+  "response_template": "{step_4}",
   "confidence_factors": {
     "policy_coverage": 0.3,
     "validation_success": 0.4,

@@ -82,6 +82,8 @@
       "save_as": "step_4"
     }
   ],
+  "response_type": "governance",
+  "response_template": "{step_4}",
   "template": "**Data Quality Governance Report**\n\n**Quality Request**: {request}\n\n**Overall Quality Score**: {step_4.findings.overall_score:.0%}\n\n**Issues Found**:\n{#step_4.findings.issues_found}\n- {.}\n{/step_4.findings.issues_found}\n\n**Auto-Fixes Applied**:\n{#step_4.findings.auto_fixes_applied}\n- {.}\n{/step_4.findings.auto_fixes_applied}\n\n**Recommendations**:\n{#step_4.findings.recommendations}\n- {.}\n{/step_4.findings.recommendations}\n\n**Next Actions**:\n{#step_4.next_actions}\n- {.}\n{/step_4.next_actions}\n\n*Quality monitoring powered by DawsOS Trinity Architecture*",
   "version": "2.0",
   "last_updated": "2025-10-08"

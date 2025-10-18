@@ -9,10 +9,14 @@
     "regulatory audit",
     "audit compliance"
   ],
+  "response_type": "governance",
+  "response_template": "{step_4}",
   "input_schema": {
     "required": [
       "request"
     ],
+  "response_type": "governance",
+  "response_template": "{step_4}",
     "optional": [
       "compliance_framework",
       "audit_scope"
@@ -81,6 +85,8 @@
       "save_as": "step_4"
     }
   ],
+  "response_type": "governance",
+  "response_template": "{step_4}",
   "template": "**Compliance Audit Report**\n\n**Audit Request**: {request}\n\n**Compliance Score**: {step_4.compliance_score:.0%}\n\n**Regulatory Frameworks**:\n{#step_4.regulatory_frameworks}\n- {.}\n{/step_4.regulatory_frameworks}\n\n**Compliant Areas**:\n{#step_4.findings.compliant_areas}\n- ✅ {.}\n{/step_4.findings.compliant_areas}\n\n**Violations Found**:\n{#step_4.findings.violations}\n- ❌ {.}\n{/step_4.findings.violations}\n\n**Remediation Recommendations**:\n{#step_4.findings.recommendations}\n- {.}\n{/step_4.findings.recommendations}\n\n*Compliance monitoring powered by DawsOS Trinity Architecture*",
   "version": "2.0",
   "last_updated": "2025-10-08"

@@ -133,6 +133,8 @@
     }
   ],
   "template": "📊 **Fundamental Analysis: {SYMBOL}**\n\n{step_7.response}\n\n---\n\n🏰 **Economic Moat Assessment**\n{step_3.response}\n\n💰 **Key Financial Metrics**\n• Owner Earnings: ${step_4.owner_earnings}M\n• ROIC: {step_4.roic}%\n• ROIC-WACC Spread: {step_4.roic_spread}%\n• FCF Yield: {step_4.fcf_yield}%\n\n📈 **Valuation**\n• Intrinsic Value: ${step_5.intrinsic_value}\n• Current Price: ${step_2.current_price}\n• Margin of Safety: {step_5.margin_of_safety}%\n• Recommendation: **{step_7.recommendation}**\n\n👔 **Management Quality**\n{step_6.response}\n\n🎯 **Investment Decision**\n{step_7.investment_thesis}\n\n⚠️ **Key Risks**\n{step_7.risks}\n\n*Fundamental analysis powered by DawsOS Trinity Architecture using Buffett and Dalio frameworks*",
+  "response_type": "analysis",
+  "response_template": "{step_7}",
   "version": "2.0",
   "last_updated": "2025-10-08",
   "notes": "Converted from legacy action types to Trinity-compliant execute_through_registry pattern",

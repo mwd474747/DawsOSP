@@ -43,6 +43,8 @@
       "save_as": "dcf_analysis"
     }
   ],
+  "response_type": "valuation",
+  "response_template": "{dcf_analysis}",
   "triggers": [
     "dcf valuation",
     "discounted cash flow",

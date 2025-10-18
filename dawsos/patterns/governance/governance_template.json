@@ -8,6 +8,8 @@
       "governance_type",
       "request"
     ],
+  "response_type": "governance",
+  "response_template": "{step_4}",
     "optional": [
       "auto_fix",
       "priority_level",
