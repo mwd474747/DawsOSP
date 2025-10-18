@@ -149,6 +149,68 @@ def render_economic_dashboard(runtime, capabilities: Dict):
                 st.error(f"❌ Analysis error: {error_msg}")
                 st.info("Economic analysis capability may not be available. Check agent registration.")
 
+            # Fetch and display systemic risk analysis
+            st.markdown("---")
+            
+            # Initialize systemic data cache
+            if 'systemic_data' not in st.session_state:
+                st.session_state.systemic_data = None
+                st.session_state.systemic_data_timestamp = None
+            
+            # Auto-fetch systemic data (if not cached or stale)
+            should_fetch_systemic = (
+                st.session_state.systemic_data is None or
+                refresh or
+                (st.session_state.systemic_data_timestamp and
+                 (datetime.now() - st.session_state.systemic_data_timestamp).total_seconds() > 3600)
+            )
+            
+            if should_fetch_systemic:
+                with st.spinner("Fetching systemic risk indicators..."):
+                    try:
+                        # Fetch systemic FRED series
+                        systemic_result = runtime.execute_by_capability(
+                            'can_fetch_economic_data',
+                            {
+                                'capability': 'can_fetch_economic_data',
+                                'indicators': ['GFDEGDQ188S', 'SIPOVGINIUSA', 'HDTGPDUSQ163N', 'TDSP', 'DRCCLACBS', 'EPUSOVDEBT'],
+                                'start_date': start_date.strftime('%Y-%m-%d'),
+                                'end_date': end_date.strftime('%Y-%m-%d')
+                            }
+                        )
+                        
+                        if systemic_result and 'error' not in systemic_result:
+                            # Call systemic risk analysis capability
+                            systemic_analysis = runtime.execute_by_capability(
+                                'can_analyze_systemic_risk',
+                                {
+                                    'capability': 'can_analyze_systemic_risk',
+                                    'gdp_data': gdp_data,
+                                    'cpi_data': cpi_data,
+                                    'unemployment_data': unemployment_data,
+                                    'fed_funds_data': fed_funds_data,
+                                    'systemic_data': systemic_result.get('series', {}),
+                                    'start_date': start_date.strftime('%Y-%m-%d'),
+                                    'end_date': end_date.strftime('%Y-%m-%d')
+                                }
+                            )
+                            
+                            st.session_state.systemic_data = systemic_analysis
+                            st.session_state.systemic_data_timestamp = datetime.now()
+                        else:
+                            st.session_state.systemic_data = None
+                    
+                    except Exception as e:
+                        st.session_state.systemic_data = None
+            
+            # Render systemic risk panel with cached data
+            systemic_data = st.session_state.systemic_data
+            if systemic_data and 'error' not in systemic_data:
+                render_systemic_risk_panel(systemic_data)
+            else:
+                # Show placeholder when systemic data not available
+                render_systemic_risk_panel(None)
+
             # Display daily events section
             st.markdown("---")
             render_daily_events()
@@ -396,6 +458,268 @@ def render_macro_analysis(analysis: Dict):
     metadata = analysis.get('_metadata', {})
     if metadata.get('source') == 'fallback':
         st.warning(f"⚠️ Data is {metadata.get('cache_age_seconds', 0) // 86400} days old - FRED API unavailable")
+
+
+def render_systemic_risk_panel(systemic_analysis: Optional[Dict]):
+    """
+    Render systemic risk analysis panel with visual gauges.
+    
+    Displays credit cycle, empire cycle, and systemic risk metrics with
+    interactive Plotly gauges and phase indicators.
+    
+    Args:
+        systemic_analysis: Dict containing systemic_analysis from deep macro analysis
+    """
+    st.subheader("⚠️ Systemic Risk Analysis")
+    st.markdown("Long-term structural risk assessment using Ray Dalio's Big Debt Cycle framework")
+    
+    if not systemic_analysis or 'systemic_analysis' not in systemic_analysis:
+        st.info("💡 Enable systemic risk analysis by fetching deep macro data")
+        st.caption("Systemic analysis includes credit cycles, empire cycles, and long-term risk scoring")
+        return
+    
+    systemic = systemic_analysis['systemic_analysis']
+    
+    # Top row: Main risk score and confidence adjustment
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        # Systemic Risk Score Gauge (0-100)
+        if 'systemic_risk' in systemic:
+            risk_data = systemic['systemic_risk']
+            risk_score = risk_data.get('systemic_risk_score', 0)
+            risk_level = risk_data.get('risk_level', 'Unknown')
+            
+            # Color coding based on risk level
+            if risk_score < 30:
+                gauge_color = '#00cc88'  # Green
+            elif risk_score < 50:
+                gauge_color = '#ffd700'  # Yellow
+            elif risk_score < 70:
+                gauge_color = '#ff8c00'  # Orange
+            else:
+                gauge_color = '#ff4444'  # Red
+            
+            # Create gauge chart
+            fig_risk = go.Figure(go.Indicator(
+                mode="gauge+number+delta",
+                value=risk_score,
+                domain={'x': [0, 1], 'y': [0, 1]},
+                title={'text': f"Systemic Risk Score<br><span style='font-size:0.8em'>{risk_level}</span>", 'font': {'size': 20}},
+                delta={'reference': 50, 'increasing': {'color': "#ff4444"}, 'decreasing': {'color': "#00cc88"}},
+                gauge={
+                    'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "white"},
+                    'bar': {'color': gauge_color},
+                    'bgcolor': "rgba(0,0,0,0)",
+                    'borderwidth': 2,
+                    'bordercolor': "white",
+                    'steps': [
+                        {'range': [0, 30], 'color': 'rgba(0, 204, 136, 0.3)'},
+                        {'range': [30, 50], 'color': 'rgba(255, 215, 0, 0.3)'},
+                        {'range': [50, 70], 'color': 'rgba(255, 140, 0, 0.3)'},
+                        {'range': [70, 100], 'color': 'rgba(255, 68, 68, 0.3)'}
+                    ],
+                    'threshold': {
+                        'line': {'color': "white", 'width': 4},
+                        'thickness': 0.75,
+                        'value': risk_score
+                    }
+                }
+            ))
+            
+            fig_risk.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font={'color': "white", 'family': "Arial"},
+                height=300,
+                margin=dict(l=20, r=20, t=60, b=20)
+            )
+            
+            st.plotly_chart(fig_risk, use_container_width=True)
+    
+    with col2:
+        # Forecast Confidence Adjustment
+        if 'forecast_confidence' in systemic_analysis:
+            conf = systemic_analysis['forecast_confidence']
+            base_conf = conf.get('base_confidence', 'N/A')
+            adj_conf = conf.get('adjusted_confidence', 'N/A')
+            change_pct = conf.get('change_percent', 0)
+            
+            st.metric(
+                "Forecast Confidence",
+                adj_conf,
+                delta=f"{change_pct:+.1f}%",
+                delta_color="inverse" if change_pct < 0 else "normal",
+                help="Base confidence adjusted by systemic risk factors"
+            )
+            
+            st.caption(f"Base: {base_conf}")
+            
+            # Adjustment explanation
+            explanation = conf.get('explanation', '')
+            if explanation:
+                with st.expander("ℹ️ Why adjusted?"):
+                    st.caption(explanation)
+    
+    st.markdown("---")
+    
+    # Second row: Credit Cycle and Empire Cycle
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 💳 Credit Cycle")
+        
+        if 'credit_cycle' in systemic:
+            cc = systemic['credit_cycle']
+            cycle_phase = cc.get('cycle_phase', 'Unknown')
+            stress_level = cc.get('stress_level', 'Unknown')
+            
+            # Phase indicator with color coding
+            phase_colors = {
+                'expansion': '🟢',
+                'peak': '🟡',
+                'contraction': '🔴',
+                'trough': '🔵'
+            }
+            phase_icon = phase_colors.get(cycle_phase.lower(), '⚪')
+            
+            st.markdown(f"**Phase:** {phase_icon} {cycle_phase.title()}")
+            st.markdown(f"**Stress Level:** {stress_level}")
+            
+            # Debt metrics
+            if 'debt_metrics' in cc:
+                dm = cc['debt_metrics']
+                
+                # Mini gauge for Debt/GDP
+                debt_gdp = dm.get('federal_debt_gdp', 0)
+                
+                st.markdown("**Key Metrics:**")
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    st.metric("Fed Debt/GDP", f"{debt_gdp:.1f}%")
+                    household_debt = dm.get('household_debt_gdp', 0)
+                    st.metric("HH Debt/GDP", f"{household_debt:.1f}%")
+                with col_b:
+                    delinquency = dm.get('credit_delinquency', 0)
+                    st.metric("CC Delinquency", f"{delinquency:.2f}%")
+                    debt_service = dm.get('debt_service_ratio', 0)
+                    st.metric("Debt Service", f"{debt_service:.1f}%")
+            
+            # Risks
+            risks = cc.get('risks', [])
+            if risks:
+                with st.expander("⚠️ Credit Cycle Risks"):
+                    for risk in risks:
+                        st.markdown(f"- {risk}")
+    
+    with col2:
+        st.markdown("### 🏛️ Empire Cycle")
+        
+        if 'empire_cycle' in systemic:
+            ec = systemic['empire_cycle']
+            empire_stage = ec.get('empire_stage', 'Unknown')
+            structural_risk = ec.get('structural_risk', 'Unknown')
+            long_term_outlook = ec.get('long_term_outlook', 'N/A')
+            
+            # Stage indicator with color coding
+            stage_colors = {
+                'rising empire': '🟢',
+                'peak empire': '🟡',
+                'declining empire': '🟠',
+                'crisis': '🔴'
+            }
+            stage_icon = stage_colors.get(empire_stage.lower(), '⚪')
+            
+            st.markdown(f"**Stage:** {stage_icon} {empire_stage.title()}")
+            st.markdown(f"**Structural Risk:** {structural_risk}")
+            st.markdown(f"**Long-term Outlook:** {long_term_outlook}")
+            
+            # Dalio Framework Proxies
+            if 'dalio_proxies' in ec:
+                proxies = ec['dalio_proxies']
+                
+                st.markdown("**Ray Dalio Indicators:**")
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    debt_burden = proxies.get('debt_burden', 0)
+                    st.metric("Debt Burden", f"{debt_burden:.1f}% GDP")
+                    inequality = proxies.get('inequality', 0)
+                    st.metric("Gini Index", f"{inequality:.3f}")
+                with col_b:
+                    currency_stress = proxies.get('currency_stress', 0)
+                    st.metric("Sovereign Stress", f"{currency_stress:.0f}")
+            
+            # Risk factors
+            risk_factors = ec.get('risk_factors', [])
+            if risk_factors:
+                with st.expander("⚠️ Structural Risk Factors"):
+                    for factor in risk_factors:
+                        st.markdown(f"- {factor}")
+    
+    # Bottom row: Component scores and interpretation guide
+    st.markdown("---")
+    
+    col1, col2 = st.columns([3, 2])
+    
+    with col1:
+        st.markdown("### 📊 Risk Score Components")
+        
+        if 'systemic_risk' in systemic and 'components' in systemic['systemic_risk']:
+            components = systemic['systemic_risk']['components']
+            
+            # Create horizontal bar chart for components
+            component_data = {
+                'Credit Cycle': components.get('credit_cycle_score', 0),
+                'Empire Cycle': components.get('empire_cycle_score', 0),
+                'Amplifier': components.get('amplifier', 0)
+            }
+            
+            fig_components = go.Figure()
+            
+            colors = ['#4ecdc4', '#a29bfe', '#ff6b6b']
+            for i, (label, value) in enumerate(component_data.items()):
+                fig_components.add_trace(go.Bar(
+                    y=[label],
+                    x=[value],
+                    orientation='h',
+                    marker_color=colors[i],
+                    text=f"{value:.1f}",
+                    textposition='auto',
+                    name=label,
+                    hovertemplate=f'{label}: {value:.1f}<extra></extra>'
+                ))
+            
+            fig_components.update_layout(
+                showlegend=False,
+                xaxis=dict(title="Score", range=[0, max(50, max(component_data.values()) + 10)]),
+                yaxis=dict(title=""),
+                height=200,
+                margin=dict(l=10, r=10, t=10, b=40),
+                template='plotly_dark',
+                hovermode='y unified'
+            )
+            
+            st.plotly_chart(fig_components, use_container_width=True)
+    
+    with col2:
+        st.markdown("### 📖 Interpretation Guide")
+        
+        st.markdown("""
+        **Risk Score Ranges:**
+        - 🟢 **0-30**: Low risk
+        - 🟡 **31-50**: Moderate risk
+        - 🟠 **51-70**: Elevated risk
+        - 🔴 **71-100**: High risk (crisis likely)
+        
+        **Credit Cycle:**
+        - Expansion: Healthy leverage
+        - Peak: Elevated debt levels
+        - Contraction: Deleveraging
+        - Trough: Reset complete
+        """)
+    
+    st.markdown("---")
+    st.caption("📚 Framework: Ray Dalio's Big Debt Cycle Theory | Data: Federal Reserve Economic Data (FRED)")
 
 
 # analyze_macro_data_directly() removed - was a workaround for broken capability routing
