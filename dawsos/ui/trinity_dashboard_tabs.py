@@ -93,10 +93,18 @@ class TrinityDashboardTabs:
                                 color = "green" if confidence > 0.8 else "orange" if confidence > 0.6 else "red"
                                 st.markdown(f"**Confidence:** :{color}[{confidence:.1%}]")
 
-                            if 'formatted_response' in message["content"]:
-                                st.write(message["content"]['formatted_response'])
-                            elif 'response' in message["content"]:
-                                st.write(message["content"]['response'])
+                            # Use universal pattern renderer for rich visualizations
+                            try:
+                                from ui import pattern_renderers as pr
+                                pr.render_pattern_result(message["content"])
+                            except Exception as e:
+                                # Fallback to text display
+                                if 'formatted_response' in message["content"]:
+                                    st.write(message["content"]['formatted_response'])
+                                elif 'friendly_response' in message["content"]:
+                                    st.write(message["content"]['friendly_response'])
+                                elif 'response' in message["content"]:
+                                    st.write(message["content"]['response'])
                         else:
                             st.write(message["content"])
 
@@ -117,7 +125,15 @@ class TrinityDashboardTabs:
                         if isinstance(response, dict) and 'pattern' in response:
                             st.caption(f"🔮 Pattern: {response.get('pattern', 'Unknown')}")
 
-                        st.write(response.get('formatted_response', response.get('response', str(response))))
+                        # Use universal pattern renderer for rich visualizations
+                        try:
+                            from ui import pattern_renderers as pr
+                            pr.render_pattern_result(response)
+                        except Exception as e:
+                            # Fallback to text display if rendering fails
+                            st.write(response.get('formatted_response', 
+                                                response.get('friendly_response',
+                                                           response.get('response', str(response)))))
 
                 # Add assistant response
                 st.session_state.chat_history.append({"role": "assistant", "content": response})
