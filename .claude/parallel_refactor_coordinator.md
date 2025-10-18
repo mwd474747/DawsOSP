@@ -13,11 +13,11 @@ Coordinate 4 specialized refactoring agents working in parallel on Trinity 2.0 c
 ## The 4 Work Streams
 
 ### Stream 1: Pattern Migration (Agent: pattern_migration_specialist.md)
-- **Task**: Migrate 48 patterns from legacy (agent+request) to modern (capability)
+- **Task**: Migrate 50 patterns from legacy (agent+request) to modern (capability)
 - **Files**: `dawsos/patterns/*/*.json`
 - **Dependencies**: None (can start immediately)
 - **Estimated**: 10-12 hours
-- **Output**: All 48 patterns using capability routing
+- **Output**: All 50 patterns using capability routing
 
 ### Stream 2: Agent Refactoring (Agent: agent_capability_extractor.md)
 - **Task**: Remove text-parsing routing methods, expose granular capabilities
@@ -57,7 +57,7 @@ Coordinate 4 specialized refactoring agents working in parallel on Trinity 2.0 c
 - Identify any cross-stream issues
 
 **Checkpoint**: End of Day 3
-- Stream 1: 50% patterns migrated (24/48)
+- Stream 1: 50% patterns migrated (25/50)
 - Stream 2: 50% agents refactored (7/15)
 - Integration check: Run smoke tests
 
