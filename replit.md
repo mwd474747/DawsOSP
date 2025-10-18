@@ -37,6 +37,13 @@ The system works fully without API keys using cached data:
 - `TRINITY_STRICT_MODE` - Architecture compliance enforcement (default: false)
 
 ## Recent Changes
+### Documentation Consolidation (October 18, 2025)
+- **Created PROJECT_ROADMAP.md**: Comprehensive roadmap consolidating all TODOs, plans, and phases
+- **Validated system metrics**: Confirmed 50 patterns, 27 datasets, 15 agents, 103 capabilities
+- **Updated documentation consistency**: All core docs now reflect accurate facts (A- grade, 50 patterns, 27 datasets)
+- **Created pattern inventory**: Detailed breakdown of all 50 patterns with issues and priorities
+- **Documented remediation plan**: 3-phase plan (Weeks 1-3) to address 6 categories of technical debt
+
 ### Replit Setup (October 17, 2025)
 - Installed Python 3.11 and dependencies
 - Configured Streamlit for Replit environment (port 5000, headless mode, CORS disabled)
@@ -46,10 +53,26 @@ The system works fully without API keys using cached data:
 - **Fixed API key integration**: Modified `load_env.py` to preserve Replit secrets (doesn't overwrite existing env vars)
 - **Verified working**: FRED API, FMP API, Anthropic Claude API all operational
 
-## Known Issues
+## System Grade
+**A- (92/100)** - Operational with documented technical debt
+
+**Key Metrics**:
+- ✅ 50 patterns operational (8% clean, 74% need fixes, 14% template only, 4% missing capabilities)
+- ✅ 27 datasets in knowledge graph (96K+ nodes)
+- ✅ 15 agents with 103 capabilities
+- ⚠️ 6 categories of technical debt documented (template fragility, capability misuse, hybrid routing, etc.)
+
+**See**: PROJECT_ROADMAP.md for complete remediation plan
+
+## Known Issues (Non-Critical)
 - FRED API warnings appear in logs when API key not configured (expected behavior - app uses cached data)
 - seed_knowledge_graph module import error on first run (benign - graph initializes from JSON files)
 - "Error in regime detection" on startup (doesn't affect functionality - uses fallback data)
+
+For technical debt and pattern-specific issues, see:
+- **PROJECT_ROADMAP.md** - Complete roadmap of TODOs, plans, and phases
+- **KNOWN_PATTERN_ISSUES.md** - Detailed pattern-by-pattern analysis
+- **SYSTEM_STATUS.md** - Known issues and technical debt
 
 ## Project Structure
 ```
@@ -67,5 +90,14 @@ dawsos/
 ## Developer Notes
 - The app is designed to run without API keys using cached/fallback data
 - All execution flows through the Trinity architecture (no direct agent calls)
-- Pattern compliance is validated at 100%
+- Pattern compliance: ~85% capability routing (~40% patterns have hybrid agent calls)
 - Streamlit config MUST allow all hosts for Replit proxy to work
+
+## Documentation
+- **PROJECT_ROADMAP.md** - Master roadmap: completed phases, active technical debt, remediation plan
+- **SYSTEM_STATUS.md** - Current system status, metrics, known issues
+- **KNOWN_PATTERN_ISSUES.md** - Pattern-by-pattern analysis, remediation priorities
+- **PATTERN_AUTHORING_GUIDE.md** - Best practices for creating/editing patterns
+- **CAPABILITY_ROUTING_GUIDE.md** - Capability selection matrix, common mistakes
+- **TROUBLESHOOTING.md** - Pattern-specific troubleshooting, error handling
+- **CLAUDE.md** - Trinity architecture primer, development guidelines
