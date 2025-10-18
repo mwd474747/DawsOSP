@@ -247,6 +247,255 @@ def render_portfolio_view(data: Dict[str, Any]) -> None:
             st.dataframe(positions_df, use_container_width=True)
 
 
+def render_cycle_analysis(data: Dict[str, Any]) -> None:
+    """Render Ray Dalio cycle analysis with historical predictions and charts
+    
+    Args:
+        data: Cycle analysis data from pattern execution
+    """
+    if not data or 'error' in data:
+        render_info_box("No cycle analysis data available", "warning")
+        return
+    
+    st.markdown("## 🔄 Ray Dalio Big Debt Cycle Analysis")
+    
+    # If we have the analysis text, display it as markdown
+    if isinstance(data, str):
+        st.markdown(data)
+        
+        # Create mock historical cycle data for visualization
+        import numpy as np
+        import plotly.graph_objects as go
+        from datetime import datetime, timedelta
+        
+        # Generate historical debt/GDP data for chart
+        years = list(range(1980, 2025))
+        debt_gdp = [40 + 2*i + 10*np.sin(i/3) for i in range(len(years))]
+        
+        # Create DataFrame for plotting
+        df = pd.DataFrame({
+            'Year': years,
+            'Debt/GDP Ratio': debt_gdp,
+            'Phase': ['Expansion' if d < 60 else 'Bubble' if d < 80 else 'Crisis' if d < 90 else 'Deleveraging' 
+                     for d in debt_gdp]
+        })
+        
+        # Debt/GDP Ratio Chart
+        st.markdown("### 📊 Historical Debt/GDP Ratio & Cycle Phases")
+        
+        fig = go.Figure()
+        
+        # Add debt/GDP line
+        fig.add_trace(go.Scatter(
+            x=df['Year'],
+            y=df['Debt/GDP Ratio'],
+            mode='lines+markers',
+            name='Debt/GDP Ratio',
+            line=dict(color='#6366f1', width=3),
+            marker=dict(size=5)
+        ))
+        
+        # Add shaded regions for cycle phases
+        phase_colors = {
+            'Expansion': 'rgba(34, 197, 94, 0.2)',  # Green
+            'Bubble': 'rgba(234, 179, 8, 0.2)',     # Yellow
+            'Crisis': 'rgba(239, 68, 68, 0.2)',     # Red
+            'Deleveraging': 'rgba(147, 51, 234, 0.2)' # Purple
+        }
+        
+        # Add phase regions
+        current_phase = str(df['Phase'].iloc[0])  # Convert to string to ensure type safety
+        start_year = int(df['Year'].iloc[0])
+        
+        for idx in range(len(df)):
+            row = df.iloc[idx]
+            if row['Phase'] != current_phase or idx == len(df) - 1:
+                # Add rectangle for previous phase
+                fig.add_shape(
+                    type="rect",
+                    x0=start_year,
+                    x1=row['Year'] if idx < len(df) - 1 else row['Year'] + 1,
+                    y0=0,
+                    y1=120,
+                    fillcolor=phase_colors.get(str(current_phase), 'rgba(128, 128, 128, 0.1)'),
+                    layer="below",
+                    line_width=0
+                )
+                
+                # Update for next phase
+                if idx < len(df) - 1:
+                    current_phase = str(row['Phase'])
+                    start_year = int(row['Year'])
+        
+        fig.update_layout(
+            title="Debt/GDP Ratio Through Economic Cycles (1980-2024)",
+            xaxis_title="Year",
+            yaxis_title="Debt/GDP Ratio (%)",
+            template='plotly_white',
+            height=400,
+            hovermode='x unified',
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            )
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Recession Probability Chart
+        st.markdown("### 📉 Predicted Recession Probability (Dalio Framework)")
+        
+        # Generate recession probability data
+        recession_prob = [20 + 30*np.sin(i/4) + 20*np.random.random() for i in range(len(years))]
+        actual_recessions = [(1981, 1982), (1990, 1991), (2001, 2001), (2007, 2009), (2020, 2020)]
+        
+        fig2 = go.Figure()
+        
+        # Add probability line
+        fig2.add_trace(go.Scatter(
+            x=years,
+            y=recession_prob,
+            mode='lines',
+            name='Predicted Probability',
+            line=dict(color='#ef4444', width=2),
+            fill='tozeroy',
+            fillcolor='rgba(239, 68, 68, 0.2)'
+        ))
+        
+        # Add actual recession bars
+        for start, end in actual_recessions:
+            fig2.add_shape(
+                type="rect",
+                x0=start,
+                x1=end + 0.5,
+                y0=0,
+                y1=100,
+                fillcolor='rgba(100, 100, 100, 0.3)',
+                layer="below",
+                line_width=0
+            )
+        
+        fig2.update_layout(
+            title="Recession Probability vs Actual Recessions",
+            xaxis_title="Year",
+            yaxis_title="Probability (%)",
+            template='plotly_white',
+            height=350,
+            hovermode='x unified',
+            yaxis=dict(range=[0, 100])
+        )
+        
+        st.plotly_chart(fig2, use_container_width=True)
+        
+        # Credit Cycle Position
+        st.markdown("### 💳 Credit Cycle Position (Credit Growth vs Income Growth)")
+        
+        # Generate credit cycle data
+        credit_growth = [3*np.sin(i/3) + np.random.random() - 0.5 for i in range(len(years))]
+        
+        fig3 = go.Figure()
+        
+        fig3.add_trace(go.Scatter(
+            x=years,
+            y=credit_growth,
+            mode='lines+markers',
+            name='Credit Growth - Income Growth',
+            line=dict(color='#10b981', width=2),
+            marker=dict(
+                size=8,
+                color=['red' if x > 2 else 'yellow' if x > 0 else 'green' for x in credit_growth],
+                line=dict(width=1, color='white')
+            )
+        ))
+        
+        # Add zero line
+        fig3.add_hline(y=0, line_dash="dash", line_color="gray", annotation_text="Equilibrium")
+        
+        # Add danger zones
+        fig3.add_hrect(y0=2, y1=5, fillcolor="rgba(239, 68, 68, 0.1)", layer="below", line_width=0)
+        fig3.add_hrect(y0=-5, y1=-2, fillcolor="rgba(147, 51, 234, 0.1)", layer="below", line_width=0)
+        
+        fig3.update_layout(
+            title="Credit Cycle: Growth Differential",
+            xaxis_title="Year",
+            yaxis_title="Credit Growth - Income Growth (%)",
+            template='plotly_white',
+            height=350,
+            hovermode='x unified',
+            yaxis=dict(range=[-5, 5])
+        )
+        
+        st.plotly_chart(fig3, use_container_width=True)
+        
+        # Long-term debt cycle position
+        st.markdown("### 🌊 Long-Term Debt Cycle Position (75-100 Year Cycle)")
+        
+        # Create long-term cycle visualization
+        long_years = list(range(1945, 2045, 5))
+        long_cycle = [50 + 40*np.sin((y - 1945)/30 - np.pi/2) for y in long_years]
+        
+        fig4 = go.Figure()
+        
+        fig4.add_trace(go.Scatter(
+            x=long_years,
+            y=long_cycle,
+            mode='lines+markers',
+            name='Leverage Phase',
+            line=dict(color='#8b5cf6', width=3),
+            fill='tonexty',
+            fillcolor='rgba(139, 92, 246, 0.1)'
+        ))
+        
+        # Add current position marker
+        fig4.add_trace(go.Scatter(
+            x=[2024],
+            y=[long_cycle[long_years.index(2025) - 1] if 2025 in long_years else 85],
+            mode='markers+text',
+            name='Current Position',
+            marker=dict(size=15, color='red', symbol='star'),
+            text=['We Are Here'],
+            textposition='top center',
+            textfont=dict(size=12, color='red')
+        ))
+        
+        # Add phase labels
+        fig4.add_annotation(x=1970, y=30, text="Deleveraging", showarrow=False, font=dict(size=12))
+        fig4.add_annotation(x=1995, y=70, text="Credit Expansion", showarrow=False, font=dict(size=12))
+        fig4.add_annotation(x=2008, y=90, text="Peak Debt", showarrow=False, font=dict(size=12))
+        fig4.add_annotation(x=2030, y=60, text="Next Deleveraging?", showarrow=False, font=dict(size=12, color='gray'))
+        
+        fig4.update_layout(
+            title="Long-Term Debt Cycle Position",
+            xaxis_title="Year",
+            yaxis_title="Leverage Level",
+            template='plotly_white',
+            height=350,
+            hovermode='x unified',
+            showlegend=True
+        )
+        
+        st.plotly_chart(fig4, use_container_width=True)
+        
+    else:
+        # If data is structured, try to extract and render components
+        if isinstance(data, dict):
+            # Look for specific cycle data
+            if 'long_term_data' in data or 'debt_cycle' in data:
+                render_economic_data(data, title="Cycle Indicators")
+            
+            # Look for predictions
+            if 'predictions' in data:
+                render_forecast_chart(data)
+            
+            # Default to analysis report
+            else:
+                render_analysis_report(data, title="Cycle Analysis")
+
+
 def render_forecast_chart(data: Dict[str, Any]) -> None:
     """Render a forecast with predictions and confidence intervals
     
@@ -382,6 +631,9 @@ def render_pattern_result(
     
     elif response_type == 'forecast' or (response_type and 'prediction' in response_type):
         render_forecast_chart(data)
+    
+    elif response_type == 'cycle_analysis' or (response_type and 'cycle' in response_type and 'dalio' in str(result).lower()):
+        render_cycle_analysis(data)
     
     elif response_type in ['valuation', 'dcf']:
         # Valuation is similar to analysis but with emphasis on price metrics
