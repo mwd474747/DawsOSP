@@ -76,6 +76,31 @@ The system works fully without API keys using cached data:
   - 71-100: High risk - Crisis conditions likely within 1-3 years
 
 ## Recent Changes
+### Universal Pattern Rendering System (October 18, 2025)
+- **NEW Feature**: Rich, interactive visualizations for all 51 patterns replacing plain markdown output
+- **Visualization Components** (7 new components in unified_components.py):
+  - `render_gauge_chart`: Gauges for scores, risk levels, confidence meters (0-100 scales with color thresholds)
+  - `render_time_series_chart`: Time series with line/area/bar modes, range sliders for economic data
+  - `render_allocation_pie`: Donut charts for portfolio allocations and sector breakdowns
+  - `render_comparison_bars`: Horizontal/vertical bars for metric comparisons
+  - `render_metric_grid`: Grid layouts for key performance indicators with color-coded deltas
+  - `render_heatmap`: Correlation matrices and risk grids with customizable color scales
+  - `render_candlestick_chart`: OHLCV price charts with volume bars
+- **Pattern-Specific Renderers** (10 specialized renderers in pattern_renderers.py):
+  - `render_stock_quote`: Quote cards with price, volume, market cap, day ranges
+  - `render_economic_data`: Economic indicator charts with multi-series time series
+  - `render_risk_dashboard`: Risk assessments with gauge charts and factor breakdowns
+  - `render_portfolio_view`: Portfolio analytics with allocation pies and position tables
+  - `render_forecast_chart`: Predictions with confidence intervals and forecast timelines
+  - `render_analysis_report`: General analysis with metrics grids and recommendations
+  - Plus handlers for: valuation, briefing, governance, UI components
+- **Universal Dispatcher**: `render_pattern_result()` auto-routes based on response_type
+- **Smart Fallback**: Auto-detects data structures when custom renderer unavailable
+- **Pattern Standardization**: Added `response_type` field to all 51 patterns for consistent routing
+- **Integration**: Pattern Browser now uses universal renderer with graceful fallback to markdown
+- **Data Architecture**: Clean separation - patterns return structured data, renderers create visualizations
+
+## Recent Changes (Historical)
 ### Economic Dashboard UI Reorganization (October 18, 2025)
 - **NEW Executive Summary**: 4 prominent metric cards at top of Economy tab (GDP Growth, Inflation, Unemployment, Fed Funds Rate)
   - Color-coded deltas (green/red) for quick visual assessment
