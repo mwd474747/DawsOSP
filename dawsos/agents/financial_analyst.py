@@ -1133,10 +1133,76 @@ class FinancialAnalyst(BaseAgent):
         # Detect economic cycle phase
         cycle_phase = self._detect_cycle_phase(gdp_qoq, unemployment_data, fed_funds_data)
 
-        # Determine economic regime
-        regime = self._determine_regime_from_data(gdp_qoq, cpi_yoy, cycle_phase)
+        # Check if systemic analysis is requested
+        include_systemic = context.get('include_systemic_analysis', False)
+        credit_cycle = None
+        empire_cycle = None
+        systemic_risk = None
 
-        # Identify macro risks
+        # OPTIONAL: Perform systemic risk analysis if requested
+        if include_systemic:
+            # Fetch systemic indicators (debt/GDP, inequality, etc.)
+            systemic_data = context.get('systemic_data', {})
+            
+            # If systemic data not pre-fetched, fetch it
+            if not systemic_data and hasattr(self, 'runtime') and self.runtime:
+                try:
+                    systemic_fred_data = self.runtime.execute_by_capability(
+                        'can_fetch_economic_data',
+                        context={
+                            'capability': 'can_fetch_economic_data',
+                            'series': ['GFDEGDQ188S', 'SIPOVGINIUSA', 'HDTGPDUSQ163N', 'TDSP', 'DRCCLACBS', 'EPUSOVDEBT'],
+                            'start_date': context.get('start_date'),
+                            'end_date': context.get('end_date')
+                        }
+                    )
+                    if 'series' in systemic_fred_data:
+                        systemic_data = systemic_fred_data['series']
+                except Exception as e:
+                    self.logger.warning(f"Failed to fetch systemic indicators: {e}")
+
+            # Extract systemic values
+            debt_gdp = systemic_data.get('GFDEGDQ188S', {}).get('latest_value')
+            gini = systemic_data.get('SIPOVGINIUSA', {}).get('latest_value')
+            household_debt_gdp = systemic_data.get('HDTGPDUSQ163N', {}).get('latest_value')
+            debt_service = systemic_data.get('TDSP', {}).get('latest_value')
+            credit_delinquency = systemic_data.get('DRCCLACBS', {}).get('latest_value')
+            sovereign_uncertainty = systemic_data.get('EPUSOVDEBT', {}).get('latest_value')
+
+            # Perform credit cycle analysis
+            credit_cycle = self._analyze_credit_cycle(
+                debt_gdp=debt_gdp,
+                household_debt_gdp=household_debt_gdp,
+                credit_delinquency=credit_delinquency,
+                debt_service=debt_service
+            )
+
+            # Perform empire cycle analysis
+            empire_cycle = self._analyze_empire_cycle(
+                debt_gdp=debt_gdp,
+                inequality_gini=gini,
+                sovereign_debt_uncertainty=sovereign_uncertainty,
+                credit_cycle_phase=credit_cycle.get('cycle_phase', 'unknown')
+            )
+
+            # Calculate systemic risk score
+            systemic_risk = self._calculate_systemic_risk_score(
+                credit_cycle=credit_cycle,
+                empire_cycle=empire_cycle
+            )
+
+        # Determine economic regime (with optional systemic overlay)
+        regime = self._determine_regime_from_data(
+            gdp_qoq,
+            cpi_yoy,
+            cycle_phase,
+            debt_gdp=context.get('systemic_data', {}).get('GFDEGDQ188S', {}).get('latest_value') if include_systemic else None,
+            credit_cycle=credit_cycle,
+            empire_cycle=empire_cycle,
+            systemic_risk=systemic_risk
+        )
+
+        # Identify macro risks (base)
         macro_risks = self._identify_macro_risks_from_data(gdp_qoq, cpi_yoy, unemployment_data, {
             'series': {
                 'GDP': gdp_data,
@@ -1146,8 +1212,13 @@ class FinancialAnalyst(BaseAgent):
             }
         })
 
-        # Identify sector opportunities
-        opportunities = self._identify_opportunities_from_regime(regime, gdp_qoq, cpi_yoy)
+        # Add systemic risks if available
+        if include_systemic and systemic_risk:
+            macro_risks.extend(systemic_risk.get('contributing_factors', []))
+
+        # Identify sector opportunities (use base regime if dict)
+        base_regime = regime if isinstance(regime, str) else regime.get('regime')
+        opportunities = self._identify_opportunities_from_regime(base_regime, gdp_qoq, cpi_yoy)
 
         # Build analysis result
         analysis = {
@@ -1155,7 +1226,7 @@ class FinancialAnalyst(BaseAgent):
             'gdp_qoq': round(gdp_qoq, 2) if gdp_qoq is not None else None,
             'cpi_yoy': round(cpi_yoy, 2) if cpi_yoy is not None else None,
             'cycle_phase': cycle_phase,
-            'regime': regime,
+            'regime': regime,  # Can be str or dict depending on systemic analysis
             'macro_risks': macro_risks,
             'opportunities': opportunities,
             'indicators': {
@@ -1182,9 +1253,29 @@ class FinancialAnalyst(BaseAgent):
                 'source': 'pre-fetched',
                 'cache_age_seconds': 0,
                 'health': {},
-                'analysis_type': 'macro_context'
+                'analysis_type': 'macro_context',
+                'systemic_analysis_included': include_systemic
             }
         }
+
+        # Add systemic analysis results if available
+        if include_systemic:
+            analysis['systemic_analysis'] = {
+                'credit_cycle': credit_cycle,
+                'empire_cycle': empire_cycle,
+                'systemic_risk': systemic_risk
+            }
+
+            # Add confidence adjustment if we have a base confidence
+            if systemic_risk:
+                base_confidence = 0.75  # Default macro analysis confidence
+                adjusted_conf = self._adjust_forecast_confidence(
+                    base_confidence=base_confidence,
+                    systemic_risk_score=systemic_risk.get('systemic_risk_score', 50),
+                    credit_cycle_phase=credit_cycle.get('cycle_phase', 'unknown'),
+                    empire_stage=empire_cycle.get('empire_stage', 'unknown')
+                )
+                analysis['forecast_confidence'] = adjusted_conf
 
         # Store in knowledge graph if available
         if self.graph and hasattr(self, 'store_result'):
@@ -1244,25 +1335,87 @@ class FinancialAnalyst(BaseAgent):
         else:
             return 'transitional'
 
-    def _determine_regime_from_data(self, gdp_qoq: Optional[float], cpi_yoy: Optional[float], cycle_phase: str) -> str:
-        """Determine economic regime from raw data"""
-        if gdp_qoq is None or cpi_yoy is None:
-            return 'insufficient_data'
+    def _determine_regime_from_data(
+        self,
+        gdp_qoq: Optional[float],
+        cpi_yoy: Optional[float],
+        cycle_phase: str,
+        debt_gdp: Optional[float] = None,
+        credit_cycle: Optional[Dict[str, Any]] = None,
+        empire_cycle: Optional[Dict[str, Any]] = None,
+        systemic_risk: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Determine economic regime from raw data with optional systemic risk overlay.
 
+        Args:
+            gdp_qoq: GDP quarter-over-quarter growth
+            cpi_yoy: CPI year-over-year inflation
+            cycle_phase: Economic cycle phase
+            debt_gdp: Optional federal debt to GDP ratio
+            credit_cycle: Optional credit cycle analysis dict
+            empire_cycle: Optional empire cycle analysis dict
+            systemic_risk: Optional systemic risk score dict
+
+        Returns:
+            str (backward compatible) OR Dict with enhanced systemic analysis
+        """
+        # Base regime determination (existing logic)
+        if gdp_qoq is None or cpi_yoy is None:
+            base_regime = 'insufficient_data'
         # Goldilocks: good growth (>2%), moderate inflation (1.5-3%)
-        if gdp_qoq > 2.0 and 1.5 < cpi_yoy < 3.0:
-            return 'goldilocks'
+        elif gdp_qoq > 2.0 and 1.5 < cpi_yoy < 3.0:
+            base_regime = 'goldilocks'
         # Stagflation: weak growth (<1%), high inflation (>4%)
         elif gdp_qoq < 1.0 and cpi_yoy > 4.0:
-            return 'stagflation'
+            base_regime = 'stagflation'
         # Recession: negative growth, any inflation
         elif gdp_qoq < 0:
-            return 'recession'
+            base_regime = 'recession'
         # Overheating: strong growth (>3%), high inflation (>3%)
         elif gdp_qoq > 3.0 and cpi_yoy > 3.0:
-            return 'overheating'
+            base_regime = 'overheating'
         else:
-            return 'transitional'
+            base_regime = 'transitional'
+
+        # Backward compatibility: if no systemic data provided, return simple string
+        if credit_cycle is None and empire_cycle is None and systemic_risk is None:
+            return base_regime
+
+        # Enhanced mode: return dict with systemic overlay
+        result = {
+            'regime': base_regime,
+            'cycle_phase': cycle_phase,
+            'gdp_qoq': gdp_qoq,
+            'cpi_yoy': cpi_yoy
+        }
+
+        # Add systemic risk overlay if available
+        if credit_cycle:
+            result['credit_cycle'] = {
+                'phase': credit_cycle.get('cycle_phase'),
+                'stress_level': credit_cycle.get('stress_level')
+            }
+
+        if empire_cycle:
+            result['empire_cycle'] = {
+                'stage': empire_cycle.get('empire_stage'),
+                'structural_risk': empire_cycle.get('structural_risk')
+            }
+
+        if systemic_risk:
+            result['systemic_risk'] = {
+                'score': systemic_risk.get('systemic_risk_score'),
+                'level': systemic_risk.get('risk_level')
+            }
+
+        # Generate regime qualifier based on systemic risks
+        if systemic_risk and systemic_risk.get('risk_level') in ['elevated', 'high']:
+            result['regime_qualifier'] = f"{base_regime}_with_systemic_risk"
+        else:
+            result['regime_qualifier'] = base_regime
+
+        return result
 
     def _identify_macro_risks_from_data(
         self,
@@ -1323,6 +1476,416 @@ class FinancialAnalyst(BaseAgent):
             opportunities.append("Diversification - uncertain regime transition")
 
         return opportunities
+
+    # ==================== SYSTEMIC RISK ANALYSIS ====================
+    # Credit Cycle, Empire Cycle, and Long-term Structural Risk Analysis
+    # Added: October 2025 - Multi-timeframe macro prediction enhancement
+
+    def _analyze_credit_cycle(
+        self,
+        debt_gdp: Optional[float],
+        household_debt_gdp: Optional[float],
+        credit_delinquency: Optional[float],
+        debt_service: Optional[float]
+    ) -> Dict[str, Any]:
+        """
+        Analyze credit cycle phase based on debt metrics.
+
+        Credit Cycle Phases:
+        - Expansion: Rising credit, debt/GDP < 90%, low delinquencies
+        - Peak: Credit slowing, debt/GDP 90-110%, rising delinquencies
+        - Contraction: Credit declining, debt/GDP > 110%, high delinquencies
+        - Trough: Credit stabilizing, debt declining, deleveraging complete
+
+        Args:
+            debt_gdp: Federal debt to GDP ratio (%)
+            household_debt_gdp: Household debt to GDP ratio (%)
+            credit_delinquency: Credit card delinquency rate (%)
+            debt_service: Household debt service as % of income
+
+        Returns:
+            Dict with cycle_phase, stress_level, risks, confidence
+        """
+        if debt_gdp is None:
+            return {
+                'cycle_phase': 'insufficient_data',
+                'stress_level': 'unknown',
+                'risks': ['Insufficient debt data for credit cycle analysis'],
+                'confidence': 0.0
+            }
+
+        # Determine credit cycle phase
+        cycle_phase = 'transitional'
+        stress_level = 'moderate'
+        risks = []
+        warning_count = 0
+
+        # Debt sustainability thresholds (based on historical crisis levels)
+        if debt_gdp < 90:
+            if household_debt_gdp and household_debt_gdp < 75:
+                cycle_phase = 'expansion'
+                stress_level = 'low'
+            else:
+                cycle_phase = 'mid_expansion'
+                stress_level = 'moderate'
+        elif 90 <= debt_gdp <= 110:
+            cycle_phase = 'peak'
+            stress_level = 'elevated'
+            risks.append(f"Debt/GDP at {debt_gdp:.1f}% - approaching historical crisis levels")
+            warning_count += 1
+        else:  # debt_gdp > 110
+            cycle_phase = 'contraction_risk'
+            stress_level = 'high'
+            risks.append(f"Debt/GDP at {debt_gdp:.1f}% - exceeds sustainable levels (>110%)")
+            warning_count += 2
+
+        # Check household debt stress
+        if household_debt_gdp and household_debt_gdp > 85:
+            risks.append(f"Household debt/GDP at {household_debt_gdp:.1f}% - elevated consumer leverage")
+            warning_count += 1
+            if stress_level == 'low':
+                stress_level = 'moderate'
+
+        # Check credit delinquency (stress indicator)
+        if credit_delinquency:
+            if credit_delinquency > 3.0:
+                risks.append(f"Credit card delinquency at {credit_delinquency:.1f}% - financial stress")
+                warning_count += 1
+                if stress_level != 'high':
+                    stress_level = 'elevated'
+            elif credit_delinquency > 2.5:
+                risks.append(f"Rising delinquencies ({credit_delinquency:.1f}%) - monitor credit quality")
+                warning_count += 1
+
+        # Check debt service burden
+        if debt_service and debt_service > 11.0:
+            risks.append(f"Debt service at {debt_service:.1f}% of income - high burden")
+            warning_count += 1
+
+        # Calculate confidence based on data availability
+        data_points = sum([
+            debt_gdp is not None,
+            household_debt_gdp is not None,
+            credit_delinquency is not None,
+            debt_service is not None
+        ])
+        confidence = data_points / 4.0  # 0.25 to 1.0 based on data availability
+
+        return {
+            'cycle_phase': cycle_phase,
+            'stress_level': stress_level,
+            'risks': risks,
+            'warning_count': warning_count,
+            'confidence': confidence,
+            'debt_metrics': {
+                'federal_debt_gdp': debt_gdp,
+                'household_debt_gdp': household_debt_gdp,
+                'credit_delinquency': credit_delinquency,
+                'debt_service': debt_service
+            }
+        }
+
+    def _analyze_empire_cycle(
+        self,
+        debt_gdp: Optional[float],
+        inequality_gini: Optional[float],
+        sovereign_debt_uncertainty: Optional[float],
+        credit_cycle_phase: str
+    ) -> Dict[str, Any]:
+        """
+        Analyze empire cycle stage using Ray Dalio's Big Debt Cycle framework.
+
+        Empire Cycle Stages:
+        - Rising: Low debt (<60%), low inequality, strong fundamentals
+        - Prosperity: Moderate debt (60-90%), manageable inequality, stable
+        - Peak: High debt (90-120%), rising inequality, structural stress
+        - Decline: Excessive debt (>120%), high inequality, crisis risk
+
+        Ray Dalio's 8 Key Determinants (proxied by available data):
+        1. Debt burden → debt_gdp
+        2. Wealth/income gap → inequality_gini
+        3. Internal conflict → inequality_gini (proxy)
+        4. Reserve currency status → sovereign_debt_uncertainty (inverse proxy)
+
+        Args:
+            debt_gdp: Federal debt to GDP ratio (%)
+            inequality_gini: Gini coefficient (0-100 scale)
+            sovereign_debt_uncertainty: Economic policy uncertainty index
+            credit_cycle_phase: Phase from _analyze_credit_cycle
+
+        Returns:
+            Dict with empire_stage, structural_risk, long_term_outlook, confidence
+        """
+        if debt_gdp is None:
+            return {
+                'empire_stage': 'insufficient_data',
+                'structural_risk': 'unknown',
+                'long_term_outlook': 'Unable to assess without debt data',
+                'confidence': 0.0
+            }
+
+        # Determine empire cycle stage
+        empire_stage = 'transitional'
+        structural_risk = 'moderate'
+        risk_factors = []
+
+        # Stage 1: Rising Empire (healthy fundamentals)
+        if debt_gdp < 60:
+            if inequality_gini and inequality_gini < 40:
+                empire_stage = 'rising'
+                structural_risk = 'low'
+            else:
+                empire_stage = 'early_prosperity'
+                structural_risk = 'moderate'
+
+        # Stage 2: Prosperity (manageable imbalances)
+        elif 60 <= debt_gdp < 90:
+            empire_stage = 'prosperity'
+            structural_risk = 'moderate'
+            if inequality_gini and inequality_gini > 45:
+                risk_factors.append("Rising inequality during prosperity - social cohesion stress")
+
+        # Stage 3: Peak Empire (warning signs)
+        elif 90 <= debt_gdp <= 120:
+            empire_stage = 'peak'
+            structural_risk = 'elevated'
+            risk_factors.append(f"Debt at {debt_gdp:.1f}% - late-stage prosperity with structural imbalances")
+
+            if inequality_gini and inequality_gini > 45:
+                risk_factors.append(f"High inequality (Gini {inequality_gini:.1f}) - internal conflict risk")
+
+        # Stage 4: Declining Empire (crisis conditions)
+        else:  # debt_gdp > 120
+            empire_stage = 'late_stage_decline'
+            structural_risk = 'high'
+            risk_factors.append(f"Excessive debt ({debt_gdp:.1f}%) - Japan/Greece crisis levels")
+
+            if inequality_gini and inequality_gini > 45:
+                risk_factors.append(f"High inequality (Gini {inequality_gini:.1f}) + excessive debt - dual crisis risk")
+
+        # Check sovereign debt uncertainty (reserve currency stress)
+        if sovereign_debt_uncertainty and sovereign_debt_uncertainty > 200:
+            risk_factors.append(f"Elevated sovereign debt uncertainty ({sovereign_debt_uncertainty:.0f}) - currency stress")
+            if structural_risk == 'moderate':
+                structural_risk = 'elevated'
+
+        # Credit cycle alignment (amplifies empire cycle risks)
+        if credit_cycle_phase in ['contraction_risk', 'peak']:
+            risk_factors.append(f"Credit cycle at {credit_cycle_phase} - amplifies structural risks")
+
+        # Generate long-term outlook
+        long_term_outlook = self._generate_empire_outlook(empire_stage, structural_risk, risk_factors)
+
+        # Calculate confidence
+        data_points = sum([
+            debt_gdp is not None,
+            inequality_gini is not None,
+            sovereign_debt_uncertainty is not None,
+            credit_cycle_phase != 'insufficient_data'
+        ])
+        confidence = data_points / 4.0
+
+        return {
+            'empire_stage': empire_stage,
+            'structural_risk': structural_risk,
+            'risk_factors': risk_factors,
+            'long_term_outlook': long_term_outlook,
+            'confidence': confidence,
+            'dalio_proxies': {
+                'debt_burden': debt_gdp,
+                'inequality': inequality_gini,
+                'currency_stress': sovereign_debt_uncertainty
+            }
+        }
+
+    def _generate_empire_outlook(self, empire_stage: str, structural_risk: str, risk_factors: List[str]) -> str:
+        """Generate narrative long-term outlook based on empire cycle analysis"""
+        outlooks = {
+            'rising': "Favorable long-term trajectory with healthy fundamentals and sustainable debt levels",
+            'early_prosperity': "Positive outlook with room for growth, monitor debt accumulation trends",
+            'prosperity': "Stable near-term with manageable imbalances, watch for emerging risks",
+            'peak': "Late-cycle dynamics present - prepare for potential deleveraging or policy shifts",
+            'late_stage_decline': "Structural vulnerabilities suggest elevated long-term risk of debt crisis or major policy intervention",
+            'transitional': "Mixed signals - insufficient data for definitive long-term assessment"
+        }
+
+        base_outlook = outlooks.get(empire_stage, "Unknown empire stage")
+
+        # Add risk qualifier
+        if structural_risk == 'high' and len(risk_factors) >= 3:
+            return f"{base_outlook}. Multiple structural risks detected - significant long-term headwinds."
+        elif structural_risk == 'elevated':
+            return f"{base_outlook}. Monitor structural indicators closely."
+        else:
+            return base_outlook
+
+    def _calculate_systemic_risk_score(
+        self,
+        credit_cycle: Dict[str, Any],
+        empire_cycle: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Calculate composite systemic risk score (0-100 scale).
+
+        Combines credit cycle stress + empire cycle structural risks
+        into a single systemic risk indicator.
+
+        Score Interpretation:
+        - 0-25: Low systemic risk
+        - 25-50: Moderate systemic risk
+        - 50-75: Elevated systemic risk
+        - 75-100: High systemic risk (crisis conditions)
+
+        Args:
+            credit_cycle: Output from _analyze_credit_cycle
+            empire_cycle: Output from _analyze_empire_cycle
+
+        Returns:
+            Dict with systemic_risk_score, risk_level, contributing_factors
+        """
+        # Base score from credit cycle stress
+        credit_stress_map = {
+            'low': 10,
+            'moderate': 30,
+            'elevated': 55,
+            'high': 80,
+            'unknown': 50
+        }
+        credit_score = credit_stress_map.get(credit_cycle.get('stress_level', 'unknown'), 50)
+
+        # Base score from empire cycle structural risk
+        structural_risk_map = {
+            'low': 10,
+            'moderate': 30,
+            'elevated': 55,
+            'high': 80,
+            'unknown': 50
+        }
+        empire_score = structural_risk_map.get(empire_cycle.get('structural_risk', 'unknown'), 50)
+
+        # Weighted average (60% credit cycle, 40% empire cycle)
+        # Credit cycle is more immediate risk
+        base_score = (credit_score * 0.6) + (empire_score * 0.4)
+
+        # Add warning amplifiers
+        warning_count = credit_cycle.get('warning_count', 0)
+        risk_factor_count = len(empire_cycle.get('risk_factors', []))
+
+        # Each additional warning/risk adds 3 points (max +15)
+        amplifier = min((warning_count + risk_factor_count) * 3, 15)
+        systemic_risk_score = min(base_score + amplifier, 100)
+
+        # Determine risk level
+        if systemic_risk_score < 25:
+            risk_level = 'low'
+        elif systemic_risk_score < 50:
+            risk_level = 'moderate'
+        elif systemic_risk_score < 75:
+            risk_level = 'elevated'
+        else:
+            risk_level = 'high'
+
+        # Collect contributing factors
+        contributing_factors = []
+        contributing_factors.extend(credit_cycle.get('risks', []))
+        contributing_factors.extend(empire_cycle.get('risk_factors', []))
+
+        # Calculate overall confidence
+        credit_confidence = credit_cycle.get('confidence', 0.5)
+        empire_confidence = empire_cycle.get('confidence', 0.5)
+        overall_confidence = (credit_confidence + empire_confidence) / 2.0
+
+        return {
+            'systemic_risk_score': round(systemic_risk_score, 1),
+            'risk_level': risk_level,
+            'contributing_factors': contributing_factors,
+            'confidence': overall_confidence,
+            'components': {
+                'credit_cycle_score': round(credit_score, 1),
+                'empire_cycle_score': round(empire_score, 1),
+                'amplifier': round(amplifier, 1)
+            }
+        }
+
+    def _adjust_forecast_confidence(
+        self,
+        base_confidence: float,
+        systemic_risk_score: float,
+        credit_cycle_phase: str,
+        empire_stage: str
+    ) -> Dict[str, Any]:
+        """
+        Adjust forecast confidence based on systemic risk factors.
+
+        Higher systemic risks = lower confidence in near-term predictions
+        (structural uncertainties create wider outcome distributions)
+
+        Confidence Adjustments:
+        - Low systemic risk (0-25): +5% confidence (stable environment)
+        - Moderate risk (25-50): No adjustment (baseline)
+        - Elevated risk (50-75): -15% confidence (increased uncertainty)
+        - High risk (75-100): -30% confidence (crisis dynamics unpredictable)
+
+        Additional Adjustments:
+        - Credit cycle peak: -10% (financial fragility)
+        - Empire decline: -10% (structural instability)
+
+        Args:
+            base_confidence: Original forecast confidence (0-1 scale)
+            systemic_risk_score: Score from _calculate_systemic_risk_score
+            credit_cycle_phase: Phase from _analyze_credit_cycle
+            empire_stage: Stage from _analyze_empire_cycle
+
+        Returns:
+            Dict with adjusted_confidence, adjustment_factors, explanation
+        """
+        # Start with base confidence
+        adjusted = base_confidence
+        adjustments = []
+
+        # Systemic risk adjustment
+        if systemic_risk_score < 25:
+            adjusted *= 1.05  # +5% in stable environment
+            adjustments.append("Stable systemic environment (+5%)")
+        elif 25 <= systemic_risk_score < 50:
+            # No adjustment - baseline
+            adjustments.append("Moderate systemic risk (baseline)")
+        elif 50 <= systemic_risk_score < 75:
+            adjusted *= 0.85  # -15% for elevated risk
+            adjustments.append("Elevated systemic risk (-15%)")
+        else:  # systemic_risk_score >= 75
+            adjusted *= 0.70  # -30% for high risk
+            adjustments.append("High systemic risk - crisis dynamics (-30%)")
+
+        # Credit cycle adjustment
+        if credit_cycle_phase in ['peak', 'contraction_risk']:
+            adjusted *= 0.90  # -10% for financial fragility
+            adjustments.append(f"Credit cycle {credit_cycle_phase} - financial fragility (-10%)")
+
+        # Empire cycle adjustment
+        if empire_stage in ['late_stage_decline', 'peak']:
+            adjusted *= 0.90  # -10% for structural instability
+            adjustments.append(f"Empire stage {empire_stage} - structural instability (-10%)")
+
+        # Cap at reasonable bounds
+        adjusted = max(0.05, min(adjusted, 0.95))  # Keep between 5% and 95%
+
+        # Generate explanation
+        change_pct = ((adjusted - base_confidence) / base_confidence) * 100 if base_confidence > 0 else 0
+        if abs(change_pct) < 1:
+            explanation = "Confidence unchanged - systemic factors neutral"
+        elif change_pct > 0:
+            explanation = f"Confidence increased {change_pct:.1f}% due to stable systemic environment"
+        else:
+            explanation = f"Confidence reduced {abs(change_pct):.1f}% due to systemic risks"
+
+        return {
+            'adjusted_confidence': round(adjusted, 3),
+            'base_confidence': base_confidence,
+            'adjustment_factors': adjustments,
+            'change_percent': round(change_pct, 1),
+            'explanation': explanation
+        }
 
     # ==================== PORTFOLIO RISK ANALYSIS ====================
     # Migrated from risk_agent.py

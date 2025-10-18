@@ -241,7 +241,8 @@ AGENT_CAPABILITIES: Dict[str, Dict[str, Any]] = {
             'can_analyze_options_flow',
             'can_detect_unusual_activity',
             'can_calculate_iv_rank',
-            'can_analyze_macro_data'  # ← NEW: Compute GDP QoQ, CPI change, cycle phase detection
+            'can_analyze_macro_data',  # ← Compute GDP QoQ, CPI change, cycle phase detection
+            'can_analyze_systemic_risk'  # ← NEW: Credit cycle, empire cycle, multi-timeframe predictions
         ],
         'requires': [
             'requires_knowledge_graph',
