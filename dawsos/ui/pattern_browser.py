@@ -4,12 +4,16 @@ Pattern Browser UI Component - Comprehensive Pattern Discovery and Execution Int
 Provides a rich UI for browsing, searching, filtering, and executing all 45 patterns in the DawsOS system
 
 Phase 3.1: Comprehensive type hints added
+Phase 3.2: Universal pattern rendering system integrated
 """
 
 import streamlit as st
 from typing import Dict, Any, List, Optional, Tuple
 from core.typing_compat import TypeAlias
 from datetime import datetime
+
+# Import universal pattern renderer
+from dawsos.ui.pattern_renderers import render_pattern_result
 
 # Type aliases for clarity
 PatternDict: TypeAlias = Dict[str, Any]
@@ -502,18 +506,20 @@ class PatternBrowser:
                 else:
                     st.success("✅ Pattern executed successfully!")
 
-                    # Display formatted response if available
-                    if 'formatted_response' in result:
-                        st.markdown("### 📊 Results")
-                        st.markdown(result['formatted_response'])
-
-                    # Display confidence if available
-                    if 'confidence' in result:
-                        confidence = result['confidence']
-                        if isinstance(confidence, (int, float)):
-                            confidence_pct = confidence * 100 if confidence <= 1 else confidence
-                            color = "green" if confidence_pct > 80 else "orange" if confidence_pct > 60 else "red"
-                            st.metric("Confidence Score", f"{confidence_pct:.1f}%")
+                    # Use universal pattern renderer for rich visualizations
+                    try:
+                        render_pattern_result(
+                            result=result,
+                            response_type=pattern.get('response_type')
+                        )
+                    except Exception as render_error:
+                        # Fallback to simple markdown if renderer fails
+                        st.warning("⚠️ Rich visualization unavailable, showing text output")
+                        if 'formatted_response' in result:
+                            st.markdown("### 📊 Results")
+                            st.markdown(result['formatted_response'])
+                        
+                        st.caption(f"Render error: {str(render_error)}")
 
                     # Show step results
                     if 'results' in result and result['results']:
