@@ -1,0 +1,83 @@
+{
+  "id": "smart_market_briefing",
+  "name": "Smart Market Briefing",
+  "description": "Customized market overview that filters content based on user interests, sectors, and timeframe preferences",
+  "category": "smart",
+  "triggers": [
+    "market",
+    "briefing",
+    "market update",
+    "what's happening",
+    "market overview"
+  ],
+  "entities": [],
+  "priority": 13,
+  "steps": [
+    {
+      "description": "Fetch market overview data",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_crypto_data",
+        "context": {}
+      },
+      "save_as": "market_data"
+    },
+    {
+      "description": "Get economic indicators",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_economic_data",
+        "context": {}
+      },
+      "save_as": "economic_data"
+    },
+    {
+      "description": "Detect current market regime",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_detect_patterns",
+        "context": {
+          "data": "{market_data}",
+          "analysis_type": "regime"
+        }
+      },
+      "save_as": "regime"
+    },
+    {
+      "description": "Fetch relevant news based on interests",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_news",
+        "context": {
+          "topics": "{interests}"
+        }
+      },
+      "save_as": "news"
+    },
+    {
+      "description": "Generate personalized briefing filtered by interests and sectors",
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "user_input": "Create a {timeframe} market briefing focused on: {interests} and sectors: {sectors}. Market data: {market_data}. Economic data: {economic_data}. Regime: {regime}. News: {news}. Prioritize topics the user cares about.",
+          "conversation_context": "{conversation_context}"
+        }
+      },
+      "save_as": "briefing"
+    }
+  ],
+  "response_type": "briefing",
+  "response_template": "{briefing}",
+  "error_handling": "continue",
+  "cache_ttl": 1800,
+  "version": "3.0",
+  "last_updated": "2025-10-18",
+  "template": "# Smart Market Briefing\n\n## Timeframe: {timeframe}\n**Focus Areas**: {interests}\n**Sectors**: {sectors}\n\n## Market Regime: {regime.regime}\n\n{briefing.response}\n\n---\n*Personalized briefing powered by DawsOS Trinity 3.0*",
+  "metadata": {
+    "uses_entity_extraction": true,
+    "supports_streaming": true,
+    "memory_aware": true,
+    "dynamic_routing": true
+  }
+}

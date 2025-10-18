@@ -14,6 +14,7 @@ from typing import Dict, Any, List, Optional
 
 # Import unified UI components
 from ui import unified_components as uc
+from core.enhanced_chat_processor import EnhancedChatProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,13 @@ class TrinityDashboardTabs:
         self.pattern_engine: Any = pattern_engine
         self.runtime: Any = runtime
         self.graph: Any = graph
+        
+        # Initialize enhanced chat processor with entity extraction and memory
+        self.enhanced_chat: Optional[EnhancedChatProcessor] = None
+        try:
+            self.enhanced_chat = EnhancedChatProcessor(pattern_engine, runtime)
+        except Exception as e:
+            logger.warning(f"Enhanced chat processor not available: {e}")
 
     def render_trinity_chat_interface(self) -> None:
         """Enhanced chat interface with pattern suggestions."""
@@ -3670,9 +3678,13 @@ class TrinityDashboardTabs:
             st.error(f"Error executing question: {str(e)}")
 
     def _process_with_patterns(self, prompt: str) -> Dict[str, Any]:
-        """Process user input through pattern system"""
+        """Process user input through pattern system with enhanced intelligence"""
         try:
-            # Find matching pattern
+            # Use enhanced chat processor if available (with entity extraction + memory)
+            if self.enhanced_chat:
+                return self.enhanced_chat.process_query(prompt, use_entity_extraction=True)
+            
+            # Fallback to original pattern matching
             pattern = self.pattern_engine.find_pattern(prompt)
 
             if pattern:
