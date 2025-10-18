@@ -23,8 +23,8 @@ def render_economic_dashboard(runtime, capabilities: Dict):
         runtime: AgentRuntime instance for capability routing
         capabilities: Dict with 'fred' capability
     """
-    st.title("📊 Economic Indicators Comparison")
-    st.markdown("Compare Unemployment Rate, Fed Rate, CPI trends, and GDP growth over 24 months")
+    st.title("📊 Economic Dashboard")
+    st.markdown("Real-time U.S. macroeconomic indicators, regime analysis, and systemic risk monitoring")
 
     # Check if FRED capability is available
     if 'fred' not in capabilities:
@@ -36,12 +36,12 @@ def render_economic_dashboard(runtime, capabilities: Dict):
         st.session_state.economic_data = None
         st.session_state.economic_data_timestamp = None
 
-    # Fetch button
-    col1, col2, col3 = st.columns([1, 1, 2])
+    # Compact controls in header
+    col1, col2, col3, col4 = st.columns([1.5, 1.5, 2, 2])
     with col1:
-        refresh = st.button("🔄 Fetch Latest Data", type="primary")
+        refresh = st.button("🔄 Refresh Data", type="primary", use_container_width=True)
     with col2:
-        time_range = st.selectbox("Time Range", ["6 months", "12 months", "24 months", "5 years"], index=2)
+        time_range = st.selectbox("📅 Time Range", ["6 months", "12 months", "24 months", "5 years"], index=2, label_visibility="collapsed")
 
     # Calculate date range
     end_date = datetime.now()
@@ -71,7 +71,7 @@ def render_economic_dashboard(runtime, capabilities: Dict):
                 'can_fetch_economic_data',
                 {
                     'capability': 'can_fetch_economic_data',  # CRITICAL: Required for AgentAdapter introspection
-                    'indicators': ['GDP', 'CPIAUCSL', 'UNRATE', 'DFF'],
+                    'indicators': ['GDP', 'CPIAUCSL', 'UNRATE', 'FEDFUNDS'],
                     'start_date': start_date.strftime('%Y-%m-%d'),
                     'end_date': end_date.strftime('%Y-%m-%d')
                 }
@@ -90,51 +90,56 @@ def render_economic_dashboard(runtime, capabilities: Dict):
 
     if fred_result and 'error' not in fred_result:
         try:
-            # Display data source indicator
+            # Compact data source indicator in header
             source = fred_result.get('source', 'unknown')
             cache_age = fred_result.get('cache_age_seconds', 0)
             data_timestamp = st.session_state.economic_data_timestamp
 
-            col_status1, col_status2 = st.columns([3, 1])
-            with col_status1:
+            with col3:
                 if source == 'live':
-                    st.success(f"✅ Live data from FRED API")
+                    st.success("✅ Live FRED data", icon="✅")
                 elif source == 'cache':
-                    st.info(f"📦 Cached data ({cache_age // 60} minutes old)")
+                    st.info(f"📦 Cached ({cache_age // 60}m)", icon="📦")
                 elif source == 'fallback':
-                    st.warning(f"⚠️ Using stale cached data ({cache_age // 86400} days old) - API unavailable")
+                    st.warning(f"⚠️ Stale ({cache_age // 86400}d)", icon="⚠️")
 
-            with col_status2:
+            with col4:
                 if data_timestamp:
                     age_seconds = (datetime.now() - data_timestamp).total_seconds()
                     if age_seconds < 60:
-                        st.caption(f"📍 {int(age_seconds)}s ago")
+                        st.caption(f"🕒 Updated {int(age_seconds)}s ago")
                     elif age_seconds < 3600:
-                        st.caption(f"📍 {int(age_seconds/60)}m ago")
+                        st.caption(f"🕒 Updated {int(age_seconds/60)}m ago")
                     else:
-                        st.caption(f"📍 {int(age_seconds/3600)}h ago")
+                        st.caption(f"🕒 Updated {int(age_seconds/3600)}h ago")
 
             # Extract series data
             series = fred_result.get('series', {})
             gdp_data = series.get('GDP', {})
             cpi_data = series.get('CPIAUCSL', {})
             unemployment_data = series.get('UNRATE', {})
-            fed_funds_data = series.get('DFF', {})
+            fed_funds_data = series.get('FEDFUNDS', {})
 
-            # Create the multi-indicator chart
-            render_economic_indicators_chart(
-                gdp_data, cpi_data, unemployment_data, fed_funds_data
-            )
+            st.markdown("---")
+            
+            # ========== SECTION 1: EXECUTIVE SUMMARY ==========
+            st.markdown("### 📈 Economic Overview")
+            render_executive_summary(gdp_data, cpi_data, unemployment_data, fed_funds_data)
+            
+            st.markdown("---")
+            
+            # ========== SECTION 2: DETAILED TRENDS ==========
+            with st.expander("📊 **Historical Trends** (24-Month View)", expanded=False):
+                st.markdown("**Compare unemployment, Fed rate, CPI, and GDP growth over time**")
+                render_economic_indicators_chart(
+                    gdp_data, cpi_data, unemployment_data, fed_funds_data
+                )
 
             # Get macro analysis
-            st.markdown("---")
-            st.subheader("🎯 Economic Analysis")
-
-            # Use Trinity-compliant capability routing with pre-fetched data
             analysis = runtime.execute_by_capability(
                 'can_analyze_macro_data',
                 {
-                    'capability': 'can_analyze_macro_data',  # CRITICAL: Required for AgentAdapter introspection
+                    'capability': 'can_analyze_macro_data',
                     'gdp_data': gdp_data,
                     'cpi_data': cpi_data,
                     'unemployment_data': unemployment_data,
@@ -142,14 +147,17 @@ def render_economic_dashboard(runtime, capabilities: Dict):
                 }
             )
 
-            if analysis and 'error' not in analysis:
-                render_macro_analysis(analysis)
-            else:
-                error_msg = analysis.get('error', 'Unknown error') if analysis else 'No result'
-                st.error(f"❌ Analysis error: {error_msg}")
-                st.info("Economic analysis capability may not be available. Check agent registration.")
-
-            # Fetch and display systemic risk analysis
+            # ========== SECTION 3: REGIME & CYCLE ANALYSIS ==========
+            st.markdown("---")
+            with st.expander("🎯 **Regime & Cycle Analysis**", expanded=True):
+                if analysis and 'error' not in analysis:
+                    render_macro_analysis(analysis)
+                else:
+                    error_msg = analysis.get('error', 'Unknown error') if analysis else 'No result'
+                    st.error(f"❌ Analysis error: {error_msg}")
+                    st.info("Economic analysis capability may not be available. Check agent registration.")
+            
+            # ========== SECTION 4: SYSTEMIC RISK MONITORING ==========
             st.markdown("---")
             
             # Initialize systemic data cache
@@ -204,16 +212,18 @@ def render_economic_dashboard(runtime, capabilities: Dict):
                         st.session_state.systemic_data = None
             
             # Render systemic risk panel with cached data
-            systemic_data = st.session_state.systemic_data
-            if systemic_data and 'error' not in systemic_data:
-                render_systemic_risk_panel(systemic_data)
-            else:
-                # Show placeholder when systemic data not available
-                render_systemic_risk_panel(None)
+            with st.expander("⚠️ **Systemic Risk Analysis** (Ray Dalio Framework)", expanded=True):
+                systemic_data = st.session_state.systemic_data
+                if systemic_data and 'error' not in systemic_data:
+                    render_systemic_risk_panel(systemic_data)
+                else:
+                    # Show placeholder when systemic data not available
+                    render_systemic_risk_panel(None)
 
-            # Display daily events section
+            # ========== SECTION 5: ECONOMIC CALENDAR ==========
             st.markdown("---")
-            render_daily_events()
+            with st.expander("📅 **Economic Events Calendar**", expanded=False):
+                render_daily_events()
 
         except Exception as e:
             st.error(f"❌ Error rendering economic dashboard: {str(e)}")
@@ -224,6 +234,81 @@ def render_economic_dashboard(runtime, capabilities: Dict):
         # No data available
         st.warning("📊 No economic data available yet")
         st.info("Data will load automatically on first visit or click '🔄 Fetch Latest Data' to refresh")
+
+
+def render_executive_summary(
+    gdp_data: Dict,
+    cpi_data: Dict,
+    unemployment_data: Dict,
+    fed_funds_data: Dict
+):
+    """Render executive summary with key economic metrics in prominent cards."""
+    
+    # Extract latest values
+    gdp_obs = gdp_data.get('observations', [])
+    cpi_obs = cpi_data.get('observations', [])
+    unemp_obs = unemployment_data.get('observations', [])
+    fed_obs = fed_funds_data.get('observations', [])
+    
+    if not (gdp_obs and cpi_obs and unemp_obs and fed_obs):
+        st.warning("Insufficient data for executive summary")
+        return
+    
+    # Calculate latest values and changes
+    gdp_latest = gdp_obs[-1]['value']
+    gdp_prev = gdp_obs[-2]['value'] if len(gdp_obs) > 1 else gdp_latest
+    gdp_qoq = ((gdp_latest - gdp_prev) / gdp_prev) * 100 if gdp_prev else 0
+    
+    cpi_latest = cpi_obs[-1]['value']
+    cpi_year_ago = cpi_obs[-12]['value'] if len(cpi_obs) >= 12 else cpi_obs[0]['value']
+    cpi_yoy = ((cpi_latest - cpi_year_ago) / cpi_year_ago) * 100 if cpi_year_ago else 0
+    
+    unemp_latest = unemp_obs[-1]['value']
+    unemp_prev = unemp_obs[-2]['value'] if len(unemp_obs) > 1 else unemp_latest
+    unemp_change = unemp_latest - unemp_prev
+    
+    fed_latest = fed_obs[-1]['value']
+    fed_prev = fed_obs[-2]['value'] if len(fed_obs) > 1 else fed_latest
+    fed_change = fed_latest - fed_prev
+    
+    # Create 4 prominent metric cards
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric(
+            label="💰 GDP Growth",
+            value=f"{gdp_qoq:+.2f}%",
+            delta=f"QoQ: {gdp_qoq:.2f}%",
+            delta_color="normal" if gdp_qoq > 0 else "inverse",
+            help=f"Latest: ${gdp_latest:,.1f}B"
+        )
+    
+    with col2:
+        st.metric(
+            label="📈 Inflation (CPI)",
+            value=f"{cpi_yoy:.2f}%",
+            delta=f"YoY: {cpi_yoy:+.2f}%",
+            delta_color="inverse" if cpi_yoy > 3.0 else "normal",
+            help=f"Latest: {cpi_latest:.1f}"
+        )
+    
+    with col3:
+        st.metric(
+            label="👥 Unemployment",
+            value=f"{unemp_latest:.1f}%",
+            delta=f"{unemp_change:+.1f}% vs prev",
+            delta_color="inverse" if unemp_change > 0 else "normal",
+            help="Latest unemployment rate"
+        )
+    
+    with col4:
+        st.metric(
+            label="🏛️ Fed Funds Rate",
+            value=f"{fed_latest:.2f}%",
+            delta=f"{fed_change:+.2f}% vs prev",
+            delta_color="normal",
+            help="Latest federal funds effective rate"
+        )
 
 
 def render_economic_indicators_chart(
@@ -470,8 +555,7 @@ def render_systemic_risk_panel(systemic_analysis: Optional[Dict]):
     Args:
         systemic_analysis: Dict containing systemic_analysis from deep macro analysis
     """
-    st.subheader("⚠️ Systemic Risk Analysis")
-    st.markdown("Long-term structural risk assessment using Ray Dalio's Big Debt Cycle framework")
+    st.markdown("**Long-term structural risk assessment using credit cycles and empire cycles**")
     
     if not systemic_analysis or 'systemic_analysis' not in systemic_analysis:
         st.info("💡 Enable systemic risk analysis by fetching deep macro data")
@@ -728,8 +812,7 @@ def render_systemic_risk_panel(systemic_analysis: Optional[Dict]):
 
 def render_daily_events():
     """Render daily events calendar with economic data releases and policy events."""
-    st.subheader("📅 Economic Events Calendar")
-    st.markdown("Upcoming economic data releases and policy events")
+    st.markdown("**Filter and view upcoming economic data releases and Fed policy events**")
 
     # Load economic calendar from KnowledgeLoader
     from core.knowledge_loader import get_knowledge_loader
