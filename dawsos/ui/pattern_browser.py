@@ -13,7 +13,7 @@ from core.typing_compat import TypeAlias
 from datetime import datetime
 
 # Import universal pattern renderer
-from dawsos.ui.pattern_renderers import render_pattern_result
+from ui.pattern_renderers import render_pattern_result
 
 # Type aliases for clarity
 PatternDict: TypeAlias = Dict[str, Any]
