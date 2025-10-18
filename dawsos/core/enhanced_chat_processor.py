@@ -50,7 +50,9 @@ class EnhancedChatProcessor:
             "portfolio_review": "smart_portfolio_review",
             "market_briefing": "smart_market_briefing",
             "opportunity_scan": "smart_opportunity_finder",
-            "risk_analysis": "smart_risk_analyzer"
+            "risk_analysis": "smart_risk_analyzer",
+            "economic_briefing": "smart_economic_briefing",
+            "economic_outlook": "smart_economic_outlook"
         }
     
     def process_query(self, query: str, use_entity_extraction: bool = True) -> Dict[str, Any]:
