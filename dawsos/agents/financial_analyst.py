@@ -1062,6 +1062,51 @@ class FinancialAnalyst(BaseAgent):
         # Delegate to analyze_macro_context
         return self.analyze_macro_context(analysis_context)
 
+    def analyze_systemic_risk(self, context: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+        """
+        Analyze systemic risk including credit cycles and empire cycles (capability method for can_analyze_systemic_risk).
+
+        This is the capability routing method that performs deep macro analysis
+        with systemic risk overlay (debt/GDP, inequality, credit stress indicators).
+
+        Args:
+            context: Dict with base economic data + optional systemic_data
+            **kwargs: Individual data series
+
+        Returns:
+            Dict with comprehensive systemic analysis including:
+            - credit_cycle: Credit cycle phase, stress level, debt metrics
+            - empire_cycle: Empire stage, structural risk, long-term outlook
+            - systemic_risk: Composite risk score (0-100)
+            - forecast_confidence: Confidence adjustment based on systemic risks
+        """
+        # Accept data from either context or kwargs
+        context = context or {}
+        
+        # Extract base economic data
+        gdp_data = kwargs.get('gdp_data') or context.get('gdp_data', {})
+        cpi_data = kwargs.get('cpi_data') or context.get('cpi_data', {})
+        unemployment_data = kwargs.get('unemployment_data') or context.get('unemployment_data', {})
+        fed_funds_data = kwargs.get('fed_funds_data') or context.get('fed_funds_data', {})
+        
+        # Extract systemic data (if provided)
+        systemic_data = kwargs.get('systemic_data') or context.get('systemic_data', {})
+
+        # Build context for analyze_macro_context with systemic analysis enabled
+        analysis_context = {
+            'gdp_data': gdp_data,
+            'cpi_data': cpi_data,
+            'unemployment_data': unemployment_data,
+            'fed_funds_data': fed_funds_data,
+            'systemic_data': systemic_data,
+            'include_systemic_analysis': True,  # Enable systemic analysis
+            'start_date': context.get('start_date'),
+            'end_date': context.get('end_date')
+        }
+
+        # Delegate to analyze_macro_context with systemic analysis enabled
+        return self.analyze_macro_context(analysis_context)
+
     def analyze_macro_context(self, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Analyze macroeconomic context using FRED data (Trinity 3.0 GDP Refresh Flow).
