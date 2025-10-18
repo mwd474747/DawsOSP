@@ -1,0 +1,79 @@
+{
+  "id": "deep_macro_analysis",
+  "name": "Deep Macro Analysis with Systemic Risk",
+  "description": "Comprehensive macroeconomic analysis including credit cycles, empire cycles, and long-term structural risk factors using Ray Dalio's framework",
+  "category": "queries",
+  "version": "1.0",
+  "last_updated": "2025-10-18",
+  "triggers": [
+    "deep macro",
+    "systemic risk",
+    "credit cycle",
+    "empire cycle",
+    "long-term outlook",
+    "structural risk",
+    "debt crisis",
+    "ray dalio"
+  ],
+  "entities": [],
+  "priority": 6,
+  "steps": [
+    {
+      "description": "Fetch base FRED economic series (GDP, CPI, Unemployment, Fed Funds)",
+      "action": "execute_by_capability",
+      "capability": "can_fetch_economic_data",
+      "context": {
+        "series": ["GDP", "CPIAUCSL", "UNRATE", "DFF"],
+        "start_date": "{start_date}",
+        "end_date": "{end_date}"
+      },
+      "save_as": "base_economic_data"
+    },
+    {
+      "description": "Fetch systemic risk FRED series (debt/GDP, Gini, household debt, delinquency, uncertainty)",
+      "action": "execute_by_capability",
+      "capability": "can_fetch_economic_data",
+      "context": {
+        "series": ["GFDEGDQ188S", "SIPOVGINIUSA", "HDTGPDUSQ163N", "TDSP", "DRCCLACBS", "EPUSOVDEBT"],
+        "start_date": "{start_date}",
+        "end_date": "{end_date}"
+      },
+      "save_as": "systemic_data"
+    },
+    {
+      "description": "Perform comprehensive macro analysis with systemic risk overlay",
+      "action": "execute_by_capability",
+      "capability": "can_analyze_macro_data",
+      "context": {
+        "gdp_data": "{base_economic_data.series.GDP}",
+        "cpi_data": "{base_economic_data.series.CPIAUCSL}",
+        "unemployment_data": "{base_economic_data.series.UNRATE}",
+        "fed_funds_data": "{base_economic_data.series.DFF}",
+        "systemic_data": "{systemic_data.series}",
+        "include_systemic_analysis": true
+      },
+      "save_as": "deep_macro_analysis"
+    },
+    {
+      "description": "Store comprehensive macro analysis in knowledge graph",
+      "action": "store_in_graph",
+      "params": {
+        "node_type": "deep_macro_analysis",
+        "data": "{deep_macro_analysis}",
+        "metadata": {
+          "base_data_source": "{base_economic_data.source}",
+          "systemic_data_source": "{systemic_data.source}",
+          "timestamp": "{deep_macro_analysis.timestamp}",
+          "systemic_risk_score": "{deep_macro_analysis.systemic_analysis.systemic_risk.systemic_risk_score}",
+          "credit_cycle_phase": "{deep_macro_analysis.systemic_analysis.credit_cycle.cycle_phase}",
+          "empire_stage": "{deep_macro_analysis.systemic_analysis.empire_cycle.empire_stage}"
+        }
+      },
+      "save_as": "analysis_node"
+    }
+  ],
+  "response_type": "data",
+  "response_template": "{deep_macro_analysis}",
+  "cache_ttl": 3600,
+  "template": "## 🌐 Deep Macroeconomic Analysis\n\n**Analysis Timestamp**: {deep_macro_analysis.timestamp}\n**Data Source**: {base_economic_data.source}\n**Systemic Analysis**: Enabled ✓\n\n---\n\n### 📊 Base Economic Indicators\n\n**GDP Growth**: {deep_macro_analysis.gdp_qoq}% QoQ\n**Inflation (CPI)**: {deep_macro_analysis.cpi_yoy}% YoY\n**Economic Cycle**: {deep_macro_analysis.cycle_phase}\n**Regime**: {deep_macro_analysis.regime.regime}\n\n---\n\n### 💳 Credit Cycle Analysis\n\n**Credit Cycle Phase**: {deep_macro_analysis.systemic_analysis.credit_cycle.cycle_phase}\n**Stress Level**: {deep_macro_analysis.systemic_analysis.credit_cycle.stress_level}\n**Federal Debt/GDP**: {deep_macro_analysis.systemic_analysis.credit_cycle.debt_metrics.federal_debt_gdp}%\n**Household Debt/GDP**: {deep_macro_analysis.systemic_analysis.credit_cycle.debt_metrics.household_debt_gdp}%\n**Credit Card Delinquency**: {deep_macro_analysis.systemic_analysis.credit_cycle.debt_metrics.credit_delinquency}%\n\n**Credit Cycle Risks**:\n{deep_macro_analysis.systemic_analysis.credit_cycle.risks}\n\n---\n\n### 🏛️ Empire Cycle Analysis (Ray Dalio Framework)\n\n**Empire Stage**: {deep_macro_analysis.systemic_analysis.empire_cycle.empire_stage}\n**Structural Risk**: {deep_macro_analysis.systemic_analysis.empire_cycle.structural_risk}\n**Long-term Outlook**: {deep_macro_analysis.systemic_analysis.empire_cycle.long_term_outlook}\n\n**Empire Cycle Metrics**:\n- **Debt Burden**: {deep_macro_analysis.systemic_analysis.empire_cycle.dalio_proxies.debt_burden}% of GDP\n- **Inequality (Gini)**: {deep_macro_analysis.systemic_analysis.empire_cycle.dalio_proxies.inequality}\n- **Sovereign Debt Uncertainty**: {deep_macro_analysis.systemic_analysis.empire_cycle.dalio_proxies.currency_stress}\n\n**Structural Risk Factors**:\n{deep_macro_analysis.systemic_analysis.empire_cycle.risk_factors}\n\n---\n\n### ⚠️ Systemic Risk Composite\n\n**Systemic Risk Score**: {deep_macro_analysis.systemic_analysis.systemic_risk.systemic_risk_score}/100\n**Risk Level**: {deep_macro_analysis.systemic_analysis.systemic_risk.risk_level}\n**Confidence**: {deep_macro_analysis.systemic_analysis.systemic_risk.confidence}\n\n**Score Components**:\n- Credit Cycle Score: {deep_macro_analysis.systemic_analysis.systemic_risk.components.credit_cycle_score}\n- Empire Cycle Score: {deep_macro_analysis.systemic_analysis.systemic_risk.components.empire_cycle_score}\n- Risk Amplifier: +{deep_macro_analysis.systemic_analysis.systemic_risk.components.amplifier}\n\n---\n\n### 🔮 Forecast Confidence Adjustment\n\n**Base Confidence**: {deep_macro_analysis.forecast_confidence.base_confidence}\n**Adjusted Confidence**: {deep_macro_analysis.forecast_confidence.adjusted_confidence}\n**Adjustment**: {deep_macro_analysis.forecast_confidence.change_percent}%\n\n**Adjustment Factors**:\n{deep_macro_analysis.forecast_confidence.adjustment_factors}\n\n**Explanation**: {deep_macro_analysis.forecast_confidence.explanation}\n\n---\n\n### 📈 Macro Risks (Base + Systemic)\n\n{deep_macro_analysis.macro_risks}\n\n---\n\n### 💡 Sector Opportunities\n\n{deep_macro_analysis.opportunities}\n\n---\n\n### 📊 FRED Series Used\n\n**Base Indicators**:\n- GDP: Gross Domestic Product\n- CPIAUCSL: Consumer Price Index (All Urban Consumers)\n- UNRATE: Unemployment Rate\n- DFF: Federal Funds Effective Rate\n\n**Systemic Indicators**:\n- GFDEGDQ188S: Federal Debt to GDP\n- SIPOVGINIUSA: Gini Coefficient (Inequality)\n- HDTGPDUSQ163N: Household Debt to GDP\n- TDSP: Household Debt Service Ratio\n- DRCCLACBS: Credit Card Delinquency Rate\n- EPUSOVDEBT: Economic Policy Uncertainty (Sovereign Debt)\n\n---\n\n*Deep Macro Analysis v1.0 | Trinity Architecture*\n*Data provided by FRED (Federal Reserve Economic Data)*\n*Framework: Ray Dalio Big Debt Cycle Theory*"
+}
