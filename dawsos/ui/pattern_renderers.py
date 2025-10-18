@@ -23,7 +23,7 @@ from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
 
 # Import unified components
-from dawsos.ui.unified_components import (
+from ui.unified_components import (
     render_metric_card,
     render_gauge_chart,
     render_time_series_chart,
