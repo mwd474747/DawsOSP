@@ -1510,7 +1510,10 @@ class PatternEngine:
 
             # Also substitute context values (like {TICKERS}, {TICKER}, etc.)
             for key, value in context.items():
-                if isinstance(value, (str, int, float)):
+                if value is None:
+                    # Replace None values with empty string or sensible default
+                    template = template.replace(f"{{{key}}}", "")
+                elif isinstance(value, (str, int, float)):
                     template = template.replace(f"{{{key}}}", str(value))
                 elif isinstance(value, list):
                     template = template.replace(f"{{{key}}}", ', '.join(str(v) for v in value))
