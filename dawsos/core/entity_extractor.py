@@ -108,9 +108,31 @@ class RiskAnalysisEntities(BaseModel):
         use_enum_values = True
 
 
+class EconomicBriefingEntities(BaseModel):
+    """Entities for economic briefing queries"""
+    indicators: List[str] = Field(default_factory=list, description="Specific indicators to cover (e.g., 'GDP', 'inflation', 'unemployment')")
+    depth: AnalysisDepth = Field(AnalysisDepth.STANDARD, description="Depth of analysis")
+    timeframe: Optional[Timeframe] = Field(None, description="Timeframe for historical context")
+    include_regime: bool = Field(True, description="Include market regime analysis")
+    
+    class Config:
+        use_enum_values = True
+
+
+class EconomicOutlookEntities(BaseModel):
+    """Entities for economic outlook queries"""
+    focus_areas: List[str] = Field(default_factory=list, description="Areas of focus (e.g., 'inflation', 'recession risk', 'fed policy')")
+    investment_context: bool = Field(True, description="Include investment implications")
+    timeframe: Timeframe = Field(Timeframe.MEDIUM_TERM, description="Outlook timeframe")
+    depth: AnalysisDepth = Field(AnalysisDepth.STANDARD, description="Depth of analysis")
+    
+    class Config:
+        use_enum_values = True
+
+
 class QueryIntent(BaseModel):
     """Classified user intent with extracted entities"""
-    intent_type: Literal["stock_analysis", "portfolio_review", "market_briefing", "opportunity_scan", "risk_analysis", "unknown"] = Field(
+    intent_type: Literal["stock_analysis", "portfolio_review", "market_briefing", "opportunity_scan", "risk_analysis", "economic_briefing", "economic_outlook", "unknown"] = Field(
         ..., description="The type of query the user is making"
     )
     confidence: float = Field(..., description="Confidence in intent classification (0-1)")
@@ -155,6 +177,8 @@ class EntityExtractor:
 - market_briefing: Getting market overview or news summary
 - opportunity_scan: Finding investment opportunities
 - risk_analysis: Assessing risks
+- economic_briefing: Current economic conditions, indicators, or regime
+- economic_outlook: Economic forecasts, investment timing, or macro trends
 - unknown: Cannot determine intent
 
 Query: "{query}"
@@ -287,6 +311,52 @@ The target field is required."""
             # Need at least a target
             return RiskAnalysisEntities(target="unknown")
     
+    def extract_economic_briefing_entities(self, query: str) -> EconomicBriefingEntities:
+        """Extract entities for economic briefing queries"""
+        try:
+            return self.client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=1024,
+                messages=[{
+                    "role": "user",
+                    "content": f"""Extract economic briefing entities from this query: "{query}"
+
+Extract:
+- indicators: Specific economic indicators mentioned (e.g., 'GDP', 'inflation', 'unemployment', 'Fed rate')
+- depth: quick, standard, or deep
+- timeframe: intraday, short_term, medium_term, or long_term (if historical context requested)
+- include_regime: true if user wants market regime analysis (risk-on/risk-off)
+
+Use defaults if not explicitly stated."""
+                }],
+                response_model=EconomicBriefingEntities
+            )
+        except Exception as e:
+            return EconomicBriefingEntities()
+    
+    def extract_economic_outlook_entities(self, query: str) -> EconomicOutlookEntities:
+        """Extract entities for economic outlook queries"""
+        try:
+            return self.client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=1024,
+                messages=[{
+                    "role": "user",
+                    "content": f"""Extract economic outlook entities from this query: "{query}"
+
+Extract:
+- focus_areas: Specific concerns (e.g., 'inflation', 'recession risk', 'Fed policy', 'rate cuts')
+- investment_context: true if user wants investment implications or timing advice
+- timeframe: short_term, medium_term, or long_term (outlook horizon)
+- depth: quick, standard, or deep
+
+Use defaults if not explicitly stated."""
+                }],
+                response_model=EconomicOutlookEntities
+            )
+        except Exception as e:
+            return EconomicOutlookEntities()
+    
     def extract_entities(self, query: str) -> dict:
         """
         Main extraction method - classifies intent then extracts relevant entities.
@@ -312,6 +382,10 @@ The target field is required."""
             entities = self.extract_opportunity_entities(query)
         elif intent.intent_type == "risk_analysis":
             entities = self.extract_risk_analysis_entities(query)
+        elif intent.intent_type == "economic_briefing":
+            entities = self.extract_economic_briefing_entities(query)
+        elif intent.intent_type == "economic_outlook":
+            entities = self.extract_economic_outlook_entities(query)
         
         # Ensure enums are serialized as values, not class names
         entities_dict = {}
