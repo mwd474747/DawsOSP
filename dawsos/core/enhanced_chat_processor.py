@@ -97,9 +97,12 @@ class EnhancedChatProcessor:
                     'conversation_context': self.memory.get_context_for_llm(turns=3)
                 }
                 
-                # Add extracted entities to context
+                # Add extracted entities to context (map to both lowercase and uppercase for compatibility)
                 if extracted and extracted['entities']:
-                    context.update(extracted['entities'])
+                    for key, value in extracted['entities'].items():
+                        context[key.lower()] = value
+                        context[key.upper()] = value
+                        context[key] = value  # Also keep original case
                 
                 # Validate required entities for smart patterns
                 pattern = self.pattern_engine.patterns.get(smart_pattern_id)
