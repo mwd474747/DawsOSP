@@ -33,6 +33,14 @@ outputType = "webview"
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 33215
+externalPort = 3001
+
+[[ports]]
+localPort = 40523
+externalPort = 3000
+
 [deployment]
 deploymentTarget = "autoscale"
 run = ["streamlit", "run", "dawsos/main.py", "--server.port=5000", "--server.address=0.0.0.0", "--server.headless=true"]
