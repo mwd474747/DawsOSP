@@ -587,3 +587,64 @@ class MacroAgent(BaseAgent):
             "Prepare for volatility",
             "Consider defensive positioning"
         ]
+    
+    def calculate_recession_probability(self) -> float:
+        """Calculate recession probability based on economic indicators"""
+        try:
+            # Simple recession probability model based on key indicators
+            probability_score = 0.0
+            
+            # Get economic indicators
+            indicators = self.openbb.get_economic_indicators([
+                'T10Y2Y',       # Yield curve
+                'UNRATE',       # Unemployment rate
+                'GDPC1',        # Real GDP
+                'CPIAUCSL',     # CPI inflation
+                'DFF',          # Fed funds rate
+                'DSPIC96'       # Real disposable income
+            ])
+            
+            # Yield curve inversion (strongest predictor - 40% weight)
+            if 'T10Y2Y' in indicators:
+                spread = self._get_latest_value(indicators['T10Y2Y'])
+                if spread and spread < 0:
+                    probability_score += 40
+                elif spread and spread < 0.5:
+                    probability_score += 20
+            
+            # Unemployment rate rising (25% weight)
+            if 'UNRATE' in indicators:
+                unemployment = self._get_latest_value(indicators['UNRATE'])
+                if unemployment:
+                    if unemployment > 4.5:
+                        probability_score += 25
+                    elif unemployment > 4.0:
+                        probability_score += 15
+            
+            # GDP growth slowing (20% weight)
+            if 'GDPC1' in indicators:
+                gdp_data = self._get_series_data(indicators['GDPC1'])
+                if len(gdp_data) > 1:
+                    gdp_growth = ((gdp_data[-1] / gdp_data[-5]) ** (1/4) - 1) * 100 if len(gdp_data) > 5 else 0
+                    if gdp_growth < 1.0:
+                        probability_score += 20
+                    elif gdp_growth < 2.0:
+                        probability_score += 10
+            
+            # High inflation (15% weight)
+            if 'CPIAUCSL' in indicators:
+                cpi_data = self._get_series_data(indicators['CPIAUCSL'])
+                if len(cpi_data) > 12:
+                    yoy_inflation = ((cpi_data[-1] / cpi_data[-13]) - 1) * 100
+                    if yoy_inflation > 4.0:
+                        probability_score += 15
+                    elif yoy_inflation > 3.0:
+                        probability_score += 8
+            
+            # Cap at 85% (never 100% certain)
+            return min(probability_score, 85.0)
+            
+        except Exception as e:
+            print(f"Error calculating recession probability: {e}")
+            # Return moderate probability on error
+            return 45.0
