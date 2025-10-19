@@ -510,11 +510,11 @@ class PredictionService:
                     'type': row[1],
                     'symbol': row[2],
                     'target_date': row[3].strftime('%Y-%m-%d') if row[3] else None,
-                    'prediction': json.loads(row[4]) if row[4] else {},
+                    'prediction': row[4] if isinstance(row[4], dict) else json.loads(row[4]) if row[4] else {},
                     'confidence': row[5],
                     'agent': row[6],
                     'status': row[7],
-                    'outcome': json.loads(row[8]) if row[8] else None,
+                    'outcome': row[8] if isinstance(row[8], dict) else json.loads(row[8]) if row[8] else None,
                     'accuracy': row[9],
                     'created_at': row[10].strftime('%Y-%m-%d %H:%M') if row[10] else None
                 })
