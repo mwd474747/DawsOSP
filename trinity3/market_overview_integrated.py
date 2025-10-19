@@ -22,26 +22,27 @@ class MarketDataProvider:
         self.real_data = st.session_state.get('real_data')
         self.cache = {}
     
-    def get_equity_data(self, symbol: str, default_price: float = 0.0, 
-                       default_change: float = 0.0) -> Tuple[float, float, str]:
+    def get_equity_data(self, symbol: str) -> Tuple[Optional[float], Optional[float], str]:
         """
         Get equity price and change with proper error handling
         Returns: (price, change_percent, status)
         """
         try:
-            price = default_price
-            change = default_change
-            status = "cached"
+            price = None
+            change = None
+            status = "no_data"
             
             # Try real data service first
             if self.real_data:
                 try:
-                    price = self.real_data.get_realtime_price(symbol)
-                    status = "live"
-                except Exception:
-                    pass  # Silently fall back to default
+                    real_price = self.real_data.get_realtime_price(symbol)
+                    if real_price is not None:
+                        price = real_price
+                        status = "live"
+                except Exception as e:
+                    print(f"Error getting real-time price for {symbol}: {e}")
             
-            # Try OpenBB service for change percentage
+            # Try OpenBB service for full quote data
             if self.openbb_service:
                 try:
                     quote = self.openbb_service.get_equity_quote(symbol)
@@ -49,24 +50,24 @@ class MarketDataProvider:
                         result = quote['results'][0]
                         if 'price' in result and result['price']:
                             price = float(result['price'])
+                            status = "live"
                         if 'changesPercentage' in result:
                             change = float(result['changesPercentage'])
-                        status = "live"
-                except Exception:
-                    pass  # Silently fall back to default
+                except Exception as e:
+                    print(f"Error getting OpenBB quote for {symbol}: {e}")
             
             return price, change, status
             
-        except Exception:
-            pass  # Return default values on critical error
-            return default_price, default_change, "error"
+        except Exception as e:
+            print(f"Critical error in get_equity_data for {symbol}: {e}")
+            return None, None, "error"
     
     def get_market_internals(self) -> Dict[str, Any]:
-        """Get market internals data with fallbacks"""
+        """Get market internals data - only real data, no placeholders"""
         internals = {
-            'vix': {'value': 16.5, 'change': -2.5, 'status': 'cached'},
-            'breadth': {'value': 1.25, 'change': 25.0, 'status': 'cached'},
-            'put_call': {'value': 0.85, 'change': -15.0, 'status': 'cached'}
+            'vix': {'value': None, 'change': None, 'status': 'no_data'},
+            'breadth': {'value': None, 'change': None, 'status': 'no_data'},
+            'put_call': {'value': None, 'change': None, 'status': 'no_data'}
         }
         
         try:
@@ -129,41 +130,36 @@ class MarketDataProvider:
         except:
             return "NEUTRAL", ProfessionalTheme.COLORS['accent_warning']
     
-    def get_sector_data(self) -> List[Tuple[str, str, float, float]]:
-        """Get sector performance data"""
+    def get_sector_data(self) -> List[Tuple[str, str, Optional[float], Optional[float]]]:
+        """Get sector performance data - only real data"""
         sectors = [
-            ("Technology", "XLK", 182.50, 2.15),
-            ("Healthcare", "XLV", 135.20, 0.85),
-            ("Financials", "XLF", 38.75, 1.45),
-            ("Consumer Disc", "XLY", 175.30, 1.75),
-            ("Energy", "XLE", 85.60, -0.95),
-            ("Utilities", "XLU", 67.40, 0.25),
-            ("Real Estate", "XLRE", 42.15, -0.35),
-            ("Materials", "XLB", 82.90, 0.65),
-            ("Industrials", "XLI", 90.25, 1.10),
-            ("Cons Staples", "XLP", 71.35, 0.45),
-            ("Communications", "XLC", 65.80, 1.85)
+            ("Technology", "XLK"),
+            ("Healthcare", "XLV"),
+            ("Financials", "XLF"),
+            ("Consumer Disc", "XLY"),
+            ("Energy", "XLE"),
+            ("Utilities", "XLU"),
+            ("Real Estate", "XLRE"),
+            ("Materials", "XLB"),
+            ("Industrials", "XLI"),
+            ("Cons Staples", "XLP"),
+            ("Communications", "XLC")
         ]
         
         result = []
-        for name, symbol, default_price, default_change in sectors:
+        for name, symbol in sectors:
             try:
-                price, change, _ = self.get_equity_data(symbol, default_price, default_change)
+                price, change, _ = self.get_equity_data(symbol)
                 result.append((f"{name} ({symbol})", symbol, price, change))
-            except:
-                result.append((f"{name} ({symbol})", symbol, default_price, default_change))
+            except Exception as e:
+                print(f"Error getting sector data for {symbol}: {e}")
+                result.append((f"{name} ({symbol})", symbol, None, None))
         
         return result[:8]  # Return top 8 for grid display
     
     def get_market_news(self) -> List[Dict]:
-        """Get market news with fallback to cached data"""
-        default_news = [
-            {'time': datetime.now().strftime('%H:%M'), 'title': 'Federal Reserve maintains interest rates, signals future cuts', 'source': 'Reuters'},
-            {'time': '13:45', 'title': 'Tech sector leads market rally on strong earnings reports', 'source': 'Bloomberg'},
-            {'time': '12:20', 'title': 'Oil prices stabilize after Middle East tensions ease', 'source': 'WSJ'},
-            {'time': '11:15', 'title': 'Dollar weakens against major currencies on economic data', 'source': 'FT'},
-            {'time': '10:00', 'title': 'European markets close higher following US lead', 'source': 'CNBC'}
-        ]
+        """Get market news - only real news from API"""
+        news_items = []
         
         try:
             if self.openbb_service:
@@ -176,11 +172,12 @@ class MarketDataProvider:
                             'title': article.get('title', 'No title'),
                             'source': article.get('source', {}).get('name', 'Unknown')
                         })
-                    return news_items if news_items else default_news
-        except Exception:
-            pass  # Use fallback news
+                    return news_items if news_items else []
+        except Exception as e:
+            print(f"Error getting market news: {e}")
+            return []
         
-        return default_news
+        return []
 
 
 def render_market_overview_integrated():
@@ -210,26 +207,35 @@ def render_market_overview_integrated():
         for col, (name, symbol, default_price, default_change) in zip([col1, col2, col3, col4], indices):
             with col:
                 try:
-                    price, change, status = data_provider.get_equity_data(symbol, default_price, default_change)
+                    price, change, status = data_provider.get_equity_data(symbol)
                     
-                    # Display metric with status indicator
-                    st.metric(
-                        label=name,
-                        value=f"${price:.2f}",
-                        delta=f"{change:.2f}%" if change != 0 else None,
-                        help=f"Data: {status}"
-                    )
-                    
-                    # Add mini status indicator
-                    if status == "live":
-                        st.caption("Live")
-                    elif status == "cached":
-                        st.caption("Cached")
+                    # Only display if we have real data
+                    if price is not None:
+                        # Display metric with status indicator
+                        st.metric(
+                            label=name,
+                            value=f"${price:.2f}",
+                            delta=f"{change:.2f}%" if change is not None else None,
+                            help=f"Data: {status}"
+                        )
+                        
+                        # Add mini status indicator
+                        if status == "live":
+                            st.caption("Live")
+                        else:
+                            st.caption(status.capitalize())
                     else:
-                        st.caption("Error")
+                        # Show loading state when no data available
+                        st.metric(
+                            label=name,
+                            value="Loading...",
+                            delta=None,
+                            help="Fetching real-time data"
+                        )
+                        st.caption("No data available")
                         
                 except Exception as e:
-                    st.metric(name, "N/A", help=f"Error: {str(e)}")
+                    st.metric(name, "Error", help=f"Error: {str(e)}")
     
     # Section: Market Internals & Sentiment
     with st.container():
@@ -242,30 +248,39 @@ def render_market_overview_integrated():
         
         with col1:
             vix_data = internals['vix']
-            st.metric(
-                "VIX",
-                f"{vix_data['value']:.2f}",
-                f"{vix_data['change']:.2f}%",
-                help=f"Volatility Index - Data: {vix_data['status']}"
-            )
+            if vix_data['value'] is not None:
+                st.metric(
+                    "VIX",
+                    f"{vix_data['value']:.2f}",
+                    f"{vix_data['change']:.2f}%" if vix_data['change'] is not None else None,
+                    help=f"Volatility Index - Data: {vix_data['status']}"
+                )
+            else:
+                st.metric("VIX", "Loading...", None, help="Fetching VIX data")
         
         with col2:
             breadth_data = internals['breadth']
-            st.metric(
-                "A/D Ratio",
-                f"{breadth_data['value']:.2f}",
-                f"{breadth_data['change']:.1f}%",
-                help=f"Advance/Decline Ratio - Data: {breadth_data['status']}"
-            )
+            if breadth_data['value'] is not None:
+                st.metric(
+                    "A/D Ratio",
+                    f"{breadth_data['value']:.2f}",
+                    f"{breadth_data['change']:.1f}%" if breadth_data['change'] is not None else None,
+                    help=f"Advance/Decline Ratio - Data: {breadth_data['status']}"
+                )
+            else:
+                st.metric("A/D Ratio", "Loading...", None, help="Fetching market breadth")
         
         with col3:
             pc_data = internals['put_call']
-            st.metric(
-                "Put/Call Ratio",
-                f"{pc_data['value']:.2f}",
-                f"{pc_data['change']:.1f}%",
-                help=f"Options Sentiment - Data: {pc_data['status']}"
-            )
+            if pc_data['value'] is not None:
+                st.metric(
+                    "Put/Call Ratio",
+                    f"{pc_data['value']:.2f}",
+                    f"{pc_data['change']:.1f}%" if pc_data['change'] is not None else None,
+                    help=f"Options Sentiment - Data: {pc_data['status']}"
+                )
+            else:
+                st.metric("Put/Call Ratio", "Loading...", None, help="Fetching options data")
         
         with col4:
             # Market Regime Indicator
@@ -327,11 +342,19 @@ def render_market_overview_integrated():
                     if idx < len(sectors):
                         name, symbol, price, change = sectors[idx]
                         with cols[i]:
-                            st.metric(
-                                label=name,
-                                value=f"${price:.2f}",
-                                delta=f"{change:.2f}%"
-                            )
+                            if price is not None:
+                                st.metric(
+                                    label=name,
+                                    value=f"${price:.2f}",
+                                    delta=f"{change:.2f}%" if change is not None else None
+                                )
+                            else:
+                                st.metric(
+                                    label=name,
+                                    value="Loading...",
+                                    delta=None,
+                                    help="Fetching sector data"
+                                )
         except Exception as e:
             st.error(f"Sector data temporarily unavailable: {str(e)}")
     
@@ -342,14 +365,17 @@ def render_market_overview_integrated():
         try:
             news_items = data_provider.get_market_news()
             
-            for item in news_items:
-                with st.container():
-                    col1, col2 = st.columns([3, 1])
-                    with col1:
-                        st.markdown(f"**{item['title']}**")
-                    with col2:
-                        st.caption(f"{item['source']} • {item['time']}")
-                    st.markdown("---")
+            if news_items:
+                for item in news_items:
+                    with st.container():
+                        col1, col2 = st.columns([3, 1])
+                        with col1:
+                            st.markdown(f"**{item['title']}**")
+                        with col2:
+                            st.caption(f"{item['source']} • {item['time']}")
+                        st.markdown("---")
+            else:
+                st.info("No news data available. News will appear when market data feed is connected.")
         except Exception as e:
             st.error(f"News feed temporarily unavailable: {str(e)}")
     
@@ -374,14 +400,20 @@ def test_market_overview():
         st.write("### Testing Equity Data Retrieval")
         test_symbols = ["SPY", "QQQ", "INVALID_SYMBOL"]
         for symbol in test_symbols:
-            price, change, status = provider.get_equity_data(symbol, 100.0, 1.0)
-            st.write(f"{symbol}: Price=${price:.2f}, Change={change:.2f}%, Status={status}")
+            price, change, status = provider.get_equity_data(symbol)
+            if price is not None:
+                st.write(f"{symbol}: Price=${price:.2f}, Change={change:.2f if change else 0}%, Status={status}")
+            else:
+                st.write(f"{symbol}: No data available, Status={status}")
         
         # Test market internals
         st.write("### Testing Market Internals")
         internals = provider.get_market_internals()
         for key, data in internals.items():
-            st.write(f"{key}: Value={data['value']:.2f}, Change={data['change']:.2f}%, Status={data['status']}")
+            if data['value'] is not None:
+                st.write(f"{key}: Value={data['value']:.2f}, Change={data['change']:.2f if data['change'] else 0}%, Status={data['status']}")
+            else:
+                st.write(f"{key}: No data available, Status={data['status']}")
         
         # Test market regime
         st.write("### Testing Market Regime")
