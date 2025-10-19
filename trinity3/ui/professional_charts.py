@@ -285,7 +285,7 @@ class ProfessionalCharts:
                 'bordercolor': cls.CHART_THEME['grid_color'],
                 'bar': {'color': cls.CHART_THEME['primary']},
                 'steps': [
-                    {'range': [r[0], r[1]], 'color': r[2], 'opacity': 0.3} for r in ranges
+                    {'range': [r[0], r[1]], 'color': r[2]} for r in ranges
                 ],
                 'threshold': {
                     'line': {'color': cls.CHART_THEME['text_color'], 'width': 2},
