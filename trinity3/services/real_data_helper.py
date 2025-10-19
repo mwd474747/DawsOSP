@@ -13,10 +13,6 @@ class RealDataHelper:
     def __init__(self, openbb_service):
         self.openbb = openbb_service
         
-    def get_vix_data(self) -> float:
-        """Get real VIX data from market - wrapper for get_real_vix"""
-        return self.get_real_vix()
-    
     def get_real_vix(self) -> float:
         """Get real VIX data from market"""
         try:
