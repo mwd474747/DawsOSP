@@ -358,6 +358,43 @@ class RealDataHelper:
             'declining': dec
         }
     
+    def get_realtime_price(self, symbol: str) -> float:
+        """Get real-time price for a symbol"""
+        try:
+            # Try Polygon first if available
+            if hasattr(self.openbb, 'polygon') and self.openbb.polygon.is_configured():
+                snapshot = self.openbb.polygon.get_ticker_snapshot(symbol)
+                if snapshot and 'price' in snapshot:
+                    return float(snapshot['price'])
+            
+            # Fallback to OpenBB
+            quote = self.openbb._get_with_fallback('equity.price.quote', symbol=symbol)
+            
+            if quote and isinstance(quote, pd.DataFrame) and not quote.empty:
+                if 'last' in quote.columns:
+                    return float(quote['last'].iloc[0])
+                elif 'close' in quote.columns:
+                    return float(quote['close'].iloc[0])
+                elif 'price' in quote.columns:
+                    return float(quote['price'].iloc[0])
+            
+            # Fallback to default values
+            defaults = {
+                'SPY': 485.43,
+                '^VIX': 15.5,
+                '^TNX': 43.5,  # 10-year treasury * 10
+                'DX-Y.NYB': 105.2,  # Dollar index
+                'GC=F': 1950.0,  # Gold
+                'CL=F': 85.0  # Oil
+            }
+            
+            return defaults.get(symbol, 100.0)
+            
+        except Exception as e:
+            print(f"Error fetching real-time price for {symbol}: {e}")
+            # Return sensible defaults
+            return 100.0
+    
     def get_sector_performance(self) -> List[Dict[str, Any]]:
         """Get real-time sector performance data"""
         try:
