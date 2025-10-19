@@ -44,13 +44,19 @@ class CycleService:
         
         # Initialize DawsOS integration for real data
         try:
-            from trinity3.services.dawsos_integration import DawsOSIntegration
+            from .dawsos_integration import DawsOSIntegration
             self.dawsos = DawsOSIntegration()
             self.use_real_data = True
         except Exception as e:
-            print(f"DawsOS integration not available: {e}")
-            self.dawsos = None
-            self.use_real_data = False
+            try:
+                # Alternative import path
+                from services.dawsos_integration import DawsOSIntegration
+                self.dawsos = DawsOSIntegration()
+                self.use_real_data = True
+            except Exception as e2:
+                print(f"DawsOS integration not available: {e2}")
+                self.dawsos = None
+                self.use_real_data = False
         
     def _load_historical_cycles(self) -> List[Dict]:
         """Load historical economic cycles for analysis"""

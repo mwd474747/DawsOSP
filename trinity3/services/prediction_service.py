@@ -32,11 +32,16 @@ class PredictionService:
         # Initialize DawsOS integration for real predictions
         if use_real_data:
             try:
-                from services.dawsos_integration import DawsOSIntegration
+                from .dawsos_integration import DawsOSIntegration
                 self.dawsos = DawsOSIntegration()
-            except ImportError:
-                print("DawsOS integration not available, using mock data")
-                self.dawsos = None
+            except ImportError as e:
+                try:
+                    # Alternative import path
+                    from services.dawsos_integration import DawsOSIntegration
+                    self.dawsos = DawsOSIntegration()
+                except ImportError as e2:
+                    print(f"DawsOS integration not available: {e2}")
+                    self.dawsos = None
         else:
             self.dawsos = None
         
