@@ -370,7 +370,10 @@ class ProfessionalTheme:
     
     @classmethod
     def render_header(cls, title: str = "DawsOS", subtitle: str = "Professional Financial Intelligence Platform"):
-        """Render professional header with modern gradient banner"""
+        """Render professional header with modern gradient banner and logo"""
+        import base64
+        import os
+        
         # Use Streamlit columns for better layout control
         st.markdown("""
         <style>
@@ -379,21 +382,35 @@ class ProfessionalTheme:
         </style>
         """, unsafe_allow_html=True)
         
-        # Create gradient background container
+        # Load and encode logo as base64
+        logo_path = 'trinity3/assets/dawsos_logo.png'
+        logo_base64 = ""
+        if os.path.exists(logo_path):
+            with open(logo_path, 'rb') as f:
+                logo_base64 = base64.b64encode(f.read()).decode()
+        
+        # Create gradient background container with logo
+        logo_html = ""
+        if logo_base64:
+            logo_html = f"<img src='data:image/png;base64,{logo_base64}' style='width: 70px; height: 70px; object-fit: contain; filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.5));' alt='DawsOS Logo'/>"
+        
         st.markdown(f"""
         <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%); 
                     padding: 2rem; margin: -4rem -4rem 2rem -4rem; border-radius: 0 0 20px 20px;'>
             <div style='background: rgba(10, 14, 39, 0.95); border-radius: 15px; padding: 2rem; 
                         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);'>
                 <div style='display: flex; align-items: center; justify-content: space-between;'>
-                    <div>
-                        <h1 style='font-size: 3.5rem; font-weight: 200; margin: 0; color: #ffffff;'>
-                            {title}
-                        </h1>
-                        <p style='font-size: 1rem; color: #a0a4b8; margin: 0.5rem 0 0 0; 
-                                  letter-spacing: 0.1em; text-transform: uppercase;'>
-                            {subtitle}
-                        </p>
+                    <div style='display: flex; align-items: center; gap: 1.5rem;'>
+                        {logo_html}
+                        <div>
+                            <h1 style='font-size: 3.5rem; font-weight: 200; margin: 0; color: #ffffff;'>
+                                {title}
+                            </h1>
+                            <p style='font-size: 1rem; color: #a0a4b8; margin: 0.5rem 0 0 0; 
+                                      letter-spacing: 0.1em; text-transform: uppercase;'>
+                                {subtitle}
+                            </p>
+                        </div>
                     </div>
                     <div style='display: flex; gap: 1rem;'>
                         <span style='padding: 0.5rem 1rem; background: rgba(16, 185, 129, 0.2); 
