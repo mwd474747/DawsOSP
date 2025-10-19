@@ -46,13 +46,57 @@ class MarketDataProvider:
             if self.openbb_service:
                 try:
                     quote = self.openbb_service.get_equity_quote(symbol)
-                    if quote and 'results' in quote and len(quote['results']) > 0:
-                        result = quote['results'][0]
-                        if 'price' in result and result['price']:
-                            price = float(result['price'])
-                            status = "live"
-                        if 'changesPercentage' in result:
-                            change = float(result['changesPercentage'])
+                    if quote:
+                        # Handle pandas DataFrame format where each field is a list
+                        if isinstance(quote, dict) and 'last_price' in quote and isinstance(quote['last_price'], list):
+                            # DataFrame format - extract first element from each list
+                            if len(quote.get('last_price', [])) > 0:
+                                price = float(quote['last_price'][0])
+                                status = "live"
+                            if 'change_percent' in quote and len(quote.get('change_percent', [])) > 0:
+                                change = float(quote['change_percent'][0]) * 100
+                            elif 'changesPercentage' in quote and len(quote.get('changesPercentage', [])) > 0:
+                                change = float(quote['changesPercentage'][0])
+                        # Handle different response formats
+                        elif 'results' in quote and len(quote['results']) > 0:
+                            # OpenBB format with results array
+                            result = quote['results'][0]
+                            
+                            # Check for price in different fields
+                            # The result might be an OpenBB data object or a dict
+                            if hasattr(result, 'last_price') and result.last_price is not None:
+                                price = float(result.last_price)
+                                status = "live"
+                            elif hasattr(result, 'price') and result.price is not None:
+                                price = float(result.price)
+                                status = "live"
+                            elif isinstance(result, dict):
+                                if 'last_price' in result and result['last_price'] is not None:
+                                    price = float(result['last_price'])
+                                    status = "live"
+                                elif 'price' in result and result['price'] is not None:
+                                    price = float(result['price'])
+                                    status = "live"
+                            
+                            # Check for change percentage
+                            if hasattr(result, 'change_percent'):
+                                change = float(result.change_percent) * 100
+                            elif hasattr(result, 'changesPercentage'):
+                                change = float(result.changesPercentage)
+                            elif isinstance(result, dict):
+                                if 'change_percent' in result:
+                                    change = float(result['change_percent']) * 100
+                                elif 'changesPercentage' in result:
+                                    change = float(result['changesPercentage'])
+                        
+                        elif isinstance(quote, list) and len(quote) > 0:
+                            # Direct FMP format (array of quotes)
+                            result = quote[0]
+                            if 'price' in result:
+                                price = float(result['price'])
+                                status = "live"
+                            if 'changesPercentage' in result:
+                                change = float(result['changesPercentage'])
                 except Exception as e:
                     print(f"Error getting OpenBB quote for {symbol}: {e}")
             

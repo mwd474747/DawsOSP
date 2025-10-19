@@ -128,9 +128,8 @@ class OpenBBService:
             # These endpoints don't exist in OpenBB - return default
             return None
             
-        # Skip FMP for premium endpoints
-        if 'equity.price.quote' in endpoint_path and 'fmp' in providers:
-            providers = [p for p in providers if p != 'fmp']
+        # FMP should be the primary provider for equity quotes
+        # Remove any logic that skips FMP
             
         # Try each provider in order
         for provider in providers:
@@ -168,12 +167,101 @@ class OpenBBService:
             if time.time() - timestamp < 60:  # 1 minute cache for quotes
                 return cached_data
         
+        # Try FMP first specifically for equity quotes
+        try:
+            if 'fmp' in self.provider_hierarchy.get('realtime_quotes', []):
+                # Try using FMP directly
+                result = self.obb.equity.price.quote(symbol=symbol, provider='fmp')
+                
+                # Handle FMP response format
+                if hasattr(result, 'to_dict'):
+                    raw_data = result.to_dict()
+                    # Extract results from OpenBB response
+                    if 'results' in raw_data and raw_data['results']:
+                        # Convert OpenBB data objects to dicts
+                        results = []
+                        for item in raw_data['results']:
+                            if hasattr(item, '__dict__'):
+                                # Convert object to dict
+                                item_dict = {}
+                                for key in dir(item):
+                                    if not key.startswith('_'):
+                                        val = getattr(item, key, None)
+                                        if val is not None and not callable(val):
+                                            item_dict[key] = val
+                                results.append(item_dict)
+                            else:
+                                results.append(item)
+                        data = {'results': results}
+                    else:
+                        data = raw_data
+                elif hasattr(result, 'to_df'):
+                    df = result.to_df()
+                    if not df.empty:
+                        # Convert DataFrame to dict format expected by callers
+                        # The DataFrame might be in column format where each field is a list
+                        df_dict = df.to_dict()
+                        if df_dict and isinstance(list(df_dict.values())[0], dict):
+                            # Standard records format
+                            data = {'results': df.to_dict('records')}
+                        else:
+                            # Column format - convert to records
+                            records = []
+                            num_rows = len(list(df_dict.values())[0]) if df_dict else 0
+                            for i in range(num_rows):
+                                record = {}
+                                for key, values in df_dict.items():
+                                    if isinstance(values, dict) and i in values:
+                                        record[key] = values[i]
+                                    elif isinstance(values, list) and i < len(values):
+                                        record[key] = values[i]
+                                records.append(record)
+                            data = {'results': records} if records else None
+                    else:
+                        data = None
+                else:
+                    data = result
+                
+                if data:
+                    self.cache[cache_key] = (data, time.time())
+                    return data
+        except Exception as e:
+            print(f"FMP quote failed for {symbol}: {e}")
+        
+        # Fall back to other providers if FMP fails
         data = self._get_with_fallback('equity.price.quote', symbol=symbol)
         
         if data:
             self.cache[cache_key] = (data, time.time())
             
         return data or {}
+    
+    def get_market_news(self, limit: int = 5) -> Dict[str, Any]:
+        """Get market news using NewsAPI or other providers"""
+        try:
+            # If NewsAPI key is available, use it directly
+            if os.getenv('NEWSAPI_KEY'):
+                import requests
+                url = 'https://newsapi.org/v2/top-headlines'
+                params = {
+                    'apiKey': os.getenv('NEWSAPI_KEY'),
+                    'category': 'business',
+                    'country': 'us',
+                    'pageSize': limit
+                }
+                response = requests.get(url, params=params)
+                if response.status_code == 200:
+                    return response.json()
+            
+            # Try OpenBB news endpoint if available
+            news_data = self._get_with_fallback('news.general', limit=limit)
+            if news_data:
+                return {'articles': news_data} if isinstance(news_data, list) else news_data
+                
+        except Exception as e:
+            print(f"Error getting market news: {e}")
+        
+        return {'articles': []}
     
     def get_equity_fundamentals(self, symbol: str) -> Dict[str, Any]:
         """Get comprehensive fundamental data for a stock"""
