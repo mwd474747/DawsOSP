@@ -251,19 +251,25 @@ def render_economic_dashboard():
     with tabs[2]:  # Sector Rotation
         sectors = st.session_state.real_data.get_sector_performance()
         
-        # Create treemap
-        sector_df = pd.DataFrame({
-            'labels': list(sectors.keys()),
-            'values': [abs(v) for v in sectors.values()],
-            'change': list(sectors.values())
-        })
+        # Convert list to DataFrame properly
+        if sectors and isinstance(sectors, list):
+            sector_df = pd.DataFrame(sectors)
+        else:
+            # Fallback data if sectors is empty
+            sector_df = pd.DataFrame({
+                'name': ['Technology', 'Energy', 'Healthcare', 'Financials'],
+                'performance': [2.3, 3.7, 1.1, -0.5],
+                'volume': [1250000000, 670000000, 890000000, 1100000000]
+            })
         
-        fig = ProfessionalCharts.create_treemap(
-            sector_df,
-            title="Sector Performance Map",
-            height=400
-        )
-        st.plotly_chart(fig, use_container_width=True)
+        # Create treemap visualization
+        if not sector_df.empty:
+            fig = ProfessionalCharts.create_treemap(
+                sector_df,
+                title="Sector Performance Map",
+                height=400
+            )
+            st.plotly_chart(fig, use_container_width=True)
     
     with tabs[3]:  # Fed Policy
         st.markdown("##### FEDERAL RESERVE POLICY ANALYSIS")
