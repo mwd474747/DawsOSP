@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from agents.base_agent import BaseAgent
 from services.openbb_service import OpenBBService
 from services.prediction_service import PredictionService
+from services.real_data_helper import RealDataHelper
 
 class MarketAgent(BaseAgent):
     """Specializes in market structure and flow analysis"""
@@ -30,6 +31,7 @@ class MarketAgent(BaseAgent):
         super().__init__("MarketAgent", capabilities)
         self.openbb = OpenBBService()
         self.prediction_service = PredictionService()
+        self.data_helper = RealDataHelper(self.openbb)
     
     def analyze(self, query: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """Main analysis method for market queries"""
@@ -362,16 +364,35 @@ class MarketAgent(BaseAgent):
         }
     
     def _predict_volatility(self, market_data: Dict, horizon: str) -> Dict:
-        """Predict volatility levels"""
-        # Simplified volatility prediction
-        current_vix = 20  # Placeholder
+        """Predict volatility levels using real VIX data"""
+        # Get real VIX from data helper
+        current_vix = self.data_helper.get_real_vix()
+        
+        # Get historical VIX for trend analysis
+        vix_hist = self.openbb.get_historical_prices('VIX', interval='1d')
+        if not vix_hist.empty and len(vix_hist) > 20:
+            # Calculate volatility trend
+            vix_ma = vix_hist['close'].rolling(window=20).mean().iloc[-1]
+            predicted_vix = current_vix * (1.1 if current_vix < vix_ma else 0.95)
+        else:
+            predicted_vix = current_vix * 1.05
+        
+        # Determine regime based on real VIX levels
+        if current_vix < 15:
+            regime = 'Low'
+        elif current_vix < 20:
+            regime = 'Normal'
+        elif current_vix < 30:
+            regime = 'Elevated'
+        else:
+            regime = 'High'
         
         return {
             'current_vix': current_vix,
-            'predicted_vix': current_vix * 1.1,
-            'regime': 'Normal' if current_vix < 20 else 'Elevated',
+            'predicted_vix': predicted_vix,
+            'regime': regime,
             'horizon': horizon,
-            'confidence': 65
+            'confidence': 70 if not vix_hist.empty else 50
         }
     
     def _predict_sector_rotation(self, market_data: Dict, horizon: str) -> Dict:
@@ -400,19 +421,51 @@ class MarketAgent(BaseAgent):
         return {}
     
     def _analyze_highs_lows(self, breadth_data: Dict) -> Dict:
+        new_highs = breadth_data.get('new_highs', 0)
+        new_lows = breadth_data.get('new_lows', 0)
+        
+        # Calculate real ratio
+        ratio = new_highs / new_lows if new_lows > 0 else 10 if new_highs > 0 else 1
+        
+        # Determine signal based on real data
+        if ratio > 3:
+            signal = 'Very Positive'
+        elif ratio > 1.5:
+            signal = 'Positive'
+        elif ratio > 0.5:
+            signal = 'Neutral'
+        else:
+            signal = 'Negative'
+            
         return {
-            'new_highs': breadth_data.get('new_highs', 0),
-            'new_lows': breadth_data.get('new_lows', 0),
-            'ratio': 2.5,  # Placeholder
-            'signal': 'Positive'
+            'new_highs': new_highs,
+            'new_lows': new_lows,
+            'ratio': ratio,
+            'signal': signal
         }
     
     def _analyze_volume_breadth(self, breadth_data: Dict) -> Dict:
+        up_vol = breadth_data.get('up_volume', 0) 
+        down_vol = breadth_data.get('down_volume', 0)
+        
+        # Calculate real volume ratio
+        ratio = up_vol / down_vol if down_vol > 0 else 5 if up_vol > 0 else 1
+        
+        # Determine signal based on real volume data
+        if ratio > 2:
+            signal = 'Strong Accumulation'
+        elif ratio > 1.2:
+            signal = 'Accumulation'
+        elif ratio > 0.8:
+            signal = 'Neutral'
+        else:
+            signal = 'Distribution'
+            
         return {
-            'up_volume': breadth_data.get('up_volume', 0),
-            'down_volume': breadth_data.get('down_volume', 0),
-            'ratio': 1.5,
-            'signal': 'Accumulation'
+            'up_volume': up_vol,
+            'down_volume': down_vol,
+            'ratio': ratio,
+            'signal': signal
         }
     
     def _analyze_sector_participation(self, breadth_data: Dict) -> Dict:
@@ -444,8 +497,8 @@ class MarketAgent(BaseAgent):
     
     # Options flow analysis helpers
     def _calculate_put_call_ratio(self, options: Dict) -> float:
-        # Simplified P/C ratio calculation
-        return 0.85
+        """Get real put/call ratio from market data"""
+        return self.data_helper.get_real_put_call_ratio()
     
     def _calculate_gamma_exposure(self, options: Dict) -> Dict:
         return {
