@@ -114,7 +114,7 @@ class EconomicPredictions:
                 ))
         else:
             # Generate sample projections
-            future_dates = pd.date_range(start=datetime.now(), periods=13, freq='M')
+            future_dates = pd.date_range(start=datetime.now(), periods=13, freq='ME')
             
             # Base case - gradual decline
             base_rates = [current_rate]
@@ -240,7 +240,7 @@ class EconomicPredictions:
             ))
         else:
             # Generate sample data
-            dates = pd.date_range(end=datetime.now(), periods=36, freq='M')
+            dates = pd.date_range(end=datetime.now(), periods=36, freq='ME')
             unemployment = np.random.normal(current_rate, 0.3, 36)
             unemployment = np.maximum(unemployment, 3.0)  # Floor at 3%
             
@@ -254,7 +254,7 @@ class EconomicPredictions:
             ))
         
         # Recession probability overlay
-        future_dates = pd.date_range(start=datetime.now(), periods=13, freq='M')
+        future_dates = pd.date_range(start=datetime.now(), periods=13, freq='ME')
         
         # Base forecast
         base_forecast = [current_rate]
@@ -348,7 +348,7 @@ class EconomicPredictions:
         )
         
         # Generate sample data if not provided
-        dates = pd.date_range(end=datetime.now(), periods=24, freq='M')
+        dates = pd.date_range(end=datetime.now(), periods=24, freq='ME')
         
         # Unemployment Rate (left axis)
         unemployment = data.get('unemployment', pd.DataFrame({
@@ -557,7 +557,7 @@ class EconomicPredictions:
         fig = go.Figure()
         
         # Generate dates
-        dates = pd.date_range(start=datetime.now(), periods=24, freq='M')
+        dates = pd.date_range(start=datetime.now(), periods=24, freq='ME')
         
         if probabilities:
             # Use provided probabilities
