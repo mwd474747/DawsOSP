@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import json
 import sys
 import os
+import plotly.graph_objects as go
 
 # Add project path
 sys.path.append('/home/runner/workspace/trinity3')
@@ -910,7 +911,8 @@ def main():
                     if i == 0:
                         corr_matrix[j,i] = corr_matrix[i,j]
                     else:
-                        corr_matrix[i,j] = corr_matrix[j,i] = np.random.uniform(-0.3, 0.3)
+                        # Set small correlations for non-stock assets
+                        corr_matrix[i,j] = corr_matrix[j,i] = 0.1
             
             corr_df = pd.DataFrame(corr_matrix, columns=assets, index=assets)
             
