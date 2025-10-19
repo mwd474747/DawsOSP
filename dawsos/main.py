@@ -61,7 +61,7 @@ from ui.economic_dashboard import render_economic_dashboard
 # Page config
 st.set_page_config(
     page_title="DawsOS - Knowledge Graph Intelligence",
-    page_icon="",
+    page_icon="trinity3/static/dawsos_icon.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
