@@ -957,7 +957,7 @@ def main():
                 title = {'text': "Advance/Decline Ratio"},
                 gauge = {
                     'axis': {'range': [0, 3]},
-                    'bar': {'color': ProfessionalTheme.COLORS['primary']},
+                    'bar': {'color': ProfessionalTheme.COLORS['accent_primary']},
                     'steps': [
                         {'range': [0, 0.7], 'color': ProfessionalTheme.COLORS['accent_danger']},
                         {'range': [0.7, 1.3], 'color': ProfessionalTheme.COLORS['accent_warning']},
@@ -1002,10 +1002,10 @@ def main():
                     x=terms,
                     y=term_vols,
                     mode='lines+markers',
-                    line=dict(color=ProfessionalTheme.COLORS['primary'], width=3),
-                    marker=dict(size=8, color=ProfessionalTheme.COLORS['primary']),
+                    line=dict(color=ProfessionalTheme.COLORS['accent_primary'], width=3),
+                    marker=dict(size=8, color=ProfessionalTheme.COLORS['accent_primary']),
                     fill='tozeroy',
-                    fillcolor=f"{ProfessionalTheme.COLORS['primary']}20"
+                    fillcolor='rgba(74, 158, 255, 0.2)'  # Transparent blue
                 )
             ])
             
