@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from agents.base_agent import BaseAgent
 from services.openbb_service import OpenBBService
 from services.prediction_service import PredictionService
+from services.cycle_service import CycleService
 
 class MacroAgent(BaseAgent):
     """Specializes in macroeconomic analysis and predictions"""
@@ -30,6 +31,7 @@ class MacroAgent(BaseAgent):
         super().__init__("MacroAgent", capabilities)
         self.openbb = OpenBBService()
         self.prediction_service = PredictionService()
+        self.cycle_service = CycleService()
         
     def analyze(self, query: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """
@@ -222,32 +224,49 @@ class MacroAgent(BaseAgent):
     
     def analyze_economic_cycles(self) -> Dict[str, Any]:
         """
-        Analyze economic cycles using Dalio framework
+        Analyze economic cycles using Dalio framework with enhanced CycleService
         """
         # Get comprehensive data
         indicators = self.openbb.get_economic_indicators()
         
-        # Debt cycle analysis
-        debt_cycle = {
-            'short_term_position': self._analyze_short_term_cycle(indicators),
-            'long_term_position': self._analyze_long_term_cycle(indicators),
-            'credit_conditions': self._analyze_credit_conditions(indicators),
-            'deleveraging_risk': self._assess_deleveraging_risk(indicators)
+        # Prepare data for cycle analysis
+        economic_data = {
+            'debt_to_gdp': self._get_latest_value(indicators.get('GFDEGDQ188S', {})) or 130,
+            'fed_funds': self._get_latest_value(indicators.get('DFF', {})) or 5.25,
+            'credit_growth': self._calculate_credit_growth(indicators),
+            'unemployment': self._get_latest_value(indicators.get('UNRATE', {})) or 3.8,
+            'inflation': self._get_latest_value(indicators.get('CPIAUCSL', {})) or 3.2
         }
         
-        # Business cycle
-        business_cycle = {
-            'current_phase': self._identify_cycle_phase(indicators),
-            'months_in_phase': self._estimate_phase_duration(indicators),
-            'next_phase_probability': self._predict_phase_transition(indicators)
-        }
+        # Use enhanced CycleService for Dalio framework analysis
+        cycle_analysis = self.cycle_service.analyze_debt_cycle(economic_data)
         
+        # Analyze empire cycle for US
+        empire_analysis = self.cycle_service.analyze_empire_cycle('US')
+        
+        # Combine with traditional analysis
         analysis = {
-            'debt_cycle': debt_cycle,
-            'business_cycle': business_cycle,
-            'composite_outlook': self._generate_cycle_outlook(debt_cycle, business_cycle),
-            'investment_implications': self._derive_investment_implications(debt_cycle, business_cycle)
+            'debt_cycle': cycle_analysis,
+            'empire_cycle': empire_analysis,
+            'historical_analogs': cycle_analysis.get('historical_analogs', []),
+            'predictions': cycle_analysis.get('predictions', {}),
+            'portfolio_allocation': cycle_analysis.get('portfolio_allocation', {}),
+            'cycle_timing': cycle_analysis.get('cycle_timing', {}),
+            'paradigm_shift_risk': cycle_analysis.get('paradigm_shift_risk', {}),
+            'investment_implications': self._derive_investment_implications(
+                cycle_analysis.get('short_term_cycle', {}),
+                cycle_analysis.get('long_term_cycle', {})
+            )
         }
+        
+        # Store cycle prediction
+        self.prediction_service.store_prediction(
+            prediction_type="economic_cycle",
+            prediction_data=analysis,
+            confidence=85,
+            target_date=(datetime.now() + timedelta(days=180)).strftime('%Y-%m-%d'),
+            agent=self.name
+        )
         
         return self.format_response('economic_cycle_analysis', analysis, 85)
     
@@ -474,12 +493,63 @@ class MacroAgent(BaseAgent):
     def _generate_cycle_outlook(self, debt_cycle: Dict, business_cycle: Dict) -> str:
         return "Caution warranted - approaching cycle peak"
     
-    def _derive_investment_implications(self, debt_cycle: Dict, business_cycle: Dict) -> List[str]:
-        return [
-            "Reduce risk exposure",
-            "Increase cash allocation",
-            "Focus on quality companies",
-            "Consider defensive sectors"
+    def _calculate_credit_growth(self, indicators: Dict) -> float:
+        """Calculate credit growth from indicators"""
+        if 'BUSLOANS' in indicators:
+            data = self._get_series_data(indicators['BUSLOANS'])
+            if len(data) >= 12:
+                yoy = self._calculate_yoy_change(data)
+                return yoy[-1] if yoy else 3.0
+        return 3.0  # Default moderate growth
+    
+    def _derive_investment_implications(self, short_cycle: Dict, long_cycle: Dict) -> List[str]:
+        """Derive investment implications from cycle positions"""
+        implications = []
+        
+        # Short-term cycle implications  
+        if isinstance(short_cycle, dict):
+            phase = short_cycle.get('phase', '')
+            if phase == 'Late Cycle':
+                implications.extend([
+                    "Reduce equity exposure, especially growth stocks",
+                    "Increase defensive sectors (utilities, consumer staples)",
+                    "Build cash reserves for opportunities"
+                ])
+            elif phase == 'Recession':
+                implications.extend([
+                    "High-quality bonds attractive",
+                    "Prepare shopping list for equities",
+                    "Focus on companies with strong balance sheets"
+                ])
+            elif phase == 'Early Recovery':
+                implications.extend([
+                    "Increase equity allocation",
+                    "Focus on cyclical sectors",
+                    "Consider small-cap opportunities"
+                ])
+            else:
+                implications.append("Maintain balanced allocation")
+        
+        # Long-term cycle implications
+        if isinstance(long_cycle, dict):
+            phase = long_cycle.get('phase', '')
+            if 'Bubble' in phase or 'Top' in phase:
+                implications.extend([
+                    "Reduce leverage significantly",
+                    "Increase allocation to real assets (gold, commodities)",
+                    "Geographic diversification critical"
+                ])
+            elif 'Deleveraging' in phase:
+                implications.extend([
+                    "Focus on capital preservation",
+                    "Government bonds may outperform",
+                    "Avoid highly leveraged companies"
+                ])
+        
+        return implications if implications else [
+            "Maintain diversified portfolio",
+            "Regular rebalancing recommended",
+            "Monitor cycle indicators closely"
         ]
     
     def _analyze_dollar_index(self, currency_data: Dict) -> Dict:
