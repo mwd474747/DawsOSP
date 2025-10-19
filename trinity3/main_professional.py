@@ -53,18 +53,17 @@ def initialize_services():
             
             # Initialize agents with proper structure
             st.session_state.macro_agent = MacroAgent()
-            st.session_state.macro_agent.openbb_service = st.session_state.openbb_service
+            st.session_state.macro_agent.openbb = st.session_state.openbb_service
             st.session_state.macro_agent.prediction_service = st.session_state.prediction_service
             st.session_state.macro_agent.cycle_service = st.session_state.cycle_service
             
             st.session_state.equity_agent = EquityAgent()
-            st.session_state.equity_agent.openbb_service = st.session_state.openbb_service
+            st.session_state.equity_agent.openbb = st.session_state.openbb_service
             st.session_state.equity_agent.prediction_service = st.session_state.prediction_service
             
             st.session_state.market_agent = MarketAgent()
-            st.session_state.market_agent.openbb_service = st.session_state.openbb_service
+            st.session_state.market_agent.openbb = st.session_state.openbb_service
             st.session_state.market_agent.prediction_service = st.session_state.prediction_service
-            st.session_state.market_agent.real_data = st.session_state.real_data
             
             st.session_state.services_initialized = True
             st.session_state.api_status = message
@@ -615,8 +614,8 @@ def render_economic_dashboard():
             phases = ['Rise', 'Peak', 'Decline', 'Restructuring']
             current_phase_idx = phases.index(empire['phase'].split()[0])
             
-            values = {'US Position': [0] * 4}
-            values['US Position'][current_phase_idx] = 100
+            values = {'US Position': [0.0] * 4}
+            values['US Position'][current_phase_idx] = 100.0
             
             fig = ProfessionalCharts.create_radar_chart(
                 categories=phases,
@@ -784,7 +783,7 @@ def main():
             X, Y = np.meshgrid(strikes, expiries)
             Z = 20 + 10 * np.exp(-(X-1)**2) * np.sqrt(Y)
             
-            vol_df = pd.DataFrame(Z, columns=[f"{s:.1%}" for s in strikes])
+            vol_df = pd.DataFrame(data=Z, columns=[f"{s:.1%}" for s in strikes])
             vol_df.index = [f"{e:.1f}Y" for e in expiries]
             
             fig = ProfessionalCharts.create_heatmap(
