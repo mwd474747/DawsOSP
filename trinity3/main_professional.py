@@ -42,28 +42,71 @@ ProfessionalTheme.apply_theme()
 def initialize_services():
     """Initialize all services with proper API configuration"""
     if 'services_initialized' not in st.session_state:
-        # Simplified initialization to prevent hanging
-        try:
-            # Configure OpenBB  
-            success, message = OpenBBConfig.setup_openbb_credentials()
-            
-            # Initialize services as None for now (mock mode)
-            st.session_state.openbb_service = None 
-            st.session_state.prediction_service = None
-            st.session_state.cycle_service = None
-            st.session_state.real_data = None
-            
-            # Initialize agents as None to prevent KeyError
-            st.session_state.macro_agent = None
-            st.session_state.equity_agent = None
-            st.session_state.market_agent = None
-            
-            st.session_state.services_initialized = True
-            st.session_state.api_status = "Services initialized (mock mode)"
-        except Exception as e:
-            st.error(f"Initialization error: {str(e)}")
-            st.session_state.services_initialized = True  # Mark as done to prevent infinite loop
-            st.session_state.api_status = "Error during initialization"
+        with st.spinner("Initializing financial data services..."):
+            try:
+                # Configure OpenBB with all available API keys
+                success, message = OpenBBConfig.setup_openbb_credentials()
+                
+                # Display configuration status
+                if success:
+                    st.session_state.api_status = message
+                    # Get configured providers for display
+                    configured = OpenBBConfig.get_configured_providers()
+                    if configured:
+                        provider_list = list(configured.keys())
+                        st.success(f"✅ Connected to {len(provider_list)} data providers")
+                else:
+                    st.session_state.api_status = "Running in limited mode (no API keys)"
+                    st.warning(message)
+                
+                # Initialize services with proper error handling
+                try:
+                    from services.openbb_service import OpenBBService
+                    st.session_state.openbb_service = OpenBBService()
+                except Exception as e:
+                    st.session_state.openbb_service = None
+                    print(f"OpenBB service initialization failed: {e}")
+                
+                try:
+                    from services.prediction_service import PredictionService
+                    st.session_state.prediction_service = PredictionService()
+                except Exception as e:
+                    st.session_state.prediction_service = None
+                    print(f"Prediction service initialization failed: {e}")
+                
+                try:
+                    from services.cycle_service import CycleService
+                    st.session_state.cycle_service = CycleService()
+                except Exception as e:
+                    st.session_state.cycle_service = None
+                    print(f"Cycle service initialization failed: {e}")
+                
+                try:
+                    from services.real_data_helper import RealDataHelper
+                    st.session_state.real_data = RealDataHelper(st.session_state.openbb_service)
+                except Exception as e:
+                    st.session_state.real_data = None
+                    print(f"Real data helper initialization failed: {e}")
+                
+                # Initialize agents as None (will be lazy-loaded when needed)
+                st.session_state.macro_agent = None
+                st.session_state.equity_agent = None
+                st.session_state.market_agent = None
+                
+                st.session_state.services_initialized = True
+                
+            except Exception as e:
+                st.error(f"Initialization error: {str(e)}")
+                st.session_state.services_initialized = True
+                st.session_state.api_status = "Error during initialization"
+                # Still initialize as None to prevent KeyErrors
+                st.session_state.openbb_service = None
+                st.session_state.prediction_service = None
+                st.session_state.cycle_service = None
+                st.session_state.real_data = None
+                st.session_state.macro_agent = None
+                st.session_state.equity_agent = None
+                st.session_state.market_agent = None
 
 def render_market_overview():
     """Render professional market overview section with comprehensive data"""
@@ -1041,11 +1084,56 @@ def render_predictions_tracker():
     else:
         st.info("No predictions recorded yet. Start making analyses to build prediction history.")
 
+def check_and_display_api_status():
+    """Check and display API connection status"""
+    if 'api_status_displayed' not in st.session_state:
+        st.session_state.api_status_displayed = True
+        
+        # Get configured providers
+        configured = OpenBBConfig.get_configured_providers()
+        
+        # Display connection status in sidebar
+        with st.sidebar:
+            st.markdown("### 📊 Data Connections")
+            
+            # Show connected providers
+            if configured:
+                for provider in configured.keys():
+                    if provider == 'fmp':
+                        st.success("✅ FMP (Stocks & Fundamentals)")
+                    elif provider == 'fred':
+                        st.success("✅ FRED (Economic Data)")
+                    elif provider == 'newsapi':
+                        st.success("✅ NewsAPI (Market News)")
+                    elif provider == 'yfinance':
+                        st.info("✅ YFinance (Backup Data)")
+            else:
+                st.warning("⚠️ No API keys configured")
+                
+            # Show recommendations for missing APIs
+            recommendations = OpenBBConfig.get_api_recommendations()
+            if recommendations and len(recommendations) > 0:
+                with st.expander("💡 Available Enhancements"):
+                    for rec in recommendations[:3]:
+                        st.markdown(f"**{rec['provider']}**: {rec['reason']}")
+                        
+            # Show AI status
+            st.markdown("### 🤖 AI Services")
+            if os.getenv('ANTHROPIC_API_KEY'):
+                st.success("✅ Claude AI Connected")
+            elif os.getenv('OPENAI_API_KEY'):
+                st.success("✅ OpenAI Connected")
+            else:
+                st.warning("⚠️ No AI service connected")
+
 def main():
     """Main application entry point"""
     
     # Initialize services
     initialize_services()
+    
+    # Check and display API status in sidebar
+    check_and_display_api_status()
     
     # Professional header
     ProfessionalTheme.render_header(
