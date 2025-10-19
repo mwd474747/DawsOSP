@@ -42,6 +42,28 @@ class RealDataHelper:
             
         return 20  # Conservative default only if all methods fail
     
+    def get_vix_data(self) -> float:
+        """Alias for get_real_vix for compatibility"""
+        return self.get_real_vix()
+    
+    def get_vix_change(self) -> float:
+        """Get VIX percent change from previous close"""
+        try:
+            # Try VIX index first
+            vix_data = self.openbb.get_equity_quote('VIX')
+            if vix_data and 'results' in vix_data:
+                return vix_data['results'][0].get('changesPercentage', 0)
+            
+            # Fallback to VIXY ETF if VIX fails  
+            vixy = self.openbb.get_equity_quote('VIXY')
+            if vixy and 'results' in vixy:
+                return vixy['results'][0].get('changesPercentage', 0)
+                
+        except Exception as e:
+            print(f"Error fetching VIX change: {e}")
+            
+        return 0  # Default if no change data available
+    
     def get_real_breadth(self) -> Dict[str, Any]:
         """Get real market breadth data"""
         try:

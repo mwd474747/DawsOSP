@@ -124,12 +124,12 @@ def render_market_overview():
             )
         
         # Market internals and volatility
-        st.markdown("### Market Internals")
+        st.markdown("### Market Internals & Sentiment")
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
             vix = real_data.get_vix_data()
-            vix_change = np.random.uniform(-5, 5)
+            vix_change = real_data.get_vix_change()
             color = ProfessionalTheme.COLORS['accent_danger'] if vix > 20 else ProfessionalTheme.COLORS['accent_success']
             ProfessionalTheme.render_metric_card(
                 "VIX",
@@ -139,9 +139,15 @@ def render_market_overview():
             )
         
         with col2:
-            # Market breadth (advance/decline ratio)
-            breadth = np.random.uniform(0.4, 1.6)
-            breadth_color = ProfessionalTheme.COLORS['accent_success'] if breadth > 1 else ProfessionalTheme.COLORS['accent_danger']
+            # Get real market breadth from improved service
+            breadth_data = openbb_service.get_market_breadth()
+            if 'market_internals' in breadth_data:
+                breadth = breadth_data['market_internals']['advance_decline_ratio']
+                breadth_color = ProfessionalTheme.COLORS['accent_success'] if breadth > 1 else ProfessionalTheme.COLORS['accent_danger']
+            else:
+                breadth = 1.0
+                breadth_color = ProfessionalTheme.COLORS['text_secondary']
+            
             ProfessionalTheme.render_metric_card(
                 "A/D Ratio",
                 f"{breadth:.2f}",
@@ -150,8 +156,8 @@ def render_market_overview():
             )
         
         with col3:
-            # Put/Call ratio
-            pc_ratio = np.random.uniform(0.7, 1.3)
+            # Real Put/Call ratio
+            pc_ratio = real_data.get_real_put_call_ratio()
             pc_color = ProfessionalTheme.COLORS['accent_warning'] if pc_ratio > 1 else ProfessionalTheme.COLORS['accent_success']
             ProfessionalTheme.render_metric_card(
                 "Put/Call Ratio",
@@ -161,15 +167,25 @@ def render_market_overview():
             )
         
         with col4:
-            # New highs vs new lows
-            highs = np.random.randint(50, 300)
-            lows = np.random.randint(20, 150)
-            nh_nl = highs - lows
-            ProfessionalTheme.render_metric_card(
-                "NH-NL",
-                f"{nh_nl:+d}",
-                (nh_nl / (highs + lows)) * 100 if (highs + lows) > 0 else 0
-            )
+            # Market regime indicator (Trinity 2.0 style)
+            # Determine regime based on VIX, breadth, and P/C ratio
+            if vix < 15 and breadth > 1.2 and pc_ratio < 0.8:
+                regime = "RISK ON"
+                regime_color = ProfessionalTheme.COLORS['accent_success']
+            elif vix > 25 or breadth < 0.7 or pc_ratio > 1.2:
+                regime = "RISK OFF"
+                regime_color = ProfessionalTheme.COLORS['accent_danger']
+            else:
+                regime = "NEUTRAL"
+                regime_color = ProfessionalTheme.COLORS['accent_warning']
+            
+            st.markdown(f"""
+            <div style="background: {regime_color}20; border: 2px solid {regime_color}; 
+                        border-radius: 8px; padding: 0.5rem; text-align: center;">
+                <div style="font-size: 0.7rem; color: {ProfessionalTheme.COLORS['text_secondary']};">MARKET REGIME</div>
+                <div style="font-size: 1.2rem; font-weight: bold; color: {regime_color};">{regime}</div>
+            </div>
+            """, unsafe_allow_html=True)
         
         # Commodities & Bonds
         st.markdown("### Commodities & Bonds")
