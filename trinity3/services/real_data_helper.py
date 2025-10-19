@@ -380,8 +380,8 @@ class RealDataHelper:
             'declining': dec
         }
     
-    def get_realtime_price(self, symbol: str) -> float:
-        """Get real-time price for a symbol"""
+    def get_realtime_price(self, symbol: str) -> Optional[float]:
+        """Get real-time price for a symbol - returns None if no real data available"""
         try:
             # Try Polygon first if available
             if hasattr(self.openbb, 'polygon') and self.openbb.polygon.is_configured():
@@ -400,22 +400,13 @@ class RealDataHelper:
                 elif 'price' in quote.columns:
                     return float(quote['price'].iloc[0])
             
-            # Fallback to default values
-            defaults = {
-                'SPY': 485.43,
-                '^VIX': 15.5,
-                '^TNX': 43.5,  # 10-year treasury * 10
-                'DX-Y.NYB': 105.2,  # Dollar index
-                'GC=F': 1950.0,  # Gold
-                'CL=F': 85.0  # Oil
-            }
-            
-            return defaults.get(symbol, 100.0)
+            # No real data available - return None
+            return None
             
         except Exception as e:
             print(f"Error fetching real-time price for {symbol}: {e}")
-            # Return sensible defaults
-            return 100.0
+            # Return None to indicate no data available
+            return None
     
     def get_sector_performance(self) -> List[Dict[str, Any]]:
         """Get real-time sector performance data"""
