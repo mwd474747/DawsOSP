@@ -16,35 +16,23 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "DawsOS"
+args = "Trinity3"
 
 [[workflows.workflow]]
-name = "DawsOS"
+name = "Trinity3"
 author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "streamlit run dawsos/main.py"
-waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
 
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd trinity3 && streamlit run main.py --server.port 5000 --server.address 0.0.0.0"
+waitForPort = 5000
+
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 35791
-externalPort = 3002
-
-[[ports]]
-localPort = 39247
-externalPort = 3001
-
-[[ports]]
-localPort = 40523
-externalPort = 3000
 
 [deployment]
 deploymentTarget = "autoscale"
