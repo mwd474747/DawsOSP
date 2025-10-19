@@ -123,6 +123,15 @@ class OpenBBService:
         if specified_provider:
             providers = [specified_provider] + [p for p in providers if p != specified_provider]
         
+        # Skip known failing endpoints for FMP
+        if endpoint_path in ['derivatives.options.pcr', 'derivatives.options.chains', 'index.market.breadth']:
+            # These endpoints don't exist in OpenBB - return default
+            return None
+            
+        # Skip FMP for premium endpoints
+        if 'equity.price.quote' in endpoint_path and 'fmp' in providers:
+            providers = [p for p in providers if p != 'fmp']
+            
         # Try each provider in order
         for provider in providers:
             try:
