@@ -674,7 +674,16 @@ def render_economic_dashboard():
             with col2:
                 # Empire cycle visualization
                 phases = ['Rise', 'Peak', 'Decline', 'Restructuring']
-                current_phase_idx = phases.index(empire['phase'].split()[0])
+                # Handle different case formats for empire phase
+                empire_phase = empire.get('phase', 'Peak')
+                phase_name = empire_phase.capitalize() if empire_phase else 'Peak'
+                # Extract first word if it's a multi-word phase
+                phase_first = phase_name.split()[0] if ' ' in phase_name else phase_name
+                # Find the phase index, default to Peak if not found
+                try:
+                    current_phase_idx = phases.index(phase_first)
+                except ValueError:
+                    current_phase_idx = 1  # Default to Peak
                 
                 values = {'US Position': [0.0] * 4}
                 values['US Position'][current_phase_idx] = 100.0
