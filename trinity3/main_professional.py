@@ -150,7 +150,7 @@ def render_economic_dashboard():
     
     with tabs[0]:  # Economic Indicators
         # Combined economic indicators chart
-        st.markdown("### 📊 Economic Indicators Dashboard")
+        st.markdown("### Economic Indicators Dashboard")
         st.markdown("*Real-time tracking of key economic metrics with forecasts*")
         
         # Key metrics summary
@@ -188,7 +188,7 @@ def render_economic_dashboard():
         st.plotly_chart(fig, use_container_width=True)
     
     with tabs[1]:  # Fed Policy
-        st.markdown("### 🏛️ Federal Reserve Policy Analysis")
+        st.markdown("### Federal Reserve Policy Analysis")
         
         # Fed funds rate projection
         col1, col2 = st.columns([3, 2])
@@ -211,12 +211,12 @@ def render_economic_dashboard():
         
         # Unemployment forecast
         st.markdown("---")
-        st.markdown("### 📈 Unemployment Rate Forecast")
+        st.markdown("### Unemployment Rate Forecast")
         fig = EconomicPredictions.create_unemployment_forecast(current_rate=3.8)
         st.plotly_chart(fig, use_container_width=True)
     
     with tabs[2]:  # Recession Risk
-        st.markdown("### ⚠️ Recession Risk Analysis")
+        st.markdown("### Recession Risk Analysis")
         
         col1, col2 = st.columns([1, 1])
         
