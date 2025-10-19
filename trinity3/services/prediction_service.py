@@ -483,3 +483,45 @@ class PredictionService:
         
         total_pairs = len(trades) // 2
         return (wins / total_pairs * 100) if total_pairs > 0 else 0
+    
+    def get_recent_predictions(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Get recent predictions for display"""
+        try:
+            conn = self._get_connection()
+            cur = conn.cursor()
+            
+            cur.execute("""
+                SELECT id, prediction_type, symbol, target_date, 
+                       prediction_data, confidence, agent, status,
+                       actual_outcome, accuracy_score, created_at
+                FROM predictions 
+                ORDER BY created_at DESC 
+                LIMIT %s
+            """, (limit,))
+            
+            rows = cur.fetchall()
+            cur.close()
+            conn.close()
+            
+            predictions = []
+            for row in rows:
+                predictions.append({
+                    'id': row[0],
+                    'type': row[1],
+                    'symbol': row[2],
+                    'target_date': row[3].strftime('%Y-%m-%d') if row[3] else None,
+                    'prediction': json.loads(row[4]) if row[4] else {},
+                    'confidence': row[5],
+                    'agent': row[6],
+                    'status': row[7],
+                    'outcome': json.loads(row[8]) if row[8] else None,
+                    'accuracy': row[9],
+                    'created_at': row[10].strftime('%Y-%m-%d %H:%M') if row[10] else None
+                })
+            
+            return predictions
+            
+        except Exception as e:
+            print(f"Error getting recent predictions: {e}")
+            # Return empty list if database not available
+            return []
