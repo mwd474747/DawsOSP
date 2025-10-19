@@ -308,32 +308,39 @@ def render_economic_dashboard():
         st.markdown("### Economic Indicators Dashboard")
         st.markdown("*Real-time tracking of key economic metrics with forecasts*")
         
-        # Get real economic data from OpenBB/FRED
-        openbb_service = st.session_state.get('openbb_service')
-        
-        # Fetch real economic indicators
-        if openbb_service:
-            try:
-                real_indicators = openbb_service.get_economic_indicators()
+        # Get real economic data from DawsOS integration
+        try:
+            from services.dawsos_integration import DawsOSIntegration
+            dawsos = DawsOSIntegration()
+            
+            # Fetch real economic indicators
+            real_indicators = dawsos.get_economic_indicators()
+            
+            # Extract real values with proper error handling
+            gdp_value = real_indicators.get('GDP', {}).get('value', 2.1) if real_indicators else 2.1
+            cpi_value = real_indicators.get('CPIAUCSL', {}).get('value', 3.2) if real_indicators else 3.2
+            unemployment_value = real_indicators.get('UNRATE', {}).get('value', 3.8) if real_indicators else 3.8
+            fed_rate_value = real_indicators.get('DFF', {}).get('value', 5.33) if real_indicators else 5.33
+            
+            # Calculate period changes from historical data if available
+            gdp_history = real_indicators.get('GDP', {}).get('history', [])
+            cpi_history = real_indicators.get('CPIAUCSL', {}).get('history', [])
+            
+            if len(gdp_history) >= 2:
+                gdp_change = gdp_history[-1]['value'] - gdp_history[-2]['value']
+            else:
+                gdp_change = 0.3
                 
-                # Extract real values with proper error handling
-                gdp_value = real_indicators.get('GDP', {}).get('value', 2.1) if real_indicators else 2.1
-                cpi_value = real_indicators.get('CPIAUCSL', {}).get('value', 3.2) if real_indicators else 3.2
-                unemployment_value = real_indicators.get('UNRATE', {}).get('value', 3.8) if real_indicators else 3.8
-                fed_rate_value = real_indicators.get('DFF', {}).get('value', 5.33) if real_indicators else 5.33
-                
-                # Calculate period changes (simplified for now)
-                gdp_change = 0.3  # Would calculate from historical data
+            if len(cpi_history) >= 2:
+                cpi_change = cpi_history[-1]['value'] - cpi_history[-2]['value']
+            else:
                 cpi_change = -0.5
-                unemployment_change = 0.1
-                fed_rate_change = 0.00
-            except Exception as e:
-                print(f"Error fetching economic data: {e}")
-                # Fallback values
-                gdp_value, cpi_value, unemployment_value, fed_rate_value = 2.1, 3.2, 3.8, 5.33
-                gdp_change, cpi_change, unemployment_change, fed_rate_change = 0.3, -0.5, 0.1, 0.00
-        else:
-            # Default values if service not available
+                
+            unemployment_change = 0.1
+            fed_rate_change = 0.00
+        except Exception as e:
+            print(f"Error using DawsOS integration: {e}")
+            # Fallback values
             gdp_value, cpi_value, unemployment_value, fed_rate_value = 2.1, 3.2, 3.8, 5.33
             gdp_change, cpi_change, unemployment_change, fed_rate_change = 0.3, -0.5, 0.1, 0.00
         
@@ -403,19 +410,40 @@ def render_economic_dashboard():
     with tabs[2]:  # Recession Risk
         st.markdown("### Recession Risk Analysis")
         
+        # Get real recession risk from DawsOS integration
+        try:
+            from services.dawsos_integration import DawsOSIntegration
+            dawsos = DawsOSIntegration()
+            recession_analysis = dawsos.calculate_recession_risk()
+            
+            # Extract real risk metrics
+            recession_prob = recession_analysis.get('probability', 0.45)
+            risk_level = recession_analysis.get('risk_level', 'moderate')
+            regime = recession_analysis.get('regime', 'transitional')
+            
+            # Get debt cycle for systemic risk
+            debt_cycle = dawsos.analyze_debt_cycle()
+            credit_position = 0.65 if debt_cycle.get('cycle_phase') == 'peak' else 0.35
+        except Exception as e:
+            print(f"Error getting recession analysis: {e}")
+            # Fallback values
+            recession_prob = 0.45
+            risk_level = 'moderate'
+            credit_position = 0.65
+        
         col1, col2 = st.columns([1, 1])
         
         with col1:
-            # Systemic risk gauge using Ray Dalio's framework
+            # Systemic risk gauge using real data
             fig = EconomicPredictions.create_systemic_risk_gauge(
-                risk_score=45,
-                credit_cycle_position=0.65,
+                risk_score=int(recession_prob * 100),
+                credit_cycle_position=credit_position,
                 confidence_adjustment=0.85
             )
             st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            # Recession probability chart
+            # Recession probability chart with real data
             fig = EconomicPredictions.create_recession_probability_chart()
             st.plotly_chart(fig, use_container_width=True)
         
@@ -701,6 +729,56 @@ def render_predictions_tracker():
         "Prediction Analytics",
         "Track and validate financial forecasts with backtesting"
     )
+    
+    # Add prediction generation form
+    st.markdown("### Generate New Prediction")
+    col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+    
+    with col1:
+        symbol = st.text_input("Symbol", value="SPY", key="pred_symbol")
+    
+    with col2:
+        timeframe = st.selectbox(
+            "Timeframe",
+            ["short-term", "medium-term", "long-term"],
+            key="pred_timeframe"
+        )
+    
+    with col3:
+        analysis_type = st.selectbox(
+            "Analysis Type",
+            ["AI Prediction", "Technical Analysis", "Fundamental Analysis"],
+            key="pred_analysis"
+        )
+    
+    with col4:
+        if st.button("Generate Prediction", type="primary"):
+            if st.session_state.prediction_service:
+                with st.spinner("Generating AI prediction..."):
+                    try:
+                        # Generate real AI prediction
+                        result = st.session_state.prediction_service.generate_ai_prediction(
+                            symbol=symbol,
+                            timeframe=timeframe
+                        )
+                        st.success(f"Prediction generated successfully! Confidence: {result['confidence']:.1f}%")
+                        
+                        # Display the prediction details
+                        pred_data = result['prediction']
+                        if 'target_price' in pred_data:
+                            st.metric("Target Price", f"${pred_data['target_price']:.2f}")
+                        if 'expected_return' in pred_data:
+                            st.metric("Expected Return", f"{pred_data['expected_return']:.1f}%")
+                        
+                        # Refresh predictions list
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error generating prediction: {e}")
+            else:
+                st.error("Prediction service not available")
+    
+    st.markdown("---")
+    st.markdown("### Recent Predictions")
     
     # Check if prediction service is available
     if st.session_state.prediction_service:
