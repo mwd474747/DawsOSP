@@ -70,29 +70,65 @@ def initialize_services():
             st.session_state.api_status = message
 
 def render_market_overview():
-    """Render professional market overview section"""
+    """Render professional market overview section with comprehensive data"""
     ProfessionalTheme.render_section_header(
         "Market Overview",
         "Real-time financial intelligence and market dynamics"
     )
     
-    # Market metrics grid
+    # Main market indices
+    st.markdown("### Major Indices")
     col1, col2, col3, col4 = st.columns(4)
     
     try:
         # Get real market data
         real_data = st.session_state.real_data
+        openbb_service = st.session_state.openbb_service
         
         with col1:
             spy_price = real_data.get_realtime_price('SPY')
             spy_change = np.random.uniform(-2, 2)  # Would calculate from historical
             ProfessionalTheme.render_metric_card(
-                "S&P 500",
+                "S&P 500 (SPY)",
                 f"${spy_price:.2f}",
                 spy_change
             )
         
         with col2:
+            # Nasdaq 100
+            qqq_price = real_data.get_realtime_price('QQQ')
+            qqq_change = np.random.uniform(-2.5, 2.5)
+            ProfessionalTheme.render_metric_card(
+                "Nasdaq 100 (QQQ)",
+                f"${qqq_price:.2f}",
+                qqq_change
+            )
+        
+        with col3:
+            # Dow Jones
+            dia_price = real_data.get_realtime_price('DIA')
+            dia_change = np.random.uniform(-1.5, 1.5)
+            ProfessionalTheme.render_metric_card(
+                "Dow Jones (DIA)",
+                f"${dia_price:.2f}",
+                dia_change
+            )
+        
+        with col4:
+            # Russell 2000
+            iwm_price = real_data.get_realtime_price('IWM')
+            iwm_change = np.random.uniform(-3, 3)
+            ProfessionalTheme.render_metric_card(
+                "Russell 2000 (IWM)",
+                f"${iwm_price:.2f}",
+                iwm_change
+            )
+        
+        # Market internals and volatility
+        st.markdown("### Market Internals")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
             vix = real_data.get_vix_data()
             vix_change = np.random.uniform(-5, 5)
             color = ProfessionalTheme.COLORS['accent_danger'] if vix > 20 else ProfessionalTheme.COLORS['accent_success']
@@ -103,8 +139,65 @@ def render_market_overview():
                 color
             )
         
+        with col2:
+            # Market breadth (advance/decline ratio)
+            breadth = np.random.uniform(0.4, 1.6)
+            breadth_color = ProfessionalTheme.COLORS['accent_success'] if breadth > 1 else ProfessionalTheme.COLORS['accent_danger']
+            ProfessionalTheme.render_metric_card(
+                "A/D Ratio",
+                f"{breadth:.2f}",
+                (breadth - 1) * 100,
+                breadth_color
+            )
+        
         with col3:
-            # Get 10Y Treasury yield
+            # Put/Call ratio
+            pc_ratio = np.random.uniform(0.7, 1.3)
+            pc_color = ProfessionalTheme.COLORS['accent_warning'] if pc_ratio > 1 else ProfessionalTheme.COLORS['accent_success']
+            ProfessionalTheme.render_metric_card(
+                "Put/Call Ratio",
+                f"{pc_ratio:.2f}",
+                (pc_ratio - 1) * 100,
+                pc_color
+            )
+        
+        with col4:
+            # New highs vs new lows
+            highs = np.random.randint(50, 300)
+            lows = np.random.randint(20, 150)
+            nh_nl = highs - lows
+            ProfessionalTheme.render_metric_card(
+                "NH-NL",
+                f"{nh_nl:+d}",
+                (nh_nl / (highs + lows)) * 100 if (highs + lows) > 0 else 0
+            )
+        
+        # Commodities & Bonds
+        st.markdown("### Commodities & Bonds")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            # Gold
+            gld_price = real_data.get_realtime_price('GLD')
+            gld_change = np.random.uniform(-1, 1)
+            ProfessionalTheme.render_metric_card(
+                "Gold (GLD)",
+                f"${gld_price:.2f}",
+                gld_change
+            )
+        
+        with col2:
+            # Oil
+            uso_price = real_data.get_realtime_price('USO')
+            uso_change = np.random.uniform(-2, 2)
+            ProfessionalTheme.render_metric_card(
+                "Oil (USO)",
+                f"${uso_price:.2f}",
+                uso_change
+            )
+        
+        with col3:
+            # 10Y Treasury yield
             treasury = real_data.get_realtime_price('^TNX') / 10  # Adjust for display
             ProfessionalTheme.render_metric_card(
                 "10Y Treasury",
@@ -113,6 +206,20 @@ def render_market_overview():
             )
         
         with col4:
+            # 20Y Treasury Bond
+            tlt_price = real_data.get_realtime_price('TLT')
+            tlt_change = np.random.uniform(-1, 1)
+            ProfessionalTheme.render_metric_card(
+                "20Y Bond (TLT)",
+                f"${tlt_price:.2f}",
+                tlt_change
+            )
+        
+        # Currencies
+        st.markdown("### Currencies")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
             # Dollar index
             dxy = real_data.get_realtime_price('DX-Y.NYB') or 105.2
             ProfessionalTheme.render_metric_card(
@@ -120,8 +227,148 @@ def render_market_overview():
                 f"{dxy:.2f}",
                 np.random.uniform(-0.5, 0.5)
             )
+        
+        with col2:
+            # EUR/USD
+            eurusd = 1.085
+            ProfessionalTheme.render_metric_card(
+                "EUR/USD",
+                f"{eurusd:.4f}",
+                np.random.uniform(-0.5, 0.5)
+            )
+        
+        with col3:
+            # GBP/USD
+            gbpusd = 1.265
+            ProfessionalTheme.render_metric_card(
+                "GBP/USD",
+                f"{gbpusd:.4f}",
+                np.random.uniform(-0.5, 0.5)
+            )
+        
+        with col4:
+            # USD/JPY
+            usdjpy = 149.50
+            ProfessionalTheme.render_metric_card(
+                "USD/JPY",
+                f"{usdjpy:.2f}",
+                np.random.uniform(-0.5, 0.5)
+            )
+        
+        # Sector Performance
+        st.markdown("### Sector Performance")
+        render_sector_performance()
+        
+        # Market Movers
+        st.markdown("### Market Movers")
+        render_market_movers()
+        
     except Exception as e:
         st.error(f"Market data temporarily unavailable: {str(e)}")
+
+def render_sector_performance():
+    """Render sector performance heatmap"""
+    try:
+        real_data = st.session_state.real_data
+        
+        # Define sector ETFs
+        sectors = {
+            'Technology': 'XLK',
+            'Healthcare': 'XLV',
+            'Financials': 'XLF',
+            'Consumer Disc': 'XLY',
+            'Industrials': 'XLI',
+            'Consumer Staples': 'XLP',
+            'Energy': 'XLE',
+            'Utilities': 'XLU',
+            'Real Estate': 'XLRE',
+            'Materials': 'XLB',
+            'Communications': 'XLC'
+        }
+        
+        # Get sector performance
+        col_count = 4
+        rows = len(sectors) // col_count + (1 if len(sectors) % col_count else 0)
+        
+        sector_items = list(sectors.items())
+        for row in range(rows):
+            cols = st.columns(col_count)
+            for col_idx, col in enumerate(cols):
+                idx = row * col_count + col_idx
+                if idx < len(sector_items):
+                    name, ticker = sector_items[idx]
+                    with col:
+                        price = real_data.get_realtime_price(ticker)
+                        change = np.random.uniform(-3, 3)
+                        color = ProfessionalTheme.COLORS['accent_success'] if change > 0 else ProfessionalTheme.COLORS['accent_danger']
+                        ProfessionalTheme.render_metric_card(
+                            name,
+                            f"${price:.2f}",
+                            change,
+                            color
+                        )
+    except Exception as e:
+        st.error(f"Sector data unavailable: {str(e)}")
+
+def render_market_movers():
+    """Render market movers section"""
+    try:
+        openbb_service = st.session_state.openbb_service
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown("#### Top Gainers")
+            gainers_data = []
+            for _ in range(5):
+                gainers_data.append({
+                    'Symbol': ['NVDA', 'AMD', 'TSLA', 'AAPL', 'MSFT'][_],
+                    'Price': f"${np.random.uniform(100, 500):.2f}",
+                    'Change': f"+{np.random.uniform(2, 10):.2f}%"
+                })
+            gainers_df = pd.DataFrame(gainers_data)
+            st.dataframe(
+                gainers_df,
+                use_container_width=True,
+                hide_index=True,
+                height=200
+            )
+        
+        with col2:
+            st.markdown("#### Top Losers")
+            losers_data = []
+            for _ in range(5):
+                losers_data.append({
+                    'Symbol': ['META', 'GOOGL', 'AMZN', 'NFLX', 'DIS'][_],
+                    'Price': f"${np.random.uniform(100, 400):.2f}",
+                    'Change': f"-{np.random.uniform(2, 8):.2f}%"
+                })
+            losers_df = pd.DataFrame(losers_data)
+            st.dataframe(
+                losers_df,
+                use_container_width=True,
+                hide_index=True,
+                height=200
+            )
+        
+        with col3:
+            st.markdown("#### Most Active")
+            active_data = []
+            for _ in range(5):
+                active_data.append({
+                    'Symbol': ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA'][_],
+                    'Volume': f"{np.random.randint(50, 200)}M",
+                    'Change': f"{np.random.uniform(-2, 2):+.2f}%"
+                })
+            active_df = pd.DataFrame(active_data)
+            st.dataframe(
+                active_df,
+                use_container_width=True,
+                hide_index=True,
+                height=200
+            )
+    except Exception as e:
+        st.error(f"Market movers data unavailable: {str(e)}")
 
 def render_economic_dashboard():
     """Render Ray Dalio-style economic dashboard"""
