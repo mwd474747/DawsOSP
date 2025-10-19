@@ -371,10 +371,9 @@ class ProfessionalTheme:
     @classmethod
     def render_header(cls, title: str = "DawsOS", subtitle: str = "Professional Financial Intelligence Platform"):
         """Render professional header with modern gradient banner and logo"""
-        import base64
         import os
         
-        # Use Streamlit columns for better layout control
+        # Style the header
         st.markdown("""
         <style>
             .stApp > header {display: none}
@@ -382,54 +381,78 @@ class ProfessionalTheme:
         </style>
         """, unsafe_allow_html=True)
         
-        # Load and encode logo as base64
-        logo_path = 'trinity3/assets/dawsos_logo.png'
-        logo_base64 = ""
-        if os.path.exists(logo_path):
-            with open(logo_path, 'rb') as f:
-                logo_base64 = base64.b64encode(f.read()).decode()
-        
-        # Create gradient background container with logo
-        logo_html = ""
-        if logo_base64:
-            logo_html = f"<img src='data:image/png;base64,{logo_base64}' style='width: 70px; height: 70px; object-fit: contain; filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.5));' alt='DawsOS Logo'/>"
-        
-        st.markdown(f"""
-        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%); 
-                    padding: 2rem; margin: -4rem -4rem 2rem -4rem; border-radius: 0 0 20px 20px;'>
-            <div style='background: rgba(10, 14, 39, 0.95); border-radius: 15px; padding: 2rem; 
-                        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);'>
-                <div style='display: flex; align-items: center; justify-content: space-between;'>
-                    <div style='display: flex; align-items: center; gap: 1.5rem;'>
-                        {logo_html}
-                        <div>
-                            <h1 style='font-size: 3.5rem; font-weight: 200; margin: 0; color: #ffffff;'>
-                                {title}
-                            </h1>
-                            <p style='font-size: 1rem; color: #a0a4b8; margin: 0.5rem 0 0 0; 
-                                      letter-spacing: 0.1em; text-transform: uppercase;'>
-                                {subtitle}
-                            </p>
-                        </div>
-                    </div>
-                    <div style='display: flex; gap: 1rem;'>
-                        <span style='padding: 0.5rem 1rem; background: rgba(16, 185, 129, 0.2); 
-                                     border: 1px solid #10B981; border-radius: 8px; color: #10B981; 
-                                     font-size: 0.875rem;'>● LIVE</span>
-                        <span style='padding: 0.5rem 1rem; background: rgba(74, 158, 255, 0.2); 
-                                     border: 1px solid #4A9EFF; border-radius: 8px; color: #4A9EFF; 
-                                     font-size: 0.875rem;'>v3.0</span>
-                    </div>
-                </div>
-                <hr style='margin: 1.5rem 0; border: 0; height: 1px; background: rgba(255, 255, 255, 0.1);'>
-                <div style='display: flex; gap: 2rem; font-size: 0.875rem;'>
-                    <span style='color: #6b7290;'>MARKET <span style='color: #10B981;'>● OPEN</span></span>
-                    <span style='color: #6b7290;'>DATA <span style='color: #10B981;'>● CONNECTED</span></span>
-                    <span style='color: #6b7290;'>UPDATE <span style='color: #e8e9f3;'>REAL-TIME</span></span>
-                </div>
-            </div>
-        </div>
+        # Create gradient background
+        st.markdown("""
+        <style>
+        .header-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+            padding: 2rem;
+            margin: -4rem -4rem 2rem -4rem;
+            border-radius: 0 0 20px 20px;
+        }
+        .header-container {
+            background: rgba(10, 14, 39, 0.95);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        </style>
         """, unsafe_allow_html=True)
+        
+        # Header with columns
+        st.markdown('<div class="header-gradient"><div class="header-container">', unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns([1, 4, 2])
+        
+        with col1:
+            # Display logo using native st.image
+            logo_path = 'trinity3/assets/dawsos_logo.png'
+            if os.path.exists(logo_path):
+                # Add some spacing to align logo
+                st.markdown("<div style='padding-top: 10px;'>", unsafe_allow_html=True)
+                st.image(logo_path, width=70)
+                st.markdown("</div>", unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f"""
+            <div>
+                <h1 style='font-size: 3.5rem; font-weight: 200; margin: 0; color: #ffffff;'>
+                    {title}
+                </h1>
+                <p style='font-size: 1rem; color: #a0a4b8; margin: 0.5rem 0 0 0; 
+                          letter-spacing: 0.1em; text-transform: uppercase;'>
+                    {subtitle}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown("""
+            <div style='padding-top: 1rem; text-align: right;'>
+                <span style='padding: 0.5rem 1rem; background: rgba(16, 185, 129, 0.2); 
+                             border: 1px solid #10B981; border-radius: 8px; color: #10B981; 
+                             font-size: 0.875rem; margin-right: 0.5rem;'>● LIVE</span>
+                <span style='padding: 0.5rem 1rem; background: rgba(74, 158, 255, 0.2); 
+                             border: 1px solid #4A9EFF; border-radius: 8px; color: #4A9EFF; 
+                             font-size: 0.875rem;'>v3.0</span>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Divider
+        st.markdown("<hr style='margin: 1.5rem 0; border: 0; height: 1px; background: rgba(255, 255, 255, 0.1);'>", unsafe_allow_html=True)
+        
+        # Status row
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown("<span style='color: #6b7290;'>MARKET <span style='color: #10B981;'>● OPEN</span></span>", unsafe_allow_html=True)
+        with col2:
+            st.markdown("<span style='color: #6b7290;'>DATA <span style='color: #10B981;'>● CONNECTED</span></span>", unsafe_allow_html=True)
+        with col3:
+            st.markdown("<span style='color: #6b7290;'>UPDATE <span style='color: #e8e9f3;'>REAL-TIME</span></span>", unsafe_allow_html=True)
+        
+        # Close containers
+        st.markdown('</div></div>', unsafe_allow_html=True)
     
     @classmethod
     def render_metric_card(cls, label: str, value: Any, delta: Any = None, color: str = None):
