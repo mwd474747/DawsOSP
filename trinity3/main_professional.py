@@ -1,5 +1,5 @@
 """
-Trinity 3.0 - Professional Financial Intelligence Platform
+DawsOS - Professional Financial Intelligence Platform
 Bloomberg Terminal-quality interface with Seeking Alpha sophistication
 """
 
@@ -30,7 +30,7 @@ from agents.market_agent import MarketAgent
 
 # Page configuration
 st.set_page_config(
-    page_title="Trinity 3.0 | Professional Financial Intelligence",
+    page_title="DawsOS | Professional Financial Intelligence",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -448,8 +448,8 @@ def main():
     
     # Professional header
     ProfessionalTheme.render_header(
-        "TRINITY 3.0",
-        "Institutional Financial Intelligence Platform"
+        "DawsOS",
+        "Professional Financial Intelligence Platform"
     )
     
     # API Status indicator

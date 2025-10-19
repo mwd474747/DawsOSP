@@ -339,3 +339,21 @@ class RealDataHelper:
             return "Risk-Off: Defensive Rotation"
         else:
             return "Mixed: No Clear Rotation"
+    
+    def get_market_breadth(self) -> Dict[str, float]:
+        """Get market breadth indicators - wrapper for get_real_breadth"""
+        breadth_data = self.get_real_breadth()
+        
+        # Format for chart display
+        adv = breadth_data.get('advancing', 1500)
+        dec = breadth_data.get('declining', 1500)
+        total = adv + dec if (adv + dec) > 0 else 1
+        
+        return {
+            'advance_decline_ratio': adv / dec if dec > 0 else 1.0,
+            'new_highs_lows_ratio': breadth_data.get('new_highs', 100) / max(breadth_data.get('new_lows', 100), 1),
+            'percent_advancing': (adv / total) * 100,
+            'percent_declining': (dec / total) * 100,
+            'advancing': adv,
+            'declining': dec
+        }
