@@ -47,7 +47,7 @@ class EconomicPredictions:
             ))
         else:
             # Generate sample historical data
-            dates = pd.date_range(end=datetime.now(), periods=24, freq='M')
+            dates = pd.date_range(end=datetime.now(), periods=24, freq='ME')
             rates = np.random.normal(current_rate, 0.5, 24)
             rates = np.maximum(rates, 0)  # Ensure no negative rates
             
@@ -178,16 +178,14 @@ class EconomicPredictions:
                 font=dict(size=20, color=cls.COLORS['text'])
             ),
             xaxis=dict(
-                title="Date",
+                title=dict(text="Date", font=dict(color=cls.COLORS['text_secondary'])),
                 gridcolor=cls.COLORS['grid'],
-                titlefont=dict(color=cls.COLORS['text_secondary']),
                 tickfont=dict(color=cls.COLORS['text_secondary']),
                 showgrid=True
             ),
             yaxis=dict(
-                title="Rate (%)",
+                title=dict(text="Rate (%)", font=dict(color=cls.COLORS['text_secondary'])),
                 gridcolor=cls.COLORS['grid'],
-                titlefont=dict(color=cls.COLORS['text_secondary']),
                 tickfont=dict(color=cls.COLORS['text_secondary']),
                 showgrid=True,
                 range=[0, max(7, current_rate + 2)]
@@ -319,15 +317,13 @@ class EconomicPredictions:
                 font=dict(size=20, color=cls.COLORS['text'])
             ),
             xaxis=dict(
-                title="Date",
+                title=dict(text="Date", font=dict(color=cls.COLORS['text_secondary'])),
                 gridcolor=cls.COLORS['grid'],
-                titlefont=dict(color=cls.COLORS['text_secondary']),
                 tickfont=dict(color=cls.COLORS['text_secondary'])
             ),
             yaxis=dict(
-                title="Unemployment Rate (%)",
+                title=dict(text="Unemployment Rate (%)", font=dict(color=cls.COLORS['text_secondary'])),
                 gridcolor=cls.COLORS['grid'],
-                titlefont=dict(color=cls.COLORS['text_secondary']),
                 tickfont=dict(color=cls.COLORS['text_secondary']),
                 range=[2, 8]
             ),
@@ -407,7 +403,7 @@ class EconomicPredictions:
         
         # GDP QoQ (right axis)
         gdp = data.get('gdp', pd.DataFrame({
-            'date': pd.date_range(end=datetime.now(), periods=8, freq='Q'),
+            'date': pd.date_range(end=datetime.now(), periods=8, freq='QE'),
             'value': np.random.normal(2.1, 1.0, 8)
         }))
         
@@ -437,7 +433,6 @@ class EconomicPredictions:
         fig.update_xaxes(
             title_text="Date",
             gridcolor=cls.COLORS['grid'],
-            titlefont=dict(color=cls.COLORS['text_secondary']),
             tickfont=dict(color=cls.COLORS['text_secondary'])
         )
         
@@ -445,14 +440,12 @@ class EconomicPredictions:
             title_text="Rates (%)",
             secondary_y=False,
             gridcolor=cls.COLORS['grid'],
-            titlefont=dict(color=cls.COLORS['text_secondary']),
             tickfont=dict(color=cls.COLORS['text_secondary'])
         )
         
         fig.update_yaxes(
             title_text="Growth/Inflation (%)",
             secondary_y=True,
-            titlefont=dict(color=cls.COLORS['text_secondary']),
             tickfont=dict(color=cls.COLORS['text_secondary'])
         )
         
@@ -642,15 +635,13 @@ class EconomicPredictions:
                 font=dict(size=20, color=cls.COLORS['text'])
             ),
             xaxis=dict(
-                title="Date",
+                title=dict(text="Date", font=dict(color=cls.COLORS['text_secondary'])),
                 gridcolor=cls.COLORS['grid'],
-                titlefont=dict(color=cls.COLORS['text_secondary']),
                 tickfont=dict(color=cls.COLORS['text_secondary'])
             ),
             yaxis=dict(
-                title="Probability (%)",
+                title=dict(text="Probability (%)", font=dict(color=cls.COLORS['text_secondary'])),
                 gridcolor=cls.COLORS['grid'],
-                titlefont=dict(color=cls.COLORS['text_secondary']),
                 tickfont=dict(color=cls.COLORS['text_secondary']),
                 range=[0, 100]
             ),
