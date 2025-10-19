@@ -13,7 +13,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from ui.professional_theme import ProfessionalTheme
-from ui.professional_charts import ChartBuilder
+from ui.professional_charts import ProfessionalCharts
 from services.openbb_service import OpenBBService  
 from services.real_data_helper import RealDataHelper
 from services.prediction_service import PredictionService
@@ -33,7 +33,6 @@ class StockAnalysis:
     def __init__(self, openbb_service: OpenBBService, real_data: RealDataHelper):
         self.openbb = openbb_service
         self.real_data = real_data
-        self.chart_builder = ChartBuilder()
         self.confidence_calculator = ConfidenceCalculator()
         
         # Initialize analyzers
@@ -429,7 +428,12 @@ class StockAnalysis:
         
         if earnings_data:
             # Earnings chart
-            fig = self.chart_builder.create_earnings_chart(earnings_data)
+            fig = ProfessionalCharts.create_line_chart(
+                {'Actual': earnings_data['actual'].tolist(), 
+                 'Estimate': earnings_data['estimate'].tolist()},
+                title="Earnings History",
+                height=400
+            )
             st.plotly_chart(fig, use_container_width=True)
             
             # Earnings surprise history
