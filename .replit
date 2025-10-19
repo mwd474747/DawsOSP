@@ -22,20 +22,20 @@ args = "Trinity3-Professional"
 name = "Trinity3-Professional"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd trinity3 && streamlit run main_professional.py --server.port 5000 --server.address 0.0.0.0"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd trinity3 && streamlit run main_professional.py --server.port 5000 --server.address 0.0.0.0 --server.headless true"
+waitForPort = 5000
 
 [[ports]]
 localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 33003
+localPort = 40567
 externalPort = 3000
 
 [deployment]
