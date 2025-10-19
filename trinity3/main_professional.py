@@ -54,7 +54,7 @@ def initialize_services():
                     configured = OpenBBConfig.get_configured_providers()
                     if configured:
                         provider_list = list(configured.keys())
-                        st.success(f"✅ Connected to {len(provider_list)} data providers")
+                        st.info(f"Connected to {len(provider_list)} data providers: {', '.join(provider_list).upper()}")
                 else:
                     st.session_state.api_status = "Running in limited mode (no API keys)"
                     st.warning(message)
@@ -111,12 +111,18 @@ def initialize_services():
 def render_market_overview():
     """Render professional market overview section with comprehensive data"""
     
-    # Try with simple header
-    st.markdown("## Market Overview")
-    st.markdown("Real-time financial intelligence and market dynamics")
-    
-    # Simple test to see if function is executing  
-    st.success("Market Overview function is running!")
+    # Use professional styled header without the problematic render_section_header
+    st.markdown(f"""
+    <div style="margin: 3rem 0 2rem 0;">
+        <h2 style="font-size: 2.5rem; font-weight: 300; color: {ProfessionalTheme.COLORS['text_primary']}; margin: 0;">
+            Market Overview
+        </h2>
+        <p style="color: {ProfessionalTheme.COLORS['text_secondary']}; font-size: 1rem; margin-top: 0.5rem;">
+            Real-time financial intelligence and market dynamics
+        </p>
+        <div style="width: 60px; height: 2px; background: linear-gradient(90deg, {ProfessionalTheme.COLORS['gradient_start']}, {ProfessionalTheme.COLORS['gradient_end']}); margin-top: 1.5rem;"></div>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Major Indices with simple metrics
     st.markdown("### Major Indices")
@@ -1092,39 +1098,47 @@ def check_and_display_api_status():
         # Get configured providers
         configured = OpenBBConfig.get_configured_providers()
         
-        # Display connection status in sidebar
+        # Display connection status in sidebar with professional styling (no emojis)
         with st.sidebar:
-            st.markdown("### 📊 Data Connections")
+            st.markdown(f"""
+            <div style='background: {ProfessionalTheme.COLORS['surface_light']}; 
+                        padding: 1rem; border-radius: 8px; margin-bottom: 1rem;'>
+                <h4 style='color: {ProfessionalTheme.COLORS['text_primary']}; margin: 0 0 0.5rem 0;'>
+                    DATA CONNECTIONS
+                </h4>
+            </div>
+            """, unsafe_allow_html=True)
             
-            # Show connected providers
+            # Show connected providers with professional styling
             if configured:
                 for provider in configured.keys():
                     if provider == 'fmp':
-                        st.success("✅ FMP (Stocks & Fundamentals)")
+                        st.markdown(f"<span style='color: {ProfessionalTheme.COLORS['accent_success']};'>• FMP (Stocks & Fundamentals)</span>", unsafe_allow_html=True)
                     elif provider == 'fred':
-                        st.success("✅ FRED (Economic Data)")
+                        st.markdown(f"<span style='color: {ProfessionalTheme.COLORS['accent_success']};'>• FRED (Economic Data)</span>", unsafe_allow_html=True)
                     elif provider == 'newsapi':
-                        st.success("✅ NewsAPI (Market News)")
+                        st.markdown(f"<span style='color: {ProfessionalTheme.COLORS['accent_success']};'>• NewsAPI (Market News)</span>", unsafe_allow_html=True)
                     elif provider == 'yfinance':
-                        st.info("✅ YFinance (Backup Data)")
+                        st.markdown(f"<span style='color: {ProfessionalTheme.COLORS['chart_primary']};'>• YFinance (Backup Data)</span>", unsafe_allow_html=True)
             else:
-                st.warning("⚠️ No API keys configured")
+                st.markdown(f"<span style='color: {ProfessionalTheme.COLORS['accent_warning']};'>No API keys configured</span>", unsafe_allow_html=True)
                 
-            # Show recommendations for missing APIs
-            recommendations = OpenBBConfig.get_api_recommendations()
-            if recommendations and len(recommendations) > 0:
-                with st.expander("💡 Available Enhancements"):
-                    for rec in recommendations[:3]:
-                        st.markdown(f"**{rec['provider']}**: {rec['reason']}")
-                        
-            # Show AI status
-            st.markdown("### 🤖 AI Services")
+            # Show AI status with professional styling
+            st.markdown(f"""
+            <div style='background: {ProfessionalTheme.COLORS['surface_light']}; 
+                        padding: 1rem; border-radius: 8px; margin-top: 1rem;'>
+                <h4 style='color: {ProfessionalTheme.COLORS['text_primary']}; margin: 0 0 0.5rem 0;'>
+                    AI SERVICES
+                </h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
             if os.getenv('ANTHROPIC_API_KEY'):
-                st.success("✅ Claude AI Connected")
+                st.markdown(f"<span style='color: {ProfessionalTheme.COLORS['accent_success']};'>• Claude AI Connected</span>", unsafe_allow_html=True)
             elif os.getenv('OPENAI_API_KEY'):
-                st.success("✅ OpenAI Connected")
+                st.markdown(f"<span style='color: {ProfessionalTheme.COLORS['accent_success']};'>• OpenAI Connected</span>", unsafe_allow_html=True)
             else:
-                st.warning("⚠️ No AI service connected")
+                st.markdown(f"<span style='color: {ProfessionalTheme.COLORS['accent_warning']};'>No AI service connected</span>", unsafe_allow_html=True)
 
 def main():
     """Main application entry point"""
