@@ -123,12 +123,12 @@ class Trinity3App:
         col1, col2, col3, col4, col5 = st.columns(5)
         
         with col1:
-            if st.button("📉 Recession Risk", use_container_width=True):
-                st.session_state['query'] = "What's the recession risk?"
+            if st.button("🔄 Dalio Cycles", use_container_width=True):
+                st.session_state['query'] = "Analyze debt cycles using Ray Dalio framework"
         
         with col2:
-            if st.button("📊 Market Breadth", use_container_width=True):
-                st.session_state['query'] = "Analyze market breadth"
+            if st.button("📉 Recession Risk", use_container_width=True):
+                st.session_state['query'] = "What's the recession risk using Dalio framework?"
         
         with col3:
             if st.button("🔄 Sector Rotation", use_container_width=True):

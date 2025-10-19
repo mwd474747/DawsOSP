@@ -443,3 +443,277 @@ class TrinityVisualizations:
         )
         
         return fig
+    
+    def create_debt_cycle_chart(
+        self,
+        cycle_data: Dict[str, Any],
+        title: str = "Ray Dalio Debt Cycle Analysis"
+    ) -> go.Figure:
+        """
+        Create comprehensive debt cycle visualization
+        """
+        fig = go.Figure()
+        
+        # Short-term cycle gauge
+        short_cycle = cycle_data.get('short_term_cycle', {})
+        position_value = float(short_cycle.get('position', '50% through cycle').split('%')[0])
+        
+        fig.add_trace(go.Indicator(
+            mode="gauge+number",
+            value=position_value,
+            domain={'x': [0, 0.45], 'y': [0.5, 1]},
+            title={'text': f"Short-Term Cycle<br>{short_cycle.get('phase', 'Unknown')}"},
+            gauge={
+                'axis': {'range': [None, 100]},
+                'bar': {'color': "darkblue"},
+                'steps': [
+                    {'range': [0, 25], 'color': "lightgreen"},
+                    {'range': [25, 50], 'color': "lightyellow"},
+                    {'range': [50, 75], 'color': "orange"},
+                    {'range': [75, 100], 'color': "lightcoral"}
+                ],
+                'threshold': {
+                    'line': {'color': "red", 'width': 4},
+                    'thickness': 0.75,
+                    'value': 90
+                }
+            }
+        ))
+        
+        # Long-term cycle gauge
+        long_cycle = cycle_data.get('long_term_cycle', {})
+        debt_to_gdp = long_cycle.get('debt_to_gdp', 100)
+        
+        fig.add_trace(go.Indicator(
+            mode="gauge+number",
+            value=debt_to_gdp,
+            domain={'x': [0.55, 1], 'y': [0.5, 1]},
+            title={'text': f"Long-Term Debt/GDP<br>{long_cycle.get('phase', 'Unknown')}"},
+            gauge={
+                'axis': {'range': [0, 150]},
+                'bar': {'color': "purple"},
+                'steps': [
+                    {'range': [0, 60], 'color': "lightgreen"},
+                    {'range': [60, 90], 'color': "lightyellow"},
+                    {'range': [90, 120], 'color': "orange"},
+                    {'range': [120, 150], 'color': "lightcoral"}
+                ],
+                'threshold': {
+                    'line': {'color': "red", 'width': 4},
+                    'thickness': 0.75,
+                    'value': 130
+                }
+            }
+        ))
+        
+        # Paradigm shift risk indicator
+        paradigm_risk = cycle_data.get('paradigm_shift_risk', {})
+        risk_score = paradigm_risk.get('risk_score', 0)
+        
+        fig.add_trace(go.Indicator(
+            mode="number+delta",
+            value=risk_score,
+            domain={'x': [0.25, 0.75], 'y': [0, 0.4]},
+            title={'text': f"Paradigm Shift Risk<br>{paradigm_risk.get('assessment', '')}"},
+            delta={'reference': 50, 'increasing': {'color': "red"}}
+        ))
+        
+        fig.update_layout(
+            title=title,
+            height=500,
+            **self.chart_theme['layout']
+        )
+        
+        return fig
+    
+    def create_empire_cycle_chart(
+        self,
+        empire_data: Dict[str, Any],
+        title: str = "Empire Cycle Analysis (Dalio Framework)"
+    ) -> go.Figure:
+        """
+        Create empire cycle radar chart
+        """
+        scores = empire_data.get('scores', {})
+        
+        categories = list(scores.keys())
+        values = list(scores.values())
+        
+        fig = go.Figure(data=go.Scatterpolar(
+            r=values,
+            theta=[cat.replace('_', ' ').title() for cat in categories],
+            fill='toself',
+            marker=dict(color=self.default_colors['primary'])
+        ))
+        
+        fig.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    visible=True,
+                    range=[0, 100]
+                )
+            ),
+            showlegend=False,
+            title=f"{title} - {empire_data.get('country', 'US')}: {empire_data.get('phase', 'Unknown')}",
+            **self.chart_theme['layout']
+        )
+        
+        return fig
+    
+    def create_historical_cycles_timeline(
+        self,
+        historical_analogs: List[Dict],
+        title: str = "Historical Cycle Analogs"
+    ) -> go.Figure:
+        """
+        Create timeline of historical cycle analogs
+        """
+        fig = go.Figure()
+        
+        if not historical_analogs:
+            return fig
+        
+        # Create timeline bars
+        for i, analog in enumerate(historical_analogs):
+            fig.add_trace(go.Bar(
+                x=[analog.get('similarity', 0)],
+                y=[analog.get('period', 'Unknown')],
+                orientation='h',
+                text=f"{analog.get('years', '')} - {analog.get('outcome', '')}",
+                textposition='inside',
+                marker=dict(
+                    color=analog.get('similarity', 0),
+                    colorscale='RdYlGn',
+                    showscale=i == 0,
+                    cmin=0,
+                    cmax=100
+                ),
+                hovertemplate=(
+                    "<b>%{y}</b><br>" +
+                    "Similarity: %{x}%<br>" +
+                    "Period: %{text}<br>" +
+                    "Lessons: " + analog.get('lessons', '') +
+                    "<extra></extra>"
+                )
+            ))
+        
+        fig.update_layout(
+            title=title,
+            xaxis_title="Similarity Score (%)",
+            yaxis_title="Historical Period",
+            showlegend=False,
+            height=300,
+            **self.chart_theme['layout']
+        )
+        
+        return fig
+    
+    def create_cycle_predictions_chart(
+        self,
+        predictions: Dict[str, Any],
+        title: str = "Cycle-Based Predictions"
+    ) -> go.Figure:
+        """
+        Create visualization for cycle-based predictions
+        """
+        fig = go.Figure()
+        
+        # Extract recession probability if available
+        if 'recession_12m' in predictions:
+            rec_data = predictions['recession_12m']
+            
+            # Recession probability gauge
+            fig.add_trace(go.Indicator(
+                mode="gauge+number",
+                value=rec_data.get('probability', 0),
+                domain={'x': [0, 0.45], 'y': [0.5, 1]},
+                title={'text': f"Recession Risk (12M)<br>{rec_data.get('timing', '')}"},
+                gauge={
+                    'axis': {'range': [0, 100]},
+                    'bar': {'color': "darkred" if rec_data.get('probability', 0) > 60 else "orange"},
+                    'steps': [
+                        {'range': [0, 30], 'color': "lightgreen"},
+                        {'range': [30, 60], 'color': "lightyellow"},
+                        {'range': [60, 100], 'color': "lightcoral"}
+                    ]
+                }
+            ))
+        
+        # Market outlook if available
+        if 'market_outlook' in predictions:
+            outlook = predictions['market_outlook']
+            if '1yr_expected' in outlook:
+                returns = outlook['1yr_expected']
+                
+                # Create bar chart for expected returns
+                assets = list(returns.keys())
+                expected_returns = list(returns.values())
+                
+                colors = ['green' if r > 0 else 'red' for r in expected_returns]
+                
+                fig.add_trace(go.Bar(
+                    x=assets,
+                    y=expected_returns,
+                    marker_color=colors,
+                    text=[f"{r:+.1f}%" for r in expected_returns],
+                    textposition='auto',
+                    name='Expected Returns'
+                ))
+        
+        fig.update_layout(
+            title=title,
+            height=400,
+            **self.chart_theme['layout']
+        )
+        
+        return fig
+    
+    def create_all_weather_allocation_chart(
+        self,
+        allocation: Dict[str, float],
+        title: str = "All-Weather Portfolio Allocation (Dalio)"
+    ) -> go.Figure:
+        """
+        Create enhanced portfolio allocation visualization
+        """
+        fig = go.Figure()
+        
+        # Create sunburst chart for hierarchical allocation
+        labels = []
+        parents = []
+        values = []
+        colors = []
+        
+        # Add asset classes
+        for asset, percent in allocation.items():
+            labels.append(asset.title())
+            parents.append("")
+            values.append(percent)
+            
+            # Color coding
+            if 'stock' in asset.lower():
+                colors.append('#2ca02c')  # Green
+            elif 'bond' in asset.lower():
+                colors.append('#1f77b4')  # Blue
+            elif 'gold' in asset.lower():
+                colors.append('#ff7f0e')  # Orange
+            else:
+                colors.append('#d62728')  # Red for commodities
+        
+        fig.add_trace(go.Sunburst(
+            labels=labels,
+            parents=parents,
+            values=values,
+            branchvalues="total",
+            marker=dict(colors=colors),
+            textinfo="label+percent parent",
+            hovertemplate='<b>%{label}</b><br>Allocation: %{value:.1f}%<extra></extra>'
+        ))
+        
+        fig.update_layout(
+            title=title,
+            height=400,
+            **self.chart_theme['layout']
+        )
+        
+        return fig
