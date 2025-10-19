@@ -110,7 +110,7 @@ class EconomicCalendar:
     def render_calendar(cls):
         """Render the economic calendar interface"""
         
-        st.markdown("### 📅 Economic Calendar")
+        st.markdown("### Economic Calendar")
         st.markdown("*Track market-moving events and data releases*")
         
         # Filter controls
@@ -186,10 +186,9 @@ class EconomicCalendar:
                 with col_event:
                     # Event header with importance badge
                     importance_color = cls.IMPORTANCE_COLORS[event['importance']]
-                    event_icon = "🔴" if event['type'] == 'policy' else "📊"
                     
                     st.markdown(
-                        f"{event_icon} **{event['event']}** "
+                        f"**{event['event']}** "
                         f"<span style='color: {importance_color}; font-size: 0.8em;'>"
                         f"[{event['importance'].upper()}]</span>",
                         unsafe_allow_html=True
@@ -213,7 +212,7 @@ class EconomicCalendar:
                     
                     # Expected impact
                     if 'expected_impact' in event:
-                        st.info(f"💡 {event['expected_impact']}")
+                        st.info(f"{event['expected_impact']}")
                 
                 st.markdown("---")
     
@@ -221,7 +220,7 @@ class EconomicCalendar:
     def render_fed_schedule(cls):
         """Render upcoming Fed meeting schedule"""
         
-        st.markdown("### 🏛️ Federal Reserve Schedule")
+        st.markdown("### Federal Reserve Schedule")
         
         # FOMC meeting dates for 2024-2025
         meetings = [
@@ -284,13 +283,13 @@ class EconomicCalendar:
                     
                     # Meeting details
                     if meeting['has_sep']:
-                        st.success("📊 Includes Economic Projections (SEP)")
+                        st.success("Includes Economic Projections (SEP)")
                     
                     if meeting['press_conf']:
-                        st.info("🎤 Press Conference Scheduled")
+                        st.info("Press Conference Scheduled")
                     
                     # Expected outcomes
                     if days_until < 30:
-                        st.warning("⚠️ Market volatility expected")
+                        st.warning("Market volatility expected")
                     
                     st.markdown("---")
