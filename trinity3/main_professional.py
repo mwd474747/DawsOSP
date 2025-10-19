@@ -968,6 +968,7 @@ def main():
     tabs = st.tabs([
         "MARKET OVERVIEW",
         "ECONOMIC ANALYSIS",
+        "FUNDAMENTAL ANALYSIS",
         "AI TERMINAL",
         "PREDICTIONS",
         "PORTFOLIO"
@@ -980,17 +981,447 @@ def main():
         render_economic_dashboard()
     
     with tabs[2]:
-        render_ai_chat_interface()
+        render_fundamental_analysis()
     
     with tabs[3]:
-        render_predictions_tracker()
+        render_ai_chat_interface()
     
     with tabs[4]:
+        render_predictions_tracker()
+    
+    with tabs[5]:
         ProfessionalTheme.render_section_header(
             "Portfolio Analytics",
             "Professional portfolio management and optimization"
         )
         st.info("Portfolio management features coming soon...")
+
+def render_fundamental_analysis():
+    """Render fundamental analysis interface"""
+    ProfessionalTheme.render_section_header(
+        "Fundamental Analysis",
+        "DCF valuation, ROIC calculation, and competitive moat assessment"
+    )
+    
+    # Company input section
+    col1, col2, col3 = st.columns([3, 2, 1])
+    
+    with col1:
+        symbol = st.text_input(
+            "Company Symbol",
+            value="AAPL",
+            placeholder="Enter ticker symbol (e.g., AAPL, MSFT)",
+            key="fundamental_symbol"
+        )
+    
+    with col2:
+        analysis_type = st.selectbox(
+            "Analysis Type",
+            ["Complete Analysis", "DCF Valuation", "ROIC Analysis", "Moat Assessment", "Financial Ratios"],
+            key="fundamental_type"
+        )
+    
+    with col3:
+        analyze_btn = st.button("ANALYZE", type="primary", use_container_width=True, key="fundamental_btn")
+    
+    # Quick analysis cards
+    st.markdown("### Quick Analysis")
+    quick_cols = st.columns(4)
+    
+    with quick_cols[0]:
+        if st.button("Apple (AAPL)", use_container_width=True):
+            symbol = "AAPL"
+            analyze_btn = True
+    
+    with quick_cols[1]:
+        if st.button("Microsoft (MSFT)", use_container_width=True):
+            symbol = "MSFT"
+            analyze_btn = True
+    
+    with quick_cols[2]:
+        if st.button("Berkshire (BRK.B)", use_container_width=True):
+            symbol = "BRK.B"
+            analyze_btn = True
+    
+    with quick_cols[3]:
+        if st.button("Tesla (TSLA)", use_container_width=True):
+            symbol = "TSLA"
+            analyze_btn = True
+    
+    st.markdown("---")
+    
+    # Analysis results section
+    if analyze_btn and symbol:
+        with st.spinner(f'Analyzing {symbol}...'):
+            try:
+                # Get DawsOS integration
+                from trinity3.services.dawsos_integration import DawsOSIntegration
+                dawsos = DawsOSIntegration()
+                
+                # Create tabs for different analysis types
+                if analysis_type == "Complete Analysis":
+                    analysis_tabs = st.tabs(["DCF Valuation", "ROIC Analysis", "Moat Assessment", "Financial Metrics"])
+                    
+                    with analysis_tabs[0]:
+                        render_dcf_analysis(dawsos, symbol)
+                    
+                    with analysis_tabs[1]:
+                        render_roic_analysis(dawsos, symbol)
+                    
+                    with analysis_tabs[2]:
+                        render_moat_analysis(dawsos, symbol)
+                    
+                    with analysis_tabs[3]:
+                        render_financial_metrics(dawsos, symbol)
+                
+                elif analysis_type == "DCF Valuation":
+                    render_dcf_analysis(dawsos, symbol)
+                
+                elif analysis_type == "ROIC Analysis":
+                    render_roic_analysis(dawsos, symbol)
+                
+                elif analysis_type == "Moat Assessment":
+                    render_moat_analysis(dawsos, symbol)
+                
+                elif analysis_type == "Financial Ratios":
+                    render_financial_metrics(dawsos, symbol)
+                    
+            except Exception as e:
+                st.error(f"Analysis failed: {str(e)}")
+    elif analyze_btn:
+        st.warning("Please enter a company symbol to analyze")
+
+def render_dcf_analysis(dawsos, symbol):
+    """Render DCF valuation analysis"""
+    st.markdown(f"### DCF Valuation for {symbol}")
+    
+    # Perform DCF analysis using DawsOS
+    result = dawsos.perform_dcf_analysis(symbol)
+    
+    if 'error' in result:
+        st.error(result['error'])
+        return
+    
+    # Display intrinsic value
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric(
+            "Intrinsic Value",
+            f"${result.get('intrinsic_value', 0):.2f}",
+            help="Calculated using discounted cash flow method"
+        )
+    
+    with col2:
+        st.metric(
+            "Current Price",
+            f"${result.get('current_price', 0):.2f}",
+            f"{result.get('price_diff_pct', 0):.1f}%"
+        )
+    
+    with col3:
+        margin = result.get('margin_of_safety', 0)
+        st.metric(
+            "Margin of Safety",
+            f"{margin:.1f}%",
+            "UNDERVALUED" if margin > 0 else "OVERVALUED"
+        )
+    
+    # Cash flow projections chart
+    if 'projected_fcf' in result:
+        st.markdown("#### Projected Free Cash Flows")
+        import plotly.graph_objects as go
+        
+        years = list(range(1, len(result['projected_fcf']) + 1))
+        fig = go.Figure()
+        
+        fig.add_trace(go.Bar(
+            x=[f"Year {y}" for y in years],
+            y=result['projected_fcf'],
+            marker_color=ProfessionalTheme.COLORS['accent_primary'],
+            name="FCF"
+        ))
+        
+        fig.update_layout(
+            paper_bgcolor=ProfessionalTheme.COLORS['surface'],
+            plot_bgcolor=ProfessionalTheme.COLORS['background'],
+            font=dict(color=ProfessionalTheme.COLORS['text_primary']),
+            height=300,
+            margin=dict(l=0, r=0, t=30, b=0),
+            showlegend=False
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Key assumptions
+    st.markdown("#### Key Assumptions")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.info(f"**Discount Rate (WACC):** {result.get('discount_rate', 0)*100:.1f}%")
+        st.info(f"**Terminal Growth Rate:** {result.get('terminal_growth', 0)*100:.1f}%")
+    
+    with col2:
+        st.info(f"**FCF Growth Rate:** {result.get('fcf_growth_rate', 0)*100:.1f}%")
+        st.info(f"**Confidence Score:** {result.get('confidence', 0):.1f}%")
+
+def render_roic_analysis(dawsos, symbol):
+    """Render ROIC analysis"""
+    st.markdown(f"### Return on Invested Capital for {symbol}")
+    
+    # Perform ROIC analysis using DawsOS
+    result = dawsos.calculate_roic(symbol)
+    
+    if 'error' in result:
+        st.error(result['error'])
+        return
+    
+    # Display ROIC metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        roic_pct = result.get('roic_percentage', 0)
+        st.metric(
+            "ROIC",
+            f"{roic_pct:.1f}%",
+            help="Return on Invested Capital"
+        )
+    
+    with col2:
+        st.metric(
+            "Quality",
+            result.get('quality_assessment', 'Unknown'),
+            help="ROIC quality rating"
+        )
+    
+    with col3:
+        st.metric(
+            "NOPAT",
+            f"${result.get('nopat', 0)/1e6:.1f}M",
+            help="Net Operating Profit After Tax"
+        )
+    
+    with col4:
+        st.metric(
+            "Invested Capital",
+            f"${result.get('invested_capital', 0)/1e6:.1f}M",
+            help="Total capital invested"
+        )
+    
+    # ROIC trend visualization
+    st.markdown("#### ROIC Performance")
+    
+    # Create a gauge chart for ROIC
+    import plotly.graph_objects as go
+    
+    fig = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        value = roic_pct,
+        domain = {'x': [0, 1], 'y': [0, 1]},
+        title = {'text': "ROIC (%)"},
+        gauge = {
+            'axis': {'range': [None, 30]},
+            'bar': {'color': ProfessionalTheme.COLORS['accent_primary']},
+            'steps': [
+                {'range': [0, 8], 'color': ProfessionalTheme.COLORS['accent_danger']},
+                {'range': [8, 12], 'color': ProfessionalTheme.COLORS['accent_warning']},
+                {'range': [12, 15], 'color': ProfessionalTheme.COLORS['accent_info']},
+                {'range': [15, 30], 'color': ProfessionalTheme.COLORS['accent_success']}
+            ],
+            'threshold': {
+                'line': {'color': "white", 'width': 2},
+                'thickness': 0.75,
+                'value': 15
+            }
+        }
+    ))
+    
+    fig.update_layout(
+        paper_bgcolor=ProfessionalTheme.COLORS['surface'],
+        font=dict(color=ProfessionalTheme.COLORS['text_primary']),
+        height=300
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Quality assessment explanation
+    if roic_pct >= 15:
+        st.success("**Excellent Performance:** Company generates superior returns on capital")
+    elif roic_pct >= 12:
+        st.info("**Good Performance:** Above-average capital efficiency")
+    elif roic_pct >= 8:
+        st.warning("**Average Performance:** Moderate returns on capital")
+    else:
+        st.error("**Poor Performance:** Below-average capital allocation")
+
+def render_moat_analysis(dawsos, symbol):
+    """Render competitive moat assessment"""
+    st.markdown(f"### Economic Moat Assessment for {symbol}")
+    
+    # Perform moat analysis using DawsOS
+    result = dawsos.analyze_moat(symbol)
+    
+    if 'error' in result:
+        st.error(result['error'])
+        return
+    
+    moat_data = result.get('moat_analysis', {})
+    
+    # Overall moat rating
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        st.metric(
+            "Moat Rating",
+            moat_data.get('moat_rating', 'Unknown'),
+            f"Score: {moat_data.get('overall_score', 0):.1f}/50"
+        )
+    
+    with col2:
+        # Moat factors radar chart
+        import plotly.graph_objects as go
+        
+        factors = moat_data.get('factors', {})
+        categories = list(factors.keys())
+        values = list(factors.values())
+        
+        fig = go.Figure(data=go.Scatterpolar(
+            r=values,
+            theta=[c.replace('_', ' ').title() for c in categories],
+            fill='toself',
+            marker_color=ProfessionalTheme.COLORS['accent_primary']
+        ))
+        
+        fig.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    visible=True,
+                    range=[0, 10]
+                )),
+            showlegend=False,
+            paper_bgcolor=ProfessionalTheme.COLORS['surface'],
+            font=dict(color=ProfessionalTheme.COLORS['text_primary']),
+            height=300
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Individual moat factors
+    st.markdown("#### Competitive Advantages")
+    
+    factor_cols = st.columns(5)
+    factor_names = {
+        'brand': 'Brand Power',
+        'network_effects': 'Network Effects',
+        'cost_advantages': 'Cost Advantages',
+        'switching_costs': 'Switching Costs',
+        'intangible_assets': 'Intangible Assets'
+    }
+    
+    for idx, (key, name) in enumerate(factor_names.items()):
+        with factor_cols[idx]:
+            score = factors.get(key, 0)
+            color = ProfessionalTheme.COLORS['accent_success'] if score >= 7 else \
+                    ProfessionalTheme.COLORS['accent_warning'] if score >= 4 else \
+                    ProfessionalTheme.COLORS['accent_danger']
+            
+            st.markdown(f"""
+            <div style="text-align: center; padding: 10px; border-radius: 5px; background: {ProfessionalTheme.COLORS['surface_light']};">
+                <div style="font-size: 24px; color: {color}; font-weight: bold;">{score:.1f}</div>
+                <div style="font-size: 12px; color: {ProfessionalTheme.COLORS['text_secondary']};">{name}</div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Financial evidence
+    if 'financial_evidence' in moat_data:
+        st.markdown("#### Financial Evidence")
+        evidence = moat_data['financial_evidence']
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Gross Margin", f"{evidence.get('gross_margin', 0)*100:.1f}%")
+        
+        with col2:
+            st.metric("Operating Margin", f"{evidence.get('operating_margin', 0)*100:.1f}%")
+        
+        with col3:
+            st.metric("ROE", f"{evidence.get('roe', 0)*100:.1f}%")
+
+def render_financial_metrics(dawsos, symbol):
+    """Render comprehensive financial metrics"""
+    st.markdown(f"### Financial Metrics for {symbol}")
+    
+    # Get financial metrics from DawsOS
+    result = dawsos.get_financial_metrics(symbol)
+    
+    if 'error' in result:
+        st.error(result['error'])
+        return
+    
+    # Organize metrics by category
+    metric_tabs = st.tabs(["Profitability", "Efficiency", "Liquidity", "Leverage", "Valuation"])
+    
+    with metric_tabs[0]:  # Profitability
+        st.markdown("#### Profitability Ratios")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Gross Margin", f"{result.get('gross_margin', 0)*100:.1f}%")
+        with col2:
+            st.metric("Operating Margin", f"{result.get('operating_margin', 0)*100:.1f}%")
+        with col3:
+            st.metric("Net Margin", f"{result.get('net_margin', 0)*100:.1f}%")
+        with col4:
+            st.metric("ROE", f"{result.get('roe', 0)*100:.1f}%")
+    
+    with metric_tabs[1]:  # Efficiency
+        st.markdown("#### Efficiency Ratios")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Asset Turnover", f"{result.get('asset_turnover', 0):.2f}x")
+        with col2:
+            st.metric("Inventory Turnover", f"{result.get('inventory_turnover', 0):.1f}x")
+        with col3:
+            st.metric("Receivables Days", f"{result.get('receivables_days', 0):.0f}")
+        with col4:
+            st.metric("Payables Days", f"{result.get('payables_days', 0):.0f}")
+    
+    with metric_tabs[2]:  # Liquidity
+        st.markdown("#### Liquidity Ratios")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Current Ratio", f"{result.get('current_ratio', 0):.2f}")
+        with col2:
+            st.metric("Quick Ratio", f"{result.get('quick_ratio', 0):.2f}")
+        with col3:
+            st.metric("Cash Ratio", f"{result.get('cash_ratio', 0):.2f}")
+    
+    with metric_tabs[3]:  # Leverage
+        st.markdown("#### Leverage Ratios")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Debt/Equity", f"{result.get('debt_to_equity', 0):.2f}")
+        with col2:
+            st.metric("Debt/Assets", f"{result.get('debt_to_assets', 0):.2f}")
+        with col3:
+            st.metric("Interest Coverage", f"{result.get('interest_coverage', 0):.1f}x")
+    
+    with metric_tabs[4]:  # Valuation
+        st.markdown("#### Valuation Multiples")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("P/E Ratio", f"{result.get('pe_ratio', 0):.1f}")
+        with col2:
+            st.metric("P/B Ratio", f"{result.get('pb_ratio', 0):.1f}")
+        with col3:
+            st.metric("P/S Ratio", f"{result.get('ps_ratio', 0):.1f}")
+        with col4:
+            st.metric("EV/EBITDA", f"{result.get('ev_ebitda', 0):.1f}")
 
 if __name__ == "__main__":
     main()
