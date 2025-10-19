@@ -167,19 +167,19 @@ def render_economic_dashboard():
         # Create combined chart with GDP, CPI, Unemployment, Fed Rate
         economic_data = {
             'unemployment': pd.DataFrame({
-                'date': pd.date_range(end=datetime.now(), periods=24, freq='M'),
+                'date': pd.date_range(end=datetime.now(), periods=24, freq='ME'),
                 'value': np.random.normal(3.8, 0.3, 24)
             }),
             'fed_rate': pd.DataFrame({
-                'date': pd.date_range(end=datetime.now(), periods=24, freq='M'),
+                'date': pd.date_range(end=datetime.now(), periods=24, freq='ME'),
                 'value': np.random.normal(5.33, 0.5, 24)
             }),
             'cpi': pd.DataFrame({
-                'date': pd.date_range(end=datetime.now(), periods=24, freq='M'),
+                'date': pd.date_range(end=datetime.now(), periods=24, freq='ME'),
                 'value': np.random.normal(3.2, 0.8, 24)
             }),
             'gdp': pd.DataFrame({
-                'date': pd.date_range(end=datetime.now(), periods=8, freq='Q'),
+                'date': pd.date_range(end=datetime.now(), periods=8, freq='QE'),
                 'value': np.random.normal(2.1, 1.0, 8)
             })
         }
