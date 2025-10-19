@@ -99,10 +99,12 @@ class ProfessionalTheme:
                 color: {cls.COLORS['text_primary']};
             }}
             
-            /* Remove default Streamlit branding */
+            /* Remove default Streamlit branding and sidebar */
             #MainMenu {{visibility: hidden;}}
             footer {{visibility: hidden;}}
             header {{visibility: hidden;}}
+            section[data-testid="stSidebar"] {{display: none;}}
+            .main .block-container {{max-width: 100%; padding: 2rem 3rem;}}
             
             /* Professional Header */
             .main-header {{
