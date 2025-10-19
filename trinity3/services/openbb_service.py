@@ -326,9 +326,17 @@ class OpenBBService:
             # Try to get volume data for up/down volume calculation
             if active and isinstance(active, (list, dict)):
                 active_list = active.get('results', active) if isinstance(active, dict) else active
-                if active_list:
-                    up_volume = sum(stock.get('volume', 0) for stock in active_list if stock.get('changesPercentage', 0) > 0)
-                    down_volume = sum(stock.get('volume', 0) for stock in active_list if stock.get('changesPercentage', 0) < 0)
+                if active_list and isinstance(active_list, list):
+                    up_volume = 0
+                    down_volume = 0
+                    for stock in active_list:
+                        if isinstance(stock, dict):
+                            volume = stock.get('volume', 0)
+                            change = stock.get('changesPercentage', 0)
+                            if change > 0:
+                                up_volume += volume
+                            elif change < 0:
+                                down_volume += volume
                     
                     if 'market_internals' not in breadth_data:
                         breadth_data['market_internals'] = {}
