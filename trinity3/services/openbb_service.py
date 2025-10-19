@@ -18,6 +18,9 @@ except ImportError:
     OPENBB_AVAILABLE = False
     print("Warning: OpenBB not installed. Install with: pip install openbb")
 
+# Import Polygon service
+from .polygon_service import PolygonService
+
 class OpenBBService:
     """Centralized OpenBB data service with multi-provider support"""
     
@@ -31,6 +34,9 @@ class OpenBBService:
         self._setup_provider_hierarchy()
         self.cache = {}
         self.cache_expiry = 300  # 5 minutes
+        
+        # Initialize Polygon service for additional data
+        self.polygon = PolygonService()
         
     def _setup_credentials(self):
         """Configure OpenBB with available API keys from environment"""
