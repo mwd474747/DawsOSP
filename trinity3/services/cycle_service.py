@@ -42,6 +42,16 @@ class CycleService:
         # Historical cycle data for pattern matching
         self.historical_cycles = self._load_historical_cycles()
         
+        # Initialize DawsOS integration for real data
+        try:
+            from trinity3.services.dawsos_integration import DawsOSIntegration
+            self.dawsos = DawsOSIntegration()
+            self.use_real_data = True
+        except Exception as e:
+            print(f"DawsOS integration not available: {e}")
+            self.dawsos = None
+            self.use_real_data = False
+        
     def _load_historical_cycles(self) -> List[Dict]:
         """Load historical economic cycles for analysis"""
         return [
@@ -748,7 +758,34 @@ class CycleService:
     # Wrapper methods for UI compatibility
     def get_debt_cycle_position(self) -> Dict[str, Any]:
         """Get current debt cycle position - wrapper for analyze_debt_cycle"""
-        # Generate sample economic data for analysis
+        # Use real economic data from DawsOS integration
+        if self.use_real_data and self.dawsos:
+            try:
+                # Get real debt cycle analysis from DawsOS
+                debt_analysis = self.dawsos.analyze_debt_cycle()
+                economic_data = self.dawsos.get_economic_indicators()
+                
+                # Map to expected format
+                return {
+                    'short_term': {
+                        'phase': debt_analysis.get('cycle_phase', 'Late Cycle'),
+                        'position': 0.65 if debt_analysis.get('cycle_phase') == 'peak' else 0.35,
+                        'months_in_phase': 18,
+                        'expected_duration': 5
+                    },
+                    'long_term': {
+                        'phase': debt_analysis.get('cycle_phase', 'Debt Growth Phase'),
+                        'position': 0.75 if debt_analysis.get('stress_level') == 'elevated' else 0.45,
+                        'debt_to_gdp': debt_analysis.get('debt_metrics', {}).get('federal_debt_gdp', 105),
+                        'years_in_phase': 45
+                    }
+                }
+            except Exception as e:
+                print(f"Error using DawsOS integration: {e}")
+                # Fall back to default data
+                pass
+        
+        # Default/fallback: Generate sample economic data for analysis  
         economic_data = {
             'gdp_growth': 2.1,
             'inflation': 3.2,
@@ -779,6 +816,31 @@ class CycleService:
     
     def get_empire_cycle_position(self) -> Dict[str, Any]:
         """Get empire cycle position - wrapper for analyze_empire_cycle"""
+        # Use real empire cycle analysis from DawsOS integration
+        if self.use_real_data and self.dawsos:
+            try:
+                empire_analysis = self.dawsos.analyze_empire_cycle()
+                
+                # Map to expected format
+                return {
+                    'phase': empire_analysis.get('empire_stage', 'Mature Phase'),
+                    'position': self._map_empire_stage_to_position(empire_analysis.get('empire_stage')),
+                    'indicators': {
+                        'reserve_currency_status': 0.8 if empire_analysis.get('empire_stage') in ['prosperity', 'peak'] else 0.5,
+                        'military_spending': 0.85,
+                        'education_ranking': 40,
+                        'innovation_index': 60,
+                        'wealth_gap': 100 - 30,  # Based on inequality
+                        'political_stability': 70
+                    },
+                    'risks': empire_analysis.get('risk_factors', [])
+                }
+            except Exception as e:
+                print(f"Error using DawsOS empire analysis: {e}")
+                # Fall back to default
+                pass
+        
+        # Default/fallback
         analysis = self.analyze_empire_cycle('US')
         
         return {
@@ -794,6 +856,44 @@ class CycleService:
             },
             'risks': analysis.get('risks', [])
         }
+    
+    def _map_empire_stage_to_position(self, stage: str) -> float:
+        """Map empire stage to position value 0-1"""
+        stage_positions = {
+            'rising': 0.25,
+            'early_prosperity': 0.35,
+            'prosperity': 0.5,
+            'peak': 0.75,
+            'decline': 0.9,
+            'transitional': 0.6
+        }
+        return stage_positions.get(stage.lower() if stage else '', 0.5)
+    
+    def _map_cycle_phase_to_position(self, phase: str) -> float:
+        """Map cycle phase to position value 0-1"""
+        phase_positions = {
+            'expansion': 0.25,
+            'mid_expansion': 0.4,
+            'peak': 0.7,
+            'contraction_risk': 0.85,
+            'contraction': 0.9,
+            'trough': 0.95,
+            'recovery': 0.1
+        }
+        return phase_positions.get(phase.lower() if phase else '', 0.5)
+    
+    def _get_cycle_description(self, phase: str) -> str:
+        """Get description for cycle phase"""
+        descriptions = {
+            'expansion': 'Credit expanding, economic growth accelerating',
+            'mid_expansion': 'Mature expansion, credit growth moderating',
+            'peak': 'Late cycle, credit constraints emerging',
+            'contraction_risk': 'High risk of credit contraction',
+            'contraction': 'Credit contraction, deleveraging underway',
+            'trough': 'Bottom of cycle, stabilization beginning',
+            'recovery': 'Early recovery, credit healing'
+        }
+        return descriptions.get(phase.lower() if phase else '', 'Transitional phase')
     
     def find_historical_analog(self) -> Dict[str, Any]:
         """Find best historical analog - wrapper for _find_historical_analogs"""

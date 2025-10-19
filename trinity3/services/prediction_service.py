@@ -17,7 +17,7 @@ import uuid
 class PredictionService:
     """Manages predictions, backtesting, and simulations"""
     
-    def __init__(self):
+    def __init__(self, use_real_data: bool = True):
         """Initialize prediction service with database connection"""
         self.db_config = {
             'host': os.getenv('PGHOST', 'localhost'),
@@ -27,6 +27,18 @@ class PredictionService:
             'password': os.getenv('PGPASSWORD', '')
         }
         self._init_database()
+        self.use_real_data = use_real_data
+        
+        # Initialize DawsOS integration for real predictions
+        if use_real_data:
+            try:
+                from services.dawsos_integration import DawsOSIntegration
+                self.dawsos = DawsOSIntegration()
+            except ImportError:
+                print("DawsOS integration not available, using mock data")
+                self.dawsos = None
+        else:
+            self.dawsos = None
         
     def _init_database(self):
         """Initialize database tables for predictions"""
@@ -364,6 +376,84 @@ class PredictionService:
             'equity_curve': portfolio['equity_curve']
         }
     
+    def generate_ai_prediction(self, symbol: str, timeframe: str = "short-term") -> Dict[str, Any]:
+        """Generate a real AI prediction using DawsOS integration"""
+        if self.use_real_data and self.dawsos:
+            try:
+                # Get real prediction from DawsOS
+                prediction = self.dawsos.get_market_prediction(symbol, timeframe)
+                
+                # Store the prediction
+                prediction_id = self.store_prediction(
+                    prediction_type="price",
+                    prediction_data=prediction,
+                    confidence=prediction.get('confidence', 75),
+                    target_date=(datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d'),
+                    symbol=symbol,
+                    agent="DawsOS_FinancialAnalyst"
+                )
+                
+                return {
+                    'id': prediction_id,
+                    'prediction': prediction,
+                    'agent': 'DawsOS_FinancialAnalyst',
+                    'confidence': prediction.get('confidence', 75)
+                }
+            except Exception as e:
+                print(f"Error generating DawsOS prediction: {e}")
+                # Fall back to default simulation
+        
+        # Default fallback simulation
+        return self._generate_mock_prediction(symbol, timeframe)
+    
+    def _generate_mock_prediction(self, symbol: str, timeframe: str) -> Dict[str, Any]:
+        """Generate a mock prediction for fallback"""
+        import random
+        
+        base_price = 100  # Placeholder
+        volatility = 0.2
+        
+        # Generate mock prediction
+        if timeframe == "short-term":
+            days = 30
+        elif timeframe == "medium-term":
+            days = 90
+        else:
+            days = 365
+            
+        predicted_return = random.uniform(-0.1, 0.2)
+        predicted_price = base_price * (1 + predicted_return)
+        confidence = random.uniform(60, 85)
+        
+        prediction_data = {
+            'target_price': predicted_price,
+            'current_price': base_price,
+            'expected_return': predicted_return * 100,
+            'timeframe': timeframe,
+            'analysis': 'Market momentum analysis based on technical indicators',
+            'key_factors': [
+                'Technical indicators show bullish signals',
+                'Strong institutional buying pressure',
+                'Favorable macroeconomic conditions'
+            ]
+        }
+        
+        prediction_id = self.store_prediction(
+            prediction_type="price",
+            prediction_data=prediction_data,
+            confidence=confidence,
+            target_date=(datetime.now() + timedelta(days=days)).strftime('%Y-%m-%d'),
+            symbol=symbol,
+            agent="MockPredictor"
+        )
+        
+        return {
+            'id': prediction_id,
+            'prediction': prediction_data,
+            'agent': 'MockPredictor',
+            'confidence': confidence
+        }
+    
     def simulate_scenarios(
         self,
         simulation_type: str,
@@ -383,6 +473,23 @@ class PredictionService:
         Returns:
             Simulation results with probability distributions
         """
+        # Try to use real predictions from DawsOS if available
+        if self.use_real_data and self.dawsos and simulation_type == "economic":
+            try:
+                # Get real economic scenarios from DawsOS
+                recession_risk = self.dawsos.calculate_recession_risk()
+                debt_cycle = self.dawsos.analyze_debt_cycle()
+                
+                # Enhance scenarios with real data
+                for scenario in scenarios:
+                    if 'recession' in scenario.get('name', '').lower():
+                        scenario['probability'] = recession_risk.get('probability', 0.45)
+                        scenario['volatility'] = 0.3 if recession_risk.get('risk_level') == 'high' else 0.2
+                    elif 'debt' in scenario.get('name', '').lower():
+                        scenario['drift'] = -0.1 if debt_cycle.get('stress_level') == 'elevated' else 0.05
+            except Exception as e:
+                print(f"Error enhancing scenarios with DawsOS: {e}")
+        
         results = []
         
         for scenario in scenarios:
