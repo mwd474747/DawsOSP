@@ -7,9 +7,9 @@ from typing import Dict, Any, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
-from trinity3.agents.base_agent import BaseAgent
-from trinity3.services.openbb_service import OpenBBService
-from trinity3.services.prediction_service import PredictionService
+from agents.base_agent import BaseAgent
+from services.openbb_service import OpenBBService
+from services.prediction_service import PredictionService
 
 class EquityAgent(BaseAgent):
     """Specializes in individual equity and sector analysis"""

@@ -13,13 +13,13 @@ from typing import Dict, Any, List, Optional
 import json
 
 # Import Trinity components
-from trinity3.services.openbb_service import OpenBBService
-from trinity3.services.prediction_service import PredictionService
-from trinity3.agents.macro_agent import MacroAgent
-from trinity3.agents.equity_agent import EquityAgent
-from trinity3.agents.market_agent import MarketAgent
-from trinity3.ui.intelligent_router import IntelligentRouter
-from trinity3.ui.visualizations import TrinityVisualizations
+from services.openbb_service import OpenBBService
+from services.prediction_service import PredictionService
+from agents.macro_agent import MacroAgent
+from agents.equity_agent import EquityAgent
+from agents.market_agent import MarketAgent
+from ui.intelligent_router import IntelligentRouter
+from ui.visualizations import TrinityVisualizations
 
 # Configure Streamlit
 st.set_page_config(
@@ -109,9 +109,10 @@ class Trinity3App:
     def render_search_bar(self) -> str:
         """Render the main search/query bar"""
         query = st.text_input(
-            "",
+            "Search",
             placeholder="Ask anything about markets, stocks, or economics... (e.g., 'What's the recession risk?', 'Analyze NVDA', 'Show sector rotation')",
-            key="main_search"
+            key="main_search",
+            label_visibility="collapsed"
         )
         return query
     

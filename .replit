@@ -1,4 +1,4 @@
-modules = ["bash", "python-3.11"]
+modules = ["bash", "python-3.11", "postgresql-16"]
 [agent]
 expertMode = true
 
@@ -22,17 +22,21 @@ args = "Trinity3"
 name = "Trinity3"
 author = "agent"
 
-[workflows.workflow.metadata]
-outputType = "webview"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd trinity3 && streamlit run main.py --server.port 5000 --server.address 0.0.0.0"
+args = "cd trinity3 && ./start.sh"
 waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
 
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 40699
+externalPort = 3000
 
 [deployment]
 deploymentTarget = "autoscale"

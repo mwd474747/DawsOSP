@@ -5,7 +5,7 @@ Uses NLP to classify intent and distribute work
 
 from typing import Dict, Any, List, Tuple, Optional
 import re
-from trinity3.agents.base_agent import BaseAgent
+from agents.base_agent import BaseAgent
 
 class IntelligentRouter:
     """Routes queries to the most appropriate agent(s)"""
