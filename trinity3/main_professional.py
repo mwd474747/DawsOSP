@@ -247,37 +247,45 @@ def render_market_overview():
         with col1:
             # Dollar index
             dxy = real_data.get_realtime_price('DX-Y.NYB') or 105.2
+            dxy_quote = openbb_service.get_equity_quote('DXY') or {'results': [{'changesPercentage': 0}]}
+            dxy_change = dxy_quote['results'][0].get('changesPercentage', 0) if dxy_quote and 'results' in dxy_quote else 0
             ProfessionalTheme.render_metric_card(
                 "Dollar Index",
                 f"{dxy:.2f}",
-                np.random.uniform(-0.5, 0.5)
+                dxy_change
             )
         
         with col2:
             # EUR/USD
-            eurusd = 1.085
+            eurusd = real_data.get_realtime_price('EURUSD=X') or 1.085
+            eur_quote = openbb_service.get_equity_quote('EURUSD=X') or {'results': [{'changesPercentage': 0}]}
+            eur_change = eur_quote['results'][0].get('changesPercentage', 0) if eur_quote and 'results' in eur_quote else 0
             ProfessionalTheme.render_metric_card(
                 "EUR/USD",
                 f"{eurusd:.4f}",
-                np.random.uniform(-0.5, 0.5)
+                eur_change
             )
         
         with col3:
             # GBP/USD
-            gbpusd = 1.265
+            gbpusd = real_data.get_realtime_price('GBPUSD=X') or 1.265
+            gbp_quote = openbb_service.get_equity_quote('GBPUSD=X') or {'results': [{'changesPercentage': 0}]}
+            gbp_change = gbp_quote['results'][0].get('changesPercentage', 0) if gbp_quote and 'results' in gbp_quote else 0
             ProfessionalTheme.render_metric_card(
                 "GBP/USD",
                 f"{gbpusd:.4f}",
-                np.random.uniform(-0.5, 0.5)
+                gbp_change
             )
         
         with col4:
             # USD/JPY
-            usdjpy = 149.50
+            usdjpy = real_data.get_realtime_price('JPY=X') or 149.50
+            jpy_quote = openbb_service.get_equity_quote('JPY=X') or {'results': [{'changesPercentage': 0}]}
+            jpy_change = jpy_quote['results'][0].get('changesPercentage', 0) if jpy_quote and 'results' in jpy_quote else 0
             ProfessionalTheme.render_metric_card(
                 "USD/JPY",
                 f"{usdjpy:.2f}",
-                np.random.uniform(-0.5, 0.5)
+                jpy_change
             )
         
         # Sector Performance
@@ -811,8 +819,7 @@ def main():
             fig = ProfessionalCharts.create_heatmap(
                 sector_df,
                 title="Sector Rotation Matrix (% Returns)",
-                height=400,
-                colorscale='RdYlGn'
+                height=400
             )
             st.plotly_chart(fig, use_container_width=True)
         
