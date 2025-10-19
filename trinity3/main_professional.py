@@ -310,7 +310,7 @@ def render_economic_dashboard():
         
         # Get real economic data from DawsOS integration
         try:
-            from services.dawsos_integration import DawsOSIntegration
+            from trinity3.services.dawsos_integration import DawsOSIntegration
             dawsos = DawsOSIntegration()
             
             # Fetch real economic indicators
@@ -412,7 +412,7 @@ def render_economic_dashboard():
         
         # Get real recession risk from DawsOS integration
         try:
-            from services.dawsos_integration import DawsOSIntegration
+            from trinity3.services.dawsos_integration import DawsOSIntegration
             dawsos = DawsOSIntegration()
             recession_analysis = dawsos.calculate_recession_risk()
             
