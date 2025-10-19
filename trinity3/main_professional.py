@@ -111,124 +111,15 @@ def initialize_services():
 def render_market_overview():
     """Render professional market overview section with comprehensive data"""
     
-    # Major Indices - Direct metrics display
-    st.subheader("Major Indices")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric("S&P 500 (SPY)", "$452.75", "1.25%")
-    
-    with col2:
-        st.metric("Nasdaq 100 (QQQ)", "$378.42", "1.58%")
-    
-    with col3:
-        st.metric("Dow Jones (DIA)", "$342.18", "0.82%")
-    
-    with col4:
-        st.metric("Russell 2000 (IWM)", "$198.65", "-0.48%")
-    
-    # Market internals
-    st.subheader("Market Internals & Sentiment")
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric("VIX", "16.50", "-2.5%")
-    
-    with col2:
-        st.metric("A/D Ratio", "1.25", "25%")
-    
-    with col3:
-        st.metric("Put/Call Ratio", "0.85", "-15%")
-    
-    with col4:
-        regime_color = ProfessionalTheme.COLORS['accent_success']
-        st.markdown(f"""
-        <div style="background: {regime_color}20; border: 2px solid {regime_color}; 
-                    border-radius: 8px; padding: 0.5rem; text-align: center;">
-            <div style="font-size: 0.7rem; color: {ProfessionalTheme.COLORS['text_secondary']};">MARKET REGIME</div>
-            <div style="font-size: 1.2rem; font-weight: bold; color: {regime_color};">RISK ON</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    
-    with col4:
-        # Market regime indicator (Trinity 2.0 style)
-        # Determine regime based on VIX, breadth, and P/C ratio
-        if vix < 15 and breadth > 1.2 and pc_ratio < 0.8:
-            regime = "RISK ON"
-            regime_color = ProfessionalTheme.COLORS['accent_success']
-        elif vix > 25 or breadth < 0.7 or pc_ratio > 1.2:
-            regime = "RISK OFF"
-            regime_color = ProfessionalTheme.COLORS['accent_danger']
-        else:
-            regime = "NEUTRAL"
-            regime_color = ProfessionalTheme.COLORS['accent_warning']
-        
-        st.markdown(f"""
-        <div style="background: {regime_color}20; border: 2px solid {regime_color}; 
-                    border-radius: 8px; padding: 0.5rem; text-align: center;">
-            <div style="font-size: 0.7rem; color: {ProfessionalTheme.COLORS['text_secondary']};">MARKET REGIME</div>
-            <div style="font-size: 1.2rem; font-weight: bold; color: {regime_color};">{regime}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Commodities & Bonds
-    st.subheader("Commodities & Bonds")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric("Gold (GLD)", "$185.50", "0.35%")
-    
-    with col2:
-        st.metric("Oil (USO)", "$72.15", "-1.25%")
-    
-    with col3:
-        st.metric("20Y Treasury (TLT)", "$92.80", "0.15%")
-    
-    with col4:
-        st.metric("US Dollar (UUP)", "$28.50", "-0.10%")
-    
-    # Additional sections
-    st.subheader("Sector Performance")
-    
-    # Display sectors in a grid
-    sectors = [
-        ("Technology (XLK)", 182.50, 2.15),
-        ("Healthcare (XLV)", 135.20, 0.85),
-        ("Financials (XLF)", 38.75, 1.45),
-        ("Consumer Disc (XLY)", 175.30, 1.75),
-        ("Energy (XLE)", 85.60, -0.95),
-        ("Utilities (XLU)", 67.40, 0.25),
-        ("Real Estate (XLRE)", 42.15, -0.35),
-        ("Materials (XLB)", 82.90, 0.65)
-    ]
-    
-    for row in range(2):
-        cols = st.columns(4)
-        for i in range(4):
-            idx = row * 4 + i
-            if idx < len(sectors):
-                name, price, change = sectors[idx]
-                with cols[i]:
-                    st.metric(name, f"${price:.2f}", f"{change:.2f}%")
-    
-    st.subheader("Market News")
-    
-    news_items = [
-        {'time': '14:30', 'title': 'Federal Reserve maintains interest rates, signals future cuts', 'source': 'Reuters'},
-        {'time': '13:45', 'title': 'Tech sector leads market rally on strong earnings reports', 'source': 'Bloomberg'},
-        {'time': '12:20', 'title': 'Oil prices stabilize after Middle East tensions ease', 'source': 'WSJ'},
-        {'time': '11:15', 'title': 'Dollar weakens against major currencies on economic data', 'source': 'FT'},
-        {'time': '10:00', 'title': 'European markets close higher following US lead', 'source': 'CNBC'}
-    ]
-    
-    for item in news_items:
-        with st.container():
-            st.markdown(f"**{item['title']}**")
-            st.caption(f"{item['source']} • {item['time']}")
-        
+    # Import the integrated market overview with proper error handling
+    try:
+        from market_overview_integrated import render_market_overview_integrated
+        render_market_overview_integrated()
+        return  # Successfully used integrated version
+    except Exception as e:
+        st.error(f"Error loading market overview: {str(e)}")
+        # Fall back to basic display
+        st.info("Market data is being loaded. Please refresh the page.")
 def render_sector_performance():
     """Render sector performance heatmap"""
     try:
