@@ -371,165 +371,48 @@ class ProfessionalTheme:
     @classmethod
     def render_header(cls, title: str = "DawsOS", subtitle: str = "Professional Financial Intelligence Platform"):
         """Render professional header with modern gradient banner"""
-        header_html = f"""
-        <div style="
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
-            padding: 3rem 0;
-            margin: -1rem -8rem 2rem -8rem;
-            position: relative;
-            overflow: hidden;
-        ">
-            <!-- Animated background pattern -->
-            <div style="
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background-image: 
-                    radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 50%),
-                    radial-gradient(circle at 40% 20%, rgba(255,255,255,0.08) 0%, transparent 50%);
-                animation: float 20s ease-in-out infinite;
-            "></div>
-            
-            <!-- Glass morphism overlay -->
-            <div style="
-                position: relative;
-                background: rgba(10, 14, 39, 0.85);
-                backdrop-filter: blur(10px);
-                -webkit-backdrop-filter: blur(10px);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 20px;
-                margin: 0 auto;
-                max-width: 1200px;
-                padding: 2.5rem 3rem;
-                box-shadow: 
-                    0 25px 50px -12px rgba(0, 0, 0, 0.5),
-                    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-            ">
-                <!-- Logo and Title -->
-                <div style="display: flex; align-items: center; gap: 2rem;">
-                    <!-- Abstract logo design -->
-                    <div style="
-                        width: 80px;
-                        height: 80px;
-                        background: linear-gradient(135deg, #667eea, #f093fb);
-                        border-radius: 20px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-                        transform: rotate(45deg);
-                    ">
-                        <div style="
-                            width: 50px;
-                            height: 50px;
-                            background: rgba(10, 14, 39, 0.9);
-                            border-radius: 10px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            transform: rotate(-45deg);
-                            font-size: 24px;
-                            font-weight: bold;
-                            color: #fff;
-                        ">
-                            D
-                        </div>
-                    </div>
-                    
-                    <!-- Title section -->
-                    <div style="flex: 1;">
-                        <h1 style="
-                            font-size: 4rem;
-                            font-weight: 200;
-                            letter-spacing: -0.03em;
-                            margin: 0;
-                            background: linear-gradient(90deg, #ffffff 0%, #a0a4b8 100%);
-                            -webkit-background-clip: text;
-                            -webkit-text-fill-color: transparent;
-                            background-clip: text;
-                        ">
+        # Use Streamlit columns for better layout control
+        st.markdown("""
+        <style>
+            .stApp > header {display: none}
+            .main .block-container {padding-top: 0;}
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Create gradient background container
+        st.markdown(f"""
+        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%); 
+                    padding: 2rem; margin: -4rem -4rem 2rem -4rem; border-radius: 0 0 20px 20px;'>
+            <div style='background: rgba(10, 14, 39, 0.95); border-radius: 15px; padding: 2rem; 
+                        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);'>
+                <div style='display: flex; align-items: center; justify-content: space-between;'>
+                    <div>
+                        <h1 style='font-size: 3.5rem; font-weight: 200; margin: 0; color: #ffffff;'>
                             {title}
                         </h1>
-                        <p style="
-                            font-size: 1.125rem;
-                            color: #a0a4b8;
-                            margin: 0.5rem 0 0 0;
-                            letter-spacing: 0.15em;
-                            text-transform: uppercase;
-                            font-weight: 300;
-                        ">
+                        <p style='font-size: 1rem; color: #a0a4b8; margin: 0.5rem 0 0 0; 
+                                  letter-spacing: 0.1em; text-transform: uppercase;'>
                             {subtitle}
                         </p>
                     </div>
-                    
-                    <!-- Status indicators -->
-                    <div style="
-                        display: flex;
-                        gap: 1rem;
-                        align-items: center;
-                    ">
-                        <div style="
-                            padding: 0.5rem 1rem;
-                            background: rgba(16, 185, 129, 0.1);
-                            border: 1px solid rgba(16, 185, 129, 0.3);
-                            border-radius: 8px;
-                            color: #10B981;
-                            font-size: 0.875rem;
-                            font-weight: 500;
-                        ">
-                            ● LIVE
-                        </div>
-                        <div style="
-                            padding: 0.5rem 1rem;
-                            background: rgba(74, 158, 255, 0.1);
-                            border: 1px solid rgba(74, 158, 255, 0.3);
-                            border-radius: 8px;
-                            color: #4A9EFF;
-                            font-size: 0.875rem;
-                            font-weight: 500;
-                        ">
-                            v3.0
-                        </div>
+                    <div style='display: flex; gap: 1rem;'>
+                        <span style='padding: 0.5rem 1rem; background: rgba(16, 185, 129, 0.2); 
+                                     border: 1px solid #10B981; border-radius: 8px; color: #10B981; 
+                                     font-size: 0.875rem;'>● LIVE</span>
+                        <span style='padding: 0.5rem 1rem; background: rgba(74, 158, 255, 0.2); 
+                                     border: 1px solid #4A9EFF; border-radius: 8px; color: #4A9EFF; 
+                                     font-size: 0.875rem;'>v3.0</span>
                     </div>
                 </div>
-                
-                <!-- Market status bar -->
-                <div style="
-                    margin-top: 1.5rem;
-                    padding-top: 1.5rem;
-                    border-top: 1px solid rgba(255, 255, 255, 0.1);
-                    display: flex;
-                    gap: 2rem;
-                    font-size: 0.875rem;
-                ">
-                    <div style="color: #a0a4b8;">
-                        <span style="color: #6b7290;">MARKET STATUS</span>
-                        <span style="color: #10B981; margin-left: 0.5rem;">● OPEN</span>
-                    </div>
-                    <div style="color: #a0a4b8;">
-                        <span style="color: #6b7290;">DATA FEEDS</span>
-                        <span style="color: #10B981; margin-left: 0.5rem;">● CONNECTED</span>
-                    </div>
-                    <div style="color: #a0a4b8;">
-                        <span style="color: #6b7290;">LAST UPDATE</span>
-                        <span style="color: #e8e9f3; margin-left: 0.5rem;">REAL-TIME</span>
-                    </div>
+                <hr style='margin: 1.5rem 0; border: 0; height: 1px; background: rgba(255, 255, 255, 0.1);'>
+                <div style='display: flex; gap: 2rem; font-size: 0.875rem;'>
+                    <span style='color: #6b7290;'>MARKET <span style='color: #10B981;'>● OPEN</span></span>
+                    <span style='color: #6b7290;'>DATA <span style='color: #10B981;'>● CONNECTED</span></span>
+                    <span style='color: #6b7290;'>UPDATE <span style='color: #e8e9f3;'>REAL-TIME</span></span>
                 </div>
             </div>
         </div>
-        
-        <style>
-            @keyframes float {{
-                0%, 100% {{ transform: translateY(0px) rotate(0deg); }}
-                25% {{ transform: translateY(-20px) rotate(1deg); }}
-                75% {{ transform: translateY(20px) rotate(-1deg); }}
-            }}
-        </style>
-        """
-        st.markdown(header_html, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     
     @classmethod
     def render_metric_card(cls, label: str, value: Any, delta: Any = None, color: str = None):

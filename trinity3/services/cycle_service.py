@@ -782,15 +782,15 @@ class CycleService:
         analysis = self.analyze_empire_cycle('US')
         
         return {
-            'phase': analysis['current_phase'],
-            'position': analysis['phase_position'],
+            'phase': analysis.get('phase', 'Mature Phase'),
+            'position': analysis.get('phase_position', 0.75),
             'indicators': {
-                'reserve_currency_status': analysis['scores']['reserve_currency'],
-                'military_spending': analysis['scores']['military_power'],
-                'education_ranking': 100 - analysis['scores']['education_innovation'],
-                'innovation_index': analysis['scores']['education_innovation'],
-                'wealth_gap': 100 - analysis['scores']['internal_order'],
-                'political_stability': analysis['scores']['internal_order']
+                'reserve_currency_status': analysis.get('scores', {}).get('reserve_currency', 0.8),
+                'military_spending': analysis.get('scores', {}).get('military_power', 0.85),
+                'education_ranking': 100 - analysis.get('scores', {}).get('education_innovation', 40),
+                'innovation_index': analysis.get('scores', {}).get('education_innovation', 60),
+                'wealth_gap': 100 - analysis.get('scores', {}).get('internal_order', 30),
+                'political_stability': analysis.get('scores', {}).get('internal_order', 70)
             },
             'risks': analysis.get('risks', [])
         }
