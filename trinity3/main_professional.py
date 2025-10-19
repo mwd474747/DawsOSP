@@ -332,7 +332,9 @@ def render_sector_performance():
                     name, ticker = sector_items[idx]
                     with col:
                         price = real_data.get_realtime_price(ticker)
-                        change = np.random.uniform(-3, 3)
+                        # Get real change from OpenBB
+                        quote = st.session_state.openbb_service.get_equity_quote(ticker)
+                        change = quote['results'][0].get('changesPercentage', 0) if quote and 'results' in quote else 0
                         color = ProfessionalTheme.COLORS['accent_success'] if change > 0 else ProfessionalTheme.COLORS['accent_danger']
                         ProfessionalTheme.render_metric_card(
                             name,
@@ -352,13 +354,30 @@ def render_market_movers():
         
         with col1:
             st.markdown("#### Top Gainers")
+            # Get real gainers data from OpenBB
+            gainers = openbb_service.get_equity_gainers(limit=5)
             gainers_data = []
-            for _ in range(5):
-                gainers_data.append({
-                    'Symbol': ['NVDA', 'AMD', 'TSLA', 'AAPL', 'MSFT'][_],
-                    'Price': f"${np.random.uniform(100, 500):.2f}",
-                    'Change': f"+{np.random.uniform(2, 10):.2f}%"
-                })
+            
+            if gainers and 'results' in gainers:
+                for stock in gainers['results'][:5]:
+                    gainers_data.append({
+                        'Symbol': stock.get('symbol', 'N/A'),
+                        'Price': f"${stock.get('price', 0):.2f}",
+                        'Change': f"+{stock.get('changesPercentage', 0):.2f}%"
+                    })
+            else:
+                # Fallback to hardcoded symbols with real data
+                for symbol in ['NVDA', 'AMD', 'TSLA', 'AAPL', 'MSFT']:
+                    quote = openbb_service.get_equity_quote(symbol)
+                    if quote and 'results' in quote:
+                        stock = quote['results'][0]
+                        if stock.get('changesPercentage', 0) > 0:  # Only show if actually gaining
+                            gainers_data.append({
+                                'Symbol': symbol,
+                                'Price': f"${stock.get('price', 0):.2f}",
+                                'Change': f"+{stock.get('changesPercentage', 0):.2f}%"
+                            })
+            
             gainers_df = pd.DataFrame(gainers_data)
             st.dataframe(
                 gainers_df,
@@ -369,13 +388,30 @@ def render_market_movers():
         
         with col2:
             st.markdown("#### Top Losers")
+            # Get real losers data from OpenBB
+            losers = openbb_service.get_equity_losers(limit=5)
             losers_data = []
-            for _ in range(5):
-                losers_data.append({
-                    'Symbol': ['META', 'GOOGL', 'AMZN', 'NFLX', 'DIS'][_],
-                    'Price': f"${np.random.uniform(100, 400):.2f}",
-                    'Change': f"-{np.random.uniform(2, 8):.2f}%"
-                })
+            
+            if losers and 'results' in losers:
+                for stock in losers['results'][:5]:
+                    losers_data.append({
+                        'Symbol': stock.get('symbol', 'N/A'),
+                        'Price': f"${stock.get('price', 0):.2f}",
+                        'Change': f"{stock.get('changesPercentage', 0):.2f}%"
+                    })
+            else:
+                # Fallback to hardcoded symbols with real data
+                for symbol in ['META', 'GOOGL', 'AMZN', 'NFLX', 'DIS']:
+                    quote = openbb_service.get_equity_quote(symbol)
+                    if quote and 'results' in quote:
+                        stock = quote['results'][0]
+                        if stock.get('changesPercentage', 0) < 0:  # Only show if actually losing
+                            losers_data.append({
+                                'Symbol': symbol,
+                                'Price': f"${stock.get('price', 0):.2f}",
+                                'Change': f"{stock.get('changesPercentage', 0):.2f}%"
+                            })
+            
             losers_df = pd.DataFrame(losers_data)
             st.dataframe(
                 losers_df,
@@ -386,13 +422,31 @@ def render_market_movers():
         
         with col3:
             st.markdown("#### Most Active")
+            # Get real active stocks data from OpenBB
+            active = openbb_service._get_with_fallback('equity.discovery.active', limit=5)
             active_data = []
-            for _ in range(5):
-                active_data.append({
-                    'Symbol': ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA'][_],
-                    'Volume': f"{np.random.randint(50, 200)}M",
-                    'Change': f"{np.random.uniform(-2, 2):+.2f}%"
-                })
+            
+            if active and 'results' in active:
+                for stock in active['results'][:5]:
+                    volume_m = stock.get('volume', 0) / 1_000_000  # Convert to millions
+                    active_data.append({
+                        'Symbol': stock.get('symbol', 'N/A'),
+                        'Volume': f"{volume_m:.1f}M",
+                        'Change': f"{stock.get('changesPercentage', 0):+.2f}%"
+                    })
+            else:
+                # Fallback to hardcoded symbols with real data
+                for symbol in ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA']:
+                    quote = openbb_service.get_equity_quote(symbol)
+                    if quote and 'results' in quote:
+                        stock = quote['results'][0]
+                        volume_m = stock.get('volume', 100_000_000) / 1_000_000
+                        active_data.append({
+                            'Symbol': symbol,
+                            'Volume': f"{volume_m:.1f}M",
+                            'Change': f"{stock.get('changesPercentage', 0):+.2f}%"
+                        })
+            
             active_df = pd.DataFrame(active_data)
             st.dataframe(
                 active_df,
@@ -809,8 +863,9 @@ def main():
                 row = []
                 base = next((s['performance'] for s in sectors_data if s['name'] == sector), 0)
                 for i, tf in enumerate(timeframes):
-                    # Simulate different timeframe momentum
-                    momentum = base * (1 + i * 0.3) + np.random.uniform(-2, 2)
+                    # Calculate momentum based on timeframe multiplier
+                    # Longer timeframes typically show larger accumulated returns
+                    momentum = base * (1 + i * 0.3)  # Progressive momentum without random
                     row.append(momentum)
                 momentum_matrix.append(row)
             
