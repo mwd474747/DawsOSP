@@ -96,7 +96,7 @@ class DawsOSIntegration:
             economic_data = {}
             for series_id in series_ids:
                 try:
-                    result = self.fred_capability.fetch_single_series(
+                    result = self.fred_capability.get_series(
                         series_id,
                         start_date=(datetime.now() - timedelta(days=730)).strftime('%Y-%m-%d'),
                         end_date=datetime.now().strftime('%Y-%m-%d')
