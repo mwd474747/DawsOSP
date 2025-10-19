@@ -86,7 +86,9 @@ def render_market_overview():
         
         with col1:
             spy_price = real_data.get_realtime_price('SPY')
-            spy_change = np.random.uniform(-2, 2)  # Would calculate from historical
+            # Get real change percentage from OpenBB
+            spy_quote = openbb_service.get_equity_quote('SPY')
+            spy_change = spy_quote['results'][0].get('changesPercentage', 0) if spy_quote and 'results' in spy_quote else 0
             ProfessionalTheme.render_metric_card(
                 "S&P 500 (SPY)",
                 f"${spy_price:.2f}",
@@ -96,7 +98,8 @@ def render_market_overview():
         with col2:
             # Nasdaq 100
             qqq_price = real_data.get_realtime_price('QQQ')
-            qqq_change = np.random.uniform(-2.5, 2.5)
+            qqq_quote = openbb_service.get_equity_quote('QQQ')
+            qqq_change = qqq_quote['results'][0].get('changesPercentage', 0) if qqq_quote and 'results' in qqq_quote else 0
             ProfessionalTheme.render_metric_card(
                 "Nasdaq 100 (QQQ)",
                 f"${qqq_price:.2f}",
@@ -106,7 +109,8 @@ def render_market_overview():
         with col3:
             # Dow Jones
             dia_price = real_data.get_realtime_price('DIA')
-            dia_change = np.random.uniform(-1.5, 1.5)
+            dia_quote = openbb_service.get_equity_quote('DIA')
+            dia_change = dia_quote['results'][0].get('changesPercentage', 0) if dia_quote and 'results' in dia_quote else 0
             ProfessionalTheme.render_metric_card(
                 "Dow Jones (DIA)",
                 f"${dia_price:.2f}",
@@ -116,7 +120,8 @@ def render_market_overview():
         with col4:
             # Russell 2000
             iwm_price = real_data.get_realtime_price('IWM')
-            iwm_change = np.random.uniform(-3, 3)
+            iwm_quote = openbb_service.get_equity_quote('IWM')
+            iwm_change = iwm_quote['results'][0].get('changesPercentage', 0) if iwm_quote and 'results' in iwm_quote else 0
             ProfessionalTheme.render_metric_card(
                 "Russell 2000 (IWM)",
                 f"${iwm_price:.2f}",
@@ -194,7 +199,8 @@ def render_market_overview():
         with col1:
             # Gold
             gld_price = real_data.get_realtime_price('GLD')
-            gld_change = np.random.uniform(-1, 1)
+            gld_quote = openbb_service.get_equity_quote('GLD')
+            gld_change = gld_quote['results'][0].get('changesPercentage', 0) if gld_quote and 'results' in gld_quote else 0
             ProfessionalTheme.render_metric_card(
                 "Gold (GLD)",
                 f"${gld_price:.2f}",
@@ -204,7 +210,8 @@ def render_market_overview():
         with col2:
             # Oil
             uso_price = real_data.get_realtime_price('USO')
-            uso_change = np.random.uniform(-2, 2)
+            uso_quote = openbb_service.get_equity_quote('USO')
+            uso_change = uso_quote['results'][0].get('changesPercentage', 0) if uso_quote and 'results' in uso_quote else 0
             ProfessionalTheme.render_metric_card(
                 "Oil (USO)",
                 f"${uso_price:.2f}",
@@ -214,16 +221,19 @@ def render_market_overview():
         with col3:
             # 10Y Treasury yield
             treasury = real_data.get_realtime_price('^TNX') / 10  # Adjust for display
+            tnx_quote = openbb_service.get_equity_quote('^TNX')
+            tnx_change = tnx_quote['results'][0].get('changesPercentage', 0) / 10 if tnx_quote and 'results' in tnx_quote else 0
             ProfessionalTheme.render_metric_card(
                 "10Y Treasury",
                 f"{treasury:.2f}%",
-                np.random.uniform(-0.1, 0.1)
+                tnx_change
             )
         
         with col4:
             # 20Y Treasury Bond
             tlt_price = real_data.get_realtime_price('TLT')
-            tlt_change = np.random.uniform(-1, 1)
+            tlt_quote = openbb_service.get_equity_quote('TLT')
+            tlt_change = tlt_quote['results'][0].get('changesPercentage', 0) if tlt_quote and 'results' in tlt_quote else 0
             ProfessionalTheme.render_metric_card(
                 "20Y Bond (TLT)",
                 f"${tlt_price:.2f}",
