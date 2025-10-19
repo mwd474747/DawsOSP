@@ -131,16 +131,39 @@ class Trinity3App:
                 st.session_state['query'] = "What's the recession risk using Dalio framework?"
         
         with col3:
-            if st.button("🔄 Sector Rotation", use_container_width=True):
-                st.session_state['query'] = "Show sector rotation"
+            if st.button("🏠 Housing Cycle", use_container_width=True):
+                st.session_state['query'] = "Analyze housing and credit cycle"
         
         with col4:
-            if st.button("💹 Fed Impact", use_container_width=True):
+            if st.button("🏛️ Fed Policy", use_container_width=True):
                 st.session_state['query'] = "Analyze Fed policy impact"
         
         with col5:
+            if st.button("🌍 Empire Cycle", use_container_width=True):
+                st.session_state['query'] = "Analyze US empire cycle position"
+        
+        # Second row of economic actions
+        col6, col7, col8, col9, col10 = st.columns(5)
+        
+        with col6:
+            if st.button("📊 Market Breadth", use_container_width=True):
+                st.session_state['query'] = "Show market breadth analysis"
+        
+        with col7:
+            if st.button("🔄 Sector Rotation", use_container_width=True):
+                st.session_state['query'] = "Analyze sector rotation"
+        
+        with col8:
+            if st.button("💹 Economic Outlook", use_container_width=True):
+                st.session_state['query'] = "Multi-timeframe economic outlook"
+        
+        with col9:
             if st.button("📈 Top Stocks", use_container_width=True):
                 st.session_state['query'] = "Show top performing stocks"
+        
+        with col10:
+            if st.button("🎯 Predictions", use_container_width=True):
+                st.session_state['query'] = "Show all economic predictions"
     
     def render_market_overview(self):
         """Render market overview dashboard"""
@@ -151,7 +174,13 @@ class Trinity3App:
             spy = self.openbb.get_equity_quote('SPY')
             qqq = self.openbb.get_equity_quote('QQQ')
             dia = self.openbb.get_equity_quote('DIA')
-            vix = {'price': 18.5}  # Placeholder for VIX
+            # Get VIX data from OpenBB
+            vix_data = self.openbb.get_equity_quote('VIX')
+            vix_price = vix_data.get('results', [{}])[0].get('price', 0) if vix_data else 0
+            # If VIX fails, try VIXY ETF as fallback
+            if not vix_price:
+                vixy = self.openbb.get_equity_quote('VIXY')
+                vix_price = vixy.get('results', [{}])[0].get('price', 0) if vixy else 0
             
             col1, col2, col3, col4 = st.columns(4)
             
@@ -171,7 +200,8 @@ class Trinity3App:
                 st.metric("DOW", f"${dia_price:.2f}", f"{dia_change:.2f}%")
             
             with col4:
-                st.metric("VIX", f"{vix['price']:.2f}", "Normal" if vix['price'] < 20 else "Elevated")
+                vix_status = "Normal" if vix_price < 20 else "Elevated" if vix_price < 30 else "High"
+                st.metric("VIX", f"{vix_price:.2f}", vix_status)
                 
         except Exception as e:
             st.info("Market data loading...")
@@ -238,8 +268,14 @@ class Trinity3App:
         st.markdown(f"**Confidence**: {confidence_color} {confidence}%")
         
         # Render specific visualizations based on type
-        if 'recession' in analysis_type:
+        if 'economic_cycle' in analysis_type or 'debt_cycle' in data or 'cycle' in analysis_type:
+            self.render_economic_cycle_analysis(data)
+        elif 'recession' in analysis_type:
             self.render_recession_analysis(data)
+        elif 'housing' in analysis_type or 'credit_cycle' in data:
+            self.render_housing_credit_cycle(data)
+        elif 'fed_policy' in analysis_type:
+            self.render_fed_policy_analysis(data)
         elif 'valuation' in analysis_type:
             self.render_valuation_analysis(data)
         elif 'breadth' in analysis_type:
@@ -327,6 +363,157 @@ class Trinity3App:
             st.markdown(f"- **Probability**: {data['probability']}%")
         if 'confidence' in data:
             st.progress(data['confidence'] / 100)
+    
+    def render_economic_cycle_analysis(self, data: Dict):
+        """Render comprehensive economic cycle analysis with Dalio framework"""
+        viz = TrinityVisualizations()
+        
+        # Check for debt cycle data
+        if 'debt_cycle' in data:
+            cycle_data = data['debt_cycle']
+            
+            # Debt cycle gauges
+            st.plotly_chart(
+                viz.create_debt_cycle_chart(cycle_data),
+                use_container_width=True
+            )
+            
+            # Cycle details
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("##### 📈 Short-Term Cycle")
+                short = cycle_data.get('short_term_cycle', {})
+                st.info(f"**Phase:** {short.get('phase', 'Unknown')}")
+                st.write(f"**Position:** {short.get('position', 'N/A')}")
+                st.write(f"**Characteristics:** {short.get('characteristics', '')}")
+                
+            with col2:
+                st.markdown("##### 📊 Long-Term Debt Cycle")
+                long = cycle_data.get('long_term_cycle', {})
+                st.info(f"**Phase:** {long.get('phase', 'Unknown')}")
+                st.write(f"**Debt/GDP:** {long.get('debt_to_gdp', 'N/A')}%")
+                st.write(f"**Risk Level:** {long.get('risk_level', 'N/A')}")
+            
+            # Paradigm shift risk
+            if 'paradigm_shift_risk' in cycle_data:
+                st.markdown("##### ⚠️ Paradigm Shift Risk")
+                risk = cycle_data['paradigm_shift_risk']
+                st.warning(f"**Assessment:** {risk.get('assessment', 'N/A')}")
+                if risk.get('risk_factors'):
+                    st.write("**Risk Factors:**")
+                    for factor in risk['risk_factors']:
+                        st.write(f"• {factor}")
+            
+            # Portfolio allocation
+            if 'portfolio_allocation' in cycle_data:
+                st.plotly_chart(
+                    viz.create_all_weather_allocation_chart(cycle_data['portfolio_allocation']),
+                    use_container_width=True
+                )
+            
+            # Historical analogs
+            if 'historical_analogs' in cycle_data:
+                st.plotly_chart(
+                    viz.create_historical_cycles_timeline(cycle_data['historical_analogs']),
+                    use_container_width=True
+                )
+            
+            # Predictions
+            if 'predictions' in cycle_data:
+                st.plotly_chart(
+                    viz.create_cycle_predictions_chart(cycle_data['predictions']),
+                    use_container_width=True
+                )
+        
+        # Empire cycle if present
+        if 'empire_cycle' in data:
+            st.markdown("##### 🌍 Empire Cycle Analysis")
+            empire = data['empire_cycle']
+            
+            st.plotly_chart(
+                viz.create_empire_cycle_chart(empire),
+                use_container_width=True
+            )
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Phase", empire.get('phase', 'Unknown'))
+                st.write(f"**Outlook:** {empire.get('outlook', '')}")
+            with col2:
+                st.metric("Timeline", empire.get('timeline', 'Unknown'))
+                if empire.get('key_risks'):
+                    st.write("**Key Risks:**")
+                    for risk in empire['key_risks']:
+                        st.write(f"• {risk}")
+        
+        # Investment implications
+        if 'investment_implications' in data:
+            st.markdown("##### 💡 Investment Implications")
+            for implication in data['investment_implications']:
+                st.write(f"• {implication}")
+    
+    def render_housing_credit_cycle(self, data: Dict):
+        """Render housing market and credit cycle analysis"""
+        st.markdown("##### 🏠 Housing & Credit Cycle Analysis")
+        
+        # Key metrics
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Housing Starts", f"{data.get('housing_starts', 'N/A')}")
+        with col2:
+            st.metric("30Y Mortgage Rate", f"{data.get('mortgage_rate', 'N/A')}%")
+        with col3:
+            st.metric("Case-Shiller Index", f"{data.get('case_shiller', 'N/A')}")
+        
+        # Credit metrics
+        if 'credit_metrics' in data:
+            st.markdown("**Credit Conditions:**")
+            credit = data['credit_metrics']
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write(f"• Credit Card Delinquencies: {credit.get('cc_delinquencies', 'N/A')}%")
+                st.write(f"• Mortgage Delinquencies: {credit.get('mortgage_delinquencies', 'N/A')}%")
+            with col2:
+                st.write(f"• Homeownership Rate: {credit.get('homeownership_rate', 'N/A')}%")
+                st.write(f"• Median Sales Price: ${credit.get('median_price', 'N/A')}")
+        
+        # Cycle position
+        if 'cycle_position' in data:
+            position = data['cycle_position']
+            st.info(f"**Housing Cycle Position:** {position.get('phase', 'Unknown')} - {position.get('description', '')}")
+    
+    def render_fed_policy_analysis(self, data: Dict):
+        """Render Fed policy impact analysis"""
+        st.markdown("##### 🏛️ Federal Reserve Policy Analysis")
+        
+        # Current policy stance
+        if 'current_stance' in data:
+            stance = data['current_stance']
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Fed Funds Rate", f"{stance.get('rate', 'N/A')}%")
+                st.write(f"**Policy Stance:** {stance.get('stance', 'N/A')}")
+            with col2:
+                st.metric("Next Meeting", stance.get('next_meeting', 'N/A'))
+                st.write(f"**Expected Action:** {stance.get('expected_action', 'N/A')}")
+        
+        # Transmission mechanisms
+        if 'transmission_channels' in data:
+            st.markdown("**Policy Transmission Channels:**")
+            for channel, impact in data['transmission_channels'].items():
+                st.write(f"• **{channel}:** {impact}")
+        
+        # Market impact
+        if 'market_impact' in data:
+            impact = data['market_impact']
+            st.markdown("**Expected Market Impact:**")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.write(f"Equities: {impact.get('equities', 'N/A')}")
+            with col2:
+                st.write(f"Bonds: {impact.get('bonds', 'N/A')}")
+            with col3:
+                st.write(f"Dollar: {impact.get('dollar', 'N/A')}")
     
     def render_generic_analysis(self, data: Dict):
         """Render generic analysis data"""
