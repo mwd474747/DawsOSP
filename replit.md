@@ -6,6 +6,12 @@ DawsOS is a **pattern-driven financial intelligence system** built with Python a
 ## User Preferences
 I prefer iterative development, where changes are made incrementally, and I am asked for feedback regularly. Please prioritize using clear, concise language in all explanations and avoid overly technical jargon where possible. I value detailed explanations when new features or complex concepts are introduced. Do not make changes to the `dawsos/agents/` folder without explicit approval.
 
+## Design Guidelines
+- **NO ICONS/EMOJIS**: The interface should maintain a professional Bloomberg Terminal aesthetic. Never use emojis, icons, or decorative symbols in titles, headers, or UI elements. This includes but is not limited to: 📊, 📈, 📉, 💰, ⚠️, 🎯, etc.
+- **Modern Professional Theme**: Purple-pink-blue gradient banner with glass morphism effects on a dark background
+- **Typography**: Clean, minimal text without decorative elements
+- **Visual Hierarchy**: Use color, size, and spacing rather than icons to establish importance
+
 ## System Architecture
 DawsOS employs a Trinity architecture for orchestrating 15 specialized AI agents. The frontend is a Streamlit web UI, with the backend powered by a Python-based agent system utilizing a knowledge graph for relationship mapping. Data storage is file-based JSON, eliminating the need for an external database. The system supports optional API integrations for real-time data sources like FRED, FMP, and NewsAPI.
 
