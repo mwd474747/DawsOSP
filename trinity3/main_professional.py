@@ -202,7 +202,7 @@ def render_market_movers():
             gainers_df = pd.DataFrame(gainers_data)
             st.dataframe(
                 gainers_df,
-                width='stretch',
+                use_container_width=True,
                 hide_index=True,
                 height=200
             )
@@ -236,7 +236,7 @@ def render_market_movers():
             losers_df = pd.DataFrame(losers_data)
             st.dataframe(
                 losers_df,
-                width='stretch',
+                use_container_width=True,
                 hide_index=True,
                 height=200
             )
@@ -271,7 +271,7 @@ def render_market_movers():
             active_df = pd.DataFrame(active_data)
             st.dataframe(
                 active_df,
-                width='stretch',
+                use_container_width=True,
                 hide_index=True,
                 height=200
             )
@@ -340,7 +340,7 @@ def render_economic_dashboard():
         }
         
         fig = EconomicPredictions.create_economic_indicators_combined(economic_data)
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True)
     
     with tabs[1]:  # Fed Policy
         st.markdown("### Federal Reserve Policy Analysis")
@@ -350,7 +350,7 @@ def render_economic_dashboard():
         
         with col1:
             fig = EconomicPredictions.create_fed_funds_projection(current_rate=5.33)
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
         
         with col2:
             # Policy impact summary
@@ -368,7 +368,7 @@ def render_economic_dashboard():
         st.markdown("---")
         st.markdown("### Unemployment Rate Forecast")
         fig = EconomicPredictions.create_unemployment_forecast(current_rate=3.8)
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True)
     
     with tabs[2]:  # Recession Risk
         st.markdown("### Recession Risk Analysis")
@@ -382,12 +382,12 @@ def render_economic_dashboard():
                 credit_cycle_position=0.65,
                 confidence_adjustment=0.85
             )
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
         
         with col2:
             # Recession probability chart
             fig = EconomicPredictions.create_recession_probability_chart()
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
         
         # Leading indicators
         st.markdown("---")
@@ -427,7 +427,7 @@ def render_economic_dashboard():
                     ],
                     height=250
                 )
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
             else:
                 # Use fallback values when service is not available
                 st.info("Debt cycle analysis unavailable - using default values")
@@ -485,7 +485,7 @@ def render_economic_dashboard():
                     y_label="Percentage",
                     height=300
                 )
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
             else:
                 # Fallback when service is unavailable
                 st.info("Long-term debt cycle analysis unavailable")
@@ -499,7 +499,7 @@ def render_economic_dashboard():
                     y_label="Percentage",
                     height=300
                 )
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
     
     with tabs[4]:  # Sector Rotation
         # Check if real_data service is available
@@ -531,7 +531,7 @@ def render_economic_dashboard():
                 title="Sector Performance Map",
                 height=400
             )
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
     
     with tabs[5]:  # Economic Calendar
         EconomicCalendar.render_calendar()
@@ -584,7 +584,7 @@ def render_economic_dashboard():
                     title="Empire Cycle Position",
                     height=350
                 )
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
         else:
             # Fallback when service is unavailable
             st.info("Empire cycle analysis unavailable - using sample visualization")
@@ -599,7 +599,7 @@ def render_economic_dashboard():
                 title="Empire Cycle Position (Sample)",
                 height=350
             )
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
 
 def render_ai_chat_interface():
     """Render professional AI chat interface"""
@@ -717,7 +717,7 @@ def render_predictions_tracker():
             else ""
         )
         
-        st.dataframe(styled_df, width='stretch', height=400)
+        st.dataframe(styled_df, use_container_width=True, height=400)
     else:
         st.info("No predictions recorded yet. Start making analyses to build prediction history.")
 
