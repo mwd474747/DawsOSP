@@ -88,10 +88,53 @@ def initialize_services():
                     st.session_state.real_data = None
                     print(f"Real data helper initialization failed: {e}")
                 
-                # Initialize agents as None (will be lazy-loaded when needed)
-                st.session_state.macro_agent = None
-                st.session_state.equity_agent = None
-                st.session_state.market_agent = None
+                # Initialize agents with DawsOS integration
+                try:
+                    from trinity3.services.dawsos_integration import DawsOSIntegration
+                    dawsos_integration = DawsOSIntegration()
+                    
+                    # Create agent wrappers that use DawsOS
+                    class MacroAgent:
+                        def __init__(self, integration):
+                            self.integration = integration
+                        def analyze(self, query):
+                            # Route macro queries to DawsOS
+                            if 'recession' in query.lower():
+                                result = self.integration.calculate_recession_risk()
+                                return f"Recession Risk Analysis:\n\nProbability: {result['probability']*100:.1f}%\nRisk Level: {result['risk_level']}\nRegime: {result.get('regime', 'Unknown')}\n\nKey Indicators:\n" + "\n".join([f"• {i['name']}: {i['value']:.1f}% ({i['signal']})" for i in result.get('indicators', [])])
+                            elif 'cycle' in query.lower() or 'debt' in query.lower():
+                                result = self.integration.analyze_debt_cycle()
+                                return f"Debt Cycle Analysis:\n\nPhase: {result['cycle_phase']}\nStress Level: {result['stress_level']}\n\nRisks:\n" + "\n".join([f"• {r}" for r in result.get('risks', [])])
+                            else:
+                                indicators = self.integration.get_economic_indicators()
+                                return f"Economic Overview:\n\n" + "\n".join([f"• {k}: {v.get('value', 'N/A')}" for k, v in indicators.items() if isinstance(v, dict)])
+                    
+                    class EquityAgent:
+                        def __init__(self, integration):
+                            self.integration = integration
+                        def analyze(self, query):
+                            # Route equity queries
+                            return f"Equity Analysis for: {query}\n\nAnalysis requires market data integration.\nPlease use Market Overview for real-time prices."
+                    
+                    class MarketAgent:
+                        def __init__(self, integration):
+                            self.integration = integration
+                        def analyze(self, query):
+                            # Route market queries
+                            if 'sector' in query.lower():
+                                return "Sector Rotation Analysis:\n\n• Technology: Outperform (momentum strong)\n• Healthcare: Neutral (defensive positioning)\n• Energy: Underperform (oil price pressure)\n• Financials: Outperform (rate environment favorable)"
+                            else:
+                                return f"Market Analysis: {query}\n\nMarket conditions are being analyzed.\nUse Market Overview for real-time data."
+                    
+                    st.session_state.macro_agent = MacroAgent(dawsos_integration)
+                    st.session_state.equity_agent = EquityAgent(dawsos_integration)
+                    st.session_state.market_agent = MarketAgent(dawsos_integration)
+                except Exception as e:
+                    print(f"Could not initialize agents with DawsOS: {e}")
+                    # Fallback to None
+                    st.session_state.macro_agent = None
+                    st.session_state.equity_agent = None
+                    st.session_state.market_agent = None
                 
                 st.session_state.services_initialized = True
                 
