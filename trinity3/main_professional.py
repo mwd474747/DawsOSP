@@ -17,6 +17,7 @@ sys.path.append('/home/runner/workspace/trinity3')
 # Import professional UI components
 from ui.professional_theme import ProfessionalTheme
 from ui.professional_charts import ProfessionalCharts, render_chart
+from ui.stock_analysis import StockAnalysis
 
 # Import Trinity components
 from services.openbb_config import OpenBBConfig
@@ -710,6 +711,16 @@ def render_ai_chat_interface():
             </div>
             """, unsafe_allow_html=True)
 
+def render_stock_analysis():
+    """Render the stock analysis interface"""
+    if 'stock_analysis' not in st.session_state:
+        st.session_state.stock_analysis = StockAnalysis(
+            st.session_state.openbb_service,
+            st.session_state.real_data
+        )
+    
+    st.session_state.stock_analysis.render()
+
 def render_predictions_tracker():
     """Render predictions and backtesting interface"""
     ProfessionalTheme.render_section_header(
@@ -767,6 +778,7 @@ def main():
     # Main navigation
     tabs = st.tabs([
         "MARKET OVERVIEW",
+        "STOCK ANALYSIS",
         "ECONOMIC ANALYSIS",
         "AI TERMINAL",
         "PREDICTIONS",
@@ -816,15 +828,18 @@ def main():
             st.plotly_chart(fig, use_container_width=True)
     
     with tabs[1]:
-        render_economic_dashboard()
+        render_stock_analysis()
     
     with tabs[2]:
-        render_ai_chat_interface()
+        render_economic_dashboard()
     
     with tabs[3]:
-        render_predictions_tracker()
+        render_ai_chat_interface()
     
     with tabs[4]:
+        render_predictions_tracker()
+    
+    with tabs[5]:
         ProfessionalTheme.render_section_header(
             "Portfolio Analytics",
             "Professional portfolio management and optimization"
