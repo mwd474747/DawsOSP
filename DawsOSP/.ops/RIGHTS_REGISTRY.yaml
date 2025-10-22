@@ -1,0 +1,298 @@
+# DawsOS Provider Rights Registry
+#
+# This file defines export and redistribution rights for each data provider.
+# It is loaded at application startup and enforced by the reports service.
+#
+# Enforcement timeline:
+# - S1-W2: Staging enforcement (blocks exports during development)
+# - S4-W8: Production enforcement (blocks exports in prod)
+#
+# See: PRODUCT_SPEC.md §5 (Provider Governance)
+# See: .security/THREAT_MODEL.md (Scenario 5: Rights Registry Bypass)
+
+version: "1.0"
+updated: "2025-10-21"
+
+providers:
+  # FMP (Financial Modeling Prep) - Premium Tier
+  FMP:
+    name: "Financial Modeling Prep"
+    tier: "premium"
+    data_types:
+      - "fundamentals"
+      - "financials"
+      - "ratios"
+      - "profiles"
+      - "earnings"
+
+    export_rights:
+      allows_export_pdf: true          # Premium tier allows PDF export
+      allows_export_csv: true          # Premium tier allows CSV export
+      allows_redistribution: false     # Cannot redistribute raw data
+      requires_attribution: true       # Must include attribution footer
+      watermark_required: false        # No watermark needed if licensed
+
+    attribution:
+      required_text: "Financial data © Financial Modeling Prep (financialmodelingprep.com)"
+      placement: "footer"
+      font_size: "8pt"
+
+    licensing:
+      requires_license: true
+      license_type: "commercial"
+      check_method: "env_var"          # Check FMP_API_KEY in environment
+      env_var: "FMP_API_KEY"
+
+    rate_limits:
+      requests_per_minute: 120
+      bandwidth_monthly_gb: 50         # Hypothetical bandwidth cap
+      alerts:
+        - threshold_pct: 70
+          action: "log_warning"
+        - threshold_pct: 85
+          action: "pagerduty_alert"
+        - threshold_pct: 95
+          action: "fallback_to_cache"
+
+    circuit_breaker:
+      failure_threshold: 3
+      timeout_seconds: 60
+      half_open_max_calls: 1
+
+  # Polygon.io - Stocks Tier
+  Polygon:
+    name: "Polygon.io"
+    tier: "stocks"
+    data_types:
+      - "prices"
+      - "splits"
+      - "dividends"
+      - "corporate_actions"
+
+    export_rights:
+      allows_export_pdf: true          # Stocks tier allows PDF export
+      allows_export_csv: true          # Stocks tier allows CSV export
+      allows_redistribution: false     # Cannot redistribute raw data
+      requires_attribution: true       # Must include attribution footer
+      watermark_required: false        # No watermark needed if licensed
+
+    attribution:
+      required_text: "Market data © Polygon.io (polygon.io)"
+      placement: "footer"
+      font_size: "8pt"
+
+    licensing:
+      requires_license: true
+      license_type: "commercial"
+      check_method: "env_var"
+      env_var: "POLYGON_API_KEY"
+
+    rate_limits:
+      requests_per_minute: 100
+      unlimited_bandwidth: true        # No bandwidth cap for Stocks tier
+
+    circuit_breaker:
+      failure_threshold: 3
+      timeout_seconds: 60
+      half_open_max_calls: 1
+
+  # FRED (Federal Reserve Economic Data) - Public Domain
+  FRED:
+    name: "Federal Reserve Economic Data"
+    tier: "public"
+    data_types:
+      - "macro_indicators"
+      - "yield_curve"
+      - "inflation"
+      - "unemployment"
+      - "credit_spreads"
+
+    export_rights:
+      allows_export_pdf: true          # Public domain data
+      allows_export_csv: true          # Public domain data
+      allows_redistribution: true      # Public domain (attribution recommended)
+      requires_attribution: true       # Recommended, not required
+      watermark_required: false
+
+    attribution:
+      required_text: "Economic data source: FRED® (Federal Reserve Bank of St. Louis)"
+      placement: "footer"
+      font_size: "8pt"
+
+    licensing:
+      requires_license: true           # API key required but free
+      license_type: "free"
+      check_method: "env_var"
+      env_var: "FRED_API_KEY"
+
+    rate_limits:
+      requests_per_minute: 60
+      unlimited_bandwidth: true
+
+    circuit_breaker:
+      failure_threshold: 3
+      timeout_seconds: 60
+      half_open_max_calls: 1
+
+  # NewsAPI - Developer Plan (Metadata Only)
+  NewsAPI:
+    name: "NewsAPI.org"
+    tier: "developer"
+    data_types:
+      - "news_headlines"
+      - "news_metadata"
+      - "sentiment"               # Derived, not raw text
+
+    export_rights:
+      allows_export_pdf: false         # ⚠️ Developer tier does NOT allow PDF export
+      allows_export_csv: false         # ⚠️ Developer tier does NOT allow CSV export
+      allows_redistribution: false     # Cannot redistribute news content
+      requires_attribution: true       # Must include attribution
+      watermark_required: true         # Watermark required if data is shown
+
+    attribution:
+      required_text: "News metadata via NewsAPI.org (Developer Plan - metadata only)"
+      placement: "footer"
+      font_size: "8pt"
+
+    licensing:
+      requires_license: true
+      license_type: "developer"        # Free tier (metadata only)
+      check_method: "env_var"
+      env_var: "NEWS_API_KEY"
+      upgrade_required_for_export: true
+      upgrade_tier: "business"         # Business tier allows export
+
+    rate_limits:
+      requests_per_minute: 60          # Developer tier limit
+      daily_request_limit: 100         # Developer tier daily cap
+
+    circuit_breaker:
+      failure_threshold: 3
+      timeout_seconds: 60
+      half_open_max_calls: 1
+
+    watermark:
+      text: "News data for internal use only (NewsAPI Developer Plan)"
+      opacity: 0.3
+      position: "diagonal"
+
+  # NewsAPI - Business Plan (Full Content)
+  NewsAPI_Business:
+    name: "NewsAPI.org Business"
+    tier: "business"
+    data_types:
+      - "news_headlines"
+      - "news_full_text"
+      - "news_metadata"
+      - "sentiment"
+
+    export_rights:
+      allows_export_pdf: true          # Business tier allows export
+      allows_export_csv: true          # Business tier allows export
+      allows_redistribution: false     # Cannot redistribute news content
+      requires_attribution: true       # Must include attribution
+      watermark_required: false        # No watermark if licensed
+
+    attribution:
+      required_text: "News data via NewsAPI.org (Business Plan)"
+      placement: "footer"
+      font_size: "8pt"
+
+    licensing:
+      requires_license: true
+      license_type: "commercial"
+      check_method: "env_var"
+      env_var: "NEWS_API_BUSINESS_KEY"
+
+    rate_limits:
+      requests_per_minute: 500
+      unlimited_daily_requests: true
+
+    circuit_breaker:
+      failure_threshold: 3
+      timeout_seconds: 60
+      half_open_max_calls: 1
+
+# Default policy (applied when provider not listed above)
+default:
+  export_rights:
+    allows_export_pdf: false
+    allows_export_csv: false
+    allows_redistribution: false
+    requires_attribution: true
+    watermark_required: true
+
+  attribution:
+    required_text: "Data source attribution required"
+    placement: "footer"
+    font_size: "8pt"
+
+# Export enforcement rules
+enforcement:
+  staging:
+    enabled: true
+    start_date: "2025-10-28"           # S1-W2
+    action_on_violation: "block"       # Block export entirely
+    log_violations: true
+
+  production:
+    enabled: true
+    start_date: "2025-12-09"           # S4-W8
+    action_on_violation: "block"       # Block export entirely
+    log_violations: true
+    alert_on_violation: true           # Send PagerDuty alert
+    audit_log_required: true           # Log all export attempts
+
+# Test fixtures (for CI/CD rights drills)
+test_scenarios:
+  - name: "FMP-only export (allowed)"
+    providers: ["FMP"]
+    export_type: "pdf"
+    expected_result: "allowed"
+
+  - name: "Polygon-only export (allowed)"
+    providers: ["Polygon"]
+    export_type: "pdf"
+    expected_result: "allowed"
+
+  - name: "FRED-only export (allowed)"
+    providers: ["FRED"]
+    export_type: "pdf"
+    expected_result: "allowed"
+
+  - name: "NewsAPI Developer export (blocked)"
+    providers: ["NewsAPI"]
+    export_type: "pdf"
+    expected_result: "blocked"
+    expected_error: "NewsAPI Developer Plan does not allow PDF export. Upgrade to Business Plan."
+
+  - name: "NewsAPI Business export (allowed)"
+    providers: ["NewsAPI_Business"]
+    export_type: "pdf"
+    expected_result: "allowed"
+
+  - name: "Mixed providers with NewsAPI Developer (blocked)"
+    providers: ["FMP", "Polygon", "NewsAPI"]
+    export_type: "pdf"
+    expected_result: "blocked"
+    expected_error: "Export blocked: NewsAPI data cannot be exported. Remove restricted analysis or upgrade license."
+
+  - name: "Mixed providers without NewsAPI (allowed)"
+    providers: ["FMP", "Polygon", "FRED"]
+    export_type: "pdf"
+    expected_result: "allowed"
+    expected_attribution: "Financial data © Financial Modeling Prep (financialmodelingprep.com) | Market data © Polygon.io (polygon.io) | Economic data source: FRED® (Federal Reserve Bank of St. Louis)"
+
+# Usage notes
+notes: |
+  1. This file is loaded at application startup via `RightsRegistry.load_from_yaml()`
+  2. Enforcement is enabled in staging from S1-W2, production from S4-W8
+  3. All export attempts are logged to audit_log table
+  4. Rights violations in production trigger PagerDuty alerts
+  5. Test scenarios are used in CI/CD rights drills (S4-W8 acceptance gate)
+
+  See implementation:
+  - core/rights_registry.py (loader and enforcement)
+  - services/reports.py (PDF export with rights gate)
+  - tests/integration/test_rights_enforcement.py (CI drills)

@@ -1,0 +1,167 @@
+{
+  "name": "Ray Dalio Economic Cycles Framework",
+  "description": "Framework for understanding economic cycles based on Ray Dalio's principles",
+  "version": "1.0",
+  "last_updated": "2025-10-03",
+  "cycles": [
+    {
+      "cycle_type": "Long-Term Debt Cycle",
+      "duration_years": "50-75",
+      "key_indicators": [
+        "debt_to_gdp_ratio",
+        "interest_rates",
+        "credit_growth",
+        "asset_prices"
+      ],
+      "phases": [
+        {
+          "phase": "Early Expansion",
+          "characteristics": [
+            "Low debt levels",
+            "Room for credit expansion",
+            "Rising productivity",
+            "Healthy economic growth"
+          ],
+          "investment_strategy": "Aggressive growth stocks, leverage acceptable"
+        },
+        {
+          "phase": "Bubble",
+          "characteristics": [
+            "High debt-to-income ratios",
+            "Asset prices disconnected from fundamentals",
+            "Excessive optimism",
+            "Credit easily available"
+          ],
+          "investment_strategy": "Reduce risk, increase cash, short bubbles"
+        },
+        {
+          "phase": "Deleveraging",
+          "characteristics": [
+            "Debt reduction imperative",
+            "Asset sales to raise cash",
+            "Credit contraction",
+            "Deflationary pressures"
+          ],
+          "investment_strategy": "Cash, gold, government bonds, defensive stocks"
+        },
+        {
+          "phase": "Reflation",
+          "characteristics": [
+            "Central bank stimulus",
+            "Debt restructuring",
+            "Gradual recovery",
+            "New cycle beginning"
+          ],
+          "investment_strategy": "Gradual re-entry to risk assets"
+        }
+      ]
+    },
+    {
+      "cycle_type": "Short-Term Debt Cycle",
+      "duration_years": "5-8",
+      "key_indicators": [
+        "gdp_growth",
+        "unemployment",
+        "capacity_utilization",
+        "central_bank_policy"
+      ],
+      "phases": [
+        {
+          "phase": "Expansion",
+          "characteristics": [
+            "Rising GDP",
+            "Falling unemployment",
+            "Increasing capacity utilization",
+            "Accommodative policy"
+          ],
+          "duration_months": "36-60",
+          "investment_strategy": "Growth stocks, commodities, corporate bonds"
+        },
+        {
+          "phase": "Peak",
+          "characteristics": [
+            "Full employment",
+            "High capacity utilization",
+            "Rising inflation",
+            "Tightening policy"
+          ],
+          "duration_months": "6-12",
+          "investment_strategy": "Reduce duration, defensive positioning"
+        },
+        {
+          "phase": "Contraction",
+          "characteristics": [
+            "Declining GDP",
+            "Rising unemployment",
+            "Falling capacity utilization",
+            "Policy still tight"
+          ],
+          "duration_months": "12-24",
+          "investment_strategy": "Defensive stocks, long-duration bonds, cash"
+        },
+        {
+          "phase": "Trough",
+          "characteristics": [
+            "High unemployment",
+            "Low capacity utilization",
+            "Easing policy",
+            "Bottoming indicators"
+          ],
+          "duration_months": "3-6",
+          "investment_strategy": "Begin accumulating risk assets"
+        }
+      ]
+    }
+  ],
+  "current_assessment_framework": {
+    "long_term_cycle_indicators": {
+      "debt_to_gdp": {
+        "early_expansion": "<100%",
+        "mid_expansion": "100-150%",
+        "late_expansion": "150-200%",
+        "bubble": ">200%"
+      },
+      "real_interest_rates": {
+        "early": ">2%",
+        "mid": "0-2%",
+        "late": "<0%",
+        "crisis": "negative_and_falling"
+      }
+    },
+    "short_term_cycle_indicators": {
+      "unemployment": {
+        "expansion": "declining",
+        "peak": "<4%",
+        "contraction": "rising",
+        "trough": ">8%"
+      },
+      "gdp_growth": {
+        "expansion": ">3%",
+        "peak": "2-3%",
+        "contraction": "<0%",
+        "trough": "negative_but_improving"
+      }
+    }
+  },
+  "dalio_principles": [
+    "Understand that economic cycles are driven by credit/debt dynamics",
+    "Most people don't recognize what cycle they're in",
+    "The long-term debt cycle is the most powerful force",
+    "When debt can't be serviced, deleveraging begins",
+    "Diversification is the holy grail of investing",
+    "Your asset allocation should change with the cycle",
+    "Don't fight the Fed or the cycle",
+    "History doesn't repeat but it rhymes - study past cycles"
+  ],
+  "risk_parity_allocation": {
+    "description": "Dalio's All Weather Portfolio concept",
+    "allocations": {
+      "stocks": 0.30,
+      "long_term_bonds": 0.40,
+      "intermediate_bonds": 0.15,
+      "commodities": 0.075,
+      "gold": 0.075
+    },
+    "rationale": "Balance risk across different economic environments"
+  }
+}

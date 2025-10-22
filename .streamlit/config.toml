@@ -1,10 +1,23 @@
 [server]
-port = 5000
-headless = true
+port = 8501
 enableCORS = false
-enableXsrfProtection = false
-address = "0.0.0.0"
+enableXsrfProtection = true
+maxUploadSize = 200
 
 [browser]
 gatherUsageStats = false
-serverAddress = "0.0.0.0"
+
+[theme]
+primaryColor = "#4A9EFF"
+backgroundColor = "#0A0E27"
+secondaryBackgroundColor = "#0F1629"
+textColor = "#E8E9F3"
+font = "sans serif"
+
+[runner]
+magicEnabled = true
+fastReruns = true
+
+[client]
+showErrorDetails = true
+toolbarMode = "minimal"

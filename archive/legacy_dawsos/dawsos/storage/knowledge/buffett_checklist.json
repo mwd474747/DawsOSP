@@ -1,0 +1,159 @@
+{
+  "name": "Warren Buffett Investment Checklist",
+  "description": "Comprehensive checklist based on Warren Buffett's investment philosophy",
+  "version": "1.0",
+  "last_updated": "2025-10-03",
+  "categories": [
+    {
+      "category": "Business Understanding",
+      "weight": 0.20,
+      "criteria": [
+        {
+          "id": "simple_business",
+          "question": "Can I understand the business model in simple terms?",
+          "weight": 0.4,
+          "pass_threshold": 0.7
+        },
+        {
+          "id": "predictable_earnings",
+          "question": "Does the business have predictable earnings?",
+          "weight": 0.3,
+          "pass_threshold": 0.6
+        },
+        {
+          "id": "consistent_history",
+          "question": "Does it have a consistent operating history?",
+          "weight": 0.3,
+          "pass_threshold": 0.7
+        }
+      ]
+    },
+    {
+      "category": "Economic Moat",
+      "weight": 0.25,
+      "criteria": [
+        {
+          "id": "durable_advantage",
+          "question": "Does the company have a durable competitive advantage?",
+          "weight": 0.5,
+          "pass_threshold": 0.8
+        },
+        {
+          "id": "pricing_power",
+          "question": "Does it have pricing power?",
+          "weight": 0.3,
+          "pass_threshold": 0.7
+        },
+        {
+          "id": "high_barriers",
+          "question": "Are there high barriers to entry?",
+          "weight": 0.2,
+          "pass_threshold": 0.6
+        }
+      ]
+    },
+    {
+      "category": "Management Quality",
+      "weight": 0.20,
+      "criteria": [
+        {
+          "id": "rational_capital_allocation",
+          "question": "Does management allocate capital rationally?",
+          "weight": 0.4,
+          "pass_threshold": 0.7
+        },
+        {
+          "id": "shareholder_friendly",
+          "question": "Is management shareholder-friendly?",
+          "weight": 0.3,
+          "pass_threshold": 0.6
+        },
+        {
+          "id": "honest_candid",
+          "question": "Is management honest and candid?",
+          "weight": 0.3,
+          "pass_threshold": 0.7
+        }
+      ]
+    },
+    {
+      "category": "Financial Strength",
+      "weight": 0.20,
+      "criteria": [
+        {
+          "id": "high_roic",
+          "question": "Does the company have high ROIC (>15%)?",
+          "weight": 0.3,
+          "pass_threshold": 15.0,
+          "metric": "roic_percentage"
+        },
+        {
+          "id": "strong_fcf",
+          "question": "Does it generate strong free cash flow?",
+          "weight": 0.4,
+          "pass_threshold": 0.7
+        },
+        {
+          "id": "low_debt",
+          "question": "Does it have manageable debt levels?",
+          "weight": 0.3,
+          "pass_threshold": 0.6,
+          "metric": "debt_to_equity_ratio",
+          "max_acceptable": 0.5
+        }
+      ]
+    },
+    {
+      "category": "Valuation",
+      "weight": 0.15,
+      "criteria": [
+        {
+          "id": "margin_of_safety",
+          "question": "Is there a sufficient margin of safety (>25%)?",
+          "weight": 0.5,
+          "pass_threshold": 0.25,
+          "metric": "price_to_intrinsic_value"
+        },
+        {
+          "id": "reasonable_pe",
+          "question": "Is the P/E ratio reasonable for the quality?",
+          "weight": 0.3,
+          "pass_threshold": 0.6
+        },
+        {
+          "id": "owner_earnings",
+          "question": "Are owner earnings attractive?",
+          "weight": 0.2,
+          "pass_threshold": 0.7
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "excellent": {
+      "min_score": 0.85,
+      "action": "Strong Buy - Meets Buffett criteria"
+    },
+    "good": {
+      "min_score": 0.70,
+      "action": "Buy - Generally meets criteria"
+    },
+    "fair": {
+      "min_score": 0.55,
+      "action": "Hold - Some concerns"
+    },
+    "poor": {
+      "min_score": 0,
+      "action": "Avoid - Does not meet Buffett criteria"
+    }
+  },
+  "key_principles": [
+    "Circle of competence - only invest in businesses you understand",
+    "Economic moat - durable competitive advantage is essential",
+    "Management matters - integrity and capital allocation skills",
+    "Price is what you pay, value is what you get",
+    "Margin of safety - always demand a discount to intrinsic value",
+    "Long-term thinking - buy to hold for years, not months",
+    "Quality over quantity - better to buy wonderful companies at fair prices"
+  ]
+}

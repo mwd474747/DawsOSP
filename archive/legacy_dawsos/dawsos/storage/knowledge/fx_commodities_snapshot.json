@@ -1,0 +1,38 @@
+{
+  "_meta": {
+    "dataset": "fx_commodities_snapshot",
+    "version": "1.0",
+    "as_of": "2025-10-03",
+    "notes": "Latest correlations and conditional relationships between FX pairs and commodities."
+  },
+  "pairs": {
+    "EURUSD": {
+      "correlations": {
+        "WTI": -0.22,
+        "GOLD": -0.41,
+        "COPPER": 0.18
+      },
+      "conditional": [
+        {
+          "condition": "CPI_YoY>3%",
+          "asset": "GOLD",
+          "corr": -0.55
+        }
+      ]
+    }
+  },
+  "signals": [
+    {
+      "asset": "GOLD",
+      "zscore_lookback": 180,
+      "z": 1.8,
+      "note": "Mean reversion stretched"
+    },
+    {
+      "asset": "WTI",
+      "zscore_lookback": 90,
+      "z": -1.1,
+      "note": "Below mid-range after refinery maintenance"
+    }
+  ]
+}

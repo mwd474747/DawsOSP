@@ -1,0 +1,78 @@
+# DawsOS Portfolio Intelligence Platform - Git Attributes
+# Version: 2.0
+# Date: 2025-10-21
+
+# ============================================================================
+# Auto detect text files and perform LF normalization
+# ============================================================================
+* text=auto
+
+# ============================================================================
+# Source Code
+# ============================================================================
+*.py text eol=lf diff=python
+*.pyi text eol=lf diff=python
+*.sh text eol=lf
+*.bash text eol=lf
+
+# ============================================================================
+# Configuration Files
+# ============================================================================
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+
+# ============================================================================
+# Documentation
+# ============================================================================
+*.md text eol=lf diff=markdown
+*.txt text eol=lf
+*.rst text eol=lf
+
+# ============================================================================
+# SQL
+# ============================================================================
+*.sql text eol=lf
+
+# ============================================================================
+# Web Files
+# ============================================================================
+*.html text eol=lf diff=html
+*.css text eol=lf
+*.js text eol=lf diff=javascript
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+
+# ============================================================================
+# Binary Files (do not modify)
+# ============================================================================
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+
+# ============================================================================
+# Linguist (GitHub language detection)
+# ============================================================================
+# Mark .md files in .claude/ as documentation
+.claude/*.md linguist-documentation
+.ops/*.md linguist-documentation
+.security/*.md linguist-documentation
+
+# Mark test files
+tests/** linguist-vendored=false
+
+# Mark migrations as SQL
+migrations/*.sql linguist-language=SQL

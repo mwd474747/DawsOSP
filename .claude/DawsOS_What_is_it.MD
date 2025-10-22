@@ -1,13 +1,30 @@
-# What is DawsOS?
+# What is DawsOS (Trinity 3.0 Architecture)?
 
-DawsOS is a pattern-driven financial intelligence platform built on the Trinity architecture. The runtime orchestrates 15 specialized agents through a centralized registry, executes 48 JSON patterns, and persists output to a NetworkX-backed knowledge graph for recall and auditing.
+> **NAMING NOTE**:
+> - **DawsOS** = The application (what users see)
+> - **Trinity 3.0** = The architecture version (how it works internally)
+> - These are NOT separate systems - Trinity 3.0 is DawsOS's execution framework
+>
+> Like "React 18" is the framework version for a React app, "Trinity 3.0" is the framework version for DawsOS.
+
+> **IMPORTANT**: This document contains ASPIRATIONAL descriptions alongside current state.
+>
+> **CURRENT STATE** (October 2025):
+> - ✅ 16 patterns (economy: 6, smart: 7, workflows: 3)
+> - ✅ 6 agents registered (financial_analyst, claude, data_harvester, forecast_dreamer, graph_mind, pattern_spotter)
+> - ✅ 27 knowledge datasets
+> - ✅ 103 capabilities
+>
+> See [../MASTER_TASK_LIST.md](../MASTER_TASK_LIST.md) for verified current state.
+
+DawsOS is a pattern-driven financial intelligence platform built on the Trinity 3.0 architecture. The runtime orchestrates agents through a centralized registry, executes JSON patterns, and persists output to a NetworkX-backed knowledge graph for recall and auditing.
 
 ## Key Characteristics
 
 - **Trinity Execution Path** – Requests flow through `UniversalExecutor → PatternEngine → AgentRegistry → Agent`, with bypass telemetry and strict-mode enforcement available when needed.
 - **Knowledge Graph First** – All insights, datasets, and relationships land in a NetworkX graph managed by the persistence layer with automated backup rotation.
-- **Agent Roster (15)** – Dedicated agents cover market data ingestion, macro analysis, governance, UI generation, code improvements, and investment research.
-- **Pattern Library** – 48 JSON patterns span analysis, governance, workflows, UI automation, and meta orchestration with capability-based routing.
+- **Agent Files (12)** – Current: 2 registered (financial_analyst, claude). Available: 10 more (data_harvester, forecast_dreamer, graph_mind, pattern_spotter, code_monkey, data_digester, governance_agent, relationship_hunter, workflow_player, base_agent)
+- **Pattern Library (16)** – Current patterns span economy (6), smart analysis (7), and workflows (3) with capability-based routing.
 - **Fallback Transparency** – Centralized tracking highlights when cached or stale data substitutes for live API responses, surfacing warnings in the UI and telemetry dashboards.
 
 ## Current Capabilities

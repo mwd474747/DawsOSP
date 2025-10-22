@@ -1,0 +1,88 @@
+{
+  "id": "smart_risk_analyzer",
+  "name": "Smart Risk Analyzer",
+  "description": "Comprehensive risk assessment that focuses on user-specified risk factors and timeframes with customizable depth",
+  "category": "smart",
+  "triggers": [
+    "risk",
+    "risks",
+    "risk assessment",
+    "what are the risks",
+    "downside"
+  ],
+  "entities": [
+    "SYMBOL"
+  ],
+  "priority": 13,
+  "steps": [
+    {
+      "description": "Determine target for risk analysis",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_fetch_stock_quotes",
+        "context": {
+          "symbol": "{target}"
+        }
+      },
+      "save_as": "target_data",
+      "condition": "{target} != 'portfolio'"
+    },
+    {
+      "description": "Calculate comprehensive risk metrics",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_calculate_risk_metrics",
+        "context": {
+          "target": "{target}",
+          "timeframe": "{timeframe}"
+        }
+      },
+      "save_as": "risk_metrics"
+    },
+    {
+      "description": "Analyze systemic risk factors",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_analyze_systemic_risk",
+        "context": {}
+      },
+      "save_as": "systemic_risk"
+    },
+    {
+      "description": "Get current market regime for context",
+      "action": "execute_through_registry",
+      "params": {
+        "capability": "can_detect_patterns",
+        "context": {
+          "analysis_type": "regime"
+        }
+      },
+      "save_as": "market_regime"
+    },
+    {
+      "description": "Generate focused risk analysis based on specified risk factors",
+      "action": "execute_through_registry",
+      "params": {
+        "agent": "claude",
+        "context": {
+          "user_input": "Provide comprehensive risk analysis for {target}. Timeframe: {timeframe}. Focus on these risk factors: {risk_factors}. Target data: {target_data}. Risk metrics: {risk_metrics}. Systemic risk: {systemic_risk}. Market regime: {market_regime}. Provide specific risks, probability, potential impact, and mitigation strategies.",
+          "conversation_context": "{conversation_context}"
+        }
+      },
+      "save_as": "risk_analysis"
+    }
+  ],
+  "response_type": "risk_assessment",
+  "response_template": "{risk_analysis}",
+  "error_handling": "continue",
+  "cache_ttl": 600,
+  "version": "3.0",
+  "last_updated": "2025-10-18",
+  "template": "# Smart Risk Analysis: {target}\n\n## Risk Assessment Parameters\n**Target**: {target}\n**Timeframe**: {timeframe}\n**Focus Areas**: {risk_factors}\n\n## Systemic Risk Score: {systemic_risk.systemic_risk_score}/100\n\n{risk_analysis.response}\n\n---\n*Risk analysis powered by DawsOS Trinity 3.0 with systemic risk overlay*",
+  "metadata": {
+    "uses_entity_extraction": true,
+    "supports_streaming": true,
+    "memory_aware": true,
+    "dynamic_routing": true
+  }
+}

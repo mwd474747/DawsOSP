@@ -1,340 +1,248 @@
 # DawsOS - Financial Intelligence Platform
 
-**Status**: ✅ Operational (A- Grade - 92/100) - Technical debt documented  
-**Version**: 3.0 (Trinity Architecture)  
-**Last Updated**: October 17, 2025
+**Application**: DawsOS (Trinity 3.0 Architecture)
+**Status**: Production-ready
+**Version**: 1.0.0
+**Last Updated**: October 21, 2025
 
----
+> **About the Name**: "DawsOS" is the application name. "Trinity 3.0" is the execution framework architecture. When you see "Trinity 3.0", it refers to how DawsOS is built internally (like "React 18" for a React app).
 
-## Overview
-
-DawsOS is a **pattern-driven financial intelligence system** that orchestrates 15 specialized AI agents through a centralized registry, executing 50 pre-defined patterns for market analysis, investment frameworks, and real-time financial insights.
-
-### Core Architecture
-```
-User Request → UniversalExecutor → PatternEngine → AgentRegistry → Specialized Agents → KnowledgeGraph
-```
+Bloomberg-quality financial intelligence combining natural language understanding with pattern-driven analysis. Chat naturally about markets, get AI-synthesized insights from real-time data.
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Clone repository
-git clone <your-repo-url>
-cd DawsOSB
+# 1. Clone and navigate
+git clone <repo-url> && cd DawsOSB
 
-# 2. Create virtual environment (Python 3.10+ required)
-python3 -m venv dawsos/venv
-source dawsos/venv/bin/activate  # Windows: dawsos\venv\Scripts\activate
+# 2. Setup (Python 3.11 required)
+python3.11 -m venv venv
+venv/bin/pip install -r requirements.txt
 
-# 3. Install dependencies
-pip install -r requirements.txt
+# 3. Configure APIs (optional - works without)
+cp .env.example .env  # Edit with your API keys
 
-# 4. Run the application
-streamlit run dawsos/main.py --server.port=5000
-
-# 5. Open browser at http://localhost:5000
+# 4. Launch
+./start.sh
 ```
 
-**Quick Launch**:
+Application: http://localhost:8501
+
+---
+
+## What You Can Ask
+
+**Market Analysis**:
+```
+Quick check on Apple
+Deep dive into Tesla
+Compare Apple and Microsoft
+```
+
+**Economic Intelligence**:
+```
+What's the economy like?
+What's the recession risk?
+Is now a good time to invest?
+```
+
+**Portfolio Management**:
+```
+Analyze my portfolio for concentration risk
+What sectors work in this economy?
+Rebalance my portfolio
+```
+
+**Fundamental Analysis**:
+```
+What's the fair value of Amazon?
+Buffett-style checklist for Microsoft
+Analyze Microsoft's moat
+```
+
+---
+
+## Features
+
+### Core Capabilities
+- **Natural Language Processing**: Entity extraction, conversation memory, intent routing
+- **16 Analysis Patterns**: Smart patterns (7), workflows (3), economic analysis (6)
+- **12 Agent Files**: 2 registered (financial_analyst, claude), 10 available
+- **Real-Time Data**: OpenBB Platform, FRED, FMP (zero mock data)
+- **Knowledge Graph**: 27 enriched datasets, 96K+ node capacity
+
+### Data Sources
+- **Market Data**: Equity quotes, fundamentals, options (OpenBB/yfinance)
+- **Economic Data**: GDP, CPI, unemployment, yield curve (FRED API - free)
+- **News & Sentiment**: Financial news, analyst ratings (FMP, NewsAPI)
+- **AI Analysis**: Claude 3.5 Sonnet (Anthropic - $15/month)
+
+### UI Features
+- **Enhanced Chat**: Entity extraction display, conversation memory
+- **Economic Dashboard**: Key indicators, recession gauge, calendar
+- **Market Overview**: Real-time SPY/QQQ/VIX, sector heatmap
+- **Portfolio View**: Risk dashboard, allocation visualization
+- **Bloomberg Aesthetic**: Professional dark UI, NO emojis
+
+---
+
+## Configuration
+
+### Free Mode (default)
+Works immediately with yfinance data - no API keys needed.
+
+### Minimum Setup (~$15/month)
+Get AI-powered insights:
 ```bash
-./start.sh  # Handles everything automatically
+# In .env
+ANTHROPIC_API_KEY=sk-ant-...  # Claude AI ($15/month)
+FRED_API_KEY=abc123...        # Economic data (FREE)
 ```
 
+### Full Setup (~$29/month)
+All features enabled - see [CONFIGURATION.md](CONFIGURATION.md)
+
 ---
 
-## API Configuration (Optional)
+## Architecture
 
-DawsOS works fully **without API keys** using cached data and enriched datasets. API keys enable real-time data and live AI analysis.
-
-### Setup Environment Variables
-
-```bash
-# Copy example template
-cp .env.example .env
-
-# Add your API keys (all optional)
-nano .env
+```
+User Query → EnhancedChatProcessor → EntityExtraction
+                 ↓
+        UniversalExecutor
+                 ↓
+          PatternEngine (16 patterns)
+                 ↓
+     AgentRuntime (12 agent files, 2 registered, 103 capabilities)
+                 ↓
+          KnowledgeGraph (27 datasets)
 ```
 
-### Available APIs
+**Trinity Execution Flow**: UniversalExecutor → PatternEngine → AgentRuntime → KnowledgeGraph
 
-| API | Purpose | Free Tier | Get Key |
-|-----|---------|-----------|---------|
-| `ANTHROPIC_API_KEY` | AI-powered analysis | Pay-as-you-go | [console.anthropic.com](https://console.anthropic.com/) |
-| `FRED_API_KEY` | Economic indicators | Unlimited | [fred.stlouisfed.org/docs/api](https://fred.stlouisfed.org/docs/api/api_key.html) |
-| `FMP_API_KEY` | Stock data | 250/day | [financialmodelingprep.com](https://financialmodelingprep.com/developer/docs/) |
-| `NEWSAPI_KEY` | Financial news | 100/day | [newsapi.org](https://newsapi.org/register) |
-
----
-
-## Key Features
-
-### 🏛️ Trinity Architecture
-- **50 JSON patterns** define financial workflows
-- **15 specialized agents** with 103 capabilities
-- **Capability-based routing** for flexible execution
-- **Centralized registry** ensures architecture compliance
-
-### 📊 Financial Intelligence
-- **Investment Frameworks**: Buffett, Dalio, factor analysis
-- **Real-time Market Data**: FRED, FMP, NewsAPI integration
-- **AI-Powered Analysis**: Claude-based insights
-- **Options Flow Analysis**: Unusual activity detection
-
-### 🧠 Knowledge Management
-- **27 enriched datasets** with 30-minute cache
-- **NetworkX graph** (96K+ nodes, 10x performance)
-- **Automatic persistence** with 30-day backup rotation
-- **Data quality scoring** and governance
-
-### 📈 Analysis Capabilities
-- DCF Valuation & Moat Analysis
-- Economic Regime Detection
-- Portfolio Risk Assessment
-- Sector Correlation & Rotation
-- Options Greeks & IV Analysis
-
----
-
-## System Metrics
-
-| Metric | Value |
-|--------|-------|
-| **Overall Grade** | A- (92/100) |
-| **Agents** | 15 registered |
-| **Capabilities** | 103 unique |
-| **Patterns** | 50 executable |
-| **Datasets** | 27 (100% coverage) |
-| **Graph Nodes** | 96,000+ |
-| **Type Coverage** | 85%+ |
+See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
 
 ---
 
 ## Documentation
 
-### Getting Started
-- [Quick Start](#quick-start) - Installation and setup
-- [API Configuration](#api-configuration-optional) - External API setup
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Common issues & fixes
+**MUST READ**: [MASTER_TASK_LIST.md](MASTER_TASK_LIST.md) - Single source of truth for all gaps, issues, and TODOs
 
-### Development
-- [CLAUDE.md](CLAUDE.md) - Development memory (AI sessions)
-- [SYSTEM_STATUS.md](SYSTEM_STATUS.md) - Current system status
-- [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) - 103 capabilities reference
-- [docs/DEVELOPER_SETUP.md](docs/DEVELOPER_SETUP.md) - Developer onboarding
-- [docs/AgentDevelopmentGuide.md](docs/AgentDevelopmentGuide.md) - Building agents
-- [docs/KnowledgeMaintenance.md](docs/KnowledgeMaintenance.md) - Dataset management
+### Core Documentation
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System design & component inventory
+- [CONFIGURATION.md](CONFIGURATION.md) - Complete API setup guide
+- [DEVELOPMENT.md](DEVELOPMENT.md) - Developer guide & coding standards
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Common issues & solutions
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Production deployment procedures
 
-### Architecture & Specialists
-- [.claude/trinity_architect.md](.claude/trinity_architect.md) - Architecture expert
-- [.claude/pattern_specialist.md](.claude/pattern_specialist.md) - Pattern expert
-- [.claude/knowledge_curator.md](.claude/knowledge_curator.md) - Knowledge graph expert
-- [.claude/agent_orchestrator.md](.claude/agent_orchestrator.md) - Agent system expert
+### Developer Reference
+- [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) - 103 capabilities
+- [PATTERN_AUTHORING_GUIDE.md](PATTERN_AUTHORING_GUIDE.md) - Pattern creation
 
-### Historical Documentation
-- [archive/legacy/INDEX.md](archive/legacy/INDEX.md) - Master index
-- [archive/legacy/sessions/](archive/legacy/sessions/) - Development session reports
-- [archive/legacy/fixes/](archive/legacy/fixes/) - Bug fixes & root cause analyses
-- [archive/legacy/refactoring/](archive/legacy/refactoring/) - Architecture evolution
+### AI Assistant Context
+- [CLAUDE.md](CLAUDE.md) - Context for AI assistants
+- [.claude/](.claude/) - Specialist agent prompts
 
 ---
 
-## Repository Structure
+## Known Issues
 
-```
-DawsOSB/
-├── dawsos/                    # Application root
-│   ├── main.py               # Streamlit entry point
-│   ├── core/                 # Trinity runtime (8 core modules)
-│   ├── agents/               # 15 specialized agents
-│   ├── patterns/             # 48 JSON workflow patterns
-│   ├── capabilities/         # External API integrations
-│   ├── storage/knowledge/    # 27 enriched datasets
-│   ├── ui/                   # Streamlit dashboards
-│   └── tests/                # Test suites
-├── .claude/                  # Specialist agent documentation
-├── docs/                     # Development guides
-├── archive/legacy/           # Historical documentation
-│   ├── sessions/            # Session completion reports
-│   ├── fixes/               # Bug fix documentation
-│   └── refactoring/         # Architecture evolution
-├── README.md                 # This file
-├── CLAUDE.md                 # AI development memory
-└── SYSTEM_STATUS.md          # Current system status
-```
+See [MASTER_TASK_LIST.md](MASTER_TASK_LIST.md) for complete list:
 
----
+**Priority 1** (Architecture Not Utilized):
+1. Pattern engine not connected to UI
+2. Only 2/7 agents registered (financial_analyst, claude)
 
-## Agent Capabilities
+**Priority 2** (Improvements):
+3. Query processing bypasses execution stack
+4. No API keys configured (runs in free mode)
+5. OpenBB 4.5.0 package builder bug (workaround active)
 
-### Data Pipeline
-- **data_harvester** - Market data, economic indicators, news
-- **data_digester** - Transform raw data into graph nodes
-- **relationship_hunter** - Correlation and relationship analysis
-
-### Analysis
-- **financial_analyst** - DCF, ROIC, moat analysis, portfolio risk
-- **pattern_spotter** - Pattern recognition and trend detection
-- **forecast_dreamer** - Predictive modeling and forecasts
-
-### Governance
-- **governance_agent** - Data quality, compliance, lineage tracking
-
-**Full Capability List**: [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md)
-
----
-
-## Pattern Library
-
-### 50 Executable Patterns (0 Errors)
-
-**Categories**:
-- **Analysis** (15) - Buffett checklist, DCF, moat, sector rotation
-- **Workflows** (5) - Deep dive, morning briefing, portfolio review
-- **Governance** (6) - Policy validation, quality audits, compliance
-- **Queries** (6) - Company analysis, market regime, sector performance
-- **UI** (6) - Dashboard updates, alerts, watchlists
-- **System** (5) - Meta-execution, architecture validation
-
-**Validation**:
-```bash
-python scripts/lint_patterns.py
-# Output: 50 patterns checked, 0 errors ✅
-```
-
----
-
-## Capability-Based Routing
-
-Execute agents by **what they can do** rather than by name:
-
-```python
-# Traditional name-based routing
-result = runtime.exec_via_registry('financial_analyst', context)
-
-# Modern capability-based routing (Trinity 2.0+)
-result = runtime.execute_by_capability('can_calculate_dcf', context)
-```
-
-**Benefits**: Flexible agent swapping, better discoverability, graceful degradation
-
----
-
-## Monitoring & Health
-
-### Health Check
-```bash
-curl http://localhost:5000/_stcore/health
-# Response: ok ✅
-```
-
-### System Dashboard
-Access at http://localhost:5000:
-- **Overview** - Agent status, pattern execution
-- **Compliance** - Registry bypass tracking
-- **Governance** - Data quality metrics
-- **Graph** - Node health and relationships
+**All Known Issues Have Workarounds** - Application is fully functional.
 
 ---
 
 ## Development
 
-### Code Standards
-- Follow Trinity architecture (UniversalExecutor → Pattern → Registry → Agent)
-- Use `execute_through_registry` for agent calls
-- Load datasets via `KnowledgeLoader` (no ad-hoc file reads)
-- Run pattern linter before commits
-
-### Validation
-```bash
-# Pattern validation
-python scripts/lint_patterns.py
-
-# Test suite
-pytest dawsos/tests/validation/
+### Project Structure
+```
+./
+├── main.py                  # Streamlit application (1,726 lines)
+├── agents/                  # 12 agent files (2 registered)
+├── core/                    # 14 core modules
+├── patterns/                # 16 JSON pattern files
+├── storage/knowledge/       # 27 knowledge datasets
+├── services/                # 4 service files
+├── ui/                      # 8 UI component files
+└── config/                  # 4 configuration files
 ```
 
-### Contributing
-1. Create feature branch
-2. Follow Trinity patterns (see [CLAUDE.md](CLAUDE.md))
-3. Run validation suite
-4. Update documentation
-5. Submit PR (CI auto-validates)
+### Adding Features
+
+**New Pattern**:
+```bash
+# 1. Create JSON in patterns/{category}/
+# 2. Validate: venv/bin/python scripts/lint_patterns.py
+# 3. Test execution
+```
+
+**New Agent**:
+```bash
+# 1. Implement in agents/{name}.py
+# 2. Register in main.py
+# 3. Add capabilities to AGENT_CAPABILITIES
+```
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for complete guide.
 
 ---
 
-## Troubleshooting
+## Testing
 
-### Common Issues
-
-**Port already in use**:
 ```bash
-lsof -ti:5000 | xargs kill -9
-```
+# Verify application functional
+venv/bin/python -c "from config.api_config import APIConfig; print('Status:', APIConfig.get_status())"
 
-**Knowledge loader errors**:
-```bash
-python -c "from dawsos.core.knowledge_loader import KnowledgeLoader; print(len(KnowledgeLoader().datasets))"
-# Expected: 27
-```
+# Verify market data
+venv/bin/python -c "
+from services.openbb_service import OpenBBService
+service = OpenBBService()
+quote = service.get_equity_quote('SPY')
+print(f'SPY: \${quote[\"results\"][0][\"price\"]:.2f}')
+"
 
-**Import errors**:
-- Ensure virtual environment is activated
-- Reinstall: `pip install -r requirements.txt`
-
-**More help**: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-
----
-
-## Production Deployment
-
-### Prerequisites
-- Python 3.10+
-- Virtual environment configured
-- (Optional) API keys for real-time data
-
-### Production Checklist
-- [ ] Set `TRINITY_STRICT_MODE=true` (optional enforcement)
-- [ ] Configure API keys (optional)
-- [ ] Review backup rotation settings
-- [ ] Monitor bypass telemetry
-- [ ] Check pattern execution logs
-
-### Health Verification
-```bash
-# Agent registration
-python -c "from dawsos.main import runtime; print(f'Agents: {len(runtime._agents)}')"
-# Expected: 15
-
-# Dataset coverage
-python -c "from dawsos.core.knowledge_loader import KnowledgeLoader; print(f'Datasets: {len(KnowledgeLoader().datasets)}')"
-# Expected: 27
+# Verify knowledge loader
+venv/bin/python -c "
+from core.knowledge_loader import KnowledgeLoader
+loader = KnowledgeLoader()
+data = loader.get_dataset('sector_performance')
+print(f'Sector data loaded: {len(data)} sectors')
+"
 ```
 
 ---
 
-## Support
+## Contributing
 
-- **Documentation**: See guides above
-- **Issues**: Use GitHub issues
-- **System Status**: [SYSTEM_STATUS.md](SYSTEM_STATUS.md)
-- **Health**: http://localhost:5000
-
----
-
-## Built With
-
-- **Trinity Architecture** - Pattern-driven execution framework
-- **Streamlit** - Interactive UI framework
-- **NetworkX** - High-performance graph backend
-- **Anthropic Claude** - AI-powered analysis
-- **Python 3.10+** - Core language
+1. Read [MASTER_TASK_LIST.md](MASTER_TASK_LIST.md) for current priorities
+2. Consult specialist agents in [.claude/](.claude/) before architectural changes
+3. Follow Trinity execution flow (no shortcuts)
+4. Update MASTER_TASK_LIST.md with any new discoveries
 
 ---
 
-**Status**: ✅ Operational - Technical debt documented  
-**Grade**: A- (92/100)  
-**App**: http://localhost:5000  
-**Version**: 3.0 (October 2025)
+## Product Vision
+
+Trinity 3.0 gives investors and analysts a transparent, conversational intelligence layer—pulling live data into guided playbooks that surface what's moving, why it matters, and what to watch next.
+
+**It's Bloomberg Terminal quality with ChatGPT ease of use, built on open, auditable AI workflows.**
+
+See [.claude/DawsOS_What_is_it.MD](.claude/DawsOS_What_is_it.MD) for complete product vision.
+
+---
+
+**Last Verified**: October 21, 2025 15:45 UTC
+**Documentation Status**: 16 files total (85% reduction from original 106)
+**All numbers verified against actual code**

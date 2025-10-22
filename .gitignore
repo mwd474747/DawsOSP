@@ -10,6 +10,7 @@ build/
 
 # Virtual Environment
 venv/
+venv_old_backup/
 env/
 ENV/
 
@@ -37,22 +38,26 @@ logs/
 *.bak
 *.orig
 
-# Knowledge Graph Storage (generated, not tracked)
+# Trinity 3.0 Storage (generated, not tracked)
 storage/graph.json
 storage/graph_backup_*.json
 storage/*_test_*.json
-dawsos/storage/graph.json
-dawsos/storage/graph_backup_*.json
-dawsos/storage/*_test_*.json
-
-# Runtime metadata files (Trinity 2.0 Hardening)
 storage/*.meta
 storage/graph.json.meta
 storage/alerts/
 storage/alerts/*.json
+storage/cache/
+storage/patterns/
+storage/sessions/
+storage/workflows/
+storage/backups/
+
+# Legacy DawsOS Storage (archived)
+archive/legacy_dawsos/storage/
+archive/legacy_dawsos/logs/
+archive/legacy_dawsos/venv/
 
 # Pattern backups (generated during migration)
-dawsos/patterns.backup*/
 patterns.backup*/
 
 # Test files (development only)
@@ -63,3 +68,20 @@ migrate_*.py
 # Streamlit process management
 .streamlit.pid
 streamlit.log
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter notebooks (if used for analysis)
+.ipynb_checkpoints/
+
+# Data files (too large for git)
+*.csv
+*.xlsx
+*.parquet
+
+# API validation results (temporary)
+*_validation_results.json
+*_test_results.json

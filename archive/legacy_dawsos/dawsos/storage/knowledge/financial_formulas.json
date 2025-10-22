@@ -1,0 +1,357 @@
+{
+  "formulas": {
+    "valuation": {
+      "pe_ratio": {
+        "formula": "price / earnings_per_share",
+        "description": "Price to Earnings Ratio",
+        "interpretation": {
+          "below_15": "potentially undervalued",
+          "15_to_25": "fairly valued",
+          "above_25": "potentially overvalued or growth stock"
+        }
+      },
+      "peg_ratio": {
+        "formula": "pe_ratio / earnings_growth_rate",
+        "description": "Price/Earnings to Growth Ratio",
+        "interpretation": {
+          "below_1": "potentially undervalued",
+          "1_to_2": "fairly valued",
+          "above_2": "potentially overvalued"
+        }
+      },
+      "price_to_book": {
+        "formula": "market_cap / book_value",
+        "description": "Price to Book Value",
+        "interpretation": {
+          "below_1": "trading below book value",
+          "1_to_3": "typical range",
+          "above_3": "premium valuation"
+        }
+      },
+      "ev_to_ebitda": {
+        "formula": "(market_cap + total_debt - cash) / ebitda",
+        "description": "Enterprise Value to EBITDA",
+        "interpretation": {
+          "below_10": "potentially undervalued",
+          "10_to_15": "fairly valued",
+          "above_15": "potentially overvalued"
+        }
+      },
+      "dcf_simplified": {
+        "formula": "sum(fcf[t] / (1 + discount_rate)^t) + terminal_value / (1 + discount_rate)^n",
+        "description": "Discounted Cash Flow",
+        "inputs": ["free_cash_flow", "growth_rate", "discount_rate", "terminal_multiple"]
+      }
+    },
+    "profitability": {
+      "gross_margin": {
+        "formula": "(revenue - cost_of_goods_sold) / revenue * 100",
+        "description": "Gross Profit Margin",
+        "interpretation": {
+          "below_20": "low margin business",
+          "20_to_40": "moderate margins",
+          "above_40": "high margin business"
+        }
+      },
+      "operating_margin": {
+        "formula": "operating_income / revenue * 100",
+        "description": "Operating Profit Margin",
+        "interpretation": {
+          "below_10": "low profitability",
+          "10_to_20": "moderate profitability",
+          "above_20": "high profitability"
+        }
+      },
+      "net_margin": {
+        "formula": "net_income / revenue * 100",
+        "description": "Net Profit Margin",
+        "interpretation": {
+          "below_5": "low profitability",
+          "5_to_15": "moderate profitability",
+          "above_15": "high profitability"
+        }
+      },
+      "roe": {
+        "formula": "net_income / shareholders_equity * 100",
+        "description": "Return on Equity",
+        "interpretation": {
+          "below_10": "poor returns",
+          "10_to_20": "acceptable returns",
+          "above_20": "excellent returns"
+        }
+      },
+      "roa": {
+        "formula": "net_income / total_assets * 100",
+        "description": "Return on Assets",
+        "interpretation": {
+          "below_5": "poor asset efficiency",
+          "5_to_10": "moderate efficiency",
+          "above_10": "high efficiency"
+        }
+      },
+      "roic": {
+        "formula": "nopat / invested_capital * 100",
+        "description": "Return on Invested Capital",
+        "interpretation": {
+          "below_wacc": "destroying value",
+          "equal_wacc": "breaking even",
+          "above_wacc": "creating value"
+        }
+      }
+    },
+    "liquidity": {
+      "current_ratio": {
+        "formula": "current_assets / current_liabilities",
+        "description": "Current Ratio",
+        "interpretation": {
+          "below_1": "potential liquidity issues",
+          "1_to_2": "healthy liquidity",
+          "above_2": "very liquid, possibly inefficient"
+        }
+      },
+      "quick_ratio": {
+        "formula": "(current_assets - inventory) / current_liabilities",
+        "description": "Quick Ratio (Acid Test)",
+        "interpretation": {
+          "below_1": "potential short-term liquidity issues",
+          "1_to_1.5": "adequate liquidity",
+          "above_1.5": "strong liquidity"
+        }
+      },
+      "cash_ratio": {
+        "formula": "cash_and_equivalents / current_liabilities",
+        "description": "Cash Ratio",
+        "interpretation": {
+          "below_0.5": "limited immediate liquidity",
+          "0.5_to_1": "moderate cash position",
+          "above_1": "strong cash position"
+        }
+      }
+    },
+    "leverage": {
+      "debt_to_equity": {
+        "formula": "total_debt / total_equity",
+        "description": "Debt to Equity Ratio",
+        "interpretation": {
+          "below_0.5": "conservative leverage",
+          "0.5_to_1.5": "moderate leverage",
+          "above_1.5": "high leverage"
+        }
+      },
+      "debt_to_assets": {
+        "formula": "total_debt / total_assets",
+        "description": "Debt to Assets Ratio",
+        "interpretation": {
+          "below_0.3": "low debt burden",
+          "0.3_to_0.6": "moderate debt",
+          "above_0.6": "high debt burden"
+        }
+      },
+      "interest_coverage": {
+        "formula": "ebit / interest_expense",
+        "description": "Interest Coverage Ratio",
+        "interpretation": {
+          "below_1.5": "difficulty servicing debt",
+          "1.5_to_3": "adequate coverage",
+          "above_3": "comfortable debt servicing"
+        }
+      },
+      "debt_service_coverage": {
+        "formula": "operating_income / total_debt_service",
+        "description": "Debt Service Coverage Ratio",
+        "interpretation": {
+          "below_1": "insufficient cash flow for debt",
+          "1_to_1.5": "adequate coverage",
+          "above_1.5": "strong debt servicing ability"
+        }
+      }
+    },
+    "efficiency": {
+      "asset_turnover": {
+        "formula": "revenue / average_total_assets",
+        "description": "Asset Turnover Ratio",
+        "interpretation": {
+          "below_0.5": "low asset efficiency",
+          "0.5_to_1.5": "moderate efficiency",
+          "above_1.5": "high asset utilization"
+        }
+      },
+      "inventory_turnover": {
+        "formula": "cost_of_goods_sold / average_inventory",
+        "description": "Inventory Turnover",
+        "interpretation": {
+          "below_4": "slow inventory movement",
+          "4_to_8": "normal turnover",
+          "above_8": "fast inventory turnover"
+        }
+      },
+      "receivables_turnover": {
+        "formula": "revenue / average_accounts_receivable",
+        "description": "Receivables Turnover",
+        "interpretation": {
+          "below_6": "slow collection",
+          "6_to_12": "normal collection",
+          "above_12": "fast collection"
+        }
+      },
+      "days_sales_outstanding": {
+        "formula": "365 / receivables_turnover",
+        "description": "Days Sales Outstanding",
+        "interpretation": {
+          "below_30": "excellent collection",
+          "30_to_60": "normal collection period",
+          "above_60": "slow collection"
+        }
+      }
+    },
+    "growth": {
+      "revenue_growth": {
+        "formula": "(revenue_current - revenue_previous) / revenue_previous * 100",
+        "description": "Revenue Growth Rate",
+        "interpretation": {
+          "below_0": "declining revenue",
+          "0_to_10": "moderate growth",
+          "above_10": "high growth"
+        }
+      },
+      "earnings_growth": {
+        "formula": "(earnings_current - earnings_previous) / earnings_previous * 100",
+        "description": "Earnings Growth Rate",
+        "interpretation": {
+          "below_0": "declining earnings",
+          "0_to_15": "moderate growth",
+          "above_15": "high growth"
+        }
+      },
+      "fcf_growth": {
+        "formula": "(fcf_current - fcf_previous) / fcf_previous * 100",
+        "description": "Free Cash Flow Growth",
+        "interpretation": {
+          "below_0": "declining cash generation",
+          "0_to_10": "moderate growth",
+          "above_10": "strong cash flow growth"
+        }
+      }
+    },
+    "market": {
+      "dividend_yield": {
+        "formula": "annual_dividends_per_share / price * 100",
+        "description": "Dividend Yield",
+        "interpretation": {
+          "0": "no dividend",
+          "1_to_3": "moderate yield",
+          "above_3": "high yield"
+        }
+      },
+      "payout_ratio": {
+        "formula": "dividends / net_income * 100",
+        "description": "Dividend Payout Ratio",
+        "interpretation": {
+          "below_30": "conservative payout",
+          "30_to_60": "balanced payout",
+          "above_60": "high payout, limited reinvestment"
+        }
+      },
+      "earnings_yield": {
+        "formula": "earnings_per_share / price * 100",
+        "description": "Earnings Yield",
+        "interpretation": {
+          "below_risk_free_rate": "expensive relative to bonds",
+          "above_risk_free_rate": "attractive relative to bonds"
+        }
+      },
+      "fcf_yield": {
+        "formula": "free_cash_flow_per_share / price * 100",
+        "description": "Free Cash Flow Yield",
+        "interpretation": {
+          "below_3": "low cash generation",
+          "3_to_7": "moderate cash yield",
+          "above_7": "high cash yield"
+        }
+      }
+    },
+    "buffett_metrics": {
+      "owner_earnings": {
+        "formula": "net_income + depreciation_amortization - maintenance_capex",
+        "description": "Buffett's Owner Earnings",
+        "note": "Better measure than reported earnings"
+      },
+      "look_through_earnings": {
+        "formula": "reported_earnings + share_of_undistributed_earnings_from_holdings",
+        "description": "Total economic earnings including partial ownership"
+      },
+      "intrinsic_value_simple": {
+        "formula": "owner_earnings / (discount_rate - growth_rate)",
+        "description": "Simplified intrinsic value calculation",
+        "inputs": ["owner_earnings", "discount_rate", "sustainable_growth_rate"]
+      }
+    },
+    "risk_metrics": {
+      "beta": {
+        "formula": "covariance(stock_returns, market_returns) / variance(market_returns)",
+        "description": "Systematic risk relative to market",
+        "interpretation": {
+          "below_0.8": "low volatility",
+          "0.8_to_1.2": "market-like volatility",
+          "above_1.2": "high volatility"
+        }
+      },
+      "sharpe_ratio": {
+        "formula": "(return - risk_free_rate) / standard_deviation",
+        "description": "Risk-adjusted return",
+        "interpretation": {
+          "below_1": "subpar risk-adjusted return",
+          "1_to_2": "good risk-adjusted return",
+          "above_2": "excellent risk-adjusted return"
+        }
+      },
+      "sortino_ratio": {
+        "formula": "(return - risk_free_rate) / downside_deviation",
+        "description": "Downside risk-adjusted return",
+        "interpretation": {
+          "below_1": "poor downside protection",
+          "1_to_2": "adequate downside protection",
+          "above_2": "excellent downside protection"
+        }
+      }
+    },
+    "correlation": {
+      "pearson_correlation": {
+        "formula": "covariance(X, Y) / (std_dev(X) * std_dev(Y))",
+        "description": "Linear correlation between two assets",
+        "interpretation": {
+          "-1_to_-0.7": "strong negative correlation",
+          "-0.7_to_-0.3": "moderate negative correlation",
+          "-0.3_to_0.3": "weak or no correlation",
+          "0.3_to_0.7": "moderate positive correlation",
+          "0.7_to_1": "strong positive correlation"
+        }
+      }
+    }
+  },
+  "calculation_methods": {
+    "wacc": {
+      "formula": "(E/V * Re) + (D/V * Rd * (1 - Tc))",
+      "components": {
+        "E": "market_value_of_equity",
+        "D": "market_value_of_debt",
+        "V": "E + D (total_value)",
+        "Re": "cost_of_equity",
+        "Rd": "cost_of_debt",
+        "Tc": "corporate_tax_rate"
+      }
+    },
+    "cost_of_equity_capm": {
+      "formula": "risk_free_rate + beta * (market_return - risk_free_rate)",
+      "description": "Capital Asset Pricing Model"
+    },
+    "terminal_value_perpetuity": {
+      "formula": "fcf_final_year * (1 + terminal_growth_rate) / (discount_rate - terminal_growth_rate)",
+      "description": "Gordon Growth Model for terminal value"
+    },
+    "terminal_value_multiple": {
+      "formula": "ebitda_final_year * exit_multiple",
+      "description": "Exit multiple method for terminal value"
+    }
+  }
+}

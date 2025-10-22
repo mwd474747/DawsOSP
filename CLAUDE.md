@@ -1,336 +1,181 @@
-# DawsOS Development Memory
+# DawsOS - AI Assistant Context
 
-**System Version**: 3.0 (Trinity Architecture)  
-**Grade**: A- (92/100)  
-**Last Updated**: October 17, 2025 (Post-Pattern Analysis)  
-**Status**: ✅ Operational - Technical debt documented
+**Application Name**: DawsOS
+**Architecture**: Trinity 3.0
+**Version**: 1.0.0
+**Status**: Production-ready
+**Last Updated**: October 21, 2025
 
-This file provides persistent context for all AI assistant sessions working on DawsOS.
-
----
-
-## 🎯 Current System State (Oct 17, 2025)
-
-### Architecture
-- **Trinity Execution Flow**: Request → UniversalExecutor → PatternEngine → AgentRegistry → KnowledgeGraph
-- **50 Patterns** (JSON-defined workflows in `dawsos/patterns/`)
-- **15 Agents** with 103 capabilities (registered in `AGENT_CAPABILITIES`)
-- **NetworkX Graph** (96K+ nodes, 10x performance vs legacy)
-- **27 Datasets** via KnowledgeLoader (30-min cache)
-
-### API Integration (Fixed Oct 11, 2025)
-- ✅ **FRED API** - Economic data (GDP, CPI, unemployment)
-- ✅ **FMP API** - Market data and fundamentals
-- ✅ **Anthropic Claude** - AI analysis
-- ✅ **NewsAPI** - Financial news
-- **Critical Fix**: load_env.py no longer overwrites Replit secrets with empty .env values
-
-### Known Issues (Active - Oct 17, 2025)
-
-**High Priority**:
-1. **Template Field Fragility** - 34 patterns reference unvalidated nested fields (e.g., `{step_3.score}`, `{investment_thesis.target_price}`)
-   - **Risk**: If agent response structure changes, fields render as literal `{field}` strings
-   - **Affected**: buffett_checklist, deep_dive, moat_analyzer, fundamental_analysis + 30 others
-   - **Mitigation**: `_smart_extract_value()` fallback handles common keys but doesn't eliminate issue
-
-2. **Capability Misuse** - 8-10 patterns use wrong capabilities for tasks
-   - **Example**: `can_fetch_economic_data` (FRED API) used to load knowledge files  
-   - **Impact**: Unnecessary API calls, slower execution, potential failures
-   - **Affected**: moat_analyzer, fundamental_analysis, buffett_checklist
-
-**Medium Priority**:
-3. **Hybrid Routing** - ~40% of patterns mix `"agent": "claude"` with capability routing
-   - **Impact**: Bypasses Trinity routing, hard-codes Claude dependency
-   - **Inconsistent** with documented "capability-first" architecture
-
-4. **Missing Capabilities** - 2 capabilities registered but not implemented:
-   - `can_fetch_options_flow` - options_flow.json fails at runtime
-   - `can_analyze_options_flow` - options_flow.json fails at runtime
-
-**Low Priority**:
-5. **Variable Resolution Edge Cases** - `{SYMBOL}` may not resolve if user says "Apple" instead of "AAPL"
-6. **Template Field Duplication** - 34 patterns have both `template` and `response_template` (unclear which is used)
-
-**Full Details**: See SYSTEM_STATUS.md "Known Issues & Technical Debt" section and KNOWN_PATTERN_ISSUES.md
-
-### Past Issues (Resolved - See archive/legacy/)
-- **Double Normalization** (Fixed Oct 10) - FredDataCapability → PatternEngine mismatch
-- **Silent Failures** (Fixed Oct 10) - 75% → 0% via Pydantic validation
-- **Economic Data System** (Fixed Oct 9) - 100% failure → operational
-
-**Historical Documentation**: See [archive/legacy/INDEX.md](archive/legacy/INDEX.md) for session reports, fixes, and refactoring history.
+This file provides context for AI assistants (Claude) working on DawsOS.
 
 ---
 
-## 🏛️ Critical Development Principles
+## 🏷️ NAMING CONVENTION (CRITICAL)
 
-### 1. ALWAYS Consult Specialist Agents
+> **DawsOS** is the APPLICATION (product name)
+> **Trinity 3.0** is the ARCHITECTURE VERSION (execution framework)
+> **DawsOSB** is the REPOSITORY (GitHub repo name)
 
-Before making architectural, pattern, knowledge, or agent changes:
+**When to use what**:
+- **User-facing** (UI, docs, marketing): "Trinity" or "DawsOS"
+- **Technical docs**: "Trinity 3.0 architecture" or "DawsOS (Trinity 3.0 Architecture)"
+- **Code comments**: "Trinity 3.0 execution flow"
+- **NEVER**: Mix "Trinity 3.0" and "DawsOS" as if they're different systems
 
-- **🏛️ Trinity Architect** ([.claude/trinity_architect.md](.claude/trinity_architect.md)) - Architecture compliance, execution flow
-- **🎯 Pattern Specialist** ([.claude/pattern_specialist.md](.claude/pattern_specialist.md)) - Pattern creation/debugging
-- **📚 Knowledge Curator** ([.claude/knowledge_curator.md](.claude/knowledge_curator.md)) - Graph structure, 27 datasets
-- **🤖 Agent Orchestrator** ([.claude/agent_orchestrator.md](.claude/agent_orchestrator.md)) - Agent development, capabilities
+**Key Understanding**:
+> Trinity 3.0 is NOT a separate system - it's the execution framework FOR DawsOS.
+> Like "React 18" is the framework version for a React app, "Trinity 3.0" is the framework version for DawsOS.
 
-**Why**: These specialists contain deep system knowledge and ensure consistency across sessions.
-
-### 2. Trinity Architecture Compliance (Non-Negotiable)
-
-**Execution Flow** (EVERY request must follow):
-```
-Request → UniversalExecutor → PatternEngine → AgentRuntime/AgentRegistry → KnowledgeGraph
-```
-
-**❌ NEVER Do**:
-```python
-# Direct agent calls (bypasses registry)
-agent = runtime.agents['claude']
-result = agent.think(context)
-
-# Ad-hoc file loading (bypasses cache)
-with open('storage/knowledge/sector_performance.json') as f:
-    data = json.load(f)
-```
-
-**✅ ALWAYS Do**:
-```python
-# Registry-compliant execution
-result = runtime.exec_via_registry('claude', context)
-
-# Capability-based routing (preferred)
-result = runtime.execute_by_capability('can_analyze_text', context)
-
-# Centralized knowledge loading
-loader = get_knowledge_loader()
-data = loader.get_dataset('sector_performance')
-```
-
-### 3. Capability-Based Routing (Trinity 2.0 Standard)
-
-**ALWAYS prefer capability-based over name-based routing**:
-
-```python
-# Old way (works but not preferred)
-result = runtime.exec_via_registry('financial_analyst', context)
-
-# New way (Trinity 2.0 - more flexible)
-result = runtime.execute_by_capability('can_calculate_dcf', context)
-```
-
-See [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) for all 103 capabilities.
+See [NAMING_CONSISTENCY_AUDIT.md](NAMING_CONSISTENCY_AUDIT.md) for complete details.
 
 ---
 
-## 📊 Key Components Reference
+## CRITICAL: Read This First
 
-### Core Architecture
-1. **UniversalExecutor** (`core/universal_executor.py`) - Single entry point
-2. **PatternEngine** (`core/pattern_engine.py`) - 48 JSON patterns
-3. **AgentRuntime** (`core/agent_runtime.py`) - Registry + capability routing
-4. **AGENT_CAPABILITIES** (`core/agent_capabilities.py`) - 103 capabilities
-5. **KnowledgeGraph** (`core/knowledge_graph.py`) - NetworkX backend (96K+ nodes)
-6. **KnowledgeLoader** (`core/knowledge_loader.py`) - 27 datasets, 30-min TTL cache
-7. **PersistenceManager** (`core/persistence.py`) - Auto-rotation, 30-day backups
+**ALWAYS start every session by reading**:
+1. **[MASTER_TASK_LIST.md](MASTER_TASK_LIST.md)** - SINGLE SOURCE OF TRUTH for all tasks, gaps, fixes
+2. This file (CLAUDE.md) - Quick reference
 
-### 27 Enriched Datasets
-**Core (7)**: sector_performance, economic_cycles, sp500_companies, sector_correlations, relationships, ui_configurations, company_database
-
-**Investment Frameworks (4)**: buffett_checklist, buffett_framework, dalio_cycles, dalio_framework
-
-**Financial Data (4)**: financial_calculations, financial_formulas, earnings_surprises, dividend_buyback
-
-**Factor/Alt Data (4)**: factor_smartbeta, insider_institutional, alt_data_signals, esg_governance
-
-**Market Indicators (6)**: cross_asset_lead_lag, econ_regime_watchlist, fx_commodities, thematic_momentum, volatility_stress, yield_curve
-
-**System Metadata (2)**: agent_capabilities, economic_calendar
-
-### Financial Analyst Capabilities
-The **financial_analyst** agent contains merged functionality from archived agents:
-
-**Equity Analysis**: `analyze_stock_comprehensive()`, `compare_stocks()`  
-**Macro Analysis**: `analyze_economy()` - regime detection (goldilocks/stagflation/recession)  
-**Portfolio Risk**: `analyze_portfolio_risk()` - concentration, correlation, macro sensitivity  
-**Options**: `analyze_options_greeks()`, `detect_unusual_options()`, `calculate_options_iv_rank()`
+**RULES**:
+- NEVER create separate task lists
+- ALWAYS update MASTER_TASK_LIST.md when discovering gaps
+- ALWAYS verify claims against actual code
+- NEVER reference non-existent directories (trinity3/, dawsos/)
 
 ---
 
-## 🚀 Common Development Tasks
+## Current State (Verified October 21, 2025)
 
-### Launching the App
-```bash
-./start.sh  # Handles everything automatically
+### Application Structure
+
+**Location**: ROOT directory (`./`)  
+**Status**: 100% complete, production-ready  
+**Main File**: `main.py` (1,726 lines, operational)
+
+```
+./
+├── main.py                  ✅ Streamlit UI
+├── agents/                  ✅ 7 agent files
+├── core/                    ✅ 13 core modules
+├── patterns/                ✅ 16 JSON patterns
+├── storage/knowledge/       ✅ 27 datasets
+├── services/                ✅ 8 service files
+├── intelligence/            ✅ 3 intelligence files
+├── ui/                      ✅ 7 UI components
+├── config/api_config.py     ✅ API configuration
+└── .env.example             ✅ API template
 ```
 
-**Manual**:
-```bash
-python3 -m venv dawsos/venv  # If venv doesn't exist
-dawsos/venv/bin/pip install -r requirements.txt
-dawsos/venv/bin/streamlit run dawsos/main.py --server.port=8501
+### API Configuration
+
+**Status**: 0/10 APIs configured (FREE MODE)  
+**Impact**: System works but no AI analysis  
+**Fix**: User must create .env file and add keys
+
+### Known Architecture Issues
+
+See [MASTER_TASK_LIST.md](MASTER_TASK_LIST.md) for full details:
+
+1. **P1: Pattern engine not connected to UI** - UI bypasses execution stack
+2. **P1: Only 2/7 agents registered** - financial_analyst, claude only
+3. **P1: Knowledge loader path wrong** - Points to `./dawsos/` (doesn't exist)
+4. **P2: Query processing bypasses UniversalExecutor** - No pattern routing
+5. **P2: OpenBB 4.5.0 bug** - yfinance workaround in place (working)
+
+---
+
+## Execution Flows
+
+### Current (UI Direct)
 ```
+UI Click → render_method() → Direct JSON load → Display
+```
+**Problem**: Bypasses architecture
 
-**Important Rules**:
-- NEVER use relative imports (use `from core.X` not `from ..core.X`)
-- ALWAYS use `self.logger` in class methods (not bare `logger`)
-- ALWAYS use `get_stats()`, `get_all_edges()` for graph access (not direct `.nodes`, `.edges`)
-
-### Adding a New Pattern
-1. **Read** [.claude/pattern_specialist.md](.claude/pattern_specialist.md)
-2. Create JSON in `dawsos/patterns/<category>/`
-3. Required fields: `id`, `name`, `description`, `version`, `triggers`, `steps`
-4. Primary action: `execute_through_registry` (not direct agent calls)
-5. Validate: `python scripts/lint_patterns.py`
-
-**⚠️ Template Authoring Edge Cases**:
-
-Pattern templates use `_smart_extract_value()` fallback that tries common response keys:
-1. `data['response']` - Claude/LLM responses
-2. `data['friendly_response']` - Formatted outputs
-3. `data['result']['synthesis']` - Nested synthesis
-4. `data['result']` - Raw result
-5. `data` - Entire dict (as-is)
-
-**Common Pitfalls**:
-- **Nested Field References**: `{step_3.score}` requires `step_3` returns dict with 'score' key
-  - If field missing → renders as literal `{step_3.score}` string
-  - **Solution**: Use `{step_3}` instead of nested paths unless you control agent response structure
-  
-- **Capability Selection**: 
-  - ❌ WRONG: `can_fetch_economic_data` to load knowledge files (calls FRED API)
-  - ✅ CORRECT: `enriched_lookup` action for knowledge files
-  - See [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) for mapping
-
-- **Variable Resolution**:
-  - `{SYMBOL}` tries: exact ticker → company aliases → company names → first uppercase word
-  - **Edge case**: "analyze meta platforms" may not resolve (no ticker, name mismatch)
-  - **Solution**: Document pattern expects clear symbol in input
-
-**Best Practice**: Use top-level variables (`{step_1}`) instead of nested paths (`{step_1.nested.field}`) unless you're certain of agent response structure
-
-### Adding a New Agent
-1. **Read** [.claude/agent_orchestrator.md](.claude/agent_orchestrator.md)
-2. **Read** [docs/AgentDevelopmentGuide.md](docs/AgentDevelopmentGuide.md)
-3. Implement standard methods: `process()`, `think()`, `analyze()`
-4. Register capabilities from `AGENT_CAPABILITIES`
-5. Test: `pytest dawsos/tests/validation/test_trinity_smoke.py`
-
-### Modifying Knowledge Graph
-1. **Read** [.claude/knowledge_curator.md](.claude/knowledge_curator.md)
-2. **Read** [docs/KnowledgeMaintenance.md](docs/KnowledgeMaintenance.md)
-3. Use safe methods: `get_node()`, `safe_query()` (never direct dict access)
-4. Load data via KnowledgeLoader (30-min cache)
-5. Include `_meta` header in dataset files
+### Designed (Pattern-Based)
+```
+UI Click → UniversalExecutor → PatternEngine → AgentRuntime → Agent → KnowledgeGraph
+```
+**Status**: Architecture exists but not connected
 
 ---
 
-## ⚠️ Common Pitfalls to Avoid
+## Component Inventory
 
-1. **Registry Bypass** - Never call `agent.method()` directly, use `runtime.exec_via_registry()`
-2. **Ad-hoc File Loading** - Never use `json.load()` for knowledge files, use `KnowledgeLoader`
-3. **Pattern Direct Agent Calls** - Use `execute_through_registry` action (not `"agent": "claude"`)
-4. **Missing Capabilities** - Register agents with `AGENT_CAPABILITIES` metadata
-5. **Graph Unsafe Access** - Use `get_node()` not `nodes[id]`, use `safe_query()` with defaults
-6. **Dataset Without _meta** - All knowledge files need `_meta.version`, `_meta.last_updated`, `_meta.source`
-7. **Template Nested Fields** - Avoid `{step_3.score}` unless certain of response structure (use `{step_3}`)
-8. **Wrong Capability** - Use `enriched_lookup` for knowledge loading (not `can_fetch_economic_data`)
-
----
-
-## 📚 Essential Documentation
-
-### Active Documentation (Project Root)
-- [README.md](README.md) - Project overview & quickstart
-- [SYSTEM_STATUS.md](SYSTEM_STATUS.md) - Current A- grade (92/100) with known issues documented
-- [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) - 103 capabilities reference
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Active issue tracking & pattern edge cases
-- [KNOWN_PATTERN_ISSUES.md](KNOWN_PATTERN_ISSUES.md) - Inventory of patterns needing fixes
-
-### Specialist Agents (.claude/)
-- [.claude/trinity_architect.md](.claude/trinity_architect.md) - Architecture expert
-- [.claude/pattern_specialist.md](.claude/pattern_specialist.md) - Pattern expert
-- [.claude/knowledge_curator.md](.claude/knowledge_curator.md) - Knowledge graph expert
-- [.claude/agent_orchestrator.md](.claude/agent_orchestrator.md) - Agent system expert
-
-### Development Guides (docs/)
-- [docs/AgentDevelopmentGuide.md](docs/AgentDevelopmentGuide.md) - Agent implementation
-- [docs/KnowledgeMaintenance.md](docs/KnowledgeMaintenance.md) - Dataset formats
-- [docs/DisasterRecovery.md](docs/DisasterRecovery.md) - Backup/restore
-- [docs/DEVELOPER_SETUP.md](docs/DEVELOPER_SETUP.md) - Development environment setup
-- [docs/ErrorHandlingGuide.md](docs/ErrorHandlingGuide.md) - Error handling patterns
-
-### Historical Documentation (Archive)
-- [archive/legacy/INDEX.md](archive/legacy/INDEX.md) - Master index of all historical docs
-- [archive/legacy/sessions/](archive/legacy/sessions/) - Session reports & completion summaries
-- [archive/legacy/fixes/](archive/legacy/fixes/) - Bug fixes & root cause analyses
-- [archive/legacy/refactoring/](archive/legacy/refactoring/) - Architecture evolution & planning docs
+**Agents**: 7 files, 2 registered  
+**Core Modules**: 13 files  
+**Patterns**: 16 JSON files (economy/6, smart/7, workflows/3)  
+**Knowledge Datasets**: 27 JSON files  
+**Services**: 8 files (OpenBBService uses yfinance)  
+**Intelligence**: 3 files (EnhancedChatProcessor, entity extraction)  
+**UI**: 7 component files
 
 ---
 
-## 🧪 Validation Commands
+## Documentation (8 Files)
+
+1. **MASTER_TASK_LIST.md** - All gaps/fixes/TODOs (READ THIS FIRST)
+2. **README.md** - Project overview
+3. **ARCHITECTURE.md** - System design
+4. **CONFIGURATION.md** - API setup
+5. **DEVELOPMENT.md** - Developer guide
+6. **DEPLOYMENT.md** - Production deployment
+7. **TROUBLESHOOTING.md** - Common issues
+8. **CLAUDE.md** - This file
+
+**Reference**:
+- CAPABILITY_ROUTING_GUIDE.md - 103 capabilities
+- PATTERN_AUTHORING_GUIDE.md - Pattern creation
+- EXTENSION_GUIDE.md - System extensions
+
+---
+
+## Verification Commands
 
 ```bash
-# Pattern validation
-python scripts/lint_patterns.py
+# Verify structure
+ls -1 agents/*.py core/*.py patterns/*/*.json storage/knowledge/*.json | wc -l
 
-# Unit tests
-pytest dawsos/tests/validation/test_trinity_smoke.py
-pytest dawsos/tests/validation/test_integration.py
+# Verify API status
+venv/bin/python -c "from config.api_config import APIConfig; print(APIConfig.get_status())"
 
-# Full suite
-pytest dawsos/tests/validation/
+# Verify market data
+venv/bin/python -c "from services.openbb_service import OpenBBService; print(OpenBBService().get_equity_quote('SPY'))"
+
+# Verify agent registration
+grep "register_agent" main.py | wc -l  # Should be 2
 ```
 
 ---
 
-## 🎓 Decision-Making Framework
+## Development Rules
 
-When making ANY code change, ask:
+**DO**:
+- Read MASTER_TASK_LIST.md at session start
+- Update MASTER_TASK_LIST.md with discoveries
+- Verify all claims against code
+- Use UniversalExecutor → PatternEngine flow
+- Use KnowledgeLoader for data (not direct file loads)
 
-1. **Does this follow Trinity flow?** → Check with [Trinity Architect](.claude/trinity_architect.md)
-2. **Does this need a pattern?** → Check with [Pattern Specialist](.claude/pattern_specialist.md)
-3. **Does this touch graph/datasets?** → Check with [Knowledge Curator](.claude/knowledge_curator.md)
-4. **Does this involve agents/capabilities?** → Check with [Agent Orchestrator](.claude/agent_orchestrator.md)
-5. **Is this Trinity-compliant?** → Run validation suite
-
-**Example Workflow**:
-```
-User: "Add a new moat analysis feature"
-
-1. Read .claude/trinity_architect.md (execution flow)
-2. Read .claude/pattern_specialist.md (pattern structure)
-3. Read .claude/agent_orchestrator.md (capability routing)
-4. Check AGENT_CAPABILITIES (can_analyze_moat → financial_analyst)
-5. Create pattern using execute_through_registry action
-6. Run linter + tests
-7. Commit with Trinity compliance verified
-```
+**DON'T**:
+- Reference trinity3/ directory (doesn't exist)
+- Reference dawsos/ directory (doesn't exist - except in archive)
+- Create separate TODO lists
+- Make claims without code verification
+- Bypass architecture (use execution stack)
 
 ---
 
-## 🔄 Session Continuity
+## Quick Reference
 
-Each new AI session should:
-
-1. **Read this file** (CLAUDE.md) for context
-2. **Reference specialist agents** in [.claude/](.claude/) before making changes
-3. **Check current status** in [SYSTEM_STATUS.md](SYSTEM_STATUS.md)
-4. **Follow Trinity principles** (UniversalExecutor → Pattern → Registry → Graph)
-5. **Use capability-based routing** (Trinity 2.0 standard)
-6. **Validate changes** with linter and tests
-
----
-
-## 📞 Quick Reference
-
-| Task | Specialist | Document |
-|------|-----------|----------|
-| Architecture review | Trinity Architect | [.claude/trinity_architect.md](.claude/trinity_architect.md) |
-| Pattern creation | Pattern Specialist | [.claude/pattern_specialist.md](.claude/pattern_specialist.md) |
-| Knowledge/graph work | Knowledge Curator | [.claude/knowledge_curator.md](.claude/knowledge_curator.md) |
-| Agent development | Agent Orchestrator | [.claude/agent_orchestrator.md](.claude/agent_orchestrator.md) |
-| Historical context | Master Index | [archive/legacy/INDEX.md](archive/legacy/INDEX.md) |
+**Launch**: `./start.sh`  
+**Port**: 8501  
+**Python**: 3.11 (required)  
+**Main File**: `main.py`  
+**Task List**: MASTER_TASK_LIST.md  
+**API Setup**: CONFIGURATION.md  
+**Architecture**: ARCHITECTURE.md
 
 ---
 
-**Remember**: The specialist agents in [.claude/](.claude/) are your first stop for ANY architecture, pattern, knowledge, or agent changes. They contain deep, accurate knowledge of the Trinity 3.0 system and ensure consistency across all development sessions.
+**Last Verified**: October 21, 2025 20:00 UTC

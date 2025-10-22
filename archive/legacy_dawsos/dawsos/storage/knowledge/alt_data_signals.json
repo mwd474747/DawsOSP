@@ -1,0 +1,30 @@
+{
+  "_meta": {
+    "dataset": "alt_data_signals",
+    "version": "1.0",
+    "as_of": "2025-10-03",
+    "notes": "Simplified alternative data metrics (downloads, traffic, sentiment)."
+  },
+  "signals": [
+    {
+      "entity": "UBER",
+      "metric": "app_downloads",
+      "geo": "US",
+      "iso_date": "2025-09-28",
+      "value": 1230000,
+      "wow_pct": 3.2,
+      "qoq_pct": 12.5,
+      "note": "Seasonality-adjusted"
+    },
+    {
+      "entity": "ABNB",
+      "metric": "search_interest",
+      "geo": "EU",
+      "iso_date": "2025-09-30",
+      "value": 87,
+      "wow_pct": -1.4,
+      "qoq_pct": 6.8,
+      "note": "Normalized to 0-100 scale"
+    }
+  ]
+}

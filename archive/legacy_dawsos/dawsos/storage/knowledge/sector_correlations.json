@@ -1,0 +1,322 @@
+{
+  "sector_correlations": {
+    "correlation_matrix": {
+      "Technology": {
+        "Technology": 1.00,
+        "Communication Services": 0.82,
+        "Consumer Discretionary": 0.78,
+        "Financials": 0.65,
+        "Industrials": 0.72,
+        "Healthcare": 0.58,
+        "Materials": 0.68,
+        "Real Estate": 0.45,
+        "Energy": 0.42,
+        "Consumer Staples": 0.35,
+        "Utilities": 0.28
+      },
+      "Financials": {
+        "Technology": 0.65,
+        "Communication Services": 0.58,
+        "Consumer Discretionary": 0.72,
+        "Financials": 1.00,
+        "Industrials": 0.78,
+        "Healthcare": 0.52,
+        "Materials": 0.75,
+        "Real Estate": 0.68,
+        "Energy": 0.62,
+        "Consumer Staples": 0.48,
+        "Utilities": 0.42
+      },
+      "Healthcare": {
+        "Technology": 0.58,
+        "Communication Services": 0.52,
+        "Consumer Discretionary": 0.48,
+        "Financials": 0.52,
+        "Industrials": 0.55,
+        "Healthcare": 1.00,
+        "Materials": 0.48,
+        "Real Estate": 0.45,
+        "Energy": 0.38,
+        "Consumer Staples": 0.65,
+        "Utilities": 0.58
+      },
+      "Consumer Discretionary": {
+        "Technology": 0.78,
+        "Communication Services": 0.75,
+        "Consumer Discretionary": 1.00,
+        "Financials": 0.72,
+        "Industrials": 0.82,
+        "Healthcare": 0.48,
+        "Materials": 0.75,
+        "Real Estate": 0.52,
+        "Energy": 0.55,
+        "Consumer Staples": 0.25,
+        "Utilities": 0.18
+      },
+      "Consumer Staples": {
+        "Technology": 0.35,
+        "Communication Services": 0.38,
+        "Consumer Discretionary": 0.25,
+        "Financials": 0.48,
+        "Industrials": 0.42,
+        "Healthcare": 0.65,
+        "Materials": 0.38,
+        "Real Estate": 0.52,
+        "Energy": 0.35,
+        "Consumer Staples": 1.00,
+        "Utilities": 0.72
+      },
+      "Energy": {
+        "Technology": 0.42,
+        "Communication Services": 0.38,
+        "Consumer Discretionary": 0.55,
+        "Financials": 0.62,
+        "Industrials": 0.68,
+        "Healthcare": 0.38,
+        "Materials": 0.78,
+        "Real Estate": 0.35,
+        "Energy": 1.00,
+        "Consumer Staples": 0.35,
+        "Utilities": 0.32
+      },
+      "Industrials": {
+        "Technology": 0.72,
+        "Communication Services": 0.65,
+        "Consumer Discretionary": 0.82,
+        "Financials": 0.78,
+        "Industrials": 1.00,
+        "Healthcare": 0.55,
+        "Materials": 0.85,
+        "Real Estate": 0.48,
+        "Energy": 0.68,
+        "Consumer Staples": 0.42,
+        "Utilities": 0.38
+      },
+      "Communication Services": {
+        "Technology": 0.82,
+        "Communication Services": 1.00,
+        "Consumer Discretionary": 0.75,
+        "Financials": 0.58,
+        "Industrials": 0.65,
+        "Healthcare": 0.52,
+        "Materials": 0.58,
+        "Real Estate": 0.42,
+        "Energy": 0.38,
+        "Consumer Staples": 0.38,
+        "Utilities": 0.35
+      },
+      "Materials": {
+        "Technology": 0.68,
+        "Communication Services": 0.58,
+        "Consumer Discretionary": 0.75,
+        "Financials": 0.75,
+        "Industrials": 0.85,
+        "Healthcare": 0.48,
+        "Materials": 1.00,
+        "Real Estate": 0.42,
+        "Energy": 0.78,
+        "Consumer Staples": 0.38,
+        "Utilities": 0.35
+      },
+      "Real Estate": {
+        "Technology": 0.45,
+        "Communication Services": 0.42,
+        "Consumer Discretionary": 0.52,
+        "Financials": 0.68,
+        "Industrials": 0.48,
+        "Healthcare": 0.45,
+        "Materials": 0.42,
+        "Real Estate": 1.00,
+        "Energy": 0.35,
+        "Consumer Staples": 0.52,
+        "Utilities": 0.62
+      },
+      "Utilities": {
+        "Technology": 0.28,
+        "Communication Services": 0.35,
+        "Consumer Discretionary": 0.18,
+        "Financials": 0.42,
+        "Industrials": 0.38,
+        "Healthcare": 0.58,
+        "Materials": 0.35,
+        "Real Estate": 0.62,
+        "Energy": 0.32,
+        "Consumer Staples": 0.72,
+        "Utilities": 1.00
+      }
+    },
+    "inter_asset_correlations": {
+      "SPY_correlations": {
+        "QQQ": 0.92,
+        "IWM": 0.85,
+        "DIA": 0.95,
+        "VTI": 0.98,
+        "GLD": -0.05,
+        "TLT": -0.35,
+        "VXX": -0.78,
+        "DXY": -0.42,
+        "USO": 0.45,
+        "UUP": -0.38
+      },
+      "sector_to_factors": {
+        "Technology": {
+          "interest_rates": -0.45,
+          "dollar_strength": -0.35,
+          "vix": -0.65,
+          "oil_prices": 0.15,
+          "gold": -0.12,
+          "credit_spreads": -0.58
+        },
+        "Financials": {
+          "interest_rates": 0.52,
+          "dollar_strength": 0.28,
+          "vix": -0.72,
+          "oil_prices": 0.38,
+          "gold": -0.25,
+          "credit_spreads": -0.68
+        },
+        "Energy": {
+          "interest_rates": 0.15,
+          "dollar_strength": -0.48,
+          "vix": -0.35,
+          "oil_prices": 0.85,
+          "gold": 0.42,
+          "credit_spreads": -0.28
+        },
+        "Utilities": {
+          "interest_rates": -0.62,
+          "dollar_strength": 0.18,
+          "vix": 0.35,
+          "oil_prices": -0.22,
+          "gold": 0.38,
+          "credit_spreads": 0.42
+        },
+        "Real Estate": {
+          "interest_rates": -0.72,
+          "dollar_strength": -0.15,
+          "vix": -0.28,
+          "oil_prices": -0.18,
+          "gold": 0.25,
+          "credit_spreads": -0.35
+        }
+      }
+    },
+    "rolling_correlations": {
+      "30_day": {
+        "description": "Short-term tactical correlations",
+        "high_correlation_pairs": [
+          ["Technology", "Communication Services", 0.88],
+          ["Financials", "Industrials", 0.82],
+          ["Consumer Staples", "Utilities", 0.78],
+          ["Energy", "Materials", 0.85]
+        ],
+        "low_correlation_pairs": [
+          ["Technology", "Utilities", 0.15],
+          ["Energy", "Real Estate", 0.22],
+          ["Consumer Discretionary", "Utilities", 0.08]
+        ]
+      },
+      "90_day": {
+        "description": "Medium-term correlations",
+        "regime_dependent": true,
+        "bull_market_correlations_increase": ["Tech-Discretionary", "Financials-Industrials"],
+        "bear_market_correlations_increase": ["Staples-Utilities", "Healthcare-Staples"]
+      },
+      "252_day": {
+        "description": "Long-term structural correlations",
+        "stable_relationships": [
+          "Technology-Communication Services",
+          "Consumer Staples-Utilities",
+          "Energy-Materials",
+          "Financials-Real Estate"
+        ]
+      }
+    },
+    "correlation_regimes": {
+      "risk_on": {
+        "high_performers": ["Technology", "Consumer Discretionary", "Financials"],
+        "correlation_increase": 0.15,
+        "defensive_correlation_decrease": -0.20
+      },
+      "risk_off": {
+        "high_performers": ["Utilities", "Consumer Staples", "Healthcare"],
+        "correlation_increase": 0.25,
+        "cyclical_correlation_decrease": -0.15
+      },
+      "inflation_regime": {
+        "high_performers": ["Energy", "Materials", "Financials"],
+        "tech_correlation_change": -0.30,
+        "real_assets_correlation_increase": 0.35
+      },
+      "deflation_regime": {
+        "high_performers": ["Technology", "Healthcare", "Consumer Staples"],
+        "commodity_correlation_change": -0.40,
+        "bond_proxy_correlation_increase": 0.30
+      }
+    },
+    "diversification_insights": {
+      "optimal_pairs": [
+        {
+          "pair": ["Technology", "Utilities"],
+          "correlation": 0.28,
+          "diversification_benefit": "high"
+        },
+        {
+          "pair": ["Energy", "Healthcare"],
+          "correlation": 0.38,
+          "diversification_benefit": "high"
+        },
+        {
+          "pair": ["Consumer Discretionary", "Consumer Staples"],
+          "correlation": 0.25,
+          "diversification_benefit": "high"
+        },
+        {
+          "pair": ["Financials", "Utilities"],
+          "correlation": 0.42,
+          "diversification_benefit": "moderate"
+        }
+      ],
+      "avoid_pairs": [
+        {
+          "pair": ["Technology", "Communication Services"],
+          "correlation": 0.82,
+          "reason": "High correlation reduces diversification"
+        },
+        {
+          "pair": ["Industrials", "Materials"],
+          "correlation": 0.85,
+          "reason": "Move together in economic cycles"
+        }
+      ]
+    },
+    "correlation_stability": {
+      "stable_correlations": {
+        "Consumer Staples-Utilities": {
+          "average": 0.72,
+          "std_dev": 0.08,
+          "stability": "very_high"
+        },
+        "Technology-Communication Services": {
+          "average": 0.82,
+          "std_dev": 0.12,
+          "stability": "high"
+        }
+      },
+      "unstable_correlations": {
+        "Technology-Energy": {
+          "average": 0.42,
+          "std_dev": 0.35,
+          "stability": "low",
+          "regime_dependent": true
+        },
+        "Financials-Real Estate": {
+          "average": 0.68,
+          "std_dev": 0.28,
+          "stability": "moderate",
+          "rate_sensitive": true
+        }
+      }
+    }
+  }
+}

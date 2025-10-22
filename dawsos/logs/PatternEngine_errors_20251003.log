@@ -1,2 +1,0 @@
-2025-10-03 00:45:47,864 - PatternEngine - ERROR - logger:error:100 - Error loading pattern patterns/governance/policy_validation.json {"error_type": "BrokenPipeError", "error_message": "[Errno 32] Broken pipe"}
-2025-10-03 00:45:47,866 - PatternEngine - ERROR - logger:error:100 - Failed to load 1 pattern files {"error_type": null, "error_message": null}

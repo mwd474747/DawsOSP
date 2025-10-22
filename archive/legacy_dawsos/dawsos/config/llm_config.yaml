@@ -1,0 +1,81 @@
+# LLM Configuration
+# Settings for AI model integration
+
+llm:
+  provider: anthropic  # or openai
+  model: claude-3-sonnet-20240229  # or gpt-4
+  temperature: 0.7
+  max_tokens: 1000
+
+  # API Keys (set in environment variables)
+  api_key_env: ANTHROPIC_API_KEY  # or OPENAI_API_KEY
+
+# Agent-specific overrides
+agent_settings:
+  code_monkey:
+    temperature: 0.3  # More deterministic for code
+    max_tokens: 2000  # Allow longer code
+
+  graph_mind:
+    temperature: 0.5  # Balanced for decisions
+    max_tokens: 500   # Keep responses concise
+
+  claude:
+    temperature: 0.8  # More creative for conversation
+    max_tokens: 1000
+
+  forecast_dreamer:
+    temperature: 0.6  # Some creativity in predictions
+    max_tokens: 800
+
+  pattern_spotter:
+    temperature: 0.4  # More consistent pattern detection
+    max_tokens: 600
+
+# Prompting strategy
+prompting:
+  style: simple  # Keep prompts simple and direct
+  include_examples: false  # Don't complicate with examples
+  chain_of_thought: false  # No complex reasoning chains
+
+# Caching
+cache:
+  enabled: true
+  ttl_seconds: 300  # 5 minutes
+  max_entries: 1000
+
+# Rate limiting
+rate_limit:
+  requests_per_minute: 60
+  requests_per_day: 10000
+
+# Fallback behavior
+fallback:
+  on_error: mock  # Use mock responses on error
+  mock_delay_ms: 100  # Simulate thinking time
+
+# Logging
+logging:
+  log_prompts: true
+  log_responses: true
+  log_file: storage/agent_memory/llm_log.json
+  max_log_size_mb: 10
+
+# Cost tracking
+cost_tracking:
+  enabled: true
+  track_by_agent: true
+  alert_threshold_daily: 10.00  # Alert if daily cost exceeds $10
+
+# Experimental features
+experimental:
+  use_streaming: false  # Stream responses
+  parallel_agents: true  # Allow parallel agent execution
+  auto_retry: true      # Retry failed requests
+  retry_count: 3
+
+# Development mode
+development:
+  mock_mode: false  # Use mock responses instead of real LLM
+  verbose: true     # Extra logging
+  save_all: true    # Save all interactions

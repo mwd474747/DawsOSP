@@ -1,0 +1,2335 @@
+#!/usr/bin/env python3
+"""
+Financial Analyst Agent - Specialized agent for DCF modeling, valuation, and financial calculations
+Leverages Trinity architecture to provide sophisticated financial analysis
+"""
+
+from typing import Dict, List, Any, Optional
+from agents.base_agent import BaseAgent
+from datetime import datetime
+from core.confidence_calculator import confidence_calculator
+from agents.analyzers.dcf_analyzer import DCFAnalyzer
+from agents.analyzers.moat_analyzer import MoatAnalyzer
+from agents.analyzers.financial_data_fetcher import FinancialDataFetcher
+from agents.analyzers.financial_confidence_calculator import FinancialConfidenceCalculator
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class FinancialAnalyst(BaseAgent):
+    """Agent specialized in financial analysis and DCF modeling"""
+
+    def __init__(
+        self,
+        graph: Optional[Any] = None,
+        llm_client: Optional[Any] = None
+    ) -> None:
+        """Initialize FinancialAnalyst with graph and optional LLM client.
+
+        Args:
+            graph: Optional knowledge graph instance
+            llm_client: Optional LLM client for financial analysis
+        """
+        super().__init__(graph=graph, name="financial_analyst", llm_client=llm_client)
+        self.capabilities_needed: List[str] = ['market', 'enriched_data']
+        # Initialize capabilities dict (will be populated by runtime if registered)
+        self.capabilities: Dict[str, Any] = {}
+
+        # Initialize analyzers (Phase 2.1 extraction - 100% complete)
+        self.dcf_analyzer: Optional[Any] = None  # Lazy initialization on first use
+        self.moat_analyzer: Optional[Any] = None  # Lazy initialization on first use
+        self.data_fetcher: Optional[Any] = None  # Lazy initialization on first use
+        self.confidence_calculator: Optional[Any] = None  # Lazy initialization on first use
+        self.options_analyzer: Optional[Any] = None  # Lazy initialization on first use (options analysis)
+
+        # Phase 2.3: Request routing table (replaces complex if/elif chain)
+        # Format: (trigger_keywords, handler_method, requires_symbol, requires_context_key)
+        self.request_router = [
+            # Economy and macro analysis
+            (['economy', 'economic regime', 'macro analysis', 'economic analysis'],
+             self.analyze_economy, False, None),
+
+            # Portfolio analysis
+            (['portfolio risk', 'portfolio analysis', 'holdings risk'],
+             self.analyze_portfolio_risk, False, 'holdings'),
+
+            # Comprehensive stock analysis
+            (['comprehensive stock', 'full stock analysis', 'stock comprehensive'],
+             self.analyze_stock_comprehensive, True, None),
+
+            # Stock comparison
+            (['compare stocks', 'stock comparison'],
+             self.compare_stocks, False, 'symbols'),
+
+            # DCF valuation
+            (['dcf', 'discounted cash flow', 'intrinsic value'],
+             self._perform_dcf_analysis, False, None),
+
+            # ROIC calculation
+            (['roic', 'return on invested capital'],
+             self._calculate_roic, False, None),
+
+            # Owner earnings
+            (['owner earnings', 'buffett earnings'],
+             self._calculate_owner_earnings, False, None),
+
+            # Moat analysis
+            (['moat', 'competitive advantage', 'competitive position'],
+             self._analyze_moat, False, None),
+
+            # Free cash flow analysis
+            (['free cash flow', 'fcf'],
+             self._analyze_free_cash_flow, False, None),
+        ]
+
+    def _ensure_dcf_analyzer(self) -> None:
+        """Lazy initialization of DCF analyzer (needs market capability)."""
+        if self.dcf_analyzer is None and 'market' in self.capabilities:
+            self.dcf_analyzer = DCFAnalyzer(
+                self.capabilities['market'],
+                self.logger
+            )
+
+    def _ensure_moat_analyzer(self) -> None:
+        """Lazy initialization of moat analyzer."""
+        if self.moat_analyzer is None:
+            self.moat_analyzer = MoatAnalyzer(self.logger)
+
+    def _ensure_data_fetcher(self) -> None:
+        """Lazy initialization of data fetcher."""
+        if self.data_fetcher is None:
+            self.data_fetcher = FinancialDataFetcher(
+                market_capability=self.capabilities.get('market'),
+                enriched_data_capability=self.capabilities.get('enriched_data'),
+                logger=self.logger
+            )
+
+    def _ensure_options_analyzer(self) -> None:
+        """Lazy initialization of options analyzer (needs polygon capability)."""
+        if self.options_analyzer is None and 'polygon' in self.capabilities:
+            from agents.analyzers.options_analyzer import OptionsAnalyzer
+            self.options_analyzer = OptionsAnalyzer(
+                self.capabilities['polygon'],
+                self.logger
+            )
+
+    def _ensure_confidence_calculator(self) -> None:
+        """Lazy initialization of confidence calculator."""
+        if self.confidence_calculator is None:
+            self.confidence_calculator = FinancialConfidenceCalculator(
+                confidence_calculator_module=confidence_calculator,
+                logger=self.logger
+            )
+
+    def _find_or_create_company_node(self, symbol: str, financial_data: Dict = None) -> str:
+        """Find existing company node or create a new one"""
+        # Search for existing company node
+        for node_id, node in self.graph.get_all_nodes():
+            if node['type'] == 'company' and node['data'].get('symbol') == symbol:
+                return node_id
+
+        # Create new company node
+        company_data = {
+            'symbol': symbol,
+            'name': financial_data.get('company_name', symbol) if financial_data else symbol,
+            'sector': financial_data.get('sector', 'Unknown') if financial_data else 'Unknown',
+            'created': datetime.now().isoformat()
+        }
+
+        return self.add_knowledge('company', company_data)
+
+    def process_request(self, request: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Process financial analysis requests using routing table.
+
+        Phase 2.3: Simplified from 70-line if/elif chain to declarative routing table.
+        """
+        if context is None:
+            context = {}
+
+        request_lower = request.lower()
+
+        # Store query node if this is a new analysis query
+        query_node_id = None
+        if self.graph and any(term in request_lower for term in ['analyze', 'calculate', 'evaluate']):
+            symbol = self._extract_symbol(request, context)
+            if symbol:
+                query_data = {
+                    'query': request,
+                    'symbol': symbol,
+                    'timestamp': datetime.now().isoformat(),
+                    'type': 'financial_analysis'
+                }
+                query_node_id = self.add_knowledge('analysis_query', query_data)
+                context['query_node_id'] = query_node_id
+
+        # Route request using routing table
+        for triggers, handler, requires_symbol, requires_context_key in self.request_router:
+            # Check if any trigger matches
+            if any(trigger in request_lower for trigger in triggers):
+                # Validate required context
+                if requires_context_key and requires_context_key not in context:
+                    return {
+                        "error": f"{handler.__name__} requires '{requires_context_key}' in context"
+                    }
+
+                # Extract and validate symbol if required
+                if requires_symbol:
+                    symbol = self._extract_symbol(request, context)
+                    if not symbol:
+                        return {"error": "No stock symbol found in request"}
+                    # Call handler with symbol
+                    return handler(symbol, context)
+
+                # Call handler based on signature
+                if requires_context_key == 'holdings':
+                    # Portfolio analysis needs holdings extracted
+                    holdings = context.get('holdings', {})
+                    return handler(holdings, context)
+                elif requires_context_key == 'symbols':
+                    # Stock comparison needs symbols list
+                    symbols = context.get('symbols', [])
+                    return handler(symbols, context)
+                elif requires_context_key is None and requires_symbol is False:
+                    # Handlers that take (request, context) or just (context)
+                    try:
+                        # Try (request, context) signature first
+                        return handler(request, context)
+                    except TypeError:
+                        # Fall back to (context) signature for analyze_economy
+                        return handler(context)
+                else:
+                    # Default: (request, context)
+                    return handler(request, context)
+
+        # No route matched - use general financial analysis
+        return self._general_financial_analysis(request, context)
+
+    def _perform_dcf_analysis(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Perform comprehensive DCF analysis using Trinity architecture"""
+        try:
+            # Extract symbol from request
+            symbol = self._extract_symbol(request, context)
+            if not symbol:
+                return {"error": "No stock symbol found in request"}
+
+            # Get financial calculation knowledge
+            calc_knowledge = self._get_calculation_knowledge()
+            if not calc_knowledge:
+                return {"error": "Financial calculation knowledge not available"}
+
+            # Get company financial data
+            financial_data = self._get_company_financials(symbol)
+            if 'error' in financial_data:
+                return financial_data
+
+            # Phase 2.1: Delegate DCF calculation to DCFAnalyzer
+            self._ensure_dcf_analyzer()
+            if self.dcf_analyzer:
+                # Use extracted DCF analyzer
+                dcf_result = self.dcf_analyzer.calculate_intrinsic_value(symbol, financial_data)
+                projected_fcf = dcf_result['projected_fcf']
+                discount_rate = dcf_result['discount_rate']
+                present_values = dcf_result['present_values']
+                terminal_value = dcf_result['terminal_value']
+                intrinsic_value = dcf_result['intrinsic_value']
+            else:
+                # Fallback to legacy implementation if DCF analyzer not available
+                projected_fcf = self._project_cash_flows(financial_data, symbol)
+                discount_rate = self._calculate_wacc(financial_data, symbol)
+                present_values = self._calculate_present_values(projected_fcf, discount_rate)
+                terminal_value = self._estimate_terminal_value(projected_fcf, discount_rate)
+                intrinsic_value = sum(present_values) + terminal_value
+
+            # Calculate dynamic confidence using the new confidence calculator
+            confidence_result = confidence_calculator.calculate_dcf_confidence(
+                financial_data=financial_data,
+                projections=projected_fcf,
+                discount_rate=discount_rate,
+                symbol=symbol,
+                data_source='financial_api'
+            )
+            confidence = confidence_result['confidence']
+
+            # Store DCF analysis in knowledge graph
+            dcf_node_data = {
+                "symbol": symbol,
+                "intrinsic_value": round(intrinsic_value, 2),
+                "projected_fcf": projected_fcf,
+                "discount_rate": discount_rate,
+                "terminal_value": terminal_value,
+                "present_values": present_values,
+                "confidence": confidence,
+                "methodology": "Standard DCF using Trinity knowledge base",
+                "timestamp": datetime.now().isoformat()
+            }
+
+            # Add DCF result node to graph if graph is available
+            dcf_node_id = None
+            if self.graph:
+                dcf_node_id = self.add_knowledge('dcf_analysis', dcf_node_data)
+
+                # Find or create company node
+                company_node_id = self._find_or_create_company_node(symbol, financial_data)
+
+                # Connect DCF to company
+                self.connect_knowledge(dcf_node_id, company_node_id, 'analyzes', strength=confidence)
+
+                # If this was from a query, connect to query node
+                if context.get('query_node_id'):
+                    self.connect_knowledge(context['query_node_id'], dcf_node_id, 'resulted_in', strength=0.9)
+
+            return {
+                "symbol": symbol,
+                "dcf_analysis": {
+                    "intrinsic_value": round(intrinsic_value, 2),
+                    "projected_fcf": projected_fcf,
+                    "discount_rate": discount_rate,
+                    "terminal_value": terminal_value,
+                    "present_values": present_values,
+                    "confidence": confidence,
+                    "methodology": "Standard DCF using Trinity knowledge base"
+                },
+                "node_id": dcf_node_id,
+                "response": f"DCF analysis for {symbol} shows intrinsic value of ${intrinsic_value:.2f} with {confidence:.0%} confidence"
+            }
+
+        except Exception as e:
+            self.logger.error(f"🔴 DCF analysis failed for {context.get('symbol', 'unknown')}: {str(e)}", exc_info=True)
+            return {"error": f"DCF analysis failed: {str(e)}"}
+
+    def _calculate_roic(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Calculate Return on Invested Capital using knowledge base methodology"""
+        try:
+            symbol = self._extract_symbol(request, context)
+            if not symbol:
+                return {"error": "No stock symbol found in request"}
+
+            # Get ROIC calculation knowledge
+            calc_knowledge = self._get_calculation_knowledge()
+            roic_config = calc_knowledge.get('roic_calculation', {})
+
+            # Get financial data
+            financial_data = self._get_company_financials(symbol)
+            if 'error' in financial_data:
+                return financial_data
+
+            # Calculate NOPAT (Net Operating Profit After Tax)
+            ebit = financial_data.get('ebit', 0)
+            tax_rate = financial_data.get('tax_rate', 0.21)  # Default corporate tax rate
+            nopat = ebit * (1 - tax_rate)
+
+            # Calculate Invested Capital
+            working_capital = financial_data.get('working_capital', 0)
+            ppe = financial_data.get('property_plant_equipment', 0)
+            goodwill = financial_data.get('goodwill', 0)
+            intangibles = financial_data.get('intangible_assets', 0)
+            invested_capital = working_capital + ppe + goodwill + intangibles
+
+            # Calculate ROIC
+            roic = nopat / invested_capital if invested_capital > 0 else 0
+
+            # Determine quality assessment
+            quality_thresholds = roic_config.get('quality_thresholds', {})
+            if roic >= quality_thresholds.get('excellent', 0.15):
+                quality = "Excellent"
+            elif roic >= quality_thresholds.get('good', 0.12):
+                quality = "Good"
+            elif roic >= quality_thresholds.get('average', 0.08):
+                quality = "Average"
+            else:
+                quality = "Poor"
+
+            # Store ROIC analysis in knowledge graph
+            roic_node_data = {
+                "symbol": symbol,
+                "roic": round(roic, 4),
+                "roic_percentage": round(roic * 100, 2),
+                "quality_assessment": quality,
+                "nopat": nopat,
+                "invested_capital": invested_capital,
+                "ebit": ebit,
+                "tax_rate": tax_rate,
+                "timestamp": datetime.now().isoformat()
+            }
+
+            # Add ROIC node to graph if graph is available
+            roic_node_id = None
+            if self.graph:
+                roic_node_id = self.add_knowledge('roic_analysis', roic_node_data)
+
+                # Find or create company node
+                company_node_id = self._find_or_create_company_node(symbol, financial_data)
+
+                # Connect ROIC to company
+                self.connect_knowledge(roic_node_id, company_node_id, 'analyzes', strength=0.9)
+
+            return {
+                "symbol": symbol,
+                "roic_analysis": {
+                    "roic": round(roic, 4),
+                    "roic_percentage": round(roic * 100, 2),
+                    "quality_assessment": quality,
+                    "components": {
+                        "nopat": nopat,
+                        "invested_capital": invested_capital,
+                        "ebit": ebit,
+                        "tax_rate": tax_rate
+                    }
+                },
+                "node_id": roic_node_id,
+                "response": f"{symbol} ROIC: {roic*100:.2f}% - {quality} performance"
+            }
+
+        except Exception as e:
+            return {"error": f"ROIC calculation failed: {str(e)}"}
+
+    def _calculate_owner_earnings(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Calculate Buffett-style Owner Earnings"""
+        try:
+            symbol = self._extract_symbol(request, context)
+            if not symbol:
+                return {"error": "No stock symbol found in request"}
+
+            # Get Owner Earnings calculation knowledge
+            calc_knowledge = self._get_calculation_knowledge()
+            owner_earnings_config = calc_knowledge.get('buffett_calculations', {}).get('owner_earnings', {})
+
+            # Get financial data
+            financial_data = self._get_company_financials(symbol)
+            if 'error' in financial_data:
+                return financial_data
+
+            # Calculate Owner Earnings following Buffett methodology
+            net_income = financial_data.get('net_income', 0)
+            depreciation = financial_data.get('depreciation_amortization', 0)
+            capex = financial_data.get('capital_expenditures', 0)
+            working_capital_change = financial_data.get('working_capital_change', 0)
+
+            # Estimate maintenance capex (typically 70% of D&A)
+            maintenance_capex = depreciation * 0.7
+
+            # Calculate Owner Earnings
+            owner_earnings = net_income + depreciation - maintenance_capex - working_capital_change
+
+            # Store Owner Earnings analysis in knowledge graph
+            owner_node_data = {
+                "symbol": symbol,
+                "owner_earnings": round(owner_earnings, 2),
+                "net_income": net_income,
+                "depreciation_amortization": depreciation,
+                "maintenance_capex": maintenance_capex,
+                "working_capital_change": working_capital_change,
+                "methodology": "Buffett Owner Earnings calculation",
+                "timestamp": datetime.now().isoformat()
+            }
+
+            # Add Owner Earnings node to graph if graph is available
+            owner_node_id = None
+            if self.graph:
+                owner_node_id = self.add_knowledge('owner_earnings', owner_node_data)
+
+                # Find or create company node
+                company_node_id = self._find_or_create_company_node(symbol, financial_data)
+
+                # Connect Owner Earnings to company
+                self.connect_knowledge(owner_node_id, company_node_id, 'analyzes', strength=0.85)
+
+            return {
+                "symbol": symbol,
+                "owner_earnings_analysis": {
+                    "owner_earnings": round(owner_earnings, 2),
+                    "components": {
+                        "net_income": net_income,
+                        "depreciation_amortization": depreciation,
+                        "maintenance_capex": maintenance_capex,
+                        "working_capital_change": working_capital_change
+                    },
+                    "methodology": "Buffett Owner Earnings calculation"
+                },
+                "node_id": owner_node_id,
+                "response": f"{symbol} Owner Earnings: ${owner_earnings:,.0f} million"
+            }
+
+        except Exception as e:
+            return {"error": f"Owner Earnings calculation failed: {str(e)}"}
+
+    def _project_cash_flows(self, financial_data: Dict, symbol: str) -> List[float]:
+        """Project future cash flows based on historical data"""
+        try:
+            # Get historical FCF
+            current_fcf = financial_data.get('free_cash_flow', 0)
+
+            # Use conservative growth assumption
+            # In production, would analyze historical trends and use analyst estimates
+            growth_rates = [0.08, 0.06, 0.05, 0.04, 0.03]  # Declining growth
+
+            projected_fcf = []
+            fcf = current_fcf
+
+            for growth_rate in growth_rates:
+                fcf = fcf * (1 + growth_rate)
+                projected_fcf.append(fcf)
+
+            return projected_fcf
+
+        except Exception as e:
+            logger.warning(f"Error projecting cash flows for {symbol}: {e}")
+            # Fallback to conservative estimates
+            return [100, 105, 110, 115, 120]  # Million USD
+
+    def _calculate_wacc(self, financial_data: Dict, symbol: str) -> float:
+        """Calculate Weighted Average Cost of Capital"""
+        try:
+            # Simplified WACC calculation
+            # In production, would calculate based on debt/equity ratios and risk factors
+            risk_free_rate = 0.045  # Current 10-year Treasury
+            market_risk_premium = 0.06
+            beta = financial_data.get('beta', 1.0)
+
+            cost_of_equity = risk_free_rate + (beta * market_risk_premium)
+
+            # Assume mostly equity financed for simplicity
+            return cost_of_equity
+
+        except Exception as e:
+            logger.warning(f"Error calculating WACC for {symbol}: {e}")
+            return 0.10  # 10% default discount rate
+
+    def _calculate_present_values(self, projected_fcf: List[float], discount_rate: float) -> List[float]:
+        """Calculate present values of projected cash flows"""
+        present_values = []
+
+        for year, fcf in enumerate(projected_fcf, 1):
+            pv = fcf / ((1 + discount_rate) ** year)
+            present_values.append(pv)
+
+        return present_values
+
+    def _estimate_terminal_value(self, projected_fcf: List[float], discount_rate: float) -> float:
+        """Estimate terminal value using perpetual growth model"""
+        if not projected_fcf:
+            return 0
+
+        final_fcf = projected_fcf[-1]
+        terminal_growth = 0.025  # 2.5% perpetual growth
+
+        terminal_value = (final_fcf * (1 + terminal_growth)) / (discount_rate - terminal_growth)
+
+        # Discount terminal value to present
+        years = len(projected_fcf)
+        present_terminal_value = terminal_value / ((1 + discount_rate) ** years)
+
+        return present_terminal_value
+
+    def _get_calculation_knowledge(self) -> Dict[str, Any]:
+        """Get financial calculation knowledge from enriched data"""
+        # Phase 2.2: Pure delegation to FinancialDataFetcher
+        self._ensure_data_fetcher()
+        return self.data_fetcher.get_calculation_knowledge()
+
+    def _get_company_financials(self, symbol: str) -> Dict[str, Any]:
+        """Get company financial data from FMP API via market capability"""
+        # Phase 2.2: Pure delegation to FinancialDataFetcher
+        self._ensure_data_fetcher()
+        return self.data_fetcher.get_company_financials(symbol)
+
+    def _calculate_confidence(self, financial_data: Dict, symbol: str) -> float:
+        """Calculate confidence score based on data quality and business predictability"""
+        # Phase 2.2: Pure delegation to FinancialConfidenceCalculator
+        self._ensure_confidence_calculator()
+
+        # Get confidence factors from knowledge base
+        calc_knowledge = self._get_calculation_knowledge()
+        confidence_factors = calc_knowledge.get('valuation_methodologies', {}).get('confidence_factors', {})
+
+        # Get data quality from FinancialDataFetcher
+        data_quality = self._assess_data_quality(financial_data)
+
+        return self.confidence_calculator.calculate_confidence(
+            financial_data=financial_data,
+            symbol=symbol,
+            confidence_factors=confidence_factors,
+            data_quality=data_quality
+        )
+
+    def _analyze_moat(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze economic moat (competitive advantage) for a company"""
+        try:
+            symbol = self._extract_symbol(request, context)
+            if not symbol:
+                return {"error": "No stock symbol found in request"}
+
+            # Get financial data for moat analysis
+            financial_data = self._get_company_financials(symbol)
+            if 'error' in financial_data:
+                return financial_data
+
+            # Phase 2.2: Pure delegation to MoatAnalyzer
+            self._ensure_moat_analyzer()
+
+            # Use MoatAnalyzer for moat calculation
+            moat_analysis = self.moat_analyzer.analyze_moat(symbol, financial_data)
+
+            # Extract results for backward compatibility
+            moat_rating = moat_analysis['moat_rating']
+            total_score = moat_analysis['overall_score']
+            moat_scores = moat_analysis['factors']
+
+            # Store moat analysis in knowledge graph
+            moat_node_data = {
+                'symbol': symbol,
+                'moat_rating': moat_rating,
+                'moat_score': total_score,
+                'brand_score': moat_scores['brand'],
+                'network_effects_score': moat_scores['network_effects'],
+                'cost_advantages_score': moat_scores['cost_advantages'],
+                'switching_costs_score': moat_scores['switching_costs'],
+                'intangible_assets_score': moat_scores['intangible_assets'],
+                'gross_margin': financial_data.get('gross_margin', 0),
+                'operating_margin': financial_data.get('operating_margin', 0),
+                'timestamp': moat_analysis['timestamp']
+            }
+
+            # Add moat analysis node to graph if graph is available
+            moat_node_id = None
+            if self.graph:
+                moat_node_id = self.add_knowledge('moat_analysis', moat_node_data)
+
+                # Find or create company node
+                company_node_id = self._find_or_create_company_node(symbol, financial_data)
+
+                # Connect moat analysis to company
+                self.connect_knowledge(moat_node_id, company_node_id, 'analyzes', strength=0.9)
+
+                # If this was from a query, connect to query node
+                if context.get('query_node_id'):
+                    self.connect_knowledge(context['query_node_id'], moat_node_id, 'resulted_in', strength=0.95)
+
+            return {
+                "symbol": symbol,
+                "moat_analysis": {
+                    "moat_rating": moat_rating,
+                    "overall_score": total_score,
+                    "factors": moat_scores,
+                    "financial_evidence": moat_analysis['financial_evidence']
+                },
+                "node_id": moat_node_id,
+                "response": f"{symbol} has a {moat_rating} moat with score {total_score:.1f}/50"
+            }
+
+        except Exception as e:
+            return {"error": f"Moat analysis failed: {str(e)}"}
+
+    def _analyze_free_cash_flow(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze free cash flow trends and quality"""
+        try:
+            symbol = self._extract_symbol(request, context)
+            if not symbol:
+                return {"error": "No stock symbol found in request"}
+
+            financial_data = self._get_company_financials(symbol)
+            if 'error' in financial_data:
+                return financial_data
+
+            fcf = financial_data.get('free_cash_flow', 0)
+            net_income = financial_data.get('net_income', 0)
+
+            # Calculate FCF conversion ratio
+            fcf_conversion = fcf / net_income if net_income > 0 else 0
+
+            return {
+                "symbol": symbol,
+                "fcf_analysis": {
+                    "free_cash_flow": fcf,
+                    "fcf_conversion_ratio": round(fcf_conversion, 3),
+                    "quality_assessment": "High" if fcf_conversion > 0.8 else "Moderate" if fcf_conversion > 0.5 else "Low"
+                },
+                "response": f"{symbol} FCF: ${fcf:,.0f}M (conversion ratio: {fcf_conversion:.1%})"
+            }
+
+        except Exception as e:
+            return {"error": f"FCF analysis failed: {str(e)}"}
+
+    def _general_financial_analysis(self, request: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Provide general financial analysis"""
+        return {
+            "response": "I can help with DCF analysis, ROIC calculations, Owner Earnings, and FCF analysis. Please specify a stock symbol and analysis type.",
+            "capabilities": [
+                "DCF (Discounted Cash Flow) valuation",
+                "ROIC (Return on Invested Capital) calculation",
+                "Buffett-style Owner Earnings calculation",
+                "Free Cash Flow analysis",
+                "Financial ratio calculations"
+            ]
+        }
+
+    def _extract_symbol(self, request: str, context: Dict[str, Any]) -> Optional[str]:
+        """Extract stock symbol from request or context"""
+        # Phase 2.2: Pure delegation to FinancialDataFetcher
+        self._ensure_data_fetcher()
+        return self.data_fetcher.extract_symbol(request, context)
+
+    def _assess_data_quality(self, financial_data: Dict[str, Any]) -> float:
+        """Assess the quality of financial data"""
+        # Phase 2.2: Pure delegation to FinancialDataFetcher
+        self._ensure_data_fetcher()
+        return self.data_fetcher.assess_data_quality(financial_data)
+
+    def _assess_business_predictability(self, financial_data: Dict[str, Any], symbol: str) -> float:
+        """Assess business predictability based on financial metrics"""
+        # Phase 2.2: Pure delegation to FinancialConfidenceCalculator
+        self._ensure_confidence_calculator()
+        return self.confidence_calculator.assess_business_predictability(financial_data, symbol)
+
+    def _calculate_roic_internal(self, financial_data: Dict[str, Any]) -> Optional[float]:
+        """Internal ROIC calculation for predictability assessment"""
+        # Phase 2.2: Pure delegation to FinancialConfidenceCalculator
+        self._ensure_confidence_calculator()
+        return self.confidence_calculator.calculate_roic_internal(financial_data)
+
+    # ==================== MIGRATED FROM ARCHIVED AGENTS ====================
+    # The following methods were migrated from equity_agent, macro_agent, and risk_agent
+    # during the October 2025 legacy elimination refactor.
+    # See git history at commit e2be11e for original implementations.
+
+    def analyze_stock_comprehensive(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Comprehensive stock analysis including fundamental + macro influences + catalysts
+
+        Migrated from equity_agent.analyze_stock()
+        Combines DCF/ROIC analysis with macro influence tracing and catalyst identification
+        """
+        if context is None:
+            context = {}
+
+        # Find or create stock node
+        stock_node = self._find_or_create_company_node(symbol)
+
+        # Get connections for influence analysis
+        if hasattr(self.graph, 'trace_connections'):
+            connections = self.graph.trace_connections(stock_node, max_depth=3)
+        else:
+            connections = []
+
+        # Build comprehensive analysis
+        analysis = {
+            'symbol': symbol,
+            'timestamp': datetime.now().isoformat(),
+
+            # Fundamental analysis (existing methods)
+            'dcf_valuation': self._perform_dcf_analysis(f"DCF for {symbol}", {'symbol': symbol}),
+            'roic': self._calculate_roic(f"ROIC for {symbol}", {'symbol': symbol}),
+
+            # Macro influences (new)
+            'macro_influences': self._find_macro_influences_for_stock(stock_node, connections),
+
+            # Sector positioning (new)
+            'sector_position': self._analyze_sector_position_for_stock(stock_node),
+
+            # Risk factors (new)
+            'risk_factors': self._identify_stock_risks(stock_node, connections),
+
+            # Growth catalysts (new)
+            'catalysts': self._identify_catalysts(stock_node, connections),
+
+            # Metadata
+            'connection_count': len(connections),
+            'analysis_type': 'comprehensive'
+        }
+
+        return analysis
+
+    def _find_macro_influences_for_stock(self, stock_node: str, connections: List[List[Dict]]) -> List[Dict]:
+        """
+        Find macroeconomic influences on stock through graph relationships
+
+        Migrated from equity_agent._find_macro_influences()
+        Traces paths from economic indicators to stock
+        """
+        macro_influences = []
+
+        for path in connections:
+            for edge in path:
+                from_node = self.graph.get_node(edge['from'])
+                from_type = from_node.get('type', '') if from_node else ''
+
+                # Check if node is a macro/economic indicator
+                if from_type in ['indicator', 'economic', 'macro']:
+                    influence = {
+                        'factor': edge['from'],
+                        'factor_name': from_node.get('data', {}).get('name', edge['from']),
+                        'relationship': edge['type'],
+                        'strength': edge.get('strength', 0.5),
+                        'type': from_type
+                    }
+
+                    # Avoid duplicates
+                    if influence not in macro_influences:
+                        macro_influences.append(influence)
+
+        # Return top 5 strongest influences
+        return sorted(macro_influences, key=lambda x: x['strength'], reverse=True)[:5]
+
+    def _analyze_sector_position_for_stock(self, stock_node: str) -> Dict:
+        """
+        Analyze stock's position within its sector including peer comparison
+
+        Migrated from equity_agent._analyze_sector_position()
+        """
+        # Find sector connections (PART_OF relationship)
+        for edge in self.graph.get_all_edges():
+            if edge['from'] == stock_node and edge.get('type') == 'PART_OF':
+                sector_node = edge['to']
+
+                # Get sector forecast if available
+                sector_forecast = {}
+                if hasattr(self.graph, 'forecast'):
+                    sector_forecast = self.graph.forecast(sector_node)
+
+                # Find peer companies in same sector
+                peers = []
+                for other_edge in self.graph.get_all_edges():
+                    if (other_edge.get('to') == sector_node and
+                        other_edge.get('type') == 'PART_OF' and
+                        other_edge['from'] != stock_node):
+                        peers.append(other_edge['from'])
+
+                sector_node_data = self.graph.get_node(sector_node)
+                return {
+                    'sector': sector_node,
+                    'sector_name': sector_node_data.get('data', {}).get('name', sector_node) if sector_node_data else sector_node,
+                    'sector_outlook': sector_forecast.get('forecast', 'neutral'),
+                    'peer_count': len(peers),
+                    'peers': peers[:5]  # Top 5 peers
+                }
+
+        return {
+            'sector': 'unknown',
+            'sector_outlook': 'neutral',
+            'peer_count': 0,
+            'peers': []
+        }
+
+    def _identify_stock_risks(self, stock_node: str, connections: List[List[Dict]]) -> List[str]:
+        """
+        Identify risks specific to the stock from graph relationships
+
+        Migrated from equity_agent._identify_stock_risks()
+        Looks for PRESSURES and WEAKENS relationships
+        """
+        risks = []
+
+        # Check for negative relationships
+        for path in connections:
+            for edge in path:
+                if edge.get('to') == stock_node:
+                    relationship = edge.get('type', '')
+
+                    # Negative relationship types
+                    if relationship in ['PRESSURES', 'WEAKENS', 'THREATENS', 'COMPETES_WITH']:
+                        from_node_id = edge['from']
+                        from_node = self.graph.get_node(from_node_id)
+                        from_name = from_node.get('data', {}).get('name', from_node_id) if from_node else from_node_id
+                        strength = edge.get('strength', 0.5)
+
+                        risks.append(f"{from_name} {relationship.lower()} stock (strength: {strength:.2f})")
+
+        return risks[:5]  # Top 5 risks
+
+    def _identify_catalysts(self, stock_node: str, connections: List[List[Dict]]) -> List[str]:
+        """
+        Identify potential growth catalysts from graph relationships
+
+        Migrated from equity_agent._identify_catalysts()
+        Looks for SUPPORTS and STRENGTHENS relationships
+        """
+        catalysts = []
+
+        # Check for positive relationships
+        for path in connections:
+            for edge in path:
+                if edge.get('to') == stock_node:
+                    relationship = edge.get('type', '')
+
+                    # Positive relationship types
+                    if relationship in ['SUPPORTS', 'STRENGTHENS', 'BENEFITS_FROM', 'ALIGNED_WITH']:
+                        from_node_id = edge['from']
+                        from_node = self.graph.get_node(from_node_id)
+                        from_name = from_node.get('data', {}).get('name', from_node_id) if from_node else from_node_id
+                        strength = edge.get('strength', 0.5)
+
+                        catalysts.append(f"{from_name} {relationship.lower()} stock (strength: {strength:.2f})")
+
+        return catalysts[:5]  # Top 5 catalysts
+
+    def compare_stocks(self, symbols: List[str], context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Side-by-side comparison of multiple stocks
+
+        Migrated from equity_agent.compare_stocks()
+        Compares fundamentals, valuations, and relative strengths
+        """
+        if context is None:
+            context = {}
+
+        comparisons = {}
+
+        for symbol in symbols:
+            try:
+                # Get comprehensive analysis for each stock
+                analysis = self.analyze_stock_comprehensive(symbol, context)
+                comparisons[symbol] = {
+                    'dcf_value': analysis.get('dcf_valuation', {}).get('intrinsic_value'),
+                    'roic': analysis.get('roic', {}).get('roic'),
+                    'macro_risk_count': len(analysis.get('risk_factors', [])),
+                    'catalyst_count': len(analysis.get('catalysts', [])),
+                    'sector': analysis.get('sector_position', {}).get('sector_name'),
+                    'peer_count': analysis.get('sector_position', {}).get('peer_count', 0)
+                }
+            except Exception as e:
+                comparisons[symbol] = {'error': str(e)}
+
+        return {
+            'timestamp': datetime.now().isoformat(),
+            'symbols_compared': symbols,
+            'comparisons': comparisons,
+            'analysis_type': 'stock_comparison'
+        }
+    # ==================== MACRO ECONOMY ANALYSIS ====================
+    # Migrated from macro_agent.py
+
+    def analyze_economy(self, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Comprehensive macroeconomic analysis including regime detection
+
+        Migrated from macro_agent.analyze_economy()
+        Analyzes key economic indicators and determines current economic regime
+        """
+        if context is None:
+            context = {}
+
+        key_indicators = [
+            'GDP', 'CPI', 'UNEMPLOYMENT', 'FED_RATE',
+            'M2', 'TREASURY_10Y', 'VIX', 'DXY'
+        ]
+
+        analysis = {
+            'timestamp': datetime.now().isoformat(),
+            'indicators': {},
+            'regime': None,
+            'risks': [],
+            'opportunities': []
+        }
+
+        # Analyze each indicator
+        for indicator in key_indicators:
+            # Query graph for indicator node
+            indicator_nodes = [
+                node_id for node_id, node in self.graph.get_all_nodes()
+                if node.get('type') == 'indicator' and
+                   node.get('data', {}).get('name') == indicator
+            ]
+
+            if indicator_nodes:
+                node_id = indicator_nodes[0]
+                node = self.graph.get_node(node_id)
+                value = node.get('data', {}).get('value')
+
+                # Get forecast if available
+                forecast_data = {}
+                if hasattr(self.graph, 'forecast'):
+                    forecast_data = self.graph.forecast(node_id)
+
+                analysis['indicators'][indicator] = {
+                    'current': value,
+                    'forecast': forecast_data.get('forecast', 'neutral'),
+                    'confidence': forecast_data.get('confidence', 0.5),
+                    'key_drivers': forecast_data.get('key_drivers', [])
+                }
+
+        # Determine economic regime
+        analysis['regime'] = self._determine_economic_regime(analysis['indicators'])
+
+        # Identify macro risks and opportunities
+        analysis['risks'] = self._identify_macro_risks(analysis)
+        analysis['opportunities'] = self._identify_sector_opportunities(analysis)
+
+        return analysis
+
+    def _determine_economic_regime(self, indicators: Dict) -> str:
+        """
+        Determine current economic regime based on indicator forecasts
+
+        Migrated from macro_agent._determine_regime()
+        Returns: goldilocks, stagflation, overheating, recession, or transitional
+        """
+        gdp = indicators.get('GDP', {})
+        inflation = indicators.get('CPI', {})
+
+        if not gdp or not inflation:
+            return 'insufficient_data'
+
+        growth_outlook = gdp.get('forecast', 'neutral')
+        inflation_outlook = inflation.get('forecast', 'neutral')
+
+        # Regime determination logic
+        if growth_outlook == 'bullish' and inflation_outlook == 'bearish':
+            return 'goldilocks'  # Good growth, low inflation
+        elif growth_outlook == 'bearish' and inflation_outlook == 'bullish':
+            return 'stagflation'  # Low growth, high inflation
+        elif growth_outlook == 'bullish' and inflation_outlook == 'bullish':
+            return 'overheating'  # High growth, high inflation
+        elif growth_outlook == 'bearish' and inflation_outlook == 'bearish':
+            return 'recession'  # Low growth, low inflation
+        else:
+            return 'transitional'
+
+    def _identify_macro_risks(self, analysis: Dict) -> List[str]:
+        """Identify macroeconomic risks based on indicator analysis"""
+        risks = []
+
+        indicators = analysis.get('indicators', {})
+
+        # Check for recession signals
+        if indicators.get('GDP', {}).get('forecast') == 'bearish':
+            risks.append("GDP forecast bearish - recession risk")
+
+        # Check for inflation concerns
+        if indicators.get('CPI', {}).get('forecast') == 'bullish':
+            risks.append("Inflation rising - purchasing power erosion")
+
+        # Check for rate risk
+        if indicators.get('FED_RATE', {}).get('forecast') == 'bullish':
+            risks.append("Rising rates - valuation compression risk")
+
+        # Check for market stress
+        vix = indicators.get('VIX', {})
+        if vix.get('current') and vix['current'] > 25:
+            risks.append(f"Elevated market volatility (VIX: {vix['current']})")
+
+        return risks
+
+    def _identify_sector_opportunities(self, analysis: Dict) -> List[str]:
+        """Identify sector opportunities based on economic regime"""
+        opportunities = []
+        regime = analysis.get('regime')
+
+        # Regime-based sector recommendations
+        if regime == 'goldilocks':
+            opportunities.append("Technology sector - benefits from growth + low rates")
+            opportunities.append("Consumer discretionary - strong demand environment")
+        elif regime == 'stagflation':
+            opportunities.append("Energy sector - inflation hedge")
+            opportunities.append("Commodities - real asset protection")
+        elif regime == 'recession':
+            opportunities.append("Defensive sectors - utilities, healthcare")
+            opportunities.append("Quality companies - pricing power")
+        elif regime == 'overheating':
+            opportunities.append("Financials - benefit from rising rates")
+            opportunities.append("Materials - supply constraints")
+
+        return opportunities
+
+    def analyze_macro_data(self, context: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+        """
+        Analyze macroeconomic data (capability method for can_analyze_macro_data).
+
+        This is the capability routing method that accepts pre-fetched FRED data
+        and provides comprehensive macro analysis.
+
+        Args:
+            context: Dict with gdp_data, cpi_data, unemployment_data, fed_funds_data
+            **kwargs: Individual data series (gdp_data, cpi_data, etc.)
+
+        Returns:
+            Dict with regime, cycle_phase, risks, opportunities, indicators
+        """
+        # Accept data from either context or kwargs
+        context = context or {}
+        gdp_data = kwargs.get('gdp_data') or context.get('gdp_data', {})
+        cpi_data = kwargs.get('cpi_data') or context.get('cpi_data', {})
+        unemployment_data = kwargs.get('unemployment_data') or context.get('unemployment_data', {})
+        fed_funds_data = kwargs.get('fed_funds_data') or context.get('fed_funds_data', {})
+
+        # Build context for analyze_macro_context
+        analysis_context = {
+            'gdp_data': gdp_data,
+            'cpi_data': cpi_data,
+            'unemployment_data': unemployment_data,
+            'fed_funds_data': fed_funds_data
+        }
+
+        # Delegate to analyze_macro_context
+        return self.analyze_macro_context(analysis_context)
+
+    def analyze_systemic_risk(self, context: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+        """
+        Analyze systemic risk including credit cycles and empire cycles (capability method for can_analyze_systemic_risk).
+
+        This is the capability routing method that performs deep macro analysis
+        with systemic risk overlay (debt/GDP, inequality, credit stress indicators).
+
+        Args:
+            context: Dict with base economic data + optional systemic_data
+            **kwargs: Individual data series
+
+        Returns:
+            Dict with comprehensive systemic analysis including:
+            - credit_cycle: Credit cycle phase, stress level, debt metrics
+            - empire_cycle: Empire stage, structural risk, long-term outlook
+            - systemic_risk: Composite risk score (0-100)
+            - forecast_confidence: Confidence adjustment based on systemic risks
+        """
+        # Accept data from either context or kwargs
+        context = context or {}
+        
+        # Extract base economic data
+        gdp_data = kwargs.get('gdp_data') or context.get('gdp_data', {})
+        cpi_data = kwargs.get('cpi_data') or context.get('cpi_data', {})
+        unemployment_data = kwargs.get('unemployment_data') or context.get('unemployment_data', {})
+        fed_funds_data = kwargs.get('fed_funds_data') or context.get('fed_funds_data', {})
+        
+        # Extract systemic data (if provided)
+        systemic_data = kwargs.get('systemic_data') or context.get('systemic_data', {})
+
+        # Build context for analyze_macro_context with systemic analysis enabled
+        analysis_context = {
+            'gdp_data': gdp_data,
+            'cpi_data': cpi_data,
+            'unemployment_data': unemployment_data,
+            'fed_funds_data': fed_funds_data,
+            'systemic_data': systemic_data,
+            'include_systemic_analysis': True,  # Enable systemic analysis
+            'start_date': context.get('start_date'),
+            'end_date': context.get('end_date')
+        }
+
+        # Delegate to analyze_macro_context with systemic analysis enabled
+        return self.analyze_macro_context(analysis_context)
+
+    def analyze_macro_context(self, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Analyze macroeconomic context using FRED data (Trinity 3.0 GDP Refresh Flow).
+
+        Internal implementation method. Use analyze_macro_data() for capability routing.
+
+        This method provides:
+        - GDP Quarter-over-Quarter growth rate
+        - CPI Year-over-Year inflation rate
+        - Economic cycle phase detection (expansion/peak/contraction/trough)
+        - Regime classification (goldilocks/stagflation/recession/overheating)
+        - Macro risks and sector opportunities
+
+        Args:
+            context: Dict with either:
+                     - Pre-fetched data: gdp_data, cpi_data, unemployment_data, fed_funds_data
+                     - OR query params: series, start_date, end_date (will fetch data)
+
+        Returns:
+            Dict with regime, cycle_phase, risks, opportunities, indicators
+        """
+        if context is None:
+            context = {}
+
+        # Check if we have pre-fetched data (from economic_dashboard.py)
+        gdp_data = context.get('gdp_data')
+        cpi_data = context.get('cpi_data')
+        unemployment_data = context.get('unemployment_data')
+        fed_funds_data = context.get('fed_funds_data')
+
+        # If data not provided, fetch it using capability routing
+        if not (gdp_data and cpi_data and unemployment_data and fed_funds_data):
+            if not hasattr(self, 'runtime') or not self.runtime:
+                return {
+                    'error': 'Runtime not available for capability routing',
+                    'note': 'Either provide pre-fetched data or ensure runtime is set'
+                }
+
+            # Execute through capability routing to get FRED data
+            fred_data = self.runtime.execute_by_capability(
+                'can_fetch_economic_data',
+                context={
+                    'capability': 'can_fetch_economic_data',
+                    'series': context.get('series'),
+                    'start_date': context.get('start_date'),
+                    'end_date': context.get('end_date')
+                }
+            )
+
+            if 'error' in fred_data:
+                return {
+                    'error': f"Failed to fetch economic data: {fred_data['error']}",
+                    'note': 'Configure FRED_API_KEY environment variable'
+                }
+
+            # Extract series data from fetch result
+            series = fred_data.get('series', {})
+            gdp_data = series.get('GDP', {})
+            cpi_data = series.get('CPIAUCSL', {})
+            unemployment_data = series.get('UNRATE', {})
+            fed_funds_data = series.get('DFF', {})
+
+        # Calculate GDP QoQ (Quarter-over-Quarter)
+        gdp_qoq = self._calculate_gdp_qoq(gdp_data)
+
+        # Calculate CPI YoY (Year-over-Year)
+        cpi_yoy = self._calculate_cpi_yoy(cpi_data)
+
+        # Detect economic cycle phase
+        cycle_phase = self._detect_cycle_phase(gdp_qoq, unemployment_data, fed_funds_data)
+
+        # Check if systemic analysis is requested
+        include_systemic = context.get('include_systemic_analysis', False)
+        credit_cycle = None
+        empire_cycle = None
+        systemic_risk = None
+
+        # OPTIONAL: Perform systemic risk analysis if requested
+        if include_systemic:
+            # Fetch systemic indicators (debt/GDP, inequality, etc.)
+            systemic_data = context.get('systemic_data', {})
+            
+            # If systemic data not pre-fetched, fetch it
+            if not systemic_data and hasattr(self, 'runtime') and self.runtime:
+                try:
+                    systemic_fred_data = self.runtime.execute_by_capability(
+                        'can_fetch_economic_data',
+                        context={
+                            'capability': 'can_fetch_economic_data',
+                            'series': ['GFDEGDQ188S', 'SIPOVGINIUSA', 'HDTGPDUSQ163N', 'TDSP', 'DRCCLACBS', 'EPUSOVDEBT'],
+                            'start_date': context.get('start_date'),
+                            'end_date': context.get('end_date')
+                        }
+                    )
+                    if 'series' in systemic_fred_data:
+                        systemic_data = systemic_fred_data['series']
+                except Exception as e:
+                    self.logger.warning(f"Failed to fetch systemic indicators: {e}")
+
+            # Extract systemic values
+            debt_gdp = systemic_data.get('GFDEGDQ188S', {}).get('latest_value')
+            gini = systemic_data.get('SIPOVGINIUSA', {}).get('latest_value')
+            household_debt_gdp = systemic_data.get('HDTGPDUSQ163N', {}).get('latest_value')
+            debt_service = systemic_data.get('TDSP', {}).get('latest_value')
+            credit_delinquency = systemic_data.get('DRCCLACBS', {}).get('latest_value')
+            sovereign_uncertainty = systemic_data.get('EPUSOVDEBT', {}).get('latest_value')
+
+            # Perform credit cycle analysis
+            credit_cycle = self._analyze_credit_cycle(
+                debt_gdp=debt_gdp,
+                household_debt_gdp=household_debt_gdp,
+                credit_delinquency=credit_delinquency,
+                debt_service=debt_service
+            )
+
+            # Perform empire cycle analysis
+            empire_cycle = self._analyze_empire_cycle(
+                debt_gdp=debt_gdp,
+                inequality_gini=gini,
+                sovereign_debt_uncertainty=sovereign_uncertainty,
+                credit_cycle_phase=credit_cycle.get('cycle_phase', 'unknown')
+            )
+
+            # Calculate systemic risk score
+            systemic_risk = self._calculate_systemic_risk_score(
+                credit_cycle=credit_cycle,
+                empire_cycle=empire_cycle
+            )
+
+        # Determine economic regime (with optional systemic overlay)
+        regime = self._determine_regime_from_data(
+            gdp_qoq,
+            cpi_yoy,
+            cycle_phase,
+            debt_gdp=context.get('systemic_data', {}).get('GFDEGDQ188S', {}).get('latest_value') if include_systemic else None,
+            credit_cycle=credit_cycle,
+            empire_cycle=empire_cycle,
+            systemic_risk=systemic_risk
+        )
+
+        # Identify macro risks (base)
+        macro_risks = self._identify_macro_risks_from_data(gdp_qoq, cpi_yoy, unemployment_data, {
+            'series': {
+                'GDP': gdp_data,
+                'CPIAUCSL': cpi_data,
+                'UNRATE': unemployment_data,
+                'DFF': fed_funds_data
+            }
+        })
+
+        # Add systemic risks if available
+        if include_systemic and systemic_risk:
+            macro_risks.extend(systemic_risk.get('contributing_factors', []))
+
+        # Identify sector opportunities (use base regime if dict)
+        base_regime = regime if isinstance(regime, str) else regime.get('regime')
+        opportunities = self._identify_opportunities_from_regime(base_regime, gdp_qoq, cpi_yoy)
+
+        # Build analysis result
+        analysis = {
+            'timestamp': datetime.now().isoformat(),
+            'gdp_qoq': round(gdp_qoq, 2) if gdp_qoq is not None else None,
+            'cpi_yoy': round(cpi_yoy, 2) if cpi_yoy is not None else None,
+            'cycle_phase': cycle_phase,
+            'regime': regime,  # Can be str or dict depending on systemic analysis
+            'macro_risks': macro_risks,
+            'opportunities': opportunities,
+            'indicators': {
+                'gdp': {
+                    'latest': gdp_data.get('latest_value'),
+                    'date': gdp_data.get('latest_date'),
+                    'qoq_growth': gdp_qoq
+                },
+                'cpi': {
+                    'latest': cpi_data.get('latest_value'),
+                    'date': cpi_data.get('latest_date'),
+                    'yoy_change': cpi_yoy
+                },
+                'unemployment': {
+                    'latest': unemployment_data.get('latest_value'),
+                    'date': unemployment_data.get('latest_date')
+                },
+                'fed_funds': {
+                    'latest': fed_funds_data.get('latest_value'),
+                    'date': fed_funds_data.get('latest_date')
+                }
+            },
+            '_metadata': {
+                'source': 'pre-fetched',
+                'cache_age_seconds': 0,
+                'health': {},
+                'analysis_type': 'macro_context',
+                'systemic_analysis_included': include_systemic
+            }
+        }
+
+        # Add systemic analysis results if available
+        if include_systemic:
+            analysis['systemic_analysis'] = {
+                'credit_cycle': credit_cycle,
+                'empire_cycle': empire_cycle,
+                'systemic_risk': systemic_risk
+            }
+
+            # Add confidence adjustment if we have a base confidence
+            if systemic_risk:
+                base_confidence = 0.75  # Default macro analysis confidence
+                adjusted_conf = self._adjust_forecast_confidence(
+                    base_confidence=base_confidence,
+                    systemic_risk_score=systemic_risk.get('systemic_risk_score', 50),
+                    credit_cycle_phase=credit_cycle.get('cycle_phase', 'unknown'),
+                    empire_stage=empire_cycle.get('empire_stage', 'unknown')
+                )
+                analysis['forecast_confidence'] = adjusted_conf
+
+        # Store in knowledge graph if available
+        if self.graph and hasattr(self, 'store_result'):
+            node_id = self.store_result(analysis)
+            analysis['node_id'] = node_id
+
+        return analysis
+
+    def _calculate_gdp_qoq(self, gdp_data: Dict) -> Optional[float]:
+        """Calculate GDP Quarter-over-Quarter growth rate"""
+        observations = gdp_data.get('observations', [])
+        if len(observations) < 2:
+            return None
+
+        # Get last two quarters
+        latest = observations[-1]['value']
+        previous = observations[-2]['value']
+
+        # Calculate QoQ growth rate
+        qoq = ((latest - previous) / previous) * 100 if previous != 0 else 0
+        return qoq
+
+    def _calculate_cpi_yoy(self, cpi_data: Dict) -> Optional[float]:
+        """Calculate CPI Year-over-Year inflation rate"""
+        observations = cpi_data.get('observations', [])
+        if len(observations) < 12:
+            return None
+
+        # Get latest and 12 months ago
+        latest = observations[-1]['value']
+        year_ago = observations[-12]['value']
+
+        # Calculate YoY change
+        yoy = ((latest - year_ago) / year_ago) * 100 if year_ago != 0 else 0
+        return yoy
+
+    def _detect_cycle_phase(self, gdp_qoq: Optional[float], unemployment_data: Dict, fed_funds_data: Dict) -> str:
+        """Detect economic cycle phase based on indicators"""
+        if gdp_qoq is None:
+            return 'unknown'
+
+        unemployment_rate = unemployment_data.get('latest_value')
+        fed_funds_rate = fed_funds_data.get('latest_value')
+
+        # Expansion: positive GDP growth, falling unemployment
+        if gdp_qoq > 2.0:
+            return 'expansion'
+        # Peak: slowing growth, tight labor market, high rates
+        elif gdp_qoq > 0 and gdp_qoq <= 2.0 and unemployment_rate and unemployment_rate < 4.0:
+            return 'peak'
+        # Contraction: negative GDP growth
+        elif gdp_qoq < 0:
+            return 'contraction'
+        # Trough: weak growth, high unemployment, low rates
+        elif gdp_qoq >= 0 and unemployment_rate and unemployment_rate > 6.0:
+            return 'trough'
+        else:
+            return 'transitional'
+
+    def _determine_regime_from_data(
+        self,
+        gdp_qoq: Optional[float],
+        cpi_yoy: Optional[float],
+        cycle_phase: str,
+        debt_gdp: Optional[float] = None,
+        credit_cycle: Optional[Dict[str, Any]] = None,
+        empire_cycle: Optional[Dict[str, Any]] = None,
+        systemic_risk: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Determine economic regime from raw data with optional systemic risk overlay.
+
+        Args:
+            gdp_qoq: GDP quarter-over-quarter growth
+            cpi_yoy: CPI year-over-year inflation
+            cycle_phase: Economic cycle phase
+            debt_gdp: Optional federal debt to GDP ratio
+            credit_cycle: Optional credit cycle analysis dict
+            empire_cycle: Optional empire cycle analysis dict
+            systemic_risk: Optional systemic risk score dict
+
+        Returns:
+            str (backward compatible) OR Dict with enhanced systemic analysis
+        """
+        # Base regime determination (existing logic)
+        if gdp_qoq is None or cpi_yoy is None:
+            base_regime = 'insufficient_data'
+        # Goldilocks: good growth (>2%), moderate inflation (1.5-3%)
+        elif gdp_qoq > 2.0 and 1.5 < cpi_yoy < 3.0:
+            base_regime = 'goldilocks'
+        # Stagflation: weak growth (<1%), high inflation (>4%)
+        elif gdp_qoq < 1.0 and cpi_yoy > 4.0:
+            base_regime = 'stagflation'
+        # Recession: negative growth, any inflation
+        elif gdp_qoq < 0:
+            base_regime = 'recession'
+        # Overheating: strong growth (>3%), high inflation (>3%)
+        elif gdp_qoq > 3.0 and cpi_yoy > 3.0:
+            base_regime = 'overheating'
+        else:
+            base_regime = 'transitional'
+
+        # Backward compatibility: if no systemic data provided, return simple string
+        if credit_cycle is None and empire_cycle is None and systemic_risk is None:
+            return base_regime
+
+        # Enhanced mode: return dict with systemic overlay
+        result = {
+            'regime': base_regime,
+            'cycle_phase': cycle_phase,
+            'gdp_qoq': gdp_qoq,
+            'cpi_yoy': cpi_yoy
+        }
+
+        # Add systemic risk overlay if available
+        if credit_cycle:
+            result['credit_cycle'] = {
+                'phase': credit_cycle.get('cycle_phase'),
+                'stress_level': credit_cycle.get('stress_level')
+            }
+
+        if empire_cycle:
+            result['empire_cycle'] = {
+                'stage': empire_cycle.get('empire_stage'),
+                'structural_risk': empire_cycle.get('structural_risk')
+            }
+
+        if systemic_risk:
+            result['systemic_risk'] = {
+                'score': systemic_risk.get('systemic_risk_score'),
+                'level': systemic_risk.get('risk_level')
+            }
+
+        # Generate regime qualifier based on systemic risks
+        if systemic_risk and systemic_risk.get('risk_level') in ['elevated', 'high']:
+            result['regime_qualifier'] = f"{base_regime}_with_systemic_risk"
+        else:
+            result['regime_qualifier'] = base_regime
+
+        return result
+
+    def _identify_macro_risks_from_data(
+        self,
+        gdp_qoq: Optional[float],
+        cpi_yoy: Optional[float],
+        unemployment_data: Dict,
+        fred_data: Dict
+    ) -> List[str]:
+        """Identify macro risks from economic data"""
+        risks = []
+
+        # GDP risks
+        if gdp_qoq is not None:
+            if gdp_qoq < 0:
+                risks.append(f"Negative GDP growth ({gdp_qoq:.1f}% QoQ) - recession risk")
+            elif gdp_qoq < 1.0:
+                risks.append(f"Weak GDP growth ({gdp_qoq:.1f}% QoQ) - stagnation risk")
+
+        # Inflation risks
+        if cpi_yoy is not None:
+            if cpi_yoy > 4.0:
+                risks.append(f"Elevated inflation ({cpi_yoy:.1f}% YoY) - purchasing power erosion")
+            elif cpi_yoy > 3.0:
+                risks.append(f"Above-target inflation ({cpi_yoy:.1f}% YoY) - Fed hawkish risk")
+
+        # Unemployment risks
+        unemployment_rate = unemployment_data.get('latest_value')
+        if unemployment_rate and unemployment_rate > 6.0:
+            risks.append(f"Elevated unemployment ({unemployment_rate:.1f}%) - weak labor market")
+
+        # Data quality risks
+        if fred_data.get('source') == 'fallback':
+            risks.append("Using stale economic data - API unavailable")
+
+        return risks
+
+    def _identify_opportunities_from_regime(self, regime: str, gdp_qoq: Optional[float], cpi_yoy: Optional[float]) -> List[str]:
+        """Identify sector opportunities based on regime and conditions"""
+        opportunities = []
+
+        if regime == 'goldilocks':
+            opportunities.append("Technology - benefits from growth with low rates")
+            opportunities.append("Consumer Discretionary - strong demand environment")
+            opportunities.append("Industrials - capital expenditure cycle")
+        elif regime == 'stagflation':
+            opportunities.append("Energy - inflation hedge and supply constraints")
+            opportunities.append("Commodities - real asset protection")
+            opportunities.append("Utilities - defensive with pricing power")
+        elif regime == 'recession':
+            opportunities.append("Healthcare - defensive, inelastic demand")
+            opportunities.append("Consumer Staples - non-cyclical necessities")
+            opportunities.append("Quality dividend stocks - cash flow stability")
+        elif regime == 'overheating':
+            opportunities.append("Financials - benefit from rising rates")
+            opportunities.append("Materials - pricing power in tight supply")
+            opportunities.append("Real Estate - inflation hedge")
+        else:
+            opportunities.append("Diversification - uncertain regime transition")
+
+        return opportunities
+
+    # ==================== SYSTEMIC RISK ANALYSIS ====================
+    # Credit Cycle, Empire Cycle, and Long-term Structural Risk Analysis
+    # Added: October 2025 - Multi-timeframe macro prediction enhancement
+
+    def _analyze_credit_cycle(
+        self,
+        debt_gdp: Optional[float],
+        household_debt_gdp: Optional[float],
+        credit_delinquency: Optional[float],
+        debt_service: Optional[float]
+    ) -> Dict[str, Any]:
+        """
+        Analyze credit cycle phase based on debt metrics.
+
+        Credit Cycle Phases:
+        - Expansion: Rising credit, debt/GDP < 90%, low delinquencies
+        - Peak: Credit slowing, debt/GDP 90-110%, rising delinquencies
+        - Contraction: Credit declining, debt/GDP > 110%, high delinquencies
+        - Trough: Credit stabilizing, debt declining, deleveraging complete
+
+        Args:
+            debt_gdp: Federal debt to GDP ratio (%)
+            household_debt_gdp: Household debt to GDP ratio (%)
+            credit_delinquency: Credit card delinquency rate (%)
+            debt_service: Household debt service as % of income
+
+        Returns:
+            Dict with cycle_phase, stress_level, risks, confidence
+        """
+        if debt_gdp is None:
+            return {
+                'cycle_phase': 'insufficient_data',
+                'stress_level': 'unknown',
+                'risks': ['Insufficient debt data for credit cycle analysis'],
+                'confidence': 0.0
+            }
+
+        # Determine credit cycle phase
+        cycle_phase = 'transitional'
+        stress_level = 'moderate'
+        risks = []
+        warning_count = 0
+
+        # Debt sustainability thresholds (based on historical crisis levels)
+        if debt_gdp < 90:
+            if household_debt_gdp and household_debt_gdp < 75:
+                cycle_phase = 'expansion'
+                stress_level = 'low'
+            else:
+                cycle_phase = 'mid_expansion'
+                stress_level = 'moderate'
+        elif 90 <= debt_gdp <= 110:
+            cycle_phase = 'peak'
+            stress_level = 'elevated'
+            risks.append(f"Debt/GDP at {debt_gdp:.1f}% - approaching historical crisis levels")
+            warning_count += 1
+        else:  # debt_gdp > 110
+            cycle_phase = 'contraction_risk'
+            stress_level = 'high'
+            risks.append(f"Debt/GDP at {debt_gdp:.1f}% - exceeds sustainable levels (>110%)")
+            warning_count += 2
+
+        # Check household debt stress
+        if household_debt_gdp and household_debt_gdp > 85:
+            risks.append(f"Household debt/GDP at {household_debt_gdp:.1f}% - elevated consumer leverage")
+            warning_count += 1
+            if stress_level == 'low':
+                stress_level = 'moderate'
+
+        # Check credit delinquency (stress indicator)
+        if credit_delinquency:
+            if credit_delinquency > 3.0:
+                risks.append(f"Credit card delinquency at {credit_delinquency:.1f}% - financial stress")
+                warning_count += 1
+                if stress_level != 'high':
+                    stress_level = 'elevated'
+            elif credit_delinquency > 2.5:
+                risks.append(f"Rising delinquencies ({credit_delinquency:.1f}%) - monitor credit quality")
+                warning_count += 1
+
+        # Check debt service burden
+        if debt_service and debt_service > 11.0:
+            risks.append(f"Debt service at {debt_service:.1f}% of income - high burden")
+            warning_count += 1
+
+        # Calculate confidence based on data availability
+        data_points = sum([
+            debt_gdp is not None,
+            household_debt_gdp is not None,
+            credit_delinquency is not None,
+            debt_service is not None
+        ])
+        confidence = data_points / 4.0  # 0.25 to 1.0 based on data availability
+
+        return {
+            'cycle_phase': cycle_phase,
+            'stress_level': stress_level,
+            'risks': risks,
+            'warning_count': warning_count,
+            'confidence': confidence,
+            'debt_metrics': {
+                'federal_debt_gdp': debt_gdp,
+                'household_debt_gdp': household_debt_gdp,
+                'credit_delinquency': credit_delinquency,
+                'debt_service': debt_service
+            }
+        }
+
+    def _analyze_empire_cycle(
+        self,
+        debt_gdp: Optional[float],
+        inequality_gini: Optional[float],
+        sovereign_debt_uncertainty: Optional[float],
+        credit_cycle_phase: str
+    ) -> Dict[str, Any]:
+        """
+        Analyze empire cycle stage using Ray Dalio's Big Debt Cycle framework.
+
+        Empire Cycle Stages:
+        - Rising: Low debt (<60%), low inequality, strong fundamentals
+        - Prosperity: Moderate debt (60-90%), manageable inequality, stable
+        - Peak: High debt (90-120%), rising inequality, structural stress
+        - Decline: Excessive debt (>120%), high inequality, crisis risk
+
+        Ray Dalio's 8 Key Determinants (proxied by available data):
+        1. Debt burden → debt_gdp
+        2. Wealth/income gap → inequality_gini
+        3. Internal conflict → inequality_gini (proxy)
+        4. Reserve currency status → sovereign_debt_uncertainty (inverse proxy)
+
+        Args:
+            debt_gdp: Federal debt to GDP ratio (%)
+            inequality_gini: Gini coefficient (0-100 scale)
+            sovereign_debt_uncertainty: Economic policy uncertainty index
+            credit_cycle_phase: Phase from _analyze_credit_cycle
+
+        Returns:
+            Dict with empire_stage, structural_risk, long_term_outlook, confidence
+        """
+        if debt_gdp is None:
+            return {
+                'empire_stage': 'insufficient_data',
+                'structural_risk': 'unknown',
+                'long_term_outlook': 'Unable to assess without debt data',
+                'confidence': 0.0
+            }
+
+        # Determine empire cycle stage
+        empire_stage = 'transitional'
+        structural_risk = 'moderate'
+        risk_factors = []
+
+        # Stage 1: Rising Empire (healthy fundamentals)
+        if debt_gdp < 60:
+            if inequality_gini and inequality_gini < 40:
+                empire_stage = 'rising'
+                structural_risk = 'low'
+            else:
+                empire_stage = 'early_prosperity'
+                structural_risk = 'moderate'
+
+        # Stage 2: Prosperity (manageable imbalances)
+        elif 60 <= debt_gdp < 90:
+            empire_stage = 'prosperity'
+            structural_risk = 'moderate'
+            if inequality_gini and inequality_gini > 45:
+                risk_factors.append("Rising inequality during prosperity - social cohesion stress")
+
+        # Stage 3: Peak Empire (warning signs)
+        elif 90 <= debt_gdp <= 120:
+            empire_stage = 'peak'
+            structural_risk = 'elevated'
+            risk_factors.append(f"Debt at {debt_gdp:.1f}% - late-stage prosperity with structural imbalances")
+
+            if inequality_gini and inequality_gini > 45:
+                risk_factors.append(f"High inequality (Gini {inequality_gini:.1f}) - internal conflict risk")
+
+        # Stage 4: Declining Empire (crisis conditions)
+        else:  # debt_gdp > 120
+            empire_stage = 'late_stage_decline'
+            structural_risk = 'high'
+            risk_factors.append(f"Excessive debt ({debt_gdp:.1f}%) - Japan/Greece crisis levels")
+
+            if inequality_gini and inequality_gini > 45:
+                risk_factors.append(f"High inequality (Gini {inequality_gini:.1f}) + excessive debt - dual crisis risk")
+
+        # Check sovereign debt uncertainty (reserve currency stress)
+        if sovereign_debt_uncertainty and sovereign_debt_uncertainty > 200:
+            risk_factors.append(f"Elevated sovereign debt uncertainty ({sovereign_debt_uncertainty:.0f}) - currency stress")
+            if structural_risk == 'moderate':
+                structural_risk = 'elevated'
+
+        # Credit cycle alignment (amplifies empire cycle risks)
+        if credit_cycle_phase in ['contraction_risk', 'peak']:
+            risk_factors.append(f"Credit cycle at {credit_cycle_phase} - amplifies structural risks")
+
+        # Generate long-term outlook
+        long_term_outlook = self._generate_empire_outlook(empire_stage, structural_risk, risk_factors)
+
+        # Calculate confidence
+        data_points = sum([
+            debt_gdp is not None,
+            inequality_gini is not None,
+            sovereign_debt_uncertainty is not None,
+            credit_cycle_phase != 'insufficient_data'
+        ])
+        confidence = data_points / 4.0
+
+        return {
+            'empire_stage': empire_stage,
+            'structural_risk': structural_risk,
+            'risk_factors': risk_factors,
+            'long_term_outlook': long_term_outlook,
+            'confidence': confidence,
+            'dalio_proxies': {
+                'debt_burden': debt_gdp,
+                'inequality': inequality_gini,
+                'currency_stress': sovereign_debt_uncertainty
+            }
+        }
+
+    def _generate_empire_outlook(self, empire_stage: str, structural_risk: str, risk_factors: List[str]) -> str:
+        """Generate narrative long-term outlook based on empire cycle analysis"""
+        outlooks = {
+            'rising': "Favorable long-term trajectory with healthy fundamentals and sustainable debt levels",
+            'early_prosperity': "Positive outlook with room for growth, monitor debt accumulation trends",
+            'prosperity': "Stable near-term with manageable imbalances, watch for emerging risks",
+            'peak': "Late-cycle dynamics present - prepare for potential deleveraging or policy shifts",
+            'late_stage_decline': "Structural vulnerabilities suggest elevated long-term risk of debt crisis or major policy intervention",
+            'transitional': "Mixed signals - insufficient data for definitive long-term assessment"
+        }
+
+        base_outlook = outlooks.get(empire_stage, "Unknown empire stage")
+
+        # Add risk qualifier
+        if structural_risk == 'high' and len(risk_factors) >= 3:
+            return f"{base_outlook}. Multiple structural risks detected - significant long-term headwinds."
+        elif structural_risk == 'elevated':
+            return f"{base_outlook}. Monitor structural indicators closely."
+        else:
+            return base_outlook
+
+    def _calculate_systemic_risk_score(
+        self,
+        credit_cycle: Dict[str, Any],
+        empire_cycle: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Calculate composite systemic risk score (0-100 scale).
+
+        Combines credit cycle stress + empire cycle structural risks
+        into a single systemic risk indicator.
+
+        Score Interpretation:
+        - 0-25: Low systemic risk
+        - 25-50: Moderate systemic risk
+        - 50-75: Elevated systemic risk
+        - 75-100: High systemic risk (crisis conditions)
+
+        Args:
+            credit_cycle: Output from _analyze_credit_cycle
+            empire_cycle: Output from _analyze_empire_cycle
+
+        Returns:
+            Dict with systemic_risk_score, risk_level, contributing_factors
+        """
+        # Base score from credit cycle stress
+        credit_stress_map = {
+            'low': 10,
+            'moderate': 30,
+            'elevated': 55,
+            'high': 80,
+            'unknown': 50
+        }
+        credit_score = credit_stress_map.get(credit_cycle.get('stress_level', 'unknown'), 50)
+
+        # Base score from empire cycle structural risk
+        structural_risk_map = {
+            'low': 10,
+            'moderate': 30,
+            'elevated': 55,
+            'high': 80,
+            'unknown': 50
+        }
+        empire_score = structural_risk_map.get(empire_cycle.get('structural_risk', 'unknown'), 50)
+
+        # Weighted average (60% credit cycle, 40% empire cycle)
+        # Credit cycle is more immediate risk
+        base_score = (credit_score * 0.6) + (empire_score * 0.4)
+
+        # Add warning amplifiers
+        warning_count = credit_cycle.get('warning_count', 0)
+        risk_factor_count = len(empire_cycle.get('risk_factors', []))
+
+        # Each additional warning/risk adds 3 points (max +15)
+        amplifier = min((warning_count + risk_factor_count) * 3, 15)
+        systemic_risk_score = min(base_score + amplifier, 100)
+
+        # Determine risk level
+        if systemic_risk_score < 25:
+            risk_level = 'low'
+        elif systemic_risk_score < 50:
+            risk_level = 'moderate'
+        elif systemic_risk_score < 75:
+            risk_level = 'elevated'
+        else:
+            risk_level = 'high'
+
+        # Collect contributing factors
+        contributing_factors = []
+        contributing_factors.extend(credit_cycle.get('risks', []))
+        contributing_factors.extend(empire_cycle.get('risk_factors', []))
+
+        # Calculate overall confidence
+        credit_confidence = credit_cycle.get('confidence', 0.5)
+        empire_confidence = empire_cycle.get('confidence', 0.5)
+        overall_confidence = (credit_confidence + empire_confidence) / 2.0
+
+        return {
+            'systemic_risk_score': round(systemic_risk_score, 1),
+            'risk_level': risk_level,
+            'contributing_factors': contributing_factors,
+            'confidence': overall_confidence,
+            'components': {
+                'credit_cycle_score': round(credit_score, 1),
+                'empire_cycle_score': round(empire_score, 1),
+                'amplifier': round(amplifier, 1)
+            }
+        }
+
+    def _adjust_forecast_confidence(
+        self,
+        base_confidence: float,
+        systemic_risk_score: float,
+        credit_cycle_phase: str,
+        empire_stage: str
+    ) -> Dict[str, Any]:
+        """
+        Adjust forecast confidence based on systemic risk factors.
+
+        Higher systemic risks = lower confidence in near-term predictions
+        (structural uncertainties create wider outcome distributions)
+
+        Confidence Adjustments:
+        - Low systemic risk (0-25): +5% confidence (stable environment)
+        - Moderate risk (25-50): No adjustment (baseline)
+        - Elevated risk (50-75): -15% confidence (increased uncertainty)
+        - High risk (75-100): -30% confidence (crisis dynamics unpredictable)
+
+        Additional Adjustments:
+        - Credit cycle peak: -10% (financial fragility)
+        - Empire decline: -10% (structural instability)
+
+        Args:
+            base_confidence: Original forecast confidence (0-1 scale)
+            systemic_risk_score: Score from _calculate_systemic_risk_score
+            credit_cycle_phase: Phase from _analyze_credit_cycle
+            empire_stage: Stage from _analyze_empire_cycle
+
+        Returns:
+            Dict with adjusted_confidence, adjustment_factors, explanation
+        """
+        # Start with base confidence
+        adjusted = base_confidence
+        adjustments = []
+
+        # Systemic risk adjustment
+        if systemic_risk_score < 25:
+            adjusted *= 1.05  # +5% in stable environment
+            adjustments.append("Stable systemic environment (+5%)")
+        elif 25 <= systemic_risk_score < 50:
+            # No adjustment - baseline
+            adjustments.append("Moderate systemic risk (baseline)")
+        elif 50 <= systemic_risk_score < 75:
+            adjusted *= 0.85  # -15% for elevated risk
+            adjustments.append("Elevated systemic risk (-15%)")
+        else:  # systemic_risk_score >= 75
+            adjusted *= 0.70  # -30% for high risk
+            adjustments.append("High systemic risk - crisis dynamics (-30%)")
+
+        # Credit cycle adjustment
+        if credit_cycle_phase in ['peak', 'contraction_risk']:
+            adjusted *= 0.90  # -10% for financial fragility
+            adjustments.append(f"Credit cycle {credit_cycle_phase} - financial fragility (-10%)")
+
+        # Empire cycle adjustment
+        if empire_stage in ['late_stage_decline', 'peak']:
+            adjusted *= 0.90  # -10% for structural instability
+            adjustments.append(f"Empire stage {empire_stage} - structural instability (-10%)")
+
+        # Cap at reasonable bounds
+        adjusted = max(0.05, min(adjusted, 0.95))  # Keep between 5% and 95%
+
+        # Generate explanation
+        change_pct = ((adjusted - base_confidence) / base_confidence) * 100 if base_confidence > 0 else 0
+        if abs(change_pct) < 1:
+            explanation = "Confidence unchanged - systemic factors neutral"
+        elif change_pct > 0:
+            explanation = f"Confidence increased {change_pct:.1f}% due to stable systemic environment"
+        else:
+            explanation = f"Confidence reduced {abs(change_pct):.1f}% due to systemic risks"
+
+        return {
+            'adjusted_confidence': round(adjusted, 3),
+            'base_confidence': base_confidence,
+            'adjustment_factors': adjustments,
+            'change_percent': round(change_pct, 1),
+            'explanation': explanation
+        }
+
+    # ==================== PORTFOLIO RISK ANALYSIS ====================
+    # Migrated from risk_agent.py
+
+    def analyze_portfolio_risk(self, holdings: Dict[str, float], context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Comprehensive portfolio risk analysis
+
+        Migrated from risk_agent.analyze_portfolio_risk()
+
+        Args:
+            holdings: Dict of {symbol: position_size_percent}
+            context: Additional context
+
+        Returns:
+            Dict with concentration, correlation, and risk metrics
+        """
+        if context is None:
+            context = {}
+
+        analysis = {
+            'timestamp': datetime.now().isoformat(),
+            'holdings_count': len(holdings),
+            'concentration': self._check_concentration_risk(holdings),
+            'correlations': self._analyze_portfolio_correlations(holdings),
+            'macro_sensitivity': self._analyze_macro_sensitivity(holdings),
+            'recommendations': []
+        }
+
+        # Generate risk recommendations
+        analysis['recommendations'] = self._generate_portfolio_recommendations(analysis)
+
+        return analysis
+
+    def _check_concentration_risk(self, holdings: Dict[str, float]) -> Dict:
+        """
+        Check for concentration risk in portfolio
+
+        Migrated from risk_agent._check_concentration()
+        """
+        # Calculate concentration metrics
+        total_weight = sum(holdings.values())
+        if total_weight == 0:
+            return {'error': 'Empty portfolio'}
+
+        # Normalize weights
+        normalized = {k: (v / total_weight) * 100 for k, v in holdings.items()}
+
+        # Find largest positions
+        sorted_positions = sorted(normalized.items(), key=lambda x: x[1], reverse=True)
+        top_5 = sorted_positions[:5]
+        top_5_weight = sum([pos[1] for pos in top_5])
+
+        # Concentration flags
+        flags = []
+        if any(weight > 20 for _, weight in sorted_positions):
+            flags.append("Single position >20% - high concentration risk")
+        if top_5_weight > 60:
+            flags.append(f"Top 5 positions = {top_5_weight:.1f}% - portfolio concentration")
+
+        return {
+            'largest_position': sorted_positions[0] if sorted_positions else None,
+            'top_5_concentration': top_5_weight,
+            'flags': flags,
+            'positions': sorted_positions
+        }
+
+    def _analyze_portfolio_correlations(self, holdings: Dict[str, float]) -> Dict:
+        """
+        Analyze correlations between portfolio holdings
+
+        Migrated from risk_agent._analyze_correlations()
+        Simplified implementation - full correlation requires historical data
+        """
+        # Simplified: Check sector concentration as proxy for correlation
+        sector_exposure = {}
+
+        for symbol in holdings.keys():
+            # Find company node
+            company_node = self._find_or_create_company_node(symbol)
+            node_data = self.graph.get_node(company_node)
+            sector = node_data.get('data', {}).get('sector', 'Unknown') if node_data else 'Unknown'
+
+            sector_exposure[sector] = sector_exposure.get(sector, 0) + holdings[symbol]
+
+        # Identify high correlation risk (sector concentration)
+        total = sum(sector_exposure.values())
+        sector_pcts = {k: (v/total)*100 for k, v in sector_exposure.items()} if total > 0 else {}
+
+        flags = []
+        for sector, pct in sector_pcts.items():
+            if pct > 40:
+                flags.append(f"{sector} sector >40% - high sector correlation risk")
+
+        return {
+            'sector_exposure': sector_pcts,
+            'flags': flags,
+            'note': 'Sector concentration used as correlation proxy'
+        }
+
+    def _analyze_macro_sensitivity(self, holdings: Dict[str, float]) -> Dict:
+        """
+        Analyze portfolio sensitivity to macroeconomic factors
+
+        Migrated from risk_agent._analyze_macro_sensitivity()
+        """
+        # Aggregate macro influences across portfolio
+        macro_exposures = {}
+
+        for symbol, weight in holdings.items():
+            try:
+                # Get comprehensive analysis
+                analysis = self.analyze_stock_comprehensive(symbol)
+                macro_influences = analysis.get('macro_influences', [])
+
+                # Weight the influences by position size
+                for influence in macro_influences:
+                    factor = influence['factor_name']
+                    strength = influence['strength'] * (weight / 100)  # Weight by position
+
+                    macro_exposures[factor] = macro_exposures.get(factor, 0) + strength
+
+            except Exception as e:
+                logger.warning(f"Error analyzing macro sensitivity for {symbol}: {e}")
+                # Skip stocks with errors
+
+        # Sort by exposure strength
+        sorted_exposures = sorted(macro_exposures.items(), key=lambda x: x[1], reverse=True)
+
+        return {
+            'top_exposures': sorted_exposures[:5],
+            'total_factors': len(macro_exposures),
+            'note': 'Weighted by position size'
+        }
+
+    def _generate_portfolio_recommendations(self, analysis: Dict) -> List[str]:
+        """Generate risk management recommendations based on portfolio analysis"""
+        recommendations = []
+
+        # Concentration recommendations
+        conc_flags = analysis.get('concentration', {}).get('flags', [])
+        if conc_flags:
+            recommendations.append("Consider reducing largest positions to improve diversification")
+
+        # Correlation recommendations
+        corr_flags = analysis.get('correlations', {}).get('flags', [])
+        if corr_flags:
+            recommendations.append("High sector concentration detected - diversify across sectors")
+
+        # Macro sensitivity recommendations
+        top_exposures = analysis.get('macro_sensitivity', {}).get('top_exposures', [])
+        if top_exposures and top_exposures[0][1] > 0.5:
+            recommendations.append(f"High exposure to {top_exposures[0][0]} - consider hedging")
+
+        if not recommendations:
+            recommendations.append("Portfolio shows reasonable diversification")
+
+        return recommendations
+
+    # ============================================================================
+    # OPTIONS ANALYSIS METHODS (Added for options trading capabilities)
+    # ============================================================================
+
+    def analyze_options_greeks(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze Greeks for options positioning.
+
+        Args:
+            context: Must contain 'ticker' and optionally 'expiration'
+
+        Returns:
+            Dictionary with net_delta, total_gamma, max_pain, positioning, etc.
+        """
+        self._ensure_options_analyzer()
+
+        if not self.options_analyzer:
+            return {
+                'error': 'Polygon capability not available',
+                'note': 'Configure POLYGON_API_KEY to enable options analysis'
+            }
+
+        ticker = context.get('ticker', '')
+        if not ticker:
+            return {'error': 'Ticker required for Greeks analysis'}
+
+        expiration = context.get('expiration')
+        return self.options_analyzer.analyze_greeks(ticker, expiration)
+
+    def analyze_options_flow(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze options flow for market sentiment.
+
+        Args:
+            context: Must contain 'tickers' (list of symbols)
+
+        Returns:
+            Dictionary with put_call_ratio, sentiment, confidence, direction, flow_data
+        """
+        self._ensure_options_analyzer()
+
+        if not self.options_analyzer:
+            return {
+                'error': 'Polygon capability not available',
+                'note': 'Configure POLYGON_API_KEY to enable options analysis'
+            }
+
+        tickers = context.get('tickers', [])
+        if not tickers:
+            tickers = ['SPY']  # Default to SPY
+
+        return self.options_analyzer.analyze_flow_sentiment(tickers)
+
+    def detect_unusual_options(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Detect unusual options activity (smart money signals).
+
+        Args:
+            context: May contain 'min_premium', 'volume_oi_ratio'
+
+        Returns:
+            Dictionary with unusual_activities, top_tickers, sentiment_score
+        """
+        self._ensure_options_analyzer()
+
+        if not self.options_analyzer:
+            return {
+                'error': 'Polygon capability not available',
+                'note': 'Configure POLYGON_API_KEY to enable options analysis'
+            }
+
+        min_premium = context.get('min_premium', 10000)
+        volume_oi_ratio = context.get('volume_oi_ratio', 3.0)
+
+        return self.options_analyzer.detect_unusual_activity(
+            min_premium=min_premium,
+            volume_oi_ratio=volume_oi_ratio
+        )
+
+    def calculate_options_iv_rank(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Calculate IV rank and suggest strategies.
+
+        Args:
+            context: Must contain 'ticker', optionally 'lookback_days'
+
+        Returns:
+            Dictionary with iv_rank, iv_percentile, regime, suggested_strategies
+        """
+        self._ensure_options_analyzer()
+
+        if not self.options_analyzer:
+            return {
+                'error': 'Polygon capability not available',
+                'note': 'Configure POLYGON_API_KEY to enable options analysis'
+            }
+
+        ticker = context.get('ticker', '')
+        if not ticker:
+            return {'error': 'Ticker required for IV rank calculation'}
+
+        lookback_days = context.get('lookback_days', 252)
+        return self.options_analyzer.calculate_iv_rank(ticker, lookback_days)
+
+    # ========================================
+    # Capability Routing Wrapper Methods
+    # ========================================
+    # These public methods match the capabilities declared in AGENT_CAPABILITIES
+    # and delegate to the existing private implementation methods.
+    # This enables direct capability→method routing via AgentAdapter.
+
+    def calculate_dcf(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for DCF calculation capability.
+        Maps to: can_calculate_dcf
+
+        Returns the dcf_analysis dict directly (not wrapped) for pattern template substitution.
+        """
+        if context is None:
+            context = {}
+        # Delegate to existing private method
+        request = f"Calculate DCF valuation for {symbol}"
+        full_result = self._perform_dcf_analysis(request, {**context, 'symbol': symbol})
+
+        # DEBUG: Log what we got
+        self.logger.info(f"🔍 calculate_dcf full_result keys: {list(full_result.keys()) if isinstance(full_result, dict) else type(full_result)}")
+
+        # For pattern compatibility, return just the dcf_analysis portion
+        # Template expects outputs['dcf_analysis'] = {intrinsic_value, confidence, ...}
+        if 'dcf_analysis' in full_result:
+            # Add symbol to the dcf_analysis dict for template access
+            dcf_data = full_result['dcf_analysis'].copy()
+            dcf_data['symbol'] = full_result.get('symbol', symbol)
+            dcf_data['SYMBOL'] = full_result.get('symbol', symbol)  # For template {SYMBOL}
+            self.logger.info(f"🔍 Returning unwrapped dcf_data with keys: {list(dcf_data.keys())}")
+            return dcf_data
+        else:
+            # Return full result if structure is different (error case)
+            self.logger.warning(f"🔍 No 'dcf_analysis' key found, returning full_result")
+            return full_result
+
+    def calculate_roic(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for ROIC calculation capability.
+        Maps to: can_calculate_roic
+        """
+        if context is None:
+            context = {}
+        request = f"Calculate ROIC for {symbol}"
+        return self._calculate_roic(request, {**context, 'symbol': symbol})
+
+    def calculate_owner_earnings(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for owner earnings calculation capability.
+        Maps to: can_calculate_owner_earnings
+        """
+        if context is None:
+            context = {}
+        request = f"Calculate owner earnings for {symbol}"
+        return self._calculate_owner_earnings(request, {**context, 'symbol': symbol})
+
+    def analyze_moat(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for moat analysis capability.
+        Maps to: can_analyze_moat
+        """
+        if context is None:
+            context = {}
+        request = f"Analyze economic moat for {symbol}"
+        return self._analyze_moat(request, {**context, 'symbol': symbol})
+
+    def analyze_stock(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for comprehensive stock analysis capability.
+        Maps to: can_analyze_stock
+        """
+        if context is None:
+            context = {}
+        return self.analyze_stock_comprehensive(symbol, context)
+
+    def compare_companies(self, symbols: List[str], context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for stock comparison capability.
+        Maps to: can_compare_stocks
+        """
+        if context is None:
+            context = {}
+        return self.compare_stocks(symbols, context)
+
+    def calculate_fcf(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for free cash flow calculation capability.
+        Maps to: can_calculate_fcf
+        """
+        if context is None:
+            context = {}
+        request = f"Analyze free cash flow for {symbol}"
+        return self._analyze_free_cash_flow(request, {**context, 'symbol': symbol})
+
+    def detect_unusual_activity(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Public wrapper for unusual options activity detection.
+        Maps to: can_detect_unusual_activity
+        Delegates to options analyzer if available.
+        """
+        # This capability is handled by options analysis
+        if not self.capabilities.get('polygon'):
+            return {
+                'error': 'Polygon capability not available',
+                'note': 'Configure POLYGON_API_KEY to enable unusual options detection'
+            }
+
+        tickers = context.get('tickers', context.get('symbols', []))
+        if isinstance(tickers, str):
+            tickers = [tickers]
+
+        # Delegate to data harvester's fetch_unusual_options
+        # In production, this would coordinate with DataHarvester
+        return {
+            'note': 'Use DataHarvester.fetch_unusual_options() for unusual activity detection',
+            'tickers': tickers
+        }
+
+    def analyze_fundamentals(self, symbol: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Public wrapper for fundamental analysis capability.
+        Maps to: can_analyze_fundamentals
+        """
+        if context is None:
+            context = {}
+        return self.analyze_stock_comprehensive(symbol, context)
+
+    def analyze_greeks(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Public wrapper for options greeks analysis capability.
+        Maps to: can_analyze_greeks
+        """
+        return self.analyze_options_greeks(context)
+
+    def calculate_iv_rank(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Public wrapper for IV rank calculation capability.
+        Maps to: can_calculate_iv_rank
+        """
+        return self.calculate_options_iv_rank(context)

@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "dataset": "cross_asset_lead_lag",
+    "version": "1.0",
+    "as_of": "2025-10-03",
+    "notes": "Lead/lag relationships computed from historical cross-correlation."
+  },
+  "matrix": [
+    {
+      "leader": "COPPER",
+      "laggard": "XLI",
+      "lead_days": 30,
+      "corr_lead": 0.48,
+      "sample_start": "2010-01-01",
+      "sample_end": "2025-09-30"
+    },
+    {
+      "leader": "2Y_YIELD",
+      "laggard": "XLF",
+      "lead_days": 20,
+      "corr_lead": 0.42,
+      "sample_start": "2010-01-01",
+      "sample_end": "2025-09-30"
+    }
+  ],
+  "notes": "Lead/lag computed via max cross-correlation on rolling 3-year windows."
+}

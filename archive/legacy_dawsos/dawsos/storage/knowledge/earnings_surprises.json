@@ -1,0 +1,56 @@
+{
+  "_meta": {
+    "dataset": "earnings_surprises",
+    "version": "1.0",
+    "as_of": "2025-10-03",
+    "notes": "Historical EPS/revenue surprises with next-day reactions for key tickers."
+  },
+  "AAPL": {
+    "quarters": [
+      {
+        "fiscal_q": "2025Q3",
+        "eps_act": 1.39,
+        "eps_est": 1.33,
+        "rev_act": 85600000000,
+        "rev_est": 84200000000,
+        "surprise_eps_pct": 0.045,
+        "surprise_rev_pct": 0.017,
+        "next_day_move_pct": 0.031
+      },
+      {
+        "fiscal_q": "2025Q2",
+        "eps_act": 1.30,
+        "eps_est": 1.27,
+        "rev_act": 81700000000,
+        "rev_est": 80500000000,
+        "surprise_eps_pct": 0.024,
+        "surprise_rev_pct": 0.015,
+        "next_day_move_pct": 0.012
+      }
+    ],
+    "summary": {
+      "beats_eps_8q": 7,
+      "beats_rev_8q": 6,
+      "avg_next_day_pct": 0.013
+    }
+  },
+  "MSFT": {
+    "quarters": [
+      {
+        "fiscal_q": "2025Q4",
+        "eps_act": 2.69,
+        "eps_est": 2.61,
+        "rev_act": 62300000000,
+        "rev_est": 61500000000,
+        "surprise_eps_pct": 0.031,
+        "surprise_rev_pct": 0.013,
+        "next_day_move_pct": 0.025
+      }
+    ],
+    "summary": {
+      "beats_eps_8q": 8,
+      "beats_rev_8q": 7,
+      "avg_next_day_pct": 0.019
+    }
+  }
+}
