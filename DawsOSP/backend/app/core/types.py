@@ -23,6 +23,7 @@ Usage:
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
+from enum import Enum
 from typing import (
     Any,
     Dict,
@@ -86,6 +87,13 @@ class RequestCtx:
     rights_profile: Optional[str] = None
     """Data rights profile for usage restrictions"""
 
+    # Phase 2 additions (executor API requirements)
+    asof_date: Optional[date] = None
+    """As-of date for analysis (None = use pricing pack date)"""
+
+    require_fresh: bool = True
+    """If true, block execution when pack not fresh (default: true)"""
+
     def __post_init__(self):
         """Validate required fields."""
         if not self.pricing_pack_id:
@@ -107,6 +115,8 @@ class RequestCtx:
             portfolio_id=portfolio_id,
             base_currency=self.base_currency,
             rights_profile=self.rights_profile,
+            asof_date=self.asof_date,
+            require_fresh=self.require_fresh,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -121,6 +131,8 @@ class RequestCtx:
             "portfolio_id": str(self.portfolio_id) if self.portfolio_id else None,
             "base_currency": self.base_currency,
             "rights_profile": self.rights_profile,
+            "asof_date": str(self.asof_date) if self.asof_date else None,
+            "require_fresh": self.require_fresh,
         }
 
 
@@ -655,6 +667,207 @@ def is_retryable_error(error: Exception) -> bool:
     if isinstance(error, CapabilityError):
         return error.retryable
     return False
+
+
+# ============================================================================
+# Executor API Types (Phase 2)
+# ============================================================================
+
+
+@dataclass
+class ExecReq:
+    """Request to executor API."""
+
+    pattern_id: str
+    inputs: Dict[str, Any] = field(default_factory=dict)
+    require_fresh: bool = True
+    asof_date: Optional[date] = None
+    portfolio_id: Optional[UUID] = None
+    security_id: Optional[UUID] = None
+
+
+@dataclass
+class ExecResp:
+    """Response from executor API."""
+
+    result: Any
+    metadata: Dict[str, Any]
+    warnings: List[str] = field(default_factory=list)
+    trace_id: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for JSON serialization."""
+        return {
+            "result": self.result,
+            "metadata": self.metadata,
+            "warnings": self.warnings,
+            "trace_id": self.trace_id,
+        }
+
+
+class ErrorCode(str, Enum):
+    """Error codes for executor API."""
+
+    # Pack errors
+    PACK_WARMING = "pricing_pack_warming"
+    PACK_NOT_FOUND = "pricing_pack_not_found"
+    PACK_ERROR = "pricing_pack_error"
+
+    # Pattern errors
+    PATTERN_NOT_FOUND = "pattern_not_found"
+    PATTERN_INVALID = "pattern_invalid"
+    PATTERN_EXECUTION_ERROR = "pattern_execution_error"
+
+    # Agent errors
+    AGENT_NOT_FOUND = "agent_not_found"
+    CAPABILITY_NOT_FOUND = "capability_not_found"
+    AGENT_EXECUTION_ERROR = "agent_execution_error"
+
+    # Auth errors
+    UNAUTHORIZED = "unauthorized"
+    FORBIDDEN = "forbidden"
+
+    # System errors
+    INTERNAL_ERROR = "internal_error"
+    TIMEOUT = "timeout"
+
+
+@dataclass
+class ExecError:
+    """Error response from executor API."""
+
+    code: ErrorCode
+    message: str
+    details: Optional[Dict[str, Any]] = None
+    request_id: Optional[str] = None
+    timestamp: datetime = field(default_factory=datetime.utcnow)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for JSON serialization."""
+        return {
+            "error": self.code.value,
+            "message": self.message,
+            "details": self.details or {},
+            "request_id": self.request_id,
+            "timestamp": self.timestamp.isoformat(),
+        }
+
+
+class PackStatus(str, Enum):
+    """Pricing pack status."""
+
+    WARMING = "warming"  # Pack being built/pre-warmed
+    FRESH = "fresh"  # Pack ready for use
+    ERROR = "error"  # Pack build/reconciliation failed
+    STALE = "stale"  # Pack superseded by newer pack
+
+
+@dataclass
+class PackHealth:
+    """Pricing pack health status."""
+
+    status: PackStatus
+    pack_id: str
+    asof_date: date
+    is_fresh: bool
+    prewarm_done: bool
+    reconciliation_passed: bool
+    updated_at: datetime
+    error_message: Optional[str] = None
+    estimated_ready: Optional[datetime] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for JSON serialization."""
+        return {
+            "status": self.status.value,
+            "pack_id": self.pack_id,
+            "asof_date": str(self.asof_date),
+            "is_fresh": self.is_fresh,
+            "prewarm_done": self.prewarm_done,
+            "reconciliation_passed": self.reconciliation_passed,
+            "updated_at": self.updated_at.isoformat(),
+            "error_message": self.error_message,
+            "estimated_ready": self.estimated_ready.isoformat() if self.estimated_ready else None,
+        }
+
+
+@dataclass
+class PatternStep:
+    """Single step in pattern execution."""
+
+    id: str
+    capability: str
+    agent: str
+    inputs: Dict[str, Any]
+    outputs: List[str]
+    condition: Optional[str] = None
+
+
+@dataclass
+class Pattern:
+    """Pattern definition."""
+
+    id: str
+    version: str
+    name: str
+    description: str
+    steps: List[PatternStep]
+    inputs_schema: Optional[Dict[str, Any]] = None
+    outputs_schema: Optional[Dict[str, Any]] = None
+
+
+@dataclass
+class CapabilityResult:
+    """Result from capability execution."""
+
+    data: Any
+    metadata: Dict[str, Any]
+    warnings: List[str] = field(default_factory=list)
+    trace_id: Optional[str] = None
+
+
+@dataclass
+class AgentCapability:
+    """Agent capability definition."""
+
+    capability_id: str
+    agent_name: str
+    description: str
+    inputs_schema: Optional[Dict[str, Any]] = None
+    outputs_schema: Optional[Dict[str, Any]] = None
+
+
+@dataclass
+class ExecutionTrace:
+    """Execution trace for observability."""
+
+    trace_id: str
+    request_id: str
+    pattern_id: str
+    user_id: UUID
+    pricing_pack_id: str
+    ledger_commit_hash: str
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    duration_ms: Optional[float] = None
+    steps: List[Dict[str, Any]] = field(default_factory=list)
+    error: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for JSON serialization."""
+        return {
+            "trace_id": self.trace_id,
+            "request_id": self.request_id,
+            "pattern_id": self.pattern_id,
+            "user_id": str(self.user_id),
+            "pricing_pack_id": self.pricing_pack_id,
+            "ledger_commit_hash": self.ledger_commit_hash,
+            "started_at": self.started_at.isoformat(),
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "duration_ms": self.duration_ms,
+            "steps": self.steps,
+            "error": self.error,
+        }
 
 
 # ============================================================================

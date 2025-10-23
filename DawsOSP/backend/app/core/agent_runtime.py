@@ -1,8 +1,8 @@
 """
 DawsOS Agent Runtime
 
-Purpose: Agent registration, capability routing, and circuit breaker management
-Updated: 2025-10-21
+Purpose: Agent registration, capability routing, circuit breaker management, and rights enforcement
+Updated: 2025-10-22
 Priority: P0 (Critical for execution architecture)
 
 Features:
@@ -12,6 +12,7 @@ Features:
     - Circuit breaker for agent failures
     - Result metadata preservation
     - Capability discovery
+    - Rights validation and attribution (NEW)
 
 Usage:
     runtime = AgentRuntime(services)
@@ -25,6 +26,8 @@ from typing import Any, Dict, List, Optional
 
 from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
+from backend.compliance.attribution import get_attribution_manager
+from backend.compliance.rights_registry import get_rights_registry
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +157,7 @@ class CircuitBreaker:
 
 class AgentRuntime:
     """
-    Agent runtime: registration, routing, and execution.
+    Agent runtime: registration, routing, execution, and rights enforcement.
 
     Responsibilities:
         1. Register agents and build capability map
@@ -162,20 +165,32 @@ class AgentRuntime:
         3. Inject dependencies (services, DB, Redis)
         4. Manage circuit breakers for fault tolerance
         5. Preserve result metadata for tracing
+        6. Enforce rights and add attributions (NEW)
     """
 
-    def __init__(self, services: Dict[str, Any]):
+    def __init__(self, services: Dict[str, Any], enable_rights_enforcement: bool = True):
         """
         Initialize agent runtime.
 
         Args:
             services: Dependency injection dict (db, redis, API clients)
+            enable_rights_enforcement: Enable rights validation and attribution (default: True)
         """
         self.services = services
         self.agents: Dict[str, BaseAgent] = {}
         self.capability_map: Dict[str, str] = {}  # capability → agent_name
         self.circuit_breaker = CircuitBreaker()
-        logger.info("AgentRuntime initialized")
+
+        # Rights enforcement
+        self.enable_rights_enforcement = enable_rights_enforcement
+        if enable_rights_enforcement:
+            self._attribution_manager = get_attribution_manager()
+            self._rights_registry = get_rights_registry()
+            logger.info("AgentRuntime initialized with rights enforcement enabled")
+        else:
+            self._attribution_manager = None
+            self._rights_registry = None
+            logger.info("AgentRuntime initialized (rights enforcement disabled)")
 
     def register_agent(self, agent: BaseAgent):
         """
@@ -281,7 +296,7 @@ class AgentRuntime:
             **kwargs: Capability-specific arguments
 
         Returns:
-            Result with __metadata__ attribute
+            Result with __metadata__ attribute and __attributions__ (if rights enforcement enabled)
 
         Raises:
             ValueError: If capability not registered
@@ -320,6 +335,10 @@ class AgentRuntime:
 
             result = await agent.execute(capability, ctx, state, **kwargs)
 
+            # Add attributions if rights enforcement enabled
+            if self.enable_rights_enforcement and self._attribution_manager:
+                result = self._add_attributions(result)
+
             self.circuit_breaker.record_success(agent_name)
             return result
 
@@ -330,6 +349,37 @@ class AgentRuntime:
                 exc_info=True,
             )
             raise
+
+    def _add_attributions(self, result: Any) -> Any:
+        """
+        Add attributions to capability result.
+
+        Extracts data sources from result metadata and adds __attributions__ field.
+
+        Args:
+            result: Capability result
+
+        Returns:
+            Result with attributions added
+        """
+        if not isinstance(result, dict):
+            # Can't add attributions to non-dict results
+            return result
+
+        try:
+            # Extract sources from result metadata
+            sources = self._attribution_manager.extract_sources(result)
+
+            if sources:
+                # Add attributions
+                result = self._attribution_manager.attach_attributions(
+                    result, sources=sources
+                )
+
+        except Exception as e:
+            logger.warning(f"Failed to add attributions: {e}", exc_info=True)
+
+        return result
 
     def get_circuit_breaker_status(self) -> Dict[str, Dict[str, Any]]:
         """

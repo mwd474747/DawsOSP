@@ -1,15 +1,17 @@
 """
 DawsOS Executor API
 
-Purpose: FastAPI application with /execute endpoint, pattern orchestration, and observability
-Updated: 2025-10-21
+Purpose: FastAPI application with legacy endpoints (execution moved to /v1/execute)
+Updated: 2025-10-22 (Governance remediation - legacy /execute removed)
 Priority: P0 (Critical for execution architecture)
 
 Routes:
-    POST /execute - Execute a pattern with full traceability
     GET /health - Health check
     GET /patterns - List available patterns
     GET /metrics - Prometheus metrics
+
+Note: Pattern execution has moved to POST /v1/execute (backend/app/api/executor.py)
+      This file now contains only legacy support endpoints.
 
 Observability:
     - OpenTelemetry spans with pattern_id, pricing_pack_id, ledger_commit_hash
@@ -20,14 +22,12 @@ Observability:
 import json
 import logging
 import os
-import subprocess
 from contextlib import asynccontextmanager
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
-from uuid import UUID, uuid4
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from opentelemetry import trace
@@ -38,8 +38,6 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from prometheus_client import Counter, Histogram, generate_latest
 from pydantic import BaseModel, Field
-
-from app.core.types import RequestCtx
 
 # ============================================================================
 # Logging Configuration
@@ -289,154 +287,6 @@ async def get_db():
 
 
 # ============================================================================
-# Helper Functions
-# ============================================================================
-
-
-async def build_request_context(
-    req: ExecRequest, user: Dict[str, Any], trace_id: str
-) -> RequestCtx:
-    """
-    Build immutable request context with reproducibility guarantees.
-
-    Args:
-        req: Execution request
-        user: Authenticated user
-        trace_id: OpenTelemetry trace ID
-
-    Returns:
-        RequestCtx with pricing_pack_id, ledger_commit_hash, and metadata
-
-    Raises:
-        HTTPException: If pricing pack not found or not fresh
-    """
-    asof = req.asof or date.today()
-
-    # TODO: Query pricing pack from database
-    # pack = await db.fetchrow("SELECT id, is_fresh FROM pricing_packs WHERE asof_date = $1", asof)
-    # if not pack:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_404_NOT_FOUND,
-    #         detail=f"No pricing pack found for {asof}"
-    #     )
-    # pricing_pack_id = str(pack["id"])
-    # is_fresh = pack["is_fresh"]
-
-    # Development placeholder
-    pricing_pack_id = f"{asof.strftime('%Y%m%d')}_v1"
-    is_fresh = True
-
-    # Get ledger commit hash (requires ledger repo to be cloned)
-    ledger_path = os.getenv("LEDGER_PATH", "/app/ledger")
-    try:
-        if os.path.exists(ledger_path):
-            ledger_commit = subprocess.check_output(
-                ["git", "-C", ledger_path, "rev-parse", "HEAD"],
-                stderr=subprocess.DEVNULL,
-            ).decode().strip()
-        else:
-            # Development placeholder
-            ledger_commit = "dev_no_ledger"
-            logger.warning(f"Ledger repo not found at {ledger_path}, using placeholder")
-    except subprocess.CalledProcessError:
-        ledger_commit = "dev_git_error"
-        logger.warning("Failed to get ledger commit hash, using placeholder")
-
-    # Get portfolio settings if portfolio_id provided
-    base_currency = "CAD"  # Default
-    if req.portfolio_id:
-        # TODO: Query portfolio settings from database
-        # portfolio = await db.fetchrow(
-        #     "SELECT base_ccy FROM portfolios WHERE id = $1",
-        #     UUID(req.portfolio_id)
-        # )
-        # if not portfolio:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_404_NOT_FOUND,
-        #         detail=f"Portfolio {req.portfolio_id} not found"
-        #     )
-        # base_currency = portfolio["base_ccy"]
-        pass
-
-    # Create immutable request context
-    ctx = RequestCtx(
-        pricing_pack_id=pricing_pack_id,
-        ledger_commit_hash=ledger_commit,
-        trace_id=trace_id,
-        user_id=UUID(user["user_id"]),
-        request_id=str(uuid4()),
-        timestamp=datetime.utcnow(),
-        portfolio_id=UUID(req.portfolio_id) if req.portfolio_id else None,
-        base_currency=base_currency,
-        rights_profile=os.getenv("RIGHTS_PROFILE", "staging"),
-    )
-
-    return ctx
-
-
-async def is_pack_fresh(pricing_pack_id: str) -> bool:
-    """
-    Check if pricing pack is fresh (pre-warming completed).
-
-    Args:
-        pricing_pack_id: Pricing pack ID to check
-
-    Returns:
-        True if pack is fresh, False if still warming
-    """
-    # TODO: Query database for pack freshness
-    # pack = await db.fetchrow("SELECT is_fresh FROM pricing_packs WHERE id = $1", pricing_pack_id)
-    # return pack["is_fresh"] if pack else False
-
-    # Development placeholder (always fresh)
-    return True
-
-
-async def run_pattern(
-    pattern_id: str,
-    ctx: RequestCtx,
-    inputs: Dict[str, Any],
-) -> Dict[str, Any]:
-    """
-    Execute pattern through orchestrator.
-
-    Args:
-        pattern_id: Pattern to execute
-        ctx: Request context with reproducibility metadata
-        inputs: Pattern input parameters
-
-    Returns:
-        Dict with data, charts, and trace
-
-    Raises:
-        ValueError: If pattern not found
-    """
-    # TODO: Use pattern orchestrator
-    # orchestrator = app.state.orchestrator
-    # return await orchestrator.run_pattern(pattern_id, ctx, inputs)
-
-    # Development placeholder
-    logger.info(f"Running pattern {pattern_id} with context {ctx.to_dict()}")
-    return {
-        "data": {
-            "message": f"Pattern {pattern_id} executed successfully",
-            "inputs": inputs,
-        },
-        "charts": [],
-        "trace": {
-            "pattern_id": pattern_id,
-            "pricing_pack_id": ctx.pricing_pack_id,
-            "ledger_commit_hash": ctx.ledger_commit_hash,
-            "agents_used": [],
-            "capabilities_used": [],
-            "sources": [],
-            "per_panel_staleness": [],
-            "steps": [],
-        },
-    }
-
-
-# ============================================================================
 # API Routes
 # ============================================================================
 
@@ -481,130 +331,6 @@ async def list_patterns():
             logger.error(f"Failed to load pattern {pattern_file}: {e}")
 
     return patterns
-
-
-@app.post("/execute", response_model=ExecResponse)
-async def execute(
-    req: ExecRequest,
-    request: Request,
-    user: Dict[str, Any] = Depends(get_current_user),
-):
-    """
-    Execute a pattern with full traceability.
-
-    Args:
-        req: Pattern execution request
-        request: FastAPI request object
-        user: Authenticated user from JWT
-
-    Returns:
-        ExecResponse with data, charts, and trace
-
-    Raises:
-        HTTPException 404: Pattern or pricing pack not found
-        HTTPException 503: Pricing pack is warming (not fresh)
-    """
-    # Get current trace context
-    span = trace.get_current_span()
-    trace_context = span.get_span_context()
-    trace_id = f"{trace_context.trace_id:032x}" if trace_context.is_valid else str(uuid4())
-    request.state.trace_id = trace_id
-
-    # Start pattern execution span
-    with tracer.start_as_current_span(
-        "pattern_execution",
-        attributes={
-            "pattern.id": req.pattern_id,
-            "portfolio.id": req.portfolio_id or "none",
-        },
-    ) as execution_span:
-        start_time = datetime.utcnow()
-
-        try:
-            # Build request context
-            ctx = await build_request_context(req, user, trace_id)
-
-            # Add context to span attributes
-            execution_span.set_attribute("pricing.pack_id", ctx.pricing_pack_id)
-            execution_span.set_attribute("ledger.commit_hash", ctx.ledger_commit_hash)
-            execution_span.set_attribute("request.id", ctx.request_id)
-
-            # Freshness gate: Block if pricing pack is warming
-            if not await is_pack_fresh(ctx.pricing_pack_id):
-                freshness_gate_counter.labels(pack_id=ctx.pricing_pack_id).inc()
-                execution_span.set_attribute("freshness.blocked", True)
-                request_counter.labels(pattern_id=req.pattern_id, status="blocked").inc()
-
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail={
-                        "error": "PACK_WARMING",
-                        "message": "Pricing pack is warming up. Please retry in a few minutes.",
-                        "pack_id": ctx.pricing_pack_id,
-                        "trace_id": trace_id,
-                    },
-                )
-
-            execution_span.set_attribute("freshness.blocked", False)
-
-            # TODO: Set RLS context for database queries
-            # await db.execute(f"SET LOCAL app.user_id = '{user['user_id']}'")
-
-            # Execute pattern through orchestrator
-            result = await run_pattern(req.pattern_id, ctx, req.inputs)
-
-            # Record success metrics
-            duration = (datetime.utcnow() - start_time).total_seconds()
-            pattern_latency_histogram.labels(
-                pattern_id=req.pattern_id, status="success"
-            ).observe(duration)
-            request_counter.labels(pattern_id=req.pattern_id, status="success").inc()
-
-            execution_span.set_attribute("execution.duration_seconds", duration)
-            execution_span.set_attribute("execution.status", "success")
-
-            logger.info(
-                f"Pattern {req.pattern_id} executed successfully in {duration:.3f}s",
-                extra={"trace_id": trace_id},
-            )
-
-            return ExecResponse(
-                data=result["data"],
-                charts=result.get("charts", []),
-                trace=result["trace"],
-            )
-
-        except HTTPException:
-            # Re-raise HTTP exceptions (already have proper status codes)
-            raise
-
-        except Exception as e:
-            # Record failure metrics
-            duration = (datetime.utcnow() - start_time).total_seconds()
-            pattern_latency_histogram.labels(
-                pattern_id=req.pattern_id, status="error"
-            ).observe(duration)
-            request_counter.labels(pattern_id=req.pattern_id, status="error").inc()
-
-            execution_span.set_attribute("execution.status", "error")
-            execution_span.set_attribute("error.message", str(e))
-            execution_span.record_exception(e)
-
-            logger.error(
-                f"Pattern {req.pattern_id} execution failed: {e}",
-                extra={"trace_id": trace_id},
-                exc_info=True,
-            )
-
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail={
-                    "error": "EXECUTION_FAILED",
-                    "message": str(e),
-                    "pattern_id": req.pattern_id,
-                    "trace_id": trace_id,
-                },
-            )
 
 
 @app.get("/metrics", response_class=PlainTextResponse)

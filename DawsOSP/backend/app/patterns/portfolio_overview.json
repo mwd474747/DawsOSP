@@ -1,0 +1,66 @@
+{
+  "id": "portfolio_overview",
+  "version": "1.0",
+  "name": "Portfolio Overview",
+  "description": "Get portfolio positions and valuations with current prices",
+  "inputs_schema": {
+    "type": "object",
+    "properties": {
+      "portfolio_id": {
+        "type": "string",
+        "description": "Portfolio ID"
+      }
+    },
+    "required": ["portfolio_id"]
+  },
+  "steps": [
+    {
+      "id": "get_positions",
+      "capability": "ledger.positions",
+      "agent": "financial_analyst",
+      "inputs": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "asof_date": "{{ctx.asof_date}}"
+      },
+      "outputs": ["positions"]
+    },
+    {
+      "id": "apply_pack",
+      "capability": "pricing.apply_pack",
+      "agent": "financial_analyst",
+      "inputs": {
+        "positions": "{{state.positions}}",
+        "pricing_pack_id": "{{ctx.pricing_pack_id}}"
+      },
+      "outputs": ["valuations"]
+    },
+    {
+      "id": "compute_metrics",
+      "capability": "metrics.compute",
+      "agent": "financial_analyst",
+      "inputs": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "valuations": "{{state.valuations}}",
+        "asof_date": "{{ctx.asof_date}}"
+      },
+      "outputs": ["metrics"]
+    }
+  ],
+  "outputs_schema": {
+    "type": "object",
+    "properties": {
+      "positions": {
+        "type": "array",
+        "description": "Portfolio positions from ledger"
+      },
+      "valuations": {
+        "type": "array",
+        "description": "Position valuations with current prices"
+      },
+      "metrics": {
+        "type": "object",
+        "description": "Portfolio metrics (TWR, MWR, etc.)"
+      }
+    }
+  }
+}
