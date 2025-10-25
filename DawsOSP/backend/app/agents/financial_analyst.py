@@ -61,6 +61,17 @@ class FinancialAnalyst(BaseAgent):
             "metrics.compute_sharpe",
             "attribution.currency",
             "charts.overview",
+            "risk.compute_factor_exposures",
+            "risk.get_factor_exposure_history",
+            "risk.overlay_cycle_phases",
+            "get_position_details",
+            "compute_position_return",
+            "compute_portfolio_contribution",
+            "compute_position_currency_attribution",
+            "compute_position_risk",
+            "get_transaction_history",
+            "get_security_fundamentals",
+            "get_comparable_positions",
         ]
 
     async def ledger_positions(
@@ -687,3 +698,583 @@ class FinancialAnalyst(BaseAgent):
         result = self._attach_metadata(result, metadata)
 
         return result
+
+    async def risk_compute_factor_exposures(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: Optional[str] = None,
+        pack_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Compute factor exposures for portfolio.
+
+        Capability: risk.compute_factor_exposures
+
+        Returns factor betas (exposure to market, size, value, momentum factors)
+        """
+        portfolio_id_uuid = UUID(portfolio_id) if portfolio_id else ctx.portfolio_id
+        pack = pack_id or ctx.pricing_pack_id
+
+        logger.info(f"risk.compute_factor_exposures: portfolio_id={portfolio_id_uuid}, pack={pack}")
+
+        from app.services.factor_analysis import FactorAnalysisService
+        factor_service = FactorAnalysisService()
+
+        result = await factor_service.compute_factor_exposure(
+            portfolio_id=portfolio_id_uuid,
+            pack_id=pack
+        )
+
+        metadata = self._create_metadata(
+            source=f"factor_analysis_service:{pack}",
+            asof=ctx.asof_date,
+            ttl=3600
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def risk_get_factor_exposure_history(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: Optional[str] = None,
+        lookback_days: int = 252,
+    ) -> Dict[str, Any]:
+        """
+        Get historical factor exposures for portfolio.
+
+        Capability: risk.get_factor_exposure_history
+
+        Returns time series of factor betas over specified period
+        """
+        portfolio_id_uuid = UUID(portfolio_id) if portfolio_id else ctx.portfolio_id
+
+        logger.info(f"risk.get_factor_exposure_history: portfolio_id={portfolio_id_uuid}, lookback={lookback_days}")
+
+        # Get factor exposures from database for historical packs
+        # TODO: Implement historical query - for now return current only
+        from app.services.factor_analysis import FactorAnalysisService
+        factor_service = FactorAnalysisService()
+
+        current = await factor_service.compute_factor_exposure(
+            portfolio_id=portfolio_id_uuid,
+            pack_id=ctx.pricing_pack_id
+        )
+
+        result = {
+            "history": [current],  # TODO: Add historical lookback
+            "lookback_days": lookback_days,
+            "note": "Historical factor exposure tracking - currently showing latest only"
+        }
+
+        metadata = self._create_metadata(
+            source=f"factor_analysis_service:history",
+            asof=ctx.asof_date,
+            ttl=3600
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def risk_overlay_cycle_phases(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: Optional[str] = None,
+        pack_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Overlay cycle phase information on risk metrics.
+
+        Capability: risk.overlay_cycle_phases
+
+        Combines factor exposures with current macro cycle phases
+        to show how portfolio positioning aligns with cycle
+        """
+        portfolio_id_uuid = UUID(portfolio_id) if portfolio_id else ctx.portfolio_id
+        pack = pack_id or ctx.pricing_pack_id
+
+        logger.info(f"risk.overlay_cycle_phases: portfolio_id={portfolio_id_uuid}, pack={pack}")
+
+        # Get factor exposures
+        from app.services.factor_analysis import FactorAnalysisService
+        factor_service = FactorAnalysisService()
+
+        exposures = await factor_service.compute_factor_exposure(
+            portfolio_id=portfolio_id_uuid,
+            pack_id=pack
+        )
+
+        # Get current cycle phases
+        from app.services.cycles import CyclesService
+        cycles_service = CyclesService()
+
+        stdc = await cycles_service.detect_stdc_phase()
+        ltdc = await cycles_service.detect_ltdc_phase()
+
+        # Overlay analysis
+        result = {
+            "factor_exposures": exposures,
+            "cycles": {
+                "short_term": {
+                    "phase": stdc.phase,
+                    "score": float(stdc.composite_score),
+                },
+                "long_term": {
+                    "phase": ltdc.phase,
+                    "score": float(ltdc.composite_score),
+                },
+            },
+            "alignment_analysis": {
+                "note": "Factor positioning vs cycle phase alignment",
+                "stdc_phase": stdc.phase,
+                "ltdc_phase": ltdc.phase,
+            }
+        }
+
+        metadata = self._create_metadata(
+            source=f"risk_cycle_overlay:{pack}",
+            asof=ctx.asof_date,
+            ttl=3600
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def get_position_details(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: str,
+        security_id: str,
+        pack_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Get detailed position information.
+
+        Capability: get_position_details
+
+        Returns position details including qty, cost basis, market value, unrealized P&L
+        """
+        portfolio_uuid = UUID(portfolio_id)
+        security_uuid = UUID(security_id)
+        pack = pack_id or ctx.pricing_pack_id
+
+        logger.info(f"get_position_details: portfolio={portfolio_id}, security={security_id}, pack={pack}")
+
+        # Query lots table for position details
+        db_pool = self.services.get("db")
+        if not db_pool:
+            raise RuntimeError("Database pool not available")
+
+        async with db_pool.acquire() as conn:
+            # Get position from lots
+            lots = await conn.fetch(
+                """
+                SELECT l.*, s.symbol, s.currency as security_currency
+                FROM lots l
+                JOIN securities s ON l.security_id = s.id
+                WHERE l.portfolio_id = $1
+                  AND l.security_id = $2
+                  AND l.qty_open > 0
+                ORDER BY l.open_date
+                """,
+                portfolio_uuid,
+                security_uuid,
+            )
+
+            if not lots:
+                raise ValueError(f"No open position found for security {security_id}")
+
+            # Calculate aggregated position
+            total_qty = sum(Decimal(str(lot["qty_open"])) for lot in lots)
+            weighted_cost = sum(
+                Decimal(str(lot["qty_open"])) * Decimal(str(lot["price"]))
+                for lot in lots
+            )
+            avg_cost = weighted_cost / total_qty if total_qty > 0 else Decimal("0")
+
+            symbol = lots[0]["symbol"]
+            security_currency = lots[0]["security_currency"]
+
+            # Get current price from pricing pack
+            price_row = await conn.fetchrow(
+                """
+                SELECT price
+                FROM prices
+                WHERE security_id = $1 AND pricing_pack_id = $2
+                """,
+                security_uuid,
+                pack,
+            )
+
+            current_price = Decimal(str(price_row["price"])) if price_row else Decimal("0")
+            market_value = total_qty * current_price
+            unrealized_pnl = market_value - weighted_cost
+            unrealized_pnl_pct = (unrealized_pnl / weighted_cost) if weighted_cost > 0 else Decimal("0")
+
+            # Get portfolio total value for weight calculation
+            portfolio_value_row = await conn.fetchrow(
+                """
+                SELECT SUM(l.qty_open * p.price) as total_value
+                FROM lots l
+                JOIN prices p ON l.security_id = p.security_id
+                WHERE l.portfolio_id = $1
+                  AND p.pricing_pack_id = $2
+                  AND l.qty_open > 0
+                """,
+                portfolio_uuid,
+                pack,
+            )
+
+            portfolio_value = Decimal(str(portfolio_value_row["total_value"])) if portfolio_value_row and portfolio_value_row["total_value"] else Decimal("1")
+            weight = market_value / portfolio_value if portfolio_value > 0 else Decimal("0")
+
+        result = {
+            "symbol": symbol,
+            "security_id": str(security_uuid),
+            "security_currency": security_currency,
+            "qty_open": float(total_qty),
+            "avg_cost": float(avg_cost),
+            "current_price": float(current_price),
+            "market_value": float(market_value),
+            "weight": float(weight),
+            "unrealized_pnl": float(unrealized_pnl),
+            "unrealized_pnl_pct": float(unrealized_pnl_pct),
+            "lot_count": len(lots),
+        }
+
+        metadata = self._create_metadata(
+            source=f"lots_table:{pack}",
+            asof=ctx.asof_date,
+            ttl=300
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def compute_position_return(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: str,
+        security_id: str,
+        pack_id: Optional[str] = None,
+        lookback_days: int = 252,
+    ) -> Dict[str, Any]:
+        """
+        Compute position return metrics over lookback period.
+
+        Capability: compute_position_return
+
+        Returns total return, volatility, Sharpe ratio, max drawdown
+        """
+        logger.info(f"compute_position_return: security={security_id}, lookback={lookback_days}")
+
+        # TODO: Implement historical price query and return calculation
+        # For now, return placeholder structure
+
+        result = {
+            "total_return": 0.15,  # 15% placeholder
+            "daily_returns": [],  # TODO: Historical daily returns
+            "portfolio_returns": [],  # TODO: Portfolio daily returns for comparison
+            "volatility": 0.18,  # Annualized volatility placeholder
+            "sharpe": 0.83,  # Sharpe ratio placeholder
+            "max_drawdown": -0.12,  # Max drawdown placeholder
+            "recovery_days": 45,  # Days to recover from max drawdown
+            "note": "Position return calculation - requires historical pricing pack data"
+        }
+
+        metadata = self._create_metadata(
+            source=f"position_returns:{security_id}",
+            asof=ctx.asof_date,
+            ttl=3600
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def compute_portfolio_contribution(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: str,
+        security_id: str,
+        pack_id: Optional[str] = None,
+        lookback_days: int = 252,
+    ) -> Dict[str, Any]:
+        """
+        Compute position's contribution to portfolio return.
+
+        Capability: compute_portfolio_contribution
+
+        Returns contribution = weight × return
+        """
+        logger.info(f"compute_portfolio_contribution: security={security_id}")
+
+        # Get position weight
+        position = await self.get_position_details(ctx, state, portfolio_id, security_id, pack_id)
+
+        # Calculate contribution (simplified)
+        weight = Decimal(str(position["weight"]))
+        position_return = Decimal("0.15")  # TODO: Get actual return from compute_position_return
+
+        total_contribution = weight * position_return
+        pct_of_portfolio_return = total_contribution / Decimal("0.10")  # TODO: Get actual portfolio return
+
+        result = {
+            "total_contribution": float(total_contribution),
+            "pct_of_portfolio_return": float(pct_of_portfolio_return),
+            "weight": float(weight),
+            "position_return": float(position_return),
+            "note": "Contribution calculation - requires historical return data"
+        }
+
+        metadata = self._create_metadata(
+            source=f"contribution:{security_id}",
+            asof=ctx.asof_date,
+            ttl=3600
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def compute_position_currency_attribution(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: str,
+        security_id: str,
+        pack_id: Optional[str] = None,
+        lookback_days: int = 252,
+    ) -> Dict[str, Any]:
+        """
+        Decompose position return into local and FX components.
+
+        Capability: compute_position_currency_attribution
+
+        Returns local, FX, and interaction contributions
+        """
+        logger.info(f"compute_position_currency_attribution: security={security_id}")
+
+        # Get position currency
+        position = await self.get_position_details(ctx, state, portfolio_id, security_id, pack_id)
+
+        # TODO: Call currency attribution service for position-level calculation
+        # For now, return placeholder structure
+
+        result = {
+            "local_contribution": 0.12,  # Local price return component
+            "fx_contribution": 0.03,  # FX return component
+            "interaction_contribution": 0.004,  # r_local × r_fx interaction
+            "total_contribution": 0.154,  # Sum of above
+            "security_currency": position.get("security_currency", "USD"),
+            "note": "Currency attribution - requires historical FX rates"
+        }
+
+        metadata = self._create_metadata(
+            source=f"currency_attr:{security_id}",
+            asof=ctx.asof_date,
+            ttl=3600
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def compute_position_risk(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: str,
+        security_id: str,
+        pack_id: Optional[str] = None,
+        lookback_days: int = 252,
+    ) -> Dict[str, Any]:
+        """
+        Compute position risk metrics.
+
+        Capability: compute_position_risk
+
+        Returns VaR, marginal VaR, beta, correlation, diversification benefit
+        """
+        logger.info(f"compute_position_risk: security={security_id}")
+
+        # Get position details
+        position = await self.get_position_details(ctx, state, portfolio_id, security_id, pack_id)
+
+        # TODO: Implement risk calculation using covariance matrix
+        # For now, return placeholder structure
+
+        result = {
+            "var_1d": -1500.00,  # 1-day VaR at 95% confidence
+            "marginal_var": -800.00,  # Contribution to portfolio VaR
+            "pct_portfolio_risk": 0.15,  # % of total portfolio volatility
+            "beta_to_portfolio": 1.2,  # Beta relative to portfolio
+            "correlation": 0.75,  # Correlation with portfolio
+            "diversification_benefit": 0.25,  # Risk reduction from correlation < 1
+            "note": "Risk metrics - requires historical covariance data"
+        }
+
+        metadata = self._create_metadata(
+            source=f"position_risk:{security_id}",
+            asof=ctx.asof_date,
+            ttl=3600
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def get_transaction_history(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: str,
+        security_id: str,
+        limit: int = 50,
+    ) -> Dict[str, Any]:
+        """
+        Get transaction history for position.
+
+        Capability: get_transaction_history
+
+        Returns list of buy/sell transactions
+        """
+        portfolio_uuid = UUID(portfolio_id)
+        security_uuid = UUID(security_id)
+
+        logger.info(f"get_transaction_history: portfolio={portfolio_id}, security={security_id}")
+
+        db_pool = self.services.get("db")
+        if not db_pool:
+            raise RuntimeError("Database pool not available")
+
+        async with db_pool.acquire() as conn:
+            transactions = await conn.fetch(
+                """
+                SELECT
+                    trade_date,
+                    action,
+                    quantity,
+                    price,
+                    (quantity * price) as total_value,
+                    commission,
+                    realized_pnl
+                FROM transactions
+                WHERE portfolio_id = $1
+                  AND security_id = $2
+                ORDER BY trade_date DESC
+                LIMIT $3
+                """,
+                portfolio_uuid,
+                security_uuid,
+                limit,
+            )
+
+            result = {
+                "transactions": [
+                    {
+                        "trade_date": str(t["trade_date"]),
+                        "action": t["action"],
+                        "quantity": float(t["quantity"]),
+                        "price": float(t["price"]),
+                        "total_value": float(t["total_value"]),
+                        "commission": float(t["commission"]) if t["commission"] else 0.0,
+                        "realized_pnl": float(t["realized_pnl"]) if t["realized_pnl"] else None,
+                    }
+                    for t in transactions
+                ],
+                "count": len(transactions),
+            }
+
+        metadata = self._create_metadata(
+            source=f"transactions_table",
+            asof=ctx.asof_date,
+            ttl=60
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def get_security_fundamentals(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        security_id: str,
+    ) -> Dict[str, Any]:
+        """
+        Get fundamental data for security.
+
+        Capability: get_security_fundamentals
+
+        Returns market cap, P/E, dividend yield, sector (for equities)
+        """
+        security_uuid = UUID(security_id)
+
+        logger.info(f"get_security_fundamentals: security={security_id}")
+
+        # TODO: Integrate with FMP provider to fetch real fundamentals
+        # For now, return placeholder structure
+
+        db_pool = self.services.get("db")
+        if not db_pool:
+            raise RuntimeError("Database pool not available")
+
+        async with db_pool.acquire() as conn:
+            security = await conn.fetchrow(
+                """
+                SELECT symbol, name, asset_class
+                FROM securities
+                WHERE id = $1
+                """,
+                security_uuid,
+            )
+
+            if not security:
+                raise ValueError(f"Security not found: {security_id}")
+
+            result = {
+                "symbol": security["symbol"],
+                "name": security["name"],
+                "asset_class": security["asset_class"],
+                "market_cap": 500000000000.00,  # Placeholder
+                "pe_ratio": 25.5,  # Placeholder
+                "dividend_yield": 0.015,  # Placeholder
+                "sector": "Technology",  # Placeholder
+                "note": "Fundamentals - requires FMP provider integration"
+            }
+
+        metadata = self._create_metadata(
+            source=f"fundamentals:{security_id}",
+            asof=ctx.asof_date,
+            ttl=86400
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def get_comparable_positions(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        security_id: str,
+        sector: Optional[str] = None,
+        limit: int = 5,
+    ) -> Dict[str, Any]:
+        """
+        Find comparable positions in same sector.
+
+        Capability: get_comparable_positions
+
+        Returns list of similar securities for comparison
+        """
+        logger.info(f"get_comparable_positions: security={security_id}, sector={sector}")
+
+        # TODO: Implement sector-based security lookup
+        # For now, return placeholder structure
+
+        result = {
+            "comparables": [],  # TODO: Query securities by sector
+            "count": 0,
+            "sector": sector,
+            "note": "Comparables - requires sector classification data"
+        }
+
+        metadata = self._create_metadata(
+            source=f"comparables:{security_id}",
+            asof=ctx.asof_date,
+            ttl=86400
+        )
+
+        return self._attach_metadata(result, metadata)

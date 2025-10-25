@@ -56,6 +56,7 @@ class RatingsAgent(BaseAgent):
             "ratings.dividend_safety",
             "ratings.moat_strength",
             "ratings.resilience",
+            "ratings.aggregate",
         ]
 
     async def ratings_dividend_safety(
@@ -321,46 +322,6 @@ class RatingsAgent(BaseAgent):
             logger.debug(f"Database lookup: {security_id} → {symbol}")
             return symbol
 
-    def _check_risk_flag(self, rating: Decimal) -> Optional[str]:
-        """
-        Check if rating triggers risk flag.
-
-        Business rule: Rating < 5.0 = "CAUTION"
-
-        Args:
-            rating: Overall rating (0-10)
-
-        Returns:
-            "CAUTION" if rating < 5.0, else None
-        """
-        if rating < Decimal("5.0"):
-            return "CAUTION"
-        return None
-
-    def _infer_moat_type(self, components: Dict[str, Any]) -> str:
-        """
-        Infer primary moat type from component scores.
-
-        Simple heuristic: Highest scoring component.
-
-        TODO Phase 2: Use rubric-based classification.
-
-        Args:
-            components: Component breakdown from service
-
-        Returns:
-            Moat type string
-        """
-        scores = {
-            "intangible_assets": components["intangibles"]["score"],
-            "brand_power": components["gross_margin"]["score"],  # Proxy
-            "cost_advantage": components["roe_consistency"]["score"],  # Proxy
-            "switching_costs": components["switching_costs"]["score"],
-        }
-
-        max_type = max(scores, key=scores.get)
-        return max_type
-
     def _stub_fundamentals_for_testing(self) -> Dict[str, Any]:
         """
         Stub fundamentals for Phase 1 testing.
@@ -384,3 +345,53 @@ class RatingsAgent(BaseAgent):
             "current_ratio": Decimal("1.8"),
             "operating_margin_std_dev": Decimal("0.03"),
         }
+
+    async def ratings_aggregate(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        security_id: Optional[str] = None,
+        fundamentals: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Calculate aggregate quality score from all three ratings.
+
+        Capability: ratings.aggregate
+
+        Combines dividend safety, moat strength, and resilience into overall score.
+        """
+        logger.info(f"ratings.aggregate: security_id={security_id}")
+
+        # Call all three rating methods
+        dividend = await self.ratings_dividend_safety(ctx, state, security_id, fundamentals)
+        moat = await self.ratings_moat_strength(ctx, state, security_id, fundamentals)
+        resilience_rating = await self.ratings_resilience(ctx, state, security_id, fundamentals)
+
+        # Aggregate with equal weights (Phase 1)
+        # TODO Phase 2: Load weights from rating_rubrics table
+        aggregate_score = (
+            dividend["overall_score"] * 0.33 +
+            moat["overall_score"] * 0.33 +
+            resilience_rating["overall_score"] * 0.34
+        )
+
+        result = {
+            "aggregate_score": aggregate_score,
+            "dividend_safety": dividend["overall_score"],
+            "moat_strength": moat["overall_score"],
+            "resilience": resilience_rating["overall_score"],
+            "rating_breakdown": {
+                "dividend": dividend,
+                "moat": moat,
+                "resilience": resilience_rating,
+            },
+            "note": "Aggregate uses equal weights (Phase 1) - Phase 2 will load from rubric"
+        }
+
+        metadata = self._create_metadata(
+            source=f"ratings_aggregate:{security_id}",
+            asof=ctx.asof_date,
+            ttl=86400
+        )
+
+        return self._attach_metadata(result, metadata)

@@ -53,6 +53,7 @@ class ClaudeAgent(BaseAgent):
             "claude.explain",
             "claude.summarize",
             "claude.analyze",
+            "ai.explain",  # Alias for claude.explain for pattern compatibility
         ]
 
     async def claude_explain(
@@ -269,3 +270,17 @@ def get_claude_agent(services: Optional[Dict[str, Any]] = None) -> ClaudeAgent:
         _claude_agent_instance = ClaudeAgent("claude", services or {})
         logger.info("ClaudeAgent initialized")
     return _claude_agent_instance
+
+    async def ai_explain(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        topic: str,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Alias for claude.explain for pattern compatibility.
+
+        Capability: ai.explain
+        """
+        return await self.claude_explain(ctx, state, topic, data)

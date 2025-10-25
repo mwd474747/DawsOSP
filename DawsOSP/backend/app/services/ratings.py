@@ -250,8 +250,11 @@ class RatingsService:
         # Component 4: Switching costs (SPEC LINE 322)
         switching_score = Decimal(str(fundamentals.get("switching_cost_score", 5)))
 
-        # Phase 1: Hardcoded equal weights (25% each)
-        # TODO Phase 2: Load from rubric.overall_weights
+        # ⚠️ GOVERNANCE DEVIATION: Using equal 25% weights
+        # SPECIFICATION REQUIREMENT: Load from rating_rubrics.overall_weights table
+        # Phase 1: Hardcoded equal weights (documented limitation)
+        # Phase 2: TODO - Implement database rubric loading
+        # Impact: Moat ratings may be inaccurate until weights match spec
         weights = {
             "roe_consistency": Decimal("0.25"),
             "gross_margin": Decimal("0.25"),
@@ -381,8 +384,11 @@ class RatingsService:
         else:
             stability_score = Decimal("4")
 
-        # Phase 1: Hardcoded equal weights (25% each)
-        # TODO Phase 2: Load from rubric.overall_weights
+        # ⚠️ GOVERNANCE DEVIATION: Using equal 25% weights
+        # SPECIFICATION REQUIREMENT: Load from rating_rubrics.overall_weights table
+        # Phase 1: Hardcoded equal weights (documented limitation)
+        # Phase 2: TODO - Implement database rubric loading
+        # Impact: Resilience ratings may be inaccurate until weights match spec
         weights = {
             "debt_equity": Decimal("0.25"),
             "interest_coverage": Decimal("0.25"),

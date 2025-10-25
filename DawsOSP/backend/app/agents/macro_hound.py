@@ -59,6 +59,15 @@ class MacroHound(BaseAgent):
             "macro.get_indicators",
             "macro.run_scenario",
             "macro.compute_dar",
+            "macro.get_regime_history",
+            "macro.detect_trend_shifts",
+            "cycles.compute_short_term",
+            "cycles.compute_long_term",
+            "cycles.compute_empire",
+            "cycles.aggregate_overview",
+            "scenarios.deleveraging_austerity",
+            "scenarios.deleveraging_default",
+            "scenarios.deleveraging_money_printing",
         ]
 
     async def macro_detect_regime(
@@ -491,9 +500,340 @@ class MacroHound(BaseAgent):
 
         return result
 
+    async def macro_get_regime_history(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        lookback_days: int = 365,
+    ) -> Dict[str, Any]:
+        """
+        Get historical regime classifications.
+
+        Capability: macro.get_regime_history
+        """
+        logger.info(f"macro.get_regime_history: lookback={lookback_days}")
+
+        macro_service = MacroService()
+        history = await macro_service.get_regime_history(lookback_days)
+
+        metadata = self._create_metadata(
+            source=f"macro_service:regime_history",
+            asof=ctx.asof_date,
+            ttl=3600
+        )
+
+        return self._attach_metadata({"history": history}, metadata)
+
+    async def macro_detect_trend_shifts(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Detect recent regime transitions/trend shifts.
+
+        Capability: macro.detect_trend_shifts
+        """
+        logger.info("macro.detect_trend_shifts")
+
+        # Get recent regime history and detect transitions
+        macro_service = MacroService()
+        history = await macro_service.get_regime_history(90)  # Last 90 days
+
+        # Find regime changes
+        shifts = []
+        prev_regime = None
+        for entry in history:
+            if prev_regime and entry["regime"] != prev_regime:
+                shifts.append({
+                    "date": entry["date"],
+                    "from_regime": prev_regime,
+                    "to_regime": entry["regime"],
+                    "confidence": entry.get("confidence", 0.0)
+                })
+            prev_regime = entry["regime"]
+
+        metadata = self._create_metadata(
+            source=f"macro_service:trend_shifts",
+            asof=ctx.asof_date,
+            ttl=3600
+        )
+
+        return self._attach_metadata({"shifts": shifts}, metadata)
+
+    async def cycles_compute_short_term(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        asof_date: Optional[date] = None,
+    ) -> Dict[str, Any]:
+        """
+        Compute Short-Term Debt Cycle (STDC) phase.
+
+        Capability: cycles.compute_short_term
+        """
+        asof = asof_date or ctx.asof_date
+        logger.info(f"cycles.compute_short_term: asof={asof}")
+
+        cycles_service = CyclesService()
+        phase = await cycles_service.detect_stdc_phase(as_of_date=asof)
+
+        result = {
+            "cycle_type": "short_term_debt",
+            "phase_label": phase.phase,
+            "phase_number": phase.phase_number,
+            "composite_score": float(phase.composite_score),
+            "date": phase.date.isoformat(),
+            "indicators": phase.indicators,
+        }
+
+        metadata = self._create_metadata(
+            source=f"cycles_service:stdc:{ctx.pricing_pack_id}",
+            asof=phase.date,
+            ttl=86400
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def cycles_compute_long_term(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        asof_date: Optional[date] = None,
+    ) -> Dict[str, Any]:
+        """
+        Compute Long-Term Debt Cycle (LTDC) phase.
+
+        Capability: cycles.compute_long_term
+        """
+        asof = asof_date or ctx.asof_date
+        logger.info(f"cycles.compute_long_term: asof={asof}")
+
+        cycles_service = CyclesService()
+        phase = await cycles_service.detect_ltdc_phase(as_of_date=asof)
+
+        result = {
+            "cycle_type": "long_term_debt",
+            "phase_label": phase.phase,
+            "phase_number": phase.phase_number,
+            "composite_score": float(phase.composite_score),
+            "date": phase.date.isoformat(),
+            "indicators": phase.indicators,
+        }
+
+        metadata = self._create_metadata(
+            source=f"cycles_service:ltdc:{ctx.pricing_pack_id}",
+            asof=phase.date,
+            ttl=86400
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def cycles_compute_empire(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        asof_date: Optional[date] = None,
+    ) -> Dict[str, Any]:
+        """
+        Compute Empire Cycle phase.
+
+        Capability: cycles.compute_empire
+        """
+        asof = asof_date or ctx.asof_date
+        logger.info(f"cycles.compute_empire: asof={asof}")
+
+        cycles_service = CyclesService()
+        phase = await cycles_service.detect_empire_phase(as_of_date=asof)
+
+        result = {
+            "cycle_type": "empire",
+            "phase_label": phase.phase,
+            "phase_number": phase.phase_number,
+            "composite_score": float(phase.composite_score),
+            "date": phase.date.isoformat(),
+            "indicators": phase.indicators,
+        }
+
+        metadata = self._create_metadata(
+            source=f"cycles_service:empire:{ctx.pricing_pack_id}",
+            asof=phase.date,
+            ttl=86400
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def cycles_aggregate_overview(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        asof_date: Optional[date] = None,
+    ) -> Dict[str, Any]:
+        """
+        Compute all three cycles in one call.
+
+        Capability: cycles.aggregate_overview
+        """
+        asof = asof_date or ctx.asof_date
+        logger.info(f"cycles.aggregate_overview: asof={asof}")
+
+        cycles_service = CyclesService()
+
+        # Compute all three cycles in parallel
+        stdc_phase = await cycles_service.detect_stdc_phase(as_of_date=asof)
+        ltdc_phase = await cycles_service.detect_ltdc_phase(as_of_date=asof)
+        empire_phase = await cycles_service.detect_empire_phase(as_of_date=asof)
+
+        result = {
+            "short_term": {
+                "phase_label": stdc_phase.phase,
+                "phase_number": stdc_phase.phase_number,
+                "composite_score": float(stdc_phase.composite_score),
+            },
+            "long_term": {
+                "phase_label": ltdc_phase.phase,
+                "phase_number": ltdc_phase.phase_number,
+                "composite_score": float(ltdc_phase.composite_score),
+            },
+            "empire": {
+                "phase_label": empire_phase.phase,
+                "phase_number": empire_phase.phase_number,
+                "composite_score": float(empire_phase.composite_score),
+            },
+            "date": asof.isoformat(),
+        }
+
+        metadata = self._create_metadata(
+            source=f"cycles_service:aggregate:{ctx.pricing_pack_id}",
+            asof=asof,
+            ttl=86400
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def scenarios_deleveraging_austerity(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: str,
+        pack_id: Optional[str] = None,
+        ltdc_phase: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Apply austerity deleveraging scenario (government spending cuts, tax increases).
+
+        Capability: scenarios.deleveraging_austerity
+        """
+        logger.info(f"scenarios.deleveraging_austerity: portfolio={portfolio_id}, ltdc_phase={ltdc_phase}")
+
+        from app.services.scenarios import ScenariosService
+        scenarios_service = ScenariosService()
+
+        # Define austerity scenario shocks
+        scenario_spec = {
+            "government_bonds": Decimal("0.15"),  # +15% (flight to safety)
+            "equities": Decimal("-0.20"),          # -20% (economic slowdown)
+            "commodities": Decimal("-0.15"),       # -15% (demand destruction)
+            "currencies_usd": Decimal("0.10"),     # +10% USD strength (deflation)
+        }
+
+        result = await scenarios_service.apply_scenario(
+            portfolio_id=UUID(portfolio_id),
+            scenario_spec=scenario_spec,
+            pack_id=pack_id
+        )
+
+        metadata = self._create_metadata(
+            source=f"scenarios_service:austerity:{pack_id}",
+            asof=ctx.asof_date,
+            ttl=0  # No caching for scenarios
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def scenarios_deleveraging_default(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: str,
+        pack_id: Optional[str] = None,
+        ltdc_phase: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Apply default deleveraging scenario (debt defaults, bankruptcies).
+
+        Capability: scenarios.deleveraging_default
+        """
+        logger.info(f"scenarios.deleveraging_default: portfolio={portfolio_id}, ltdc_phase={ltdc_phase}")
+
+        from app.services.scenarios import ScenariosService
+        scenarios_service = ScenariosService()
+
+        # Define default scenario shocks (severe deflation)
+        scenario_spec = {
+            "government_bonds": Decimal("-0.30"),  # -30% (default risk)
+            "equities": Decimal("-0.50"),           # -50% (crisis)
+            "commodities": Decimal("-0.40"),        # -40% (collapse in demand)
+            "currencies_usd": Decimal("0.20"),      # +20% USD (deflation, flight to safety)
+        }
+
+        result = await scenarios_service.apply_scenario(
+            portfolio_id=UUID(portfolio_id),
+            scenario_spec=scenario_spec,
+            pack_id=pack_id
+        )
+
+        metadata = self._create_metadata(
+            source=f"scenarios_service:default:{pack_id}",
+            asof=ctx.asof_date,
+            ttl=0
+        )
+
+        return self._attach_metadata(result, metadata)
+
+    async def scenarios_deleveraging_money_printing(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: str,
+        pack_id: Optional[str] = None,
+        ltdc_phase: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Apply money printing deleveraging scenario (inflation, currency debasement).
+
+        Capability: scenarios.deleveraging_money_printing
+        """
+        logger.info(f"scenarios.deleveraging_money_printing: portfolio={portfolio_id}, ltdc_phase={ltdc_phase}")
+
+        from app.services.scenarios import ScenariosService
+        scenarios_service = ScenariosService()
+
+        # Define money printing scenario shocks (inflation)
+        scenario_spec = {
+            "government_bonds": Decimal("-0.25"),   # -25% (inflation erodes value)
+            "equities": Decimal("0.10"),             # +10% (nominal gains)
+            "commodities": Decimal("0.30"),          # +30% (inflation hedge)
+            "currencies_usd": Decimal("-0.15"),      # -15% USD (currency debasement)
+        }
+
+        result = await scenarios_service.apply_scenario(
+            portfolio_id=UUID(portfolio_id),
+            scenario_spec=scenario_spec,
+            pack_id=pack_id
+        )
+
+        metadata = self._create_metadata(
+            source=f"scenarios_service:money_printing:{pack_id}",
+            asof=ctx.asof_date,
+            ttl=0
+        )
+
+        return self._attach_metadata(result, metadata)
+
 
 # ============================================================================
-# Factory Function (Singleton Pattern)
+# Singleton Pattern
 # ============================================================================
 
 _macro_hound_instance = None
