@@ -195,10 +195,10 @@ class STDCDetector:
             total_score += contribution
             total_weight += abs(weight)
 
-        # Normalize to 0-100
+        # Normalize to 0-1 (consistent with macro regime confidence scores)
         if total_weight > 0:
-            normalized = (total_score / total_weight) * 100
-            return max(0, min(100, normalized))  # Clamp to 0-100
+            normalized = (total_score / total_weight) / 100
+            return max(0.0, min(1.0, normalized))  # Clamp to 0-1
         return 0.0
 
     def detect_phase(self, indicators: Dict[str, float], as_of_date: date) -> CyclePhase:
@@ -304,8 +304,8 @@ class LTDCDetector:
             total_weight += abs(weight)
 
         if total_weight > 0:
-            normalized = (total_score / total_weight) * 100
-            return max(0, min(100, normalized))
+            normalized = (total_score / total_weight) / 100
+            return max(0.0, min(1.0, normalized))
         return 0.0
 
     def detect_phase(self, indicators: Dict[str, float], as_of_date: date) -> CyclePhase:
@@ -389,8 +389,8 @@ class EmpireDetector:
             total_weight += abs(weight)
 
         if total_weight > 0:
-            normalized = (total_score / total_weight) * 100
-            return max(0, min(100, normalized))
+            normalized = (total_score / total_weight) / 100
+            return max(0.0, min(1.0, normalized))
         return 0.0
 
     def detect_phase(self, indicators: Dict[str, float], as_of_date: date) -> CyclePhase:

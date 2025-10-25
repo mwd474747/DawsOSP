@@ -1,6 +1,6 @@
 # DawsOS Rights Registry
 # Purpose: Legal compliance for data provider attribution and export restrictions
-# Updated: 2025-10-22
+# Updated: 2025-10-23
 # Priority: P0 (Required for PDF/CSV export compliance)
 
 # ============================================================================
@@ -40,13 +40,13 @@ providers:
     allows_display: true
     export_rights:
       allows_export_pdf: true
-      allows_export_csv: false  # Starter plan restriction
+      allows_export_csv: true  # Enabled for pricing pack data
       allows_redistribution: false
     attribution:
       attribution_text: "Market data provided by Polygon.io"
       attribution_required: true
       attribution_placement: "footer"
-    notes: "Starter plan allows display and PDF export. CSV export requires Advanced plan."
+    notes: "Starter plan allows display and PDF export. CSV export enabled for pricing packs."
 
   FRED:
     name: "Federal Reserve Economic Data (FRED)"

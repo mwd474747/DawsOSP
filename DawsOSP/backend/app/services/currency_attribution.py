@@ -87,10 +87,37 @@ class CurrencyAttributor:
         Raises:
             ValueError: If insufficient data for calculation
         """
+        # Validate inputs
+        logger.info(f"compute_attribution called with: portfolio_id={repr(portfolio_id)}, pack_id={repr(pack_id)}")
+
+        if not portfolio_id or not isinstance(portfolio_id, str) or portfolio_id.strip() == "":
+            raise ValueError(f"portfolio_id is required and cannot be empty (got {repr(portfolio_id)})")
+        if not pack_id or not isinstance(pack_id, str) or pack_id.strip() == "":
+            raise ValueError(f"pack_id is required and cannot be empty (got {repr(pack_id)})")
+
         # Get pack date and portfolio base currency
         end_date = await self._get_pack_date(pack_id)
         start_date = end_date - timedelta(days=lookback_days)
         base_ccy = await self._get_base_currency(portfolio_id)
+
+        # Get start pack_id for lookback period
+        start_pack = await self.db.fetchrow(
+            """
+            SELECT id FROM pricing_packs
+            WHERE date = $1
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            start_date,
+        )
+
+        if not start_pack:
+            logger.warning(
+                f"No pricing pack found for start date {start_date}, using end pack"
+            )
+            start_pack_id = pack_id
+        else:
+            start_pack_id = start_pack["id"]
 
         # Get holdings with currencies
         holdings = await self.db.fetch(
@@ -107,28 +134,22 @@ class CurrencyAttributor:
             FROM lots l
             JOIN securities s ON l.security_id = s.id
             JOIN prices p_start ON l.security_id = p_start.security_id
+                AND p_start.pricing_pack_id = $3
             JOIN prices p_end ON l.security_id = p_end.security_id
+                AND p_end.pricing_pack_id = $2
             LEFT JOIN fx_rates fx_start ON s.currency = fx_start.base_ccy
-                AND fx_start.quote_ccy = $3
-                AND fx_start.asof_date = $4
+                AND fx_start.quote_ccy = $4
+                AND fx_start.pricing_pack_id = $3
             LEFT JOIN fx_rates fx_end ON s.currency = fx_end.base_ccy
-                AND fx_end.quote_ccy = $3
-                AND fx_end.asof_date = $5
+                AND fx_end.quote_ccy = $4
+                AND fx_end.pricing_pack_id = $2
             WHERE l.portfolio_id = $1
                 AND l.qty_open > 0
-                AND p_start.pricing_pack_id = (
-                    SELECT id FROM pricing_packs
-                    WHERE asof_date = $4
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                )
-                AND p_end.pricing_pack_id = $2
         """,
             portfolio_id,
             pack_id,
+            start_pack_id,
             base_ccy,
-            start_date,
-            end_date,
         )
 
         if not holdings:
@@ -361,20 +382,20 @@ class CurrencyAttributor:
     async def _get_pack_date(self, pack_id: str) -> date:
         """Get as-of date for pricing pack."""
         row = await self.db.fetchrow(
-            "SELECT asof_date FROM pricing_packs WHERE id = $1", pack_id
+            "SELECT date FROM pricing_packs WHERE id = $1", pack_id
         )
         if not row:
             raise ValueError(f"Pricing pack not found: {pack_id}")
-        return row["asof_date"]
+        return row["date"]
 
     async def _get_base_currency(self, portfolio_id: str) -> str:
         """Get portfolio base currency."""
         row = await self.db.fetchrow(
-            "SELECT base_ccy FROM portfolios WHERE id = $1", portfolio_id
+            "SELECT base_currency FROM portfolios WHERE id = $1", portfolio_id
         )
         if not row:
             raise ValueError(f"Portfolio not found: {portfolio_id}")
-        return row["base_ccy"]
+        return row["base_currency"]
 
     async def _get_portfolio_value(
         self, portfolio_id: str, pack_id: str

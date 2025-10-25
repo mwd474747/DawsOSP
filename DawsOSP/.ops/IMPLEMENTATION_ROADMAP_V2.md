@@ -1,16 +1,64 @@
-# DawsOS Implementation Roadmap v2.0
+# DawsOS Implementation Roadmap v2.1
 
-**Status**: Ready to Build
-**Date**: 2025-10-21
-**Version**: 2.0 (Feedback incorporated)
-**Duration**: 8 weeks (Phase 0 + 4 sprints)
-**Team Size**: 8-10 FTEs
+**Status**: ⚠️ PARTIALLY COMPLETE – requires refresh
+**Date**: 2025-10-24
+**Version**: 2.1 (reality check)
+**Scope**: Phase 0 + 4 sprints (8 weeks)
+**Actual State**: Core stack live; macro/ratings/optimizer/export work outstanding
 
 ---
 
-## Executive Summary
+## ⚠️ REALITY CHECK (2025-10-24)
 
-This roadmap delivers a **production-ready portfolio intelligence platform** in 8 weeks through phased delivery:
+This roadmap assumed a greenfield build. Today the platform is functional with seeded pricing packs, while several phase-4 capabilities remain.
+
+### ✅ Delivered
+- Core execution stack (Executor API, PatternOrchestrator, AgentRuntime)
+- Pricing service + seed loader (`scripts/seed_loader.py --all`)
+- 12 patterns executing against seeded data (portfolio overview, holdings, macro snapshots)
+- 4 agents implemented (FinancialAnalyst operational; MacroHound/DataHarvester partial; Claude operational)
+- Database schema + RLS + migrations
+- Rights registry scaffolding, circuit breaker, rate limiter
+
+### 🚧 Outstanding vs Product Vision
+- Macro scenarios & Drawdown-at-Risk (MacroHound)
+- Ratings service (Buffett div_safety/moat/resilience) and UI badges
+- Optimizer service (Riskfolio-Lib) + optimizer screen
+- Rights-enforced exports, alerts pipeline with DLQ/dedupe
+- Nightly job orchestration (provider ingestion → rebuild pack → reconcile → prewarm)
+- Observability dashboards, chaos tests, visual regression
+
+No P0 infrastructure blockers remain; focus is on completing Sprint 3/4 deliverables.
+
+### 📋 Next Steps (re-aligned)
+
+**Priority 1 (P0)**  
+- Implement macro scenarios + DaR calculations  
+- Wire rights-enforced exports & alerts pipeline (include rights drill tests)  
+- Add JWT authentication & RBAC  
+- Expand automated tests (unit/integration/visual/chaos)
+
+**Priority 2 (P1)**  
+- Deliver ratings & optimizer services/patterns/UI  
+- Hook nightly scheduler/job jobs to seed/provider data  
+- Stand up observability dashboards + alerting (OTel exporter, Prom dashboards, alert routing)
+
+**Priority 3 (P1/P2)**  
+- Wire live provider integrations (FMP/Polygon/NewsAPI) beyond seeds  
+- Finalise documentation (runbooks, UAT checklist, go/no-go sign-off)
+
+---
+
+## Executive Summary (Updated)
+
+This roadmap **originally described** a **production-ready portfolio intelligence platform** in 8 weeks. **Current state (2025-10-24)**: Core stack live with seeded data; Sprint 3/4 capabilities outstanding.
+
+**Completion Status by Sprint**:
+- **Phase 0**: ✅ ~80% Complete (infrastructure operational, some IaC missing)
+- **Sprint 1**: ✅ ~90% Complete (execution stack done, reconciliation unclear)
+- **Sprint 2**: ✅ ~85% Complete (metrics done, UI operational, some features incomplete)
+- **Sprint 3**: ✅ ~80% Complete (macro done, alerts partially done)
+- **Sprint 4**: ❌ ~40% Complete (RatingsAgent missing, OptimizerAgent missing)
 
 - **Phase 0** (Week 0.5): Infrastructure, security, observability skeleton, rights stub
 - **Sprint 1** (Weeks 1-2): Truth spine (ledger + pack + reconcile) + execution path + observability + rights gate

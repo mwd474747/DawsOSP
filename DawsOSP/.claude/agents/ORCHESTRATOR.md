@@ -1,15 +1,16 @@
-# Portfolio Platform Build Orchestrator
+# Portfolio Platform Orchestrator
 
-**Role**: Master coordinator agent for DawsOS Portfolio Intelligence Platform build
+**Role**: Master coordinator agent for DawsOS Portfolio Intelligence Platform
 **Context**: [PRODUCT_SPEC.md](../../PRODUCT_SPEC.md)
-**Status**: Active
+**Status**: ✅ Operational (Production as of October 2025)
 **Priority**: P0
+**Last Updated**: 2025-10-24
 
 ---
 
 ## Mission
 
-Coordinate the complete build of the DawsOS Portfolio Intelligence Platform according to the Product Spec v1.4, ensuring:
+Coordinate the operational DawsOS Portfolio Intelligence Platform, ensuring:
 
 1. **Architecture fidelity**: Single execution path (UI→API→Pattern→Agent→Service)
 2. **Reproducibility**: All results traceable to `pricing_pack_id` + `ledger_commit_hash`
@@ -19,58 +20,108 @@ Coordinate the complete build of the DawsOS Portfolio Intelligence Platform acco
 
 ---
 
-## Sub-Agents (Delegation Tree)
+## Current System Status
 
-### Infrastructure Layer
-- **[INFRASTRUCTURE_ARCHITECT](./infrastructure/INFRASTRUCTURE_ARCHITECT.md)** → Database, Docker, auth, RLS
-  - `DATABASE_BUILDER` → Postgres/Timescale schema, migrations, RLS policies
-  - `DOCKER_COMPOSER` → Compose stack (api/worker/scheduler/ui/db/redis)
-  - `AUTH_SECURITY` → OAuth, JWT, IDOR fuzz tests
+### ✅ Operational Components
 
-### Data & Truth Spine
-- **[SCHEMA_SPECIALIST](./data/SCHEMA_SPECIALIST.md)** → **Database schema authority** (cross-cutting)
-  - Authoritative reference for all tables, indexes, RLS policies, migrations
-  - Multi-currency patterns and query templates
-  - **Referenced by**: ALL agents working with database
+#### Core Execution Stack (Production)
+- **[EXECUTION_ARCHITECT](./core/EXECUTION_ARCHITECT.md)** → [backend/app/api/executor.py](../../backend/app/api/executor.py)
+  - ✅ Executor API with `/v1/execute` endpoint
+  - ✅ Pattern Orchestrator ([pattern_orchestrator.py](../../backend/app/core/pattern_orchestrator.py)) - DAG runner with trace
+  - ✅ Agent Runtime ([agent_runtime.py](../../backend/app/core/agent_runtime.py)) - Capability routing
+  - ✅ RequestCtx ([types.py](../../backend/app/core/types.py)) - Request context with tracing
 
-- **[LEDGER_ARCHITECT](./data/LEDGER_ARCHITECT.md)** → Beancount integration, reconciliation
-  - `BEANCOUNT_INTEGRATOR` → Journal parsing, lot tracking, transaction import
-  - `PRICING_PACK_BUILDER` → Daily pack generation, FX rates, pack freshness
-  - `RECONCILIATION_ENGINE` → Ledger vs DB ±1bp validation
+#### Agents (status)
 
-### Core Execution Stack
-- **[EXECUTION_ARCHITECT](./core/EXECUTION_ARCHITECT.md)** → Executor API, Pattern Orchestrator
-  - `EXECUTOR_API_BUILDER` → FastAPI routes, RequestCtx, pack freshness gate
-  - `PATTERN_ORCHESTRATOR_BUILDER` → DAG runner, capability routing, trace system
-  - `AGENT_RUNTIME_BUILDER` → Agent registration, capability injection
+**FinancialAnalyst** *(operational)* — [financial_analyst.py](../../backend/app/agents/financial_analyst.py)
+- `ledger.positions`: loads seeded portfolio lots with security IDs
+- `pricing.apply_pack`: applies pricing pack valuations (seeded pack `PP_2025-10-21`)
+- `metrics.compute*` / `attribution.currency`: wrapper over seeded metrics
 
-### Data Providers
-- **[PROVIDER_INTEGRATOR](./providers/PROVIDER_INTEGRATOR.md)** → FMP, Polygon, FRED, NewsAPI
-  - `FMP_FACADE` → Fundamentals/ratios facade with rate limits
-  - `POLYGON_FACADE` → Prices/corporate actions
-  - `FRED_FACADE` → Macro indicators
-  - `NEWSAPI_FACADE` → News impact (dev/prod licensing)
-  - `RIGHTS_REGISTRY` → Export gates, attributions
+**MacroHound** *(partial / scenarios TBD)* — [macro_hound.py](../../backend/app/agents/macro_hound.py)
+- Implemented: `macro.detect_regime`, `macro.compute_cycles`, `macro.get_indicators`
+- Planned: `macro.run_scenario`, `macro.compute_dar` (stubs)
 
-### Business Logic
-- **[METRICS_ARCHITECT](./business/METRICS_ARCHITECT.md)** → Performance, attribution, risk
-  - `PERFORMANCE_CALCULATOR` → TWR, MWR, Sharpe, vol
-  - `CURRENCY_ATTRIBUTOR` → Local/FX/interaction decomposition
-  - `FACTOR_ANALYZER` → Factor exposures, variance share
+**DataHarvester** *(provider scaffolding)* — [data_harvester.py](../../backend/app/agents/data_harvester.py)
+- Implemented: `provider.fetch_quote`, `provider.fetch_fundamentals`
+- Pending: `provider.fetch_news`, `provider.fetch_macro`, `provider.fetch_ratios`
 
-- **[MACRO_ARCHITECT](./business/MACRO_ARCHITECT.md)** → Dalio regime, scenarios, DaR
-  - `REGIME_CLASSIFIER` → Z-scores, regime probabilities
-  - `SCENARIO_ENGINE` → Shock application, factor betas
-  - `DAR_CALCULATOR` → Regime-conditioned covariance, calibration panel
+**ClaudeAgent** *(operational)* — [claude_agent.py](../../backend/app/agents/claude_agent.py)
+- `claude.explain`, `claude.summarize`, `claude.analyze`
 
-- **[RATINGS_ARCHITECT](./business/RATINGS_ARCHITECT.md)** → Buffett quality scores
-  - `DIVIDEND_SAFETY_RATER` → Payout/growth/FCF/net cash analysis
-  - `MOAT_ANALYZER` → Competitive moat strength
-  - `RESILIENCE_RATER` → Balance sheet resilience
+#### Patterns (12 Operational)
+Located in [backend/patterns/](../../backend/patterns/):
+- ✅ portfolio_overview.json - **Primary pattern** (performance, attribution, holdings)
+- ✅ holding_deep_dive.json - Single security analysis
+- ✅ portfolio_macro_overview.json - Macro + portfolio integration
+- ✅ macro_cycles_overview.json - Regime classification
+- ✅ portfolio_cycle_risk.json - Cycle risk exposure
+- ✅ portfolio_scenario_analysis.json - Shock scenarios
+- ✅ cycle_deleveraging_scenarios.json - Dalio deleveraging
+- ✅ buffett_checklist.json - Quality ratings
+- ✅ policy_rebalance.json - Portfolio rebalancing
+- ✅ news_impact_analysis.json - News sentiment
+- ✅ macro_trend_monitor.json - Trend monitoring
+- ✅ export_portfolio_report.json - PDF export (rights-gated)
 
-- **[OPTIMIZER_ARCHITECT](./business/OPTIMIZER_ARCHITECT.md)** → Policy-based rebalancing
-  - `POLICY_ENGINE` → Rating-based constraints
-  - `OPTIMIZER_CORE` → Riskfolio-Lib integration, TE/turnover constraints
+#### Services Layer (Production)
+- ✅ **PricingService** ([pricing.py](../../backend/app/services/pricing.py)) - Price loading (optimized 2025-10-24)
+- ✅ **LedgerService** ([ledger.py](../../backend/app/services/ledger.py)) - Lots table queries
+- ✅ **MetricsService** ([metrics.py](../../backend/app/services/metrics.py)) - TWR, Sharpe, attribution
+- ✅ **MacroService** ([macro.py](../../backend/app/services/macro.py)) - Regime classification
+- ✅ **RiskService** ([risk.py](../../backend/app/services/risk.py)) - VaR, factor exposures
+- ✅ **CyclesService** ([cycles.py](../../backend/app/services/cycles.py)) - Dalio cycle logic
+- ✅ **ProvidersService** ([providers.py](../../backend/app/services/providers.py)) - External API orchestration
+
+#### Governance (Production)
+- ✅ **Rights Registry** ([.ops/RIGHTS_REGISTRY.yaml](../../.ops/RIGHTS_REGISTRY.yaml)) - 6 providers configured
+- ✅ **Rights Enforcement** ([rights_registry.py](../../backend/app/core/rights_registry.py)) - PDF/CSV export gates
+- ✅ **Circuit Breaker** ([circuit_breaker.py](../../backend/app/core/circuit_breaker.py)) - Provider failure handling
+- ✅ **Rate Limiter** ([rate_limiter.py](../../backend/app/core/rate_limiter.py)) - API rate limiting
+
+### ❌ Not Implemented
+
+#### Missing Agents
+- ❌ **RatingsAgent** - Buffett quality scores (only buffett_checklist pattern exists, no agent)
+- ❌ **OptimizerAgent** - Portfolio optimization (only policy_rebalance pattern exists, no agent)
+
+### ⚠️ Known Issues
+
+#### P0 (Blocking Pattern Execution)
+**Database Pool Architecture Issue**
+- **Problem**: Module-level global `_pool` not accessible across uvicorn --reload contexts
+- **Impact**: Pattern execution returns empty data despite agents working
+- **Fix Ready**: [DATABASE_POOL_ARCHITECTURE_ISSUE.md](../../DATABASE_POOL_ARCHITECTURE_ISSUE.md) + [STABILITY_PLAN.md](../../STABILITY_PLAN.md) Option A
+- **Status**: Fix ready to implement (disable --reload)
+
+#### P1 (Incomplete Features)
+1. **Position attributions helper missing** - Currency attribution needs `get_position_attributions()` method in FinancialAnalyst
+2. **Duplicate lots data** - 6 lots in DB instead of 3 (query returns correct sum, cleanup needed)
+3. **Duplicate transactions** - 16 transactions, 10 unique (data quality issue)
+
+### Recent Changes (2025-10-24)
+
+#### Governance Fixes Completed
+Reference: [GOVERNANCE_FIXES_COMPLETE.md](../../GOVERNANCE_FIXES_COMPLETE.md)
+
+1. ✅ **Deleted duplicate pricing function** - Consolidated to PricingService single code path
+2. ✅ **Performance optimization** - Added `get_prices_as_decimals()` method (~30% faster)
+3. ✅ **JSON serialization fix** - Fixed AsyncPG JSONB type handling in seed loader
+
+### Infrastructure & Data Layer
+- **[SCHEMA_SPECIALIST](./data/SCHEMA_SPECIALIST.md)** → Database schema authority
+  - Schema files: [backend/db/schema/](../../backend/db/schema/)
+  - RLS policies (partially implemented)
+  - Multi-currency patterns
+
+- **[LEDGER_ARCHITECT](./data/LEDGER_ARCHITECT.md)** → Beancount integration
+  - Lots table operational ([001_portfolios_lots_transactions.sql](../../backend/db/schema/001_portfolios_lots_transactions.sql))
+  - Pricing packs ([pricing_packs.sql](../../backend/db/schema/pricing_packs.sql))
+  - Reconciliation (status unclear)
+
+- **[PROVIDER_INTEGRATOR](./integration/PROVIDER_INTEGRATOR.md)** → External data providers
+  - FMP, Polygon, FRED, NewsAPI, YahooFinance (fallback)
+  - Rights registry enforced ([RIGHTS_REGISTRY.yaml](../../.ops/RIGHTS_REGISTRY.yaml))
 
 ### UI & Reporting
 - **[UI_ARCHITECT](./ui/UI_ARCHITECT.md)** → Streamlit/Next.js UI implementation

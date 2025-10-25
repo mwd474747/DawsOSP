@@ -1,14 +1,32 @@
 # RATINGS_ARCHITECT — Buffett Quality Scoring Specialist
 
 **Agent Type**: Business Logic
-**Phase**: Week 3-4 (Analytics & Intelligence)
-**Priority**: P1 (High - Core differentiator)
-**Status**: Specification Complete
+**Phase**: Future Enhancement
+**Priority**: P2 (Future - Core differentiator when implemented)
+**Status**: ❌ NOT IMPLEMENTED (Pattern exists, no agent code)
 **Created**: 2025-10-21
+**Last Updated**: 2025-10-24
 
 ---
 
-## Mission
+## Current Status
+
+### ❌ Agent Not Implemented
+- **No RatingsAgent file** in [backend/app/agents/](../../../backend/app/agents/)
+- **Pattern exists**: [buffett_checklist.json](../../../backend/patterns/buffett_checklist.json) defines expected capabilities
+- **Impact**: Patterns calling `ratings.*` capabilities will fail or return stub data
+- **Workaround**: Ratings features unavailable until agent is built
+
+### ✅ Pattern Schema Ready
+The [buffett_checklist.json](../../../backend/patterns/buffett_checklist.json) pattern is complete and defines:
+- `ratings.dividend_safety` capability
+- `ratings.moat_strength` capability
+- `ratings.resilience` capability
+- Expected inputs/outputs for each rating type
+
+---
+
+## Mission (When Implemented)
 
 Implement **Warren Buffett's quality framework** with three quantitative scores (0-10 scale): **Dividend Safety**, **Moat Strength**, and **Resilience**, using fundamental data from FMP and stored ratings rubrics from seeds.
 

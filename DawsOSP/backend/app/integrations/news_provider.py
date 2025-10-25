@@ -18,7 +18,7 @@ Endpoints:
     - /v2/top-headlines (breaking news)
 
 Usage:
-    provider = NewsAPIProvider(api_key=settings.NEWS_API_KEY, tier="dev")
+    provider = NewsAPIProvider(api_key=settings.NEWSAPI_KEY, tier="dev")
     articles = await provider.search("AAPL", from_date, to_date)
 
 IMPORTANT:

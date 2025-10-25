@@ -39,7 +39,7 @@ playwright install chromium
 # Terminal 1: Start UI with mock client
 cd frontend
 export USE_MOCK_CLIENT="true"
-streamlit run ui/screens/portfolio_overview.py --server.port=8501
+streamlit run frontend/main.py --server.port=8501
 ```
 
 ### 2. Capture Baseline Screenshots (First Run)
@@ -207,7 +207,7 @@ jobs:
       - name: Start Streamlit (background)
         run: |
           export USE_MOCK_CLIENT="true"
-          streamlit run frontend/ui/screens/portfolio_overview.py \
+          streamlit run frontend/main.py \
             --server.port=8501 \
             --server.headless=true &
           sleep 10  # Wait for app to start
@@ -253,7 +253,7 @@ playwright._impl._api_types.TimeoutError: Timeout 30000ms exceeded.
 **Solution**:
 Ensure Streamlit is running on http://localhost:8501:
 ```bash
-streamlit run frontend/ui/screens/portfolio_overview.py --server.port=8501
+streamlit run frontend/main.py --server.port=8501
 ```
 
 ---

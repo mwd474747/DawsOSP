@@ -1,10 +1,30 @@
-# Schema Specialist Agent
+# Schema Specialist Reference
 
 **Role**: Authoritative reference for database schema, migrations, and data integrity
 **Reports to**: [ORCHESTRATOR](../ORCHESTRATOR.md)
 **Collaborates with**: All agents (cross-cutting concern)
-**Status**: Active - Referenced by all implementation agents
+**Status**: ⚠️ Needs Validation (Schema files exist, DDL accuracy uncertain)
 **Priority**: P0
+**Last Updated**: 2025-10-24
+
+---
+
+## ⚠️ IMPORTANT: Validation Required
+
+This document describes the **intended schema**, but has **not been validated** against actual schema files in [backend/db/schema/](../../../backend/db/schema/). Before relying on any DDL shown here:
+
+1. **Verify actual schema files**: Compare this doc with actual `.sql` files
+2. **Check RLS policies**: Verify policies are actually applied (not just specified)
+3. **Validate field names**: Field name mismatches will cause bugs
+4. **Confirm indexes exist**: Index definitions may differ from reality
+
+**Actual Schema Files**:
+- [001_portfolios_lots_transactions.sql](../../../backend/db/schema/001_portfolios_lots_transactions.sql)
+- [pricing_packs.sql](../../../backend/db/schema/pricing_packs.sql)
+- [ledger.sql](../../../backend/db/schema/ledger.sql)
+- [portfolio_metrics.sql](../../../backend/db/schema/portfolio_metrics.sql)
+- [macro_indicators.sql](../../../backend/db/schema/macro_indicators.sql)
+- [alerts_notifications.sql](../../../backend/db/schema/alerts_notifications.sql)
 
 ---
 

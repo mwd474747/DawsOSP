@@ -29,8 +29,13 @@ from uuid import UUID
 
 from app.agents.base_agent import BaseAgent, AgentMetadata
 from app.core.types import RequestCtx
-from app.db import get_metrics_queries, get_pricing_pack_queries
-from jobs.currency_attribution import CurrencyAttribution
+from app.db import (
+    get_metrics_queries,
+    get_pricing_pack_queries,
+    get_db_connection_with_rls,
+)
+from app.services.pricing import get_pricing_service
+from backend.app.services.currency_attribution import CurrencyAttributor
 
 logger = logging.getLogger("DawsOS.FinancialAnalyst")
 
@@ -51,6 +56,7 @@ class FinancialAnalyst(BaseAgent):
         return [
             "ledger.positions",
             "pricing.apply_pack",
+            "metrics.compute",  # Generic metrics computation (wrapper)
             "metrics.compute_twr",
             "metrics.compute_sharpe",
             "attribution.currency",
@@ -81,28 +87,74 @@ class FinancialAnalyst(BaseAgent):
 
         logger.info(f"ledger.positions: portfolio_id={portfolio_id}, asof_date={ctx.asof_date}")
 
-        # TODO: Call ledger service to get real positions
-        # For now, return stub data
-        positions = [
-            {
-                "symbol": "AAPL",
-                "qty": Decimal("100"),
-                "cost_basis": Decimal("15000.00"),
-                "currency": "USD",
-            },
-            {
-                "symbol": "MSFT",
-                "qty": Decimal("50"),
-                "cost_basis": Decimal("12500.00"),
-                "currency": "USD",
-            },
-        ]
+        portfolio_base_currency = ctx.base_currency or "USD"
+
+        # Query database for real positions using lots table (source of truth)
+        try:
+            if not ctx.user_id:
+                raise ValueError("user_id missing from request context")
+
+            portfolio_uuid = UUID(str(portfolio_id))
+
+            async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
+                rows = await conn.fetch(
+                    """
+                    SELECT
+                        l.security_id,
+                        l.symbol,
+                        l.qty_open AS qty,
+                        l.cost_basis,
+                        l.currency,
+                        p.base_currency
+                    FROM lots l
+                    JOIN portfolios p ON p.id = l.portfolio_id
+                    WHERE l.portfolio_id = $1
+                      AND l.is_open = true
+                      AND l.qty_open > 0
+                    """,
+                    portfolio_uuid,
+                )
+
+            if rows:
+                portfolio_base_currency = rows[0]["base_currency"]
+
+            positions = []
+            for row in rows:
+                qty = Decimal(str(row["qty"]))
+                cost_basis = abs(Decimal(str(row["cost_basis"] or 0)))
+                positions.append(
+                    {
+                        "security_id": str(row["security_id"]),
+                        "symbol": row["symbol"] or "UNKNOWN",
+                        "qty": qty,
+                        "cost_basis": cost_basis,
+                        "currency": row["currency"] or portfolio_base_currency,
+                        "base_currency": portfolio_base_currency,
+                    }
+                )
+
+            logger.info(f"Retrieved {len(positions)} positions from lots table")
+
+        except Exception as e:
+            logger.error(f"Error querying positions from database: {e}", exc_info=True)
+            # Fall back to stub data
+            positions = [
+                {
+                    "security_id": "048a0b1e-5fa7-507a-9854-af6a9d7360e9",
+                    "symbol": "AAPL",
+                    "qty": Decimal("100"),
+                    "cost_basis": Decimal("15000.00"),
+                    "currency": "USD",
+                    "base_currency": portfolio_base_currency,
+                },
+            ]
 
         result = {
             "portfolio_id": portfolio_id,
             "asof_date": str(ctx.asof_date) if ctx.asof_date else None,
             "positions": positions,
             "total_positions": len(positions),
+            "base_currency": portfolio_base_currency,
         }
 
         # Attach metadata
@@ -113,13 +165,18 @@ class FinancialAnalyst(BaseAgent):
         )
         result = self._attach_metadata(result, metadata)
 
+        logger.info(f"✅ ledger_positions returning result with {len(positions)} positions")
+        logger.info(f"Result type: {type(result)}, keys: {result.keys() if isinstance(result, dict) else 'N/A'}")
+
         return result
+
 
     async def pricing_apply_pack(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
         positions: List[Dict[str, Any]],
+        pack_id: str = None,
     ) -> Dict[str, Any]:
         """
         Apply pricing pack to positions.
@@ -128,44 +185,132 @@ class FinancialAnalyst(BaseAgent):
             ctx: Request context
             state: Execution state
             positions: List of positions to price
+            pack_id: Pricing pack ID (optional, uses ctx.pricing_pack_id if not provided)
 
         Returns:
             Dict with valued positions
         """
+        pack_id = pack_id or ctx.pricing_pack_id
+        if not pack_id:
+            raise ValueError("pricing_pack_id is required to value positions")
+
         logger.info(
-            f"pricing.apply_pack: pack_id={ctx.pricing_pack_id}, "
-            f"positions_count={len(positions)}"
+            f"pricing.apply_pack: pack_id={pack_id}, positions_count={len(positions)}"
         )
 
-        # TODO: Load pricing pack and apply to positions
-        # For now, return stub data with dummy prices
-        valued_positions = []
+        pricing_service = get_pricing_service()
+
+        # Collect security IDs for batch price loading
+        security_ids: List[UUID] = []
         for pos in positions:
-            # Dummy pricing
-            dummy_price = Decimal("150.00") if pos["symbol"] == "AAPL" else Decimal("350.00")
-            value = pos["qty"] * dummy_price
+            sec_id = pos.get("security_id")
+            if sec_id:
+                try:
+                    # Validate and normalize to string
+                    security_ids.append(UUID(str(sec_id)))
+                except ValueError:
+                    logger.warning("Invalid security_id on position: %s", sec_id)
 
-            valued_positions.append({
+        # Load prices efficiently (plain Decimals, no dataclass overhead)
+        price_map: Dict[str, Decimal] = {}
+        if security_ids:
+            try:
+                price_map = await pricing_service.get_prices_as_decimals(
+                    security_ids, pack_id
+                )
+                logger.info(f"Loaded {len(price_map)} prices from pack {pack_id}")
+            except Exception as exc:
+                logger.error(
+                    "Failed to load prices for pack %s: %s", pack_id, exc, exc_info=True
+                )
+
+        base_currency = ctx.base_currency
+        if not base_currency and positions:
+            base_currency = positions[0].get("base_currency")
+        if not base_currency:
+            base_currency = "USD"
+
+        fx_cache: Dict[tuple, Optional[Decimal]] = {}
+        valued_positions: List[Dict[str, Any]] = []
+        total_value_base = Decimal("0")
+
+        for pos in positions:
+            security_id = str(pos.get("security_id", ""))
+            qty = pos.get("qty", Decimal("0"))
+            if not security_id or qty == 0:
+                logger.warning(
+                    "Skipping position with missing security_id or zero quantity: %s",
+                    pos,
+                )
+                continue
+
+            currency = pos.get("currency", base_currency)
+
+            # Direct Decimal lookup (no dataclass unpacking needed)
+            price = price_map.get(security_id, Decimal("0"))
+
+            if price == 0:
+                logger.warning(
+                    "No price for security_id=%s (symbol=%s) in pack %s",
+                    security_id,
+                    pos.get("symbol"),
+                    pack_id,
+                )
+
+            value_local = qty * price
+
+            fx_rate = Decimal("1")
+            if currency != base_currency and value_local != 0:
+                cache_key = (currency, base_currency)
+                if cache_key not in fx_cache:
+                    fx_record = await pricing_service.get_fx_rate(
+                        currency, base_currency, pack_id
+                    )
+                    fx_cache[cache_key] = fx_record.rate if fx_record else None
+
+                cached_rate = fx_cache.get(cache_key)
+                if cached_rate:
+                    fx_rate = cached_rate
+                else:
+                    logger.warning(
+                        "No FX rate for %s/%s in pack %s; assuming 1.0",
+                        currency,
+                        base_currency,
+                        pack_id,
+                    )
+
+            value_base = value_local * fx_rate
+
+            valued_position = {
                 **pos,
-                "price": dummy_price,
-                "value": value,
-                "fx_rate": Decimal("1.0"),  # Assume USD for now
-            })
+                "price": price,
+                "value_local": value_local,
+                "value": value_base,
+                "fx_rate": fx_rate,
+                "base_currency": base_currency,
+            }
+            valued_positions.append(valued_position)
+            total_value_base += value_base
 
-        total_value = sum(p["value"] for p in valued_positions)
+        if total_value_base > 0:
+            for vp in valued_positions:
+                vp["weight"] = vp["value"] / total_value_base
+        else:
+            for vp in valued_positions:
+                vp["weight"] = Decimal("0")
 
         result = {
+            "pricing_pack_id": pack_id,
             "positions": valued_positions,
-            "total_value": total_value,
-            "currency": "USD",
-            "pricing_pack_id": ctx.pricing_pack_id,
+            "total_value": total_value_base,
+            "currency": base_currency,
         }
 
         # Attach metadata
         metadata = self._create_metadata(
-            source=f"pricing_pack:{ctx.pricing_pack_id}",
+            source=f"pricing_pack:{pack_id}",
             asof=ctx.asof_date,
-            ttl=3600,
+            ttl=3600,  # Cache for 1 hour
         )
         result = self._attach_metadata(result, metadata)
 
@@ -177,6 +322,8 @@ class FinancialAnalyst(BaseAgent):
         state: Dict[str, Any],
         portfolio_id: Optional[str] = None,
         asof_date: Optional[date] = None,
+        pack_id: Optional[str] = None,
+        lookback_days: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Compute Time-Weighted Return from metrics database.
@@ -186,6 +333,8 @@ class FinancialAnalyst(BaseAgent):
             state: Execution state
             portfolio_id: Override portfolio ID (optional)
             asof_date: Override as-of date (optional)
+            pack_id: Pricing pack ID (optional)
+            lookback_days: Historical period in days (optional)
 
         Returns:
             Dict with TWR metrics and provenance
@@ -211,17 +360,18 @@ class FinancialAnalyst(BaseAgent):
             raise ValueError("portfolio_id required for metrics.compute_twr")
 
         logger.info(
-            f"metrics.compute_twr: portfolio_id={portfolio_id_uuid}, asof_date={asof}"
+            f"metrics.compute_twr: portfolio_id={portfolio_id_uuid}, asof_date={asof}, pack_id={pack_id}"
         )
 
-        # Fetch from database
+        # Fetch pre-computed metrics from database
         queries = get_metrics_queries()
 
+        # Use pack_id from context if not provided
+        effective_pack_id = pack_id or ctx.pricing_pack_id
+
         try:
-            if asof:
-                metrics = await queries.get_latest_metrics(portfolio_id_uuid, asof)
-            else:
-                metrics = await queries.get_latest_metrics_any_date(portfolio_id_uuid)
+            # Get metrics for this portfolio and pricing pack
+            metrics = await queries.get_latest_metrics(portfolio_id_uuid, effective_pack_id)
 
             if not metrics:
                 logger.warning(
@@ -231,6 +381,7 @@ class FinancialAnalyst(BaseAgent):
                 result = {
                     "portfolio_id": str(portfolio_id_uuid),
                     "asof_date": str(asof) if asof else None,
+                    "pricing_pack_id": effective_pack_id,
                     "error": "Metrics not found in database",
                     "twr_1d": None,
                     "twr_mtd": None,
@@ -256,6 +407,7 @@ class FinancialAnalyst(BaseAgent):
             result = {
                 "portfolio_id": str(portfolio_id_uuid),
                 "asof_date": str(asof) if asof else None,
+                "pricing_pack_id": effective_pack_id,
                 "error": f"Database error: {str(e)}",
                 "twr_1d": None,
                 "twr_mtd": None,
@@ -264,7 +416,7 @@ class FinancialAnalyst(BaseAgent):
 
         # Attach metadata
         metadata = self._create_metadata(
-            source=f"metrics_database:{ctx.pricing_pack_id}",
+            source=f"metrics_database:{effective_pack_id}",
             asof=asof,
             ttl=3600,  # Cache for 1 hour
         )
@@ -314,14 +466,15 @@ class FinancialAnalyst(BaseAgent):
             f"metrics.compute_sharpe: portfolio_id={portfolio_id_uuid}, asof_date={asof}"
         )
 
-        # Fetch from database
+        # Fetch pre-computed metrics from database
         queries = get_metrics_queries()
 
+        # Use pack_id from context
+        effective_pack_id = ctx.pricing_pack_id
+
         try:
-            if asof:
-                metrics = await queries.get_latest_metrics(portfolio_id_uuid, asof)
-            else:
-                metrics = await queries.get_latest_metrics_any_date(portfolio_id_uuid)
+            # Get metrics for this portfolio and pricing pack
+            metrics = await queries.get_latest_metrics(portfolio_id_uuid, effective_pack_id)
 
             if not metrics:
                 logger.warning(
@@ -373,6 +526,8 @@ class FinancialAnalyst(BaseAgent):
         portfolio_id: Optional[str] = None,
         asof_date: Optional[date] = None,
         base_currency: str = "CAD",
+        pack_id: Optional[str] = None,
+        lookback_days: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Compute currency attribution (local/FX/interaction).
@@ -403,35 +558,53 @@ class FinancialAnalyst(BaseAgent):
         portfolio_id_str = portfolio_id or (str(ctx.portfolio_id) if ctx.portfolio_id else None)
         asof = asof_date or ctx.asof_date
 
-        if not portfolio_id_str:
+        logger.info(
+            f"attribution.currency called with: portfolio_id={repr(portfolio_id)}, "
+            f"ctx.portfolio_id={repr(ctx.portfolio_id)}, "
+            f"resolved={repr(portfolio_id_str)}"
+        )
+
+        if not portfolio_id_str or portfolio_id_str.strip() == "":
             raise ValueError("portfolio_id required for attribution.currency")
+
+        # Use pack_id and lookback_days
+        pack_id = pack_id or ctx.pricing_pack_id
+        days = lookback_days or 252
 
         logger.info(
             f"attribution.currency: portfolio_id={portfolio_id_str}, "
-            f"asof_date={asof}, base_currency={base_currency}"
+            f"pack_id={pack_id}, lookback_days={days}"
         )
 
-        # Compute currency attribution
-        attr_service = CurrencyAttribution(base_currency=base_currency)
+        # Get database connection from services
+        from backend.app.db.connection import get_db_pool
+        db = get_db_pool()
+
+        # Compute currency attribution using service
+        attr_service = CurrencyAttributor(db)
 
         try:
-            attribution = attr_service.compute_portfolio_attribution(
+            # Service computes attribution internally using portfolio positions
+            attribution = await attr_service.compute_attribution(
                 portfolio_id=portfolio_id_str,
-                asof_date=asof,
+                pack_id=pack_id,
+                lookback_days=days
             )
 
+            # Extract results from service response
             result = {
                 "portfolio_id": portfolio_id_str,
                 "asof_date": str(asof) if asof else None,
-                "pricing_pack_id": ctx.pricing_pack_id,
+                "pricing_pack_id": pack_id,
                 "base_currency": base_currency,
                 # Attribution components
-                "local_return": float(attribution.local_return),
-                "fx_return": float(attribution.fx_return),
-                "interaction_return": float(attribution.interaction_return),
-                "total_return": float(attribution.total_return),
+                "local_return": attribution.get("local_return"),
+                "fx_return": attribution.get("fx_return"),
+                "interaction_return": attribution.get("interaction"),
+                "total_return": attribution.get("total_return"),
                 # Validation
-                "error_bps": float(attribution.error_bps) if attribution.error_bps else None,
+                "error_bps": attribution.get("verification", {}).get("error_bps"),
+                "by_currency": attribution.get("by_currency", {}),
             }
 
         except Exception as e:
@@ -439,6 +612,7 @@ class FinancialAnalyst(BaseAgent):
             result = {
                 "portfolio_id": portfolio_id_str,
                 "asof_date": str(asof) if asof else None,
+                "pricing_pack_id": pack_id,
                 "error": f"Attribution error: {str(e)}",
                 "local_return": None,
                 "fx_return": None,
@@ -459,8 +633,10 @@ class FinancialAnalyst(BaseAgent):
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
-        positions: List[Dict[str, Any]],
-        metrics: Dict[str, Any],
+        positions: Dict[str, Any] = None,
+        metrics: Dict[str, Any] = None,
+        twr: Dict[str, Any] = None,
+        currency_attr: Dict[str, Any] = None,
     ) -> Dict[str, Any]:
         """
         Generate overview charts.

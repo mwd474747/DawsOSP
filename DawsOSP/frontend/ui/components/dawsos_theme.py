@@ -82,16 +82,120 @@ def apply_theme():
            ======================================================================== */
 
         .stApp {
-            background-color: var(--bg-primary);
+            background: linear-gradient(135deg, hsl(210, 20%, 10%) 0%, hsl(210, 15%, 12%) 100%);
             color: var(--text-primary);
             font-family: var(--font-body);
         }
 
         /* Main content area */
         .main .block-container {
-            padding-top: var(--spacing-xl);
+            padding-top: 0;
             padding-bottom: var(--spacing-xl);
-            max-width: 1400px;
+            max-width: 1600px;
+        }
+
+        /* Premium Banner */
+        .premium-banner {
+            position: relative;
+            background: linear-gradient(135deg,
+                hsl(210, 25%, 8%) 0%,
+                hsl(210, 20%, 12%) 50%,
+                hsl(210, 25%, 8%) 100%);
+            border-bottom: 1px solid hsl(185, 100%, 50%, 0.15);
+            padding: var(--spacing-lg) var(--spacing-xl);
+            margin: calc(-1 * var(--spacing-xl)) calc(-1 * var(--spacing-xl)) var(--spacing-xl);
+            box-shadow:
+                0 4px 24px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.02);
+            overflow: hidden;
+        }
+
+        .premium-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                hsl(185, 100%, 50%, 0.3) 50%,
+                transparent 100%);
+        }
+
+        .premium-banner::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -20%;
+            width: 40%;
+            height: 100%;
+            background: radial-gradient(ellipse at center,
+                hsl(185, 100%, 50%, 0.03) 0%,
+                transparent 70%);
+            pointer-events: none;
+        }
+
+        .banner-title {
+            font-size: 2.75rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg,
+                hsl(210, 20%, 98%) 0%,
+                hsl(185, 100%, 85%) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+            padding: 0;
+            line-height: 1.2;
+            text-shadow: 0 2px 8px rgba(0, 217, 255, 0.1);
+        }
+
+        .banner-subtitle {
+            font-size: 1.125rem;
+            color: hsl(210, 12%, 65%);
+            font-weight: 400;
+            letter-spacing: 0.025em;
+            margin-top: var(--spacing-sm);
+            margin-bottom: 0;
+        }
+
+        .banner-meta {
+            display: flex;
+            gap: var(--spacing-lg);
+            margin-top: var(--spacing-md);
+            flex-wrap: wrap;
+        }
+
+        .banner-meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .banner-meta-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: hsl(210, 10%, 55%);
+            font-weight: 600;
+        }
+
+        .banner-meta-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .banner-meta-value.positive {
+            color: hsl(140, 60%, 60%);
+        }
+
+        .banner-meta-value.negative {
+            color: hsl(0, 85%, 65%);
         }
 
         /* Headers */
@@ -499,6 +603,43 @@ def trace_step(name: str, duration_ms: float, sources: list = None):
         <div class="trace-step-name">{name}</div>
         <div class="trace-step-duration">{duration_ms:.1f}ms</div>
         {sources_html}
+    </div>
+    """
+
+    st.markdown(html, unsafe_allow_html=True)
+
+
+def premium_banner(title: str, subtitle: str = None, meta_items: list = None):
+    """
+    Render premium banner with title and optional metadata.
+
+    Args:
+        title: Main title text
+        subtitle: Subtitle text (optional)
+        meta_items: List of (label, value, positive/negative/neutral) tuples
+    """
+    subtitle_html = f'<p class="banner-subtitle">{subtitle}</p>' if subtitle else ''
+
+    meta_html = ''
+    if meta_items:
+        meta_items_html = []
+        for item in meta_items:
+            label = item[0]
+            value = item[1]
+            value_class = f' {item[2]}' if len(item) > 2 and item[2] in ['positive', 'negative'] else ''
+            meta_items_html.append(f"""
+                <div class="banner-meta-item">
+                    <div class="banner-meta-label">{label}</div>
+                    <div class="banner-meta-value{value_class}">{value}</div>
+                </div>
+            """)
+        meta_html = f'<div class="banner-meta">{"".join(meta_items_html)}</div>'
+
+    html = f"""
+    <div class="premium-banner">
+        <h1 class="banner-title">{title}</h1>
+        {subtitle_html}
+        {meta_html}
     </div>
     """
 

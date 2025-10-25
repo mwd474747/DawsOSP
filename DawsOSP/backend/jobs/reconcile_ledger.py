@@ -1,26 +1,35 @@
 """
 Ledger Reconciliation Job
 
-Purpose: Reconcile ledger NAV vs pricing pack NAV (±1bp tolerance)
-Updated: 2025-10-22
+Purpose: Reconcile ledger NAV vs database NAV (±1bp tolerance)
+Updated: 2025-10-23
 Priority: P0 (Critical for Sprint 1 - Truth Spine)
 
 Features:
-    - Compare ledger NAV vs pricing pack NAV
-    - ±1bp tolerance
-    - Store reconciliation results
+    - Compare ledger NAV vs database NAV
+    - ±1bp tolerance validation
+    - Detailed discrepancy diagnostics (missing positions, quantity mismatches)
+    - Store reconciliation results with full provenance
     - Alert on reconciliation failure
-    - Nightly scheduler
+    - Nightly scheduler integration
 
 Architecture:
-    Ledger Service → Holdings → Pricing Pack → Reconciliation → Database
+    Ledger Service → Compute Ledger NAV → Compute DB NAV → Compare → Store Results → Alert
+
+Truth Spine Principle:
+    The Beancount ledger is the immutable source of truth. The database is a
+    derivative view that must reconcile to ±1 basis point. This job validates
+    that invariant nightly.
 
 Usage:
-    # Manual run
+    # Manual run - single portfolio
     python -m backend.jobs.reconcile_ledger --portfolio-id <uuid>
 
+    # Manual run - all portfolios
+    python -m backend.jobs.reconcile_ledger --all
+
     # Nightly scheduler (APScheduler)
-    @scheduler.scheduled_job("cron", hour=1, minute=0)
+    @scheduler.scheduled_job("cron", hour=0, minute=10)
     async def reconcile_all_portfolios():
         ...
 """
@@ -107,64 +116,44 @@ class ReconciliationService:
         portfolio_id: UUID,
         as_of_date: date,
         ledger_commit_hash: str,
-        base_currency: str = "CAD",
+        pricing_pack_id: str,
     ) -> Decimal:
         """
-        Compute portfolio NAV from ledger transactions.
+        Compute portfolio NAV from ledger transactions using pricing pack.
 
         Args:
             portfolio_id: Portfolio UUID
             as_of_date: NAV as-of date
             ledger_commit_hash: Ledger commit hash
-            base_currency: Base currency for NAV
+            pricing_pack_id: Pricing pack ID for prices
 
         Returns:
             NAV in base currency
         """
-        # Get balances from ledger
-        balances = await self.ledger_service.get_portfolio_balance(
+        # Use ledger service's compute_ledger_nav method
+        nav = await self.ledger_service.compute_ledger_nav(
             portfolio_id,
             as_of_date,
             ledger_commit_hash,
+            pricing_pack_id,
         )
 
-        if not balances:
-            logger.warning(f"No ledger balances found for portfolio {portfolio_id}")
-            return Decimal("0")
-
-        # If single currency and matches base, return directly
-        if len(balances) == 1 and base_currency in balances:
-            return balances[base_currency]
-
-        # Multi-currency: convert all to base currency
-        # TODO: Fetch FX rates from pricing pack
-        # For now, assume single currency or return first currency
-        if base_currency in balances:
-            nav = balances[base_currency]
-        else:
-            # Return first currency (warning: may not be base currency)
-            nav = list(balances.values())[0]
-            logger.warning(
-                f"Base currency {base_currency} not found in ledger balances, "
-                f"using {list(balances.keys())[0]}"
-            )
-
-        logger.debug(f"Ledger NAV for {portfolio_id}: {nav} {base_currency}")
+        logger.debug(f"Ledger NAV for {portfolio_id}: {nav}")
         return nav
 
-    async def compute_pricing_nav(
+    async def compute_db_nav(
         self,
         portfolio_id: UUID,
-        pack_id: str,
-        base_currency: str = "CAD",
+        as_of_date: date,
+        pricing_pack_id: str,
     ) -> Decimal:
         """
-        Compute portfolio NAV from pricing pack.
+        Compute portfolio NAV from database transactions using pricing pack.
 
         Args:
             portfolio_id: Portfolio UUID
-            pack_id: Pricing pack ID
-            base_currency: Base currency for NAV
+            as_of_date: NAV as-of date
+            pricing_pack_id: Pricing pack ID for prices
 
         Returns:
             NAV in base currency
@@ -179,46 +168,49 @@ class ReconciliationService:
             FROM lots l
             WHERE l.portfolio_id = $1
               AND l.is_open = true
+              AND l.acquisition_date <= $2
               AND l.quantity > 0
             GROUP BY l.security_id, l.symbol, l.currency
         """
-        lots = await execute_query(query_lots, portfolio_id)
+        lots = await execute_query(query_lots, portfolio_id, as_of_date)
 
         if not lots:
-            logger.warning(f"No holdings found for portfolio {portfolio_id}")
+            logger.warning(f"No holdings found in DB for portfolio {portfolio_id}")
             return Decimal("0")
-
-        # Get pricing pack
-        pack = await self.pack_queries.get_pack_by_id(pack_id)
-        if not pack:
-            raise ValueError(f"Pricing pack {pack_id} not found")
 
         total_nav = Decimal("0")
 
-        # TODO: This needs prices table implementation
-        # For now, use cost basis as fallback (will be replaced when prices table exists)
-        # When prices table is implemented, query:
-        # SELECT price FROM pack_prices WHERE pack_id = $1 AND symbol = $2
+        # Get prices from pricing pack for each holding
+        for lot in lots:
+            symbol = lot["symbol"]
+            quantity = Decimal(str(lot["total_qty"]))
 
-        query_cost_basis = """
-            SELECT
-                SUM(l.quantity * l.cost_basis_per_share) AS total_value
-            FROM lots l
-            WHERE l.portfolio_id = $1
-              AND l.is_open = true
-              AND l.quantity > 0
-        """
-        result = await execute_query(query_cost_basis, portfolio_id)
+            # Get price from pricing pack
+            price_query = """
+                SELECT close, currency
+                FROM prices
+                WHERE security_id = $1
+                  AND pricing_pack_id = $2
+                  AND asof_date = $3
+                LIMIT 1
+            """
 
-        if result and len(result) > 0 and result[0]["total_value"]:
-            total_nav = Decimal(str(result[0]["total_value"]))
+            price_result = await execute_query(
+                price_query,
+                lot["security_id"],
+                pricing_pack_id,
+                as_of_date,
+            )
 
-        logger.debug(f"Pricing NAV for {portfolio_id}: {total_nav} {base_currency}")
-        logger.warning(
-            f"Using cost basis for NAV calculation (prices table not yet implemented). "
-            f"Portfolio {portfolio_id}: {total_nav} {base_currency}"
-        )
+            if price_result:
+                price = Decimal(str(price_result[0]["close"]))
+                value = quantity * price
+                total_nav += value
+                logger.debug(f"  {symbol}: {quantity} × {price} = {value}")
+            else:
+                logger.warning(f"No price found for {symbol} in pack {pricing_pack_id}")
 
+        logger.debug(f"DB NAV for {portfolio_id}: {total_nav}")
         return total_nav
 
     async def reconcile_portfolio(
@@ -229,7 +221,7 @@ class ReconciliationService:
         ledger_commit_hash: Optional[str] = None,
     ) -> ReconciliationResult:
         """
-        Reconcile portfolio ledger vs pricing pack.
+        Reconcile portfolio ledger vs database using pricing pack.
 
         Args:
             portfolio_id: Portfolio UUID
@@ -261,18 +253,21 @@ class ReconciliationService:
             portfolio_id,
             as_of_date,
             ledger_commit_hash,
+            pack_id,
         )
 
-        pricing_nav = await self.compute_pricing_nav(
+        db_nav = await self.compute_db_nav(
             portfolio_id,
+            as_of_date,
             pack_id,
         )
 
         # Calculate difference and error
-        difference = ledger_nav - pricing_nav
+        difference = ledger_nav - db_nav
 
-        if pricing_nav != 0:
-            error_bps = abs(difference / pricing_nav * 10000)  # Basis points
+        # Use ledger NAV as denominator (ledger is truth)
+        if ledger_nav != 0:
+            error_bps = abs(difference / ledger_nav * 10000)  # Basis points
         else:
             error_bps = Decimal("999999")  # Infinite error
 
@@ -283,7 +278,7 @@ class ReconciliationService:
             pricing_pack_id=pack_id,
             ledger_commit_hash=ledger_commit_hash,
             ledger_nav=ledger_nav,
-            pricing_nav=pricing_nav,
+            pricing_nav=db_nav,  # Actually DB NAV, but keeping field name for backwards compat
             difference=difference,
             error_bps=error_bps,
             passed=passed,
@@ -291,46 +286,91 @@ class ReconciliationService:
 
         logger.info(
             f"Reconciliation {'PASSED' if passed else 'FAILED'}: "
-            f"error={error_bps:.2f}bp (ledger={ledger_nav}, pricing={pricing_nav})"
+            f"error={error_bps:.2f}bp (ledger={ledger_nav}, db={db_nav})"
         )
 
         return result
 
-    async def store_reconciliation_result(self, result: ReconciliationResult):
+    async def store_reconciliation_result(
+        self,
+        result: ReconciliationResult,
+        asof_date: date,
+        snapshot_id: Optional[UUID] = None,
+    ):
         """
-        Store reconciliation result in database.
+        Store reconciliation result in database using new schema.
 
         Args:
             result: ReconciliationResult object
+            asof_date: As-of date for reconciliation
+            snapshot_id: Optional ledger snapshot ID
         """
+        from uuid import uuid4
+        from datetime import datetime
+
+        # Get ledger snapshot ID if not provided
+        if not snapshot_id:
+            snapshot_query = """
+                SELECT id FROM ledger_snapshots
+                WHERE commit_hash = $1
+                  AND status = 'parsed'
+                ORDER BY parsed_at DESC
+                LIMIT 1
+            """
+            snapshot_result = await execute_query(snapshot_query, result.ledger_commit_hash)
+            if snapshot_result:
+                snapshot_id = snapshot_result[0]["id"]
+            else:
+                logger.warning(f"No ledger snapshot found for commit {result.ledger_commit_hash[:8]}")
+                # Create a placeholder snapshot ID (should not happen in practice)
+                snapshot_id = uuid4()
+
+        # Determine status
+        status = "pass" if result.passed else "fail"
+
         query = """
             INSERT INTO reconciliation_results (
                 id,
                 portfolio_id,
-                pricing_pack_id,
+                asof_date,
                 ledger_commit_hash,
-                error_bps,
-                passed,
+                ledger_snapshot_id,
+                pricing_pack_id,
                 ledger_nav,
-                pricing_nav,
+                db_nav,
                 difference,
-                created_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+                error_bp,
+                status,
+                tolerance_bp,
+                reconciled_at,
+                reconciliation_duration_ms
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            ON CONFLICT (portfolio_id, asof_date, ledger_commit_hash, pricing_pack_id)
+            DO UPDATE SET
+                ledger_nav = EXCLUDED.ledger_nav,
+                db_nav = EXCLUDED.db_nav,
+                difference = EXCLUDED.difference,
+                error_bp = EXCLUDED.error_bp,
+                status = EXCLUDED.status,
+                reconciled_at = EXCLUDED.reconciled_at
         """
-
-        from uuid import uuid4
 
         await execute_statement(
             query,
             uuid4(),
             result.portfolio_id,
-            result.pricing_pack_id,
+            asof_date,
             result.ledger_commit_hash,
-            result.error_bps,
-            result.passed,
+            snapshot_id,
+            result.pricing_pack_id,
             result.ledger_nav,
-            result.pricing_nav,
+            result.pricing_nav,  # Actually db_nav
             result.difference,
+            result.error_bps,
+            status,
+            Decimal("1.0"),  # tolerance_bp
+            datetime.now(),
+            None,  # reconciliation_duration_ms (TODO: add timing)
         )
 
         logger.info(f"Stored reconciliation result for portfolio {result.portfolio_id}")
@@ -374,7 +414,7 @@ class ReconciliationService:
                     as_of_date,
                 )
 
-                await self.store_reconciliation_result(result)
+                await self.store_reconciliation_result(result, as_of_date)
                 results.append(result)
 
                 if result.passed:
@@ -507,7 +547,7 @@ async def main():
             as_of_date,
         )
 
-        await service.store_reconciliation_result(result)
+        await service.store_reconciliation_result(result, as_of_date)
 
         print("\n=== Reconciliation Result ===")
         print(f"Portfolio: {result.portfolio_id}")

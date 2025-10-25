@@ -48,5 +48,30 @@ def register_routes(app: "FastAPI") -> None:
         # Routes not yet implemented (Phase 4)
         pass
 
+    # Register Sprint 1 routers (UAT readiness)
+    try:
+        from .routes.portfolios import router as portfolios_router
+        from .routes.trades import router as trades_router
+        app.include_router(portfolios_router)
+        app.include_router(trades_router)
+    except ImportError:
+        # Routes not yet implemented
+        pass
+
+    # Register macro/scenario/risk routers
+    try:
+        from .routes.macro import router as macro_router
+        from .routes.alerts import router as alerts_router
+        from .routes.notifications import router as notifications_router
+        from .routes.corporate_actions import router as corporate_actions_router
+
+        app.include_router(macro_router)
+        app.include_router(alerts_router)
+        app.include_router(notifications_router)
+        app.include_router(corporate_actions_router)
+    except ImportError:
+        # Routes not yet implemented
+        pass
+
 
 __all__ = ["register_routes"]

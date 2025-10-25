@@ -28,21 +28,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 import streamlit as st
 
 from frontend.ui.components.dawsos_theme import apply_theme
-from frontend.ui.api_client import DawsOSClient, MockDawsOSClient
+from frontend.ui.client_factory import get_client, is_mock_mode, get_api_url
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("DawsOS.UI.PortfolioOverview")
-
-
-# ============================================================================
-# Configuration
-# ============================================================================
-
-# Use mock client if API is not available (for development)
-USE_MOCK_CLIENT = os.getenv("USE_MOCK_CLIENT", "true").lower() == "true"
-
-# API base URL
-API_BASE_URL = os.getenv("EXECUTOR_API_URL", "http://localhost:8000")
 
 
 # ============================================================================
@@ -103,55 +92,61 @@ def render_portfolio_overview(
     apply_theme()
 
     # Initialize API client
-    if USE_MOCK_CLIENT:
-        client = MockDawsOSClient(base_url=API_BASE_URL)
+    client = get_client()
+
+    if is_mock_mode():
         st.info("ℹ️ Using mock data (API not connected)")
-    else:
-        client = DawsOSClient(base_url=API_BASE_URL)
 
     # Set asof_date to today if not provided
     if asof_date is None:
         asof_date = date.today()
 
     # ========================================================================
-    # Header with Provenance
+    # Execute portfolio_overview pattern via Executor API
     # ========================================================================
 
-    st.markdown("# Portfolio Overview")
-
-    # Fetch portfolio metrics
     with st.spinner("Loading portfolio data..."):
         try:
-            metrics = client.get_portfolio_metrics(portfolio_id, asof_date)
-            attribution = client.get_currency_attribution(portfolio_id, asof_date)
+            # Call Executor API with portfolio_overview pattern
+            result = client.execute(
+                pattern_id="portfolio_overview",
+                inputs={
+                    "portfolio_id": portfolio_id,
+                    "lookback_days": 252,  # 1 year of trading days
+                },
+                portfolio_id=portfolio_id,
+                asof_date=asof_date,
+                require_fresh=True,
+            )
 
-            # Extract provenance
-            pack_id = metrics.get("pricing_pack_id", "unknown")
-            pack_id_short = pack_id[:12] if len(pack_id) > 12 else pack_id
+            # Extract data from pattern result
+            metrics = result.get("data", {}).get("perf_metrics", {})
+            attribution = result.get("data", {}).get("currency_attr", {})
+            holdings = result.get("data", {}).get("valued_positions", [])
 
-            # Display provenance badges
-            col1, col2 = st.columns([3, 1])
+            # Extract provenance from metadata
+            metadata = result.get("metadata", {})
+            pack_id = metadata.get("pricing_pack_id", "unknown")
+            ledger_hash = metadata.get("ledger_commit_hash", "unknown")
 
+            # Page header
+            st.markdown("## Portfolio Overview")
+
+            col1, col2, col3 = st.columns(3)
             with col1:
-                st.markdown(f"### Portfolio: {portfolio_id[:8]}...")
-
+                st.metric("Portfolio", f"{portfolio_id[:8]}...")
             with col2:
-                st.markdown(
-                    f"""
-                    <div style="text-align: right; padding-top: 8px;">
-                        <span class="provenance-chip staleness-fresh">
-                            Pack: {pack_id_short}
-                        </span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-            st.markdown(f"**As of**: {metrics.get('asof_date', 'N/A')}")
+                st.metric("Pricing Pack", f"{pack_id[:12]}...")
+            with col3:
+                st.metric("As of", asof_date.isoformat())
 
             # Success state - render KPIs and attribution
             render_kpi_ribbon(metrics)
             render_currency_attribution(attribution)
+
+            # Render holdings table and charts (already fetched from pattern)
+            render_holdings_table(holdings)
+            render_allocation_charts(holdings)
             render_metadata_section(metrics, attribution)
 
         except Exception as e:
@@ -164,14 +159,14 @@ def render_portfolio_overview(
                 st.markdown(
                     f"""
                     **Possible issues**:
-                    - API not running at `{API_BASE_URL}`
+                    - API not running at `{get_api_url()}`
                     - Portfolio ID `{portfolio_id}` not found
                     - Database not populated with metrics
                     - Network connectivity issues
 
                     **Quick fixes**:
-                    - Start API: `cd backend && uvicorn app.main:app --reload`
-                    - Check API health: `curl {API_BASE_URL}/health`
+                    - Start API: `cd backend && uvicorn app.api.executor:app --reload`
+                    - Check API health: `curl {get_api_url()}/health`
                     - Enable mock mode: Set `USE_MOCK_CLIENT=true` environment variable
                     """
                 )
@@ -379,6 +374,168 @@ def render_currency_attribution(attribution: dict):
             - **Total CAD return: +7.2%**
             """
         )
+
+
+def render_holdings_table(holdings: list):
+    """
+    Render holdings table with rating badges.
+
+    Args:
+        holdings: List of holding dicts
+    """
+    st.markdown("## Holdings")
+
+    if not holdings:
+        st.info("No holdings found in this portfolio")
+        return
+
+    # Convert holdings to DataFrame for table display
+    import pandas as pd
+
+    df = pd.DataFrame(holdings)
+
+    # Format columns
+    if not df.empty:
+        # Reorder and select columns for display
+        display_cols = [
+            "symbol",
+            "name",
+            "shares",
+            "market_value",
+            "unrealized_pl",
+            "unrealized_pl_pct",
+            "weight",
+            "div_safety",
+            "moat",
+            "resilience",
+        ]
+
+        # Filter to only existing columns
+        display_cols = [col for col in display_cols if col in df.columns]
+        df_display = df[display_cols].copy()
+
+        # Format numeric columns
+        if "shares" in df_display.columns:
+            df_display["shares"] = df_display["shares"].apply(lambda x: f"{x:,.0f}")
+
+        if "market_value" in df_display.columns:
+            df_display["market_value"] = df_display["market_value"].apply(
+                lambda x: f"${x:,.2f}"
+            )
+
+        if "unrealized_pl" in df_display.columns:
+            df_display["unrealized_pl"] = df_display["unrealized_pl"].apply(
+                lambda x: f"${x:,.2f}"
+            )
+
+        if "unrealized_pl_pct" in df_display.columns:
+            df_display["unrealized_pl_pct"] = df_display["unrealized_pl_pct"].apply(
+                lambda x: f"{x*100:.2f}%"
+            )
+
+        if "weight" in df_display.columns:
+            df_display["weight"] = df_display["weight"].apply(lambda x: f"{x*100:.1f}%")
+
+        # Rename columns for display
+        df_display.columns = [
+            col.replace("_", " ").title() for col in df_display.columns
+        ]
+
+        # Display table
+        st.dataframe(
+            df_display,
+            use_container_width=True,
+            height=min(400, len(df_display) * 35 + 38),
+        )
+
+        # Add explanation
+        st.markdown("""
+        **Rating Badges**:
+        - **Div Safety**: Dividend safety score (0-10) - higher is safer
+        - **Moat**: Economic moat strength (0-10) - higher is stronger
+        - **Resilience**: Financial resilience (0-10) - higher is more resilient
+        """)
+
+
+def render_allocation_charts(holdings: list):
+    """
+    Render allocation pie chart and treemap.
+
+    Args:
+        holdings: List of holding dicts
+    """
+    st.markdown("## Allocation")
+
+    if not holdings:
+        return
+
+    try:
+        import plotly.express as px
+        import pandas as pd
+
+        df = pd.DataFrame(holdings)
+
+        # Create two columns for charts
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("### By Security")
+
+            # Pie chart by security
+            if "symbol" in df.columns and "market_value" in df.columns:
+                fig_pie = px.pie(
+                    df,
+                    values="market_value",
+                    names="symbol",
+                    title="Portfolio Allocation by Security",
+                    hole=0.3,  # Donut chart
+                )
+
+                fig_pie.update_traces(
+                    textposition="inside",
+                    textinfo="percent+label",
+                )
+
+                fig_pie.update_layout(
+                    showlegend=True,
+                    height=400,
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                )
+
+                st.plotly_chart(fig_pie, use_container_width=True)
+
+        with col2:
+            st.markdown("### By Currency")
+
+            # Pie chart by currency
+            if "currency" in df.columns and "market_value" in df.columns:
+                df_currency = df.groupby("currency")["market_value"].sum().reset_index()
+
+                fig_currency = px.pie(
+                    df_currency,
+                    values="market_value",
+                    names="currency",
+                    title="Portfolio Allocation by Currency",
+                    hole=0.3,
+                )
+
+                fig_currency.update_traces(
+                    textposition="inside",
+                    textinfo="percent+label",
+                )
+
+                fig_currency.update_layout(
+                    showlegend=True,
+                    height=400,
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                )
+
+                st.plotly_chart(fig_currency, use_container_width=True)
+
+    except ImportError:
+        st.warning("📊 Install plotly to see allocation charts: `pip install plotly`")
 
 
 def render_metadata_section(metrics: dict, attribution: dict):

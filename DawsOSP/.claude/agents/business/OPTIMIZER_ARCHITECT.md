@@ -1,14 +1,32 @@
 # OPTIMIZER_ARCHITECT — Policy-Based Rebalancing Specialist
 
 **Agent Type**: Business Logic
-**Phase**: Week 5-6 (Advanced Features)
-**Priority**: P2 (Medium - Value-add feature)
-**Status**: Specification Complete
+**Phase**: Future Enhancement
+**Priority**: P2 (Future - Value-add feature when implemented)
+**Status**: ❌ NOT IMPLEMENTED (Pattern exists, no agent code)
 **Created**: 2025-10-21
+**Last Updated**: 2025-10-24
 
 ---
 
-## Mission
+## Current Status
+
+### ❌ Agent Not Implemented
+- **No OptimizerAgent file** in [backend/app/agents/](../../../backend/app/agents/)
+- **Pattern exists**: [policy_rebalance.json](../../../backend/patterns/policy_rebalance.json) defines expected capabilities
+- **Impact**: Optimization patterns will fail or return stub data
+- **Workaround**: Portfolio rebalancing must be done manually until agent is built
+
+### ✅ Pattern Schema Ready
+The [policy_rebalance.json](../../../backend/patterns/policy_rebalance.json) pattern is complete and defines:
+- `optimizer.rebalance` capability
+- Policy constraint integration
+- Trade execution planning workflow
+- Expected inputs/outputs
+
+---
+
+## Mission (When Implemented)
 
 Implement **policy-based portfolio rebalancing** with quality ratings constraints, tracking error limits, turnover costs, and trade proposals using Riskfolio-Lib for mean-variance optimization.
 

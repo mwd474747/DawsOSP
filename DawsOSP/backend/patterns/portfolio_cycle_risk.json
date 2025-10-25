@@ -1,0 +1,157 @@
+{
+  "id": "portfolio_cycle_risk",
+  "name": "Portfolio Cycle Risk",
+  "description": "Overlay cycle phases with portfolio factor exposures for macro-aware risk mapping",
+  "version": "1.0.0",
+  "category": "risk",
+  "tags": ["cycles", "risk", "factors", "macro"],
+  "author": "DawsOS",
+  "created": "2025-10-23",
+  "inputs": {
+    "portfolio_id": {
+      "type": "uuid",
+      "required": true,
+      "description": "Portfolio UUID"
+    }
+  },
+  "outputs": {
+    "panels": [
+      {
+        "id": "risk_map",
+        "title": "Cycle-Aware Risk Map",
+        "type": "heatmap",
+        "refresh_ttl": 3600
+      },
+      {
+        "id": "amplified_factors",
+        "title": "Amplified Factors",
+        "type": "bar_chart",
+        "refresh_ttl": 3600
+      },
+      {
+        "id": "risk_summary",
+        "title": "Risk Summary",
+        "type": "metrics_grid",
+        "refresh_ttl": 3600
+      }
+    ]
+  },
+  "steps": [
+    {
+      "capability": "cycles.compute_short_term",
+      "args": {},
+      "as": "stdc"
+    },
+    {
+      "capability": "cycles.compute_long_term",
+      "args": {},
+      "as": "ltdc"
+    },
+    {
+      "capability": "risk.compute_factor_exposures",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "pack_id": "{{ctx.pricing_pack_id}}"
+      },
+      "as": "factor_exposures"
+    },
+    {
+      "capability": "risk.overlay_cycle_phases",
+      "args": {
+        "factor_exposures": "{{state.factor_exposures}}",
+        "stdc": "{{state.stdc}}",
+        "ltdc": "{{state.ltdc}}"
+      },
+      "as": "cycle_risk_map"
+    },
+    {
+      "capability": "macro.compute_dar",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "pack_id": "{{ctx.pricing_pack_id}}",
+        "cycle_adjusted": true
+      },
+      "as": "dar"
+    }
+  ],
+  "presentation": {
+    "risk_map": {
+      "chart": {
+        "type": "heatmap",
+        "title": "Factor Risk by Cycle Phase",
+        "x_axis": "factor",
+        "y_axis": "cycle_phase",
+        "categories": {
+          "factors": ["Real Rates", "Inflation", "Credit", "FX", "Equity"],
+          "phases": ["Early Expansion", "Mid Expansion", "Late Expansion", "Early Contraction", "Deep Contraction"]
+        },
+        "data": "{{cycle_risk_map.heatmap_data}}",
+        "color_scale": {
+          "low": "#2ecc71",
+          "medium": "#f39c12",
+          "high": "#e74c3c"
+        }
+      }
+    },
+    "amplified_factors": {
+      "chart": {
+        "type": "horizontal_bar",
+        "title": "Factors Amplified in Current Phase",
+        "x": "amplification_factor",
+        "y": "factor",
+        "data": "{{cycle_risk_map.amplified_factors}}",
+        "color_condition": "threshold",
+        "threshold": 1.0
+      }
+    },
+    "risk_summary": {
+      "metrics": [
+        {
+          "label": "Current STDC Phase",
+          "value": "{{stdc.phase_label}}",
+          "format": "text"
+        },
+        {
+          "label": "Current LTDC Phase",
+          "value": "{{ltdc.phase_label}}",
+          "format": "text"
+        },
+        {
+          "label": "Cycle-Adjusted DaR",
+          "value": "{{dar.dar_value}}",
+          "format": "currency",
+          "color": "red"
+        },
+        {
+          "label": "Risk Amplification Factor",
+          "value": "{{cycle_risk_map.overall_amplification}}",
+          "format": "decimal_2",
+          "color_condition": "threshold",
+          "threshold": 1.2
+        },
+        {
+          "label": "Most Vulnerable Factor",
+          "value": "{{cycle_risk_map.most_vulnerable_factor}}",
+          "format": "text"
+        },
+        {
+          "label": "Risk Level",
+          "value": "{{cycle_risk_map.risk_level}}",
+          "format": "risk_badge"
+        }
+      ]
+    }
+  },
+  "rights_required": ["portfolio_read", "macro_data_read"],
+  "export_allowed": {
+    "pdf": true,
+    "csv": true
+  },
+  "observability": {
+    "otel_span_name": "pattern.portfolio_cycle_risk",
+    "metrics": [
+      "pattern_execution_duration_seconds",
+      "cycle_risk_computation_duration_seconds"
+    ]
+  }
+}

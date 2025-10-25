@@ -1,0 +1,185 @@
+# DawsOS Docker Compose Stack
+# Purpose: Development environment with all services
+# Updated: 2025-10-22
+# Usage: docker compose up -d
+
+services:
+  # ============================================================================
+  # Database: PostgreSQL + TimescaleDB
+  # ============================================================================
+  postgres:
+    image: timescale/timescaledb:latest-pg14
+    container_name: dawsos-postgres
+    environment:
+      POSTGRES_USER: dawsos
+      POSTGRES_PASSWORD: dawsos
+      POSTGRES_DB: dawsos
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/db/schema:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dawsos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dawsos-network
+
+  # ============================================================================
+  # Cache: Redis
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: dawsos-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dawsos-network
+
+  # ============================================================================
+  # Backend API: FastAPI
+  # ============================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: dawsos-backend
+    environment:
+      # Database
+      DATABASE_URL: postgresql://dawsos_app:dawsos_app_pass@postgres:5432/dawsos
+      REDIS_URL: redis://redis:6379/0
+
+      # Application
+      ENVIRONMENT: development
+      LOG_LEVEL: INFO
+      PYTHONPATH: /app
+
+      # API Keys (override with .env file)
+      FMP_API_KEY: ${FMP_API_KEY:-}
+      POLYGON_API_KEY: ${POLYGON_API_KEY:-}
+      FRED_API_KEY: ${FRED_API_KEY:-}
+      NEWSAPI_KEY: ${NEWSAPI_KEY:-}
+
+      # Security & observability
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-dev-secret}
+      OTLP_ENDPOINT: ${OTLP_ENDPOINT:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+
+      # Pricing configuration
+      PRICING_POLICY: ${PRICING_POLICY:-WM4PM_CAD}
+
+      # Ledger
+      LEDGER_PATH: /app/ledger
+
+      # Feature flags
+      USE_MOCK_DATA: "false"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app/backend:ro
+      - ./data/ledger:/app/ledger:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - dawsos-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Frontend UI: Streamlit
+  # ============================================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: dawsos-frontend
+    environment:
+      EXECUTOR_API_URL: http://backend:8000
+      USE_MOCK_CLIENT: "false"
+      PYTHONPATH: /app
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./frontend:/app/frontend:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - dawsos-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Worker: Background Jobs (Optional)
+  # ============================================================================
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.worker
+    container_name: dawsos-worker
+    environment:
+      DATABASE_URL: postgresql://dawsos_app:dawsos_app_pass@postgres:5432/dawsos
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: development
+      LOG_LEVEL: INFO
+      PYTHONPATH: /app
+      FMP_API_KEY: ${FMP_API_KEY:-}
+      POLYGON_API_KEY: ${POLYGON_API_KEY:-}
+      FRED_API_KEY: ${FRED_API_KEY:-}
+      NEWSAPI_KEY: ${NEWSAPI_KEY:-}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-dev-secret}
+      OTLP_ENDPOINT: ${OTLP_ENDPOINT:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      PRICING_POLICY: ${PRICING_POLICY:-WM4PM_CAD}
+      LEDGER_PATH: /app/ledger
+    volumes:
+      - ./backend:/app/backend:ro
+      - ./data/ledger:/app/ledger:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - dawsos-network
+    restart: unless-stopped
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  dawsos-network:
+    driver: bridge
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

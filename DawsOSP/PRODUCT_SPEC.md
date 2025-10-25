@@ -30,7 +30,7 @@ Deliver a **portfolio-first, explainable decision engine** that fuses:
 
 ```
 UI (Streamlit now / Next.js later)
-   │  POST /execute
+   │  POST /v1/execute
    ▼
 Executor API (FastAPI) – builds RequestCtx, enforces pack freshness, sets RLS context
    │
@@ -42,7 +42,6 @@ Agent Runtime (capability router)
  ├─ financial_analyst  → metrics/ratings/optimizer/pricing_pack
  ├─ macro_hound        → FRED/FX, regime, factors, scenarios, DaR
  ├─ data_harvester     → FMP/Polygon/NewsAPI/OpenBB via facades
- ├─ graph_mind         → knowledge-graph queries & memory
  └─ claude             → explanations (trace-aware)
 
 Services (stateless facades)
@@ -58,8 +57,8 @@ Data
 
 **Run envelope (compose)**
 
-* **api** (FastAPI), **worker** (RQ), **scheduler** (APScheduler), **ui** (Streamlit), **db** (Timescale/Postgres), **redis**.
-* `.env` keys: `DATABASE_URL`, `REDIS_URL`, `FMP_API_KEY`, `POLYGON_API_KEY`, `FRED_API_KEY`, `NEWS_API_KEY`, `AUTH_JWT_SECRET`, `PRICING_POLICY=WM4PM_CAD`, `EXECUTOR_API_URL`, `CORS_ORIGINS`.
+* **backend** (FastAPI), **worker** (RQ), **frontend** (Streamlit), **postgres** (Timescale/Postgres), **redis**.
+* `.env` keys: `DATABASE_URL`, `REDIS_URL`, `FMP_API_KEY`, `POLYGON_API_KEY`, `FRED_API_KEY`, `NEWSAPI_KEY`, `AUTH_JWT_SECRET`, `PRICING_POLICY=WM4PM_CAD`, `EXECUTOR_API_URL`, `CORS_ORIGINS`.
 
 **Nightly job order (sacred)**
 `build_pack → reconcile_ledger → compute_daily_metrics → prewarm_factors → mark_pack_fresh → evaluate_alerts`
@@ -482,7 +481,7 @@ async def execute(req: ExecReq, user: User = Depends(get_current_user)):
 
 ## 9) Security & tenancy
 
-* OAuth (Google/GitHub) → JWT bearer for `/execute`.
+* OAuth (Google/GitHub) → JWT bearer for `/v1/execute`.
 * **RLS** on portfolio tables; IDOR fuzz tests in CI; minimal error bodies.
 * Backups/day; ledger repo mirrored; monthly restore drill.
 
@@ -682,7 +681,7 @@ async def execute(req: ExecReq, user: User = Depends(get_current_user)):
 **Executor** (freshness gate)
 
 ```python
-@app.post("/execute")
+@app.post("/v1/execute")
 async def execute(req: ExecReq, user=Depends(get_user_ctx)):
     ctx = RequestCtx.from_req(req, user)
     ctx.pricing_pack_id = resolve_pack(ctx.asof)

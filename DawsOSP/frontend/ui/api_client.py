@@ -232,6 +232,76 @@ class DawsOSClient:
             logger.error(f"Error fetching attribution for portfolio {portfolio_id}: {e}")
             raise
 
+    def get_holdings(
+        self,
+        portfolio_id: str,
+        asof_date: Optional[date] = None,
+    ) -> Dict[str, Any]:
+        """
+        Get portfolio holdings list.
+
+        Uses the portfolio_overview pattern which includes holdings.
+
+        Args:
+            portfolio_id: Portfolio ID
+            asof_date: As-of date (optional)
+
+        Returns:
+            Dict with holdings list
+        """
+        result = self.execute(
+            pattern_id="portfolio_overview",
+            portfolio_id=portfolio_id,
+            asof_date=asof_date,
+        )
+
+        # Extract holdings from result
+        return result.get("result", {}).get("holdings", [])
+
+    def get_macro_regime(
+        self,
+        asof_date: Optional[date] = None,
+    ) -> Dict[str, Any]:
+        """
+        Get current macro regime.
+
+        Uses the portfolio_macro_overview pattern.
+
+        Args:
+            asof_date: As-of date (optional)
+
+        Returns:
+            Dict with regime classification
+        """
+        result = self.execute(
+            pattern_id="portfolio_macro_overview",
+            asof_date=asof_date,
+        )
+
+        return result.get("result", {}).get("regime", {})
+
+    def get_macro_cycles(
+        self,
+        asof_date: Optional[date] = None,
+    ) -> Dict[str, Any]:
+        """
+        Get macro cycle phases (STDC, LTDC, Empire).
+
+        Uses the macro_cycles_overview pattern.
+
+        Args:
+            asof_date: As-of date (optional)
+
+        Returns:
+            Dict with cycle phases
+        """
+        result = self.execute(
+            pattern_id="macro_cycles_overview",
+            asof_date=asof_date,
+        )
+
+        return result.get("result", {}).get("cycles", {})
+
     def health_check(self) -> Dict[str, Any]:
         """
         Check API health.
@@ -274,11 +344,93 @@ class MockDawsOSClient(DawsOSClient):
         """Return mock execution result."""
         logger.info(f"[MOCK] Executing pattern: {pattern_id}")
 
+        # Return data matching portfolio_overview pattern format
         return {
             "data": {
-                "portfolio_name": "Test Portfolio",
-                "total_value": 1245678.90,
-                "currency": "CAD",
+                "perf_metrics": {
+                    "twr_1d": 0.0125,
+                    "twr_ytd": 0.0850,
+                    "twr_1y": 0.1240,
+                    "sharpe_1y": 1.45,
+                    "sharpe_3y": 1.28,
+                    "volatility_30d": 0.1520,
+                    "max_drawdown_1y": -0.1234,
+                },
+                "currency_attr": {
+                    "base_currency": "CAD",
+                    "local_return": 0.0850,
+                    "fx_return": -0.0120,
+                    "interaction_return": -0.0010,
+                    "total_return": 0.0720,
+                    "error_bps": 0.05,
+                },
+                "valued_positions": [
+                    {
+                        "symbol": "BN",
+                        "name": "Brookfield Corporation",
+                        "shares": 500.0,
+                        "market_value": 52500.00,
+                        "unrealized_pl": 7500.00,
+                        "unrealized_pl_pct": 0.1667,
+                        "weight": 0.26,
+                        "currency": "CAD",
+                        "div_safety": 9,
+                        "moat": 8,
+                        "resilience": 9,
+                    },
+                    {
+                        "symbol": "BTI",
+                        "name": "British American Tobacco",
+                        "shares": 800.0,
+                        "market_value": 32000.00,
+                        "unrealized_pl": 2000.00,
+                        "unrealized_pl_pct": 0.0667,
+                        "weight": 0.16,
+                        "currency": "USD",
+                        "div_safety": 7,
+                        "moat": 6,
+                        "resilience": 7,
+                    },
+                    {
+                        "symbol": "EVO",
+                        "name": "Evolution Gaming Group",
+                        "shares": 200.0,
+                        "market_value": 28000.00,
+                        "unrealized_pl": 4000.00,
+                        "unrealized_pl_pct": 0.1667,
+                        "weight": 0.14,
+                        "currency": "SEK",
+                        "div_safety": 8,
+                        "moat": 9,
+                        "resilience": 8,
+                    },
+                    {
+                        "symbol": "NKE",
+                        "name": "Nike Inc",
+                        "shares": 400.0,
+                        "market_value": 48000.00,
+                        "unrealized_pl": -2000.00,
+                        "unrealized_pl_pct": -0.0400,
+                        "weight": 0.24,
+                        "currency": "USD",
+                        "div_safety": 8,
+                        "moat": 7,
+                        "resilience": 8,
+                    },
+                    {
+                        "symbol": "PYPL",
+                        "name": "PayPal Holdings",
+                        "shares": 600.0,
+                        "market_value": 39000.00,
+                        "unrealized_pl": -1000.00,
+                        "unrealized_pl_pct": -0.0250,
+                        "weight": 0.20,
+                        "currency": "USD",
+                        "div_safety": 6,
+                        "moat": 7,
+                        "resilience": 7,
+                    },
+                ],
             },
             "metadata": {
                 "pattern_id": pattern_id,
@@ -286,12 +438,6 @@ class MockDawsOSClient(DawsOSClient):
                 "pricing_pack_id": "20251022_v1",
                 "ledger_commit_hash": "abc123def",
                 "execution_time_ms": 125.5,
-            },
-            "trace": {
-                "steps": [
-                    {"name": "fetch_metrics", "duration_ms": 45.2},
-                    {"name": "compute_attribution", "duration_ms": 80.3},
-                ],
             },
         }
 
@@ -336,4 +482,127 @@ class MockDawsOSClient(DawsOSClient):
             "interaction_return": -0.0010,
             "total_return": 0.0720,
             "error_bps": 0.05,
+        }
+
+    def get_holdings(
+        self,
+        portfolio_id: str,
+        asof_date: Optional[date] = None,
+    ) -> list:
+        """Return mock holdings."""
+        logger.info(f"[MOCK] Fetching holdings for portfolio {portfolio_id}")
+
+        return [
+            {
+                "symbol": "AAPL",
+                "name": "Apple Inc.",
+                "shares": 300.0,
+                "cost_basis": 45000.00,
+                "market_value": 52500.00,
+                "unrealized_pl": 7500.00,
+                "unrealized_pl_pct": 0.1667,
+                "weight": 0.42,
+                "div_safety": 9,
+                "moat": 10,
+                "resilience": 8,
+                "currency": "USD",
+            },
+            {
+                "symbol": "RY.TO",
+                "name": "Royal Bank of Canada",
+                "shares": 400.0,
+                "cost_basis": 48000.00,
+                "market_value": 50000.00,
+                "unrealized_pl": 2000.00,
+                "unrealized_pl_pct": 0.0417,
+                "weight": 0.40,
+                "div_safety": 9,
+                "moat": 8,
+                "resilience": 9,
+                "currency": "CAD",
+            },
+            {
+                "symbol": "XIU.TO",
+                "name": "iShares S&P/TSX 60 ETF",
+                "shares": 1000.0,
+                "cost_basis": 35000.00,
+                "market_value": 36800.00,
+                "unrealized_pl": 1800.00,
+                "unrealized_pl_pct": 0.0514,
+                "weight": 0.18,
+                "div_safety": 8,
+                "moat": 5,
+                "resilience": 9,
+                "currency": "CAD",
+            },
+        ]
+
+    def get_macro_regime(
+        self,
+        asof_date: Optional[date] = None,
+    ) -> Dict[str, Any]:
+        """Return mock macro regime."""
+        logger.info(f"[MOCK] Fetching macro regime")
+
+        return {
+            "regime": "MID_EXPANSION",
+            "regime_name": "Mid Expansion",
+            "confidence": 0.78,
+            "date": "2025-10-22",
+            "indicators": {
+                "T10Y2Y": 0.52,
+                "UNRATE": 3.7,
+                "GDP": 2.8,
+                "CPIAUCSL": 2.4,
+            },
+            "zscores": {
+                "T10Y2Y": 0.45,
+                "UNRATE": -0.82,
+                "GDP": 0.65,
+                "CPIAUCSL": 0.35,
+            },
+        }
+
+    def get_macro_cycles(
+        self,
+        asof_date: Optional[date] = None,
+    ) -> Dict[str, Any]:
+        """Return mock macro cycles."""
+        logger.info(f"[MOCK] Fetching macro cycles")
+
+        return {
+            "stdc": {
+                "cycle_type": "STDC",
+                "phase": "Early Recovery",
+                "phase_number": 1,
+                "composite_score": 0.24,
+                "date": "2025-10-22",
+                "indicators": {
+                    "T10Y2Y": 0.52,
+                    "UNRATE": 3.7,
+                    "GDP": 2.8,
+                },
+            },
+            "ltdc": {
+                "cycle_type": "LTDC",
+                "phase": "Expansion",
+                "phase_number": 3,
+                "composite_score": 0.65,
+                "date": "2025-10-22",
+                "indicators": {
+                    "debt_to_gdp": 125.0,
+                    "GDP": 2.8,
+                },
+            },
+            "empire": {
+                "cycle_type": "EMPIRE",
+                "phase": "Peak",
+                "phase_number": 2,
+                "composite_score": 0.85,
+                "date": "2025-10-22",
+                "indicators": {
+                    "reserve_currency_share": 0.58,
+                    "GDP_share": 0.24,
+                },
+            },
         }

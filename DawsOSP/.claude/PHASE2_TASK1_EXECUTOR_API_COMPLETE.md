@@ -36,7 +36,7 @@ Created complete Executor API with **freshness gate** that blocks execution when
 @dataclass(frozen=True)
 class RequestCtx:
     """Immutable context for reproducibility."""
-    user_id: str
+    user_id: UUID
     pricing_pack_id: str
     ledger_commit_hash: str
     asof_date: date

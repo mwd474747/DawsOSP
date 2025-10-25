@@ -734,12 +734,11 @@ _metrics_queries: Optional[MetricsQueries] = None
 
 
 def get_metrics_queries() -> MetricsQueries:
-    """Get singleton MetricsQueries instance."""
+    """Get singleton MetricsQueries instance (lazy-initializes if needed)."""
     global _metrics_queries
     if _metrics_queries is None:
-        raise RuntimeError(
-            "MetricsQueries not initialized. Call init_metrics_queries() first."
-        )
+        logger.info("MetricsQueries not initialized, lazy-initializing with use_db=True")
+        _metrics_queries = MetricsQueries(use_db=True)
     return _metrics_queries
 
 

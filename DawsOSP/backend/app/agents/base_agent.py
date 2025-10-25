@@ -164,8 +164,12 @@ class BaseAgent(ABC):
         result = await method(ctx, state, **kwargs)
 
         # Attach metadata if not already present
-        if not hasattr(result, "__metadata__"):
-            result.__metadata__ = AgentMetadata(agent_name=self.name)
+        if not hasattr(result, "__metadata__") and not isinstance(result, dict):
+            try:
+                result.__metadata__ = AgentMetadata(agent_name=self.name)
+            except (AttributeError, TypeError):
+                # Can't set attribute - result probably already has metadata embedded
+                pass
 
         return result
 
@@ -205,9 +209,25 @@ class BaseAgent(ABC):
             metadata: Metadata to attach
 
         Returns:
-            Result with __metadata__ attribute
+            Result with metadata embedded (for dicts) or as attribute (for objects)
         """
-        result.__metadata__ = metadata
+        # For dicts, add metadata as a key instead of attribute
+        if isinstance(result, dict):
+            return {
+                **result,
+                "_metadata": metadata.to_dict()
+            }
+
+        # For objects with __dict__, try setting attribute
+        try:
+            result.__metadata__ = metadata
+        except (AttributeError, TypeError):
+            # Can't set attribute - wrap in dict instead
+            return {
+                "data": result,
+                "_metadata": metadata.to_dict()
+            }
+
         return result
 
 

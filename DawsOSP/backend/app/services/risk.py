@@ -1,41 +1,57 @@
 """
 Risk Service (DaR - Drawdown at Risk)
 
-Purpose: Scenario-based risk calculation (Sprint 3 Week 5)
-Updated: 2025-10-22
-Priority: P1 (Sprint 3)
+Purpose: Regime-conditioned risk calculation using Monte Carlo simulation
+Updated: 2025-10-23
+Priority: P0 (Critical for risk management)
 
 Features:
     - DaR (Drawdown at Risk) calculation at 95% confidence
-    - Scenario stress testing
-    - Historical scenario library
-    - Portfolio-specific risk metrics
+    - Regime-conditioned covariance matrices
+    - Monte Carlo simulation (10,000 scenarios)
+    - Factor-based risk attribution
+    - Historical and hypothetical scenarios
 
-DaR Concept:
+DaR Concept (PRODUCT_SPEC.md §7):
     Similar to VaR (Value at Risk), but measures potential drawdown instead of
     absolute loss. Answers: "What's the worst drawdown in the next 30 days at
-    95% confidence?"
+    95% confidence given the current macro regime?"
 
-Scenarios:
-    - Historical: 2008 Financial Crisis, 2020 COVID crash, etc.
-    - Hypothetical: Yield curve +200bp, Oil shock, etc.
-    - Regime-based: Transition to recession, etc.
+Methodology:
+    1. Determine current macro regime
+    2. Load regime-specific covariance matrix
+    3. Compute portfolio factor exposures (betas)
+    4. Run Monte Carlo simulation (10k scenarios)
+    5. Extract 95th percentile drawdown
 
 Architecture:
-    Portfolio → Scenarios → Stress Test → DaR Distribution → 95th Percentile
+    Portfolio → Factor Betas → Regime Covariance → Monte Carlo → DaR (95%)
 
 Usage:
-    service = RiskService()
-    dar = await service.compute_dar(portfolio_id, confidence=0.95)
-    scenarios = await service.get_dar_scenarios(portfolio_id)
+    from backend.app.services.risk import get_risk_service
+    from backend.app.services.macro import get_macro_service
+
+    # Detect current regime
+    macro_service = get_macro_service()
+    regime = await macro_service.detect_current_regime()
+
+    # Compute DaR
+    risk_service = get_risk_service()
+    dar = await service.compute_dar(
+        portfolio_id="...",
+        regime=regime.regime.value,
+        confidence=0.95,
+    )
 """
 
 import logging
+import random
+import numpy as np
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple
 from enum import Enum
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import statistics
 
 from backend.app.db.connection import execute_query, execute_statement, execute_query_one
@@ -77,20 +93,28 @@ class Scenario:
 
 @dataclass
 class DaRResult:
-    """Drawdown at Risk result."""
+    """Drawdown at Risk result (regime-conditioned)."""
 
     portfolio_id: str
+    regime: str  # Macro regime (e.g., "MID_EXPANSION")
     confidence: float  # 0-1
     dar: float  # DaR in percent (e.g., -0.15 = -15% drawdown)
     horizon_days: int  # Forecast horizon
 
-    # Scenario breakdown
-    worst_scenario: str
-    worst_drawdown: float
-    scenarios_tested: int
+    # Monte Carlo simulation
+    simulations: int  # Number of simulations run
+    worst_drawdown: float  # Absolute worst case
+    median_drawdown: float  # 50th percentile
+    best_case: float  # Best case (could be positive)
+
+    # Factor attribution
+    factor_contributions: Dict[str, float] = field(default_factory=dict)
 
     # Date
     as_of_date: date
+
+    # Metadata
+    nav: Decimal = Decimal("0")  # Current NAV
 
 
 @dataclass
@@ -221,11 +245,65 @@ class RiskService:
     """
     Risk service for DaR calculation.
 
-    Computes Drawdown at Risk (DaR) using scenario stress testing.
+    Computes Drawdown at Risk (DaR) using regime-conditioned Monte Carlo simulation.
     """
 
-    def __init__(self):
+    # Regime-conditioned covariance matrices (factor returns)
+    # Covariance of: [real_rates, inflation, credit_spread, usd, equity]
+    # Units: monthly returns (e.g., 0.01 = 1% monthly return)
+    REGIME_COVARIANCES = {
+        "EARLY_EXPANSION": np.array([
+            # real_rates, inflation, credit, usd, equity
+            [0.0004, -0.0001, -0.0002, 0.0001, -0.0003],  # real_rates
+            [-0.0001, 0.0002, 0.0000, 0.0000, 0.0001],   # inflation
+            [-0.0002, 0.0000, 0.0003, -0.0001, -0.0004],  # credit
+            [0.0001, 0.0000, -0.0001, 0.0015, 0.0002],   # usd
+            [-0.0003, 0.0001, -0.0004, 0.0002, 0.0025],  # equity
+        ]),
+        "MID_EXPANSION": np.array([
+            [0.0003, -0.0001, -0.0001, 0.0000, -0.0002],
+            [-0.0001, 0.0001, 0.0000, 0.0000, 0.0000],
+            [-0.0001, 0.0000, 0.0002, 0.0000, -0.0002],
+            [0.0000, 0.0000, 0.0000, 0.0010, 0.0001],
+            [-0.0002, 0.0000, -0.0002, 0.0001, 0.0016],
+        ]),
+        "LATE_EXPANSION": np.array([
+            [0.0006, 0.0002, 0.0003, -0.0001, -0.0001],
+            [0.0002, 0.0004, 0.0001, -0.0001, 0.0000],
+            [0.0003, 0.0001, 0.0008, -0.0002, -0.0006],
+            [-0.0001, -0.0001, -0.0002, 0.0020, 0.0003],
+            [-0.0001, 0.0000, -0.0006, 0.0003, 0.0030],
+        ]),
+        "EARLY_CONTRACTION": np.array([
+            [0.0008, 0.0001, 0.0006, 0.0002, 0.0002],
+            [0.0001, 0.0003, 0.0001, 0.0000, 0.0001],
+            [0.0006, 0.0001, 0.0020, 0.0003, 0.0010],
+            [0.0002, 0.0000, 0.0003, 0.0025, -0.0005],
+            [0.0002, 0.0001, 0.0010, -0.0005, 0.0040],
+        ]),
+        "DEEP_CONTRACTION": np.array([
+            [0.0010, -0.0002, 0.0008, 0.0005, 0.0008],
+            [-0.0002, 0.0002, -0.0001, 0.0001, 0.0000],
+            [0.0008, -0.0001, 0.0050, 0.0008, 0.0025],
+            [0.0005, 0.0001, 0.0008, 0.0035, -0.0010],
+            [0.0008, 0.0000, 0.0025, -0.0010, 0.0080],
+        ]),
+    }
+
+    # Factor names (for indexing)
+    FACTORS = ["real_rates", "inflation", "credit_spread", "usd", "equity"]
+
+    def __init__(self, random_seed: Optional[int] = None):
+        """
+        Initialize risk service.
+
+        Args:
+            random_seed: Random seed for reproducibility (default: None)
+        """
         self.scenarios = ALL_SCENARIOS
+        if random_seed is not None:
+            random.seed(random_seed)
+            np.random.seed(random_seed)
 
     async def get_portfolio_holdings(self, portfolio_id: str) -> List[Dict]:
         """
@@ -340,65 +418,179 @@ class RiskService:
             as_of_date=as_of_date,
         )
 
-    async def compute_dar(
+    def get_regime_covariance(self, regime: str) -> np.ndarray:
+        """
+        Get regime-specific covariance matrix.
+
+        Args:
+            regime: Macro regime (e.g., "MID_EXPANSION")
+
+        Returns:
+            Covariance matrix (5x5 numpy array)
+        """
+        if regime not in self.REGIME_COVARIANCES:
+            logger.warning(f"Unknown regime {regime}, using MID_EXPANSION default")
+            regime = "MID_EXPANSION"
+
+        return self.REGIME_COVARIANCES[regime]
+
+    async def get_portfolio_factor_betas(
         self,
         portfolio_id: str,
-        confidence: float = 0.95,
-        horizon_days: int = 30,
-        as_of_date: Optional[date] = None,
-    ) -> DaRResult:
+        pack_id: str,
+    ) -> np.ndarray:
         """
-        Compute Drawdown at Risk (DaR).
+        Get portfolio-level factor betas.
 
         Args:
             portfolio_id: Portfolio UUID
+            pack_id: Pricing pack UUID
+
+        Returns:
+            Factor beta vector [real_rates, inflation, credit, usd, equity]
+        """
+        # Get position-level betas
+        positions = await self.get_portfolio_holdings(portfolio_id)
+
+        if not positions:
+            return np.zeros(5)
+
+        # Compute portfolio NAV
+        total_nav = sum(Decimal(str(p["market_value"])) for p in positions)
+
+        # Weight-average betas across positions
+        portfolio_betas = np.zeros(5)
+        for pos in positions:
+            weight = float(Decimal(str(pos["market_value"])) / total_nav)
+            pos_betas = np.array([
+                pos.get("beta_real_rates", 0.0),
+                pos.get("beta_inflation", 0.0),
+                pos.get("beta_credit", 0.0),
+                pos.get("beta_usd", 0.0),
+                pos.get("beta_equity", 0.0),
+            ])
+            portfolio_betas += weight * pos_betas
+
+        logger.debug(f"Portfolio betas: {portfolio_betas}")
+        return portfolio_betas
+
+    async def simulate_scenarios(
+        self,
+        betas: np.ndarray,
+        covariance: np.ndarray,
+        n_simulations: int = 10000,
+    ) -> np.ndarray:
+        """
+        Run Monte Carlo simulation of portfolio returns.
+
+        Args:
+            betas: Portfolio factor betas (5-element vector)
+            covariance: Factor covariance matrix (5x5)
+            n_simulations: Number of simulations (default: 10,000)
+
+        Returns:
+            Array of simulated returns (length n_simulations)
+        """
+        logger.info(f"Running {n_simulations} Monte Carlo simulations")
+
+        # Generate random factor returns from multivariate normal
+        # Returns are monthly, so we use mean=0 (no drift)
+        mean = np.zeros(5)
+        factor_returns = np.random.multivariate_normal(
+            mean,
+            covariance,
+            size=n_simulations,
+        )
+
+        # Compute portfolio returns: r_p = beta' * r_f
+        portfolio_returns = factor_returns @ betas
+
+        logger.debug(
+            f"Simulated returns: mean={portfolio_returns.mean():.4f}, "
+            f"std={portfolio_returns.std():.4f}, "
+            f"min={portfolio_returns.min():.4f}, "
+            f"max={portfolio_returns.max():.4f}"
+        )
+
+        return portfolio_returns
+
+    async def compute_dar(
+        self,
+        portfolio_id: str,
+        regime: str,
+        pack_id: str,
+        confidence: float = 0.95,
+        horizon_days: int = 30,
+        n_simulations: int = 10000,
+        as_of_date: Optional[date] = None,
+    ) -> DaRResult:
+        """
+        Compute Drawdown at Risk (DaR) using regime-conditioned Monte Carlo.
+
+        Args:
+            portfolio_id: Portfolio UUID
+            regime: Current macro regime
+            pack_id: Pricing pack UUID
             confidence: Confidence level (default: 0.95 = 95%)
             horizon_days: Forecast horizon in days (default: 30)
+            n_simulations: Number of Monte Carlo simulations (default: 10,000)
             as_of_date: Date for calculation (default: today)
 
         Returns:
-            DaRResult
+            DaRResult with regime-conditioned risk metrics
         """
         if as_of_date is None:
             as_of_date = date.today()
 
-        # Run stress tests for all scenarios
-        results = []
-        for scenario in self.scenarios:
-            result = await self.apply_scenario(portfolio_id, scenario, as_of_date)
-            results.append(result)
+        # Get portfolio factor betas
+        betas = await self.get_portfolio_factor_betas(portfolio_id, pack_id)
 
-        if not results:
-            raise ValueError("No stress test results")
+        # Get regime-specific covariance
+        covariance = self.get_regime_covariance(regime)
 
-        # Sort by drawdown (worst first)
-        results.sort(key=lambda r: r.drawdown)
+        # Run Monte Carlo simulation
+        returns = await self.simulate_scenarios(betas, covariance, n_simulations)
 
-        # Compute DaR at confidence level
-        # For 95% confidence, we take the 5th percentile (worst 5% of outcomes)
-        percentile = 1 - confidence  # 95% confidence = 5th percentile
-        index = int(len(results) * percentile)
-        dar_scenario = results[index]
+        # Compute percentiles
+        percentile_idx = int((1 - confidence) * n_simulations)
+        sorted_returns = np.sort(returns)
 
-        dar = dar_scenario.drawdown
+        dar = float(sorted_returns[percentile_idx])  # 5th percentile for 95% confidence
+        worst_drawdown = float(sorted_returns[0])  # Absolute worst
+        median_drawdown = float(np.median(returns))  # 50th percentile
+        best_case = float(sorted_returns[-1])  # Best case
 
-        # Find absolute worst case
-        worst_scenario = results[0]
+        # Compute factor contributions to DaR
+        # Approximate using beta * marginal covariance
+        factor_contributions = {}
+        for i, factor in enumerate(self.FACTORS):
+            # Marginal contribution = beta_i * sqrt(variance_i)
+            variance = covariance[i, i]
+            contribution = betas[i] * np.sqrt(variance)
+            factor_contributions[factor] = float(contribution)
+
+        # Get current NAV
+        positions = await self.get_portfolio_holdings(portfolio_id)
+        nav = sum(Decimal(str(p["market_value"])) for p in positions)
 
         logger.info(
-            f"DaR ({confidence*100:.0f}% confidence, {horizon_days}d): {dar*100:.2f}% "
-            f"(worst case: {worst_scenario.drawdown*100:.2f}% in {worst_scenario.scenario_name})"
+            f"DaR ({confidence*100:.0f}% confidence, {horizon_days}d, {regime}): {dar*100:.2f}% "
+            f"(worst: {worst_drawdown*100:.2f}%, median: {median_drawdown*100:.2f}%)"
         )
 
         return DaRResult(
             portfolio_id=portfolio_id,
+            regime=regime,
             confidence=confidence,
             dar=dar,
             horizon_days=horizon_days,
-            worst_scenario=worst_scenario.scenario_name,
-            worst_drawdown=worst_scenario.drawdown,
-            scenarios_tested=len(results),
+            simulations=n_simulations,
+            worst_drawdown=worst_drawdown,
+            median_drawdown=median_drawdown,
+            best_case=best_case,
+            factor_contributions=factor_contributions,
             as_of_date=as_of_date,
+            nav=nav,
         )
 
     async def get_dar_scenarios(self, portfolio_id: str) -> List[StressTestResult]:

@@ -6,11 +6,16 @@
 
 ## 🎯 Start Here
 
-1. **[PRODUCT_SPEC.md](PRODUCT_SPEC.md)** - Complete product specification (v1.4 + SLOs)
-2. **[.ops/IMPLEMENTATION_ROADMAP_V2.md](.ops/IMPLEMENTATION_ROADMAP_V2.md)** ⭐ - 8-week phased delivery plan (v2.0 with all feedback incorporated)
-3. **[.claude/CLAUDE_CODE_GUIDE.md](.claude/CLAUDE_CODE_GUIDE.md)** ⭐ - Practical guide to using Claude Code in VS Code for agent-driven development
-4. **[DawsOS_Seeding_Plan](DawsOS_Seeding_Plan)** - Complete seed data specification (Dalio cycles, multi-currency, ADR)
-5. **[.claude/BUILD_SYSTEM_V2_FINAL_COMPLETION.md](.claude/BUILD_SYSTEM_V2_FINAL_COMPLETION.md)** - Build system v2.0 complete (15/15 deliverables, 100%)
+**NEW DEVELOPERS - START WITH THIS**:
+1. **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** ⭐ **START HERE** - Quick-start guide (5-minute launch, architecture, troubleshooting)
+
+**CORE SPECIFICATIONS**:
+2. **[.ops/TASK_INVENTORY_2025-10-24.md](.ops/TASK_INVENTORY_2025-10-24.md)** ⭐ **BACKLOG REFERENCE** - Single source of truth for remaining work
+3. **[.claude/PATTERN_CAPABILITY_MAPPING.md](.claude/PATTERN_CAPABILITY_MAPPING.md)** ⭐ **ARCHITECTURE REFERENCE** - 12 patterns, 44 capabilities, 4 agents mapping
+4. **[PRODUCT_SPEC.md](PRODUCT_SPEC.md)** - Complete product specification (v1.4 + SLOs)
+5. **[STABILITY_PLAN.md](STABILITY_PLAN.md)** - Remaining stability tasks (macro, ratings, optimizer, exports, observability)
+6. **[.ops/IMPLEMENTATION_ROADMAP_V2.md](.ops/IMPLEMENTATION_ROADMAP_V2.md)** - Historical 8-week plan (use for context)
+7. **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Test strategy and execution
 
 ---
 
@@ -68,7 +73,7 @@ From [PRODUCT_SPEC.md](PRODUCT_SPEC.md):
 ### Core Execution Stack (Sprint 1)
 - **[.claude/agents/core/EXECUTION_ARCHITECT.md](.claude/agents/core/EXECUTION_ARCHITECT.md)**
   - Sub-agents: `EXECUTOR_API_BUILDER`, `PATTERN_ORCHESTRATOR_BUILDER`, `AGENT_RUNTIME_BUILDER`
-  - Deliverables: `/execute` endpoint, JSON DAG runner, capability routing, tracing, caching
+  - Deliverables: `/v1/execute` endpoint, JSON DAG runner, capability routing, tracing, caching
 
 ### Business Logic (Sprints 2-4)
 - **[.claude/agents/business/METRICS_ARCHITECT.md](.claude/agents/business/METRICS_ARCHITECT.md)**
@@ -231,6 +236,22 @@ From [PRODUCT_SPEC.md](PRODUCT_SPEC.md):
 
 ---
 
+## 📁 Documentation Cleanup (2025-10-24)
+
+**Streamlined Structure**:
+- Active documentation reduced to 6 essential root files
+- 50+ obsolete/redundant files removed
+- Consolidated DEVELOPMENT_GUIDE.md as single entry point
+
+**Key Changes** (2025-10-24):
+- ✅ Removed redundant start guides (START_HERE.md, QUICK_START.md, LAUNCH_GUIDE.md)
+- ✅ Removed session summaries and governance docs
+- ✅ Removed audit reports and architecture analysis docs
+- ✅ Updated agent documentation to reflect operational state
+- ✅ Updated IMPLEMENTATION_ROADMAP_V2.md with reality check (v2.1)
+
+---
+
 ## 📊 Status Dashboard
 
 Build system status is maintained in **[.claude/BUILD_SYSTEM_V2_FINAL_COMPLETION.md](.claude/BUILD_SYSTEM_V2_FINAL_COMPLETION.md)**:
@@ -255,5 +276,5 @@ Build system status is maintained in **[.claude/BUILD_SYSTEM_V2_FINAL_COMPLETION
 
 ---
 
-**Last Updated**: 2025-10-21
+**Last Updated**: 2025-10-24 (Documentation refactored, agent docs aligned with actual code)
 **Maintained by**: ORCHESTRATOR agent

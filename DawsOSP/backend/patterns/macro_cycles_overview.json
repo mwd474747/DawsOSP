@@ -1,0 +1,181 @@
+{
+  "id": "macro_cycles_overview",
+  "name": "Macro Cycles Overview",
+  "description": "Dalio-style cycle analysis: Short-Term Debt Cycle, Long-Term Debt Cycle, and Empire phases",
+  "version": "1.0.0",
+  "category": "economy",
+  "tags": ["cycles", "dalio", "debt", "empire", "macro"],
+  "author": "DawsOS",
+  "created": "2025-10-23",
+  "inputs": {
+    "asof_date": {
+      "type": "date",
+      "required": false,
+      "description": "Analysis date (defaults to ctx.asof_date)"
+    }
+  },
+  "outputs": {
+    "panels": [
+      {
+        "id": "cycle_cards",
+        "title": "Cycle Phases",
+        "type": "card_grid",
+        "refresh_ttl": 86400
+      },
+      {
+        "id": "timeline",
+        "title": "Historical Cycle Timeline",
+        "type": "timeline_chart",
+        "refresh_ttl": 86400
+      },
+      {
+        "id": "drivers",
+        "title": "Key Drivers",
+        "type": "metrics_grid",
+        "refresh_ttl": 86400
+      }
+    ]
+  },
+  "steps": [
+    {
+      "capability": "cycles.compute_short_term",
+      "args": {
+        "asof_date": "{{inputs.asof_date}}"
+      },
+      "as": "stdc"
+    },
+    {
+      "capability": "cycles.compute_long_term",
+      "args": {
+        "asof_date": "{{inputs.asof_date}}"
+      },
+      "as": "ltdc"
+    },
+    {
+      "capability": "cycles.compute_empire",
+      "args": {
+        "asof_date": "{{inputs.asof_date}}"
+      },
+      "as": "empire"
+    },
+    {
+      "capability": "cycles.aggregate_overview",
+      "args": {
+        "stdc": "{{state.stdc}}",
+        "ltdc": "{{state.ltdc}}",
+        "empire": "{{state.empire}}"
+      },
+      "as": "overview"
+    }
+  ],
+  "presentation": {
+    "cycle_cards": {
+      "cards": [
+        {
+          "id": "stdc_card",
+          "title": "Short-Term Debt Cycle (STDC)",
+          "phase": "{{stdc.phase_label}}",
+          "score": "{{stdc.score}}",
+          "confidence": "{{stdc.confidence}}",
+          "description": "{{stdc.description}}",
+          "duration": "{{stdc.phase_duration_months}} months",
+          "metrics": [
+            {"label": "Credit Growth", "value": "{{stdc.credit_growth}}", "format": "percentage"},
+            {"label": "Policy Rate Z-Score", "value": "{{stdc.policy_rate_zscore}}", "format": "decimal_2"},
+            {"label": "Unemployment Gap", "value": "{{stdc.unemployment_gap}}", "format": "percentage"}
+          ]
+        },
+        {
+          "id": "ltdc_card",
+          "title": "Long-Term Debt Cycle (LTDC)",
+          "phase": "{{ltdc.phase_label}}",
+          "score": "{{ltdc.score}}",
+          "confidence": "{{ltdc.confidence}}",
+          "description": "{{ltdc.description}}",
+          "duration": "{{ltdc.phase_duration_years}} years",
+          "metrics": [
+            {"label": "Debt-to-GDP", "value": "{{ltdc.debt_to_gdp}}", "format": "percentage"},
+            {"label": "Debt Service Ratio", "value": "{{ltdc.debt_service_ratio}}", "format": "percentage"},
+            {"label": "Real Rates Trend", "value": "{{ltdc.real_rates_trend}}", "format": "percentage"}
+          ]
+        },
+        {
+          "id": "empire_card",
+          "title": "Empire Cycle",
+          "phase": "{{empire.phase_label}}",
+          "score": "{{empire.score}}",
+          "confidence": "{{empire.confidence}}",
+          "description": "{{empire.description}}",
+          "metrics": [
+            {"label": "Reserve Currency Share", "value": "{{empire.reserve_currency_share}}", "format": "percentage"},
+            {"label": "Military Power Index", "value": "{{empire.military_power}}", "format": "number"},
+            {"label": "Innovation Rate", "value": "{{empire.innovation_rate}}", "format": "decimal_2"}
+          ]
+        }
+      ]
+    },
+    "timeline": {
+      "chart": {
+        "type": "timeline",
+        "title": "Cycle Phase History (10 Years)",
+        "series": [
+          {
+            "name": "STDC",
+            "data": "{{overview.stdc_timeline}}",
+            "color": "#3498db"
+          },
+          {
+            "name": "LTDC",
+            "data": "{{overview.ltdc_timeline}}",
+            "color": "#e74c3c"
+          },
+          {
+            "name": "Empire",
+            "data": "{{overview.empire_timeline}}",
+            "color": "#9b59b6"
+          }
+        ]
+      }
+    },
+    "drivers": {
+      "metrics": [
+        {
+          "label": "Credit Impulse",
+          "value": "{{overview.credit_impulse}}",
+          "format": "percentage",
+          "zscore": "{{overview.credit_impulse_zscore}}"
+        },
+        {
+          "label": "Fiscal Deficit",
+          "value": "{{overview.fiscal_deficit}}",
+          "format": "percentage",
+          "zscore": "{{overview.fiscal_deficit_zscore}}"
+        },
+        {
+          "label": "Real Yield 10Y",
+          "value": "{{overview.real_yield_10y}}",
+          "format": "percentage",
+          "zscore": "{{overview.real_yield_zscore}}"
+        },
+        {
+          "label": "Internal Order Score",
+          "value": "{{overview.internal_order}}",
+          "format": "decimal_2",
+          "threshold": 0.7
+        }
+      ]
+    }
+  },
+  "rights_required": ["macro_data_read"],
+  "export_allowed": {
+    "pdf": true,
+    "csv": true
+  },
+  "observability": {
+    "otel_span_name": "pattern.macro_cycles_overview",
+    "metrics": [
+      "pattern_execution_duration_seconds",
+      "cycle_computation_duration_seconds"
+    ]
+  }
+}

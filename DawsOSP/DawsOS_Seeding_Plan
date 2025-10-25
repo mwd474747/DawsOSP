@@ -29,6 +29,7 @@
 data/SEEDS/
   portfolios/        # tenants, portfolios, lots, txns, benchmarks
   symbols/           # securities, figi/cusip mappings, sectors
+  prices/            # pricing pack CSVs (pricing_pack_id inferred from filename)
   fx/                # WM 4pm daily FX snapshots
   prices/            # split-adjusted closes by pack
   packs/             # pricing_pack rows, pack_supersedes
@@ -43,22 +44,22 @@ data/SEEDS/
   rights/            # RIGHTS_REGISTRY.yaml
   calendars/         # business/exchange calendars, holidays
 scripts/
-  seed_load.py
+  seed_loader.py
   seed_generate_demo_pack.py
   seed_ingest_demo_portfolio.py
-Makefile
 ```
 
-**Make targets**
+**Seed loader CLI**
 
-* `make seed:foundation` → symbols, portfolios, benchmarks, FX, prices, packs, CA, calendars, rights
-* `make seed:demo` → demo lots/transactions (ADR case), Beancount, reconciliation
-* `make seed:macro` → FRED catalog, transforms, regime defs
-* `make seed:cycles` → cycle definitions & snapshots (STDC/LTDC/Empire)
-* `make seed:ratings` → rating schema & rubrics
-* `make seed:optimizer` → policy templates & constraints
-* `make seed:news` → entities, lexicon, sources, impact rules
-* `make validate` → property/golden/integration checks
+Run from repository root after installing `backend/requirements.txt`.
+
+* `python scripts/seed_loader.py --domain symbols` → symbols, mapping, benchmark metadata
+* `python scripts/seed_loader.py --domain portfolios` → demo portfolio lots/transactions (ADR case)
+* `python scripts/seed_loader.py --domain macro` → FRED catalog, transforms, regime defs
+* `python scripts/seed_loader.py --domain cycles` → cycle definitions & snapshots (STDC/LTDC/Empire)
+* `python scripts/seed_loader.py --all` → runs the domains above in the canonical order
+
+Additional seed domains (ratings, optimizer, news, rights) remain manual imports until the loader grows new handlers; see §3 for file layouts.
 
 ---
 
@@ -119,6 +120,19 @@ symbol,exchange,figi,cusip,security_id,source
 AAPL,NASDAQ,BBG000B9XRY4,037833100,SEC_AAPL,override
 RY,TSX,BBG000BLNNH6,780087102,SEC_RY,override
 ```
+
+**`prices/YYYY-MM-DD.csv`**
+
+```csv
+security_id,close,open,high,low,volume,currency,source
+048a0b1e-5fa7-507a-9854-af6a9d7360e9,185.23,184.20,186.50,183.90,54238901,USD,seed
+37c12a32-ca29-5418-b464-18c50553b4d2,142.56,141.80,143.70,141.20,1234567,CAD,seed
+68e591b8-c12c-5c5a-bb70-4b8d0adda570,37.82,37.50,38.10,37.20,876543,CAD,seed
+```
+
+- Filename `2025-10-21.csv` becomes pricing pack `PP_2025-10-21`
+- `currency` and `source` default to `USD` and `seed` when omitted
+- `open/high/low/volume` optional; blank cells ignored
 
 **`portfolios/benchmarks.csv`**
 
@@ -383,16 +397,13 @@ NewsAPI: { export: restricted, require_license: true,  attribution: "News metada
 
 ## 5) Validation & Golden Tests
 
-**Makefile**
+**Validation checks**
 
-* `make validate` runs:
-
-  * **Property**: currency identity (`r_base ≈ (1+r_local)*(1+r_fx)-1`)
-  * **Golden**: Beancount vs `portfolio_metrics` ±1 bp (includes ADR test)
-  * **Integration**: portfolio_overview, macro_overview, cycles_overview, scenario_analysis, export_report
-  * **Rights drills**: blocked/watermarked exports; attributions present
-  * **Chaos (staging)**: provider outage/stale panels/DLQ
-  * **RLS/IDOR fuzz**: isolation
+* Property tests (`r_base ≈ (1+r_local)*(1+r_fx)-1`): `pytest backend/tests/test_property_currency_attribution.py`
+* Golden Beancount ±1 bp (incl. ADR pay-date FX): `pytest backend/tests/test_macro_golden.py backend/tests/test_property_twr_accuracy.py`
+* Integration: `pytest backend/tests/test_portfolio_overview_pattern.py backend/tests/test_executor_freshness_gate.py`
+* Rights drills: `pytest backend/tests/test_rights_enforcement.py`
+* RLS/IDOR fuzz: `pytest backend/tests/test_rls_with_app_role.py`
 
 **Manual smoke** (first run)
 
@@ -405,9 +416,9 @@ NewsAPI: { export: restricted, require_license: true,  attribution: "News metada
 
 ## 6) Simulation (what happens day-1)
 
-1. `make seed:foundation seed:demo` loads P1 (CAD base; AAPL/USD + RY/XIU CAD), D0 & D1 packs, WM FX, CA (AAPL split & dividend ADR).
-2. `make seed:macro seed:cycles seed:ratings seed:optimizer seed:news` loads all pattern configs.
-3. Nightly job runs (or `make run:nightly`): pack build (already D1), reconcile (green), compute, pre-warm, mark fresh, evaluate alerts.
+1. `python scripts/seed_loader.py --domain symbols` followed by `--domain portfolios` (or a single `--all`) loads P1 (CAD base; AAPL/USD + RY/XIU CAD), D0 & D1 packs, WM FX, CA (AAPL split & dividend ADR).
+2. Macro and cycle seeds load via `python scripts/seed_loader.py --domain macro` and `--domain cycles` (ratings/optimizer/news seeds remain manual until the loader grows dedicated handlers).
+3. Nightly job runs (or `python -m backend.jobs.scheduler --once`): pack build (already D1), reconcile (green), compute, pre-warm, mark fresh, evaluate alerts.
 4. UI loads **Overview** → TWR/Attribution/Badges; **Macro** → regime; **Cycles** → STDC/LTDC/Empire; **Scenarios** → ΔP/L; **Alerts** → presets; **Reports** → PDF with rights gate.
 5. Golden tests confirm **±1 bp**; currency identity passes; chaos & rights drills pass.
 
@@ -423,18 +434,32 @@ NewsAPI: { export: restricted, require_license: true,  attribution: "News metada
 
 ## 8) Appendix — Seed Loader Stubs
 
-**`scripts/seed_load.py`**
+**`scripts/seed_loader.py`**
 
 ```python
-import csv, sys
-from psycopg import connect
-from upsert import upsert_row  # helper
+class SeedLoader:
+    def __init__(self):
+        self.loaders = {
+            "symbols": SymbolSeedLoader(),
+            "portfolios": PortfolioSeedLoader(),
+            "macro": MacroSeedLoader(),
+            "cycles": CycleSeedLoader(),
+        }
 
-tbl, path = sys.argv[1], sys.argv[2]
-with connect(dsn=os.getenv("DATABASE_URL")) as con, con.cursor() as cur, open(path) as f:
-    for row in csv.DictReader(f):
-        upsert_row(cur, tbl, row)  # natural keys per table; ON CONFLICT DO UPDATE
-con.commit()
+    async def load_all(self):
+        for domain in ["symbols", "portfolios", "macro", "cycles"]:
+            await self.load_domain(domain)
+
+async def main():
+    parser = argparse.ArgumentParser(...)
+    args = parser.parse_args()
+
+    await init_db_pool(database_url)
+    loader = SeedLoader()
+    if args.all:
+        await loader.load_all()
+    else:
+        await loader.load_domain(args.domain)
 ```
 
 **`scripts/seed_generate_demo_pack.py`**
@@ -454,7 +479,7 @@ con.commit()
 
 ## 9) Final Checklist (seeding Go/No-Go)
 
-* [ ] All seeds loaded idempotently via `make seed:*`
+* [ ] All seeds loaded idempotently via `scripts/seed_loader.py`
 * [ ] RLS on; migrations complete; hypertables/cont. aggregates present
 * [ ] Golden/property/integration/rights/chaos/rls tests all green
 * [ ] Nightly pack flips fresh reliably; pre-warm completes; freshness gate enforced

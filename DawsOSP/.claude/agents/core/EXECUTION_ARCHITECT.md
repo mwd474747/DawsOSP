@@ -1,15 +1,16 @@
-# Execution Architect Agent
+# Execution Architect Reference
 
 **Role**: Core execution stack - Executor API, Pattern Orchestrator, Agent Runtime
 **Reports to**: [ORCHESTRATOR](../ORCHESTRATOR.md)
-**Status**: Sprint 1 - Execution Core Phase
+**Status**: ✅ Operational (Production)
 **Priority**: P0
+**Last Updated**: 2025-10-24
 
 ---
 
 ## Mission
 
-Build the **single execution path** that enforces:
+Maintain the **single execution path** that enforces:
 1. UI → Executor API → Pattern Orchestrator → Agent Runtime → Services
 2. Every result includes `pricing_pack_id` + `ledger_commit_hash` + full trace
 3. Pack freshness gate prevents stale data
@@ -18,26 +19,187 @@ Build the **single execution path** that enforces:
 
 ---
 
-## Sub-Agents
+## Current Implementation
 
-### EXECUTOR_API_BUILDER
-**Responsibilities**:
-- FastAPI application with `/execute` endpoint
-- RequestContext construction (user, portfolio, asof, pack_id)
+### Executor API ✅ OPERATIONAL
+
+**File**: [backend/app/api/executor.py](../../../backend/app/api/executor.py)
+
+**Key Components**:
+- FastAPI application with `/v1/execute` endpoint
+- RequestContext construction (user, portfolio, asof_date, pricing_pack_id)
 - Pack freshness validation (503 if warming)
-- RLS context setting
+- RLS context setting (`SET LOCAL app.user_id`)
 - Result serialization with trace
-- OpenAPI documentation
+- OpenTelemetry instrumentation
 
-**Deliverables**:
+**Actual RequestContext Structure**:
 
-**API Structure**:
+Defined in [backend/app/core/types.py:RequestCtx](../../../backend/app/core/types.py)
+
+**Critical Field Names** (avoid bugs by using exact names from code):
 ```python
-# api/main.py
-from fastapi import FastAPI, Depends, HTTPException
-from pydantic import BaseModel
-from datetime import date
-from typing import Any
+# From backend/app/core/types.py:RequestCtx
+trace_id: str                      # OpenTelemetry trace ID
+request_id: str                    # Unique request ID
+user_id: Optional[UUID]            # For RLS (SET LOCAL app.user_id)
+portfolio_id: Optional[UUID]       # Portfolio being analyzed
+pricing_pack_id: Optional[str]     # e.g., "PP_2025-10-21" (string, NOT UUID)
+ledger_commit_hash: Optional[str]  # Git commit of ledger
+asof_date: date                    # Valuation date (NOT "asof")
+base_currency: Optional[str]       # Portfolio base (NOT "base_ccy")
+benchmark_id: Optional[str]        # Benchmark reference
+# + ~10 more fields for macro/risk context
+```
+
+**⚠️ Common Mistakes to Avoid**:
+- Using `asof` instead of `asof_date` → AttributeError
+- Using `base_ccy` instead of `base_currency` → AttributeError
+- Treating `pricing_pack_id` as UUID instead of string → Type error
+
+---
+
+### Pattern Orchestrator ✅ OPERATIONAL
+
+**File**: [backend/app/core/pattern_orchestrator.py](../../../backend/app/core/pattern_orchestrator.py)
+
+**What it does**:
+1. Loads pattern JSON from `backend/patterns/*.json`
+2. Executes steps sequentially (DAG order)
+3. Substitutes templates: `{{ctx.asof_date}}`, `{{inputs.portfolio_id}}`, `{{state.positions}}`
+4. Routes capabilities to agents via AgentRuntime
+5. Builds execution trace with all metadata
+
+**Pattern Schema** (actual fields from patterns/*.json):
+```json
+{
+  "id": "portfolio_overview",
+  "name": "Portfolio Overview",
+  "version": "1.0.0",
+  "category": "portfolio",
+  "tags": ["portfolio", "performance"],
+  "author": "DawsOS",
+  "created": "2025-10-23",
+  "inputs": { "portfolio_id": {"type": "uuid", "required": true} },
+  "outputs": ["perf_metrics", "currency_attr", "valued_positions"],
+  "steps": [
+    {"capability": "ledger.positions", "args": {...}, "as": "positions"},
+    {"capability": "pricing.apply_pack", "args": {...}, "as": "valued_positions"}
+  ],
+  "display": { "panels": [...] },
+  "presentation": { "performance_strip": {...} },
+  "rights_required": ["portfolio_read"],
+  "export_allowed": {"pdf": true, "csv": true},
+  "observability": {"otel_span_name": "pattern.portfolio_overview"}
+}
+```
+
+**Key Features Not in Original Docs**:
+- ✅ `display` - UI panel definitions
+- ✅ `presentation` - Chart/table configurations
+- ✅ `rights_required` - Access control
+- ✅ `export_allowed` - PDF/CSV export gates
+- ✅ `observability` - OpenTelemetry spans
+
+---
+
+### Agent Runtime ✅ OPERATIONAL
+
+**File**: [backend/app/core/agent_runtime.py](../../../backend/app/core/agent_runtime.py)
+
+**What it does**:
+1. Registers agents at startup (see [executor.py:50-90](../../../backend/app/api/executor.py))
+2. Maintains capability → agent mapping
+3. Routes capability calls to correct agent
+4. Handles circuit breaker failures
+
+**Registered Agents** (verified from executor.py):
+- ✅ FinancialAnalyst (7 capabilities)
+- ✅ MacroHound (5 capabilities)
+- ✅ DataHarvester (5 capabilities)
+- ✅ ClaudeAgent (3 capabilities)
+
+**How Capabilities Route**:
+```
+Pattern step: {"capability": "metrics.compute_twr", "args": {...}}
+    ↓
+AgentRuntime.execute_capability("metrics.compute_twr", ctx, state, **args)
+    ↓
+Finds: FinancialAnalyst registered for "metrics.compute_twr"
+    ↓
+Calls: FinancialAnalyst.metrics_compute_twr(ctx, state, **args)
+    ↓
+Returns: Result with metadata attached
+```
+
+---
+
+## Known Issues
+
+### P0: Database Pool Not Accessible in Agent Context
+**Problem**: Module-level global `_pool` variable not shared across uvicorn `--reload` contexts
+**Impact**: Agents can't query database → empty results
+**Fix**: [STABILITY_PLAN.md](../../../STABILITY_PLAN.md) Option A (disable --reload)
+**Status**: Fix ready, not yet applied
+
+### P1: Attribution Incomplete
+**Issue**: `attribution.currency` capability exists but `get_position_attributions()` helper missing
+**Impact**: Currency attribution returns incomplete data
+
+---
+
+## Recent Changes (2025-10-24)
+
+**Governance Fixes**: [GOVERNANCE_FIXES_COMPLETE.md](../../../GOVERNANCE_FIXES_COMPLETE.md)
+1. ✅ Performance optimization - `PricingService.get_prices_as_decimals()` (~30% faster)
+2. ✅ Deleted duplicate pricing function - Single code path
+3. ✅ Fixed JSON serialization - AsyncPG JSONB handling
+
+---
+
+## For New Agent Development
+
+When building a new agent, follow this pattern:
+
+**1. Create agent file** in `backend/app/agents/`
+**2. Extend BaseAgent** from [base_agent.py](../../../backend/app/agents/base_agent.py)
+**3. Implement `get_capabilities()`** - Return list of capability strings
+**4. Implement capability methods** - Name must match capability with dots→underscores
+**5. Register in executor.py** - Add to startup function
+**6. Use correct field names** - Reference RequestCtx in types.py
+**7. Attach metadata** - Include agent_name, source, asof for tracing
+
+**Example capability method signature**:
+```python
+async def capability_name(
+    self,
+    ctx: RequestCtx,           # From types.py
+    state: Dict[str, Any],     # Current execution state
+    **kwargs                   # Pattern args
+) -> Dict[str, Any]:           # Must be dict for JSON serialization
+    # Implementation
+    result = {"data": ...}
+    result.__metadata__ = AgentMetadata(agent_name=self.name, source="...")
+    return result
+```
+
+---
+
+## Quick Reference
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Executor API | [executor.py](../../../backend/app/api/executor.py) | `/v1/execute` endpoint, freshness gate |
+| RequestCtx | [types.py](../../../backend/app/core/types.py) | Request context (use exact field names!) |
+| PatternOrchestrator | [pattern_orchestrator.py](../../../backend/app/core/pattern_orchestrator.py) | Pattern execution, template substitution |
+| AgentRuntime | [agent_runtime.py](../../../backend/app/core/agent_runtime.py) | Agent registration, capability routing |
+| BaseAgent | [base_agent.py](../../../backend/app/agents/base_agent.py) | Agent interface, metadata |
+| Patterns | [backend/patterns/](../../../backend/patterns/) | 12 JSON pattern definitions |
+
+---
+
+**Last Updated**: 2025-10-24
+**Status**: Operational with known P0 database pool issue
 
 app = FastAPI(title="DawsOS Executor API", version="1.0.0")
 

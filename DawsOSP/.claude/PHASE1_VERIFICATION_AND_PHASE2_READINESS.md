@@ -412,7 +412,7 @@ End-to-end test: POST /v1/execute → orchestrator.run() → runtime.execute_cap
 
 1. **PRODUCT_SPEC.md** - Product specification v2.0
 2. **DawsOS_Seeding_Plan** - Data seeding plan
-3. **MASTER_TASK_LIST.md** - All gaps/fixes/TODOs (from existing DawsOS)
+3. **.ops/TASK_INVENTORY_2025-10-24.md** - Current source for all gaps/fixes/TODOs (replaces the retired MASTER_TASK_LIST.md)
 
 ---
 

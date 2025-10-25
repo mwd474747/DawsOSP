@@ -179,7 +179,7 @@ class PatternOrchestrator:
 
     def _load_patterns(self):
         """
-        Load all pattern JSON files from patterns/ directory.
+        Load all pattern JSON files from backend/patterns/ directory.
 
         Pattern files must have structure:
         {
@@ -192,7 +192,9 @@ class PatternOrchestrator:
             "outputs": [...]
         }
         """
-        patterns_dir = Path("patterns")
+        # GOVERNANCE FIX #2: Use correct pattern directory path
+        # backend/app/core/pattern_orchestrator.py -> parent.parent.parent = backend/ -> patterns/
+        patterns_dir = Path(__file__).parent.parent.parent / "patterns"
         if not patterns_dir.exists():
             logger.warning(f"Patterns directory not found: {patterns_dir}")
             return
@@ -315,7 +317,10 @@ class PatternOrchestrator:
 
                 # Store result in state
                 result_key = step.get("as", "last")
+                logger.info(f"📦 Storing result from {capability} in state['{result_key}']")
+                logger.info(f"Result type: {type(result)}, is None: {result is None}")
                 state[result_key] = result
+                logger.info(f"State after storing: keys={list(state.keys())}, '{result_key}' is None: {state.get(result_key) is None}")
 
                 trace.add_step(capability, result, args, duration)
                 logger.debug(

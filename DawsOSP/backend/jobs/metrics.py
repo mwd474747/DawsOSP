@@ -338,9 +338,26 @@ class MetricsComputer:
 
     async def _get_active_portfolios(self) -> List[str]:
         """Get list of active portfolio IDs."""
-        # TODO: Query DB for active portfolios
-        logger.debug("Getting active portfolios")
-        return []
+        if not self.use_db:
+            logger.debug("Getting active portfolios (stub mode)")
+            return []
+
+        # Query DB for active portfolios
+        query = """
+            SELECT id::text
+            FROM portfolios
+            WHERE is_active = true
+        """
+
+        try:
+            from backend.app.db.connection import execute_query
+            rows = await execute_query(query)
+            portfolio_ids = [row["id"] for row in rows]
+            logger.debug(f"Found {len(portfolio_ids)} active portfolios")
+            return portfolio_ids
+        except Exception as e:
+            logger.error(f"Failed to get active portfolios: {e}", exc_info=True)
+            return []
 
     async def _get_portfolio_returns(
         self,
@@ -354,9 +371,35 @@ class MetricsComputer:
         Returns:
             List of daily returns (most recent last)
         """
-        # TODO: Query portfolio_valuations table for daily returns
-        logger.debug(f"Getting returns for portfolio {portfolio_id}")
-        return []
+        if not self.use_db:
+            logger.debug(f"Getting returns for portfolio {portfolio_id} (stub mode)")
+            # Return stub data: random returns around 0.05% daily
+            import random
+            return [random.gauss(0.0005, 0.01) for _ in range(min(lookback_days, 252))]
+
+        start_date = asof_date - timedelta(days=lookback_days)
+
+        # Query portfolio_metrics table for historical returns
+        query = """
+            SELECT asof_date, twr_1d
+            FROM portfolio_metrics
+            WHERE portfolio_id = $1::uuid
+              AND asof_date >= $2
+              AND asof_date <= $3
+              AND twr_1d IS NOT NULL
+            ORDER BY asof_date ASC
+        """
+
+        try:
+            from backend.app.db.connection import execute_query
+            rows = await execute_query(query, portfolio_id, start_date, asof_date)
+            returns = [float(row["twr_1d"]) for row in rows]
+            logger.debug(f"Loaded {len(returns)} returns for portfolio {portfolio_id}")
+            return returns
+        except Exception as e:
+            logger.warning(f"Failed to load portfolio returns: {e}")
+            # Fallback: compute from prices if available
+            return []
 
     async def _get_benchmark_returns(
         self,
@@ -369,16 +412,97 @@ class MetricsComputer:
 
         CRITICAL: Benchmark returns must be hedged to remove FX impact.
         """
-        # TODO: Query benchmark_returns table
-        # IMPORTANT: Returns must be hedged to portfolio base currency
-        logger.debug(f"Getting benchmark returns for portfolio {portfolio_id}")
-        return []
+        if not self.use_db:
+            logger.debug(f"Getting benchmark returns for portfolio {portfolio_id} (stub mode)")
+            # Return stub data: market returns around 0.04% daily
+            import random
+            return [random.gauss(0.0004, 0.012) for _ in range(min(lookback_days, 252))]
+
+        try:
+            from backend.app.db.connection import execute_query_one
+            from backend.app.services.benchmarks import get_benchmark_service
+
+            # Get portfolio benchmark and base currency
+            query = """
+                SELECT benchmark_id, base_currency
+                FROM portfolios
+                WHERE id = $1::uuid
+            """
+            portfolio = await execute_query_one(query, portfolio_id)
+
+            if not portfolio or not portfolio["benchmark_id"]:
+                logger.warning(f"No benchmark configured for portfolio {portfolio_id}")
+                return []
+
+            benchmark_id = portfolio["benchmark_id"]
+            base_currency = portfolio["base_currency"]
+
+            # Get benchmark returns (hedged to base currency)
+            benchmark_service = get_benchmark_service(use_db=self.use_db)
+            start_date = asof_date - timedelta(days=lookback_days)
+
+            # Get pack_id for this date
+            pack_query = """
+                SELECT id
+                FROM pricing_packs
+                WHERE date <= $1
+                ORDER BY date DESC
+                LIMIT 1
+            """
+            pack_row = await execute_query_one(pack_query, asof_date)
+            pack_id = pack_row["id"] if pack_row else f"PP_{asof_date}"
+
+            # Load hedged benchmark returns
+            returns_array = await benchmark_service.get_benchmark_returns_as_array(
+                benchmark_id=benchmark_id,
+                start_date=start_date,
+                end_date=asof_date,
+                pack_id=pack_id,
+                hedged=True,  # CRITICAL: Hedge to portfolio base currency
+                base_currency=base_currency,
+            )
+
+            logger.debug(
+                f"Loaded {len(returns_array)} hedged benchmark returns "
+                f"for {benchmark_id} (base: {base_currency})"
+            )
+            return returns_array.tolist()
+
+        except Exception as e:
+            logger.error(f"Failed to load benchmark returns: {e}", exc_info=True)
+            return []
 
     async def _get_risk_free_rate(self, asof_date: date) -> Decimal:
         """Get risk-free rate from FRED (DGS10 or DGS3MO)."""
-        # TODO: Query FRED data for risk-free rate
-        logger.debug(f"Getting risk-free rate for {asof_date}")
-        return Decimal("0.05")  # Placeholder: 5%
+        if not self.use_db:
+            logger.debug(f"Getting risk-free rate for {asof_date} (stub mode)")
+            return Decimal("0.05")  # Stub: 5%
+
+        # Query FRED indicators table for DGS10 (10-year Treasury)
+        query = """
+            SELECT value
+            FROM macro_indicators
+            WHERE series_id = 'DGS10'
+              AND asof_date <= $1
+            ORDER BY asof_date DESC
+            LIMIT 1
+        """
+
+        try:
+            from backend.app.db.connection import execute_query_one
+            row = await execute_query_one(query, asof_date)
+
+            if row and row["value"]:
+                # Convert annual rate to daily rate
+                annual_rate = Decimal(str(row["value"])) / Decimal("100")
+                logger.debug(f"Risk-free rate: {annual_rate:.4%} (from DGS10)")
+                return annual_rate
+
+        except Exception as e:
+            logger.warning(f"Failed to get risk-free rate from FRED: {e}")
+
+        # Fallback to default rate
+        return Decimal("0.05")
 
     def _compute_twr_metrics(
         self,
@@ -403,20 +527,66 @@ class MetricsComputer:
                 "twr_inception_ann": None,
             }
 
-        # TODO: Implement TWR calculation
-        # 1. Get daily returns
-        # 2. Compute cumulative return for each period
-        # 3. Annualize multi-year returns
+        # Get most recent return as 1-day TWR
+        twr_1d = Decimal(str(returns[-1])) if returns else None
+
+        # Helper to compute cumulative return
+        def cumulative_return(ret_list):
+            if not ret_list:
+                return None
+            # Geometric linking: (1+r1)*(1+r2)*...*(1+rN) - 1
+            cum_ret = np.prod([1 + r for r in ret_list]) - 1
+            return Decimal(str(cum_ret))
+
+        # Helper to annualize return
+        def annualize_return(cum_ret, num_days):
+            if cum_ret is None or num_days <= 0:
+                return None
+            # Annualized = (1 + cum_ret)^(365/days) - 1
+            ann_ret = (1 + float(cum_ret)) ** (365.0 / num_days) - 1
+            return Decimal(str(ann_ret))
+
+        # Compute period returns
+        # MTD: Month-to-date
+        month_start = date(asof_date.year, asof_date.month, 1)
+        mtd_days = (asof_date - month_start).days + 1
+        twr_mtd = cumulative_return(returns[-mtd_days:]) if len(returns) >= mtd_days else None
+
+        # QTD: Quarter-to-date
+        quarter = (asof_date.month - 1) // 3 + 1
+        quarter_start = date(asof_date.year, (quarter - 1) * 3 + 1, 1)
+        qtd_days = (asof_date - quarter_start).days + 1
+        twr_qtd = cumulative_return(returns[-qtd_days:]) if len(returns) >= qtd_days else None
+
+        # YTD: Year-to-date
+        year_start = date(asof_date.year, 1, 1)
+        ytd_days = (asof_date - year_start).days + 1
+        twr_ytd = cumulative_return(returns[-ytd_days:]) if len(returns) >= ytd_days else None
+
+        # 1 Year
+        twr_1y = cumulative_return(returns[-252:]) if len(returns) >= 252 else None
+
+        # 3 Year (annualized)
+        twr_3y_cum = cumulative_return(returns[-756:]) if len(returns) >= 756 else None
+        twr_3y_ann = annualize_return(twr_3y_cum, 756) if twr_3y_cum else None
+
+        # 5 Year (annualized)
+        twr_5y_cum = cumulative_return(returns[-1260:]) if len(returns) >= 1260 else None
+        twr_5y_ann = annualize_return(twr_5y_cum, 1260) if twr_5y_cum else None
+
+        # Inception (annualized)
+        twr_inception_cum = cumulative_return(returns)
+        twr_inception_ann = annualize_return(twr_inception_cum, len(returns)) if twr_inception_cum else None
 
         return {
-            "twr_1d": Decimal("0.0"),
-            "twr_mtd": Decimal("0.0"),
-            "twr_qtd": Decimal("0.0"),
-            "twr_ytd": Decimal("0.0"),
-            "twr_1y": Decimal("0.0"),
-            "twr_3y_ann": Decimal("0.0"),
-            "twr_5y_ann": Decimal("0.0"),
-            "twr_inception_ann": Decimal("0.0"),
+            "twr_1d": twr_1d,
+            "twr_mtd": twr_mtd,
+            "twr_qtd": twr_qtd,
+            "twr_ytd": twr_ytd,
+            "twr_1y": twr_1y,
+            "twr_3y_ann": twr_3y_ann,
+            "twr_5y_ann": twr_5y_ann,
+            "twr_inception_ann": twr_inception_ann,
         }
 
     async def _compute_mwr_metrics(
@@ -459,16 +629,26 @@ class MetricsComputer:
                 "volatility_1y": None,
             }
 
-        # TODO: Implement volatility calculation
-        # 1. Rolling windows: 30, 60, 90, 252 days
-        # 2. Compute stdev for each window
-        # 3. Annualize: vol_annual = vol_daily * sqrt(252)
+        # Helper to compute annualized volatility
+        def annualized_vol(ret_list):
+            if not ret_list or len(ret_list) < 2:
+                return None
+            # Stdev of daily returns * sqrt(252) for annualization
+            daily_vol = np.std(ret_list, ddof=1)
+            ann_vol = daily_vol * np.sqrt(252)
+            return Decimal(str(ann_vol))
+
+        # Compute rolling volatilities
+        vol_30d = annualized_vol(returns[-30:]) if len(returns) >= 30 else None
+        vol_60d = annualized_vol(returns[-60:]) if len(returns) >= 60 else None
+        vol_90d = annualized_vol(returns[-90:]) if len(returns) >= 90 else None
+        vol_1y = annualized_vol(returns[-252:]) if len(returns) >= 252 else None
 
         return {
-            "volatility_30d": Decimal("0.0"),
-            "volatility_60d": Decimal("0.0"),
-            "volatility_90d": Decimal("0.0"),
-            "volatility_1y": Decimal("0.0"),
+            "volatility_30d": vol_30d,
+            "volatility_60d": vol_60d,
+            "volatility_90d": vol_90d,
+            "volatility_1y": vol_1y,
         }
 
     def _compute_sharpe_metrics(
@@ -489,16 +669,39 @@ class MetricsComputer:
                 "sharpe_1y": None,
             }
 
-        # TODO: Implement Sharpe ratio calculation
-        # 1. Compute excess return: portfolio_return - risk_free_rate
-        # 2. Compute volatility for each window
-        # 3. Sharpe = excess_return / volatility
+        rf = float(risk_free_rate)
+
+        # Helper to compute Sharpe ratio
+        def compute_sharpe(ret_list, num_days):
+            if not ret_list or len(ret_list) < 2:
+                return None
+
+            # Annualized portfolio return
+            cum_ret = np.prod([1 + r for r in ret_list]) - 1
+            ann_ret = (1 + cum_ret) ** (365.0 / num_days) - 1
+
+            # Annualized volatility
+            daily_vol = np.std(ret_list, ddof=1)
+            ann_vol = daily_vol * np.sqrt(252)
+
+            if ann_vol == 0:
+                return None
+
+            # Sharpe = (return - rf) / volatility
+            sharpe = (ann_ret - rf) / ann_vol
+            return Decimal(str(sharpe))
+
+        # Compute Sharpe for different windows
+        sharpe_30d = compute_sharpe(returns[-30:], 30) if len(returns) >= 30 else None
+        sharpe_60d = compute_sharpe(returns[-60:], 60) if len(returns) >= 60 else None
+        sharpe_90d = compute_sharpe(returns[-90:], 90) if len(returns) >= 90 else None
+        sharpe_1y = compute_sharpe(returns[-252:], 252) if len(returns) >= 252 else None
 
         return {
-            "sharpe_30d": Decimal("0.0"),
-            "sharpe_60d": Decimal("0.0"),
-            "sharpe_90d": Decimal("0.0"),
-            "sharpe_1y": Decimal("0.0"),
+            "sharpe_30d": sharpe_30d,
+            "sharpe_60d": sharpe_60d,
+            "sharpe_90d": sharpe_90d,
+            "sharpe_1y": sharpe_1y,
         }
 
     def _compute_alpha_beta_metrics(
@@ -524,19 +727,69 @@ class MetricsComputer:
                 "information_ratio_1y": None,
             }
 
-        # TODO: Implement alpha/beta calculation
-        # 1. Compute beta: regression of portfolio returns on benchmark returns
-        # 2. Compute alpha: portfolio_return - (rf + beta * (benchmark_return - rf))
-        # 3. Compute tracking error: stdev(portfolio_returns - benchmark_returns)
-        # 4. Compute information ratio: alpha / tracking_error
+        # Helper to compute alpha/beta/tracking error
+        def compute_alpha_beta(port_rets, bench_rets, num_days):
+            # Align lengths
+            min_len = min(len(port_rets), len(bench_rets))
+            if min_len < 30:  # Need minimum data
+                return None, None, None, None
+
+            p_rets = np.array(port_rets[-min_len:])
+            b_rets = np.array(bench_rets[-min_len:])
+
+            # Beta = Cov(portfolio, benchmark) / Var(benchmark)
+            covariance = np.cov(p_rets, b_rets)[0, 1]
+            benchmark_var = np.var(b_rets, ddof=1)
+
+            if benchmark_var == 0:
+                beta = Decimal("1.0")
+            else:
+                beta = Decimal(str(covariance / benchmark_var))
+
+            # Annualized returns
+            p_cum_ret = np.prod([1 + r for r in p_rets]) - 1
+            b_cum_ret = np.prod([1 + r for r in b_rets]) - 1
+
+            p_ann_ret = (1 + p_cum_ret) ** (365.0 / num_days) - 1
+            b_ann_ret = (1 + b_cum_ret) ** (365.0 / num_days) - 1
+
+            # Alpha (assuming rf=0 for simplicity, should use actual rf)
+            # Alpha = portfolio_return - beta * benchmark_return
+            alpha = Decimal(str(p_ann_ret - float(beta) * b_ann_ret))
+
+            # Tracking error = stdev(portfolio_returns - benchmark_returns) * sqrt(252)
+            excess_rets = p_rets - b_rets
+            te = Decimal(str(np.std(excess_rets, ddof=1) * np.sqrt(252)))
+
+            # Information ratio = alpha / tracking_error
+            if te > 0:
+                ir = alpha / te
+            else:
+                ir = None
+
+            return alpha, beta, te, ir
+
+        # 1-year metrics
+        alpha_1y, beta_1y, te_1y, ir_1y = compute_alpha_beta(
+            returns[-252:],
+            benchmark_returns[-252:],
+            252
+        ) if len(returns) >= 252 and len(benchmark_returns) >= 252 else (None, None, None, None)
+
+        # 3-year metrics
+        alpha_3y, beta_3y, _, _ = compute_alpha_beta(
+            returns[-756:],
+            benchmark_returns[-756:],
+            756
+        ) if len(returns) >= 756 and len(benchmark_returns) >= 756 else (None, None, None, None)
 
         return {
-            "alpha_1y": Decimal("0.0"),
-            "alpha_3y_ann": Decimal("0.0"),
-            "beta_1y": Decimal("1.0"),
-            "beta_3y": Decimal("1.0"),
-            "tracking_error_1y": Decimal("0.0"),
-            "information_ratio_1y": Decimal("0.0"),
+            "alpha_1y": alpha_1y,
+            "alpha_3y_ann": alpha_3y,
+            "beta_1y": beta_1y,
+            "beta_3y": beta_3y,
+            "tracking_error_1y": te_1y,
+            "information_ratio_1y": ir_1y,
         }
 
     def _compute_drawdown_metrics(
@@ -555,15 +808,31 @@ class MetricsComputer:
                 "max_drawdown_3y": None,
             }
 
-        # TODO: Implement drawdown calculation
-        # 1. Compute cumulative returns
-        # 2. Track running maximum
-        # 3. Compute drawdown at each point: (running_max - current) / running_max
-        # 4. Return max drawdown for each period
+        def compute_max_drawdown(ret_list):
+            if not ret_list or len(ret_list) < 2:
+                return None
+
+            # Compute cumulative wealth (starting at 1.0)
+            cum_wealth = np.cumprod([1 + r for r in ret_list])
+
+            # Track running maximum
+            running_max = np.maximum.accumulate(cum_wealth)
+
+            # Drawdown at each point = (running_max - current) / running_max
+            drawdowns = (running_max - cum_wealth) / running_max
+
+            # Max drawdown
+            max_dd = np.max(drawdowns)
+
+            return Decimal(str(max_dd))
+
+        # Compute max drawdown for different periods
+        max_dd_1y = compute_max_drawdown(returns[-252:]) if len(returns) >= 252 else None
+        max_dd_3y = compute_max_drawdown(returns[-756:]) if len(returns) >= 756 else None
 
         return {
-            "max_drawdown_1y": Decimal("0.0"),
-            "max_drawdown_3y": Decimal("0.0"),
+            "max_drawdown_1y": max_dd_1y,
+            "max_drawdown_3y": max_dd_3y,
         }
 
     async def _compute_trading_metrics(

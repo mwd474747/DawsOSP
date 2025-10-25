@@ -411,14 +411,25 @@ def create_runtime_with_agents(services: Dict[str, Any]) -> AgentRuntime:
     """
     runtime = AgentRuntime(services)
 
-    # TODO: Import and register actual agents as they're implemented
-    # from app.agents.financial_analyst import FinancialAnalyst
-    # from app.agents.macro_hound import MacroHound
-    # from app.agents.data_harvester import DataHarvester
+    # Register production agents
+    from app.agents.macro_hound import MacroHound
 
-    # runtime.register_agent(FinancialAnalyst("financial_analyst", services))
-    # runtime.register_agent(MacroHound("macro_hound", services))
-    # runtime.register_agent(DataHarvester("data_harvester", services))
+    try:
+        from app.agents.financial_analyst import FinancialAnalyst
+        runtime.register_agent(FinancialAnalyst("financial_analyst", services))
+    except ImportError as e:
+        logger.warning(f"FinancialAnalyst not available: {e}")
+
+    try:
+        runtime.register_agent(MacroHound("macro_hound", services))
+    except ImportError as e:
+        logger.warning(f"MacroHound not available: {e}")
+
+    try:
+        from app.agents.data_harvester import DataHarvester
+        runtime.register_agent(DataHarvester("data_harvester", services))
+    except ImportError as e:
+        logger.warning(f"DataHarvester not available: {e}")
 
     # Register example agent for testing
     from app.agents.base_agent import ExampleAgent

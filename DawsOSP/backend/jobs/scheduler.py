@@ -29,6 +29,7 @@ SLOs:
 Scheduler: APScheduler (cron trigger at 00:05 daily)
 """
 
+import argparse
 import asyncio
 import logging
 from datetime import date, datetime, timedelta
@@ -115,7 +116,7 @@ class NightlyJobScheduler:
         # Initialize job components
         self.pricing_pack_builder = PricingPackBuilder()
         self.ledger_reconciliator = LedgerReconciliator()
-        self.metrics_computer = MetricsComputer()
+        self.metrics_computer = MetricsComputer(use_db=True)
         self.factor_computer = FactorComputer()
 
         # Track last run
@@ -133,8 +134,19 @@ class NightlyJobScheduler:
             max_instances=1,  # Only one instance at a time
         )
 
+        # Add DLQ replay job (hourly at :05)
+        self.scheduler.add_job(
+            self.run_dlq_replay,
+            trigger=CronTrigger(minute=5),  # Every hour at :05
+            id="dlq_replay",
+            name="DLQ Replay (Hourly)",
+            replace_existing=True,
+            max_instances=1,
+        )
+
         self.scheduler.start()
         logger.info(f"Scheduler started. Nightly jobs will run at {self.run_hour:02d}:{self.run_minute:02d}")
+        logger.info("DLQ replay will run hourly at :05")
 
     def stop(self):
         """Stop the scheduler."""
@@ -540,17 +552,60 @@ class NightlyJobScheduler:
         Returns:
             {"num_alerts_evaluated": int, "num_alerts_delivered": int}
         """
-        # TODO: Implement alert evaluation
-        # This will integrate with alert_manager
-
         logger.info(f"Evaluating alerts for pack {pack_id}")
 
-        # Placeholder
-        return {
-            "num_alerts_evaluated": 0,
-            "num_alerts_delivered": 0,
-            "status": "TODO",
-        }
+        try:
+            from backend.jobs.evaluate_alerts import AlertEvaluator
+
+            evaluator = AlertEvaluator(use_db=True)
+            summary = await evaluator.evaluate_all_alerts(asof_date=asof_date)
+
+            return {
+                "num_alerts_evaluated": summary["alerts_evaluated"],
+                "num_alerts_delivered": summary["notifications_delivered"],
+                "num_alerts_failed": summary["notifications_failed"],
+                "duration_seconds": summary["duration_seconds"],
+            }
+
+        except Exception as e:
+            logger.error(f"Alert evaluation failed: {e}", exc_info=True)
+            raise
+
+    async def run_dlq_replay(self):
+        """
+        Run DLQ replay job (hourly).
+
+        Retries failed notification deliveries from Dead Letter Queue.
+
+        This job runs hourly at :05 (00:05, 01:05, 02:05, ...).
+        """
+        logger.info("=" * 80)
+        logger.info("DLQ REPLAY JOB STARTED")
+        logger.info("=" * 80)
+
+        started_at = datetime.now()
+
+        try:
+            from backend.jobs.replay_dlq import DLQReplayer
+
+            replayer = DLQReplayer(use_db=True)
+            summary = await replayer.replay_dlq_jobs(batch_size=100)
+
+            completed_at = datetime.now()
+            duration = (completed_at - started_at).total_seconds()
+
+            logger.info("=" * 80)
+            logger.info("DLQ REPLAY JOB COMPLETED")
+            logger.info(f"  Duration: {duration:.2f}s")
+            logger.info(f"  Jobs processed: {summary['jobs_processed']}")
+            logger.info(f"  Jobs succeeded: {summary['jobs_succeeded']}")
+            logger.info(f"  Jobs failed: {summary['jobs_failed']}")
+            logger.info(f"  Jobs permanently failed: {summary['jobs_permanent_fail']}")
+            logger.info("=" * 80)
+
+        except Exception as e:
+            logger.exception(f"DLQ replay job failed: {e}")
+            # Don't raise - hourly job should continue on failure
 
     def _log_summary(self, report: NightlyRunReport):
         """Log summary of nightly run."""
@@ -584,35 +639,94 @@ class NightlyJobScheduler:
 # STANDALONE EXECUTION
 # ===========================
 
-async def main():
-    """Run nightly jobs immediately (for testing)."""
-    import sys
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="DawsOS Nightly Job Scheduler")
+    parser.add_argument(
+        "--mode",
+        choices=("run-once", "daemon"),
+        default="run-once",
+        help="Execution mode. 'run-once' executes the nightly flow immediately; 'daemon' runs on schedule.",
+    )
+    parser.add_argument(
+        "--asof-date",
+        help="ISO date (YYYY-MM-DD) for run-once mode. Defaults to yesterday.",
+    )
+    parser.add_argument(
+        "--pricing-policy",
+        default=os.getenv("PRICING_POLICY", "WM4PM_CAD"),
+        help="Pricing policy identifier (default: WM4PM_CAD).",
+    )
+    parser.add_argument(
+        "--ledger-path",
+        default=os.getenv("LEDGER_PATH", ".ledger/main.beancount"),
+        help="Path to Beancount ledger repository (default: .ledger/main.beancount).",
+    )
+    parser.add_argument(
+        "--run-hour",
+        type=int,
+        default=int(os.getenv("SCHEDULER_RUN_HOUR", "0")),
+        help="Hour (0-23) for nightly job in daemon mode (default: 0).",
+    )
+    parser.add_argument(
+        "--run-minute",
+        type=int,
+        default=int(os.getenv("SCHEDULER_RUN_MINUTE", "5")),
+        help="Minute (0-59) for nightly job in daemon mode (default: 5).",
+    )
+    return parser.parse_args()
 
-    # Get date from command line or use yesterday
-    if len(sys.argv) > 1:
-        asof_date = date.fromisoformat(sys.argv[1])
+
+async def _run_daemon(args: argparse.Namespace) -> None:
+    scheduler = NightlyJobScheduler(
+        pricing_policy=args.pricing_policy,
+        ledger_path=args.ledger_path,
+        run_hour=args.run_hour,
+        run_minute=args.run_minute,
+    )
+
+    scheduler.start()
+    logger.info("Nightly scheduler running in daemon mode. Press Ctrl+C to stop.")
+
+    try:
+        while True:
+            await asyncio.sleep(60)
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        logger.info("Shutdown signal received. Stopping scheduler...")
+        scheduler.stop()
+
+
+async def _run_once(args: argparse.Namespace) -> int:
+    if args.asof_date:
+        asof_date = date.fromisoformat(args.asof_date)
     else:
         asof_date = date.today() - timedelta(days=1)
 
-    # Initialize scheduler
     scheduler = NightlyJobScheduler(
-        pricing_policy=os.getenv("PRICING_POLICY", "WM4PM_CAD"),
-        ledger_path=os.getenv("LEDGER_PATH", ".ledger/main.beancount"),
+        pricing_policy=args.pricing_policy,
+        ledger_path=args.ledger_path,
+        run_hour=args.run_hour,
+        run_minute=args.run_minute,
     )
 
-    # Run nightly jobs immediately
     report = await scheduler.run_nightly_jobs(asof_date=asof_date)
+    return 0 if report.success else 1
 
-    # Exit with appropriate code
-    sys.exit(0 if report.success else 1)
+
+async def main_async() -> int:
+    args = _parse_args()
+
+    if args.mode == "daemon":
+        await _run_daemon(args)
+        return 0
+
+    return await _run_once(args)
 
 
 if __name__ == "__main__":
-    # Configure logging
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
-    # Run
-    asyncio.run(main())
+    exit_code = asyncio.run(main_async())
+    raise SystemExit(exit_code)

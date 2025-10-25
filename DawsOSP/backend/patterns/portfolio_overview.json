@@ -1,0 +1,168 @@
+{
+  "id": "portfolio_overview",
+  "name": "Portfolio Overview",
+  "description": "Comprehensive portfolio snapshot with performance, attribution, and ratings",
+  "version": "1.0.0",
+  "category": "portfolio",
+  "tags": ["portfolio", "performance", "attribution", "overview"],
+  "author": "DawsOS",
+  "created": "2025-10-23",
+  "inputs": {
+    "portfolio_id": {
+      "type": "uuid",
+      "required": true,
+      "description": "Portfolio UUID"
+    },
+    "lookback_days": {
+      "type": "integer",
+      "default": 252,
+      "description": "Historical period in days (default 1 year)"
+    }
+  },
+  "outputs": ["perf_metrics", "currency_attr", "valued_positions"],
+  "display": {
+    "panels": [
+      {
+        "id": "performance_strip",
+        "title": "Performance Metrics",
+        "type": "metrics_grid",
+        "refresh_ttl": 300
+      },
+      {
+        "id": "currency_attribution",
+        "title": "Currency Attribution",
+        "type": "donut_chart",
+        "refresh_ttl": 300
+      },
+      {
+        "id": "holdings",
+        "title": "Holdings",
+        "type": "table",
+        "refresh_ttl": 60
+      },
+      {
+        "id": "allocation",
+        "title": "Asset Allocation",
+        "type": "pie_chart",
+        "refresh_ttl": 300
+      }
+    ]
+  },
+  "steps": [
+    {
+      "capability": "ledger.positions",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}"
+      },
+      "as": "positions"
+    },
+    {
+      "capability": "pricing.apply_pack",
+      "args": {
+        "positions": "{{positions.positions}}",
+        "pack_id": "{{ctx.pricing_pack_id}}"
+      },
+      "as": "valued_positions"
+    },
+    {
+      "capability": "metrics.compute_twr",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "pack_id": "{{ctx.pricing_pack_id}}",
+        "lookback_days": "{{inputs.lookback_days}}"
+      },
+      "as": "perf_metrics"
+    },
+    {
+      "capability": "attribution.currency",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "pack_id": "{{ctx.pricing_pack_id}}",
+        "lookback_days": "{{inputs.lookback_days}}"
+      },
+      "as": "currency_attr"
+    }
+  ],
+  "presentation": {
+    "performance_strip": {
+      "metrics": [
+        {
+          "label": "TWR (1Y)",
+          "value": "{{twr.total_return}}",
+          "format": "percentage",
+          "color_condition": "sign"
+        },
+        {
+          "label": "Volatility",
+          "value": "{{twr.volatility}}",
+          "format": "percentage"
+        },
+        {
+          "label": "Sharpe Ratio",
+          "value": "{{twr.sharpe}}",
+          "format": "decimal_2"
+        },
+        {
+          "label": "Max Drawdown",
+          "value": "{{twr.max_drawdown}}",
+          "format": "percentage",
+          "color": "red"
+        },
+        {
+          "label": "Total Value",
+          "value": "{{valued.total_value}}",
+          "format": "currency"
+        }
+      ]
+    },
+    "currency_attribution": {
+      "chart": {
+        "type": "donut",
+        "title": "Return Attribution (Local vs FX)",
+        "series": [
+          {
+            "name": "Local Return",
+            "value": "{{currency_attr.local_return}}",
+            "color": "#00d9ff"
+          },
+          {
+            "name": "FX Return",
+            "value": "{{currency_attr.fx_return}}",
+            "color": "#e74c3c"
+          },
+          {
+            "name": "Interaction",
+            "value": "{{currency_attr.interaction}}",
+            "color": "#9b59b6"
+          }
+        ]
+      }
+    },
+    "holdings": {
+      "columns": [
+        {"field": "symbol", "header": "Symbol", "width": 100},
+        {"field": "name", "header": "Name", "width": 200},
+        {"field": "quantity", "header": "Qty", "format": "number", "width": 100},
+        {"field": "market_value", "header": "Value", "format": "currency", "width": 120},
+        {"field": "weight", "header": "Weight", "format": "percentage", "width": 100},
+        {"field": "unrealized_pnl", "header": "P&L", "format": "currency", "width": 120, "color_condition": "sign"},
+        {"field": "dividend_safety", "header": "Div Safety", "format": "rating", "width": 100},
+        {"field": "moat_strength", "header": "Moat", "format": "rating", "width": 100}
+      ],
+      "data": "{{valued.positions}}"
+    }
+  },
+  "rights_required": ["portfolio_read"],
+  "export_allowed": {
+    "pdf": true,
+    "csv": true,
+    "excel": true
+  },
+  "observability": {
+    "otel_span_name": "pattern.portfolio_overview",
+    "metrics": [
+      "pattern_execution_duration_seconds",
+      "pattern_steps_total"
+    ]
+  }
+}

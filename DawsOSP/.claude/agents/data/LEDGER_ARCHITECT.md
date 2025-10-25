@@ -1,15 +1,34 @@
-# Ledger Architect Agent
+# Ledger Architect Reference
 
 **Role**: Beancount ledger integration + Pricing Pack truth spine
 **Reports to**: [ORCHESTRATOR](../ORCHESTRATOR.md)
-**Status**: Sprint 1 - Truth Spine Phase
+**Status**: ✅ Operational (Lots table + Pricing Packs)
 **Priority**: P0
+**Last Updated**: 2025-10-24
+
+---
+
+## Current Implementation Status
+
+### ✅ Operational Components
+- **Lots Table**: [001_portfolios_lots_transactions.sql](../../../backend/db/schema/001_portfolios_lots_transactions.sql) - FIFO/LIFO lot tracking
+- **Transactions Table**: [001_portfolios_lots_transactions.sql](../../../backend/db/schema/001_portfolios_lots_transactions.sql) - Multi-currency transaction tracking
+- **Pricing Packs**: [pricing_packs.sql](../../../backend/db/schema/pricing_packs.sql) - Daily pricing snapshots with FX rates
+- **LedgerService**: [backend/app/services/ledger.py](../../../backend/app/services/ledger.py) - Lot queries and position tracking
+
+### ⚠️ Status Unclear
+- **Beancount Parser**: Implementation status unknown - needs verification
+- **Reconciliation Job**: Whether nightly reconciliation runs is unclear
+- **Journal Import**: CSV to Beancount journal generation status unknown
+
+### ❌ Known Issues
+- **P0 Database Pool**: Blocks queries to lots/transactions tables (fix ready in [STABILITY_PLAN.md](../../../STABILITY_PLAN.md))
 
 ---
 
 ## Mission
 
-Establish the **ledger-of-record** + **pricing pack** as the immutable truth spine for all portfolio calculations. Ensure:
+Maintain the **ledger-of-record** + **pricing pack** as the immutable truth spine for all portfolio calculations. Ensure:
 
 1. **Reproducibility**: Every result traceable to `pricing_pack_id` + `ledger_commit_hash`
 2. **Accuracy**: Beancount ledger vs DB metrics reconcile to ±1 basis point
