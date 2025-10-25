@@ -1,5 +1,5 @@
 {
-  "pattern_id": "holding_deep_dive",
+  "id": "holding_deep_dive",
   "name": "Holding Deep Dive Analysis",
   "description": "Detailed analysis of individual holding with performance, risk, and contribution metrics",
   "version": "2.0.0",
