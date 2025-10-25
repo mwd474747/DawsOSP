@@ -1,248 +1,137 @@
-# DawsOS - Financial Intelligence Platform
+# DawsOS - Portfolio Intelligence Platform
 
-**Application**: DawsOS (Trinity 3.0 Architecture)
-**Status**: Production-ready
-**Version**: 1.0.0
-**Last Updated**: October 21, 2025
-
-> **About the Name**: "DawsOS" is the application name. "Trinity 3.0" is the execution framework architecture. When you see "Trinity 3.0", it refers to how DawsOS is built internally (like "React 18" for a React app).
-
-Bloomberg-quality financial intelligence combining natural language understanding with pattern-driven analysis. Chat naturally about markets, get AI-synthesized insights from real-time data.
+**Current Version**: DawsOSP (Production)
+**Architecture**: Trinity 3.0 Framework
+**Repository**: [DawsOSB](https://github.com/mwd474747/DawsOSB)
 
 ---
 
 ## Quick Start
 
+The production application is in the `DawsOSP/` directory:
+
 ```bash
-# 1. Clone and navigate
-git clone <repo-url> && cd DawsOSB
+cd DawsOSP
 
-# 2. Setup (Python 3.11 required)
-python3.11 -m venv venv
-venv/bin/pip install -r requirements.txt
+# Start backend (FastAPI + PostgreSQL)
+./backend/run_api.sh
 
-# 3. Configure APIs (optional - works without)
-cp .env.example .env  # Edit with your API keys
-
-# 4. Launch
-./start.sh
+# Start frontend (Streamlit) - separate terminal
+./frontend/run_ui.sh
 ```
 
-Application: http://localhost:8501
-
----
-
-## What You Can Ask
-
-**Market Analysis**:
-```
-Quick check on Apple
-Deep dive into Tesla
-Compare Apple and Microsoft
-```
-
-**Economic Intelligence**:
-```
-What's the economy like?
-What's the recession risk?
-Is now a good time to invest?
-```
-
-**Portfolio Management**:
-```
-Analyze my portfolio for concentration risk
-What sectors work in this economy?
-Rebalance my portfolio
-```
-
-**Fundamental Analysis**:
-```
-What's the fair value of Amazon?
-Buffett-style checklist for Microsoft
-Analyze Microsoft's moat
-```
-
----
-
-## Features
-
-### Core Capabilities
-- **Natural Language Processing**: Entity extraction, conversation memory, intent routing
-- **16 Analysis Patterns**: Smart patterns (7), workflows (3), economic analysis (6)
-- **12 Agent Files**: 2 registered (financial_analyst, claude), 10 available
-- **Real-Time Data**: OpenBB Platform, FRED, FMP (zero mock data)
-- **Knowledge Graph**: 27 enriched datasets, 96K+ node capacity
-
-### Data Sources
-- **Market Data**: Equity quotes, fundamentals, options (OpenBB/yfinance)
-- **Economic Data**: GDP, CPI, unemployment, yield curve (FRED API - free)
-- **News & Sentiment**: Financial news, analyst ratings (FMP, NewsAPI)
-- **AI Analysis**: Claude 3.5 Sonnet (Anthropic - $15/month)
-
-### UI Features
-- **Enhanced Chat**: Entity extraction display, conversation memory
-- **Economic Dashboard**: Key indicators, recession gauge, calendar
-- **Market Overview**: Real-time SPY/QQQ/VIX, sector heatmap
-- **Portfolio View**: Risk dashboard, allocation visualization
-- **Bloomberg Aesthetic**: Professional dark UI, NO emojis
-
----
-
-## Configuration
-
-### Free Mode (default)
-Works immediately with yfinance data - no API keys needed.
-
-### Minimum Setup (~$15/month)
-Get AI-powered insights:
-```bash
-# In .env
-ANTHROPIC_API_KEY=sk-ant-...  # Claude AI ($15/month)
-FRED_API_KEY=abc123...        # Economic data (FREE)
-```
-
-### Full Setup (~$29/month)
-All features enabled - see [CONFIGURATION.md](CONFIGURATION.md)
-
----
-
-## Architecture
-
-```
-User Query → EnhancedChatProcessor → EntityExtraction
-                 ↓
-        UniversalExecutor
-                 ↓
-          PatternEngine (16 patterns)
-                 ↓
-     AgentRuntime (12 agent files, 2 registered, 103 capabilities)
-                 ↓
-          KnowledgeGraph (27 datasets)
-```
-
-**Trinity Execution Flow**: UniversalExecutor → PatternEngine → AgentRuntime → KnowledgeGraph
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
+Visit **http://localhost:8501** for the UI.
 
 ---
 
 ## Documentation
 
-**MUST READ**: [MASTER_TASK_LIST.md](MASTER_TASK_LIST.md) - Single source of truth for all gaps, issues, and TODOs
-
-### Core Documentation
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System design & component inventory
-- [CONFIGURATION.md](CONFIGURATION.md) - Complete API setup guide
-- [DEVELOPMENT.md](DEVELOPMENT.md) - Developer guide & coding standards
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Common issues & solutions
-- [DEPLOYMENT.md](DEPLOYMENT.md) - Production deployment procedures
-
-### Developer Reference
-- [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) - 103 capabilities
-- [PATTERN_AUTHORING_GUIDE.md](PATTERN_AUTHORING_GUIDE.md) - Pattern creation
-
-### AI Assistant Context
-- [CLAUDE.md](CLAUDE.md) - Context for AI assistants
-- [.claude/](.claude/) - Specialist agent prompts
+- **[DawsOSP/CLAUDE.md](DawsOSP/CLAUDE.md)** - Complete development guide
+- **[DawsOSP/PRODUCT_SPEC.md](DawsOSP/PRODUCT_SPEC.md)** - Product specification
+- **[DawsOSP/DEVELOPMENT_GUIDE.md](DawsOSP/DEVELOPMENT_GUIDE.md)** - Quick-start guide
+- **[DawsOSP/TESTING_GUIDE.md](DawsOSP/TESTING_GUIDE.md)** - Testing documentation
 
 ---
 
-## Known Issues
+## Repository Structure
 
-See [MASTER_TASK_LIST.md](MASTER_TASK_LIST.md) for complete list:
+```
+/DawsOSB/
+├── DawsOSP/          Production application (use this)
+│   ├── backend/       FastAPI + PostgreSQL
+│   ├── frontend/      Streamlit UI
+│   ├── data/          Seed data
+│   ├── scripts/       Utilities
+│   └── tests/         Integration tests
+│
+└── archive/          Historical reference (Trinity 3.0, legacy code)
+```
 
-**Priority 1** (Architecture Not Utilized):
-1. Pattern engine not connected to UI
-2. Only 2/7 agents registered (financial_analyst, claude)
+---
 
-**Priority 2** (Improvements):
-3. Query processing bypasses execution stack
-4. No API keys configured (runs in free mode)
-5. OpenBB 4.5.0 package builder bug (workaround active)
+## What is DawsOS?
 
-**All Known Issues Have Workarounds** - Application is fully functional.
+DawsOS is a **portfolio-first, explainable decision engine** that combines:
+
+- **Dalio Macro** - Regime detection, factor analysis, scenario stress testing
+- **Buffett Fundamentals** - Quality ratings, moat analysis, conservative metrics
+- **Auditable Math** - Beancount ledger-of-record + immutable pricing packs for reproducibility
+
+**Key Features**:
+- Multi-currency portfolio analytics with accurate FX attribution
+- Macro regime detection and cycle analysis (STDC, LTDC, Empire)
+- Buffett quality ratings (dividend safety, moat strength, resilience)
+- Portfolio optimization with policy constraints
+- Rights-enforced exports and comprehensive observability
+
+---
+
+## Architecture Notes
+
+DawsOS uses the **Trinity 3.0 architecture** - a pattern-based execution framework:
+
+```
+UI → Executor API → Pattern Orchestrator → Agent Runtime → Services → Database
+```
+
+- **Patterns** (JSON) define workflows
+- **Agents** provide atomic capabilities
+- **Services** contain business logic
+- **Every result** includes pricing_pack_id + ledger_commit_hash for reproducibility
+
+See [DawsOSP/CLAUDE.md](DawsOSP/CLAUDE.md) for complete architecture documentation.
+
+---
+
+## Prerequisites
+
+- Python 3.11+
+- PostgreSQL with TimescaleDB
+- Redis (optional, for caching)
+- API Keys (FMP, Polygon, FRED, NewsAPI) - optional for seed data mode
 
 ---
 
 ## Development
 
-### Project Structure
-```
-./
-├── main.py                  # Streamlit application (1,726 lines)
-├── agents/                  # 12 agent files (2 registered)
-├── core/                    # 14 core modules
-├── patterns/                # 16 JSON pattern files
-├── storage/knowledge/       # 27 knowledge datasets
-├── services/                # 4 service files
-├── ui/                      # 8 UI component files
-└── config/                  # 4 configuration files
-```
-
-### Adding Features
-
-**New Pattern**:
 ```bash
-# 1. Create JSON in patterns/{category}/
-# 2. Validate: venv/bin/python scripts/lint_patterns.py
-# 3. Test execution
-```
+cd DawsOSP/
 
-**New Agent**:
-```bash
-# 1. Implement in agents/{name}.py
-# 2. Register in main.py
-# 3. Add capabilities to AGENT_CAPABILITIES
-```
+# Set up environment
+export DATABASE_URL='postgresql://dawsos_app:dawsos_app_pass@localhost:5432/dawsos'
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for complete guide.
+# Load seed data
+python scripts/seed_loader.py --all
 
----
+# Run tests
+pytest backend/tests/
 
-## Testing
-
-```bash
-# Verify application functional
-venv/bin/python -c "from config.api_config import APIConfig; print('Status:', APIConfig.get_status())"
-
-# Verify market data
-venv/bin/python -c "
-from services.openbb_service import OpenBBService
-service = OpenBBService()
-quote = service.get_equity_quote('SPY')
-print(f'SPY: \${quote[\"results\"][0][\"price\"]:.2f}')
-"
-
-# Verify knowledge loader
-venv/bin/python -c "
-from core.knowledge_loader import KnowledgeLoader
-loader = KnowledgeLoader()
-data = loader.get_dataset('sector_performance')
-print(f'Sector data loaded: {len(data)} sectors')
-"
+# Start development
+./backend/run_api.sh
+./frontend/run_ui.sh
 ```
 
 ---
 
-## Contributing
+## Status
 
-1. Read [MASTER_TASK_LIST.md](MASTER_TASK_LIST.md) for current priorities
-2. Consult specialist agents in [.claude/](.claude/) before architectural changes
-3. Follow Trinity execution flow (no shortcuts)
-4. Update MASTER_TASK_LIST.md with any new discoveries
+**Current State** (October 2025):
+- ✅ Core execution stack operational
+- ✅ Pricing pack + ledger reconciliation
+- ✅ 12 production patterns
+- ✅ 4 agents with 46 capabilities
+- ✅ Streamlit UI functional
+- 🚧 Macro scenarios, ratings, optimizer (in progress)
 
----
-
-## Product Vision
-
-Trinity 3.0 gives investors and analysts a transparent, conversational intelligence layer—pulling live data into guided playbooks that surface what's moving, why it matters, and what to watch next.
-
-**It's Bloomberg Terminal quality with ChatGPT ease of use, built on open, auditable AI workflows.**
-
-See [.claude/DawsOS_What_is_it.MD](.claude/DawsOS_What_is_it.MD) for complete product vision.
+See [DawsOSP/.ops/TASK_INVENTORY_2025-10-24.md](DawsOSP/.ops/TASK_INVENTORY_2025-10-24.md) for detailed status.
 
 ---
 
-**Last Verified**: October 21, 2025 15:45 UTC
-**Documentation Status**: 16 files total (85% reduction from original 106)
-**All numbers verified against actual code**
+## License
+
+Proprietary - © 2025 DawsOS
+
+---
+
+**Last Updated**: October 25, 2025
+**Maintainer**: Mike Dawson
