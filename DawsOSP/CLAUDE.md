@@ -12,7 +12,9 @@ This file provides context for AI assistants (Claude) working on DawsOS.
 
 ## 🚨 CRITICAL: READ THIS FIRST
 
-### Current State (October 24, 2025)
+### Current State (October 26, 2025)
+
+⚠️ **GOVERNANCE AUDIT FINDINGS** - See [.ops/GOVERNANCE_VIOLATIONS_AUDIT_2025-10-26.md](.ops/GOVERNANCE_VIOLATIONS_AUDIT_2025-10-26.md)
 
 **Working today**
 - AsyncPG pool initialises once and is reused across requests
@@ -21,12 +23,20 @@ This file provides context for AI assistants (Claude) working on DawsOS.
 - Streamlit UI renders seeded valuations and attribution
 - Observability hooks (trace IDs, pricing_pack_id, ledger_commit_hash) attached to responses
 
+**Known Governance Deviations (Phase 1)**
+- ❌ **CRITICAL**: Ratings use hardcoded 25% weights instead of rubric-driven weights ([ratings.py:258-263, 392-397](backend/app/services/ratings.py#L258-L263))
+- ⚠️  **LIMITATION**: Fundamentals loading fetches FMP data but returns stubs ([data_harvester.py:616-621](backend/app/agents/data_harvester.py#L616-L621))
+- ℹ️  **DOCUMENTED**: All deviations explicitly commented with "GOVERNANCE DEVIATION" and Phase 2 TODO
+
 **Still outstanding (tracked in [.ops/TASK_INVENTORY_2025-10-24.md](.ops/TASK_INVENTORY_2025-10-24.md))**
 - Macro scenarios (`macro_run_scenario`, `macro_compute_dar`) and alerts pipeline
-- Ratings/optimizer services + UI screens
+- Ratings rubric weights database implementation
+- Fundamentals transformation from FMP to ratings format
 - Rights-gated PDF exports & alerts delivery
 - Nightly job orchestration and provider integrations beyond seeds
 - Expanded automated tests + observability dashboards
+
+**Production Status**: ⚠️ **Phase 1 - Limited Use** - Critical governance violations must be remediated before full production deployment.
 
 Use the sections below for navigation; update `.ops/TASK_INVENTORY_2025-10-24.md` whenever you uncover new gaps.
 
