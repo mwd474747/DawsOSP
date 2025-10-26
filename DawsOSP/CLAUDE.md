@@ -28,17 +28,23 @@ This file provides context for AI assistants (Claude) working on DawsOS.
 - ⚠️  **LIMITATION**: Fundamentals loading fetches FMP data but returns stubs ([data_harvester.py:616-621](backend/app/agents/data_harvester.py#L616-L621))
 - ℹ️  **DOCUMENTED**: All deviations explicitly commented with "GOVERNANCE DEVIATION" and Phase 2 TODO
 
-**Still outstanding (tracked in [.ops/TASK_INVENTORY_2025-10-24.md](.ops/TASK_INVENTORY_2025-10-24.md))**
-- Macro scenarios (`macro_run_scenario`, `macro_compute_dar`) and alerts pipeline
-- Ratings rubric weights database implementation
-- Fundamentals transformation from FMP to ratings format
-- Rights-gated PDF exports & alerts delivery
-- Nightly job orchestration and provider integrations beyond seeds
-- Expanded automated tests + observability dashboards
+**Comprehensive Remediation Plan**: [.ops/SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md](.ops/SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md)
+- **54 TODOs**, **186 stub references**, **4 governance deviations** catalogued
+- **P0 (Critical)**: 3 items, 37 hours - Rubric weights, FMP transformation, schema creation
+- **P1 (High)**: 4 items, 68 hours - Scenarios, DaR, optimizer, provider wiring
+- **P2 (Medium)**: 8 items, 60 hours - Chart placeholders, holding details
+- **Total**: 245 hours over 10 weeks with 2-3 engineers
+- **Affected Patterns**: 6 of 12 patterns (buffett_checklist, policy_rebalance, scenarios, macro)
 
-**Production Status**: ⚠️ **Phase 1 - Limited Use** - Critical governance violations must be remediated before full production deployment.
+**Still outstanding (see remediation plan for details)**:
+- ❌ **P0**: Ratings rubric weights database + FMP fundamentals transformation
+- ❌ **P1**: Macro scenarios + DaR implementation + optimizer integration
+- ⚠️  **P2**: Chart placeholders + holding deep dive + provider transformations
+- ℹ️  **P3**: 39 minor TODOs (cosmetic improvements, optimizations)
 
-Use the sections below for navigation; update `.ops/TASK_INVENTORY_2025-10-24.md` whenever you uncover new gaps.
+**Production Status**: ⚠️ **Phase 1 - Limited Use** - See [SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md](.ops/SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md) for path to production readiness.
+
+Use the sections below for navigation; update remediation plan as work progresses.
 
 ## Current Capability Summary (Verified 2025-10-24)
 
