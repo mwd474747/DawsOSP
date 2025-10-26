@@ -2,8 +2,9 @@
 
 **Date**: October 26, 2025
 **Purpose**: Single source of truth for ALL remaining work (code + documentation)
-**Status**: CONSOLIDATED - Integrates remediation plan + documentation alignment
-**Last Audit**: 2025-10-26 (governance violations identified, 295 hours estimated)
+**Status**: CONSOLIDATED - Integrates remediation plan + documentation alignment + implementation guardrails
+**Last Audit**: 2025-10-26 (governance violations identified, 301 hours estimated)
+**Guardrails**: [IMPLEMENTATION_GUARDRAILS.md](IMPLEMENTATION_GUARDRAILS.md) - MANDATORY zero-shortcuts policy
 
 ---
 
