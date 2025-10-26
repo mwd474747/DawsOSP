@@ -78,16 +78,14 @@ Use the sections below for navigation; update `.ops/TASK_INVENTORY_2025-10-24.md
 
 ## 📚 Essential Reading Order
 
-1. **[.ops/TASK_INVENTORY_2025-10-24.md](.ops/TASK_INVENTORY_2025-10-24.md)** ⭐ **START HERE** – Canonical backlog and ownership
-2. **THIS FILE** – Current system snapshot for assistants
-3. **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** – Quick-start guide
-4. **[.claude/PATTERN_CAPABILITY_MAPPING.md](.claude/PATTERN_CAPABILITY_MAPPING.md)** – Pattern/agent/capability mapping
-5. **[PRODUCT_SPEC.md](PRODUCT_SPEC.md)** – Full product vision and guardrails
-6. **[INDEX.md](INDEX.md)** – Complete documentation index
+1. **THIS FILE** ⭐ **START HERE** – Current system snapshot and quick reference
+2. **[.ops/TASK_INVENTORY_2025-10-24.md](.ops/TASK_INVENTORY_2025-10-24.md)** – Canonical backlog and task ownership
+3. **[PRODUCT_SPEC.md](PRODUCT_SPEC.md)** – Full product vision and guardrails
+4. **[INDEX.md](INDEX.md)** – Complete documentation index
+5. **[backend/LEDGER_RECONCILIATION.md](backend/LEDGER_RECONCILIATION.md)** – Ledger operations guide
+6. **[backend/PRICING_PACK_GUIDE.md](backend/PRICING_PACK_GUIDE.md)** – Pricing pack operations
 
-**Historical references** (read for context only):
-- [.ops/IMPLEMENTATION_ROADMAP_V2.md](.ops/IMPLEMENTATION_ROADMAP_V2.md) – original 8-week plan (partially delivered)
-- [.claude/BUILD_HISTORY.md](.claude/BUILD_HISTORY.md) – archived milestones
+**Note**: Documentation was streamlined on 2025-10-26. Developer guides, architect files, and pattern mappings are being restored from the parent repository.
 
 ---
 

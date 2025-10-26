@@ -236,19 +236,20 @@ From [PRODUCT_SPEC.md](PRODUCT_SPEC.md):
 
 ---
 
-## 📁 Documentation Cleanup (2025-10-24)
+## 📁 Documentation Cleanup (2025-10-26)
 
 **Streamlined Structure**:
-- Active documentation reduced to 6 essential root files
+- Active documentation reduced to 11 essential root files
 - 50+ obsolete/redundant files removed
-- Consolidated DEVELOPMENT_GUIDE.md as single entry point
+- Restored critical architecture reference files
 
-**Key Changes** (2025-10-24):
+**Key Changes** (2025-10-26):
 - ✅ Removed redundant start guides (START_HERE.md, QUICK_START.md, LAUNCH_GUIDE.md)
-- ✅ Removed session summaries and governance docs
-- ✅ Removed audit reports and architecture analysis docs
-- ✅ Updated agent documentation to reflect operational state
-- ✅ Updated IMPLEMENTATION_ROADMAP_V2.md with reality check (v2.1)
+- ✅ Removed session summaries and governance docs (60+ files)
+- ✅ Restored DEVELOPMENT_GUIDE.md - Developer quick-start guide
+- ✅ Restored .claude/PATTERN_CAPABILITY_MAPPING.md - Pattern/agent/capability mapping
+- ✅ Restored .claude/agents/*.md - 14 agent architect files
+- ✅ Fixed broken links in CLAUDE.md
 
 ---
 
@@ -276,5 +277,5 @@ Build system status is maintained in **[.claude/BUILD_SYSTEM_V2_FINAL_COMPLETION
 
 ---
 
-**Last Updated**: 2025-10-24 (Documentation refactored, agent docs aligned with actual code)
+**Last Updated**: 2025-10-26 (Critical documentation restored after aggressive cleanup)
 **Maintained by**: ORCHESTRATOR agent
