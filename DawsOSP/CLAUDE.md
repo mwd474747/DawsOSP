@@ -3,8 +3,8 @@
 **Application Name**: DawsOS
 **Architecture**: Trinity 3.0
 **Version**: 1.0.0
-**Status**: ≈70% complete (remaining: macro scenarios, ratings, optimizer, exports)
-**Last Updated**: October 24, 2025
+**Status**: ≈75% complete (P0 remediation complete; remaining: P1 scenarios/optimizer, P2 charts/provider wiring)
+**Last Updated**: October 26, 2025
 
 This file provides context for AI assistants (Claude) working on DawsOS.
 
@@ -12,19 +12,20 @@ This file provides context for AI assistants (Claude) working on DawsOS.
 
 ## 🚨 CRITICAL: READ THIS FIRST
 
-### Current State (October 26, 2025 - Post P0-CODE-1 Completion)
+### Current State (October 26, 2025 - Post P0 Remediation COMPLETE)
 
-✅ **P0-CODE-1 COMPLETE** - Rating Rubrics Database Implementation (commits 5d24e04, 8fd4d9e, e5cf939)
+✅ **ALL P0 REMEDIATION COMPLETE** - Rating Rubrics + FMP Transformation (commits 5d24e04, 8fd4d9e, e5cf939, 26f636a, 72de052, fa8bcf8)
 
 **Working today**
 - AsyncPG pool initialises once and is reused across requests
 - `python scripts/seed_loader.py --all` hydrates demo symbols, portfolio, pricing pack, macro cycles, **ratings rubrics**
-- Executor `/v1/execute` executes seeded patterns (portfolio overview, holdings)
+- Executor `/v1/execute` executes seeded patterns (portfolio overview, holdings, **buffett_checklist with real FMP data**)
 - Streamlit UI renders seeded valuations and attribution
 - Observability hooks (trace IDs, pricing_pack_id, ledger_commit_hash) attached to responses
 - **✅ NEW**: Ratings service loads research-based weights from `rating_rubrics` table (moat_strength, resilience, dividend_safety)
+- **✅ NEW**: Data Harvester transforms real FMP fundamentals data (no more stub fundamentals when API key configured)
 
-**Remediation Completed This Session (2025-10-26)**
+**Remediation Completed Across Two Sessions (2025-10-26)**
 - ✅ **P0-CODE-1 (20h)**: Rating Rubrics Database Implementation
   - Created `rating_rubrics` schema with JSONB columns ([rating_rubrics.sql](backend/db/schema/rating_rubrics.sql))
   - Created 3 research-based seed files ([data/seeds/ratings/*.json](data/seeds/ratings/))
@@ -33,27 +34,45 @@ This file provides context for AI assistants (Claude) working on DawsOS.
   - **Removed hardcoded 25% weights** - now loads from database with fallback
   - All weights research-based and documented (Buffett investment philosophy)
 
-**Remaining Governance Deviations**
-- ⚠️  **LIMITATION**: Fundamentals loading fetches FMP data but returns stubs ([data_harvester.py:616-621](backend/app/agents/data_harvester.py#L616-L621))
-  - **Next**: P0-CODE-2 (FMP Fundamentals Transformation, 14h)
+- ✅ **Enhancement (30min)**: Weights Source Metadata (commit 72de052)
+  - Added `_metadata.weights_source` field to rating results ("rubric" or "fallback")
+  - Modified `_get_weights()` to return tuple: (weights, source)
+  - Updated all 3 rating methods to track and expose weights source
+
+- ✅ **P0-CODE-2 (14h)**: FMP Fundamentals Data Transformation (commit fa8bcf8)
+  - Implemented `_transform_fmp_to_ratings_format()` method with 12 field mappings ([data_harvester.py:690-884](backend/app/agents/data_harvester.py#L690-L884))
+  - Added 3 helper methods: `_calculate_5y_avg()`, `_calculate_std_dev()`, `_calculate_dividend_streak()` ([data_harvester.py:889-1025](backend/app/agents/data_harvester.py#L889-L1025))
+  - Updated `fundamentals_load()` to use transformation instead of stubs ([data_harvester.py:610-644](backend/app/agents/data_harvester.py#L610-L644))
+  - **Removed stub fundamentals shortcut** - now returns real FMP data with graceful fallback
+  - 364 lines added, comprehensive error handling
+
+- ✅ **P0-CODE-3 (3h)**: Database Init Script (commit 7f00f3e)
+  - Updated [init_database.sh](backend/db/init_database.sh) to include rating_rubrics schema
+  - Added schema validation for rating_rubrics table
+  - All schemas applied in correct dependency order
+
+**Governance Violations Eliminated**
+- ✅ **Fixed**: Hardcoded 25% weights in moat_strength and resilience ratings
+- ✅ **Fixed**: Stub fundamentals data when FMP API available
+- ✅ **Fixed**: Missing rating_rubrics table initialization
 
 **Comprehensive Remediation Plan**: [.ops/SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md](.ops/SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md)
-- ~~**P0 (Critical)**: 3 items, 37 hours~~ → **1 item complete (20h), 2 remaining (17h)**
+- ~~**P0 (Critical)**: 3 items, 37 hours~~  → **✅ ALL P0 COMPLETE (37.5 hours)**
   - ✅ P0-CODE-1: Rating rubrics (20h) - COMPLETE
-  - ⏳ P0-CODE-2: FMP transformation (14h) - NOT STARTED
-  - ⏳ P0-CODE-3: Schema migrations (3h) - NOT STARTED
+  - ✅ P0-CODE-2: FMP transformation (14h) - COMPLETE
+  - ✅ P0-CODE-3: Schema init script (3h) - COMPLETE
+  - ✅ Enhancement: Weights source metadata (30min) - COMPLETE
 - **P1 (High)**: 4 items, 68 hours - Scenarios, DaR, optimizer, provider wiring
 - **P2 (Medium)**: 8 items, 60 hours - Chart placeholders, holding details
-- **Total**: 225 hours remaining (20h completed) over 9-10 weeks with 2-3 engineers
-- **Affected Patterns**: 6 of 12 patterns (~~buffett_checklist~~ partial fix, policy_rebalance, scenarios, macro)
+- **Total**: 165 hours remaining (37.5h completed) over 7-8 weeks with 2-3 engineers
+- **Affected Patterns**: ~~buffett_checklist (FIXED)~~, policy_rebalance, scenarios, macro
 
 **Still outstanding (see remediation plan for details)**:
-- ⏳ **P0 Remaining**: FMP fundamentals transformation (14h) + schema migrations (3h)
-- ❌ **P1**: Macro scenarios + DaR implementation + optimizer integration
-- ⚠️  **P2**: Chart placeholders + holding deep dive + provider transformations
-- ℹ️  **P3**: 39 minor TODOs (cosmetic improvements, optimizations)
+- ❌ **P1 (High Priority)**: Macro scenarios + DaR implementation + optimizer integration (68h)
+- ⚠️  **P2 (Medium Priority)**: Chart placeholders + holding deep dive + provider transformations (60h)
+- ℹ️  **P3 (Low Priority)**: 39 minor TODOs (cosmetic improvements, optimizations, 72h)
 
-**Production Status**: ⚠️ **Phase 1 - Limited Use** - See [SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md](.ops/SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md) for path to production readiness.
+**Production Status**: ⚠️ **Phase 2 - Core Features Ready** - All P0 blockers eliminated. buffett_checklist pattern now returns real data when FMP API key configured. See [SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md](.ops/SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md) for P1/P2 work remaining.
 
 Use the sections below for navigation; update remediation plan as work progresses.
 
