@@ -90,6 +90,7 @@ echo -e "${YELLOW}Applying migrations...${NC}"
 
 migrations=(
     "backend/db/migrations/005_create_rls_policies.sql"
+    "backend/db/migrations/009_add_scenario_dar_tables.sql"
 )
 
 for migration in "${migrations[@]}"; do

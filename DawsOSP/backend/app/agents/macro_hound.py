@@ -545,18 +545,26 @@ class MacroHound(BaseAgent):
         state: Dict[str, Any],
         portfolio_id: Optional[str] = None,
         confidence: float = 0.95,
+        horizon_days: int = 30,
     ) -> Dict[str, Any]:
         """
         Compute Drawdown at Risk (DaR).
 
         Computes the expected maximum drawdown at a given confidence level
-        by running 13 macro scenarios and taking the specified percentile.
+        by running all macro scenarios and taking the specified percentile.
+
+        DaR Methodology (Dalio Framework):
+        - DaR = Percentile of scenario drawdowns (e.g., 95th percentile)
+        - Runs 9 pre-defined scenarios (rates, USD, CPI, credit, equity)
+        - Conditions on current macro regime
+        - Persists to dar_history table for trend analysis
 
         Args:
             ctx: Request context
             state: Execution state
             portfolio_id: Portfolio ID (optional)
             confidence: Confidence level (default 0.95 = 95%)
+            horizon_days: Forecast horizon (default 30 days)
 
         Returns:
             Dict with DaR computation
@@ -564,16 +572,25 @@ class MacroHound(BaseAgent):
         Example:
             {
                 "dar_value": -0.185,  # 18.5% drawdown at 95% confidence
+                "dar_amount": -25900.00,  # Dollar drawdown
                 "confidence": 0.95,
                 "portfolio_id": "11111111-1111-1111-1111-111111111111",
-                "scenarios_run": 13,
-                "worst_scenario": "2008_financial_crisis",
+                "regime": "LATE_EXPANSION",
+                "horizon_days": 30,
+                "scenarios_run": 9,
+                "worst_scenario": "equity_selloff",
+                "worst_scenario_name": "Equity Selloff -20%",
                 "worst_scenario_drawdown": -0.35,
+                "mean_drawdown": -0.12,
+                "median_drawdown": -0.08,
+                "max_drawdown": -0.35,
+                "current_nav": 140000.00,
                 "scenario_distribution": [
-                    {"scenario": "2008_financial_crisis", "drawdown": -0.35},
-                    {"scenario": "covid_2020", "drawdown": -0.28},
+                    {"scenario": "equity_selloff", "scenario_name": "Equity Selloff -20%", "drawdown_pct": -0.35, "delta_pl": -49000.00},
+                    {"scenario": "credit_spread_widening", "scenario_name": "Credit Spreads +200bp", "drawdown_pct": -0.18, "delta_pl": -25200.00},
                     ...
                 ],
+                "as_of_date": "2025-10-24",
                 "__metadata__": {...}
             }
         """
@@ -582,29 +599,83 @@ class MacroHound(BaseAgent):
         if not portfolio_id_uuid:
             raise ValueError("portfolio_id required for macro.compute_dar")
 
+        pack_id_str = ctx.pricing_pack_id or "PP_latest"
+
         logger.info(
             f"macro.compute_dar: portfolio_id={portfolio_id_uuid}, "
-            f"confidence={confidence}"
+            f"confidence={confidence}, horizon={horizon_days}d"
         )
 
-        # TODO: Implement DaR service
-        # For now, return stub data
-        result = {
-            "dar_value": None,
-            "confidence": confidence,
-            "portfolio_id": str(portfolio_id_uuid),
-            "scenarios_run": 0,
-            "worst_scenario": None,
-            "worst_scenario_drawdown": None,
-            "scenario_distribution": [],
-            "error": "DaR service not yet implemented",
-        }
+        # Get scenario service
+        from app.services.scenarios import get_scenario_service
+        scenario_service = get_scenario_service()
+
+        # Get macro service to detect current regime
+        from app.services.macro import get_macro_service
+        macro_service = get_macro_service()
+
+        try:
+            # Detect current regime for conditioning
+            try:
+                regime_classification = await macro_service.detect_current_regime(asof_date=ctx.asof_date)
+                regime = regime_classification.regime.value
+            except Exception as e:
+                logger.warning(f"Could not detect regime for DaR conditioning: {e}")
+                regime = "MID_EXPANSION"  # Default fallback
+
+            logger.info(f"Computing DaR conditioned on regime: {regime}")
+
+            # Compute DaR using scenario service
+            dar_result = await scenario_service.compute_dar(
+                portfolio_id=str(portfolio_id_uuid),
+                regime=regime,
+                confidence=confidence,
+                horizon_days=horizon_days,
+                pack_id=pack_id_str,
+                as_of_date=ctx.asof_date,
+            )
+
+            # Check for errors
+            if "error" in dar_result:
+                logger.error(f"DaR computation failed: {dar_result['error']}")
+                result = {
+                    "dar_value": None,
+                    "dar_amount": None,
+                    "confidence": confidence,
+                    "portfolio_id": str(portfolio_id_uuid),
+                    "regime": regime,
+                    "horizon_days": horizon_days,
+                    "scenarios_run": 0,
+                    "worst_scenario": None,
+                    "worst_scenario_drawdown": None,
+                    "error": dar_result["error"],
+                    "_is_stub": True,
+                }
+            else:
+                # Success - return DaR result
+                result = dar_result
+
+        except Exception as e:
+            logger.error(f"Error computing DaR: {e}", exc_info=True)
+            result = {
+                "dar_value": None,
+                "dar_amount": None,
+                "confidence": confidence,
+                "portfolio_id": str(portfolio_id_uuid),
+                "regime": None,
+                "horizon_days": horizon_days,
+                "scenarios_run": 0,
+                "worst_scenario": None,
+                "worst_scenario_drawdown": None,
+                "error": f"DaR computation error: {str(e)}",
+                "_is_stub": True,
+            }
 
         # Attach metadata
         metadata = self._create_metadata(
-            source="risk_service:dar_computation",
+            source=f"scenario_service:dar:{pack_id_str}",
             asof=ctx.asof_date,
-            ttl=3600,
+            ttl=3600,  # Cache for 1 hour (DaR is computationally expensive)
         )
         result = self._attach_metadata(result, metadata)
 

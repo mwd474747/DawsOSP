@@ -611,6 +611,221 @@ class ScenarioService:
 
         return winners, losers
 
+    async def compute_dar(
+        self,
+        portfolio_id: str,
+        regime: str,
+        confidence: float = 0.95,
+        horizon_days: int = 30,
+        pack_id: Optional[str] = None,
+        as_of_date: Optional[date] = None,
+    ) -> Dict[str, Any]:
+        """
+        Compute Drawdown at Risk (DaR) for portfolio.
+
+        DaR methodology (Dalio framework):
+        - Run all pre-defined scenarios from library
+        - Calculate drawdown for each scenario
+        - Take specified percentile (e.g., 95th percentile = 95% confidence DaR)
+        - Persist to dar_history table for trend analysis
+
+        Args:
+            portfolio_id: Portfolio UUID
+            regime: Current regime (for conditioning)
+            confidence: Confidence level (0.95 = 95%)
+            horizon_days: Forecast horizon (default 30 days)
+            pack_id: Pricing pack ID
+            as_of_date: Date for DaR calculation (default: today)
+
+        Returns:
+            Dict with DaR value, scenario distribution, worst scenario
+        """
+        if as_of_date is None:
+            as_of_date = date.today()
+
+        if not pack_id:
+            pack_id = "PP_latest"
+
+        logger.info(
+            f"compute_dar: portfolio={portfolio_id}, regime={regime}, "
+            f"confidence={confidence}, horizon={horizon_days}d"
+        )
+
+        # Get current portfolio NAV
+        nav_query = """
+            SELECT SUM(quantity * cost_basis_per_share) AS nav
+            FROM lots
+            WHERE portfolio_id = $1
+              AND is_open = true
+              AND quantity > 0
+        """
+        nav_result = await execute_query_one(nav_query, portfolio_id)
+        current_nav = Decimal(str(nav_result["nav"])) if nav_result and nav_result["nav"] else Decimal("0")
+
+        if current_nav <= 0:
+            logger.warning(f"Portfolio {portfolio_id} has zero or negative NAV: {current_nav}")
+            return {
+                "error": "Portfolio has zero or negative NAV",
+                "dar": None,
+                "dar_pct": None,
+                "confidence": confidence,
+                "portfolio_id": portfolio_id,
+                "regime": regime,
+                "current_nav": float(current_nav),
+            }
+
+        # Run all scenarios and collect drawdowns
+        scenario_drawdowns = []
+
+        for shock_type in self.scenarios.keys():
+            try:
+                # Apply scenario
+                scenario_result = await self.apply_scenario(
+                    portfolio_id=portfolio_id,
+                    shock_type=shock_type,
+                    pack_id=pack_id,
+                    as_of_date=as_of_date,
+                )
+
+                # Extract drawdown (negative delta P&L %)
+                drawdown_pct = scenario_result.total_delta_pl_pct
+
+                scenario_drawdowns.append({
+                    "scenario": shock_type.value,
+                    "scenario_name": scenario_result.shock_name,
+                    "drawdown_pct": drawdown_pct,
+                    "delta_pl": float(scenario_result.total_delta_pl),
+                })
+
+            except Exception as e:
+                logger.warning(f"Scenario {shock_type.value} failed: {e}")
+                continue
+
+        if not scenario_drawdowns:
+            logger.error("No scenarios ran successfully for DaR calculation")
+            return {
+                "error": "No scenarios ran successfully",
+                "dar": None,
+                "dar_pct": None,
+                "confidence": confidence,
+                "portfolio_id": portfolio_id,
+                "regime": regime,
+                "current_nav": float(current_nav),
+            }
+
+        # Sort by drawdown (most negative first)
+        scenario_drawdowns.sort(key=lambda x: x["drawdown_pct"])
+
+        # Extract drawdown percentages for percentile calculation
+        drawdowns = [s["drawdown_pct"] for s in scenario_drawdowns]
+
+        # Compute DaR as percentile (e.g., 95th percentile = 5th worst outcome)
+        import numpy as np
+        dar_pct = float(np.percentile(drawdowns, confidence * 100))
+
+        # Convert to dollar amount
+        dar_amount = float(current_nav) * dar_pct
+
+        # Find worst scenario
+        worst_scenario = scenario_drawdowns[0]  # First after sorting (most negative)
+
+        # Compute distribution statistics
+        mean_drawdown = float(np.mean(drawdowns))
+        median_drawdown = float(np.median(drawdowns))
+        max_drawdown = worst_scenario["drawdown_pct"]
+
+        # Persist to dar_history table
+        try:
+            # Get user_id from portfolio
+            user_query = "SELECT user_id FROM portfolios WHERE id = $1"
+            user_result = await execute_query_one(user_query, portfolio_id)
+            user_id = user_result["user_id"] if user_result else None
+
+            if not user_id:
+                logger.warning(f"No user_id found for portfolio {portfolio_id}, skipping persistence")
+            else:
+                # Insert dar_history record
+                insert_query = """
+                    INSERT INTO dar_history (
+                        portfolio_id,
+                        user_id,
+                        asof_date,
+                        regime,
+                        confidence,
+                        horizon_days,
+                        num_simulations,
+                        dar,
+                        dar_pct,
+                        mean_drawdown,
+                        median_drawdown,
+                        max_drawdown,
+                        current_nav,
+                        pricing_pack_id
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                    ON CONFLICT (portfolio_id, asof_date, regime)
+                    DO UPDATE SET
+                        confidence = EXCLUDED.confidence,
+                        horizon_days = EXCLUDED.horizon_days,
+                        num_simulations = EXCLUDED.num_simulations,
+                        dar = EXCLUDED.dar,
+                        dar_pct = EXCLUDED.dar_pct,
+                        mean_drawdown = EXCLUDED.mean_drawdown,
+                        median_drawdown = EXCLUDED.median_drawdown,
+                        max_drawdown = EXCLUDED.max_drawdown,
+                        current_nav = EXCLUDED.current_nav,
+                        pricing_pack_id = EXCLUDED.pricing_pack_id,
+                        created_at = NOW()
+                """
+                await execute_statement(
+                    insert_query,
+                    portfolio_id,
+                    user_id,
+                    as_of_date,
+                    regime,
+                    confidence,
+                    horizon_days,
+                    len(scenario_drawdowns),  # num_simulations = number of scenarios run
+                    dar_amount,
+                    dar_pct,
+                    mean_drawdown,
+                    median_drawdown,
+                    max_drawdown,
+                    float(current_nav),
+                    pack_id,
+                )
+                logger.info(f"Persisted DaR to dar_history: {dar_pct*100:.2f}% at {confidence*100:.0f}% confidence")
+
+        except Exception as e:
+            logger.error(f"Failed to persist DaR to dar_history: {e}", exc_info=True)
+            # Continue - don't fail DaR calculation if persistence fails
+
+        # Return DaR result
+        result = {
+            "dar_value": dar_pct,  # DaR as percentage (e.g., -0.185 = -18.5%)
+            "dar_amount": dar_amount,  # DaR in dollars
+            "confidence": confidence,
+            "portfolio_id": portfolio_id,
+            "regime": regime,
+            "horizon_days": horizon_days,
+            "scenarios_run": len(scenario_drawdowns),
+            "worst_scenario": worst_scenario["scenario"],
+            "worst_scenario_name": worst_scenario["scenario_name"],
+            "worst_scenario_drawdown": worst_scenario["drawdown_pct"],
+            "mean_drawdown": mean_drawdown,
+            "median_drawdown": median_drawdown,
+            "max_drawdown": max_drawdown,
+            "current_nav": float(current_nav),
+            "scenario_distribution": scenario_drawdowns,
+            "as_of_date": str(as_of_date),
+        }
+
+        logger.info(
+            f"DaR computed: {dar_pct*100:.2f}% at {confidence*100:.0f}% confidence "
+            f"(worst: {worst_scenario['scenario_name']} at {worst_scenario['drawdown_pct']*100:.2f}%)"
+        )
+
+        return result
+
 
 # ============================================================================
 # Singleton
