@@ -12,32 +12,43 @@ This file provides context for AI assistants (Claude) working on DawsOS.
 
 ## 🚨 CRITICAL: READ THIS FIRST
 
-### Current State (October 26, 2025)
+### Current State (October 26, 2025 - Post P0-CODE-1 Completion)
 
-⚠️ **GOVERNANCE AUDIT FINDINGS** - See [.ops/GOVERNANCE_VIOLATIONS_AUDIT_2025-10-26.md](.ops/GOVERNANCE_VIOLATIONS_AUDIT_2025-10-26.md)
+✅ **P0-CODE-1 COMPLETE** - Rating Rubrics Database Implementation (commits 5d24e04, 8fd4d9e, e5cf939)
 
 **Working today**
 - AsyncPG pool initialises once and is reused across requests
-- `python scripts/seed_loader.py --all` hydrates demo symbols, portfolio, pricing pack, macro cycles
+- `python scripts/seed_loader.py --all` hydrates demo symbols, portfolio, pricing pack, macro cycles, **ratings rubrics**
 - Executor `/v1/execute` executes seeded patterns (portfolio overview, holdings)
 - Streamlit UI renders seeded valuations and attribution
 - Observability hooks (trace IDs, pricing_pack_id, ledger_commit_hash) attached to responses
+- **✅ NEW**: Ratings service loads research-based weights from `rating_rubrics` table (moat_strength, resilience, dividend_safety)
 
-**Known Governance Deviations (Phase 1)**
-- ❌ **CRITICAL**: Ratings use hardcoded 25% weights instead of rubric-driven weights ([ratings.py:258-263, 392-397](backend/app/services/ratings.py#L258-L263))
+**Remediation Completed This Session (2025-10-26)**
+- ✅ **P0-CODE-1 (20h)**: Rating Rubrics Database Implementation
+  - Created `rating_rubrics` schema with JSONB columns ([rating_rubrics.sql](backend/db/schema/rating_rubrics.sql))
+  - Created 3 research-based seed files ([data/seeds/ratings/*.json](data/seeds/ratings/))
+  - Extended seed_loader.py with RatingSeedLoader ([seed_loader.py:646-735](scripts/seed_loader.py#L646-L735))
+  - Implemented database rubric loading in ratings.py ([ratings.py:57-165](backend/app/services/ratings.py#L57-L165))
+  - **Removed hardcoded 25% weights** - now loads from database with fallback
+  - All weights research-based and documented (Buffett investment philosophy)
+
+**Remaining Governance Deviations**
 - ⚠️  **LIMITATION**: Fundamentals loading fetches FMP data but returns stubs ([data_harvester.py:616-621](backend/app/agents/data_harvester.py#L616-L621))
-- ℹ️  **DOCUMENTED**: All deviations explicitly commented with "GOVERNANCE DEVIATION" and Phase 2 TODO
+  - **Next**: P0-CODE-2 (FMP Fundamentals Transformation, 14h)
 
 **Comprehensive Remediation Plan**: [.ops/SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md](.ops/SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md)
-- **54 TODOs**, **186 stub references**, **4 governance deviations** catalogued
-- **P0 (Critical)**: 3 items, 37 hours - Rubric weights, FMP transformation, schema creation
+- ~~**P0 (Critical)**: 3 items, 37 hours~~ → **1 item complete (20h), 2 remaining (17h)**
+  - ✅ P0-CODE-1: Rating rubrics (20h) - COMPLETE
+  - ⏳ P0-CODE-2: FMP transformation (14h) - NOT STARTED
+  - ⏳ P0-CODE-3: Schema migrations (3h) - NOT STARTED
 - **P1 (High)**: 4 items, 68 hours - Scenarios, DaR, optimizer, provider wiring
 - **P2 (Medium)**: 8 items, 60 hours - Chart placeholders, holding details
-- **Total**: 245 hours over 10 weeks with 2-3 engineers
-- **Affected Patterns**: 6 of 12 patterns (buffett_checklist, policy_rebalance, scenarios, macro)
+- **Total**: 225 hours remaining (20h completed) over 9-10 weeks with 2-3 engineers
+- **Affected Patterns**: 6 of 12 patterns (~~buffett_checklist~~ partial fix, policy_rebalance, scenarios, macro)
 
 **Still outstanding (see remediation plan for details)**:
-- ❌ **P0**: Ratings rubric weights database + FMP fundamentals transformation
+- ⏳ **P0 Remaining**: FMP fundamentals transformation (14h) + schema migrations (3h)
 - ❌ **P1**: Macro scenarios + DaR implementation + optimizer integration
 - ⚠️  **P2**: Chart placeholders + holding deep dive + provider transformations
 - ℹ️  **P3**: 39 minor TODOs (cosmetic improvements, optimizations)
