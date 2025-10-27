@@ -643,6 +643,97 @@ class PricingSeedLoader:
 
 
 
+class RatingSeedLoader:
+    """Load rating rubric seed data."""
+
+    async def load(self):
+        """Load rating rubrics from JSON files."""
+        logger.info("Loading rating rubric seeds...")
+
+        ratings_dir = SEED_DIR / "ratings"
+        if not ratings_dir.exists():
+            logger.warning(f"Ratings seed directory not found: {ratings_dir}")
+            return
+
+        await self._load_rating_rubrics(ratings_dir)
+        logger.info("Rating rubric seeds loaded successfully")
+
+    async def _load_rating_rubrics(self, ratings_dir: Path):
+        """Load rating rubrics from JSON files in ratings directory."""
+        query = """
+            INSERT INTO rating_rubrics (
+                rating_type,
+                method_version,
+                overall_weights,
+                component_thresholds,
+                description,
+                research_basis
+            ) VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (rating_type, method_version)
+            DO UPDATE SET
+                overall_weights = EXCLUDED.overall_weights,
+                component_thresholds = EXCLUDED.component_thresholds,
+                description = EXCLUDED.description,
+                research_basis = EXCLUDED.research_basis,
+                updated_at = NOW()
+        """
+
+        count = 0
+        for json_file in sorted(ratings_dir.glob("*_v*.json")):
+            try:
+                with open(json_file) as f:
+                    rubric_data = json.load(f)
+
+                # Extract fields
+                rating_type = rubric_data.get("rating_type")
+                method_version = rubric_data.get("method_version", "v1")
+                overall_weights = rubric_data.get("overall_weights", {})
+                component_thresholds = rubric_data.get("component_thresholds", {})
+                description = rubric_data.get("description")
+                research_basis = rubric_data.get("research_basis")
+
+                # Validate required fields
+                if not rating_type:
+                    logger.warning(f"Skipping {json_file.name}: missing rating_type")
+                    continue
+
+                # Validate weights sum to 1.0
+                weight_sum = sum(overall_weights.values())
+                if not (0.99 <= weight_sum <= 1.01):  # Allow small floating point errors
+                    logger.error(
+                        f"Skipping {json_file.name}: weights sum to {weight_sum:.4f}, expected 1.0"
+                    )
+                    continue
+
+                # Convert dicts to JSON strings for JSONB columns
+                overall_weights_json = json.dumps(overall_weights)
+                component_thresholds_json = json.dumps(component_thresholds)
+
+                await execute_statement(
+                    query,
+                    rating_type,
+                    method_version,
+                    overall_weights_json,
+                    component_thresholds_json,
+                    description,
+                    research_basis,
+                )
+
+                logger.info(
+                    f"Loaded rubric: {rating_type} v{method_version} (weights: {', '.join(f'{k}={v:.0%}' for k, v in overall_weights.items())})"
+                )
+                count += 1
+
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON in {json_file.name}: {e}")
+                continue
+            except Exception as e:
+                logger.error(f"Failed to load {json_file.name}: {e}", exc_info=True)
+                continue
+
+        logger.info(f"Loaded {count} rating rubrics")
+
+
 class SeedLoader:
     """Main seed loader orchestrator."""
 
@@ -653,6 +744,7 @@ class SeedLoader:
             "portfolios": PortfolioSeedLoader(),
             "symbols": SymbolSeedLoader(),
             "prices": PricingSeedLoader(),
+            "ratings": RatingSeedLoader(),
         }
 
     async def load_domain(self, domain: str):
@@ -667,8 +759,8 @@ class SeedLoader:
         """Load all seed domains in order."""
         logger.info("Loading all seed domains...")
 
-        # Order matters: symbols → portfolios → prices → macro → cycles
-        for domain in ["symbols", "portfolios", "prices", "macro", "cycles"]:
+        # Order matters: symbols → portfolios → prices → macro → cycles → ratings
+        for domain in ["symbols", "portfolios", "prices", "macro", "cycles", "ratings"]:
             await self.load_domain(domain)
 
         logger.info("All seed domains loaded successfully")
@@ -684,7 +776,7 @@ async def main():
     parser = argparse.ArgumentParser(description="DawsOS Database Seed Loader")
     parser.add_argument(
         "--domain",
-        choices=["macro", "cycles", "portfolios", "symbols"],
+        choices=["macro", "cycles", "portfolios", "symbols", "prices", "ratings"],
         help="Specific domain to load",
     )
     parser.add_argument(

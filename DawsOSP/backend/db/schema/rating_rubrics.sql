@@ -4,7 +4,7 @@
 
 -- Ratings rubrics table
 CREATE TABLE IF NOT EXISTS rating_rubrics (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     rating_type TEXT NOT NULL,  -- 'dividend_safety', 'moat_strength', 'resilience'
     method_version TEXT NOT NULL DEFAULT 'v1',
     overall_weights JSONB NOT NULL,  -- Component weights (must sum to 1.0)
