@@ -62,26 +62,46 @@ This file provides context for AI assistants (Claude) working on DawsOS.
   - ✅ P0-CODE-2: FMP transformation (14h) - COMPLETE
   - ✅ P0-CODE-3: Schema init script (3h) - COMPLETE
   - ✅ Enhancement: Weights source metadata (30min) - COMPLETE
-- **P1 (High)**: 4 items, 68 hours - Scenarios, DaR, optimizer, provider wiring
+- **P1 (High)**: 4 items, 88 hours → **✅ 75% COMPLETE (48 of 88 hours)** - Session 2025-10-26
+  - ✅ P1-CODE-1: macro.run_scenario (12h) - COMPLETE (commit 2876d86)
+  - ✅ P1-CODE-2: macro.compute_dar (16h) - COMPLETE (commit bc6a7ee)
+  - ⏳ P1-CODE-3: optimizer.propose_trades (40h) - NOT STARTED (requires new service)
+  - ✅ P1-CODE-4: Provider transformations (20h) - COMPLETE (commit 5e28827)
 - **P2 (Medium)**: 8 items, 60 hours - Chart placeholders, holding details
-- **Total**: 165 hours remaining (37.5h completed) over 7-8 weeks with 2-3 engineers
-- **Affected Patterns**: ~~buffett_checklist (FIXED)~~, policy_rebalance, scenarios, macro
+- **Total**: 125 hours remaining (85.5h completed) over 5-6 weeks with 2-3 engineers
+- **Affected Patterns**: ~~buffett_checklist (FIXED)~~, ~~portfolio_scenario_analysis (FIXED)~~, ~~portfolio_cycle_risk (FIXED)~~, policy_rebalance
+
+**P1 Work Completed (Session 2025-10-26)**:
+- ✅ **Macro Scenarios** (12h): 22 Dalio-based scenarios (debt crisis, empire cycles, standard stress tests)
+- ✅ **Drawdown-at-Risk** (16h): Regime-conditional DaR with scenario distribution analysis
+- ✅ **Provider Transformations** (20h): Polygon prices, FRED macro, NewsAPI articles
 
 **Still outstanding (see remediation plan for details)**:
-- ❌ **P1 (High Priority)**: Macro scenarios + DaR implementation + optimizer integration (68h)
-- ⚠️  **P2 (Medium Priority)**: Chart placeholders + holding deep dive + provider transformations (60h)
+- ⏳ **P1 Remaining**: Optimizer integration (40h) - Requires Riskfolio-Lib integration
+- ⚠️  **P2 (Medium Priority)**: Chart placeholders + holding deep dive (60h)
 - ℹ️  **P3 (Low Priority)**: 39 minor TODOs (cosmetic improvements, optimizations, 72h)
 
-**Production Status**: ⚠️ **Phase 2 - Core Features Ready** - All P0 blockers eliminated. buffett_checklist pattern now returns real data when FMP API key configured. See [SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md](.ops/SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md) for P1/P2 work remaining.
+**Production Status**: ⚠️ **Phase 2.75 - Advanced Macro Features Ready** - All P0 blockers eliminated, 75% of P1 complete. Patterns now functional: buffett_checklist (real FMP data), portfolio_scenario_analysis (22 stress tests), portfolio_cycle_risk (regime-conditional DaR), macro_trend_monitor (real FRED data). See [SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md](.ops/SHORTCUT_REMEDIATION_IMPLEMENTATION_PLAN.md) for remaining work.
 
 Use the sections below for navigation; update remediation plan as work progresses.
 
-## Current Capability Summary (Verified 2025-10-24)
+## Current Capability Summary (Verified 2025-10-26)
 
 - **financial_analyst**: 7 capabilities implemented (`ledger.positions`, `pricing.apply_pack`, `metrics.*`, `attribution.currency`, `charts.overview`) pulling live data from seeded tables.
-- **macro_hound**: `macro.detect_regime`, `macro.compute_cycles`, and `macro.get_indicators` read seeded macro data; `macro.run_scenario` and `macro.compute_dar` currently return placeholder responses and need full service wiring.
-- **data_harvester**: Provider facades exist for FMP and FRED (require API keys); Polygon/news integrations are still placeholders and return explicit `not yet implemented` errors.
-- **claude_agent**: All three capabilities (`claude.explain`, `claude.summarize`, `claude.analyze`) return placeholder text until Anthropic wiring is completed.
+- **macro_hound**: ✅ **ALL 5 CAPABILITIES FULLY WIRED** (Session 2025-10-26)
+  - `macro.detect_regime` - Real regime detection (5 regimes: Early Expansion → Late Contraction)
+  - `macro.compute_cycles` - Aggregate cycle analysis (Dalio framework)
+  - `macro.get_indicators` - Real FRED economic indicators
+  - `macro.run_scenario` - ✅ **NEW**: 22 stress test scenarios (Dalio debt crisis + empire cycles + standard tests)
+  - `macro.compute_dar` - ✅ **NEW**: Regime-conditional Drawdown-at-Risk calculation
+- **data_harvester**: ✅ **ALL 6 CAPABILITIES FULLY WIRED** (Session 2025-10-26)
+  - `provider.fetch_quote` - ✅ **NEW**: Real Polygon price quotes (OHLC transformations)
+  - `provider.fetch_fundamentals` - ✅ Real FMP fundamentals (P0-CODE-2)
+  - `provider.fetch_news` - ✅ **NEW**: Real NewsAPI articles with relevance scoring
+  - `provider.fetch_macro` - ✅ **NEW**: Real FRED macro indicators (T10Y2Y, FEDFUNDS, etc.)
+  - `provider.fetch_ratios` - ✅ Real FMP financial ratios
+  - `fundamentals.load` - ✅ Real FMP transformation pipeline (12 rating fields)
+- **claude_agent**: All three capabilities (`claude.explain`, `claude.summarize`, `claude.analyze`) return placeholder text until Anthropic API wiring is completed.
 
 ## Historical Audit Notes (Archived)
 
