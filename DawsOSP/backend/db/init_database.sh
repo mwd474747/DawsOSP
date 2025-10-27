@@ -61,9 +61,12 @@ echo ""
 echo -e "${YELLOW}Applying database schemas...${NC}"
 
 schemas=(
+    "backend/db/schema/000_roles.sql"
     "backend/db/schema/001_portfolios_lots_transactions.sql"
-    "backend/db/schema/portfolio_metrics.sql"
+    "backend/db/schema/ledger.sql"
     "backend/db/schema/pricing_packs.sql"
+    "backend/db/schema/rating_rubrics.sql"
+    "backend/db/schema/portfolio_metrics.sql"
     "backend/db/schema/macro_indicators.sql"
     "backend/db/schema/alerts_notifications.sql"
 )
@@ -111,13 +114,13 @@ tables=$(psql "$DATABASE_URL" -t -c "
     SELECT COUNT(*)
     FROM information_schema.tables
     WHERE table_schema = 'public'
-    AND table_name IN ('portfolios', 'lots', 'transactions', 'portfolio_metrics', 'pricing_packs')
+    AND table_name IN ('portfolios', 'lots', 'transactions', 'portfolio_metrics', 'pricing_packs', 'rating_rubrics', 'ledger_snapshots')
 " | xargs)
 
-if [ "$tables" -ge 5 ]; then
-    echo -e "  ${GREEN}✓${NC} Core tables created ($tables/5+)"
+if [ "$tables" -ge 7 ]; then
+    echo -e "  ${GREEN}✓${NC} Core tables created ($tables/7+)"
 else
-    echo -e "  ${RED}✗${NC} Expected 5+ tables, found $tables"
+    echo -e "  ${RED}✗${NC} Expected 7+ tables, found $tables"
     exit 1
 fi
 
