@@ -1,16 +1,18 @@
-# Trinity 3.0 - Development Guide
+# DawsOS / Trinity 3.0 Development Guide
 
-**Last Updated**: October 21, 2025
-**For**: Developers contributing to Trinity 3.0
+> ⚠️ **Note**: This document originated from the legacy Trinity 3.0 stack. Some references (e.g., `MASTER_TASK_LIST.md`, `UniversalExecutor`) no longer exist in the DawsOSP repo. Use this guide for environment setup basics, but rely on:
+> - `README.md` for the authoritative quick start
+> - `.ops/TASK_INVENTORY_2025-10-24.md` for the live backlog
+> - `PRODUCT_SPEC.md` for architecture guardrails
 
 ---
 
 ## Quick Setup
 
 ```bash
-# 1. Clone repository
+# 1. Clone repository (monorepo root)
 git clone <repo-url>
-cd DawsOSB
+cd DawsOSB/DawsOSP
 
 # 2. Create virtual environment (Python 3.11 required)
 python3.11 -m venv venv
@@ -22,9 +24,14 @@ venv/bin/pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your API keys
 
-# 5. Launch application
-./start.sh
-# Or manually: venv/bin/streamlit run main.py --server.port=8501
+# 5. Launch backend + frontend
+docker compose up -d --build  # spins up Postgres, Redis, backend, frontend
+# or, for local dev:
+#   ./backend/run_api.sh
+#   ./frontend/run_ui.sh
+
+# (Optional) Seed demo data and rating rubrics
+python scripts/seed_loader.py --all  # symbols, portfolios, prices, macro, cycles, ratings
 ```
 
 ---
@@ -51,10 +58,10 @@ cp .env.example .env
 
 ### Making Changes
 
-1. **Read MASTER_TASK_LIST.md** - Check current tasks/gaps
+1. **Review `.ops/TASK_INVENTORY_2025-10-24.md`** - Check current tasks/gaps
 2. **Follow architecture** - Use UniversalExecutor → PatternEngine → AgentRuntime
 3. **Test locally** - Verify changes work
-4. **Update MASTER_TASK_LIST.md** - Mark complete, add new discoveries
+4. **Update `.ops/TASK_INVENTORY_*`** - Mark complete, add new discoveries
 5. **Update documentation** - If changing architecture/API
 
 ### Coding Standards
@@ -120,7 +127,7 @@ def initialize_trinity(self):
     })
 ```
 
-**3. Add to MASTER_TASK_LIST.md** completed tasks
+**3. Update `.ops/TASK_INVENTORY_*`** with completed tasks
 
 ### Add New Pattern
 
@@ -234,7 +241,7 @@ result = runtime.exec_via_registry('financial_analyst', context)
 
 ### Automated Testing
 
-**Current Status**: No test suite (see MASTER_TASK_LIST.md P3 task)
+**Current Status**: No test suite (see `.ops/TASK_INVENTORY_*` P3 task)
 
 **Recommended**:
 ```bash
@@ -357,7 +364,7 @@ venv/bin/python scripts/test_api_integration.py
 
 ## References
 
-- [MASTER_TASK_LIST.md](MASTER_TASK_LIST.md) - Current tasks and gaps
+- [.ops/TASK_INVENTORY_2025-10-24.md](.ops/TASK_INVENTORY_2025-10-24.md) - Current tasks and gaps
 - [ARCHITECTURE.md](ARCHITECTURE.md) - System design
 - [CONFIGURATION.md](CONFIGURATION.md) - API setup
 - [PATTERN_AUTHORING_GUIDE.md](PATTERN_AUTHORING_GUIDE.md) - Pattern creation
@@ -367,3 +374,8 @@ venv/bin/python scripts/test_api_integration.py
 ---
 
 **Document Status**: ✅ Verified against code October 21, 2025
+# Observability toggle (optional)
+# Enable Jaeger/Sentry by setting these in .env
+# ENABLE_OBSERVABILITY=true
+# JAEGER_ENDPOINT=http://localhost:14268/api/traces
+# SENTRY_DSN=<dsn>

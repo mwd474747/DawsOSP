@@ -87,6 +87,13 @@ echo -e "${YELLOW}Checking Docker containers...${NC}"
 POSTGRES_CONTAINER=$(docker ps --format '{{.Names}}' | grep -E '^(dawsos-postgres|dawsos-dev-postgres)$' | head -n1)
 REDIS_CONTAINER=$(docker ps --format '{{.Names}}' | grep -E '^(dawsos-redis|dawsos-dev-redis)$' | head -n1)
 
+# Determine DB user based on container (dev stack uses superuser)
+DB_USER="dawsos_app"
+if [[ "$POSTGRES_CONTAINER" == "dawsos-dev-postgres" ]]; then
+    DB_USER="dawsos"
+fi
+DB_NAME="dawsos"
+
 if [ -n "$POSTGRES_CONTAINER" ]; then
     test_result 0 "PostgreSQL container running ($POSTGRES_CONTAINER)"
 else
@@ -103,7 +110,7 @@ echo ""
 
 # Test 2: Check database connectivity
 echo -e "${YELLOW}Checking database connectivity...${NC}"
-if [ -n "$POSTGRES_CONTAINER" ] && docker exec "$POSTGRES_CONTAINER" psql -U dawsos -d dawsos -c "SELECT 1;" > /dev/null 2>&1; then
+if [ -n "$POSTGRES_CONTAINER" ] && docker exec "$POSTGRES_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1; then
     test_result 0 "Database connection successful"
 else
     test_result 1 "Database connection failed"
@@ -115,7 +122,7 @@ echo ""
 echo -e "${YELLOW}Checking database schema...${NC}"
 table_count=0
 if [ -n "$POSTGRES_CONTAINER" ]; then
-    table_count=$(docker exec "$POSTGRES_CONTAINER" psql -U dawsos -d dawsos -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null | tr -d ' ')
+    table_count=$(docker exec "$POSTGRES_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null | tr -d ' ')
 fi
 
 if [ "$table_count" -ge 10 ]; then
@@ -130,7 +137,7 @@ echo ""
 echo -e "${YELLOW}Checking seed data...${NC}"
 portfolio_count=0
 if [ -n "$POSTGRES_CONTAINER" ]; then
-    portfolio_count=$(docker exec "$POSTGRES_CONTAINER" psql -U dawsos -d dawsos -t -c "SELECT COUNT(*) FROM portfolios;" 2>/dev/null | tr -d ' ')
+    portfolio_count=$(docker exec "$POSTGRES_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM portfolios;" 2>/dev/null | tr -d ' ')
 fi
 
 if [ "$portfolio_count" -ge 1 ]; then
@@ -178,7 +185,7 @@ if [ $API_RUNNING -eq 1 ]; then
     # Get portfolio ID from database
     portfolio_id=""
     if [ -n "$POSTGRES_CONTAINER" ]; then
-        portfolio_id=$(docker exec "$POSTGRES_CONTAINER" psql -U dawsos -d dawsos -t -c "SELECT id FROM portfolios LIMIT 1;" 2>/dev/null | tr -d ' ')
+        portfolio_id=$(docker exec "$POSTGRES_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT id FROM portfolios LIMIT 1;" 2>/dev/null | tr -d ' ')
     fi
 
     if [ -n "$portfolio_id" ]; then

@@ -2,9 +2,9 @@
 
 **Role**: Master coordinator agent for DawsOS Portfolio Intelligence Platform
 **Context**: [PRODUCT_SPEC.md](../../PRODUCT_SPEC.md)
-**Status**: ✅ Operational (Production as of October 2025)
+**Status**: ⚠️ Partial (Seeded MVP; macro scenarios/DaR shipped, optimizer/exports pending)
 **Priority**: P0
-**Last Updated**: 2025-10-24
+**Last Updated**: 2025-10-26
 
 ---
 
@@ -22,7 +22,7 @@ Coordinate the operational DawsOS Portfolio Intelligence Platform, ensuring:
 
 ## Current System Status
 
-### ✅ Operational Components
+### ✅ Working Today (Seeded Mode)
 
 #### Core Execution Stack (Production)
 - **[EXECUTION_ARCHITECT](./core/EXECUTION_ARCHITECT.md)** → [backend/app/api/executor.py](../../backend/app/api/executor.py)
@@ -38,18 +38,19 @@ Coordinate the operational DawsOS Portfolio Intelligence Platform, ensuring:
 - `pricing.apply_pack`: applies pricing pack valuations (seeded pack `PP_2025-10-21`)
 - `metrics.compute*` / `attribution.currency`: wrapper over seeded metrics
 
-**MacroHound** *(partial / scenarios TBD)* — [macro_hound.py](../../backend/app/agents/macro_hound.py)
+**MacroHound** *(scenarios + DaR implemented; persistence pending)* — [macro_hound.py](../../backend/app/agents/macro_hound.py)
 - Implemented: `macro.detect_regime`, `macro.compute_cycles`, `macro.get_indicators`
-- Planned: `macro.run_scenario`, `macro.compute_dar` (stubs)
+- Implemented: `macro.run_scenario`, `macro.compute_dar` (ScenarioService)
+- Planned: Persist scenario/DaR results + expose in UI
 
-**DataHarvester** *(provider scaffolding)* — [data_harvester.py](../../backend/app/agents/data_harvester.py)
-- Implemented: `provider.fetch_quote`, `provider.fetch_fundamentals`
-- Pending: `provider.fetch_news`, `provider.fetch_macro`, `provider.fetch_ratios`
+**DataHarvester** *(provider scaffolding + transforms)* — [data_harvester.py](../../backend/app/agents/data_harvester.py)
+- Implemented: FMP fundamentals transformation, Polygon/FRED/NewsAPI transformations
+- Pending: Fundamentals caching + UI wiring for buffett_checklist
 
 **ClaudeAgent** *(operational)* — [claude_agent.py](../../backend/app/agents/claude_agent.py)
 - `claude.explain`, `claude.summarize`, `claude.analyze`
 
-#### Patterns (12 Operational)
+#### Patterns (Mixed Status)
 Located in [backend/patterns/](../../backend/patterns/):
 - ✅ portfolio_overview.json - **Primary pattern** (performance, attribution, holdings)
 - ✅ holding_deep_dive.json - Single security analysis
@@ -58,9 +59,10 @@ Located in [backend/patterns/](../../backend/patterns/):
 - ✅ portfolio_cycle_risk.json - Cycle risk exposure
 - ✅ portfolio_scenario_analysis.json - Shock scenarios
 - ✅ cycle_deleveraging_scenarios.json - Dalio deleveraging
-- ✅ buffett_checklist.json - Quality ratings
-- ✅ policy_rebalance.json - Portfolio rebalancing
-- ✅ news_impact_analysis.json - News sentiment
+- ⚠️ buffett_checklist.json - Ratings weights/fundamentals implemented, UI still seeded
+- 🚧 policy_rebalance.json - Optimizer service not implemented
+- ⚠️ news_impact_analysis.json - NewsAPI metadata-only (dev tier restrictions)
+- 🚧 export_portfolio_report.json - Placeholder export output
 - ✅ macro_trend_monitor.json - Trend monitoring
 - ✅ export_portfolio_report.json - PDF export (rights-gated)
 

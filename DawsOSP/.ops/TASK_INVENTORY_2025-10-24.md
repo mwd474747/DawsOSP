@@ -15,9 +15,10 @@
 ## Priority Backlog
 
 ### P0 (Critical – must ship to meet product vision)
-1. **Macro scenarios & Drawdown-at-Risk**
-   - Implement `macro_run_scenario` and `macro_compute_dar`
-   - Persist results (`scenario_results`, `dar_history`) and expose via patterns/UI
+1. **Macro scenarios & Drawdown-at-Risk** ✅ *Delivered 2025-10-26 (commits 2876d86, bc6a7ee, scenario seeds)*
+   - ✅ `macro_run_scenario` wired to ScenarioService + 22 seeded scenarios
+   - ✅ `macro_compute_dar` implemented in ScenarioService
+   - ⏳ Persist results (`scenario_results`, `dar_history`) & add UI panels
 2. **Rights-enforced exports & alerts**
    - Finish PDF export pipeline (WeasyPrint, watermarking, attribution) and alert delivery with DLQ/dedupe tests
    - Add rights drill test suite

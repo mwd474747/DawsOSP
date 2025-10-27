@@ -165,7 +165,7 @@ def render_portfolio_overview(
                     - Network connectivity issues
 
                     **Quick fixes**:
-                    - Start API: `cd backend && uvicorn app.api.executor:app --reload`
+                    - Start API: `./backend/run_api.sh` (or `uvicorn backend.app.api.executor:app --reload`)
                     - Check API health: `curl {get_api_url()}/health`
                     - Enable mock mode: Set `USE_MOCK_CLIENT=true` environment variable
                     """
