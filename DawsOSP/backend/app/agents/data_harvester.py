@@ -607,18 +607,41 @@ class DataHarvester(BaseAgent):
                     ctx, state, symbol=symbol, provider=provider
                 )
 
-                # If we got real data (not stubs), transform it
-                if fundamentals_data.get("_real_data", False):
-                    source = f"fundamentals:fmp:{symbol}"
-                    logger.info(f"Successfully fetched real fundamentals for {symbol}")
+                # Check if we got real data (no error field means success)
+                has_fundamentals = (
+                    "error" not in fundamentals_data
+                    and "income_statement" in fundamentals_data
+                    and len(fundamentals_data.get("income_statement", [])) > 0
+                )
+                has_ratios = (
+                    "error" not in ratios_data
+                    and "ratios" in ratios_data
+                    and len(ratios_data.get("ratios", [])) > 0
+                )
 
-                    # Transform provider data to ratings format
-                    # TODO: Implement proper transformation logic
-                    # For now, still use stubs but mark as attempted
-                    result = self._stub_fundamentals_for_symbol(symbol)
+                # If we got real data from both endpoints, transform it
+                if has_fundamentals and has_ratios:
+                    try:
+                        result = self._transform_fmp_to_ratings_format(
+                            fundamentals_data,
+                            ratios_data,
+                            symbol
+                        )
+                        source = f"fundamentals:fmp:{symbol}"
+                        logger.info(f"Successfully transformed real fundamentals for {symbol}")
+                    except ValueError as e:
+                        logger.warning(f"FMP transformation failed for {symbol}: {e}, using stubs")
+                        result = self._stub_fundamentals_for_symbol(symbol)
+                        source = "fundamentals:stub"
                 else:
-                    logger.warning(f"Provider returned stub data for {symbol}, using fallback stubs")
+                    # Provider returned error or empty data
+                    error_msg = fundamentals_data.get("error") or ratios_data.get("error")
+                    if error_msg:
+                        logger.warning(f"Provider error for {symbol}: {error_msg}, using stubs")
+                    else:
+                        logger.warning(f"Provider returned empty data for {symbol}, using stubs")
                     result = self._stub_fundamentals_for_symbol(symbol)
+                    source = "fundamentals:stub"
             else:
                 if not symbol:
                     logger.warning(f"Could not lookup symbol for security_id={security_id}, using stubs")
@@ -659,6 +682,348 @@ class DataHarvester(BaseAgent):
             "_symbol": symbol or "UNKNOWN",
             "_note": "STUB DATA - Real provider integration not yet complete"
         }
+
+    # ========================================================================
+    # FMP Transformation Methods
+    # ========================================================================
+
+    def _transform_fmp_to_ratings_format(
+        self,
+        fmp_fundamentals: Dict[str, Any],
+        fmp_ratios: Dict[str, Any],
+        symbol: str
+    ) -> Dict[str, Any]:
+        """
+        Transform FMP API responses to ratings service format.
+
+        This method maps FMP field names to the format expected by the ratings service,
+        calculating 5-year averages and other derived metrics.
+
+        Args:
+            fmp_fundamentals: Response from provider.fetch_fundamentals containing:
+                - income_statement: List[Dict] (sorted newest first)
+                - balance_sheet: List[Dict] (sorted newest first)
+                - cash_flow: List[Dict] (sorted newest first)
+            fmp_ratios: Response from provider.fetch_ratios containing:
+                - ratios: List[Dict] (sorted newest first)
+            symbol: Security symbol (for logging)
+
+        Returns:
+            Dict with all fields required by ratings service:
+                - payout_ratio_5y_avg: Decimal
+                - fcf_dividend_coverage: Decimal
+                - dividend_growth_streak_years: int
+                - net_cash_position: Decimal
+                - roe_5y_avg: Decimal
+                - gross_margin_5y_avg: Decimal
+                - intangible_assets_ratio: Decimal
+                - switching_cost_score: Decimal (default 5)
+                - debt_equity_ratio: Decimal
+                - interest_coverage: Decimal
+                - current_ratio: Decimal
+                - operating_margin_std_dev: Decimal
+                - _symbol: str
+                - _source: str ("fmp")
+                - _is_stub: bool (False)
+
+        Raises:
+            ValueError: If required fields missing from FMP response
+
+        FMP Field Mapping:
+            Income Statement Fields:
+                - revenue: Total revenue
+                - costOfRevenue: Cost of goods sold
+                - grossProfit: Gross profit (revenue - COGS)
+                - operatingIncome: Operating income (EBIT)
+                - netIncome: Net income
+                - eps: Earnings per share
+                - dividendsPaid: Cash dividends paid (negative number)
+
+            Balance Sheet Fields:
+                - totalAssets: Total assets
+                - totalLiabilities: Total liabilities
+                - totalEquity: Total shareholders' equity
+                - cashAndCashEquivalents: Cash and equivalents
+                - totalDebt: Total debt
+                - intangibleAssets: Intangible assets (goodwill, patents, etc.)
+                - totalCurrentAssets: Current assets
+                - totalCurrentLiabilities: Current liabilities
+
+            Ratios Fields:
+                - returnOnEquity: ROE (net income / equity)
+                - debtEquityRatio: Debt-to-equity ratio
+                - currentRatio: Current ratio (current assets / current liabilities)
+                - interestCoverage: Interest coverage (EBIT / interest expense)
+                - grossProfitMargin: Gross margin (gross profit / revenue)
+                - operatingProfitMargin: Operating margin (operating income / revenue)
+                - payoutRatio: Dividend payout ratio (dividends / net income)
+        """
+        try:
+            # Extract statement lists from FMP response
+            income_statements = fmp_fundamentals.get("income_statement", [])
+            balance_sheets = fmp_fundamentals.get("balance_sheet", [])
+            cash_flows = fmp_fundamentals.get("cash_flow", [])
+            ratios = fmp_ratios.get("ratios", [])
+
+            # Validate we have data
+            if not income_statements:
+                raise ValueError("No income statement data in FMP response")
+            if not balance_sheets:
+                raise ValueError("No balance sheet data in FMP response")
+            if not ratios:
+                raise ValueError("No ratios data in FMP response")
+
+            # Get most recent statements
+            latest_income = income_statements[0]
+            latest_balance = balance_sheets[0]
+            latest_ratios = ratios[0]
+
+            # ================================================================
+            # Calculate 5-Year Averages
+            # ================================================================
+
+            # ROE consistency (5-year average)
+            roe_5y_avg = self._calculate_5y_avg(ratios, "returnOnEquity")
+
+            # Gross margin consistency (5-year average)
+            gross_margin_5y_avg = self._calculate_5y_avg(ratios, "grossProfitMargin")
+
+            # Payout ratio (5-year average)
+            payout_ratio_5y_avg = self._calculate_5y_avg(ratios, "payoutRatio")
+
+            # Operating margin stability (standard deviation over 5 years)
+            operating_margin_std_dev = self._calculate_std_dev(ratios, "operatingProfitMargin")
+
+            # ================================================================
+            # Dividend Safety Components
+            # ================================================================
+
+            # FCF dividend coverage = Free Cash Flow / Dividends Paid
+            # Note: FMP reports dividendsPaid as negative (cash outflow)
+            fcf = Decimal(str(latest_income.get("freeCashFlow", 0)))
+            dividends_paid_raw = latest_income.get("dividendsPaid", 0)
+            dividends_paid = abs(Decimal(str(dividends_paid_raw)))  # Make positive
+
+            if dividends_paid > 0:
+                fcf_dividend_coverage = fcf / dividends_paid
+            else:
+                fcf_dividend_coverage = Decimal("0")
+
+            # Dividend growth streak (consecutive years of dividend increases)
+            dividend_growth_streak_years = self._calculate_dividend_streak(income_statements)
+
+            # Net cash position = Cash - Total Debt
+            cash = Decimal(str(latest_balance.get("cashAndCashEquivalents", 0)))
+            total_debt = Decimal(str(latest_balance.get("totalDebt", 0)))
+            net_cash_position = cash - total_debt
+
+            # ================================================================
+            # Moat Strength Components
+            # ================================================================
+
+            # Intangible assets ratio = Intangible Assets / Total Assets
+            intangible_assets = Decimal(str(latest_balance.get("intangibleAssets", 0)))
+            total_assets = Decimal(str(latest_balance.get("totalAssets", 1)))  # Avoid division by zero
+
+            if total_assets > 0:
+                intangible_assets_ratio = intangible_assets / total_assets
+            else:
+                intangible_assets_ratio = Decimal("0")
+
+            # Switching costs (qualitative - default to 5)
+            # TODO: Implement sector-based lookup for switching costs
+            switching_cost_score = Decimal("5")
+
+            # ================================================================
+            # Resilience Components
+            # ================================================================
+
+            # Debt-to-equity ratio (from ratios)
+            debt_equity_ratio = Decimal(str(latest_ratios.get("debtEquityRatio", 0)))
+
+            # Interest coverage (from ratios)
+            interest_coverage = Decimal(str(latest_ratios.get("interestCoverage", 0)))
+
+            # Current ratio (from ratios)
+            current_ratio = Decimal(str(latest_ratios.get("currentRatio", 0)))
+
+            # ================================================================
+            # Return Transformed Data
+            # ================================================================
+
+            logger.info(f"Successfully transformed FMP data for {symbol}")
+
+            return {
+                # Dividend safety
+                "payout_ratio_5y_avg": payout_ratio_5y_avg,
+                "fcf_dividend_coverage": fcf_dividend_coverage,
+                "dividend_growth_streak_years": dividend_growth_streak_years,
+                "net_cash_position": net_cash_position,
+
+                # Moat strength
+                "roe_5y_avg": roe_5y_avg,
+                "gross_margin_5y_avg": gross_margin_5y_avg,
+                "intangible_assets_ratio": intangible_assets_ratio,
+                "switching_cost_score": switching_cost_score,
+
+                # Resilience
+                "debt_equity_ratio": debt_equity_ratio,
+                "interest_coverage": interest_coverage,
+                "current_ratio": current_ratio,
+                "operating_margin_std_dev": operating_margin_std_dev,
+
+                # Metadata
+                "_symbol": symbol,
+                "_source": "fmp",
+                "_is_stub": False,
+            }
+
+        except (KeyError, IndexError, ValueError, ZeroDivisionError, TypeError) as e:
+            logger.error(f"FMP transformation failed for {symbol}: {e}", exc_info=True)
+            raise ValueError(f"Cannot transform FMP data for {symbol}: {e}")
+
+    # ========================================================================
+    # FMP Transformation Helper Methods
+    # ========================================================================
+
+    def _calculate_5y_avg(self, data_array: List[Dict], field: str) -> Decimal:
+        """
+        Calculate 5-year average of a field from FMP time series data.
+
+        Args:
+            data_array: List of FMP statements (sorted newest first)
+            field: Field name to average (e.g., "returnOnEquity", "grossProfitMargin")
+
+        Returns:
+            Decimal: 5-year average, or Decimal("0") if no data
+
+        Example:
+            data_array = [
+                {"date": "2023-12-31", "returnOnEquity": 0.45},
+                {"date": "2022-12-31", "returnOnEquity": 0.42},
+                ...
+            ]
+            avg = self._calculate_5y_avg(data_array, "returnOnEquity")
+            # Returns Decimal("0.435")
+        """
+        if not data_array:
+            return Decimal("0")
+
+        # Take up to 5 years of data
+        values = []
+        for item in data_array[:5]:
+            value = item.get(field, 0)
+            if value is not None:
+                try:
+                    values.append(Decimal(str(value)))
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid value for {field}: {value}")
+                    continue
+
+        if not values:
+            return Decimal("0")
+
+        return sum(values) / Decimal(len(values))
+
+    def _calculate_std_dev(self, data_array: List[Dict], field: str) -> Decimal:
+        """
+        Calculate standard deviation of a field from FMP time series data.
+
+        Args:
+            data_array: List of FMP statements (sorted newest first)
+            field: Field name to analyze (e.g., "operatingIncomeRatio")
+
+        Returns:
+            Decimal: Standard deviation over 5 years, or Decimal("0") if no data
+
+        Example:
+            data_array = [
+                {"date": "2023-12-31", "operatingIncomeRatio": 0.30},
+                {"date": "2022-12-31", "operatingIncomeRatio": 0.28},
+                ...
+            ]
+            std = self._calculate_std_dev(data_array, "operatingIncomeRatio")
+            # Returns Decimal("0.015")
+        """
+        if not data_array:
+            return Decimal("0")
+
+        # Take up to 5 years of data
+        values = []
+        for item in data_array[:5]:
+            value = item.get(field, 0)
+            if value is not None:
+                try:
+                    values.append(Decimal(str(value)))
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid value for {field}: {value}")
+                    continue
+
+        if not values or len(values) < 2:
+            return Decimal("0")
+
+        # Calculate mean
+        mean = sum(values) / Decimal(len(values))
+
+        # Calculate variance
+        variance = sum((v - mean) ** 2 for v in values) / Decimal(len(values))
+
+        # Return square root (standard deviation)
+        # Note: Decimal.sqrt() requires Python 3.9+, we'll use a workaround
+        try:
+            return variance.sqrt()
+        except AttributeError:
+            # Fallback for Python < 3.9
+            import math
+            return Decimal(str(math.sqrt(float(variance))))
+
+    def _calculate_dividend_streak(self, data_array: List[Dict]) -> int:
+        """
+        Calculate consecutive years of dividend growth from FMP data.
+
+        Args:
+            data_array: List of FMP statements (sorted newest first)
+
+        Returns:
+            int: Number of consecutive years of dividend growth
+
+        Example:
+            data_array = [
+                {"date": "2023-12-31", "dividendsPaid": -5000000000},  # Negative = paid out
+                {"date": "2022-12-31", "dividendsPaid": -4500000000},
+                {"date": "2021-12-31", "dividendsPaid": -4000000000},
+                ...
+            ]
+            streak = self._calculate_dividend_streak(data_array)
+            # Returns 2 (2023 > 2022 > 2021)
+
+        Note:
+            FMP reports dividendsPaid as negative numbers (cash outflow)
+            We compare absolute values for growth streak
+        """
+        if not data_array or len(data_array) < 2:
+            return 0
+
+        streak = 0
+        for i in range(len(data_array) - 1):
+            current_div = data_array[i].get("dividendsPaid", 0)
+            previous_div = data_array[i + 1].get("dividendsPaid", 0)
+
+            # Convert to absolute values (FMP uses negative for outflows)
+            try:
+                current_abs = abs(Decimal(str(current_div)))
+                previous_abs = abs(Decimal(str(previous_div)))
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid dividend values: current={current_div}, previous={previous_div}")
+                break
+
+            # Check for growth (current year dividend > previous year dividend)
+            if current_abs > previous_abs and previous_abs > 0:
+                streak += 1
+            else:
+                break
+
+        return streak
 
 
 # ============================================================================
