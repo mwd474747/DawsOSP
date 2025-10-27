@@ -743,6 +743,98 @@ async def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
+@app.get("/health/pack")
+async def health_pack():
+    """
+    Pricing pack health check endpoint.
+
+    Returns pack freshness status for monitoring.
+
+    Response:
+        - status: 'warming' | 'fresh' | 'error'
+        - pack_id: Current pack ID
+        - is_fresh: Boolean freshness flag
+        - prewarm_done: Boolean prewarm completion flag
+        - updated_at: Last update timestamp
+        - estimated_ready: Estimated ready time (if warming)
+
+    Status Codes:
+        - 200: Pack is fresh and ready
+        - 503: Pack is warming (not ready yet)
+        - 500: Pack error or not found
+    """
+    try:
+        from backend.app.db.pricing_pack_queries import get_pricing_pack_queries
+
+        pack_queries = get_pricing_pack_queries()
+
+        # Get latest pack
+        pack = await pack_queries.get_latest_pack()
+
+        if not pack:
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "status": "error",
+                    "message": "No pricing packs found",
+                    "pack_id": None,
+                    "is_fresh": False,
+                    "prewarm_done": False,
+                }
+            )
+
+        pack_id = pack["id"]
+        status = pack.get("status", "unknown")
+        is_fresh = pack.get("is_fresh", False)
+        prewarm_done = pack.get("prewarm_done", False)
+        updated_at = pack.get("updated_at")
+        error_message = pack.get("error_message")
+
+        # Determine HTTP status code
+        if status == "fresh" and is_fresh:
+            http_status = 200
+        elif status == "warming":
+            http_status = 503
+        else:
+            http_status = 500
+
+        # Estimate ready time (if warming)
+        estimated_ready = None
+        if status == "warming" and updated_at:
+            # Assume 30 minutes from pack creation
+            from datetime import timedelta
+            estimated_ready = (updated_at + timedelta(minutes=30)).isoformat()
+
+        response = {
+            "status": status,
+            "pack_id": pack_id,
+            "is_fresh": is_fresh,
+            "prewarm_done": prewarm_done,
+            "updated_at": updated_at.isoformat() if updated_at else None,
+            "estimated_ready": estimated_ready,
+        }
+
+        if error_message:
+            response["error_message"] = error_message
+
+        return JSONResponse(
+            status_code=http_status,
+            content=response
+        )
+
+    except Exception as e:
+        logger.exception(f"Health pack check failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": str(e),
+                "pack_id": None,
+                "is_fresh": False,
+            }
+        )
+
+
 if __name__ == "__main__":
     import uvicorn
 

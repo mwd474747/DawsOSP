@@ -1,0 +1,132 @@
+{
+  "_comment": "Example output from ratings.aggregate() for a high-quality dividend aristocrat",
+  "_company_example": "Johnson & Johnson, Procter & Gamble, or similar",
+
+  "overall_rating": 91.38,
+  "overall_grade": "A",
+  "symbol": "JNJ",
+  "security_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+
+  "aggregation_weights": {
+    "moat_strength": 0.40,
+    "resilience": 0.35,
+    "dividend_safety": 0.25
+  },
+
+  "moat": {
+    "overall": 9.25,
+    "rating_100": 92.5,
+    "grade": "A",
+    "rating_type": "moat_strength",
+    "symbol": "JNJ",
+    "security_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "_metadata": {
+      "weights_source": "rubric",
+      "method_version": "v1"
+    },
+    "components": {
+      "roe_consistency": {
+        "score": 10.0,
+        "value": 0.28,
+        "weight": 0.25,
+        "label": "ROE Consistency (5Y Avg)"
+      },
+      "gross_margin": {
+        "score": 10.0,
+        "value": 0.65,
+        "weight": 0.25,
+        "label": "Gross Margin (5Y Avg)"
+      },
+      "intangibles": {
+        "score": 8.0,
+        "value": 0.35,
+        "weight": 0.25,
+        "label": "Intangible Assets Ratio"
+      },
+      "switching_costs": {
+        "score": 9.0,
+        "value": 9.0,
+        "weight": 0.25,
+        "label": "Switching Costs (Qualitative)"
+      }
+    }
+  },
+
+  "resilience": {
+    "overall": 10.0,
+    "rating_100": 100.0,
+    "grade": "A",
+    "rating_type": "resilience",
+    "symbol": "JNJ",
+    "security_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "_metadata": {
+      "weights_source": "rubric",
+      "method_version": "v1"
+    },
+    "components": {
+      "debt_equity": {
+        "score": 10.0,
+        "value": 0.45,
+        "weight": 0.25,
+        "label": "Debt-to-Equity Ratio"
+      },
+      "interest_coverage": {
+        "score": 10.0,
+        "value": 15.0,
+        "weight": 0.25,
+        "label": "Interest Coverage"
+      },
+      "current_ratio": {
+        "score": 10.0,
+        "value": 2.2,
+        "weight": 0.25,
+        "label": "Current Ratio"
+      },
+      "margin_stability": {
+        "score": 10.0,
+        "value": 0.015,
+        "weight": 0.25,
+        "label": "Operating Margin Stability (Std Dev)"
+      }
+    }
+  },
+
+  "dividend": {
+    "overall": 7.75,
+    "rating_100": 77.5,
+    "grade": "C",
+    "rating_type": "dividend_safety",
+    "symbol": "JNJ",
+    "security_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "_metadata": {
+      "weights_source": "rubric",
+      "method_version": "v1"
+    },
+    "components": {
+      "payout_ratio": {
+        "score": 7.0,
+        "value": 0.45,
+        "weight": 0.30,
+        "label": "Payout Ratio (5Y Avg)"
+      },
+      "fcf_coverage": {
+        "score": 7.0,
+        "value": 2.8,
+        "weight": 0.35,
+        "label": "FCF Dividend Coverage"
+      },
+      "growth_streak": {
+        "score": 10.0,
+        "value": 25,
+        "weight": 0.20,
+        "label": "Dividend Growth Streak (Years)"
+      },
+      "net_cash": {
+        "score": 8.0,
+        "value": 15000000000,
+        "weight": 0.15,
+        "label": "Net Cash Position"
+      }
+    }
+  }
+}

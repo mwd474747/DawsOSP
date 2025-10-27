@@ -9,20 +9,17 @@
 
 ---
 
-## Current Status
+## Current Status (2025-10-26)
 
-### ❌ Agent Not Implemented
-- **No RatingsAgent file** in [backend/app/agents/](../../../backend/app/agents/)
-- **Pattern exists**: [buffett_checklist.json](../../../backend/patterns/buffett_checklist.json) defines expected capabilities
-- **Impact**: Patterns calling `ratings.*` capabilities will fail or return stub data
-- **Workaround**: Ratings features unavailable until agent is built
+### ✅ Agent + Service Shipping (Seeded Mode)
+- `backend/app/agents/ratings_agent.py` and `backend/app/services/ratings.py` are live and wired through the orchestrator.
+- `rating_rubrics` schema + seeds load via `scripts/seed_loader.py --domain ratings` (commits `5d24e04`, `8fd4d9e`, `e5cf939`).
+- `macro.run_scenario`/ScenarioService outputs include `ratings.*` metadata so patterns can display sourcing + version.
 
-### ✅ Pattern Schema Ready
-The [buffett_checklist.json](../../../backend/patterns/buffett_checklist.json) pattern is complete and defines:
-- `ratings.dividend_safety` capability
-- `ratings.moat_strength` capability
-- `ratings.resilience` capability
-- Expected inputs/outputs for each rating type
+### ⚠️ Known Limitations
+- Fundamentals ingest uses the new FMP transform (`fa8bcf8`), but caching + UI wiring are pending; the Streamlit surface still shows seeded snapshots.
+- Ratings persistence is tied to the nightly job; ad-hoc recalculations run in-memory until the persistence gate lands.
+- `buffett_checklist` outputs are available via `/v1/execute`, yet UI panels still label the experience as "Preview".
 
 ---
 

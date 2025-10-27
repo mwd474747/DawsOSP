@@ -184,6 +184,7 @@ class RatingsService:
         self,
         symbol: str,
         fundamentals: Dict[str, Any],
+        security_id: Optional[UUID] = None,
     ) -> Dict[str, Any]:
         """
         Calculate dividend safety (0-10 scale).
@@ -209,6 +210,7 @@ class RatingsService:
                 - fcf_dividend_coverage: Decimal
                 - dividend_growth_streak_years: int
                 - net_cash_position: Decimal
+            security_id: Optional security UUID (for future database persistence)
 
         Returns:
             Dict with:
@@ -277,6 +279,7 @@ class RatingsService:
             "overall": overall,
             "rating_type": "dividend_safety",
             "symbol": symbol,
+            "security_id": str(security_id) if security_id else None,
             "_metadata": {
                 "weights_source": weights_source,  # "rubric" or "fallback"
                 "method_version": "v1"
@@ -313,6 +316,7 @@ class RatingsService:
         self,
         symbol: str,
         fundamentals: Dict[str, Any],
+        security_id: Optional[UUID] = None,
     ) -> Dict[str, Any]:
         """
         Calculate economic moat strength (0-10 scale).
@@ -341,6 +345,7 @@ class RatingsService:
                 - gross_margin_5y_avg: Decimal
                 - intangible_assets_ratio: Decimal
                 - switching_cost_score: Decimal (optional, default 5)
+            security_id: Optional security UUID (for future database persistence)
 
         Returns:
             Dict with overall score and component breakdown
@@ -394,6 +399,7 @@ class RatingsService:
             "overall": overall,
             "rating_type": "moat_strength",
             "symbol": symbol,
+            "security_id": str(security_id) if security_id else None,
             "_metadata": {
                 "weights_source": weights_source,  # "rubric" or "fallback"
                 "method_version": "v1"
@@ -430,6 +436,7 @@ class RatingsService:
         self,
         symbol: str,
         fundamentals: Dict[str, Any],
+        security_id: Optional[UUID] = None,
     ) -> Dict[str, Any]:
         """
         Calculate financial resilience (0-10 scale).
@@ -458,6 +465,7 @@ class RatingsService:
                 - interest_coverage: Decimal
                 - current_ratio: Decimal
                 - operating_margin_std_dev: Decimal (5-year)
+            security_id: Optional security UUID (for future database persistence)
 
         Returns:
             Dict with overall score and component breakdown
@@ -521,6 +529,7 @@ class RatingsService:
             "overall": overall,
             "rating_type": "resilience",
             "symbol": symbol,
+            "security_id": str(security_id) if security_id else None,
             "_metadata": {
                 "weights_source": weights_source,  # "rubric" or "fallback"
                 "method_version": "v1"
@@ -552,6 +561,108 @@ class RatingsService:
                 },
             },
         }
+
+    async def aggregate(
+        self,
+        symbol: str,
+        fundamentals: Dict[str, Any],
+        security_id: Optional[UUID] = None,
+    ) -> Dict[str, Any]:
+        """
+        Calculate aggregate quality rating combining all three ratings.
+
+        Specification: Buffett Quality Framework
+
+        Aggregation Weights:
+            - moat_strength: 40% (competitive advantage is paramount)
+            - resilience: 35% (financial strength during downturns)
+            - dividend_safety: 25% (income reliability)
+
+        Args:
+            symbol: Security symbol
+            fundamentals: Dict with all required fundamental fields
+            security_id: Optional security UUID (for future database persistence)
+
+        Returns:
+            Dict with:
+                - overall_rating: Decimal (0-100 scale)
+                - overall_grade: str (A-F letter grade)
+                - moat: Dict (moat_strength result with 0-100 scale)
+                - resilience: Dict (resilience result with 0-100 scale)
+                - dividend: Dict (dividend_safety result with 0-100 scale)
+                - symbol: str
+                - security_id: Optional[UUID]
+        """
+        # Calculate individual ratings (0-10 scale)
+        moat_result = await self.calculate_moat_strength(symbol, fundamentals)
+        resilience_result = await self.calculate_resilience(symbol, fundamentals)
+        dividend_result = await self.calculate_dividend_safety(symbol, fundamentals)
+
+        # Convert to 0-100 scale
+        moat_100 = moat_result["overall"] * Decimal("10")
+        resilience_100 = resilience_result["overall"] * Decimal("10")
+        dividend_100 = dividend_result["overall"] * Decimal("10")
+
+        # Aggregate with weights (moat 40%, resilience 35%, dividend 25%)
+        overall_rating = (
+            moat_100 * Decimal("0.40")
+            + resilience_100 * Decimal("0.35")
+            + dividend_100 * Decimal("0.25")
+        )
+
+        # Convert to letter grade
+        overall_grade = self._rating_to_grade(overall_rating)
+
+        # Add grades and 0-100 scale to individual results
+        moat_result["rating_100"] = moat_100
+        moat_result["grade"] = self._rating_to_grade(moat_100)
+        resilience_result["rating_100"] = resilience_100
+        resilience_result["grade"] = self._rating_to_grade(resilience_100)
+        dividend_result["rating_100"] = dividend_100
+        dividend_result["grade"] = self._rating_to_grade(dividend_100)
+
+        return {
+            "overall_rating": overall_rating,
+            "overall_grade": overall_grade,
+            "symbol": symbol,
+            "security_id": str(security_id) if security_id else None,
+            "aggregation_weights": {
+                "moat_strength": Decimal("0.40"),
+                "resilience": Decimal("0.35"),
+                "dividend_safety": Decimal("0.25"),
+            },
+            "moat": moat_result,
+            "resilience": resilience_result,
+            "dividend": dividend_result,
+        }
+
+    def _rating_to_grade(self, rating: Decimal) -> str:
+        """
+        Convert numeric rating (0-100 scale) to letter grade.
+
+        Grading Scale:
+            A: 90-100 (Exceptional quality - Buffett's "wonderful company")
+            B: 80-89  (Strong quality - Buffett's "good company")
+            C: 70-79  (Acceptable quality - requires fair price)
+            D: 60-69  (Below average - avoid unless deeply discounted)
+            F: <60    (Poor quality - stay away)
+
+        Args:
+            rating: Numeric rating on 0-100 scale
+
+        Returns:
+            Letter grade (A, B, C, D, F)
+        """
+        if rating >= Decimal("90"):
+            return "A"
+        elif rating >= Decimal("80"):
+            return "B"
+        elif rating >= Decimal("70"):
+            return "C"
+        elif rating >= Decimal("60"):
+            return "D"
+        else:
+            return "F"
 
 
 def get_ratings_service() -> RatingsService:

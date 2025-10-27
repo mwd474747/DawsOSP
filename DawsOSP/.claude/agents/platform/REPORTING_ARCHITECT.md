@@ -3,7 +3,7 @@
 **Agent Type**: Platform
 **Phase**: Week 2-3 (Integration + Compliance)
 **Priority**: P1 (Legal/compliance critical)
-**Status**: Specification Complete
+**Status**: 🚧 Planned — reports service currently returns placeholder text; WeasyPrint export pending (see `.ops/TASK_INVENTORY_2025-10-24.md`, P1-DOCS/P1-CODE entries)
 **Created**: 2025-10-21
 
 ---
