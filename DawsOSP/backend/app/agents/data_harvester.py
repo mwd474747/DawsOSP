@@ -31,6 +31,7 @@ import os
 from datetime import date
 from typing import Any, Dict, List, Optional
 from decimal import Decimal
+from uuid import UUID
 
 from app.agents.base_agent import BaseAgent, AgentMetadata
 from app.core.types import RequestCtx
@@ -140,12 +141,39 @@ class DataHarvester(BaseAgent):
                         "provider": "fmp",
                     }
         elif provider == "polygon":
-            # TODO: Implement Polygon provider
-            result = {
-                "symbol": symbol,
-                "error": "Polygon provider not yet implemented",
-                "provider": "polygon",
-            }
+            from app.providers.polygon_client import get_polygon_client
+            api_key = os.getenv("POLYGON_API_KEY")
+            if not api_key:
+                result = {
+                    "symbol": symbol,
+                    "error": "POLYGON_API_KEY not configured",
+                }
+            else:
+                try:
+                    provider_client = get_polygon_client(api_key=api_key)
+                    # Get latest daily price (today's date)
+                    from datetime import date as datetime_date
+                    today = datetime_date.today().isoformat()
+
+                    # Fetch single day price
+                    price_data = await provider_client.get_daily_price(symbol, today, adjusted=True)
+
+                    if price_data:
+                        # Transform Polygon format to DawsOS format
+                        result = self._transform_polygon_to_quote_format(price_data, symbol)
+                    else:
+                        result = {
+                            "symbol": symbol,
+                            "error": f"No price data available for {symbol} on {today}",
+                            "provider": "polygon",
+                        }
+                except Exception as e:
+                    logger.error(f"Error fetching quote from Polygon: {e}", exc_info=True)
+                    result = {
+                        "symbol": symbol,
+                        "error": f"Polygon error: {str(e)}",
+                        "provider": "polygon",
+                    }
         else:
             result = {
                 "symbol": symbol,
@@ -315,28 +343,36 @@ class DataHarvester(BaseAgent):
             }
         else:
             try:
-                provider_client = NewsAPIProvider(api_key=api_key)
+                # Determine tier from environment (default: dev)
+                tier = os.getenv("NEWSAPI_TIER", "dev")
+                provider_client = NewsAPIProvider(api_key=api_key, tier=tier)
 
                 # Fetch news articles
                 if symbol:
                     # Search for symbol in news
-                    articles = await provider_client.search_news(
-                        query=symbol, limit=limit
+                    articles_raw = await provider_client.search(
+                        query=symbol, page_size=limit
                     )
                 elif query:
-                    articles = await provider_client.search_news(
-                        query=query, limit=limit
+                    articles_raw = await provider_client.search(
+                        query=query, page_size=limit
                     )
                 else:
                     # Get top headlines
-                    articles = await provider_client.get_top_headlines(limit=limit)
+                    articles_raw = await provider_client.get_top_headlines(page_size=limit)
+
+                # Transform NewsAPI format to DawsOS format
+                articles_transformed = self._transform_newsapi_to_news_format(
+                    articles_raw, symbol or query
+                )
 
                 result = {
                     "symbol": symbol,
                     "query": query,
-                    "articles": articles,
+                    "articles": articles_transformed,
                     "provider": "newsapi",
-                    "rights_warning": "NewsAPI Developer tier: PDF export not allowed",
+                    "rights_warning": "NewsAPI Developer tier: PDF export not allowed" if tier == "dev" else None,
+                    "_is_stub": False,
                 }
 
             except Exception as e:
@@ -395,7 +431,7 @@ class DataHarvester(BaseAgent):
         logger.info(f"provider.fetch_macro: series_id={series_id}, limit={limit}")
 
         # Get FRED provider
-        from app.integrations.fred_provider import FREDProvider
+        from app.providers.fred_client import get_fred_client
         api_key = os.getenv("FRED_API_KEY")
 
         if not api_key:
@@ -406,21 +442,27 @@ class DataHarvester(BaseAgent):
             }
         else:
             try:
-                provider_client = FREDProvider(api_key=api_key)
+                provider_client = get_fred_client(api_key=api_key)
 
                 # Fetch series data
                 series_info = await provider_client.get_series_info(series_id)
-                observations = await provider_client.get_series_observations(
+                observations_raw = await provider_client.get_series_observations(
                     series_id, limit=limit
+                )
+
+                # Transform FRED format to DawsOS format
+                observations_transformed = self._transform_fred_to_macro_format(
+                    observations_raw, series_id
                 )
 
                 result = {
                     "series_id": series_id,
                     "series_name": series_info.get("title"),
-                    "observations": observations,
+                    "observations": observations_transformed,
                     "units": series_info.get("units"),
                     "frequency": series_info.get("frequency"),
                     "provider": "fred",
+                    "_is_stub": False,
                 }
 
             except Exception as e:
@@ -1024,6 +1066,377 @@ class DataHarvester(BaseAgent):
                 break
 
         return streak
+
+    # ========================================================================
+    # Polygon Transformation Methods
+    # ========================================================================
+
+    def _transform_polygon_to_quote_format(
+        self,
+        polygon_price: Dict[str, Any],
+        symbol: str
+    ) -> Dict[str, Any]:
+        """
+        Transform Polygon API price response to DawsOS quote format.
+
+        Args:
+            polygon_price: Single price bar from Polygon API with keys:
+                - o: open price (float)
+                - h: high price (float)
+                - l: low price (float)
+                - c: close price (float)
+                - v: volume (int)
+                - t: timestamp in Unix milliseconds (int)
+            symbol: Security symbol
+
+        Returns:
+            Dict with DawsOS quote format:
+                - symbol: str
+                - price: Decimal (close price)
+                - change: Decimal (change from previous close)
+                - change_pct: Decimal (percentage change)
+                - volume: int
+                - timestamp: str (ISO format)
+                - provider: str ("polygon")
+                - _is_stub: bool (False)
+
+        Raises:
+            ValueError: If required fields missing
+
+        Example:
+            Input (Polygon):
+                {
+                    "o": 175.10,
+                    "h": 177.50,
+                    "l": 174.80,
+                    "c": 176.45,
+                    "v": 54238901,
+                    "t": 1698796800000
+                }
+
+            Output (DawsOS):
+                {
+                    "symbol": "AAPL",
+                    "price": Decimal("176.45"),
+                    "open": Decimal("175.10"),
+                    "high": Decimal("177.50"),
+                    "low": Decimal("174.80"),
+                    "volume": 54238901,
+                    "change": Decimal("1.35"),
+                    "change_pct": Decimal("0.0077"),
+                    "timestamp": "2023-11-01T00:00:00Z",
+                    "provider": "polygon",
+                    "_is_stub": False
+                }
+        """
+        try:
+            # Validate required fields
+            required_fields = ["c", "o", "h", "l", "v", "t"]
+            for field in required_fields:
+                if field not in polygon_price:
+                    raise ValueError(f"Missing required field: {field}")
+
+            # Extract values
+            close = Decimal(str(polygon_price["c"]))
+            open_price = Decimal(str(polygon_price["o"]))
+            high = Decimal(str(polygon_price["h"]))
+            low = Decimal(str(polygon_price["l"]))
+            volume = int(polygon_price["v"])
+            timestamp_ms = int(polygon_price["t"])
+
+            # Convert timestamp from Unix milliseconds to ISO format
+            from datetime import datetime, timezone
+            timestamp = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
+            timestamp_str = timestamp.isoformat()
+
+            # Calculate change (assuming open as previous close for single-day quote)
+            # Note: For accurate change, would need previous day's close
+            change = close - open_price
+            if open_price > 0:
+                change_pct = change / open_price
+            else:
+                change_pct = Decimal("0")
+
+            return {
+                "symbol": symbol,
+                "price": close,
+                "open": open_price,
+                "high": high,
+                "low": low,
+                "volume": volume,
+                "change": change,
+                "change_pct": change_pct,
+                "timestamp": timestamp_str,
+                "provider": "polygon",
+                "_is_stub": False,
+            }
+
+        except (KeyError, ValueError, TypeError, ZeroDivisionError) as e:
+            logger.error(f"Polygon transformation failed for {symbol}: {e}", exc_info=True)
+            raise ValueError(f"Cannot transform Polygon price for {symbol}: {e}")
+
+    # ========================================================================
+    # FRED Transformation Methods
+    # ========================================================================
+
+    def _transform_fred_to_macro_format(
+        self,
+        fred_observations: List[Dict[str, Any]],
+        series_id: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Transform FRED API observations to DawsOS macro indicator format.
+
+        Args:
+            fred_observations: List of FRED observations with keys:
+                - date: observation date (str, "YYYY-MM-DD")
+                - value: observation value (str, may be "." for missing)
+                - realtime_start: realtime start date (str)
+                - realtime_end: realtime end date (str)
+            series_id: FRED series ID
+
+        Returns:
+            List of transformed observations with DawsOS format:
+                - date: str (YYYY-MM-DD)
+                - value: Decimal (converted from str, None if missing)
+                - indicator_code: str (series_id)
+                - _source: str ("fred")
+                - _is_stub: bool (False)
+
+        Example:
+            Input (FRED):
+                [
+                    {
+                        "date": "2025-10-22",
+                        "value": "0.52",
+                        "realtime_start": "2025-10-23",
+                        "realtime_end": "2025-10-23"
+                    },
+                    {
+                        "date": "2025-10-21",
+                        "value": ".",
+                        "realtime_start": "2025-10-23",
+                        "realtime_end": "2025-10-23"
+                    }
+                ]
+
+            Output (DawsOS):
+                [
+                    {
+                        "date": "2025-10-22",
+                        "value": Decimal("0.52"),
+                        "indicator_code": "T10Y2Y",
+                        "_source": "fred",
+                        "_is_stub": False
+                    },
+                    {
+                        "date": "2025-10-21",
+                        "value": None,
+                        "indicator_code": "T10Y2Y",
+                        "_source": "fred",
+                        "_is_stub": False
+                    }
+                ]
+        """
+        transformed = []
+
+        for obs in fred_observations:
+            try:
+                date_str = obs.get("date")
+                value_str = obs.get("value")
+
+                if not date_str:
+                    logger.warning(f"FRED observation missing date field: {obs}")
+                    continue
+
+                # Handle missing values (FRED uses "." for missing)
+                if value_str == "." or value_str is None or value_str == "":
+                    value = None
+                else:
+                    try:
+                        value = Decimal(str(value_str))
+                    except (ValueError, TypeError):
+                        logger.warning(f"Invalid FRED value for {series_id} on {date_str}: {value_str}")
+                        value = None
+
+                transformed.append({
+                    "date": date_str,
+                    "value": value,
+                    "indicator_code": series_id,
+                    "_source": "fred",
+                    "_is_stub": False,
+                })
+
+            except Exception as e:
+                logger.warning(f"Failed to transform FRED observation: {e}")
+                continue
+
+        logger.info(f"Transformed {len(transformed)} FRED observations for {series_id}")
+        return transformed
+
+    # ========================================================================
+    # NewsAPI Transformation Methods
+    # ========================================================================
+
+    def _transform_newsapi_to_news_format(
+        self,
+        newsapi_articles: List[Dict[str, Any]],
+        query: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Transform NewsAPI article responses to DawsOS news format.
+
+        Args:
+            newsapi_articles: List of NewsAPI articles with keys:
+                - source: dict with "id" and "name"
+                - author: str (may be None)
+                - title: str
+                - description: str
+                - url: str
+                - urlToImage: str (may be None)
+                - publishedAt: str (ISO format)
+                - content: str (only if business tier)
+                - metadata_only: bool (True if dev tier)
+            query: Search query or symbol
+
+        Returns:
+            List of transformed articles with DawsOS format:
+                - title: str
+                - summary: str (from description)
+                - url: str
+                - published_at: str (ISO format)
+                - source: str (source name)
+                - relevance: Decimal (calculated from keyword matching)
+                - author: str (optional)
+                - image_url: str (optional)
+                - _source: str ("newsapi")
+                - _is_stub: bool (False)
+                - _metadata_only: bool (True if dev tier)
+
+        Example:
+            Input (NewsAPI):
+                [
+                    {
+                        "source": {"id": "reuters", "name": "Reuters"},
+                        "author": "John Doe",
+                        "title": "Apple Reports Record Quarter",
+                        "description": "Apple Inc. reported record quarterly earnings...",
+                        "url": "https://reuters.com/article/123",
+                        "urlToImage": "https://reuters.com/image.jpg",
+                        "publishedAt": "2025-10-22T10:00:00Z",
+                        "metadata_only": True
+                    }
+                ]
+
+            Output (DawsOS):
+                [
+                    {
+                        "title": "Apple Reports Record Quarter",
+                        "summary": "Apple Inc. reported record quarterly earnings...",
+                        "url": "https://reuters.com/article/123",
+                        "published_at": "2025-10-22T10:00:00Z",
+                        "source": "Reuters",
+                        "relevance": Decimal("0.85"),
+                        "author": "John Doe",
+                        "image_url": "https://reuters.com/image.jpg",
+                        "_source": "newsapi",
+                        "_is_stub": False,
+                        "_metadata_only": True
+                    }
+                ]
+        """
+        transformed = []
+
+        for article in newsapi_articles:
+            try:
+                # Extract source name
+                source_obj = article.get("source", {})
+                source_name = source_obj.get("name", "Unknown")
+
+                # Required fields
+                title = article.get("title", "")
+                description = article.get("description", "")
+                url = article.get("url", "")
+                published_at = article.get("publishedAt", "")
+
+                if not title or not url:
+                    logger.warning(f"NewsAPI article missing required fields: {article}")
+                    continue
+
+                # Optional fields
+                author = article.get("author")
+                image_url = article.get("urlToImage")
+                metadata_only = article.get("metadata_only", False)
+
+                # Calculate relevance score (simple keyword matching)
+                relevance = self._calculate_news_relevance(title, description, query)
+
+                transformed.append({
+                    "title": title,
+                    "summary": description,
+                    "url": url,
+                    "published_at": published_at,
+                    "source": source_name,
+                    "relevance": relevance,
+                    "author": author,
+                    "image_url": image_url,
+                    "_source": "newsapi",
+                    "_is_stub": False,
+                    "_metadata_only": metadata_only,
+                })
+
+            except Exception as e:
+                logger.warning(f"Failed to transform NewsAPI article: {e}")
+                continue
+
+        logger.info(f"Transformed {len(transformed)} NewsAPI articles for query '{query}'")
+        return transformed
+
+    def _calculate_news_relevance(
+        self,
+        title: str,
+        description: str,
+        query: str
+    ) -> Decimal:
+        """
+        Calculate relevance score for news article based on keyword matching.
+
+        Args:
+            title: Article title
+            description: Article description/summary
+            query: Search query (symbol or keyword)
+
+        Returns:
+            Relevance score between 0.0 and 1.0
+
+        Algorithm:
+            - Exact match in title: 1.0
+            - Match in title (case-insensitive): 0.85
+            - Match in description: 0.70
+            - Multiple matches: average of scores
+            - No match: 0.50 (default relevance)
+        """
+        if not query or not title:
+            return Decimal("0.50")
+
+        query_lower = query.lower()
+        title_lower = title.lower()
+        description_lower = (description or "").lower()
+
+        # Check for exact match in title
+        if query == title:
+            return Decimal("1.00")
+
+        # Check for case-insensitive match in title
+        if query_lower in title_lower:
+            return Decimal("0.85")
+
+        # Check for match in description
+        if query_lower in description_lower:
+            return Decimal("0.70")
+
+        # No match found - default relevance
+        return Decimal("0.50")
 
 
 # ============================================================================
