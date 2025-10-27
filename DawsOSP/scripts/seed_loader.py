@@ -734,6 +734,150 @@ class RatingSeedLoader:
         logger.info(f"Loaded {count} rating rubrics")
 
 
+class ScenarioSeedLoader:
+    """Load scenario stress test seed data."""
+
+    async def load(self):
+        """Load scenario definitions from JSON files."""
+        logger.info("Loading scenario seeds...")
+
+        scenarios_dir = SEED_DIR / "scenarios"
+        if not scenarios_dir.exists():
+            logger.warning(f"Scenarios seed directory not found: {scenarios_dir}")
+            return
+
+        await self._load_scenario_definitions(scenarios_dir)
+        logger.info("Scenario seeds loaded successfully")
+
+    async def _load_scenario_definitions(self, scenarios_dir: Path):
+        """Load scenario shock definitions from JSON files in scenarios directory."""
+        query = """
+            INSERT INTO scenario_shocks (
+                shock_type,
+                shock_name,
+                shock_description,
+                real_rates_bps,
+                inflation_bps,
+                credit_spread_bps,
+                usd_pct,
+                equity_pct,
+                commodity_pct,
+                volatility_pct,
+                is_custom
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            ON CONFLICT (shock_type)
+            DO UPDATE SET
+                shock_name = EXCLUDED.shock_name,
+                shock_description = EXCLUDED.shock_description,
+                real_rates_bps = EXCLUDED.real_rates_bps,
+                inflation_bps = EXCLUDED.inflation_bps,
+                credit_spread_bps = EXCLUDED.credit_spread_bps,
+                usd_pct = EXCLUDED.usd_pct,
+                equity_pct = EXCLUDED.equity_pct,
+                commodity_pct = EXCLUDED.commodity_pct,
+                volatility_pct = EXCLUDED.volatility_pct,
+                updated_at = NOW()
+        """
+
+        count = 0
+        total_scenarios = 0
+
+        for json_file in sorted(scenarios_dir.glob("*_v*.json")):
+            try:
+                with open(json_file) as f:
+                    scenario_family_data = json.load(f)
+
+                # Extract family metadata
+                family_name = scenario_family_data.get("scenario_family")
+                version = scenario_family_data.get("version")
+                description = scenario_family_data.get("description")
+                research_basis = scenario_family_data.get("research_basis")
+
+                logger.info(
+                    f"Loading scenario family: {family_name} {version} - {description[:60]}..."
+                )
+
+                # Extract scenarios array
+                scenarios = scenario_family_data.get("scenarios", [])
+                if not scenarios:
+                    logger.warning(f"Skipping {json_file.name}: no scenarios found")
+                    continue
+
+                # Insert each scenario
+                for scenario in scenarios:
+                    shock_type = scenario.get("shock_type")
+                    shock_name = scenario.get("shock_name")
+                    shock_description = scenario.get("shock_description")
+
+                    # Extract shock parameters
+                    real_rates_bps = scenario.get("real_rates_bps", 0)
+                    inflation_bps = scenario.get("inflation_bps", 0)
+                    credit_spread_bps = scenario.get("credit_spread_bps", 0)
+                    usd_pct = scenario.get("usd_pct", 0.0)
+                    equity_pct = scenario.get("equity_pct", 0.0)
+                    commodity_pct = scenario.get("commodity_pct", 0.0)
+                    volatility_pct = scenario.get("volatility_pct", 0.0)
+
+                    # Validate required fields
+                    if not shock_type or not shock_name:
+                        logger.warning(
+                            f"Skipping scenario in {json_file.name}: missing shock_type or shock_name"
+                        )
+                        continue
+
+                    # All seed scenarios are pre-defined (not custom)
+                    is_custom = False
+
+                    # Insert scenario
+                    await execute_statement(
+                        query,
+                        shock_type,
+                        shock_name,
+                        shock_description,
+                        real_rates_bps,
+                        inflation_bps,
+                        credit_spread_bps,
+                        usd_pct,
+                        equity_pct,
+                        commodity_pct,
+                        volatility_pct,
+                        is_custom,
+                    )
+
+                    # Build shock summary
+                    shocks = []
+                    if real_rates_bps != 0:
+                        shocks.append(f"rates {real_rates_bps:+.0f}bp")
+                    if inflation_bps != 0:
+                        shocks.append(f"inflation {inflation_bps:+.0f}bp")
+                    if credit_spread_bps != 0:
+                        shocks.append(f"credit {credit_spread_bps:+.0f}bp")
+                    if usd_pct != 0:
+                        shocks.append(f"USD {usd_pct:+.1%}")
+                    if equity_pct != 0:
+                        shocks.append(f"equity {equity_pct:+.1%}")
+                    if commodity_pct != 0:
+                        shocks.append(f"commodity {commodity_pct:+.1%}")
+
+                    shock_summary = ", ".join(shocks) if shocks else "no shocks"
+
+                    logger.info(
+                        f"  Loaded scenario: {shock_type} ({shock_summary})"
+                    )
+                    total_scenarios += 1
+
+                count += 1
+
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON in {json_file.name}: {e}")
+                continue
+            except Exception as e:
+                logger.error(f"Failed to load {json_file.name}: {e}", exc_info=True)
+                continue
+
+        logger.info(f"Loaded {count} scenario families ({total_scenarios} total scenarios)")
+
+
 class SeedLoader:
     """Main seed loader orchestrator."""
 
@@ -745,6 +889,7 @@ class SeedLoader:
             "symbols": SymbolSeedLoader(),
             "prices": PricingSeedLoader(),
             "ratings": RatingSeedLoader(),
+            "scenarios": ScenarioSeedLoader(),
         }
 
     async def load_domain(self, domain: str):
@@ -759,8 +904,8 @@ class SeedLoader:
         """Load all seed domains in order."""
         logger.info("Loading all seed domains...")
 
-        # Order matters: symbols → portfolios → prices → macro → cycles → ratings
-        for domain in ["symbols", "portfolios", "prices", "macro", "cycles", "ratings"]:
+        # Order matters: symbols → portfolios → prices → macro → cycles → ratings → scenarios
+        for domain in ["symbols", "portfolios", "prices", "macro", "cycles", "ratings", "scenarios"]:
             await self.load_domain(domain)
 
         logger.info("All seed domains loaded successfully")
@@ -776,7 +921,7 @@ async def main():
     parser = argparse.ArgumentParser(description="DawsOS Database Seed Loader")
     parser.add_argument(
         "--domain",
-        choices=["macro", "cycles", "portfolios", "symbols", "prices", "ratings"],
+        choices=["macro", "cycles", "portfolios", "symbols", "prices", "ratings", "scenarios"],
         help="Specific domain to load",
     )
     parser.add_argument(

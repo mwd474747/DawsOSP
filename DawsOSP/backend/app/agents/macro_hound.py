@@ -356,42 +356,56 @@ class MacroHound(BaseAgent):
         portfolio_id: Optional[str] = None,
         scenario_id: Optional[str] = None,
         scenario_params: Optional[Dict[str, Any]] = None,
+        pack_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Run stress test scenario.
 
         Applies a stress test scenario to the portfolio and computes the
-        expected change in portfolio value.
+        expected change in portfolio value using factor-based shock analysis.
 
         Args:
             ctx: Request context
             state: Execution state
             portfolio_id: Portfolio ID (optional, uses ctx.portfolio_id if not provided)
-            scenario_id: Scenario ID (e.g., "2008_financial_crisis")
+            scenario_id: Scenario ID (e.g., "rates_up", "equity_selloff", "2008_financial_crisis")
             scenario_params: Custom scenario parameters (shocks to apply)
+            pack_id: Pricing pack ID (optional, uses ctx.pricing_pack_id if not provided)
 
         Returns:
             Dict with scenario results
 
         Example:
             {
-                "scenario_id": "2008_financial_crisis",
-                "scenario_name": "2008 Financial Crisis",
+                "scenario_id": "rates_up",
+                "scenario_name": "Rates Up +100bp",
                 "portfolio_id": "11111111-1111-1111-1111-111111111111",
-                "current_value": 140000.0,
-                "shocked_value": 105000.0,
-                "delta_pl": -35000.0,
-                "delta_pl_pct": -0.25,
-                "by_holding": [
+                "pre_shock_nav": 140000.0,
+                "post_shock_nav": 133000.0,
+                "total_delta_pl": -7000.0,
+                "total_delta_pl_pct": -0.05,
+                "factor_contributions": {
+                    "real_rates": -8000.0,
+                    "inflation": 0.0,
+                    "credit": 0.0,
+                    "usd": 500.0,
+                    "equity": 500.0
+                },
+                "winners": [
+                    {
+                        "symbol": "TLT",
+                        "delta_pl": 500.0,
+                        "delta_pl_pct": 0.05
+                    }
+                ],
+                "losers": [
                     {
                         "symbol": "AAPL",
-                        "current_value": 52500.0,
-                        "shocked_value": 39375.0,
-                        "delta_pl": -13125.0,
-                        "delta_pl_pct": -0.25
-                    },
-                    ...
+                        "delta_pl": -2500.0,
+                        "delta_pl_pct": -0.05
+                    }
                 ],
+                "positions": [...],
                 "__metadata__": {...}
             }
         """
@@ -400,30 +414,126 @@ class MacroHound(BaseAgent):
         if not portfolio_id_uuid:
             raise ValueError("portfolio_id required for macro.run_scenario")
 
+        pack_id_str = pack_id or ctx.pricing_pack_id
+        if not pack_id_str:
+            pack_id_str = "PP_latest"  # Fallback
+
         logger.info(
             f"macro.run_scenario: portfolio_id={portfolio_id_uuid}, "
-            f"scenario_id={scenario_id}"
+            f"scenario_id={scenario_id}, pack_id={pack_id_str}"
         )
 
-        # TODO: Implement scenario service
-        # For now, return stub data
-        result = {
-            "scenario_id": scenario_id or "custom",
-            "scenario_name": "Custom Scenario" if not scenario_id else scenario_id.replace("_", " ").title(),
-            "portfolio_id": str(portfolio_id_uuid),
-            "current_value": None,
-            "shocked_value": None,
-            "delta_pl": None,
-            "delta_pl_pct": None,
-            "by_holding": [],
-            "error": "Scenario service not yet implemented",
-        }
+        # Get scenario service
+        from app.services.scenarios import get_scenario_service, ShockType
+
+        scenario_service = get_scenario_service()
+
+        try:
+            # Determine shock type
+            if scenario_id:
+                # Map scenario_id to ShockType enum
+                shock_type_map = {
+                    "rates_up": ShockType.RATES_UP,
+                    "rates_down": ShockType.RATES_DOWN,
+                    "usd_up": ShockType.USD_UP,
+                    "usd_down": ShockType.USD_DOWN,
+                    "cpi_surprise": ShockType.CPI_SURPRISE,
+                    "credit_spread_widening": ShockType.CREDIT_SPREAD_WIDENING,
+                    "credit_spread_tightening": ShockType.CREDIT_SPREAD_TIGHTENING,
+                    "equity_selloff": ShockType.EQUITY_SELLOFF,
+                    "equity_rally": ShockType.EQUITY_RALLY,
+                    # Historical analogs (use equity_selloff as base)
+                    "2008_financial_crisis": ShockType.EQUITY_SELLOFF,
+                    "covid_2020": ShockType.EQUITY_SELLOFF,
+                    "dot_com_bubble": ShockType.EQUITY_SELLOFF,
+                }
+                shock_type = shock_type_map.get(scenario_id, ShockType.RATES_UP)
+            else:
+                # Default to rates_up if no scenario specified
+                shock_type = ShockType.RATES_UP
+
+            # Run scenario stress test
+            scenario_result = await scenario_service.apply_scenario(
+                portfolio_id=str(portfolio_id_uuid),
+                shock_type=shock_type,
+                pack_id=pack_id_str,
+                as_of_date=ctx.asof_date,
+            )
+
+            # Convert ScenarioResult to dict for agent response
+            result = {
+                "scenario_id": scenario_id or shock_type.value,
+                "scenario_name": scenario_result.shock_name,
+                "portfolio_id": str(portfolio_id_uuid),
+                "pre_shock_nav": float(scenario_result.pre_shock_nav),
+                "post_shock_nav": float(scenario_result.post_shock_nav),
+                "total_delta_pl": float(scenario_result.total_delta_pl),
+                "total_delta_pl_pct": scenario_result.total_delta_pl_pct,
+                "factor_contributions": {
+                    k: float(v) for k, v in scenario_result.factor_contributions.items()
+                },
+                "winners": [
+                    {
+                        "symbol": pos.symbol,
+                        "quantity": pos.quantity,
+                        "pre_shock_value": float(pos.pre_shock_value),
+                        "post_shock_value": float(pos.post_shock_value),
+                        "delta_pl": float(pos.delta_pl),
+                        "delta_pl_pct": pos.delta_pl_pct,
+                    }
+                    for pos in scenario_result.winners
+                ],
+                "losers": [
+                    {
+                        "symbol": pos.symbol,
+                        "quantity": pos.quantity,
+                        "pre_shock_value": float(pos.pre_shock_value),
+                        "post_shock_value": float(pos.post_shock_value),
+                        "delta_pl": float(pos.delta_pl),
+                        "delta_pl_pct": pos.delta_pl_pct,
+                    }
+                    for pos in scenario_result.losers
+                ],
+                "positions": [
+                    {
+                        "symbol": pos.symbol,
+                        "quantity": pos.quantity,
+                        "pre_shock_value": float(pos.pre_shock_value),
+                        "post_shock_value": float(pos.post_shock_value),
+                        "delta_pl": float(pos.delta_pl),
+                        "delta_pl_pct": pos.delta_pl_pct,
+                        "factor_contributions": {
+                            k: float(v) for k, v in pos.factor_contributions.items()
+                        },
+                    }
+                    for pos in scenario_result.positions
+                ],
+                "as_of_date": str(scenario_result.as_of_date),
+            }
+
+        except Exception as e:
+            logger.error(f"Error running scenario {scenario_id}: {e}", exc_info=True)
+            result = {
+                "scenario_id": scenario_id or "unknown",
+                "scenario_name": scenario_id.replace("_", " ").title() if scenario_id else "Unknown Scenario",
+                "portfolio_id": str(portfolio_id_uuid),
+                "pre_shock_nav": None,
+                "post_shock_nav": None,
+                "total_delta_pl": None,
+                "total_delta_pl_pct": None,
+                "factor_contributions": {},
+                "winners": [],
+                "losers": [],
+                "positions": [],
+                "error": f"Scenario execution error: {str(e)}",
+                "_is_stub": True,
+            }
 
         # Attach metadata
         metadata = self._create_metadata(
-            source="scenario_service:stress_test",
+            source=f"scenario_service:{pack_id_str}",
             asof=ctx.asof_date,
-            ttl=0,  # Don't cache scenario results
+            ttl=0,  # Don't cache scenario results (they're point-in-time stress tests)
         )
         result = self._attach_metadata(result, metadata)
 
