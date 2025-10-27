@@ -3,26 +3,32 @@ DawsOS Ratings Service - Buffett Quality Scoring
 
 Purpose: Calculate quality ratings (dividend safety, moat strength, resilience) on 0-10 scale
 Specification: .claude/agents/business/RATINGS_ARCHITECT.md (lines 175-407)
-Governance: .ops/RATINGS_IMPLEMENTATION_GOVERNANCE.md
+Governance: P0-CODE-1 remediation (2025-10-26)
 
 Architecture:
-    Agent → RatingsService → RatingsQueries (future) → Database
+    Agent → RatingsService → rating_rubrics table → Database
 
-Phase 1 Scope (Current):
-    - Calculate ratings using correct thresholds from spec
-    - Use hardcoded fallback weights (equal 25%) until rubrics seeded
-    - Return component scores for agent formatting (no duplication)
-    - Accept fundamentals dict (not yet integrated with FMP)
+Implemented Features:
+    - ✅ Calculate ratings using correct thresholds from spec
+    - ✅ Load research-based weights from rating_rubrics table (database-driven)
+    - ✅ Graceful fallback to hardcoded weights if database unavailable
+    - ✅ Return component scores for agent formatting (no duplication)
+    - ✅ Accept fundamentals dict (FMP integration in progress)
 
-Phase 2 Scope (Future):
-    - Load weights from rating_rubrics table (database-driven)
-    - Integrate with FMP provider for real fundamental data
-    - Add database persistence (ratings table)
-    - Add caching layer for performance
+Rubric Weights (Loaded from Database):
+    - dividend_safety: fcf_coverage=35%, payout_ratio=30%, growth_streak=20%, net_cash=15%
+    - moat_strength: roe_consistency=35%, gross_margin=30%, intangibles=20%, switching_costs=15%
+    - resilience: debt_equity=40%, current_ratio=25%, interest_coverage=20%, margin_stability=15%
+
+Future Scope:
+    - Integrate with FMP provider for real fundamental data transformation
+    - Add database persistence for calculated ratings (ratings table)
+    - Add caching layer for performance optimization
 
 CRITICAL: This service returns component scores to prevent duplication in agent layer.
 """
 
+import json
 import logging
 from decimal import Decimal
 from typing import Any, Dict, Optional
@@ -42,11 +48,133 @@ class RatingsService:
     This prevents duplication - agent layer only formats, doesn't recalculate.
     """
 
-    def __init__(self):
-        """Initialize ratings service."""
-        # TODO Phase 2: Load rubrics from database
-        # self.rubrics = self._load_rubrics()
-        logger.info("RatingsService initialized (Phase 1: hardcoded weights)")
+    def __init__(self, db_pool=None):
+        """
+        Initialize ratings service.
+
+        Args:
+            db_pool: AsyncPG connection pool (optional, will get from connection module if not provided)
+        """
+        self.db_pool = db_pool
+        self.rubrics = {}  # Cache for loaded rubrics
+        logger.info("RatingsService initialized")
+
+    async def _load_rubrics(self) -> Dict[str, Dict]:
+        """
+        Load rating rubrics from database.
+
+        Returns:
+            Dict mapping rating_type to rubric data:
+            {
+                "dividend_safety": {"overall_weights": {...}, "component_thresholds": {...}, ...},
+                "moat_strength": {...},
+                "resilience": {...}
+            }
+        """
+        if not self.db_pool:
+            # Lazy import to avoid circular dependency
+            from backend.app.db.connection import get_db_pool
+            self.db_pool = get_db_pool()
+
+        query = """
+            SELECT
+                rating_type,
+                method_version,
+                overall_weights,
+                component_thresholds,
+                description,
+                research_basis
+            FROM rating_rubrics
+            WHERE method_version = 'v1'
+            ORDER BY rating_type
+        """
+
+        rubrics = {}
+        async with self.db_pool.acquire() as conn:
+            rows = await conn.fetch(query)
+            for row in rows:
+                rating_type = row["rating_type"]
+                rubrics[rating_type] = {
+                    "method_version": row["method_version"],
+                    "overall_weights": row["overall_weights"],  # Already a dict from asyncpg
+                    "component_thresholds": row["component_thresholds"],  # Already a dict from asyncpg
+                    "description": row["description"],
+                    "research_basis": row["research_basis"],
+                }
+
+        logger.info(f"Loaded {len(rubrics)} rating rubrics from database: {list(rubrics.keys())}")
+        return rubrics
+
+    async def _get_weights(self, rating_type: str) -> Dict[str, Decimal]:
+        """
+        Get component weights for a rating type.
+
+        Loads from database if not cached. Falls back to hardcoded weights if database load fails.
+
+        Args:
+            rating_type: One of 'dividend_safety', 'moat_strength', 'resilience'
+
+        Returns:
+            Dict mapping component names to Decimal weights
+        """
+        # Load rubrics if not already cached
+        if not self.rubrics:
+            try:
+                self.rubrics = await self._load_rubrics()
+            except Exception as e:
+                logger.error(f"Failed to load rubrics from database: {e}")
+                self.rubrics = {}  # Empty dict triggers fallback
+
+        # Get weights from rubric, or use fallback
+        if rating_type in self.rubrics:
+            weights_data = self.rubrics[rating_type]["overall_weights"]
+
+            # Handle both dict (from asyncpg JSONB) and string (from JSON parsing)
+            if isinstance(weights_data, str):
+                weights_dict = json.loads(weights_data)
+            else:
+                weights_dict = weights_data
+
+            # Convert to Decimal
+            return {k: Decimal(str(v)) for k, v in weights_dict.items()}
+        else:
+            logger.warning(f"Rubric not found for {rating_type}, using fallback equal weights")
+            return self._get_fallback_weights(rating_type)
+
+    def _get_fallback_weights(self, rating_type: str) -> Dict[str, Decimal]:
+        """
+        Get hardcoded fallback weights when database rubrics unavailable.
+
+        Args:
+            rating_type: One of 'dividend_safety', 'moat_strength', 'resilience'
+
+        Returns:
+            Dict mapping component names to equal Decimal weights (25% each)
+        """
+        if rating_type == "dividend_safety":
+            # Dividend safety has spec-defined weights (SPEC LINES 548-553)
+            return {
+                "payout_ratio": Decimal("0.30"),
+                "fcf_coverage": Decimal("0.35"),
+                "growth_streak": Decimal("0.20"),
+                "net_cash": Decimal("0.15"),
+            }
+        elif rating_type == "moat_strength":
+            return {
+                "roe_consistency": Decimal("0.25"),
+                "gross_margin": Decimal("0.25"),
+                "intangibles": Decimal("0.25"),
+                "switching_costs": Decimal("0.25"),
+            }
+        elif rating_type == "resilience":
+            return {
+                "debt_equity": Decimal("0.25"),
+                "interest_coverage": Decimal("0.25"),
+                "current_ratio": Decimal("0.25"),
+                "margin_stability": Decimal("0.25"),
+            }
+        else:
+            raise ValueError(f"Unknown rating_type: {rating_type}")
 
     async def calculate_dividend_safety(
         self,
@@ -129,13 +257,8 @@ class RatingsService:
         else:
             cash_score = Decimal("4")
 
-        # Weights from spec (SPEC LINES 548-553)
-        weights = {
-            "payout_ratio": Decimal("0.30"),
-            "fcf_coverage": Decimal("0.35"),
-            "growth_streak": Decimal("0.20"),
-            "net_cash": Decimal("0.15"),
-        }
+        # Load weights from database (SPEC LINES 548-553)
+        weights = await self._get_weights("dividend_safety")
 
         # Weighted average (SPEC LINES 259-266)
         overall = (
@@ -194,16 +317,14 @@ class RatingsService:
             3. Intangible assets ratio: >30%=8, >15%=6, else=4
             4. Switching costs: Qualitative score from rubric (default 5)
 
-        Weights (SPEC LINES 325-330):
-            Phase 1: Equal weights (25% each) - hardcoded fallback
-            Phase 2: Load from rubric.overall_weights
-                - "roe_consistency"
-                - "gross_margin"
-                - "intangibles"
-                - "switching_costs"
+        Weights (Loaded from Database):
+            Research-based weights from rating_rubrics.overall_weights:
+                - roe_consistency: 35% (Buffett's key competitive advantage indicator)
+                - gross_margin: 30% (pricing power indicator, Buffett prefers >40%)
+                - intangibles: 20% (brand/patent value)
+                - switching_costs: 15% (qualitative, sector-dependent)
 
-        DEVIATION FROM SPEC: Using equal 25% weights until rubrics seeded.
-        See governance doc for justification.
+            Fallback (if database unavailable): Equal 25% weights
 
         Args:
             symbol: Security symbol
@@ -250,17 +371,8 @@ class RatingsService:
         # Component 4: Switching costs (SPEC LINE 322)
         switching_score = Decimal(str(fundamentals.get("switching_cost_score", 5)))
 
-        # ⚠️ GOVERNANCE DEVIATION: Using equal 25% weights
-        # SPECIFICATION REQUIREMENT: Load from rating_rubrics.overall_weights table
-        # Phase 1: Hardcoded equal weights (documented limitation)
-        # Phase 2: TODO - Implement database rubric loading
-        # Impact: Moat ratings may be inaccurate until weights match spec
-        weights = {
-            "roe_consistency": Decimal("0.25"),
-            "gross_margin": Decimal("0.25"),
-            "intangibles": Decimal("0.25"),
-            "switching_costs": Decimal("0.25"),
-        }
+        # Load weights from database (research-based, see seed files)
+        weights = await self._get_weights("moat_strength")
 
         # Weighted average (SPEC LINES 325-331)
         overall = (
@@ -318,16 +430,14 @@ class RatingsService:
             3. Current ratio: >2.0=10, >1.5=8, >1.0=7, else=4
             4. Operating margin stability (std dev): <2%=10, <5%=8, <10%=6, else=4
 
-        Weights (SPEC LINES 400-405):
-            Phase 1: Equal weights (25% each) - hardcoded fallback
-            Phase 2: Load from rubric.overall_weights
-                - "debt_equity"
-                - "interest_coverage"
-                - "current_ratio"
-                - "margin_stability"
+        Weights (Loaded from Database):
+            Research-based weights from rating_rubrics.overall_weights:
+                - debt_equity: 40% (Buffett strongly emphasizes low debt, <0.5 ideal)
+                - current_ratio: 25% (short-term liquidity, Buffett wants >1.5)
+                - interest_coverage: 20% (debt service capacity)
+                - margin_stability: 15% (earnings consistency over 5 years)
 
-        DEVIATION FROM SPEC: Using equal 25% weights until rubrics seeded.
-        See governance doc for justification.
+            Fallback (if database unavailable): Equal 25% weights
 
         Args:
             symbol: Security symbol
@@ -384,17 +494,8 @@ class RatingsService:
         else:
             stability_score = Decimal("4")
 
-        # ⚠️ GOVERNANCE DEVIATION: Using equal 25% weights
-        # SPECIFICATION REQUIREMENT: Load from rating_rubrics.overall_weights table
-        # Phase 1: Hardcoded equal weights (documented limitation)
-        # Phase 2: TODO - Implement database rubric loading
-        # Impact: Resilience ratings may be inaccurate until weights match spec
-        weights = {
-            "debt_equity": Decimal("0.25"),
-            "interest_coverage": Decimal("0.25"),
-            "current_ratio": Decimal("0.25"),
-            "margin_stability": Decimal("0.25"),
-        }
+        # Load weights from database (research-based, see seed files)
+        weights = await self._get_weights("resilience")
 
         # Weighted average (SPEC LINES 400-406)
         overall = (
