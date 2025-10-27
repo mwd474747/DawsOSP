@@ -47,10 +47,24 @@ sentry-sdk[fastapi]>=1.38.0
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pytest-cov>=4.1.0
+pytest-mock>=3.11.0
 hypothesis>=6.88.0
+faker>=19.0.0
+coverage[toml]>=7.3.0
 
 # Linting & Type Checking (dev)
 ruff>=0.1.0
 mypy>=1.6.0
 types-pyyaml>=6.0.0
 types-requests>=2.31.0
+
+# Authentication & Security (added 2025-10-27)
+PyJWT>=2.8.0
+bcrypt>=4.1.0
+python-multipart>=0.0.6
+
+# PDF/Report Generation
+weasyprint>=60.0
+Jinja2>=3.1.0
+cairocffi>=1.6.0
+Pillow>=10.0.0

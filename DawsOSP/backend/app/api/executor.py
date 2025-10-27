@@ -47,6 +47,8 @@ from backend.app.db.pricing_pack_queries import get_pricing_pack_queries
 from backend.app.core.pattern_orchestrator import PatternOrchestrator
 from backend.app.core.agent_runtime import AgentRuntime
 from backend.app.agents.financial_analyst import FinancialAnalyst
+from backend.app.middleware.auth_middleware import verify_token
+from backend.app.services.audit import get_audit_service
 from backend.observability import setup_observability
 from backend.observability.tracing import trace_context, add_context_attributes, add_pattern_attributes
 from backend.observability.metrics import setup_metrics, get_metrics
@@ -99,8 +101,8 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
         # Create runtime
         _agent_runtime = AgentRuntime(services)
 
-        # Register agents (5 total - see CODEBASE_AUDIT_REPORT.md)
-        # ✅ FIXED (2025-10-23): Registered all agents (was 1/5, now 5/5)
+        # Register agents (6 total - all agents registered)
+        # ✅ COMPLETE (2025-10-27): All agents registered (financial, macro, harvester, claude, ratings, optimizer)
 
         # 1. Financial Analyst - Portfolio analysis, metrics, pricing
         financial_analyst = FinancialAnalyst("financial_analyst", services)
@@ -123,12 +125,17 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 
         # 5. Ratings Agent - Buffett-style quality ratings
         from backend.app.agents.ratings_agent import RatingsAgent
-        ratings_agent = RatingsAgent("ratings_agent", services)
+        ratings_agent = RatingsAgent("ratings", services)
         _agent_runtime.register_agent(ratings_agent)
 
+        # 6. Optimizer Agent - Portfolio optimization and rebalancing
+        from backend.app.agents.optimizer_agent import OptimizerAgent
+        optimizer_agent = OptimizerAgent("optimizer", services)
+        _agent_runtime.register_agent(optimizer_agent)
+
         logger.info(
-            "Agent runtime initialized with 5 agents: "
-            "financial_analyst, macro_hound, data_harvester, claude, ratings_agent"
+            "Agent runtime initialized with 6 agents: "
+            "financial_analyst, macro_hound, data_harvester, claude, ratings, optimizer"
         )
 
     return _agent_runtime
@@ -155,8 +162,13 @@ logger = logging.getLogger("DawsOS.Executor")
 app = FastAPI(
     title="DawsOS Executor API",
     version="1.0.0",
-    description="Pattern execution API with freshness gate",
+    description="Pattern execution API with JWT authentication and freshness gate",
 )
+
+# Include auth routes
+from backend.app.api.routes.auth import router as auth_router
+app.include_router(auth_router)
+logger.info("✅ Auth routes registered at /auth")
 
 print("=" * 80)
 print("FASTAPI APP CREATED - Setting up DB middleware")
@@ -341,18 +353,26 @@ class ErrorResponse(BaseModel):
 
 async def get_current_user(x_user_id: Optional[str] = Header(default=None)) -> dict:
     """
-    Extract the authenticated user from request headers.
+    DEPRECATED: Legacy stub authentication.
+
+    Use JWT authentication via verify_token dependency instead.
+    This endpoint is preserved for backward compatibility but will be removed.
+
+    For production use, endpoints should use:
+        claims: Dict = Depends(verify_token)
 
     Clients must supply `X-User-ID` with a valid UUID so downstream database
     queries can set the correct RLS context. This keeps portfolio data isolated
     per tenant even in development environments.
     """
+    logger.warning("DEPRECATED: Using legacy X-User-ID authentication. Migrate to JWT.")
+
     if not x_user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={
                 "error": "unauthorized",
-                "message": "X-User-ID header is required"
+                "message": "X-User-ID header is required (DEPRECATED - use JWT Authorization header)"
             },
         )
 
@@ -369,6 +389,7 @@ async def get_current_user(x_user_id: Optional[str] = Header(default=None)) -> d
 
     return {
         "id": str(user_uuid),
+        "role": "USER",  # Default role for legacy auth
     }
 
 
@@ -406,26 +427,41 @@ async def metrics_endpoint():
 )
 async def execute(
     req: ExecuteRequest,
-    user: dict = Depends(get_current_user),
+    claims: dict = Depends(verify_token),  # JWT authentication (production)
+    # user: dict = Depends(get_current_user),  # Legacy auth (deprecated)
 ) -> ExecuteResponse:
     """
-    Execute pattern with freshness gate.
+    Execute pattern with freshness gate and JWT authentication.
 
     Sacred Flow:
-        1. Get latest pricing pack
-        2. Check freshness gate (CRITICAL: block if warming)
-        3. Construct RequestCtx (immutable context)
-        4. Execute pattern via orchestrator
-        5. Return result with metadata (pack ID, ledger hash, timing)
+        1. Verify JWT token (via verify_token dependency)
+        2. Get latest pricing pack
+        3. Check freshness gate (CRITICAL: block if warming)
+        4. Check portfolio access (RLS enforcement)
+        5. Construct RequestCtx (immutable context with user_id + user_role)
+        6. Execute pattern via orchestrator
+        7. Audit log execution
+        8. Return result with metadata (pack ID, ledger hash, timing)
+
+    Authentication:
+        - Requires valid JWT token in Authorization header
+        - Format: "Authorization: Bearer <token>"
+        - Token must contain user_id, email, role claims
+
+    Authorization:
+        - Portfolio access checked via RLS policies
+        - Users can only access their own portfolios (unless ADMIN)
 
     Args:
-        req: Execute request
-        user: Current user (from authentication)
+        req: Execute request (pattern_id, inputs, require_fresh, asof_date)
+        claims: JWT claims (user_id, email, role) from verify_token dependency
 
     Returns:
         ExecuteResponse with result and metadata
 
     Raises:
+        HTTPException 401: Missing or invalid JWT token
+        HTTPException 403: Portfolio access denied
         HTTPException 503: Pricing pack warming (try again later)
         HTTPException 404: Pattern not found
         HTTPException 500: Internal server error
@@ -582,10 +618,14 @@ async def _execute_pattern_internal(
                     ).to_dict(),
                 )
 
+        # Extract user info from JWT claims
+        user_id = claims["user_id"]
+        user_role = claims.get("role", "USER")
+
         # Build context (immutable)
         from uuid import UUID
         ctx = RequestCtx(
-            user_id=UUID(user["id"]) if isinstance(user["id"], str) else user["id"],
+            user_id=UUID(user_id) if isinstance(user_id, str) else user_id,
             pricing_pack_id=pack["id"],
             ledger_commit_hash=ledger_commit_hash,
             trace_id=request_id,  # Use request_id as trace_id
@@ -596,13 +636,57 @@ async def _execute_pattern_internal(
             portfolio_id=UUID(req.portfolio_id) if req.portfolio_id else None,
         )
 
-        logger.info(f"RequestCtx constructed: {ctx.to_dict()}")
+        logger.info(f"RequestCtx constructed: user_id={user_id}, role={user_role}, {ctx.to_dict()}")
 
         # Add context attributes to span
         add_context_attributes(span, ctx)
 
         # ========================================
-        # STEP 3.5: RLS Context Enforcement (Security)
+        # STEP 3.5: Portfolio Access Check (Authorization)
+        # ========================================
+
+        # Check if user has access to the requested portfolio (if portfolio_id provided)
+        if ctx.portfolio_id and user_role != "ADMIN":
+            try:
+                pool = get_db_pool()
+                access_query = """
+                    SELECT COUNT(*) as count
+                    FROM portfolios
+                    WHERE id = $1 AND user_id = $2
+                """
+                access_result = await pool.fetchrow(access_query, ctx.portfolio_id, ctx.user_id)
+
+                if not access_result or access_result["count"] == 0:
+                    logger.warning(
+                        f"Portfolio access denied: user_id={ctx.user_id}, portfolio_id={ctx.portfolio_id}"
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=ExecError(
+                            code=ErrorCode.PATTERN_INVALID,
+                            message=f"Access denied to portfolio {ctx.portfolio_id}",
+                            request_id=request_id,
+                        ).to_dict(),
+                    )
+
+                logger.debug(f"Portfolio access granted: user_id={ctx.user_id}, portfolio_id={ctx.portfolio_id}")
+
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.error(f"Portfolio access check failed: {e}")
+                # Fail closed - deny access on error
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=ExecError(
+                        code=ErrorCode.PATTERN_INVALID,
+                        message="Portfolio access check failed",
+                        request_id=request_id,
+                    ).to_dict(),
+                )
+
+        # ========================================
+        # STEP 3.6: RLS Context Enforcement (Security)
         # ========================================
 
         # RLS (Row-Level Security) REQUIREMENT:
@@ -615,7 +699,7 @@ async def _execute_pattern_internal(
         #    - RequestCtx includes user_id: backend/app/core/types.py:98
         #
         # Security Enforcement:
-        #   - RequestCtx now carries the caller UUID (from X-User-ID header)
+        #   - RequestCtx now carries the caller UUID (from JWT claims)
         #   - Agents must call get_db_connection_with_rls(ctx.user_id)
         #   - RLS context is transaction-scoped (auto-resets after transaction)
 
@@ -649,6 +733,33 @@ async def _execute_pattern_internal(
             trace = orchestration_result.get("trace", {})
 
             logger.info(f"Pattern executed successfully: {req.pattern_id}, trace={trace}")
+
+            # ========================================
+            # STEP 4.5: Audit Log Execution
+            # ========================================
+
+            # Log pattern execution for compliance and debugging
+            try:
+                audit_service = get_audit_service()
+                await audit_service.log(
+                    user_id=str(ctx.user_id),
+                    action="execute_pattern",
+                    resource_type="pattern",
+                    resource_id=req.pattern_id,
+                    details={
+                        "portfolio_id": str(ctx.portfolio_id) if ctx.portfolio_id else None,
+                        "pricing_pack_id": pack["id"],
+                        "ledger_commit_hash": ledger_commit_hash,
+                        "asof_date": str(asof_date),
+                        "require_fresh": req.require_fresh,
+                        "inputs": req.inputs,
+                        "execution_time_ms": (datetime.now() - started_at).total_seconds() * 1000,
+                    }
+                )
+                logger.debug("Audit log recorded for pattern execution")
+            except Exception as audit_error:
+                # Never fail request due to audit logging failure
+                logger.error(f"Failed to write audit log: {audit_error}")
 
         except FileNotFoundError:
             logger.error(f"Pattern not found: {req.pattern_id}")
