@@ -1,0 +1,239 @@
+{
+  "id": "buffett_checklist",
+  "name": "Buffett Quality Checklist",
+  "description": "Comprehensive Buffett-style quality and moat scorecard with explanations",
+  "version": "1.0.0",
+  "category": "analysis",
+  "tags": ["buffett", "quality", "moat", "fundamentals", "ratings"],
+  "author": "DawsOS",
+  "created": "2025-10-23",
+  "inputs": {
+    "security_id": {
+      "type": "uuid",
+      "required": true,
+      "description": "Security UUID"
+    }
+  },
+  "outputs": {
+    "panels": [
+      {
+        "id": "quality_scorecard",
+        "title": "Quality Scorecard",
+        "type": "scorecard",
+        "refresh_ttl": 86400
+      },
+      {
+        "id": "moat_analysis",
+        "title": "Moat Strength",
+        "type": "scorecard",
+        "refresh_ttl": 86400
+      },
+      {
+        "id": "dividend_safety",
+        "title": "Dividend Safety",
+        "type": "scorecard",
+        "refresh_ttl": 86400
+      },
+      {
+        "id": "resilience",
+        "title": "Balance Sheet Resilience",
+        "type": "metrics_grid",
+        "refresh_ttl": 86400
+      }
+    ]
+  },
+  "steps": [
+    {
+      "capability": "fundamentals.load",
+      "args": {
+        "security_id": "{{inputs.security_id}}",
+        "provider": "fmp"
+      },
+      "as": "fundamentals"
+    },
+    {
+      "capability": "ratings.dividend_safety",
+      "args": {
+        "security_id": "{{inputs.security_id}}",
+        "fundamentals": "{{state.fundamentals}}"
+      },
+      "as": "dividend_safety"
+    },
+    {
+      "capability": "ratings.moat_strength",
+      "args": {
+        "security_id": "{{inputs.security_id}}",
+        "fundamentals": "{{state.fundamentals}}"
+      },
+      "as": "moat_strength"
+    },
+    {
+      "capability": "ratings.resilience",
+      "args": {
+        "security_id": "{{inputs.security_id}}",
+        "fundamentals": "{{state.fundamentals}}"
+      },
+      "as": "resilience"
+    },
+    {
+      "capability": "ai.explain",
+      "args": {
+        "ratings": {
+          "dividend_safety": "{{state.dividend_safety}}",
+          "moat_strength": "{{state.moat_strength}}",
+          "resilience": "{{state.resilience}}"
+        },
+        "fundamentals": "{{state.fundamentals}}",
+        "prompt": "Explain the quality and moat ratings in Buffett's framework"
+      },
+      "as": "explanation"
+    }
+  ],
+  "presentation": {
+    "quality_scorecard": {
+      "overall_score": "{{moat_strength.overall_score}}",
+      "max_score": 10,
+      "components": [
+        {
+          "label": "Return on Equity (ROE)",
+          "score": "{{moat_strength.roe_score}}",
+          "value": "{{fundamentals.roe}}",
+          "format": "percentage",
+          "threshold": 15,
+          "explanation": "Consistent ROE > 15% indicates strong competitive advantage"
+        },
+        {
+          "label": "Operating Margins",
+          "score": "{{moat_strength.margin_score}}",
+          "value": "{{fundamentals.operating_margin}}",
+          "format": "percentage",
+          "threshold": 20,
+          "explanation": "High margins suggest pricing power"
+        },
+        {
+          "label": "Free Cash Flow",
+          "score": "{{moat_strength.fcf_score}}",
+          "value": "{{fundamentals.fcf_to_revenue}}",
+          "format": "percentage",
+          "threshold": 10,
+          "explanation": "Strong FCF conversion indicates capital efficiency"
+        },
+        {
+          "label": "Revenue Growth Stability",
+          "score": "{{moat_strength.growth_stability_score}}",
+          "value": "{{fundamentals.revenue_growth_cv}}",
+          "format": "decimal_2",
+          "threshold": 0.3,
+          "explanation": "Low CV indicates predictable revenue streams"
+        }
+      ]
+    },
+    "moat_analysis": {
+      "overall_score": "{{moat_strength.moat_score}}",
+      "max_score": 10,
+      "moat_type": "{{moat_strength.primary_moat_type}}",
+      "components": [
+        {
+          "label": "Brand Power",
+          "score": "{{moat_strength.brand_score}}",
+          "evidence": "{{moat_strength.brand_evidence}}"
+        },
+        {
+          "label": "Network Effects",
+          "score": "{{moat_strength.network_score}}",
+          "evidence": "{{moat_strength.network_evidence}}"
+        },
+        {
+          "label": "Cost Advantage",
+          "score": "{{moat_strength.cost_score}}",
+          "evidence": "{{moat_strength.cost_evidence}}"
+        },
+        {
+          "label": "Switching Costs",
+          "score": "{{moat_strength.switching_score}}",
+          "evidence": "{{moat_strength.switching_evidence}}"
+        }
+      ]
+    },
+    "dividend_safety": {
+      "overall_score": "{{dividend_safety.overall_score}}",
+      "max_score": 10,
+      "risk_flag": "{{dividend_safety.risk_flag}}",
+      "components": [
+        {
+          "label": "Payout Ratio",
+          "score": "{{dividend_safety.payout_score}}",
+          "value": "{{fundamentals.payout_ratio}}",
+          "format": "percentage",
+          "threshold": 60,
+          "explanation": "Payout < 60% provides safety margin"
+        },
+        {
+          "label": "Dividend Coverage",
+          "score": "{{dividend_safety.coverage_score}}",
+          "value": "{{dividend_safety.fcf_coverage}}",
+          "format": "decimal_2",
+          "threshold": 1.5,
+          "explanation": "FCF should cover dividend by 1.5x+"
+        },
+        {
+          "label": "Dividend Growth Streak",
+          "score": "{{dividend_safety.streak_score}}",
+          "value": "{{fundamentals.dividend_growth_years}}",
+          "format": "number",
+          "threshold": 10,
+          "explanation": "Long streak indicates commitment"
+        }
+      ]
+    },
+    "resilience": {
+      "metrics": [
+        {
+          "label": "Debt-to-Equity",
+          "value": "{{fundamentals.debt_to_equity}}",
+          "format": "decimal_2",
+          "threshold": 1.0,
+          "color_condition": "threshold_under"
+        },
+        {
+          "label": "Interest Coverage",
+          "value": "{{fundamentals.interest_coverage}}",
+          "format": "decimal_2",
+          "threshold": 5.0,
+          "color_condition": "threshold_over"
+        },
+        {
+          "label": "Current Ratio",
+          "value": "{{fundamentals.current_ratio}}",
+          "format": "decimal_2",
+          "threshold": 1.5,
+          "color_condition": "threshold_over"
+        },
+        {
+          "label": "Cash as % of Assets",
+          "value": "{{fundamentals.cash_pct_assets}}",
+          "format": "percentage",
+          "threshold": 10,
+          "color_condition": "threshold_over"
+        }
+      ]
+    },
+    "explanation": {
+      "content": "{{explanation.text}}",
+      "confidence": "{{explanation.confidence}}",
+      "sources": "{{explanation.sources}}"
+    }
+  },
+  "rights_required": ["fundamentals_read"],
+  "export_allowed": {
+    "pdf": true,
+    "csv": false
+  },
+  "observability": {
+    "otel_span_name": "pattern.buffett_checklist",
+    "metrics": [
+      "pattern_execution_duration_seconds",
+      "fundamentals_fetch_duration_seconds"
+    ]
+  }
+}

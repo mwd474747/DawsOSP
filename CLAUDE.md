@@ -4,7 +4,8 @@
 **Architecture**: Trinity 3.0
 **Version**: 1.0.0
 **Status**: Production-ready
-**Last Updated**: October 21, 2025
+**Repository**: [DawsOSP](https://github.com/mwd474747/DawsOSP)
+**Last Updated**: October 27, 2025
 
 This file provides context for AI assistants (Claude) working on DawsOS.
 
@@ -14,11 +15,11 @@ This file provides context for AI assistants (Claude) working on DawsOS.
 
 > **DawsOS** is the APPLICATION (product name)
 > **Trinity 3.0** is the ARCHITECTURE VERSION (execution framework)
-> **DawsOSB** is the REPOSITORY (GitHub repo name)
+> **DawsOSP** is the REPOSITORY (GitHub repo name)
 
 **When to use what**:
-- **User-facing** (UI, docs, marketing): "Trinity" or "DawsOS"
-- **Technical docs**: "Trinity 3.0 architecture" or "DawsOS (Trinity 3.0 Architecture)"
+- **User-facing** (UI, docs, marketing): "DawsOS" or "Trinity"
+- **Technical docs**: "Trinity 3.0 architecture" or "DawsOS (Trinity 3.0)"
 - **Code comments**: "Trinity 3.0 execution flow"
 - **NEVER**: Mix "Trinity 3.0" and "DawsOS" as if they're different systems
 
@@ -26,77 +27,213 @@ This file provides context for AI assistants (Claude) working on DawsOS.
 > Trinity 3.0 is NOT a separate system - it's the execution framework FOR DawsOS.
 > Like "React 18" is the framework version for a React app, "Trinity 3.0" is the framework version for DawsOS.
 
-See [NAMING_CONSISTENCY_AUDIT.md](NAMING_CONSISTENCY_AUDIT.md) for complete details.
-
 ---
 
 ## CRITICAL: Read This First
 
 **ALWAYS start every session by reading**:
-1. **[MASTER_TASK_LIST.md](MASTER_TASK_LIST.md)** - SINGLE SOURCE OF TRUTH for all tasks, gaps, fixes
+1. **[.ops/TASK_INVENTORY_2025-10-24.md](.ops/TASK_INVENTORY_2025-10-24.md)** - SINGLE SOURCE OF TRUTH for all tasks, gaps, fixes
 2. This file (CLAUDE.md) - Quick reference
 
 **RULES**:
 - NEVER create separate task lists
-- ALWAYS update MASTER_TASK_LIST.md when discovering gaps
+- ALWAYS update TASK_INVENTORY when discovering gaps
 - ALWAYS verify claims against actual code
-- NEVER reference non-existent directories (trinity3/, dawsos/)
+- NEVER reference non-existent directories
 
 ---
 
-## Current State (Verified October 21, 2025)
+## Current State (Verified October 27, 2025)
 
 ### Application Structure
 
 **Location**: ROOT directory (`./`)  
-**Status**: 100% complete, production-ready  
-**Main File**: `main.py` (1,726 lines, operational)
+**Status**: 80-85% complete, production-ready  
+**Architecture**: FastAPI backend + Streamlit frontend
 
 ```
-./
-├── main.py                  ✅ Streamlit UI
-├── agents/                  ✅ 7 agent files
-├── core/                    ✅ 13 core modules
-├── patterns/                ✅ 16 JSON patterns
-├── storage/knowledge/       ✅ 27 datasets
-├── services/                ✅ 8 service files
-├── intelligence/            ✅ 3 intelligence files
-├── ui/                      ✅ 7 UI components
-├── config/api_config.py     ✅ API configuration
-└── .env.example             ✅ API template
+DawsOSP/
+├── backend/                    ✅ FastAPI application
+│   ├── app/                    ✅ Core application
+│   │   ├── agents/             ✅ 7 agent files
+│   │   ├── core/               ✅ Pattern orchestrator, agent runtime
+│   │   ├── services/           ✅ 20 service files
+│   │   ├── api/                ✅ FastAPI routes
+│   │   └── providers/          ✅ External API clients
+│   ├── tests/                  ✅ 602 tests (unit, integration, e2e)
+│   └── requirements.txt        ✅ All dependencies
+├── frontend/                   ✅ Streamlit UI
+├── data/                       ✅ Seed data
+├── scripts/                    ✅ Utilities
+└── .ops/                       ✅ Operations documentation
 ```
 
-### API Configuration
+### Import Structure
 
-**Status**: 0/10 APIs configured (FREE MODE)  
-**Impact**: System works but no AI analysis  
-**Fix**: User must create .env file and add keys
+**Status**: ✅ RESOLVED (October 27, 2025)
+- **19 `__init__.py` files** - Proper Python package structure
+- **0 files using `from app.X`** - All imports standardized
+- **All imports use `from backend.app.X`** - Consistent pattern
+- **Test suite functional** - 602 tests collected successfully
 
-### Known Architecture Issues
+### Current Capabilities
 
-See [MASTER_TASK_LIST.md](MASTER_TASK_LIST.md) for full details:
+**Agents**: 7 agents registered and functional
+- `financial_analyst` - Portfolio data, pricing, metrics
+- `macro_hound` - Macro regime detection, scenarios, DaR
+- `data_harvester` - External provider integration
+- `claude` - AI explanations and analysis
+- `ratings` - Buffett quality ratings
+- `optimizer` - Portfolio optimization
+- `reports` - PDF exports and reporting
 
-1. **P1: Pattern engine not connected to UI** - UI bypasses execution stack
-2. **P1: Only 2/7 agents registered** - financial_analyst, claude only
-3. **P1: Knowledge loader path wrong** - Points to `./dawsos/` (doesn't exist)
-4. **P2: Query processing bypasses UniversalExecutor** - No pattern routing
-5. **P2: OpenBB 4.5.0 bug** - yfinance workaround in place (working)
+**Patterns**: 12 production patterns operational
+- `portfolio_overview` - Core portfolio analysis
+- `buffett_checklist` - Quality ratings
+- `policy_rebalance` - Optimization
+- `portfolio_scenario_analysis` - Stress testing
+- And 8 more patterns
 
 ---
 
 ## Execution Flows
 
-### Current (UI Direct)
+### Current (Pattern-Based)
 ```
-UI Click → render_method() → Direct JSON load → Display
+UI → FastAPI Executor → Pattern Orchestrator → Agent Runtime → Agent → Service → Database
 ```
-**Problem**: Bypasses architecture
+**Status**: ✅ Fully operational
 
-### Designed (Pattern-Based)
+### Data Flow
 ```
-UI Click → UniversalExecutor → PatternEngine → AgentRuntime → Agent → KnowledgeGraph
+Pattern JSON → Agent Capabilities → Service Methods → Database Queries → Results
 ```
-**Status**: Architecture exists but not connected
+**Status**: ✅ Fully operational
+
+---
+
+## Development Workflow
+
+### Environment Setup
+```bash
+# Clone repository
+git clone https://github.com/mwd474747/DawsOSP.git
+cd DawsOSP
+
+# Set up environment
+python3 -m venv venv
+source venv/bin/activate
+pip install -r backend/requirements.txt
+
+# Set up database
+export DATABASE_URL='postgresql://dawsos_app:dawsos_app_pass@localhost:5432/dawsos'
+
+# Load seed data
+python scripts/seed_loader.py --all
+
+# Start development
+./backend/run_api.sh
+./frontend/run_ui.sh
+```
+
+### Testing
+```bash
+# Run test suite
+pytest backend/tests/
+
+# Run specific test categories
+pytest backend/tests/unit/
+pytest backend/tests/integration/
+pytest backend/tests/e2e/
+```
+
+---
+
+## Key Files Reference
+
+### Critical Code
+- **[backend/app/api/executor.py](backend/app/api/executor.py)** - FastAPI application entry point
+- **[backend/app/core/pattern_orchestrator.py](backend/app/core/pattern_orchestrator.py)** - Pattern execution engine
+- **[backend/app/core/agent_runtime.py](backend/app/core/agent_runtime.py)** - Agent capability routing
+- **[backend/app/agents/base_agent.py](backend/app/agents/base_agent.py)** - Base agent class
+
+### Documentation
+- **[README.md](README.md)** - Quick start and overview
+- **[PRODUCT_SPEC.md](PRODUCT_SPEC.md)** - Complete product specification
+- **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** - Development workflow
+- **[.ops/TASK_INVENTORY_2025-10-24.md](.ops/TASK_INVENTORY_2025-10-24.md)** - Current backlog
+
+### Configuration
+- **[backend/requirements.txt](backend/requirements.txt)** - Python dependencies
+- **[docker-compose.yml](docker-compose.yml)** - Full stack deployment
+- **[.env.example](.env.example)** - Environment template
+
+---
+
+## Architecture Compliance
+
+**ALWAYS** follow the pattern-based execution model:
+- Patterns (JSON) define workflows
+- Capabilities use dot notation (e.g., `ledger.positions`)
+- Agent methods use underscore notation (e.g., `ledger_positions`)
+- Base agent converts: `capability.replace(".", "_")` → method name
+- NO direct service calls from UI
+- NO bypassing pattern orchestrator
+
+---
+
+## Development Guidelines
+
+### DO
+- ✅ Verify ALL claims by reading actual code
+- ✅ Use `get_capabilities()` to see what agents declare
+- ✅ Check if service method exists before creating new one
+- ✅ Follow naming: `capability.with.dots` → `method_with_underscores`
+- ✅ Update TASK_INVENTORY when you find inaccuracies
+- ✅ Run `python3 -m py_compile` before committing
+
+### DON'T
+- ❌ Trust documentation percentage estimates
+- ❌ Assume features need building from scratch
+- ❌ Create new services without checking existing ones
+- ❌ Bypass pattern orchestration
+- ❌ Reference non-existent directories
+- ❌ Enable uvicorn `--reload` in production
+
+---
+
+## Quick Reference
+
+**Ports**:
+- Backend: http://localhost:8000
+- Frontend: http://localhost:8501
+- Database: postgresql://localhost:5432/dawsos
+
+**Health Checks**:
+```bash
+curl http://localhost:8000/health
+```
+
+**Key Commands**:
+```bash
+# Start backend
+./backend/run_api.sh
+
+# Start frontend
+./frontend/run_ui.sh
+
+# Run tests
+pytest backend/tests/
+
+# Load seed data
+python scripts/seed_loader.py --all
+```
+
+---
+
+**Last Updated**: October 27, 2025
+**Repository**: [DawsOSP](https://github.com/mwd474747/DawsOSP)
+**Status**: Production-ready with clean import structure
 
 ---
 

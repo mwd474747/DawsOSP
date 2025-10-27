@@ -1,0 +1,152 @@
+# DawsOS Rights Registry
+# Purpose: Legal compliance for data provider attribution and export restrictions
+# Updated: 2025-10-23
+# Priority: P0 (Required for PDF/CSV export compliance)
+
+# ============================================================================
+# CONTEXT
+# ============================================================================
+# This registry defines the legal rights and restrictions for each data provider.
+# The rights registry is loaded by backend/app/core/rights_registry.py and
+# enforced at export time (PDF, CSV) to comply with provider Terms of Service.
+#
+# Key concepts:
+# - allows_display: Can show data in UI
+# - export_rights: Nested object with PDF/CSV/redistribution flags
+# - attribution: Required attribution text and display requirements
+#
+# Enforcement points:
+# - PDF export: backend/app/services/reporting.py
+# - CSV export: backend/app/api/export.py
+# - UI display: All UI components check rights before rendering
+# ============================================================================
+
+providers:
+  FMP:
+    name: "Financial Modeling Prep"
+    allows_display: true
+    export_rights:
+      allows_export_pdf: true
+      allows_export_csv: true
+      allows_redistribution: false
+    attribution:
+      attribution_text: "Market data provided by Financial Modeling Prep (https://financialmodelingprep.com/)"
+      attribution_required: true
+      attribution_placement: "footer"
+    notes: "Free tier allows display and export. Redistribution requires Business plan."
+
+  Polygon:
+    name: "Polygon.io"
+    allows_display: true
+    export_rights:
+      allows_export_pdf: true
+      allows_export_csv: true  # Enabled for pricing pack data
+      allows_redistribution: false
+    attribution:
+      attribution_text: "Market data provided by Polygon.io"
+      attribution_required: true
+      attribution_placement: "footer"
+    notes: "Starter plan allows display and PDF export. CSV export enabled for pricing packs."
+
+  FRED:
+    name: "Federal Reserve Economic Data (FRED)"
+    allows_display: true
+    export_rights:
+      allows_export_pdf: true
+      allows_export_csv: true
+      allows_redistribution: true  # Public domain
+    attribution:
+      attribution_text: "Economic data from FRED, Federal Reserve Bank of St. Louis (https://fred.stlouisfed.org/)"
+      attribution_required: true
+      attribution_placement: "footer"
+    notes: "FRED data is public domain. Attribution required as courtesy."
+
+  NewsAPI:
+    name: "NewsAPI"
+    allows_display: true
+    export_rights:
+      allows_export_pdf: false  # Business plan required
+      allows_export_csv: false
+      allows_redistribution: false
+    attribution:
+      attribution_text: "News data from NewsAPI.org"
+      attribution_required: true
+      attribution_placement: "inline"
+    notes: "Developer plan allows display only (24h delay). Export requires Business plan ($449/mo)."
+
+  AlphaVantage:
+    name: "Alpha Vantage"
+    allows_display: true
+    export_rights:
+      allows_export_pdf: false
+      allows_export_csv: false
+      allows_redistribution: false
+    attribution:
+      attribution_text: "Market data provided by Alpha Vantage"
+      attribution_required: true
+      attribution_placement: "footer"
+    notes: "Free tier allows display only. Export prohibited per ToS."
+
+  YahooFinance:
+    name: "Yahoo Finance (yfinance)"
+    allows_display: true
+    export_rights:
+      allows_export_pdf: false  # ToS unclear, conservative default
+      allows_export_csv: false
+      allows_redistribution: false
+    attribution:
+      attribution_text: "Market data provided by Yahoo Finance"
+      attribution_required: true
+      attribution_placement: "footer"
+    notes: "Unofficial API (yfinance library). Conservative rights default. Use for display only."
+
+  Manual:
+    name: "Manual Entry"
+    allows_display: true
+    export_rights:
+      allows_export_pdf: true
+      allows_export_csv: true
+      allows_redistribution: true
+    attribution:
+      attribution_text: "User-provided data"
+      attribution_required: false
+      attribution_placement: "none"
+    notes: "User-entered data has no restrictions."
+
+# ============================================================================
+# USAGE EXAMPLES
+# ============================================================================
+# 
+# Example 1: Check if PDF export is allowed
+# ```python
+# from backend.app.core.rights_registry import load_rights_registry, ensure_allowed
+# 
+# registry = load_rights_registry()
+# allowed, blocked = registry.ensure_allowed(["FMP", "FRED"], "export_pdf")
+# if not allowed:
+#     raise RightsViolationError(f"PDF export blocked by: {blocked}")
+# ```
+#
+# Example 2: Get attribution text
+# ```python
+# attribution = registry.get_attribution_text(["FMP", "FRED"])
+# # Returns: "Market data provided by Financial Modeling Prep (https://financialmodelingprep.com/)\nEconomic data from FRED..."
+# ```
+#
+# Example 3: Raise if operation blocked
+# ```python
+# from backend.app.core.rights_registry import raise_if_blocked
+# 
+# raise_if_blocked(["NewsAPI"], "export_pdf")  # Raises RightsViolationError
+# ```
+# ============================================================================
+
+# ============================================================================
+# MAINTENANCE
+# ============================================================================
+# When adding a new provider:
+# 1. Add entry to this YAML file
+# 2. Run tests: pytest tests/rights/test_rights_registry.py
+# 3. Update API documentation
+# 4. Verify attribution text renders correctly in UI and PDF exports
+# ============================================================================

@@ -1,0 +1,413 @@
+{
+  "id": "holding_deep_dive",
+  "name": "Holding Deep Dive Analysis",
+  "description": "Detailed analysis of individual holding with performance, risk, and contribution metrics",
+  "version": "2.0.0",
+  "category": "portfolio",
+  "tags": ["holding", "position", "analysis", "contribution"],
+  "author": "DawsOS",
+  "created": "2025-10-21",
+  "inputs": {
+    "portfolio_id": {
+      "type": "uuid",
+      "required": true,
+      "description": "Portfolio UUID"
+    },
+    "security_id": {
+      "type": "uuid",
+      "required": true,
+      "description": "Security UUID"
+    },
+    "lookback_days": {
+      "type": "integer",
+      "default": 252,
+      "description": "Historical period in days (default 1 year)"
+    }
+  },
+  "outputs": {
+    "panels": [
+      {
+        "id": "position_summary",
+        "title": "Position Summary",
+        "type": "metrics_grid",
+        "refresh_ttl": 60
+      },
+      {
+        "id": "performance",
+        "title": "Performance vs Portfolio",
+        "type": "chart_with_metrics",
+        "refresh_ttl": 300
+      },
+      {
+        "id": "contribution",
+        "title": "Portfolio Contribution",
+        "type": "metrics_grid",
+        "refresh_ttl": 300
+      },
+      {
+        "id": "risk_analysis",
+        "title": "Risk Analysis",
+        "type": "metrics_grid",
+        "refresh_ttl": 300
+      },
+      {
+        "id": "transactions",
+        "title": "Transaction History",
+        "type": "table",
+        "refresh_ttl": 60
+      }
+    ]
+  },
+  "steps": [
+    {
+      "capability": "get_position_details",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "security_id": "{{inputs.security_id}}",
+        "pack_id": "{{ctx.pricing_pack_id}}"
+      },
+      "as": "position"
+    },
+    {
+      "capability": "compute_position_return",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "security_id": "{{inputs.security_id}}",
+        "pack_id": "{{ctx.pricing_pack_id}}",
+        "lookback_days": "{{inputs.lookback_days}}"
+      },
+      "as": "position_perf"
+    },
+    {
+      "capability": "compute_portfolio_contribution",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "security_id": "{{inputs.security_id}}",
+        "pack_id": "{{ctx.pricing_pack_id}}",
+        "lookback_days": "{{inputs.lookback_days}}"
+      },
+      "as": "contribution"
+    },
+    {
+      "capability": "compute_position_currency_attribution",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "security_id": "{{inputs.security_id}}",
+        "pack_id": "{{ctx.pricing_pack_id}}",
+        "lookback_days": "{{inputs.lookback_days}}"
+      },
+      "as": "currency_attr"
+    },
+    {
+      "capability": "compute_position_risk",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "security_id": "{{inputs.security_id}}",
+        "pack_id": "{{ctx.pricing_pack_id}}",
+        "lookback_days": "{{inputs.lookback_days}}"
+      },
+      "as": "risk"
+    },
+    {
+      "capability": "get_transaction_history",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "security_id": "{{inputs.security_id}}",
+        "limit": 50
+      },
+      "as": "transactions"
+    },
+    {
+      "capability": "get_security_fundamentals",
+      "args": {
+        "security_id": "{{inputs.security_id}}"
+      },
+      "as": "fundamentals",
+      "condition": "{{position.asset_class}} == 'equity'"
+    },
+    {
+      "capability": "get_comparable_positions",
+      "args": {
+        "security_id": "{{inputs.security_id}}",
+        "sector": "{{fundamentals.sector}}",
+        "limit": 5
+      },
+      "as": "comparables",
+      "condition": "{{fundamentals}} != null"
+    }
+  ],
+  "presentation": {
+    "position_summary": {
+      "metrics": [
+        {
+          "label": "Symbol",
+          "value": "{{position.symbol}}",
+          "format": "text"
+        },
+        {
+          "label": "Quantity",
+          "value": "{{position.qty_open}}",
+          "format": "number"
+        },
+        {
+          "label": "Current Price",
+          "value": "{{position.current_price}}",
+          "format": "currency",
+          "provenance": "pricing_pack:{{ctx.pricing_pack_id}}"
+        },
+        {
+          "label": "Market Value",
+          "value": "{{position.market_value}}",
+          "format": "currency",
+          "provenance": "pricing_pack:{{ctx.pricing_pack_id}}"
+        },
+        {
+          "label": "Portfolio Weight",
+          "value": "{{position.weight}}",
+          "format": "percentage"
+        },
+        {
+          "label": "Avg Cost Basis",
+          "value": "{{position.avg_cost}}",
+          "format": "currency",
+          "provenance": "ledger:{{ctx.ledger_commit_hash}}"
+        },
+        {
+          "label": "Unrealized P&L",
+          "value": "{{position.unrealized_pnl}}",
+          "format": "currency",
+          "color_condition": "sign"
+        },
+        {
+          "label": "Unrealized P&L %",
+          "value": "{{position.unrealized_pnl_pct}}",
+          "format": "percentage",
+          "color_condition": "sign"
+        }
+      ]
+    },
+    "performance": {
+      "chart": {
+        "type": "dual_line",
+        "x": "date",
+        "title": "Position vs Portfolio Performance",
+        "series": [
+          {
+            "name": "Position Return",
+            "data": "{{position_perf.daily_returns}}",
+            "color": "#00d9ff",
+            "yAxis": 0
+          },
+          {
+            "name": "Portfolio Return",
+            "data": "{{position_perf.portfolio_returns}}",
+            "color": "#7f8c8d",
+            "yAxis": 0
+          }
+        ]
+      },
+      "metrics": [
+        {
+          "label": "Position Return (1Y)",
+          "value": "{{position_perf.total_return}}",
+          "format": "percentage"
+        },
+        {
+          "label": "Position Volatility",
+          "value": "{{position_perf.volatility}}",
+          "format": "percentage"
+        },
+        {
+          "label": "Sharpe Ratio",
+          "value": "{{position_perf.sharpe}}",
+          "format": "decimal_2"
+        },
+        {
+          "label": "Beta to Portfolio",
+          "value": "{{risk.beta_to_portfolio}}",
+          "format": "decimal_2"
+        },
+        {
+          "label": "Correlation to Portfolio",
+          "value": "{{risk.correlation}}",
+          "format": "decimal_2"
+        }
+      ]
+    },
+    "contribution": {
+      "metrics": [
+        {
+          "label": "Total Contribution",
+          "value": "{{contribution.total_contribution}}",
+          "format": "percentage",
+          "description": "Return contribution to portfolio (weight × return)"
+        },
+        {
+          "label": "Local Return Component",
+          "value": "{{currency_attr.local_contribution}}",
+          "format": "percentage",
+          "description": "Contribution from price change in local currency"
+        },
+        {
+          "label": "FX Return Component",
+          "value": "{{currency_attr.fx_contribution}}",
+          "format": "percentage",
+          "description": "Contribution from currency moves"
+        },
+        {
+          "label": "Interaction Component",
+          "value": "{{currency_attr.interaction_contribution}}",
+          "format": "percentage",
+          "description": "r_local × r_fx interaction term"
+        },
+        {
+          "label": "% of Portfolio Return",
+          "value": "{{contribution.pct_of_portfolio_return}}",
+          "format": "percentage",
+          "description": "Contribution as % of total portfolio return"
+        }
+      ],
+      "chart": {
+        "type": "waterfall",
+        "title": "Return Decomposition",
+        "categories": [
+          "Local Return",
+          "FX Return",
+          "Interaction",
+          "Total Contribution"
+        ],
+        "values": [
+          "{{currency_attr.local_contribution}}",
+          "{{currency_attr.fx_contribution}}",
+          "{{currency_attr.interaction_contribution}}",
+          "{{contribution.total_contribution}}"
+        ]
+      }
+    },
+    "risk_analysis": {
+      "metrics": [
+        {
+          "label": "Position VaR (1d, 95%)",
+          "value": "{{risk.var_1d}}",
+          "format": "currency",
+          "color": "red",
+          "description": "Maximum 1-day loss at 95% confidence"
+        },
+        {
+          "label": "Marginal VaR",
+          "value": "{{risk.marginal_var}}",
+          "format": "currency",
+          "description": "Contribution to portfolio VaR"
+        },
+        {
+          "label": "% of Portfolio Risk",
+          "value": "{{risk.pct_portfolio_risk}}",
+          "format": "percentage",
+          "description": "Contribution to total portfolio volatility"
+        },
+        {
+          "label": "Diversification Benefit",
+          "value": "{{risk.diversification_benefit}}",
+          "format": "percentage",
+          "description": "Risk reduction from correlation < 1"
+        },
+        {
+          "label": "Maximum Drawdown",
+          "value": "{{position_perf.max_drawdown}}",
+          "format": "percentage"
+        },
+        {
+          "label": "Recovery Days",
+          "value": "{{position_perf.recovery_days}}",
+          "format": "number"
+        }
+      ]
+    },
+    "transactions": {
+      "columns": [
+        {
+          "field": "trade_date",
+          "header": "Date",
+          "format": "date",
+          "width": 100
+        },
+        {
+          "field": "action",
+          "header": "Action",
+          "width": 80
+        },
+        {
+          "field": "quantity",
+          "header": "Quantity",
+          "format": "number",
+          "width": 100
+        },
+        {
+          "field": "price",
+          "header": "Price",
+          "format": "currency",
+          "width": 100
+        },
+        {
+          "field": "total_value",
+          "header": "Total",
+          "format": "currency",
+          "width": 120
+        },
+        {
+          "field": "commission",
+          "header": "Commission",
+          "format": "currency",
+          "width": 100
+        },
+        {
+          "field": "realized_pnl",
+          "header": "Realized P&L",
+          "format": "currency",
+          "width": 120,
+          "color_condition": "sign"
+        }
+      ],
+      "data": "{{transactions}}"
+    },
+    "fundamentals": {
+      "condition": "{{fundamentals}} != null",
+      "metrics": [
+        {
+          "label": "Market Cap",
+          "value": "{{fundamentals.market_cap}}",
+          "format": "currency"
+        },
+        {
+          "label": "P/E Ratio",
+          "value": "{{fundamentals.pe_ratio}}",
+          "format": "decimal_2"
+        },
+        {
+          "label": "Dividend Yield",
+          "value": "{{fundamentals.dividend_yield}}",
+          "format": "percentage"
+        },
+        {
+          "label": "Sector",
+          "value": "{{fundamentals.sector}}",
+          "format": "text"
+        }
+      ]
+    }
+  },
+  "rights_required": ["portfolio_read", "position_read"],
+  "export_allowed": {
+    "pdf": true,
+    "csv": true,
+    "excel": true
+  },
+  "observability": {
+    "otel_span_name": "pattern.holding_deep_dive",
+    "metrics": [
+      "pattern_execution_duration_seconds",
+      "pattern_steps_total",
+      "pattern_capability_calls_total"
+    ]
+  }
+}

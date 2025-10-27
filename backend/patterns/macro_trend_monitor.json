@@ -1,0 +1,179 @@
+{
+  "id": "macro_trend_monitor",
+  "name": "Macro Trend Monitor",
+  "description": "Monitor week-over-week trends in regime and factor exposures with alert suggestions",
+  "version": "1.0.0",
+  "category": "macro",
+  "tags": ["macro", "trends", "monitoring", "alerts"],
+  "author": "DawsOS",
+  "created": "2025-10-23",
+  "inputs": {
+    "portfolio_id": {
+      "type": "uuid",
+      "required": true,
+      "description": "Portfolio UUID"
+    },
+    "lookback_weeks": {
+      "type": "integer",
+      "default": 4,
+      "description": "Weeks to analyze for trends (default 4)"
+    }
+  },
+  "outputs": {
+    "panels": [
+      {
+        "id": "regime_trend",
+        "title": "Regime Probability Trends",
+        "type": "line_chart",
+        "refresh_ttl": 3600
+      },
+      {
+        "id": "factor_trends",
+        "title": "Factor Exposure Trends",
+        "type": "multi_line_chart",
+        "refresh_ttl": 3600
+      },
+      {
+        "id": "alert_suggestions",
+        "title": "Suggested Alerts",
+        "type": "action_cards",
+        "refresh_ttl": 3600
+      }
+    ]
+  },
+  "steps": [
+    {
+      "capability": "macro.get_regime_history",
+      "args": {
+        "lookback_weeks": "{{inputs.lookback_weeks}}"
+      },
+      "as": "regime_history"
+    },
+    {
+      "capability": "risk.get_factor_exposure_history",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "lookback_weeks": "{{inputs.lookback_weeks}}"
+      },
+      "as": "factor_history"
+    },
+    {
+      "capability": "macro.detect_trend_shifts",
+      "args": {
+        "regime_history": "{{state.regime_history}}",
+        "factor_history": "{{state.factor_history}}"
+      },
+      "as": "trend_analysis"
+    },
+    {
+      "capability": "alerts.suggest_presets",
+      "args": {
+        "trend_analysis": "{{state.trend_analysis}}",
+        "portfolio_id": "{{inputs.portfolio_id}}"
+      },
+      "as": "alert_suggestions"
+    }
+  ],
+  "presentation": {
+    "regime_trend": {
+      "chart": {
+        "type": "stacked_area",
+        "title": "Regime Probability Evolution",
+        "x": "date",
+        "y": "probability",
+        "series": [
+          {
+            "name": "Early Expansion",
+            "data": "{{regime_history.early_expansion_probs}}",
+            "color": "#2ecc71"
+          },
+          {
+            "name": "Mid Expansion",
+            "data": "{{regime_history.mid_expansion_probs}}",
+            "color": "#3498db"
+          },
+          {
+            "name": "Late Expansion",
+            "data": "{{regime_history.late_expansion_probs}}",
+            "color": "#f39c12"
+          },
+          {
+            "name": "Early Contraction",
+            "data": "{{regime_history.early_contraction_probs}}",
+            "color": "#e74c3c"
+          },
+          {
+            "name": "Deep Contraction",
+            "data": "{{regime_history.deep_contraction_probs}}",
+            "color": "#c0392b"
+          }
+        ]
+      }
+    },
+    "factor_trends": {
+      "chart": {
+        "type": "multi_line",
+        "title": "Factor Exposure Trends",
+        "x": "date",
+        "y": "beta",
+        "series": [
+          {
+            "name": "Real Rates",
+            "data": "{{factor_history.real_rates_betas}}",
+            "color": "#00d9ff"
+          },
+          {
+            "name": "Inflation",
+            "data": "{{factor_history.inflation_betas}}",
+            "color": "#e74c3c"
+          },
+          {
+            "name": "Credit Spread",
+            "data": "{{factor_history.credit_betas}}",
+            "color": "#9b59b6"
+          },
+          {
+            "name": "FX",
+            "data": "{{factor_history.fx_betas}}",
+            "color": "#f39c12"
+          },
+          {
+            "name": "Equity Risk",
+            "data": "{{factor_history.equity_betas}}",
+            "color": "#3498db"
+          }
+        ]
+      }
+    },
+    "alert_suggestions": {
+      "cards": "{{alert_suggestions.suggestions}}",
+      "card_template": {
+        "title": "{{alert_type}}",
+        "subtitle": "{{trigger_description}}",
+        "reason": "{{reason}}",
+        "metrics": [
+          {"label": "Current Value", "value": "{{current_value}}", "format": "decimal_2"},
+          {"label": "WoW Change", "value": "{{wow_change}}", "format": "percentage"},
+          {"label": "Trend", "value": "{{trend}}", "format": "trend_arrow"}
+        ],
+        "action": {
+          "label": "Create Alert",
+          "endpoint": "/alerts/create",
+          "payload": "{{alert_payload}}"
+        }
+      }
+    }
+  },
+  "rights_required": ["portfolio_read", "macro_data_read"],
+  "export_allowed": {
+    "pdf": true,
+    "csv": true
+  },
+  "observability": {
+    "otel_span_name": "pattern.macro_trend_monitor",
+    "metrics": [
+      "pattern_execution_duration_seconds",
+      "trend_analysis_duration_seconds"
+    ]
+  }
+}

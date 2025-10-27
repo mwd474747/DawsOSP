@@ -1,17 +1,28 @@
 # DawsOS - Portfolio Intelligence Platform
 
-**Current Version**: DawsOSP (Production)
+**Version**: 0.7 (Production Ready)
 **Architecture**: Trinity 3.0 Framework
-**Repository**: [DawsOSB](https://github.com/mwd474747/DawsOSB)
+**Repository**: [DawsOSP](https://github.com/mwd474747/DawsOSP)
 
 ---
 
 ## Quick Start
 
-The production application is in the `DawsOSP/` directory:
-
 ```bash
+# Clone the repository
+git clone https://github.com/mwd474747/DawsOSP.git
 cd DawsOSP
+
+# Set up environment
+python3 -m venv venv
+source venv/bin/activate
+pip install -r backend/requirements.txt
+
+# Set up database
+export DATABASE_URL='postgresql://dawsos_app:dawsos_app_pass@localhost:5432/dawsos'
+
+# Load seed data
+python scripts/seed_loader.py --all
 
 # Start backend (FastAPI + PostgreSQL)
 ./backend/run_api.sh
@@ -26,25 +37,24 @@ Visit **http://localhost:8501** for the UI.
 
 ## Documentation
 
-- **[DawsOSP/CLAUDE.md](DawsOSP/CLAUDE.md)** - Complete development guide
-- **[DawsOSP/PRODUCT_SPEC.md](DawsOSP/PRODUCT_SPEC.md)** - Product specification
-- **[DawsOSP/DEVELOPMENT_GUIDE.md](DawsOSP/DEVELOPMENT_GUIDE.md)** - Quick-start guide
-- **[DawsOSP/TESTING_GUIDE.md](DawsOSP/TESTING_GUIDE.md)** - Testing documentation
+- **[CLAUDE.md](CLAUDE.md)** - Complete development guide
+- **[PRODUCT_SPEC.md](PRODUCT_SPEC.md)** - Product specification
+- **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** - Quick-start guide
+- **[.ops/TASK_INVENTORY_2025-10-24.md](.ops/TASK_INVENTORY_2025-10-24.md)** - Current backlog
 
 ---
 
 ## Repository Structure
 
 ```
-/DawsOSB/
-├── DawsOSP/          Production application (use this)
-│   ├── backend/       FastAPI + PostgreSQL
-│   ├── frontend/      Streamlit UI
-│   ├── data/          Seed data
-│   ├── scripts/       Utilities
-│   └── tests/         Integration tests
-│
-└── archive/          Historical reference (Trinity 3.0, legacy code)
+DawsOSP/
+├── backend/           FastAPI + PostgreSQL
+├── frontend/          Streamlit UI
+├── data/              Seed data
+├── scripts/           Utilities
+├── tests/             Integration tests
+├── .ops/              Operations documentation
+└── .claude/           Agent specifications
 ```
 
 ---

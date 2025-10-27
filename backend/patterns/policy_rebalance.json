@@ -1,0 +1,195 @@
+{
+  "id": "policy_rebalance",
+  "name": "Policy-Based Rebalance",
+  "description": "Generate rebalance trades based on Buffett-style policies and constraints",
+  "version": "1.0.0",
+  "category": "action",
+  "tags": ["rebalance", "optimizer", "policy", "trades"],
+  "author": "DawsOS",
+  "created": "2025-10-23",
+  "inputs": {
+    "portfolio_id": {
+      "type": "uuid",
+      "required": true,
+      "description": "Portfolio UUID"
+    },
+    "policies": {
+      "type": "array",
+      "required": false,
+      "description": "Policy rules (dividend safety caps, moat bias, etc.)",
+      "default": []
+    },
+    "constraints": {
+      "type": "object",
+      "required": false,
+      "description": "Optimization constraints (max TE, turnover, lot size)",
+      "default": {
+        "max_te_pct": 2.0,
+        "max_turnover_pct": 10.0,
+        "min_lot_value": 500
+      }
+    }
+  },
+  "outputs": {
+    "panels": [
+      {
+        "id": "rebalance_summary",
+        "title": "Rebalance Summary",
+        "type": "metrics_grid",
+        "refresh_ttl": 0
+      },
+      {
+        "id": "proposed_trades",
+        "title": "Proposed Trades",
+        "type": "table",
+        "refresh_ttl": 0
+      },
+      {
+        "id": "impact_analysis",
+        "title": "Impact Analysis",
+        "type": "comparison_grid",
+        "refresh_ttl": 0
+      }
+    ]
+  },
+  "steps": [
+    {
+      "capability": "ledger.positions",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}"
+      },
+      "as": "positions"
+    },
+    {
+      "capability": "pricing.apply_pack",
+      "args": {
+        "positions": "{{state.positions}}",
+        "pack_id": "{{ctx.pricing_pack_id}}"
+      },
+      "as": "valued"
+    },
+    {
+      "capability": "ratings.aggregate",
+      "args": {
+        "positions": "{{state.valued}}"
+      },
+      "as": "ratings"
+    },
+    {
+      "capability": "optimizer.propose_trades",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "positions": "{{state.valued}}",
+        "ratings": "{{state.ratings}}",
+        "policies": "{{inputs.policies}}",
+        "constraints": "{{inputs.constraints}}",
+        "pack_id": "{{ctx.pricing_pack_id}}"
+      },
+      "as": "rebalance_result"
+    },
+    {
+      "capability": "optimizer.analyze_impact",
+      "args": {
+        "current_positions": "{{state.valued}}",
+        "proposed_trades": "{{state.rebalance_result.trades}}",
+        "pack_id": "{{ctx.pricing_pack_id}}"
+      },
+      "as": "impact"
+    }
+  ],
+  "presentation": {
+    "rebalance_summary": {
+      "metrics": [
+        {
+          "label": "Total Trades",
+          "value": "{{rebalance_result.trade_count}}",
+          "format": "number"
+        },
+        {
+          "label": "Total Turnover",
+          "value": "{{rebalance_result.total_turnover}}",
+          "format": "currency"
+        },
+        {
+          "label": "Turnover %",
+          "value": "{{rebalance_result.turnover_pct}}",
+          "format": "percentage"
+        },
+        {
+          "label": "Estimated Costs",
+          "value": "{{rebalance_result.estimated_costs}}",
+          "format": "currency"
+        },
+        {
+          "label": "Cost (bps)",
+          "value": "{{rebalance_result.cost_bps}}",
+          "format": "bps"
+        },
+        {
+          "label": "Tracking Error Impact",
+          "value": "{{impact.te_delta}}",
+          "format": "percentage"
+        }
+      ]
+    },
+    "proposed_trades": {
+      "columns": [
+        {"field": "symbol", "header": "Symbol", "width": 100},
+        {"field": "action", "header": "Action", "width": 80},
+        {"field": "quantity", "header": "Shares", "format": "number", "width": 100},
+        {"field": "price", "header": "Price", "format": "currency", "width": 100},
+        {"field": "value", "header": "Value", "format": "currency", "width": 120},
+        {"field": "reason", "header": "Policy Driver", "width": 200},
+        {"field": "estimated_cost", "header": "Est. Cost", "format": "currency", "width": 100}
+      ],
+      "data": "{{rebalance_result.trades}}",
+      "summary_row": {
+        "label": "Total",
+        "value": "{{rebalance_result.total_value}}",
+        "cost": "{{rebalance_result.estimated_costs}}"
+      }
+    },
+    "impact_analysis": {
+      "comparison": [
+        {
+          "metric": "Portfolio Value",
+          "current": "{{impact.current_value}}",
+          "post_rebalance": "{{impact.post_rebalance_value}}",
+          "delta": "{{impact.value_delta}}"
+        },
+        {
+          "metric": "Avg Dividend Safety",
+          "current": "{{impact.current_div_safety}}",
+          "post_rebalance": "{{impact.post_div_safety}}",
+          "delta": "{{impact.div_safety_delta}}"
+        },
+        {
+          "metric": "Avg Moat Strength",
+          "current": "{{impact.current_moat}}",
+          "post_rebalance": "{{impact.post_moat}}",
+          "delta": "{{impact.moat_delta}}"
+        },
+        {
+          "metric": "Concentration (Top 10)",
+          "current": "{{impact.current_concentration}}",
+          "post_rebalance": "{{impact.post_concentration}}",
+          "delta": "{{impact.concentration_delta}}"
+        }
+      ]
+    }
+  },
+  "rights_required": ["portfolio_read", "portfolio_write"],
+  "export_allowed": {
+    "pdf": true,
+    "csv": true,
+    "excel": true
+  },
+  "observability": {
+    "otel_span_name": "pattern.policy_rebalance",
+    "metrics": [
+      "pattern_execution_duration_seconds",
+      "optimizer_computation_duration_seconds",
+      "trades_proposed_total"
+    ]
+  }
+}
