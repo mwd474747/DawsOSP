@@ -1,0 +1,57 @@
+{
+  "rating_type": "resilience",
+  "method_version": "v1",
+  "description": "Financial resilience rating based on Buffett's balance sheet strength criteria",
+  "research_basis": "Weights derived from Warren Buffett's investment philosophy research (2025-10-26). Debt-to-equity weighted highest (40%) as Buffett strongly emphasizes low debt (<0.5 preferred, max 1.0) for flexibility during downturns. Current ratio second (25%) as indicator of short-term financial health (wants >1.5). Interest coverage (20%) shows debt service ability. Operating margin stability (15%) indicates earnings consistency. Sources: Buffett shareholder letters, 'Warren Buffett and the Interpretation of Financial Statements', balance sheet strength analysis.",
+  "overall_weights": {
+    "debt_equity": 0.40,
+    "current_ratio": 0.25,
+    "interest_coverage": 0.20,
+    "margin_stability": 0.15
+  },
+  "component_thresholds": {
+    "debt_equity": {
+      "description": "Debt-to-equity ratio - Buffett's key balance sheet metric",
+      "thresholds": [
+        {"max": 0.50, "score": 10, "label": "Excellent (<0.5, Buffett ideal)"},
+        {"max": 1.00, "score": 8, "label": "Good (0.5-1.0, Buffett acceptable)"},
+        {"max": 2.00, "score": 6, "label": "Moderate (1.0-2.0)"},
+        {"min": 2.00, "score": 3, "label": "High risk (>2.0)"}
+      ],
+      "buffett_ideal": 0.50,
+      "buffett_max": 1.00,
+      "notes": "Buffett believes debt limits flexibility and agility. Companies with durable advantages need little/no long-term debt. Should be able to pay off debt in 3-4 years of earnings."
+    },
+    "interest_coverage": {
+      "description": "EBIT / interest expense - ability to service debt",
+      "thresholds": [
+        {"min": 10.0, "score": 10, "label": "Excellent (>10x coverage)"},
+        {"min": 5.0, "score": 8, "label": "Good (5-10x coverage)"},
+        {"min": 2.0, "score": 6, "label": "Adequate (2-5x coverage)"},
+        {"min": 0.0, "score": 3, "label": "Risky (<2x coverage)"}
+      ],
+      "notes": "High interest coverage indicates strong debt service capacity and lower financial risk"
+    },
+    "current_ratio": {
+      "description": "Current assets / current liabilities - short-term liquidity",
+      "thresholds": [
+        {"min": 2.0, "score": 10, "label": "Strong (>2.0)"},
+        {"min": 1.5, "score": 8, "label": "Good (1.5-2.0, Buffett minimum)"},
+        {"min": 1.0, "score": 7, "label": "Acceptable (1.0-1.5)"},
+        {"min": 0.0, "score": 4, "label": "Weak (<1.0)"}
+      ],
+      "buffett_threshold": 1.5,
+      "notes": "Buffett prefers current ratio >1.5 to ensure company can meet short-term obligations"
+    },
+    "margin_stability": {
+      "description": "Operating margin standard deviation (5-year) - earnings consistency",
+      "thresholds": [
+        {"max": 0.02, "score": 10, "label": "Very stable (<2% std dev)"},
+        {"max": 0.05, "score": 8, "label": "Stable (2-5% std dev)"},
+        {"max": 0.10, "score": 6, "label": "Moderate (5-10% std dev)"},
+        {"min": 0.10, "score": 4, "label": "Volatile (>10% std dev)"}
+      ],
+      "notes": "Lower standard deviation indicates more predictable earnings, important for Buffett's buy-and-hold strategy"
+    }
+  }
+}
