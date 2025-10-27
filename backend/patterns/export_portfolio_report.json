@@ -50,7 +50,7 @@
     {
       "capability": "pricing.apply_pack",
       "args": {
-        "positions": "{{state.positions}}",
+        "positions": "{{positions.positions}}",
         "pack_id": "{{ctx.pricing_pack_id}}"
       },
       "as": "valued"
@@ -85,10 +85,10 @@
       "capability": "reports.render_pdf",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
-        "positions": "{{state.valued}}",
-        "performance": "{{state.performance}}",
-        "currency_attr": "{{state.currency_attr}}",
-        "regime": "{{state.regime}}",
+        "positions": "{{valued.positions}}",
+        "performance": "{{performance}}",
+        "currency_attr": "{{currency_attr}}",
+        "regime": "{{regime}}",
         "pricing_pack_id": "{{ctx.pricing_pack_id}}",
         "ledger_commit_hash": "{{ctx.ledger_commit_hash}}",
         "include_sections": {

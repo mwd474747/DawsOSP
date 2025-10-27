@@ -63,7 +63,7 @@
     {
       "capability": "pricing.apply_pack",
       "args": {
-        "positions": "{{state.positions}}",
+        "positions": "{{positions.positions}}",
         "pack_id": "{{ctx.pricing_pack_id}}"
       },
       "as": "valued"
@@ -71,7 +71,7 @@
     {
       "capability": "ratings.aggregate",
       "args": {
-        "positions": "{{state.valued}}"
+        "positions": "{{valued.positions}}"
       },
       "as": "ratings"
     },
@@ -79,8 +79,8 @@
       "capability": "optimizer.propose_trades",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
-        "positions": "{{state.valued}}",
-        "ratings": "{{state.ratings}}",
+        "positions": "{{valued.positions}}",
+        "ratings": "{{ratings}}",
         "policies": "{{inputs.policies}}",
         "constraints": "{{inputs.constraints}}",
         "pack_id": "{{ctx.pricing_pack_id}}"
@@ -90,8 +90,8 @@
     {
       "capability": "optimizer.analyze_impact",
       "args": {
-        "current_positions": "{{state.valued}}",
-        "proposed_trades": "{{state.rebalance_result.trades}}",
+        "current_positions": "{{valued.positions}}",
+        "proposed_trades": "{{rebalance_result.trades}}",
         "pack_id": "{{ctx.pricing_pack_id}}"
       },
       "as": "impact"

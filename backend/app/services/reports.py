@@ -579,6 +579,23 @@ async def example_usage():
         print(f"CSV failed: {e}")
 
 
+# ============================================================================
+# Service Singleton
+# ============================================================================
+
+_reports_service = None
+
+
+def get_reports_service() -> ReportService:
+    """Get singleton reports service instance."""
+    global _reports_service
+
+    if _reports_service is None:
+        _reports_service = ReportService()
+
+    return _reports_service
+
+
 if __name__ == "__main__":
     import asyncio
     asyncio.run(example_usage())
