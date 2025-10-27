@@ -127,6 +127,12 @@ class AlertService:
             return await self._evaluate_price_condition(condition, ctx)
         elif condition_type == "news_sentiment":
             return await self._evaluate_news_sentiment_condition(condition, ctx)
+        elif condition_type == "dar_breach":
+            return await self._evaluate_dar_breach_condition(condition, ctx)
+        elif condition_type == "drawdown_limit":
+            return await self._evaluate_drawdown_limit_condition(condition, ctx)
+        elif condition_type == "regime_shift":
+            return await self._evaluate_regime_shift_condition(condition, ctx)
         else:
             logger.warning(f"Unknown condition type: {condition_type}")
             return False
@@ -655,4 +661,252 @@ class AlertService:
             return value != threshold
         else:
             logger.warning(f"Unknown operator: {operator}")
+            return False
+
+    # ========================================================================
+    # DaR Breach Condition Evaluation (ALERTS_ARCHITECT)
+    # ========================================================================
+    # Added: 2025-10-26
+    # Purpose: Evaluate Drawdown at Risk threshold breaches
+    # Source: Bridgewater risk framework, Dalio methodology
+    # ========================================================================
+
+    async def _evaluate_dar_breach_condition(
+        self,
+        condition: Dict[str, Any],
+        ctx: Dict[str, Any],
+    ) -> bool:
+        """
+        Evaluate DaR breach condition.
+
+        Computes current DaR for portfolio and checks if it exceeds threshold.
+
+        Example:
+            {
+                "type": "dar_breach",
+                "portfolio_id": "xxx",
+                "threshold": 0.15,  # 15%
+                "confidence": 0.95,  # 95%
+                "horizon_days": 30
+            }
+        """
+        portfolio_id = condition.get("portfolio_id")
+        threshold = Decimal(str(condition.get("threshold", 0.15)))
+        confidence = condition.get("confidence", 0.95)
+        horizon_days = condition.get("horizon_days", 30)
+
+        if not portfolio_id:
+            logger.warning("DaR breach condition missing portfolio_id")
+            return False
+
+        # Validate threshold using AlertThresholdValidator
+        try:
+            from backend.app.core.alert_validators import AlertThresholdValidator
+            AlertThresholdValidator.validate_threshold('dar_breach', threshold)
+        except ValueError as e:
+            logger.error(f"Invalid DaR threshold: {e}")
+            return False
+
+        # Compute DaR using scenarios service
+        try:
+            from backend.app.services.scenarios import get_scenario_service
+            from backend.app.services.macro import get_macro_service
+
+            scenario_service = get_scenario_service()
+            macro_service = get_macro_service()
+
+            # Detect current regime for conditioning
+            asof_date = ctx.get("asof_date", date.today())
+            try:
+                regime_classification = await macro_service.detect_current_regime(asof_date=asof_date)
+                regime = regime_classification.regime.value
+            except Exception as e:
+                logger.warning(f"Could not detect regime: {e}")
+                regime = "MID_EXPANSION"
+
+            # Compute DaR
+            dar_result = await scenario_service.compute_dar(
+                portfolio_id=portfolio_id,
+                regime=regime,
+                confidence=confidence,
+                horizon_days=horizon_days,
+                as_of_date=asof_date,
+            )
+
+            # Check for errors
+            if "error" in dar_result or dar_result.get("dar_value") is None:
+                logger.error(f"DaR computation failed: {dar_result.get('error')}")
+                return False
+
+            dar_value = abs(Decimal(str(dar_result["dar_value"])))  # DaR is negative, take absolute
+
+            # Store DaR result in context for playbook generation
+            ctx["dar_result"] = dar_result
+            ctx["dar_actual"] = dar_value
+
+            # Check if DaR exceeds threshold
+            breach = dar_value > threshold
+            if breach:
+                logger.warning(
+                    f"DaR breach detected: {dar_value:.2%} > {threshold:.2%} "
+                    f"(worst scenario: {dar_result.get('worst_scenario')})"
+                )
+
+            return breach
+
+        except Exception as e:
+            logger.error(f"Failed to evaluate DaR breach condition: {e}", exc_info=True)
+            return False
+
+    async def _evaluate_drawdown_limit_condition(
+        self,
+        condition: Dict[str, Any],
+        ctx: Dict[str, Any],
+    ) -> bool:
+        """
+        Evaluate drawdown limit condition.
+
+        Checks if current portfolio drawdown exceeds configured limit.
+
+        Example:
+            {
+                "type": "drawdown_limit",
+                "portfolio_id": "xxx",
+                "limit": 0.20  # 20%
+            }
+        """
+        portfolio_id = condition.get("portfolio_id")
+        limit = Decimal(str(condition.get("limit", 0.20)))
+
+        if not portfolio_id:
+            logger.warning("Drawdown limit condition missing portfolio_id")
+            return False
+
+        # Validate threshold
+        try:
+            from backend.app.core.alert_validators import AlertThresholdValidator
+            AlertThresholdValidator.validate_threshold('drawdown_limit', limit)
+        except ValueError as e:
+            logger.error(f"Invalid drawdown limit: {e}")
+            return False
+
+        # Query portfolio_metrics for current drawdown
+        if not self.use_db:
+            return False
+
+        asof_date = ctx.get("asof_date", date.today())
+
+        query = """
+            SELECT max_drawdown_1y
+            FROM portfolio_metrics
+            WHERE portfolio_id = $1::uuid
+              AND asof_date <= $2
+            ORDER BY asof_date DESC
+            LIMIT 1
+        """
+
+        try:
+            row = await self.execute_query_one(query, portfolio_id, asof_date)
+            if row and row["max_drawdown_1y"] is not None:
+                current_drawdown = abs(Decimal(str(row["max_drawdown_1y"])))  # Drawdown is negative
+                ctx["current_drawdown"] = current_drawdown
+
+                breach = current_drawdown > limit
+                if breach:
+                    logger.warning(
+                        f"Drawdown limit breach: {current_drawdown:.2%} > {limit:.2%}"
+                    )
+                return breach
+            else:
+                logger.warning(f"Drawdown not found for portfolio {portfolio_id}")
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to evaluate drawdown limit: {e}")
+            return False
+
+    async def _evaluate_regime_shift_condition(
+        self,
+        condition: Dict[str, Any],
+        ctx: Dict[str, Any],
+    ) -> bool:
+        """
+        Evaluate regime shift condition.
+
+        Detects if macro regime has shifted since last evaluation.
+
+        Example:
+            {
+                "type": "regime_shift",
+                "confidence": 0.90,  # 90% minimum confidence
+                "min_distance": 2    # At least 2 regimes apart
+            }
+        """
+        confidence_threshold = Decimal(str(condition.get("confidence", 0.90)))
+        min_distance = condition.get("min_distance", 2)
+
+        # Validate threshold
+        try:
+            from backend.app.core.alert_validators import AlertThresholdValidator
+            AlertThresholdValidator.validate_threshold('regime_shift', confidence_threshold)
+        except ValueError as e:
+            logger.error(f"Invalid regime shift confidence: {e}")
+            return False
+
+        # Detect current regime
+        try:
+            from backend.app.services.macro import get_macro_service
+
+            macro_service = get_macro_service()
+            asof_date = ctx.get("asof_date", date.today())
+
+            regime_classification = await macro_service.detect_current_regime(asof_date=asof_date)
+            current_regime = regime_classification.regime.value
+            confidence = Decimal(str(regime_classification.confidence))
+
+            # Check confidence threshold
+            if confidence < confidence_threshold:
+                logger.debug(
+                    f"Regime confidence {confidence:.2%} below threshold {confidence_threshold:.2%}"
+                )
+                return False
+
+            # Get previous regime from database (last regime detection)
+            if not self.use_db:
+                return False
+
+            query = """
+                SELECT regime
+                FROM regime_history
+                WHERE asof_date < $1
+                ORDER BY asof_date DESC
+                LIMIT 1
+            """
+
+            row = await self.execute_query_one(query, asof_date)
+            if row:
+                previous_regime = row["regime"]
+            else:
+                # No previous regime - first detection
+                logger.info("First regime detection - no shift to evaluate")
+                return False
+
+            # Check if regime shifted
+            regime_shift = current_regime != previous_regime
+
+            if regime_shift:
+                # Optionally check regime distance (e.g., EARLY_EXPANSION → LATE_CONTRACTION = 4 regimes apart)
+                # For now, just detect any shift
+                logger.warning(
+                    f"Regime shift detected: {previous_regime} → {current_regime} "
+                    f"(confidence: {confidence:.2%})"
+                )
+                ctx["old_regime"] = previous_regime
+                ctx["new_regime"] = current_regime
+                ctx["regime_confidence"] = confidence
+
+            return regime_shift
+
+        except Exception as e:
+            logger.error(f"Failed to evaluate regime shift: {e}", exc_info=True)
             return False

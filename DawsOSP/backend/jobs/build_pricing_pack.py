@@ -37,6 +37,7 @@ import asyncio
 import argparse
 import logging
 import sys
+import time
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import List, Dict, Optional
@@ -50,6 +51,13 @@ from backend.app.db.connection import get_db_pool, execute_statement, execute_qu
 from backend.app.db.pricing_pack_queries import get_pricing_pack_queries
 from backend.app.providers.polygon_client import get_polygon_client, PolygonError
 from backend.app.core.circuit_breaker import CircuitBreakerOpenError
+
+# Observability (metrics for pack build monitoring)
+try:
+    from backend.observability.metrics import setup_metrics, get_metrics
+    METRICS_AVAILABLE = True
+except ImportError:
+    METRICS_AVAILABLE = False
 
 logger = logging.getLogger("DawsOS.BuildPricingPack")
 
@@ -114,6 +122,9 @@ class PricingPackBuilder:
             Pricing pack ID
         """
         logger.info(f"Building pricing pack for {asof_date}, policy={policy}")
+
+        # Start timing for metrics
+        start_time = time.time()
 
         # Generate pack ID
         pack_id = f"PP_{asof_date.isoformat()}"
@@ -184,7 +195,15 @@ class PricingPackBuilder:
             await self.pack_queries.mark_pack_fresh(pack_id)
             logger.info(f"Marked pack {pack_id} as fresh")
 
-        logger.info(f"✅ Pricing pack built successfully: {pack_id}")
+        # Record metrics
+        duration = time.time() - start_time
+        if METRICS_AVAILABLE:
+            metrics = get_metrics()
+            if metrics:
+                metrics.pack_build_duration.labels(pack_id=pack_id).observe(duration)
+                logger.info(f"📊 Recorded pack build duration: {duration:.2f}s")
+
+        logger.info(f"✅ Pricing pack built successfully: {pack_id} (duration: {duration:.2f}s)")
         return pack_id
 
     # ========================================================================
@@ -626,6 +645,11 @@ async def main():
     logger.info(f"Mark Fresh: {args.mark_fresh}")
     logger.info(f"Use Stubs: {args.use_stubs}")
     logger.info("=" * 80)
+
+    # Initialize metrics (if available)
+    if METRICS_AVAILABLE:
+        setup_metrics(service_name="dawsos_pack_builder")
+        logger.info("📊 Metrics initialized")
 
     # Initialize database connection
     await get_db_pool()

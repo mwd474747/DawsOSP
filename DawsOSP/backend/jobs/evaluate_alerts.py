@@ -34,6 +34,7 @@ import asyncio
 import logging
 import sys
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 from typing import Dict, Any, Optional, List
 from uuid import UUID
 
@@ -161,10 +162,14 @@ class AlertEvaluator:
                 # Get current value for notification message
                 current_value = await self.alert_service.get_alert_value(condition, ctx)
 
+                # Generate playbook if this is a DaR/drawdown/regime shift alert
+                playbook = await self._generate_playbook(condition, ctx)
+
                 # Build notification message
                 message = self._build_notification_message(
                     condition=condition,
                     current_value=current_value,
+                    playbook=playbook,
                 )
 
                 # Determine notification channels
@@ -329,10 +334,95 @@ class AlertEvaluator:
         except Exception as e:
             logger.error(f"Failed to update last_fired_at for alert {alert_id}: {e}")
 
+    async def _generate_playbook(
+        self,
+        condition: Dict[str, Any],
+        ctx: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Generate actionable playbook for triggered alert.
+
+        Args:
+            condition: Alert condition JSON
+            ctx: Evaluation context (contains DaR result, drawdown, etc.)
+
+        Returns:
+            Playbook dict or None if not applicable
+        """
+        condition_type = condition.get("type")
+
+        try:
+            from backend.app.services.playbooks import PlaybookGenerator
+
+            if condition_type == "dar_breach":
+                # DaR breach playbook
+                dar_result = ctx.get("dar_result", {})
+                dar_actual = ctx.get("dar_actual")
+                portfolio_id = condition.get("portfolio_id")
+                threshold = Decimal(str(condition.get("threshold", 0.15)))
+
+                if dar_actual and dar_result:
+                    playbook = PlaybookGenerator.generate_dar_breach_playbook(
+                        portfolio_id=UUID(portfolio_id),
+                        dar_actual=dar_actual,
+                        dar_threshold=threshold,
+                        worst_scenario=dar_result.get("worst_scenario", "unknown"),
+                        current_nav=Decimal(str(dar_result.get("current_nav", 1000000))),
+                    )
+                    return playbook
+
+            elif condition_type == "drawdown_limit":
+                # Drawdown limit playbook
+                current_drawdown = ctx.get("current_drawdown")
+                portfolio_id = condition.get("portfolio_id")
+                limit = Decimal(str(condition.get("limit", 0.20)))
+
+                if current_drawdown:
+                    # Get current NAV from database
+                    current_nav = Decimal("1000000")  # Default
+                    if self.use_db:
+                        nav_query = """
+                            SELECT SUM(quantity * cost_basis_per_share) AS nav
+                            FROM lots
+                            WHERE portfolio_id = $1::uuid AND is_open = true
+                        """
+                        nav_row = await self.execute_query_one(nav_query, portfolio_id)
+                        if nav_row and nav_row["nav"]:
+                            current_nav = Decimal(str(nav_row["nav"]))
+
+                    playbook = PlaybookGenerator.generate_drawdown_limit_playbook(
+                        portfolio_id=UUID(portfolio_id),
+                        current_drawdown=current_drawdown,
+                        drawdown_limit=limit,
+                        current_nav=current_nav,
+                    )
+                    return playbook
+
+            elif condition_type == "regime_shift":
+                # Regime shift playbook
+                old_regime = ctx.get("old_regime")
+                new_regime = ctx.get("new_regime")
+                confidence = ctx.get("regime_confidence", Decimal("0.90"))
+
+                if old_regime and new_regime:
+                    playbook = PlaybookGenerator.generate_regime_shift_playbook(
+                        portfolio_id=UUID(condition.get("portfolio_id", "00000000-0000-0000-0000-000000000000")),
+                        old_regime=old_regime,
+                        new_regime=new_regime,
+                        confidence=confidence,
+                    )
+                    return playbook
+
+        except Exception as e:
+            logger.error(f"Failed to generate playbook: {e}", exc_info=True)
+
+        return None
+
     def _build_notification_message(
         self,
         condition: Dict[str, Any],
         current_value: Optional[Any],
+        playbook: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Build human-readable notification message.
@@ -340,6 +430,7 @@ class AlertEvaluator:
         Args:
             condition: Alert condition JSON
             current_value: Current value that triggered alert
+            playbook: Optional playbook with actionable recommendations
 
         Returns:
             Notification message
@@ -360,10 +451,30 @@ class AlertEvaluator:
 
         op_text = op_symbols.get(operator, operator)
 
-        if condition_type == "macro":
+        # Build base message based on condition type
+        if condition_type == "dar_breach":
+            dar_actual = threshold if isinstance(threshold, Decimal) else Decimal(str(threshold))
+            base_msg = (
+                f"⚠️ RISK ALERT: Drawdown at Risk (DaR) breach detected!\n\n"
+                f"Portfolio DaR: {current_value:.1%} (threshold: {threshold:.1%})\n"
+            )
+
+        elif condition_type == "drawdown_limit":
+            base_msg = (
+                f"🚨 CRITICAL: Drawdown limit breached!\n\n"
+                f"Current drawdown: {current_value:.1%} (limit: {threshold:.1%})\n"
+            )
+
+        elif condition_type == "regime_shift":
+            base_msg = (
+                f"📊 MACRO SHIFT: Regime change detected!\n\n"
+                f"New regime: {current_value}\n"
+            )
+
+        elif condition_type == "macro":
             entity = condition.get("entity", "indicator")
             metric = condition.get("metric", "level")
-            return (
+            base_msg = (
                 f"{entity} {op_text} {threshold} "
                 f"(current {metric}: {current_value})"
             )
@@ -371,7 +482,7 @@ class AlertEvaluator:
         elif condition_type == "metric":
             portfolio_id = condition.get("portfolio_id", "unknown")
             metric_name = condition.get("metric", "metric")
-            return (
+            base_msg = (
                 f"Portfolio metric '{metric_name}' {op_text} {threshold} "
                 f"(current: {current_value})"
             )
@@ -379,7 +490,7 @@ class AlertEvaluator:
         elif condition_type == "rating":
             symbol = condition.get("symbol", "security")
             metric_name = condition.get("metric", "rating")
-            return (
+            base_msg = (
                 f"{symbol} {metric_name} {op_text} {threshold} "
                 f"(current: {current_value})"
             )
@@ -387,20 +498,48 @@ class AlertEvaluator:
         elif condition_type == "price":
             symbol = condition.get("symbol", "security")
             metric_name = condition.get("metric", "price")
-            return (
+            base_msg = (
                 f"{symbol} {metric_name} {op_text} {threshold} "
                 f"(current: {current_value})"
             )
 
         elif condition_type == "news_sentiment":
             symbol = condition.get("symbol", "security")
-            return (
+            base_msg = (
                 f"{symbol} news sentiment {op_text} {threshold} "
                 f"(current: {current_value})"
             )
 
         else:
-            return f"Alert condition triggered: {condition_type}"
+            base_msg = f"Alert condition triggered: {condition_type}"
+
+        # Append playbook if available
+        if playbook:
+            playbook_msg = "\n\n📋 RECOMMENDED ACTION:\n"
+            playbook_msg += f"Action: {playbook.get('action', 'N/A')}\n"
+            playbook_msg += f"Rationale: {playbook.get('rationale', 'N/A')}\n"
+
+            instruments = playbook.get('instruments', [])
+            if instruments:
+                playbook_msg += f"\nInstruments:\n"
+                for inst in instruments[:3]:  # Show first 3 instruments
+                    symbol = inst.get('symbol', inst.get('type', 'N/A'))
+                    inst_type = inst.get('type', 'N/A')
+                    playbook_msg += f"  • {symbol} ({inst_type})\n"
+
+            notional = playbook.get('notional_usd', 0)
+            if notional > 0:
+                playbook_msg += f"\nSuggested allocation: ${notional:,.0f}\n"
+
+            alternatives = playbook.get('alternatives', [])
+            if alternatives:
+                playbook_msg += f"\nAlternatives:\n"
+                for alt in alternatives[:2]:  # Show first 2 alternatives
+                    playbook_msg += f"  • {alt}\n"
+
+            base_msg += playbook_msg
+
+        return base_msg
 
     def _get_alert_name(self, condition: Dict[str, Any]) -> str:
         """

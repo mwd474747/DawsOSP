@@ -650,48 +650,108 @@ class FinancialAnalyst(BaseAgent):
         currency_attr: Dict[str, Any] = None,
     ) -> Dict[str, Any]:
         """
-        Generate overview charts.
+        Generate overview charts using real data from metrics database.
 
         Args:
             ctx: Request context
             state: Execution state
-            positions: Valued positions
-            metrics: Performance metrics
+            positions: Valued positions from pricing.apply_pack
+            metrics: Performance metrics from metrics.compute_twr/sharpe
+            twr: TWR data from metrics.compute_twr
+            currency_attr: Currency attribution from attribution.currency
 
         Returns:
-            Dict with chart configurations
+            Dict with chart configurations for UI rendering
         """
-        logger.info(f"charts.overview: positions_count={len(positions)}")
+        portfolio_id = ctx.portfolio_id
+        if not portfolio_id:
+            raise ValueError("portfolio_id required for charts.overview")
 
-        # TODO: Generate real chart configs
-        # For now, return stub data
-        charts = [
-            {
+        logger.info(f"charts.overview: portfolio_id={portfolio_id}, pack_id={ctx.pricing_pack_id}")
+
+        charts = []
+
+        # Chart 1: Portfolio Allocation (Pie Chart)
+        if positions and isinstance(positions, dict) and "positions" in positions:
+            position_list = positions["positions"]
+            allocation_data = [
+                {
+                    "symbol": pos.get("symbol", "UNKNOWN"),
+                    "value": float(pos.get("value", 0)),
+                    "weight": float(pos.get("weight", 0)),
+                }
+                for pos in position_list
+                if float(pos.get("value", 0)) > 0
+            ]
+            charts.append({
                 "type": "pie",
-                "title": "Portfolio Allocation",
-                "data": [
-                    {"label": pos["symbol"], "value": float(pos.get("value", 0))}
-                    for pos in positions
-                ],
-            },
-            {
-                "type": "line",
-                "title": "Performance (TWR)",
-                "data": [
-                    {"x": p["date"], "y": float(p["return_pct"]) * 100}
-                    for p in metrics.get("periods", [])
-                ],
-            },
-        ]
+                "title": "Portfolio Allocation by Security",
+                "data": allocation_data,
+                "total_value": float(positions.get("total_value", 0)),
+                "currency": positions.get("currency", "CAD"),
+            })
+
+        # Chart 2: Currency Attribution (Donut Chart)
+        if currency_attr and isinstance(currency_attr, dict):
+            attr_data = [
+                {"label": "Local Return", "value": float(currency_attr.get("local_return", 0))},
+                {"label": "FX Return", "value": float(currency_attr.get("fx_return", 0))},
+                {"label": "Interaction", "value": float(currency_attr.get("interaction_return", 0))},
+            ]
+            charts.append({
+                "type": "donut",
+                "title": "Currency Attribution Breakdown",
+                "data": attr_data,
+                "total_return": float(currency_attr.get("total_return", 0)),
+                "base_currency": currency_attr.get("base_currency", "CAD"),
+            })
+
+        # Chart 3: Performance Metrics (Bar Chart)
+        if twr and isinstance(twr, dict):
+            perf_data = []
+            for period_key in ["twr_1d", "twr_mtd", "twr_ytd", "twr_1y", "twr_3y", "twr_5y"]:
+                period_value = twr.get(period_key)
+                if period_value is not None:
+                    perf_data.append({
+                        "period": period_key.replace("twr_", "").upper(),
+                        "return": float(period_value) * 100,  # Convert to percentage
+                    })
+
+            if perf_data:
+                charts.append({
+                    "type": "bar",
+                    "title": "Time-Weighted Returns by Period",
+                    "data": perf_data,
+                    "unit": "%",
+                })
+
+        # Chart 4: Risk Metrics (Horizontal Bar)
+        if metrics and isinstance(metrics, dict):
+            risk_data = []
+            if "volatility_30d" in metrics:
+                risk_data.append({"metric": "Volatility (30d)", "value": float(metrics["volatility_30d"]) * 100})
+            if "sharpe_30d" in metrics:
+                risk_data.append({"metric": "Sharpe (30d)", "value": float(metrics["sharpe_30d"])})
+            if "max_drawdown_1y" in metrics:
+                risk_data.append({"metric": "Max DD (1y)", "value": float(metrics.get("max_drawdown_1y", 0)) * 100})
+
+            if risk_data:
+                charts.append({
+                    "type": "horizontal_bar",
+                    "title": "Risk-Adjusted Metrics",
+                    "data": risk_data,
+                })
 
         result = {
             "charts": charts,
             "chart_count": len(charts),
+            "portfolio_id": str(portfolio_id),
+            "pricing_pack_id": ctx.pricing_pack_id,
         }
 
         # Attach metadata
         metadata = self._create_metadata(
-            source="chart_generator",
+            source=f"chart_generator:{ctx.pricing_pack_id}",
             asof=ctx.asof_date,
             ttl=3600,
         )
@@ -961,30 +1021,113 @@ class FinancialAnalyst(BaseAgent):
         lookback_days: int = 252,
     ) -> Dict[str, Any]:
         """
-        Compute position return metrics over lookback period.
+        Compute position return metrics over lookback period using historical pricing data.
 
         Capability: compute_position_return
 
         Returns total return, volatility, Sharpe ratio, max drawdown
         """
-        logger.info(f"compute_position_return: security={security_id}, lookback={lookback_days}")
+        security_uuid = UUID(security_id)
+        pack = pack_id or ctx.pricing_pack_id
 
-        # TODO: Implement historical price query and return calculation
-        # For now, return placeholder structure
+        logger.info(f"compute_position_return: security={security_id}, lookback={lookback_days}, pack={pack}")
+
+        # Get historical prices from pricing packs (last N days)
+        db_pool = self.services.get("db")
+        if not db_pool:
+            raise RuntimeError("Database pool not available")
+
+        async with db_pool.acquire() as conn:
+            # Query historical prices for this security
+            prices = await conn.fetch(
+                """
+                SELECT pp.asof_date, p.price
+                FROM prices p
+                JOIN pricing_packs pp ON p.pricing_pack_id = pp.id
+                WHERE p.security_id = $1
+                  AND pp.asof_date <= (SELECT asof_date FROM pricing_packs WHERE id = $2)
+                  AND pp.asof_date >= (SELECT asof_date FROM pricing_packs WHERE id = $2) - INTERVAL '1 day' * $3
+                ORDER BY pp.asof_date ASC
+                """,
+                security_uuid,
+                pack,
+                lookback_days,
+            )
+
+            if len(prices) < 2:
+                logger.warning(f"Insufficient price data for security {security_id}: {len(prices)} data points")
+                return self._attach_metadata(
+                    {
+                        "error": "Insufficient historical data",
+                        "data_points": len(prices),
+                        "required_minimum": 2,
+                    },
+                    self._create_metadata(source=f"position_returns:{security_id}", asof=ctx.asof_date, ttl=3600)
+                )
+
+            # Calculate daily returns
+            daily_returns = []
+            for i in range(1, len(prices)):
+                prev_price = Decimal(str(prices[i - 1]["price"]))
+                curr_price = Decimal(str(prices[i]["price"]))
+                if prev_price > 0:
+                    daily_return = (curr_price - prev_price) / prev_price
+                    daily_returns.append({
+                        "date": str(prices[i]["asof_date"]),
+                        "return": float(daily_return),
+                    })
+
+            if not daily_returns:
+                return self._attach_metadata(
+                    {"error": "No valid returns calculated", "data_points": len(prices)},
+                    self._create_metadata(source=f"position_returns:{security_id}", asof=ctx.asof_date, ttl=3600)
+                )
+
+            # Compute metrics
+            returns_array = [r["return"] for r in daily_returns]
+
+            # Total return (geometric linking)
+            total_return = float(np.prod([1 + r for r in returns_array]) - 1)
+
+            # Annualized volatility
+            volatility = float(np.std(returns_array) * np.sqrt(252)) if len(returns_array) > 1 else 0.0
+
+            # Sharpe ratio (assume 4% risk-free rate)
+            rf_rate = 0.04
+            days_actual = len(daily_returns)
+            ann_return = (1 + total_return) ** (252 / days_actual) - 1 if days_actual > 0 else 0.0
+            sharpe = (ann_return - rf_rate) / volatility if volatility > 0 else 0.0
+
+            # Max drawdown
+            prices_array = [float(p["price"]) for p in prices]
+            running_max = np.maximum.accumulate(prices_array)
+            drawdowns = (np.array(prices_array) - running_max) / running_max
+            max_drawdown = float(np.min(drawdowns))
+            max_dd_idx = int(np.argmin(drawdowns))
+
+            # Recovery days (days from max drawdown to recovery)
+            peak_value = running_max[max_dd_idx]
+            recovery_days = -1
+            for i in range(max_dd_idx, len(prices_array)):
+                if prices_array[i] >= peak_value:
+                    recovery_days = i - max_dd_idx
+                    break
 
         result = {
-            "total_return": 0.15,  # 15% placeholder
-            "daily_returns": [],  # TODO: Historical daily returns
-            "portfolio_returns": [],  # TODO: Portfolio daily returns for comparison
-            "volatility": 0.18,  # Annualized volatility placeholder
-            "sharpe": 0.83,  # Sharpe ratio placeholder
-            "max_drawdown": -0.12,  # Max drawdown placeholder
-            "recovery_days": 45,  # Days to recover from max drawdown
-            "note": "Position return calculation - requires historical pricing pack data"
+            "security_id": security_id,
+            "total_return": round(total_return, 6),
+            "annualized_return": round(ann_return, 6),
+            "volatility": round(volatility, 6),
+            "sharpe": round(sharpe, 4),
+            "max_drawdown": round(max_drawdown, 6),
+            "recovery_days": recovery_days,
+            "data_points": len(prices),
+            "lookback_days": lookback_days,
+            "daily_returns": daily_returns,  # For charting
         }
 
         metadata = self._create_metadata(
-            source=f"position_returns:{security_id}",
+            source=f"position_returns:{pack}",
             asof=ctx.asof_date,
             ttl=3600
         )
@@ -1045,31 +1188,123 @@ class FinancialAnalyst(BaseAgent):
         lookback_days: int = 252,
     ) -> Dict[str, Any]:
         """
-        Decompose position return into local and FX components.
+        Decompose position return into local and FX components using real historical data.
 
         Capability: compute_position_currency_attribution
 
         Returns local, FX, and interaction contributions
+
+        Formula:
+            r_base = r_local + r_fx + (r_local × r_fx)
         """
-        logger.info(f"compute_position_currency_attribution: security={security_id}")
+        security_uuid = UUID(security_id)
+        pack = pack_id or ctx.pricing_pack_id
 
-        # Get position currency
-        position = await self.get_position_details(ctx, state, portfolio_id, security_id, pack_id)
+        logger.info(f"compute_position_currency_attribution: security={security_id}, pack={pack}")
 
-        # TODO: Call currency attribution service for position-level calculation
-        # For now, return placeholder structure
+        # Get position details to determine currency
+        position = await self.get_position_details(ctx, state, portfolio_id, security_id, pack)
+        security_currency = position.get("security_currency", "USD")
+        base_currency = ctx.base_currency or "CAD"
+
+        # If security is in base currency, no FX attribution
+        if security_currency == base_currency:
+            result = {
+                "security_id": security_id,
+                "security_currency": security_currency,
+                "base_currency": base_currency,
+                "local_contribution": float(position.get("unrealized_pnl_pct", 0)),
+                "fx_contribution": 0.0,
+                "interaction_contribution": 0.0,
+                "total_contribution": float(position.get("unrealized_pnl_pct", 0)),
+                "note": "Position in base currency - no FX attribution"
+            }
+            metadata = self._create_metadata(
+                source=f"currency_attr:{security_id}",
+                asof=ctx.asof_date,
+                ttl=3600
+            )
+            return self._attach_metadata(result, metadata)
+
+        # Get historical prices and FX rates
+        db_pool = self.services.get("db")
+        if not db_pool:
+            raise RuntimeError("Database pool not available")
+
+        async with db_pool.acquire() as conn:
+            # Query historical prices in local currency and FX rates
+            data = await conn.fetch(
+                """
+                SELECT
+                    pp.asof_date,
+                    p.price as local_price,
+                    COALESCE(fx.rate, 1.0) as fx_rate
+                FROM prices p
+                JOIN pricing_packs pp ON p.pricing_pack_id = pp.id
+                LEFT JOIN fx_rates fx ON fx.pricing_pack_id = pp.id
+                    AND fx.base_ccy = $4
+                    AND fx.quote_ccy = $5
+                WHERE p.security_id = $1
+                  AND pp.asof_date <= (SELECT asof_date FROM pricing_packs WHERE id = $2)
+                  AND pp.asof_date >= (SELECT asof_date FROM pricing_packs WHERE id = $2) - INTERVAL '1 day' * $3
+                ORDER BY pp.asof_date ASC
+                """,
+                security_uuid,
+                pack,
+                lookback_days,
+                security_currency,
+                base_currency,
+            )
+
+            if len(data) < 2:
+                logger.warning(f"Insufficient data for currency attribution: {len(data)} data points")
+                result = {
+                    "error": "Insufficient historical data",
+                    "data_points": len(data),
+                    "required_minimum": 2,
+                }
+                metadata = self._create_metadata(
+                    source=f"currency_attr:{security_id}",
+                    asof=ctx.asof_date,
+                    ttl=3600
+                )
+                return self._attach_metadata(result, metadata)
+
+            # Calculate returns
+            start = data[0]
+            end = data[-1]
+
+            start_local_price = Decimal(str(start["local_price"]))
+            end_local_price = Decimal(str(end["local_price"]))
+            start_fx_rate = Decimal(str(start["fx_rate"]))
+            end_fx_rate = Decimal(str(end["fx_rate"]))
+
+            # Local return (in security's currency)
+            r_local = (end_local_price - start_local_price) / start_local_price if start_local_price > 0 else Decimal("0")
+
+            # FX return (currency move)
+            r_fx = (end_fx_rate - start_fx_rate) / start_fx_rate if start_fx_rate > 0 else Decimal("0")
+
+            # Interaction term
+            r_interaction = r_local * r_fx
+
+            # Total return in base currency
+            r_total = r_local + r_fx + r_interaction
 
         result = {
-            "local_contribution": 0.12,  # Local price return component
-            "fx_contribution": 0.03,  # FX return component
-            "interaction_contribution": 0.004,  # r_local × r_fx interaction
-            "total_contribution": 0.154,  # Sum of above
-            "security_currency": position.get("security_currency", "USD"),
-            "note": "Currency attribution - requires historical FX rates"
+            "security_id": security_id,
+            "security_currency": security_currency,
+            "base_currency": base_currency,
+            "local_contribution": float(r_local),
+            "fx_contribution": float(r_fx),
+            "interaction_contribution": float(r_interaction),
+            "total_contribution": float(r_total),
+            "lookback_days": lookback_days,
+            "data_points": len(data),
         }
 
         metadata = self._create_metadata(
-            source=f"currency_attr:{security_id}",
+            source=f"currency_attr:{pack}",
             asof=ctx.asof_date,
             ttl=3600
         )
@@ -1086,32 +1321,150 @@ class FinancialAnalyst(BaseAgent):
         lookback_days: int = 252,
     ) -> Dict[str, Any]:
         """
-        Compute position risk metrics.
+        Compute position risk metrics using historical data.
 
         Capability: compute_position_risk
 
         Returns VaR, marginal VaR, beta, correlation, diversification benefit
         """
-        logger.info(f"compute_position_risk: security={security_id}")
+        security_uuid = UUID(security_id)
+        portfolio_uuid = UUID(portfolio_id)
+        pack = pack_id or ctx.pricing_pack_id
+
+        logger.info(f"compute_position_risk: security={security_id}, portfolio={portfolio_id}, pack={pack}")
 
         # Get position details
-        position = await self.get_position_details(ctx, state, portfolio_id, security_id, pack_id)
+        position = await self.get_position_details(ctx, state, portfolio_id, security_id, pack)
+        market_value = position.get("market_value", 0)
 
-        # TODO: Implement risk calculation using covariance matrix
-        # For now, return placeholder structure
+        # Get historical returns for position and portfolio
+        db_pool = self.services.get("db")
+        if not db_pool:
+            raise RuntimeError("Database pool not available")
+
+        async with db_pool.acquire() as conn:
+            # Get position returns
+            position_data = await conn.fetch(
+                """
+                SELECT pp.asof_date, p.price
+                FROM prices p
+                JOIN pricing_packs pp ON p.pricing_pack_id = pp.id
+                WHERE p.security_id = $1
+                  AND pp.asof_date <= (SELECT asof_date FROM pricing_packs WHERE id = $2)
+                  AND pp.asof_date >= (SELECT asof_date FROM pricing_packs WHERE id = $2) - INTERVAL '1 day' * $3
+                ORDER BY pp.asof_date ASC
+                """,
+                security_uuid,
+                pack,
+                lookback_days,
+            )
+
+            # Get portfolio returns (from metrics table)
+            portfolio_metrics = await conn.fetch(
+                """
+                SELECT asof_date, twr_1d as daily_return
+                FROM portfolio_metrics
+                WHERE portfolio_id = $1
+                  AND asof_date <= (SELECT asof_date FROM pricing_packs WHERE id = $2)
+                  AND asof_date >= (SELECT asof_date FROM pricing_packs WHERE id = $2) - INTERVAL '1 day' * $3
+                  AND twr_1d IS NOT NULL
+                ORDER BY asof_date ASC
+                """,
+                portfolio_uuid,
+                pack,
+                lookback_days,
+            )
+
+            if len(position_data) < 2 or len(portfolio_metrics) < 2:
+                logger.warning(f"Insufficient data for risk calculation: position={len(position_data)}, portfolio={len(portfolio_metrics)}")
+                result = {
+                    "error": "Insufficient historical data",
+                    "position_data_points": len(position_data),
+                    "portfolio_data_points": len(portfolio_metrics),
+                }
+                metadata = self._create_metadata(
+                    source=f"position_risk:{security_id}",
+                    asof=ctx.asof_date,
+                    ttl=3600
+                )
+                return self._attach_metadata(result, metadata)
+
+            # Calculate position returns
+            position_returns = []
+            for i in range(1, len(position_data)):
+                prev_price = Decimal(str(position_data[i - 1]["price"]))
+                curr_price = Decimal(str(position_data[i]["price"]))
+                if prev_price > 0:
+                    ret = float((curr_price - prev_price) / prev_price)
+                    position_returns.append(ret)
+
+            # Extract portfolio returns
+            portfolio_returns = [float(m["daily_return"]) for m in portfolio_metrics if m["daily_return"] is not None]
+
+            # Align arrays (use minimum length)
+            min_len = min(len(position_returns), len(portfolio_returns))
+            position_returns = position_returns[-min_len:]
+            portfolio_returns = portfolio_returns[-min_len:]
+
+            if min_len < 30:
+                logger.warning(f"Insufficient aligned data points: {min_len}")
+                result = {
+                    "error": "Insufficient aligned data",
+                    "aligned_data_points": min_len,
+                    "required_minimum": 30,
+                }
+                metadata = self._create_metadata(
+                    source=f"position_risk:{security_id}",
+                    asof=ctx.asof_date,
+                    ttl=3600
+                )
+                return self._attach_metadata(result, metadata)
+
+            # Compute risk metrics
+            position_vol = float(np.std(position_returns) * np.sqrt(252))
+            portfolio_vol = float(np.std(portfolio_returns) * np.sqrt(252))
+
+            # Correlation
+            correlation = float(np.corrcoef(position_returns, portfolio_returns)[0, 1]) if min_len > 1 else 0.0
+
+            # Beta (slope of regression: position returns vs portfolio returns)
+            covariance = float(np.cov(position_returns, portfolio_returns)[0, 1])
+            portfolio_variance = float(np.var(portfolio_returns))
+            beta = covariance / portfolio_variance if portfolio_variance > 0 else 1.0
+
+            # VaR at 95% confidence (parametric)
+            var_1d_pct = -1.645 * position_vol / np.sqrt(252)  # 1-day VaR
+            var_1d = var_1d_pct * market_value
+
+            # Marginal VaR (contribution to portfolio VaR)
+            # Approximation: beta × position_weight × portfolio_VaR
+            position_weight = position.get("weight", 0)
+            portfolio_var_pct = -1.645 * portfolio_vol / np.sqrt(252)
+            marginal_var_pct = beta * position_weight * portfolio_var_pct
+            marginal_var = marginal_var_pct * market_value
+
+            # Diversification benefit (how much correlation < 1 reduces risk)
+            standalone_risk = position_weight * position_vol
+            portfolio_contribution = position_weight * beta * portfolio_vol
+            diversification_benefit = (standalone_risk - portfolio_contribution) / standalone_risk if standalone_risk > 0 else 0.0
 
         result = {
-            "var_1d": -1500.00,  # 1-day VaR at 95% confidence
-            "marginal_var": -800.00,  # Contribution to portfolio VaR
-            "pct_portfolio_risk": 0.15,  # % of total portfolio volatility
-            "beta_to_portfolio": 1.2,  # Beta relative to portfolio
-            "correlation": 0.75,  # Correlation with portfolio
-            "diversification_benefit": 0.25,  # Risk reduction from correlation < 1
-            "note": "Risk metrics - requires historical covariance data"
+            "security_id": security_id,
+            "market_value": float(market_value),
+            "position_weight": float(position_weight),
+            "var_1d": round(var_1d, 2),
+            "var_1d_pct": round(var_1d_pct, 6),
+            "marginal_var": round(marginal_var, 2),
+            "position_volatility": round(position_vol, 6),
+            "portfolio_volatility": round(portfolio_vol, 6),
+            "beta_to_portfolio": round(beta, 4),
+            "correlation": round(correlation, 4),
+            "diversification_benefit": round(diversification_benefit, 4),
+            "data_points": min_len,
         }
 
         metadata = self._create_metadata(
-            source=f"position_risk:{security_id}",
+            source=f"position_risk:{pack}",
             asof=ctx.asof_date,
             ttl=3600
         )
@@ -1195,7 +1548,7 @@ class FinancialAnalyst(BaseAgent):
         security_id: str,
     ) -> Dict[str, Any]:
         """
-        Get fundamental data for security.
+        Get fundamental data for security using FMP provider.
 
         Capability: get_security_fundamentals
 
@@ -1204,9 +1557,6 @@ class FinancialAnalyst(BaseAgent):
         security_uuid = UUID(security_id)
 
         logger.info(f"get_security_fundamentals: security={security_id}")
-
-        # TODO: Integrate with FMP provider to fetch real fundamentals
-        # For now, return placeholder structure
 
         db_pool = self.services.get("db")
         if not db_pool:
@@ -1225,24 +1575,109 @@ class FinancialAnalyst(BaseAgent):
             if not security:
                 raise ValueError(f"Security not found: {security_id}")
 
+            symbol = security["symbol"]
+            name = security["name"]
+            asset_class = security["asset_class"]
+
+        # For non-equity securities, return basic info only
+        if asset_class not in ["equity", "stock"]:
             result = {
-                "symbol": security["symbol"],
-                "name": security["name"],
-                "asset_class": security["asset_class"],
-                "market_cap": 500000000000.00,  # Placeholder
-                "pe_ratio": 25.5,  # Placeholder
-                "dividend_yield": 0.015,  # Placeholder
-                "sector": "Technology",  # Placeholder
-                "note": "Fundamentals - requires FMP provider integration"
+                "security_id": security_id,
+                "symbol": symbol,
+                "name": name,
+                "asset_class": asset_class,
+                "note": f"Fundamentals not available for asset class: {asset_class}"
+            }
+            metadata = self._create_metadata(
+                source="securities_table",
+                asof=ctx.asof_date,
+                ttl=86400
+            )
+            return self._attach_metadata(result, metadata)
+
+        # Fetch from FMP provider
+        try:
+            from backend.app.providers.fmp_client import FMPClient
+
+            fmp = FMPClient()
+            profile = await fmp.get_profile(symbol)
+
+            # Extract fundamental metrics
+            result = {
+                "security_id": security_id,
+                "symbol": symbol,
+                "name": profile.get("companyName", name),
+                "asset_class": asset_class,
+                "exchange": profile.get("exchangeShortName"),
+                "sector": profile.get("sector"),
+                "industry": profile.get("industry"),
+                "market_cap": profile.get("mktCap"),
+                "price": profile.get("price"),
+                "beta": profile.get("beta"),
+                "pe_ratio": profile.get("pe"),
+                "eps": profile.get("eps"),
+                "dividend_yield": profile.get("lastDiv"),
+                "52_week_high": profile.get("range", "").split("-")[-1].strip() if profile.get("range") else None,
+                "52_week_low": profile.get("range", "").split("-")[0].strip() if profile.get("range") else None,
+                "volume_avg": profile.get("volAvg"),
+                "description": profile.get("description"),
+                "ceo": profile.get("ceo"),
+                "website": profile.get("website"),
+                "ipo_date": profile.get("ipoDate"),
+                "country": profile.get("country"),
+                "currency": profile.get("currency"),
+                "employees": profile.get("fullTimeEmployees"),
             }
 
-        metadata = self._create_metadata(
-            source=f"fundamentals:{security_id}",
-            asof=ctx.asof_date,
-            ttl=86400
-        )
+            # Get ratios for additional metrics
+            try:
+                ratios = await fmp.get_ratios(symbol, limit=1)
+                if ratios and len(ratios) > 0:
+                    latest_ratios = ratios[0]
+                    result.update({
+                        "roe": latest_ratios.get("returnOnEquity"),
+                        "roa": latest_ratios.get("returnOnAssets"),
+                        "debt_to_equity": latest_ratios.get("debtEquityRatio"),
+                        "current_ratio": latest_ratios.get("currentRatio"),
+                        "quick_ratio": latest_ratios.get("quickRatio"),
+                        "gross_margin": latest_ratios.get("grossProfitMargin"),
+                        "operating_margin": latest_ratios.get("operatingProfitMargin"),
+                        "net_margin": latest_ratios.get("netProfitMargin"),
+                        "payout_ratio": latest_ratios.get("payoutRatio"),
+                    })
+            except Exception as e:
+                logger.warning(f"Failed to fetch ratios for {symbol}: {e}")
 
-        return self._attach_metadata(result, metadata)
+            await fmp.close()
+
+            metadata = self._create_metadata(
+                source="FMP",
+                asof=ctx.asof_date,
+                ttl=86400  # Cache fundamentals for 24 hours
+            )
+
+            return self._attach_metadata(result, metadata)
+
+        except Exception as e:
+            logger.error(f"Failed to fetch fundamentals from FMP for {symbol}: {e}", exc_info=True)
+
+            # Return basic info from database on FMP failure
+            result = {
+                "security_id": security_id,
+                "symbol": symbol,
+                "name": name,
+                "asset_class": asset_class,
+                "error": f"FMP provider unavailable: {str(e)}",
+                "note": "Using database fallback - limited data available"
+            }
+
+            metadata = self._create_metadata(
+                source="securities_table_fallback",
+                asof=ctx.asof_date,
+                ttl=3600
+            )
+
+            return self._attach_metadata(result, metadata)
 
     async def get_comparable_positions(
         self,
