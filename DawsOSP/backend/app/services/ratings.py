@@ -105,7 +105,7 @@ class RatingsService:
         logger.info(f"Loaded {len(rubrics)} rating rubrics from database: {list(rubrics.keys())}")
         return rubrics
 
-    async def _get_weights(self, rating_type: str) -> Dict[str, Decimal]:
+    async def _get_weights(self, rating_type: str) -> tuple[Dict[str, Decimal], str]:
         """
         Get component weights for a rating type.
 
@@ -115,7 +115,9 @@ class RatingsService:
             rating_type: One of 'dividend_safety', 'moat_strength', 'resilience'
 
         Returns:
-            Dict mapping component names to Decimal weights
+            Tuple of (weights dict, source):
+                - weights: Dict mapping component names to Decimal weights
+                - source: "rubric" if loaded from database, "fallback" if using hardcoded weights
         """
         # Load rubrics if not already cached
         if not self.rubrics:
@@ -136,10 +138,12 @@ class RatingsService:
                 weights_dict = weights_data
 
             # Convert to Decimal
-            return {k: Decimal(str(v)) for k, v in weights_dict.items()}
+            weights = {k: Decimal(str(v)) for k, v in weights_dict.items()}
+            return (weights, "rubric")
         else:
             logger.warning(f"Rubric not found for {rating_type}, using fallback equal weights")
-            return self._get_fallback_weights(rating_type)
+            weights = self._get_fallback_weights(rating_type)
+            return (weights, "fallback")
 
     def _get_fallback_weights(self, rating_type: str) -> Dict[str, Decimal]:
         """
@@ -258,7 +262,7 @@ class RatingsService:
             cash_score = Decimal("4")
 
         # Load weights from database (SPEC LINES 548-553)
-        weights = await self._get_weights("dividend_safety")
+        weights, weights_source = await self._get_weights("dividend_safety")
 
         # Weighted average (SPEC LINES 259-266)
         overall = (
@@ -273,6 +277,10 @@ class RatingsService:
             "overall": overall,
             "rating_type": "dividend_safety",
             "symbol": symbol,
+            "_metadata": {
+                "weights_source": weights_source,  # "rubric" or "fallback"
+                "method_version": "v1"
+            },
             "components": {
                 "payout_ratio": {
                     "score": payout_score,
@@ -372,7 +380,7 @@ class RatingsService:
         switching_score = Decimal(str(fundamentals.get("switching_cost_score", 5)))
 
         # Load weights from database (research-based, see seed files)
-        weights = await self._get_weights("moat_strength")
+        weights, weights_source = await self._get_weights("moat_strength")
 
         # Weighted average (SPEC LINES 325-331)
         overall = (
@@ -386,6 +394,10 @@ class RatingsService:
             "overall": overall,
             "rating_type": "moat_strength",
             "symbol": symbol,
+            "_metadata": {
+                "weights_source": weights_source,  # "rubric" or "fallback"
+                "method_version": "v1"
+            },
             "components": {
                 "roe_consistency": {
                     "score": roe_score,
@@ -495,7 +507,7 @@ class RatingsService:
             stability_score = Decimal("4")
 
         # Load weights from database (research-based, see seed files)
-        weights = await self._get_weights("resilience")
+        weights, weights_source = await self._get_weights("resilience")
 
         # Weighted average (SPEC LINES 400-406)
         overall = (
@@ -509,6 +521,10 @@ class RatingsService:
             "overall": overall,
             "rating_type": "resilience",
             "symbol": symbol,
+            "_metadata": {
+                "weights_source": weights_source,  # "rubric" or "fallback"
+                "method_version": "v1"
+            },
             "components": {
                 "debt_equity": {
                     "score": de_score,
