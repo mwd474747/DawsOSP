@@ -85,3 +85,18 @@ htmlcov/
 # API validation results (temporary)
 *_validation_results.json
 *_test_results.json
+
+# Next.js
+dawsos-ui/.next/
+dawsos-ui/node_modules/
+dawsos-ui/out/
+dawsos-ui/*.tsbuildinfo
+dawsos-ui/.env*.local
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+.pnpm-debug.log*

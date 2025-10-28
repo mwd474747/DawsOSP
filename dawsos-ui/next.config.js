@@ -1,11 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Fix workspace root warning
-  outputFileTracingRoot: '/Users/mdawson/Documents/GitHub/DawsOSP',
-  
-  // Enable standalone output for Docker
-  output: 'standalone',
-  
   // API configuration
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
@@ -17,16 +11,14 @@ const nextConfig = {
   // Image optimization
   images: {
     domains: ['localhost'],
-    unoptimized: true, // For development
+    unoptimized: true,
   },
   
   // Build configuration
   typescript: {
-    // Type checking handled by separate process
     ignoreBuildErrors: false,
   },
   
-  // Disable static optimization for now
   trailingSlash: false,
 }
 
