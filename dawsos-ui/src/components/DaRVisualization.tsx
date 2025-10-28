@@ -15,7 +15,8 @@ interface DaRVisualizationProps {
 export function DaRVisualization({ dar, benchmark_dar, confidence, horizon_days, scenarios }: DaRVisualizationProps) {
   const darPercentage = (dar * 100).toFixed(1)
   const benchmarkPercentage = (benchmark_dar * 100).toFixed(1)
-  const outperformance = ((dar - benchmark_dar) / benchmark_dar * 100).toFixed(1)
+  const outperformanceValue = (dar - benchmark_dar) / benchmark_dar * 100
+  const outperformance = outperformanceValue.toFixed(1)
 
   return (
     <div className="metric-card">
@@ -38,15 +39,15 @@ export function DaRVisualization({ dar, benchmark_dar, confidence, horizon_days,
         <div className="flex items-center justify-between mb-fib2">
           <span className="text-sm text-slate-600">vs Benchmark</span>
           <span className={`text-sm font-medium ${
-            parseFloat(outperformance) > 0 ? 'loss' : 'profit'
+            outperformanceValue > 0 ? 'loss' : 'profit'
           }`}>
-            {outperformance > 0 ? '+' : ''}{outperformance}%
+            {outperformanceValue > 0 ? '+' : ''}{outperformance}%
           </span>
         </div>
         <div className="w-full bg-slate-200 rounded-full h-fib2">
           <div 
             className={`h-fib2 rounded-full ${
-              parseFloat(outperformance) > 0 ? 'bg-red-500' : 'bg-accent-500'
+              outperformanceValue > 0 ? 'bg-red-500' : 'bg-accent-500'
             }`}
             style={{ width: `${Math.min(Math.abs(parseFloat(outperformance)) * 10, 100)}%` }}
           ></div>

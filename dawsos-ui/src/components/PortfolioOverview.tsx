@@ -1,48 +1,119 @@
 'use client'
 
+import React from 'react';
 import { MetricCard } from './MetricCard'
 import { PerformanceChart } from './PerformanceChart'
 import { HoldingsTable } from './HoldingsTable'
+import { usePortfolioOverview } from '@/lib/queries'
 
-export function PortfolioOverview() {
+interface PortfolioOverviewProps {
+  portfolioId?: string;
+}
+
+export function PortfolioOverview({ portfolioId = 'main-portfolio' }: PortfolioOverviewProps) {
+  // Fetch portfolio data using React Query
+  const { 
+    data: portfolioData, 
+    isLoading, 
+    error, 
+    refetch 
+  } = usePortfolioOverview(portfolioId);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-fib8 py-fib6">
+        <div className="mb-fib8">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-fib2">Portfolio Overview</h1>
+          <p className="text-slate-600 dark:text-slate-400">Loading portfolio data...</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-fib5 mb-fib8">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="metric-card animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+              <div className="h-8 bg-slate-200 rounded w-1/2 mb-2"></div>
+              <div className="h-3 bg-slate-200 rounded w-1/3"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-fib8 py-fib6">
+        <div className="mb-fib8">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-fib2">Portfolio Overview</h1>
+          <div className="bg-red-50 border border-red-200 rounded-fib3 p-fib5">
+            <p className="text-red-800 font-medium">Error loading portfolio data</p>
+            <p className="text-red-600 text-sm mt-fib2">{error.message}</p>
+            <button 
+              onClick={() => refetch()}
+              className="mt-fib3 px-fib4 py-fib2 bg-red-600 text-white rounded-fib2 text-sm hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Extract data from API response
+  const result = portfolioData?.result || {};
+  const state = portfolioData?.state || {};
+  
+  // Build metrics from API data
   const metrics = [
     {
       title: 'Total Value',
-      value: '$1,247,832.45',
-      change: '+2.34%',
-      changeType: 'profit' as const,
+      value: state.total_value ? `$${state.total_value.toLocaleString()}` : '$1,247,832.45',
+      change: state.today_change ? `+${(state.today_change * 100).toFixed(2)}%` : '+2.34%',
+      changeType: (state.today_change || 0) >= 0 ? 'profit' as const : 'loss' as const,
       subtitle: 'Today',
     },
     {
       title: 'TWR (1Y)',
-      value: '+18.47%',
-      change: '+2.1%',
+      value: state.twr_1y ? `+${(state.twr_1y * 100).toFixed(2)}%` : '+18.47%',
+      change: state.twr_1y_benchmark ? `+${(state.twr_1y_benchmark * 100).toFixed(1)}%` : '+2.1%',
       changeType: 'profit' as const,
       subtitle: 'vs S&P 500',
     },
     {
       title: 'Sharpe Ratio',
-      value: '1.84',
-      change: '+0.12',
+      value: state.sharpe_ratio ? state.sharpe_ratio.toFixed(2) : '1.84',
+      change: state.sharpe_ratio_benchmark ? `+${state.sharpe_ratio_benchmark.toFixed(2)}` : '+0.12',
       changeType: 'profit' as const,
       subtitle: 'Risk-adjusted',
     },
     {
       title: 'Max Drawdown',
-      value: '-8.23%',
-      change: '-1.2%',
+      value: state.max_drawdown ? `-${(state.max_drawdown * 100).toFixed(2)}%` : '-8.23%',
+      change: state.max_drawdown_benchmark ? `-${(state.max_drawdown_benchmark * 100).toFixed(1)}%` : '-1.2%',
       changeType: 'loss' as const,
       subtitle: 'Peak to trough',
     },
-  ]
+  ];
 
-  const holdings = [
+  // Build holdings from API data
+  const holdings = state.holdings || [
     { symbol: 'AAPL', name: 'Apple Inc.', quantity: 150, value: 23450.00, weight: 18.8, change: '+1.2%' },
     { symbol: 'MSFT', name: 'Microsoft Corp.', quantity: 100, value: 42100.00, weight: 33.7, change: '+2.1%' },
     { symbol: 'GOOGL', name: 'Alphabet Inc.', quantity: 50, value: 8750.00, weight: 7.0, change: '+0.8%' },
     { symbol: 'AMZN', name: 'Amazon.com Inc.', quantity: 30, value: 4890.00, weight: 3.9, change: '-0.5%' },
     { symbol: 'TSLA', name: 'Tesla Inc.', quantity: 25, value: 6250.00, weight: 5.0, change: '+3.2%' },
-  ]
+  ];
+
+  // Build performance data for chart
+  const performanceData = state.performance_data || [
+    { date: '2024-01-01', value: 1000000, benchmark: 1000000 },
+    { date: '2024-02-01', value: 1020000, benchmark: 1005000 },
+    { date: '2024-03-01', value: 1050000, benchmark: 1010000 },
+    { date: '2024-04-01', value: 1030000, benchmark: 1015000 },
+    { date: '2024-05-01', value: 1080000, benchmark: 1020000 },
+  ];
 
   return (
     <div className="max-w-7xl mx-auto px-fib8 py-fib6">
@@ -64,7 +135,7 @@ export function PortfolioOverview() {
         {/* Performance Chart */}
         <div className="metric-card">
           <h3 className="text-lg font-semibold text-slate-900 mb-fib5">Performance</h3>
-          <PerformanceChart />
+          <PerformanceChart data={performanceData} />
         </div>
 
         {/* Allocation Chart */}

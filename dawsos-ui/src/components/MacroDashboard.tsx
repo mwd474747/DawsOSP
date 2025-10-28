@@ -33,12 +33,12 @@ export function MacroDashboard() {
   }
 
   const indicators = [
-    { name: 'GDP Growth', value: 2.4, change: 0.2, trend: 'up', significance: 'high' },
-    { name: 'Unemployment', value: 3.8, change: -0.1, trend: 'down', significance: 'high' },
-    { name: 'Inflation (CPI)', value: 3.2, change: -0.3, trend: 'down', significance: 'high' },
-    { name: '10Y-2Y Spread', value: 0.15, change: 0.05, trend: 'up', significance: 'medium' },
-    { name: 'VIX', value: 18.5, change: -2.1, trend: 'down', significance: 'medium' },
-    { name: 'Dollar Index', value: 103.2, change: 0.8, trend: 'up', significance: 'medium' },
+    { name: 'GDP Growth', value: 2.4, change: 0.2, trend: 'up' as const, significance: 'high' as const },
+    { name: 'Unemployment', value: 3.8, change: -0.1, trend: 'down' as const, significance: 'high' as const },
+    { name: 'Inflation (CPI)', value: 3.2, change: -0.3, trend: 'down' as const, significance: 'high' as const },
+    { name: '10Y-2Y Spread', value: 0.15, change: 0.05, trend: 'up' as const, significance: 'medium' as const },
+    { name: 'VIX', value: 18.5, change: -2.1, trend: 'down' as const, significance: 'medium' as const },
+    { name: 'Dollar Index', value: 103.2, change: 0.8, trend: 'up' as const, significance: 'medium' as const },
   ]
 
   return (

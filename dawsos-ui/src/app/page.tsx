@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { Navigation } from '@/components/Navigation'
 import { PortfolioOverview } from '@/components/PortfolioOverview'
+import { MacroDashboard } from '@/components/MacroDashboard'
+import { HoldingsDetail } from '@/components/HoldingsDetail'
+import { Scenarios } from '@/components/Scenarios'
 import { Alerts } from '@/components/Alerts'
 import { Reports } from '@/components/Reports'
 

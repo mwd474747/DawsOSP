@@ -28,14 +28,14 @@ export function HoldingsDetail() {
   }
 
   const fundamentals = [
-    { metric: 'P/E Ratio', value: 28.5, benchmark: 22.3, status: 'above' },
-    { metric: 'P/B Ratio', value: 8.2, benchmark: 3.1, status: 'above' },
-    { metric: 'ROE', value: 28.9, benchmark: 15.2, status: 'above' },
-    { metric: 'ROA', value: 12.4, benchmark: 8.7, status: 'above' },
-    { metric: 'Debt/Equity', value: 0.15, benchmark: 0.35, status: 'below' },
-    { metric: 'Current Ratio', value: 1.8, benchmark: 1.5, status: 'above' },
-    { metric: 'Dividend Yield', value: 0.5, benchmark: 2.1, status: 'below' },
-    { metric: 'EPS Growth (5Y)', value: 12.3, benchmark: 8.9, status: 'above' },
+    { metric: 'P/E Ratio', value: 28.5, benchmark: 22.3, status: 'above' as const },
+    { metric: 'P/B Ratio', value: 8.2, benchmark: 3.1, status: 'above' as const },
+    { metric: 'ROE', value: 28.9, benchmark: 15.2, status: 'above' as const },
+    { metric: 'ROA', value: 12.4, benchmark: 8.7, status: 'above' as const },
+    { metric: 'Debt/Equity', value: 0.15, benchmark: 0.35, status: 'below' as const },
+    { metric: 'Current Ratio', value: 1.8, benchmark: 1.5, status: 'above' as const },
+    { metric: 'Dividend Yield', value: 0.5, benchmark: 2.1, status: 'below' as const },
+    { metric: 'EPS Growth (5Y)', value: 12.3, benchmark: 8.9, status: 'above' as const },
   ]
 
   const positionHistory = [
