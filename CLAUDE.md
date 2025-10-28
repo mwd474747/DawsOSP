@@ -3,9 +3,9 @@
 **Application Name**: DawsOS
 **Architecture**: Trinity 3.0
 **Version**: 1.0.0
-**Status**: Development (60-70% complete - CORRECTED)
+**Status**: Development (60-65% complete - VERIFIED)
 **Repository**: [DawsOSP](https://github.com/mwd474747/DawsOSP)
-**Last Updated**: October 27, 2025
+**Last Updated**: October 28, 2025
 
 This file provides context for AI assistants (Claude) working on DawsOS.
 
@@ -81,7 +81,7 @@ DawsOSP/
 **Agents**: 9 agents registered and functional
 - `financial_analyst` - Portfolio data, pricing, metrics (18 capabilities)
 - `macro_hound` - Macro regime detection, scenarios, DaR (14 capabilities)
-- `data_harvester` - External provider integration (6 capabilities)
+- `data_harvester` - External provider integration (8 capabilities)
 - `claude` - AI explanations and analysis (4 capabilities)
 - `ratings` - Buffett quality ratings (4 capabilities)
 - `optimizer` - Portfolio optimization (4 capabilities)
@@ -89,7 +89,7 @@ DawsOSP/
 - `alerts` - Alert suggestions and threshold-based creation (2 capabilities) ✨ NEW
 - `charts` - Visualization formatting and chart specifications (2 capabilities) ✨ NEW
 
-**Total Capabilities**: 57 (verified via code inspection October 27, 2025)
+**Total Capabilities**: 59 (verified via code inspection October 28, 2025)
 
 **Patterns**: 12 production patterns operational
 - `portfolio_overview` - Core portfolio analysis
@@ -105,14 +105,16 @@ DawsOSP/
 - `export_portfolio_report` - PDF export
 - `macro_trend_monitor` - Trend monitoring
 
-**Capabilities**: 53 total capabilities across 7 agents
+**Capabilities**: 59 total capabilities across 9 agents
 - `financial_analyst` (18 capabilities)
 - `macro_hound` (14 capabilities)
-- `data_harvester` (6 capabilities)
+- `data_harvester` (8 capabilities)
 - `claude` (4 capabilities)
 - `ratings` (4 capabilities)
 - `optimizer` (4 capabilities)
 - `reports` (3 capabilities)
+- `alerts` (2 capabilities)
+- `charts` (2 capabilities)
 
 ---
 

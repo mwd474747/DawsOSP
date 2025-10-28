@@ -6,7 +6,7 @@ Updated: 2025-10-21
 Priority: P0 (Critical for reproducibility and type safety)
 
 Usage:
-    from app.core.types import RequestCtx, Capability, FactorResult
+    from backend.app.core.types import RequestCtx, Capability, FactorResult
 
     # Every request handler receives context
     async def get_portfolio_valuation(ctx: RequestCtx, portfolio_id: UUID) -> ValuationResponse:

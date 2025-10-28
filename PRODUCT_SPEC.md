@@ -57,7 +57,7 @@ Pattern Orchestrator (declarative DAG runner)
 Agent Runtime (capability router)
  ├─ financial_analyst  → metrics/ratings/optimizer/pricing_pack
  ├─ macro_hound        → FRED/FX, regime, factors, scenarios, DaR
- ├─ data_harvester     → FMP/Polygon/NewsAPI/OpenBB via facades
+ ├─ data_harvester     → FMP/Polygon/NewsAPI/OpenBB via integration providers
  └─ claude             → explanations (trace-aware)
 
 Services (stateless facades)

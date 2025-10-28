@@ -21,9 +21,9 @@ Modules:
     - macro: Macro regime and scenario analysis endpoints (JWT + RBAC)
 
 Usage:
-    from app.api.routes.auth import router as auth_router
-    from app.api.routes.metrics import router as metrics_router
-    from app.api.routes.macro import router as macro_router
+    from backend.app.api.routes.auth import router as auth_router
+    from backend.app.api.routes.metrics import router as metrics_router
+    from backend.app.api.routes.macro import router as macro_router
     app.include_router(auth_router)
     app.include_router(metrics_router)
     app.include_router(macro_router)

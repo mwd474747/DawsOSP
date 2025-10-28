@@ -1597,9 +1597,15 @@ class FinancialAnalyst(BaseAgent):
 
         # Fetch from FMP provider
         try:
-            from backend.app.providers.fmp_client import FMPClient
-
-            fmp = FMPClient()
+            from backend.app.integrations.fmp_provider import FMPProvider
+            import os
+            
+            api_key = os.getenv("FMP_API_KEY")
+            if not api_key:
+                logger.warning("FMP_API_KEY not configured, using stub data")
+                return self._get_stub_fundamentals(security_id, symbol, name)
+                
+            fmp = FMPProvider(api_key=api_key)
             profile = await fmp.get_profile(symbol)
 
             # Extract fundamental metrics

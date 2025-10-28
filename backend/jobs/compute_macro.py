@@ -40,9 +40,9 @@ import argparse
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from backend.app.providers.fred_client import get_fred_client
+from backend.app.integrations.fred_provider import FREDProvider
 from backend.app.services.macro import get_macro_service, Regime
-from backend.app.db.connection import get_connection_pool
+from backend.app.db.connection import get_db_pool
 
 logger = logging.getLogger("DawsOS.MacroJob")
 
@@ -69,8 +69,14 @@ async def fetch_indicators_job(
     logger.info(f"Fetching indicators for {asof_date}")
 
     # Get services
-    fred_client = get_fred_client()
-    macro_service = get_macro_service(fred_client=fred_client)
+    import os
+    api_key = os.getenv("FRED_API_KEY")
+    if not api_key:
+        logger.error("FRED_API_KEY not configured")
+        return
+        
+    fred_provider = FREDProvider(api_key=api_key)
+    macro_service = get_macro_service(fred_client=fred_provider)
 
     # Fetch indicators
     try:
@@ -215,8 +221,14 @@ async def backfill_historical_data(
     """
     logger.info(f"Backfilling historical data: {start_date} to {end_date}")
 
-    fred_client = get_fred_client()
-    macro_service = get_macro_service(fred_client=fred_client)
+    import os
+    api_key = os.getenv("FRED_API_KEY")
+    if not api_key:
+        logger.error("FRED_API_KEY not configured")
+        return
+        
+    fred_provider = FREDProvider(api_key=api_key)
+    macro_service = get_macro_service(fred_client=fred_provider)
 
     # Fetch historical indicators
     logger.info("Step 1: Fetching historical indicators")

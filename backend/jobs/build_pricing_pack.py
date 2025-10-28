@@ -30,12 +30,13 @@ Provider Attribution:
 
 References:
     - PRODUCT_SPEC.md §5 (Provider Integration)
-    - backend/app/providers/polygon_client.py
+    - backend/app/integrations/polygon_provider.py
 """
 
 import asyncio
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
 import time
@@ -51,8 +52,8 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from backend.app.db.connection import get_db_pool, execute_statement, execute_query_one, execute_query
 from backend.app.db.pricing_pack_queries import get_pricing_pack_queries
-from backend.app.providers.polygon_client import get_polygon_client, PolygonError
-from backend.app.core.circuit_breaker import CircuitBreakerOpenError
+from backend.app.integrations.polygon_provider import PolygonProvider
+from backend.app.core.types import ProviderTimeoutError, RightsViolationError
 
 # Observability (metrics for pack build monitoring)
 try:
@@ -96,11 +97,16 @@ class PricingPackBuilder:
         self.use_stubs = use_stubs
         self.pack_queries = get_pricing_pack_queries(use_db=True)
 
-        # Initialize Polygon client (unless using stubs)
+        # Initialize Polygon provider (unless using stubs)
         if not use_stubs:
-            self.polygon_client = get_polygon_client()
+            api_key = os.getenv("POLYGON_API_KEY")
+            if api_key:
+                self.polygon_provider = PolygonProvider(api_key=api_key)
+            else:
+                logger.warning("POLYGON_API_KEY not configured, using stubs")
+                self.polygon_provider = None
         else:
-            self.polygon_client = None
+            self.polygon_provider = None
 
         logger.info(
             f"Pricing pack builder initialized: use_stubs={use_stubs}"
@@ -263,7 +269,11 @@ class PricingPackBuilder:
 
             try:
                 # Fetch price from Polygon
-                price_data = await self.polygon_client.get_daily_price(
+                if not self.polygon_provider:
+                    logger.warning(f"Polygon provider not available for {symbol}")
+                    continue
+                    
+                price_data = await self.polygon_provider.get_daily_price(
                     symbol, date_str, adjusted=True
                 )
 
@@ -282,7 +292,7 @@ class PricingPackBuilder:
                 else:
                     logger.warning(f"No price found for {symbol} on {date_str}")
 
-            except (PolygonError, CircuitBreakerOpenError) as e:
+            except (ProviderTimeoutError, RightsViolationError) as e:
                 logger.warning(f"Failed to fetch price for {symbol}: {e}")
                 continue
 
@@ -319,7 +329,11 @@ class PricingPackBuilder:
 
                 # Fetch FX rate from Polygon
                 # Note: In production, use WM Reuters API for official 4PM fixing
-                price_data = await self.polygon_client.get_daily_price(
+                if not self.polygon_provider:
+                    logger.warning(f"Polygon provider not available for {fx_symbol}")
+                    continue
+                    
+                price_data = await self.polygon_provider.get_daily_price(
                     fx_symbol, date_str, adjusted=True
                 )
 
@@ -338,7 +352,7 @@ class PricingPackBuilder:
                 else:
                     logger.warning(f"No FX rate found for {base_ccy}/{quote_ccy} on {date_str}")
 
-            except (PolygonError, CircuitBreakerOpenError) as e:
+            except (ProviderTimeoutError, RightsViolationError) as e:
                 logger.warning(f"Failed to fetch FX rate for {base_ccy}/{quote_ccy}: {e}")
                 continue
 
