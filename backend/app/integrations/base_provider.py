@@ -492,7 +492,7 @@ class BaseProvider(ABC):
             return  # No restrictions
 
         # TODO: Implement rights check against registry
-        # from app.services.rights_registry import get_registry
+        # from backend.app.services.rights_registry import get_registry
         # registry = get_registry()
         # result = registry.check_export([self.name], action, ctx.rights_profile)
         # if not result.allowed:

@@ -9,7 +9,7 @@ Models:
     - AttributionResponse: Currency attribution breakdown
 
 Usage:
-    from app.api.schemas.attribution import AttributionResponse
+    from backend.app.api.schemas.attribution import AttributionResponse
 
     attribution = currency_attr.compute_portfolio_attribution(portfolio_id, asof_date)
     return AttributionResponse.from_attribution(attribution)

@@ -494,7 +494,7 @@ async def api_client() -> AsyncGenerator[AsyncClient, None]:
     Yields:
         HTTPX async client
     """
-    from app.api.executor import app
+    from backend.app.api.executor import app
 
     async with AsyncClient(app=app, base_url="http://test") as client:
         yield client

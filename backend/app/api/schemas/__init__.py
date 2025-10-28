@@ -10,8 +10,8 @@ Schemas:
     - attribution: Currency attribution response models
 
 Usage:
-    from app.api.schemas.metrics import MetricsResponse
-    from app.api.schemas.attribution import AttributionResponse
+    from backend.app.api.schemas.metrics import MetricsResponse
+    from backend.app.api.schemas.attribution import AttributionResponse
 """
 
 __all__ = []

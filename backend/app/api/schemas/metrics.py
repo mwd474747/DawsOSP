@@ -10,7 +10,7 @@ Models:
     - MetricsHistoryResponse: List of historical metrics
 
 Usage:
-    from app.api.schemas.metrics import MetricsResponse
+    from backend.app.api.schemas.metrics import MetricsResponse
 
     metrics = await queries.get_latest_metrics(portfolio_id, asof_date)
     return MetricsResponse.from_orm(metrics)
