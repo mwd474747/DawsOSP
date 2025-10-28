@@ -3,9 +3,77 @@
 import { ScenarioCard } from './ScenarioCard'
 import { ImpactAnalysis } from './ImpactAnalysis'
 import { HedgeSuggestions } from './HedgeSuggestions'
+import { useScenarios } from '@/lib/queries'
 
-export function Scenarios() {
-  const scenarios = [
+interface ScenariosProps {
+  portfolioId?: string;
+}
+
+export function Scenarios({ portfolioId = 'main-portfolio' }: ScenariosProps) {
+  // Fetch scenarios data using React Query
+  const { 
+    data: scenariosData, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useScenarios(portfolioId);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-8 py-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Scenarios</h1>
+          <p className="text-slate-600 dark:text-slate-400">Loading scenario data...</p>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700 animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-3/4 mb-4"></div>
+              <div className="h-8 bg-slate-200 rounded w-1/2 mb-2"></div>
+              <div className="h-3 bg-slate-200 rounded w-1/3"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-8 py-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Scenarios</h1>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+            <p className="text-red-800 dark:text-red-200 font-medium">Error loading scenario data</p>
+            <p className="text-red-600 dark:text-red-300 text-sm mt-2">
+              {error instanceof Error ? error.message : 'Unknown error occurred'}
+            </p>
+            <button 
+              onClick={() => refetch()}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Extract data from API response or use defaults
+  const scenarios: Array<{
+    id: string;
+    name: string;
+    description: string;
+    probability: number;
+    impact: number;
+    regime: string;
+    factors: string[];
+    portfolio_impact: number;
+    duration_months: number;
+  }> = scenariosData?.result?.scenarios || [
     {
       id: 'recession',
       name: 'Recession Scenario',

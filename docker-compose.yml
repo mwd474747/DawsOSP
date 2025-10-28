@@ -105,26 +105,25 @@ services:
     restart: unless-stopped
 
   # ============================================================================
-  # Frontend UI: Streamlit
+  # Frontend UI: Next.js
   # ============================================================================
-  frontend:
+  dawsos-ui:
     build:
       context: .
-      dockerfile: frontend/Dockerfile
-    container_name: dawsos-frontend
+      dockerfile: dawsos-ui/Dockerfile
+    container_name: dawsos-ui
     environment:
-      EXECUTOR_API_URL: http://backend:8000
-      USE_MOCK_CLIENT: "false"
-      PYTHONPATH: /app
+      NEXT_PUBLIC_API_URL: http://backend:8000
+      NODE_ENV: production
     ports:
-      - "8501:8501"
+      - "3000:3000"
     volumes:
-      - ./frontend:/app/frontend:ro
+      - ./dawsos-ui:/app:ro
     depends_on:
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
