@@ -25,7 +25,7 @@ DLQ Status Flow:
     pending → retrying → failed (max attempts reached)
 
 Usage:
-    from backend.app.services.dlq import DLQService
+    from app.services.dlq import DLQService
 
     dlq_svc = DLQService()
 
@@ -87,7 +87,7 @@ class DLQService:
 
         if use_db:
             try:
-                from backend.app.db.connection import (
+                from app.db.connection import (
                     execute_query_one,
                     execute_query,
                     execute_statement,

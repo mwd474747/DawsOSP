@@ -25,8 +25,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from backend.app.core.types import RequestCtx
-from backend.observability.metrics import get_metrics
+from app.core.types import RequestCtx
+from observability.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
 

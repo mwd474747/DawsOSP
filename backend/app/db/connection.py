@@ -12,7 +12,7 @@ Features:
     - Graceful shutdown
 
 Usage:
-    from backend.app.db.connection import get_db_pool, init_db_pool
+    from app.db.connection import get_db_pool, init_db_pool
 
     # Initialize at startup
     await init_db_pool(database_url)
@@ -124,7 +124,7 @@ _pool_manager = PoolManager()
 # ============================================================================
 # Redis Coordinator (NEW - Fixes cross-module pool access)
 # ============================================================================
-from backend.app.db.redis_pool_coordinator import coordinator
+from app.db.redis_pool_coordinator import coordinator
 
 
 async def init_db_pool(

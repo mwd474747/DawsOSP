@@ -12,7 +12,7 @@ Features:
     - Retry scheduling
 
 Usage:
-    from backend.app.services.alert_delivery import AlertDeliveryService
+    from app.services.alert_delivery import AlertDeliveryService
 
     delivery_svc = AlertDeliveryService()
 
@@ -58,7 +58,7 @@ class AlertDeliveryService:
 
         if use_db:
             try:
-                from backend.app.db.connection import execute_query_one, execute_statement
+                from app.db.connection import execute_query_one, execute_statement
 
                 self.execute_query_one = execute_query_one
                 self.execute_statement = execute_statement
@@ -281,7 +281,7 @@ class AlertDeliveryService:
         """
 
         try:
-            from backend.app.db.connection import execute_query
+            from app.db.connection import execute_query
 
             rows = await execute_query(query, max_retry_count, limit)
 

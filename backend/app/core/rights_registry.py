@@ -12,7 +12,7 @@ Features:
     - Raise RightsViolationError for blocked operations
 
 Usage:
-    from backend.app.core.rights_registry import ensure_allowed, get_attribution_text
+    from app.core.rights_registry import ensure_allowed, get_attribution_text
 
     # Check if PDF export allowed
     allowed, blocked = ensure_allowed(["FMP", "Polygon"], "export_pdf")

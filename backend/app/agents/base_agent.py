@@ -29,7 +29,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from backend.app.core.types import RequestCtx
+from app.core.types import RequestCtx
 
 logger = logging.getLogger(__name__)
 

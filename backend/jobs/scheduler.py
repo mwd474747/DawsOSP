@@ -40,9 +40,9 @@ from apscheduler.triggers.cron import CronTrigger
 import os
 
 # Job imports
-from backend.jobs.build_pricing_pack import PricingPackBuilder
-from backend.jobs.reconcile_ledger import ReconciliationService
-from backend.jobs.metrics import MetricsComputer
+from jobs.build_pricing_pack import PricingPackBuilder
+from jobs.reconcile_ledger import ReconciliationService
+from jobs.metrics import MetricsComputer
 
 # Logger
 logger = logging.getLogger("DawsOS.Scheduler")
@@ -428,7 +428,7 @@ class NightlyJobScheduler:
             )
 
         # Update pricing pack reconciliation status
-        from backend.app.db.connection import execute_statement
+        from app.db.connection import execute_statement
         update_query = """
             UPDATE pricing_packs
             SET reconciliation_passed = true,
@@ -487,7 +487,7 @@ class NightlyJobScheduler:
         """
         logger.info(f"Pre-warming macro factors for pack {pack_id}")
 
-        from backend.app.db.connection import execute_query
+        from app.db.connection import execute_query
 
         # Get all active portfolios
         query_portfolios = "SELECT id FROM portfolios WHERE is_active = true"
@@ -498,7 +498,7 @@ class NightlyJobScheduler:
         # Call macro agent to compute regime and cycles
         # This will be cached in database for fast UI retrieval
         try:
-            from backend.app.services.macro import get_macro_service
+            from app.services.macro import get_macro_service
 
             macro_service = get_macro_service()
 
@@ -572,7 +572,7 @@ class NightlyJobScheduler:
         """
         logger.info(f"Marking pack as fresh: {pack_id}")
 
-        from backend.app.db.connection import execute_statement, execute_query_one
+        from app.db.connection import execute_statement, execute_query_one
 
         # Update pricing pack status
         update_query = """
@@ -623,7 +623,7 @@ class NightlyJobScheduler:
         logger.info(f"Evaluating alerts for pack {pack_id}")
 
         try:
-            from backend.jobs.evaluate_alerts import AlertEvaluator
+            from jobs.evaluate_alerts import AlertEvaluator
 
             evaluator = AlertEvaluator(use_db=True)
             summary = await evaluator.evaluate_all_alerts(asof_date=asof_date)
@@ -654,7 +654,7 @@ class NightlyJobScheduler:
         started_at = datetime.now()
 
         try:
-            from backend.jobs.replay_dlq import DLQReplayer
+            from jobs.replay_dlq import DLQReplayer
 
             replayer = DLQReplayer(use_db=True)
             summary = await replayer.replay_dlq_jobs(batch_size=100)

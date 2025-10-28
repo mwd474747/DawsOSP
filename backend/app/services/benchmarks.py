@@ -17,7 +17,7 @@ Sacred Accuracy:
     - Unhedged returns include both local and FX components
 
 Usage:
-    from backend.app.services.benchmarks import BenchmarkService
+    from app.services.benchmarks import BenchmarkService
 
     service = BenchmarkService()
 
@@ -49,8 +49,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from backend.app.services.pricing import PricingService, get_pricing_service
-from backend.app.db.connection import execute_query
+from app.services.pricing import PricingService, get_pricing_service
+from app.db.connection import execute_query
 
 logger = logging.getLogger("DawsOS.Benchmarks")
 

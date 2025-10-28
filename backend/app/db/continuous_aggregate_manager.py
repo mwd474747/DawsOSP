@@ -13,7 +13,7 @@ Features:
     - Health checks
 
 Usage:
-    from backend.app.db import get_continuous_aggregate_manager
+    from app.db import get_continuous_aggregate_manager
 
     manager = get_continuous_aggregate_manager()
 

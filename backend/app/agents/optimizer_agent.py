@@ -31,9 +31,9 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from backend.app.agents.base_agent import BaseAgent, AgentMetadata
-from backend.app.core.types import RequestCtx
-from backend.app.services.optimizer import get_optimizer_service
+from app.agents.base_agent import BaseAgent, AgentMetadata
+from app.core.types import RequestCtx
+from app.services.optimizer import get_optimizer_service
 
 logger = logging.getLogger("DawsOS.OptimizerAgent")
 

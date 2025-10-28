@@ -31,7 +31,7 @@ Dependencies:
     pip install riskfolio-lib
 
 Usage:
-    from backend.app.services.optimizer import get_optimizer_service
+    from app.services.optimizer import get_optimizer_service
 
     service = get_optimizer_service()
 
@@ -74,7 +74,7 @@ except ImportError:
     RISKFOLIO_AVAILABLE = False
     logging.warning("Riskfolio-Lib not installed. Optimizer will return stub data.")
 
-from backend.app.db.connection import get_db_pool
+from app.db.connection import get_db_pool
 
 logger = logging.getLogger("DawsOS.OptimizerService")
 
@@ -253,7 +253,7 @@ class OptimizerService:
         
         if use_db:
             try:
-                from backend.app.db.connection import execute_query, execute_query_one, execute_statement
+                from app.db.connection import execute_query, execute_query_one, execute_statement
                 self.execute_query = execute_query
                 self.execute_query_one = execute_query_one
                 self.execute_statement = execute_statement

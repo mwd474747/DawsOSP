@@ -29,7 +29,7 @@ import logging
 import sys
 from typing import Dict, Any
 
-from backend.app.db.connection import get_db_pool, execute_query_one
+from app.db.connection import get_db_pool, execute_query_one
 
 logger = logging.getLogger("DawsOS.Jobs.MarkPackFresh")
 

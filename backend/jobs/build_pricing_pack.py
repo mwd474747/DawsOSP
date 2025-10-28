@@ -50,14 +50,14 @@ import json
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from backend.app.db.connection import get_db_pool, execute_statement, execute_query_one, execute_query
-from backend.app.db.pricing_pack_queries import get_pricing_pack_queries
-from backend.app.integrations.polygon_provider import PolygonProvider
-from backend.app.core.types import ProviderTimeoutError, RightsViolationError
+from app.db.connection import get_db_pool, execute_statement, execute_query_one, execute_query
+from app.db.pricing_pack_queries import get_pricing_pack_queries
+from app.integrations.polygon_provider import PolygonProvider
+from app.core.types import ProviderTimeoutError, RightsViolationError
 
 # Observability (metrics for pack build monitoring)
 try:
-    from backend.observability.metrics import setup_metrics, get_metrics
+    from observability.metrics import setup_metrics, get_metrics
     METRICS_AVAILABLE = True
 except ImportError:
     METRICS_AVAILABLE = False

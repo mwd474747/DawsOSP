@@ -20,7 +20,7 @@ from uuid import UUID
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from backend.app.db.metrics_queries import MetricsQueries
+from app.db.metrics_queries import MetricsQueries
 
 # Test constants
 TEST_PORTFOLIO_ID = UUID("00000000-0000-0000-0000-000000000001")

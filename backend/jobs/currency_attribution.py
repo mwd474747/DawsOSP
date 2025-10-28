@@ -22,7 +22,7 @@ Validation:
     |r_base_computed - r_base_actual| ≤ 0.000001 (0.1bp)
 
 Usage:
-    from backend.jobs.currency_attribution import CurrencyAttribution
+    from jobs.currency_attribution import CurrencyAttribution
 
     # Initialize
     attr = CurrencyAttribution(base_currency='CAD')

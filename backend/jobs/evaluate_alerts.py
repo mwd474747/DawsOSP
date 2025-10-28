@@ -38,9 +38,9 @@ from decimal import Decimal
 from typing import Dict, Any, Optional, List
 from uuid import UUID
 
-from backend.app.services.alerts import AlertService
-from backend.app.services.notifications import NotificationService
-from backend.app.services.dlq import DLQService
+from app.services.alerts import AlertService
+from app.services.notifications import NotificationService
+from app.services.dlq import DLQService
 
 logger = logging.getLogger("DawsOS.Jobs.EvaluateAlerts")
 
@@ -68,7 +68,7 @@ class AlertEvaluator:
 
         if use_db:
             try:
-                from backend.app.db.connection import (
+                from app.db.connection import (
                     execute_query,
                     execute_statement,
                 )
@@ -352,7 +352,7 @@ class AlertEvaluator:
         condition_type = condition.get("type")
 
         try:
-            from backend.app.services.playbooks import PlaybookGenerator
+            from app.services.playbooks import PlaybookGenerator
 
             if condition_type == "dar_breach":
                 # DaR breach playbook

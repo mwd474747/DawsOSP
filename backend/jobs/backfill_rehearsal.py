@@ -46,9 +46,9 @@ from decimal import Decimal
 from typing import Dict, Any, List, Optional
 from uuid import UUID, uuid4
 
-from backend.app.db.connection import get_db_pool, execute_query_one, execute_query, execute_statement
-from backend.app.db.pricing_pack_queries import PricingPackQueries, get_pricing_pack_queries
-from backend.app.db.metrics_queries import MetricsQueries, get_metrics_queries
+from app.db.connection import get_db_pool, execute_query_one, execute_query, execute_statement
+from app.db.pricing_pack_queries import PricingPackQueries, get_pricing_pack_queries
+from app.db.metrics_queries import MetricsQueries, get_metrics_queries
 
 logger = logging.getLogger("DawsOS.BackfillRehearsal")
 logging.basicConfig(

@@ -12,7 +12,7 @@ Components:
     - watermark.py: Watermark generation and application
 
 Usage:
-    from backend.compliance import (
+    from compliance import (
         get_rights_registry,
         validate_export,
         attach_attributions,

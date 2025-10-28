@@ -22,7 +22,7 @@ Architecture:
     - No serialization of pool objects (AsyncPG pools can't be pickled)
 
 Usage:
-    from backend.app.db.redis_pool_coordinator import coordinator
+    from app.db.redis_pool_coordinator import coordinator
 
     # Initialize (sets config in Redis + creates local pool)
     pool = await coordinator.initialize(database_url, min_size=5, max_size=20)

@@ -45,15 +45,15 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException, Header, status, Query
 from pydantic import BaseModel, Field
 
-from backend.app.db.connection import get_db_connection_with_rls, execute_query_one
-from backend.app.core.alert_validators import (
+from app.db.connection import get_db_connection_with_rls, execute_query_one
+from app.core.alert_validators import (
     validate_alert_condition,
     validate_cooldown_hours,
     validate_notification_channels,
 )
-from backend.app.services.alerts import AlertService
-from backend.app.middleware.auth_middleware import verify_token
-from backend.app.services.auth import get_auth_service
+from app.services.alerts import AlertService
+from app.middleware.auth_middleware import verify_token
+from app.services.auth import get_auth_service
 
 logger = logging.getLogger("DawsOS.API.Alerts")
 

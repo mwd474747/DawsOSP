@@ -22,8 +22,8 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from backend.app.agents.base_agent import BaseAgent, AgentMetadata
-from backend.app.core.types import RequestCtx
+from app.agents.base_agent import BaseAgent, AgentMetadata
+from app.core.types import RequestCtx
 
 logger = logging.getLogger("DawsOS.ClaudeAgent")
 

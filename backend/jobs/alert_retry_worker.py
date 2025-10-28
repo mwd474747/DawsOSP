@@ -16,7 +16,7 @@ Usage:
     python backend/jobs/alert_retry_worker.py
 
     # Or import and run programmatically
-    from backend.jobs.alert_retry_worker import retry_failed_alerts
+    from jobs.alert_retry_worker import retry_failed_alerts
     await retry_failed_alerts()
 """
 
@@ -24,9 +24,9 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 
-from backend.app.services.alert_delivery import AlertDeliveryService
-from backend.app.services.notifications import NotificationService
-from backend.observability.metrics import get_metrics
+from app.services.alert_delivery import AlertDeliveryService
+from app.services.notifications import NotificationService
+from observability.metrics import get_metrics
 
 # Configure logging
 logging.basicConfig(

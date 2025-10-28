@@ -40,9 +40,9 @@ import argparse
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from backend.app.integrations.fred_provider import FREDProvider
-from backend.app.services.macro import get_macro_service, Regime
-from backend.app.db.connection import get_db_pool
+from app.integrations.fred_provider import FREDProvider
+from app.services.macro import get_macro_service, Regime
+from app.db.connection import get_db_pool
 
 logger = logging.getLogger("DawsOS.MacroJob")
 

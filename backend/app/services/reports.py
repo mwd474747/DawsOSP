@@ -34,7 +34,7 @@ from typing import Any, Dict, List, Optional
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from backend.app.services.rights_registry import get_registry, ExportCheckResult
+from app.services.rights_registry import get_registry, ExportCheckResult
 
 logger = logging.getLogger(__name__)
 
@@ -640,7 +640,7 @@ class ReportService:
             rights_check: Rights check result
         """
         try:
-            from backend.app.db.connection import execute_statement
+            from app.db.connection import execute_statement
             
             # Prepare audit log data
             audit_data = {

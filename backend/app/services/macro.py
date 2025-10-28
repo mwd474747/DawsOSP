@@ -32,8 +32,8 @@ Architecture:
     FRED API → MacroService → RegimeDetector → Database
 
 Usage:
-    from backend.app.providers.fred_client import get_fred_client
-    from backend.app.services.macro import get_macro_service
+    from app.providers.fred_client import get_fred_client
+    from app.services.macro import get_macro_service
 
     # Fetch latest indicators from FRED
     client = get_fred_client()
@@ -55,8 +55,8 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 import statistics
 
-from backend.app.db.connection import execute_query, execute_statement, execute_query_one
-from backend.app.integrations.fred_provider import FREDProvider
+from app.db.connection import execute_query, execute_statement, execute_query_one
+from app.integrations.fred_provider import FREDProvider
 
 logger = logging.getLogger("DawsOS.MacroService")
 

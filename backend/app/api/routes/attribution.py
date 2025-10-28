@@ -19,8 +19,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Path
 
-from backend.app.api.schemas.attribution import AttributionResponse
-from backend.jobs.currency_attribution import CurrencyAttribution
+from app.api.schemas.attribution import AttributionResponse
+from jobs.currency_attribution import CurrencyAttribution
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ async def get_currency_attribution(
 
         # Compute attribution
         # Note: This requires pricing pack ID - we'll need to fetch latest pack
-        from backend.app.db.pricing_pack_queries import get_pricing_pack_queries
+        from app.db.pricing_pack_queries import get_pricing_pack_queries
 
         pack_queries = get_pricing_pack_queries()
         latest_pack = await pack_queries.get_latest_pack()

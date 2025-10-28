@@ -34,8 +34,8 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from backend.app.core.types import PackHealth, PackStatus
-from backend.app.db.pricing_pack_queries import get_pricing_pack_queries
+from app.core.types import PackHealth, PackStatus
+from app.db.pricing_pack_queries import get_pricing_pack_queries
 
 logger = logging.getLogger("DawsOS.Health")
 

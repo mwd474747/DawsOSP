@@ -39,12 +39,12 @@ from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Query, Path, Body, Header, Depends
 from pydantic import BaseModel, Field, validator
 
-from backend.app.services.macro import get_macro_service, Regime
-from backend.app.services.scenarios import get_scenario_service, ShockType
-from backend.app.services.risk import get_risk_service
-from backend.app.db.connection import get_db_connection_with_rls
-from backend.app.middleware.auth_middleware import verify_token
-from backend.app.services.auth import get_auth_service
+from app.services.macro import get_macro_service, Regime
+from app.services.scenarios import get_scenario_service, ShockType
+from app.services.risk import get_risk_service
+from app.db.connection import get_db_connection_with_rls
+from app.middleware.auth_middleware import verify_token
+from app.services.auth import get_auth_service
 
 logger = logging.getLogger(__name__)
 

@@ -17,7 +17,7 @@ Research Basis:
 - Quantified notional > vague suggestions
 
 Usage:
-    from backend.app.services.playbooks import PlaybookGenerator
+    from app.services.playbooks import PlaybookGenerator
 
     # Generate DaR breach playbook
     playbook = PlaybookGenerator.generate_dar_breach_playbook(

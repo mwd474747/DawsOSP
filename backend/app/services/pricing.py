@@ -33,8 +33,8 @@ from typing import Optional, Dict, Any, List
 from decimal import Decimal
 from dataclasses import dataclass
 
-from backend.app.db.pricing_pack_queries import get_pricing_pack_queries
-from backend.app.db.connection import execute_query_one, execute_query
+from app.db.pricing_pack_queries import get_pricing_pack_queries
+from app.db.connection import execute_query_one, execute_query
 
 logger = logging.getLogger("DawsOS.PricingService")
 

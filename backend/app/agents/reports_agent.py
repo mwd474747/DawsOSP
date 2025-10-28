@@ -31,9 +31,9 @@ import logging
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from backend.app.agents.base_agent import BaseAgent
-from backend.app.core.types import RequestCtx
-from backend.app.services.reports import ReportService
+from app.agents.base_agent import BaseAgent
+from app.core.types import RequestCtx
+from app.services.reports import ReportService
 
 logger = logging.getLogger(__name__)
 

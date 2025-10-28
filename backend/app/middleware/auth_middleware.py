@@ -11,7 +11,7 @@ Architecture:
     - Optional authentication: Some endpoints allow unauthenticated access
 
 Usage:
-    from backend.app.middleware.auth_middleware import verify_token, require_permission
+    from app.middleware.auth_middleware import verify_token, require_permission
 
     # Protected endpoint (requires valid JWT)
     @app.post("/v1/execute")
@@ -46,7 +46,7 @@ from typing import Dict, Optional
 from fastapi import Depends, HTTPException, Header, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from backend.app.services.auth import get_auth_service, AuthenticationError, AuthorizationError
+from app.services.auth import get_auth_service, AuthenticationError, AuthorizationError
 
 logger = logging.getLogger(__name__)
 
@@ -291,7 +291,7 @@ def require_role(required_role: str):
         Raises:
             HTTPException 403: If user role insufficient
         """
-        from backend.app.services.auth import ROLES
+        from app.services.auth import ROLES
 
         user_role = claims.get("role")
 

@@ -21,7 +21,7 @@ Usage:
 import logging
 from typing import Any, Dict, List, Optional
 
-from backend.app.core.agent_runtime import AgentRuntime
+from app.core.agent_runtime import AgentRuntime
 
 logger = logging.getLogger(__name__)
 

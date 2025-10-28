@@ -311,7 +311,7 @@ class RightsRegistry:
         result = self.check_export(providers, export_type, environment)
 
         if not result.allowed:
-            from backend.app.core.types import RightsViolationError
+            from app.core.types import RightsViolationError
             raise RightsViolationError(
                 action=f"{export_type}_export",
                 rights_profile=environment,

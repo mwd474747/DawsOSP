@@ -53,7 +53,7 @@ from enum import Enum
 from dataclasses import dataclass
 import json as json_module
 
-from backend.app.db.connection import execute_query, execute_statement, execute_query_one
+from app.db.connection import execute_query, execute_statement, execute_query_one
 
 logger = logging.getLogger("DawsOS.CyclesService")
 

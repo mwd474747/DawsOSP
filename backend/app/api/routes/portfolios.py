@@ -25,9 +25,9 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException, Header, status
 from pydantic import BaseModel, Field
 
-from backend.app.db.connection import get_db_connection_with_rls
-from backend.app.middleware.auth_middleware import verify_token
-from backend.app.services.auth import get_auth_service
+from app.db.connection import get_db_connection_with_rls
+from app.middleware.auth_middleware import verify_token
+from app.services.auth import get_auth_service
 
 logger = logging.getLogger("DawsOS.API.Portfolios")
 

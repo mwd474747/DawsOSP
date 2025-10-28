@@ -13,7 +13,7 @@ Metrics:
     - Circuit breaker state: Gauge of circuit breaker status
 
 Usage:
-    from backend.observability.metrics import setup_metrics, metrics
+    from observability.metrics import setup_metrics, metrics
 
     # Setup once at app startup
     setup_metrics(service_name="dawsos-executor")
@@ -343,7 +343,7 @@ def generate_metrics() -> bytes:
 
     Usage:
         from fastapi import Response
-        from backend.observability.metrics import generate_metrics, CONTENT_TYPE_LATEST
+        from observability.metrics import generate_metrics, CONTENT_TYPE_LATEST
 
         @app.get("/metrics")
         async def metrics_endpoint():

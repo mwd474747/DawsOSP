@@ -24,11 +24,11 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from backend.app.agents.base_agent import BaseAgent
-from backend.app.core.types import RequestCtx
-from backend.compliance.attribution import get_attribution_manager
-from backend.compliance.rights_registry import get_rights_registry
-from backend.observability.metrics import get_metrics
+from app.agents.base_agent import BaseAgent
+from app.core.types import RequestCtx
+from compliance.attribution import get_attribution_manager
+from compliance.rights_registry import get_rights_registry
+from observability.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -561,10 +561,10 @@ def create_runtime_with_agents(services: Dict[str, Any]) -> AgentRuntime:
     runtime = AgentRuntime(services)
 
     # Register production agents
-    from backend.app.agents.macro_hound import MacroHound
+    from app.agents.macro_hound import MacroHound
 
     try:
-        from backend.app.agents.financial_analyst import FinancialAnalyst
+        from app.agents.financial_analyst import FinancialAnalyst
         runtime.register_agent(FinancialAnalyst("financial_analyst", services))
     except ImportError as e:
         logger.warning(f"FinancialAnalyst not available: {e}")
@@ -575,13 +575,13 @@ def create_runtime_with_agents(services: Dict[str, Any]) -> AgentRuntime:
         logger.warning(f"MacroHound not available: {e}")
 
     try:
-        from backend.app.agents.data_harvester import DataHarvester
+        from app.agents.data_harvester import DataHarvester
         runtime.register_agent(DataHarvester("data_harvester", services))
     except ImportError as e:
         logger.warning(f"DataHarvester not available: {e}")
 
     # Register example agent for testing
-    from backend.app.agents.base_agent import ExampleAgent
+    from app.agents.base_agent import ExampleAgent
     runtime.register_agent(ExampleAgent("example_agent", services))
 
     logger.info(f"Runtime initialized with {len(runtime.agents)} agents")

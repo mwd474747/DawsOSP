@@ -79,7 +79,7 @@ class RatingsService:
         """
         if not self.db_pool:
             # Lazy import to avoid circular dependency
-            from backend.app.db.connection import get_db_pool
+            from app.db.connection import get_db_pool
             self.db_pool = get_db_pool()
 
         query = """

@@ -42,8 +42,8 @@ import json
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from backend.app.db.connection import get_db_pool, execute_statement, execute_query_one
-from backend.app.db.pricing_pack_queries import get_pricing_pack_queries
+from app.db.connection import get_db_pool, execute_statement, execute_query_one
+from app.db.pricing_pack_queries import get_pricing_pack_queries
 
 logger = logging.getLogger("DawsOS.BuildPackStub")
 

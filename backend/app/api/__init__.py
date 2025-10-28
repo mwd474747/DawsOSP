@@ -13,7 +13,7 @@ Modules:
     - schemas/metrics: Pydantic response models
 
 Usage:
-    from backend.app.api import register_routes
+    from app.api import register_routes
     register_routes(app)
 """
 

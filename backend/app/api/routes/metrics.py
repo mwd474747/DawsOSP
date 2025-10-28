@@ -22,8 +22,8 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, Path
 from pydantic import ValidationError
 
-from backend.app.api.schemas.metrics import MetricsResponse, MetricsHistoryResponse
-from backend.app.db.metrics_queries import get_metrics_queries
+from app.api.schemas.metrics import MetricsResponse, MetricsHistoryResponse
+from app.db.metrics_queries import get_metrics_queries
 
 logger = logging.getLogger(__name__)
 

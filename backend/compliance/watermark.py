@@ -27,7 +27,7 @@ from typing import Optional, List, Dict, Any
 import logging
 import json
 
-from backend.compliance.rights_registry import get_rights_registry, DataSource
+from compliance.rights_registry import get_rights_registry, DataSource
 
 logger = logging.getLogger("DawsOS.Compliance.Watermark")
 

@@ -11,7 +11,7 @@ Components:
     - metrics_queries.py: Portfolio metrics, currency attribution, factor exposures
 
 Usage:
-    from backend.app.db import init_db_pool, get_pricing_pack_queries, get_metrics_queries
+    from app.db import init_db_pool, get_pricing_pack_queries, get_metrics_queries
 
     # Initialize at startup
     await init_db_pool(database_url)

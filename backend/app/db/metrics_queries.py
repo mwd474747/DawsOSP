@@ -6,7 +6,7 @@ Updated: 2025-10-22
 Priority: P0 (Critical for Phase 3)
 
 Usage:
-    from backend.app.db import get_metrics_queries
+    from app.db import get_metrics_queries
 
     queries = get_metrics_queries()
 

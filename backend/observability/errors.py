@@ -19,7 +19,7 @@ Critical: Never send PII to Sentry
     - Filter API keys
 
 Usage:
-    from backend.observability.errors import setup_error_tracking, capture_exception
+    from observability.errors import setup_error_tracking, capture_exception
 
     # Setup once at app startup
     setup_error_tracking(
@@ -407,7 +407,7 @@ def configure_fastapi_integration(app):
 
     Usage:
         from fastapi import FastAPI
-        from backend.observability.errors import configure_fastapi_integration
+        from observability.errors import configure_fastapi_integration
 
         app = FastAPI()
         configure_fastapi_integration(app)

@@ -35,7 +35,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from backend.app.core.types import (
+from app.core.types import (
     RequestCtx,
     ExecReq,
     ExecResp,
@@ -43,16 +43,16 @@ from backend.app.core.types import (
     ErrorCode,
     PackStatus,
 )
-from backend.app.db.pricing_pack_queries import get_pricing_pack_queries
-from backend.app.core.pattern_orchestrator import PatternOrchestrator
-from backend.app.core.agent_runtime import AgentRuntime
-from backend.app.agents.financial_analyst import FinancialAnalyst
-from backend.app.middleware.auth_middleware import verify_token
-from backend.app.services.audit import get_audit_service
-from backend.observability import setup_observability
-from backend.observability.tracing import trace_context, add_context_attributes, add_pattern_attributes
-from backend.observability.metrics import setup_metrics, get_metrics
-from backend.observability.errors import capture_exception
+from app.db.pricing_pack_queries import get_pricing_pack_queries
+from app.core.pattern_orchestrator import PatternOrchestrator
+from app.core.agent_runtime import AgentRuntime
+from app.agents.financial_analyst import FinancialAnalyst
+from app.middleware.auth_middleware import verify_token
+from app.services.audit import get_audit_service
+from observability import setup_observability
+from observability.tracing import trace_context, add_context_attributes, add_pattern_attributes
+from observability.metrics import setup_metrics, get_metrics
+from observability.errors import capture_exception
 
 logger = logging.getLogger("DawsOS.Executor")
 
@@ -74,7 +74,7 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
     global _agent_runtime
 
     # Get current database pool (may be None if not initialized yet)
-    from backend.app.db.connection import get_db_pool
+    from app.db.connection import get_db_pool
 
     try:
         db_pool = get_db_pool()
@@ -109,42 +109,42 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
         _agent_runtime.register_agent(financial_analyst)
 
         # 2. Macro Hound - Macro regime, cycles, scenarios, DaR
-        from backend.app.agents.macro_hound import MacroHound
+        from app.agents.macro_hound import MacroHound
         macro_hound = MacroHound("macro_hound", services)
         _agent_runtime.register_agent(macro_hound)
 
         # 3. Data Harvester - Provider integration (FMP, Polygon, FRED, NewsAPI)
-        from backend.app.agents.data_harvester import DataHarvester
+        from app.agents.data_harvester import DataHarvester
         data_harvester = DataHarvester("data_harvester", services)
         _agent_runtime.register_agent(data_harvester)
 
         # 4. Claude Agent - AI explanations and analysis
-        from backend.app.agents.claude_agent import ClaudeAgent
+        from app.agents.claude_agent import ClaudeAgent
         claude_agent = ClaudeAgent("claude", services)
         _agent_runtime.register_agent(claude_agent)
 
         # 5. Ratings Agent - Buffett-style quality ratings
-        from backend.app.agents.ratings_agent import RatingsAgent
+        from app.agents.ratings_agent import RatingsAgent
         ratings_agent = RatingsAgent("ratings", services)
         _agent_runtime.register_agent(ratings_agent)
 
         # 6. Optimizer Agent - Portfolio optimization and rebalancing
-        from backend.app.agents.optimizer_agent import OptimizerAgent
+        from app.agents.optimizer_agent import OptimizerAgent
         optimizer_agent = OptimizerAgent("optimizer", services)
         _agent_runtime.register_agent(optimizer_agent)
 
         # 7. Reports Agent - PDF/CSV export generation
-        from backend.app.agents.reports_agent import ReportsAgent
+        from app.agents.reports_agent import ReportsAgent
         reports_agent = ReportsAgent("reports", services)
         _agent_runtime.register_agent(reports_agent)
 
         # 8. Alerts Agent - Alert suggestions and threshold-based creation
-        from backend.app.agents.alerts_agent import AlertsAgent
+        from app.agents.alerts_agent import AlertsAgent
         alerts_agent = AlertsAgent("alerts", services)
         _agent_runtime.register_agent(alerts_agent)
 
         # 9. Charts Agent - Chart formatting and visualization specs
-        from backend.app.agents.charts_agent import ChartsAgent
+        from app.agents.charts_agent import ChartsAgent
         charts_agent = ChartsAgent("charts", services)
         _agent_runtime.register_agent(charts_agent)
 
@@ -181,7 +181,7 @@ app = FastAPI(
 )
 
 # Include auth routes
-from backend.app.api.routes.auth import router as auth_router
+from app.api.routes.auth import router as auth_router
 app.include_router(auth_router)
 logger.info("✅ Auth routes registered at /auth")
 
@@ -207,7 +207,7 @@ class DBInitMiddleware(BaseHTTPMiddleware):
         if not _db_initialized:
             async with _init_lock:
                 if not _db_initialized:
-                    from backend.app.db.connection import init_db_pool
+                    from app.db.connection import init_db_pool
                     import os
 
                     logger.info("🔄 Initializing database pool (first request)...")
@@ -251,7 +251,7 @@ print("✅ DB Init Middleware registered")
 @app.on_event("startup")
 async def startup_event():
     """Initialize database pool and other resources on startup."""
-    from backend.app.db.connection import init_db_pool
+    from app.db.connection import init_db_pool
     import os
 
     print("=" * 80)
@@ -271,7 +271,7 @@ async def startup_event():
         logger.info("✅ Agent runtime updated with database pool")
 
         # GOVERNANCE FIX #1: Force pricing service to use database for freshness gate
-        from backend.app.services.pricing import init_pricing_service
+        from app.services.pricing import init_pricing_service
         init_pricing_service(use_db=True, force=True)
         logger.info("✅ Pricing service initialized with database (freshness gate enabled)")
 
@@ -284,7 +284,7 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Close database pool and other resources on shutdown."""
-    from backend.app.db.connection import close_db_pool
+    from app.db.connection import close_db_pool
 
     logger.info("Closing database connection pool...")
     print("SHUTDOWN EVENT - Closing database pool")
@@ -373,7 +373,7 @@ async def metrics_endpoint():
 
     Returns metrics in Prometheus text format for scraping.
     """
-    from backend.observability.metrics import generate_metrics, METRICS_CONTENT_TYPE
+    from observability.metrics import generate_metrics, METRICS_CONTENT_TYPE
     from fastapi import Response
 
     return Response(content=generate_metrics(), media_type=METRICS_CONTENT_TYPE)
@@ -842,7 +842,7 @@ async def health_pack():
         - 500: Pack error or not found
     """
     try:
-        from backend.app.db.pricing_pack_queries import get_pricing_pack_queries
+        from app.db.pricing_pack_queries import get_pricing_pack_queries
 
         pack_queries = get_pricing_pack_queries()
 

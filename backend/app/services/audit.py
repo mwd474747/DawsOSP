@@ -25,7 +25,7 @@ Database Schema:
     );
 
 Usage:
-    from backend.app.services.audit import get_audit_service
+    from app.services.audit import get_audit_service
 
     audit = get_audit_service()
 
@@ -93,7 +93,7 @@ class AuditService:
             return self.db_pool
 
         # Try to get pool from connection module
-        from backend.app.db.connection import get_db_pool
+        from app.db.connection import get_db_pool
         self.db_pool = get_db_pool()
         return self.db_pool
 
@@ -387,7 +387,7 @@ def get_audit_service(db_pool: Optional[asyncpg.Pool] = None) -> AuditService:
         AuditService instance
 
     Example:
-        >>> from backend.app.services.audit import get_audit_service
+        >>> from app.services.audit import get_audit_service
         >>> audit = get_audit_service()
         >>> await audit.log(user_id, "execute_pattern", "pattern", pattern_id)
     """

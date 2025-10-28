@@ -21,8 +21,8 @@ import logging
 from typing import Any, Dict, List, Optional
 from decimal import Decimal
 
-from backend.app.agents.base_agent import BaseAgent, AgentMetadata
-from backend.app.core.types import RequestCtx
+from app.agents.base_agent import BaseAgent, AgentMetadata
+from app.core.types import RequestCtx
 
 logger = logging.getLogger("DawsOS.AlertsAgent")
 
@@ -79,7 +79,7 @@ class AlertsAgent(BaseAgent):
         """
         logger.info(f"alerts.suggest_presets: portfolio_id={portfolio_id}")
 
-        from backend.app.services.playbooks import PlaybookGenerator
+        from app.services.playbooks import PlaybookGenerator
 
         playbook_gen = PlaybookGenerator()
         suggestions = []
@@ -213,7 +213,7 @@ class AlertsAgent(BaseAgent):
         """
         logger.info(f"alerts.create_if_threshold: portfolio_id={portfolio_id}, threshold={threshold}")
 
-        from backend.app.services.alerts import AlertService
+        from app.services.alerts import AlertService
 
         alert_service = AlertService(use_db=self.services is not None)
 

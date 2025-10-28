@@ -16,7 +16,7 @@ from uuid import uuid4
 # Set test database URL
 os.environ["DATABASE_URL"] = "postgresql://dawsos_app:dawsos_app_pass@localhost:5432/dawsos"
 
-from backend.app.db.connection import init_db_pool
+from app.db.connection import init_db_pool
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -37,14 +37,14 @@ async def db_connection(db_pool) -> AsyncGenerator:
 @pytest_asyncio.fixture
 async def auth_service():
     """Get auth service instance."""
-    from backend.app.services.auth import get_auth_service
+    from app.services.auth import get_auth_service
     return get_auth_service()
 
 
 @pytest_asyncio.fixture
 async def reports_service():
     """Get reports service instance."""
-    from backend.app.services.reports import get_reports_service
+    from app.services.reports import get_reports_service
     return get_reports_service()
 
 

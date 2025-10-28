@@ -11,7 +11,7 @@ Components:
     - errors.py: Sentry error capture
 
 Usage:
-    from backend.observability import setup_observability
+    from observability import setup_observability
 
     setup_observability(
         service_name="dawsos-executor",

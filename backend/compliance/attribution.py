@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from typing import Optional, List, Dict, Any, Set
 import logging
 
-from backend.compliance.rights_registry import get_rights_registry, DataSource
+from compliance.rights_registry import get_rights_registry, DataSource
 
 logger = logging.getLogger("DawsOS.Compliance.Attribution")
 
@@ -211,7 +211,8 @@ class AttributionManager:
                     items.append(f"- [{attr.text}]({attr.url})")
                 else:
                     items.append(f"- {attr.text}")
-            return f"**Data Sources:**\n\n{''.join(f'{item}\n' for item in items)}"
+            items_text = ''.join(f'{item}\n' for item in items)
+            return f"**Data Sources:**\n\n{items_text}"
 
         else:  # text
             items = []

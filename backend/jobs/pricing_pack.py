@@ -43,9 +43,9 @@ from typing import Dict, List, Optional
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
-from backend.app.integrations.polygon_provider import PolygonProvider
-from backend.app.integrations.fmp_provider import FMPProvider
-from backend.app.integrations.fred_provider import FREDProvider
+from app.integrations.polygon_provider import PolygonProvider
+from app.integrations.fmp_provider import FMPProvider
+from app.integrations.fred_provider import FREDProvider
 
 logger = logging.getLogger(__name__)
 

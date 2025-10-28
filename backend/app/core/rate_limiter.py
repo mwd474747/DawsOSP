@@ -18,7 +18,7 @@ Token Bucket Algorithm:
     - Bucket has maximum capacity (burst allowance)
 
 Usage:
-    from backend.app.core.rate_limiter import TokenBucket
+    from app.core.rate_limiter import TokenBucket
 
     # Create rate limiter (120 requests per minute)
     limiter = TokenBucket(rate=120, per=60.0)

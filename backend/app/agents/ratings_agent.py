@@ -30,9 +30,9 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from backend.app.agents.base_agent import BaseAgent, AgentMetadata
-from backend.app.core.types import RequestCtx
-from backend.app.services.ratings import get_ratings_service
+from app.agents.base_agent import BaseAgent, AgentMetadata
+from app.core.types import RequestCtx
+from app.services.ratings import get_ratings_service
 
 logger = logging.getLogger("DawsOS.RatingsAgent")
 

@@ -28,8 +28,8 @@ Architecture:
     Portfolio → Factor Betas → Regime Covariance → Monte Carlo → DaR (95%)
 
 Usage:
-    from backend.app.services.risk import get_risk_service
-    from backend.app.services.macro import get_macro_service
+    from app.services.risk import get_risk_service
+    from app.services.macro import get_macro_service
 
     # Detect current regime
     macro_service = get_macro_service()
@@ -54,7 +54,7 @@ from enum import Enum
 from dataclasses import dataclass, field
 import statistics
 
-from backend.app.db.connection import execute_query, execute_statement, execute_query_one
+from app.db.connection import execute_query, execute_statement, execute_query_one
 
 logger = logging.getLogger("DawsOS.RiskService")
 

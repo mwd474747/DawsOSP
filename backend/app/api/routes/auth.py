@@ -47,9 +47,9 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel, EmailStr, Field
 
-from backend.app.services.auth import get_auth_service, AuthenticationError
-from backend.app.middleware.auth_middleware import verify_token, require_role
-from backend.app.db.connection import get_db_pool
+from app.services.auth import get_auth_service, AuthenticationError
+from app.middleware.auth_middleware import verify_token, require_role
+from app.db.connection import get_db_pool
 
 logger = logging.getLogger(__name__)
 

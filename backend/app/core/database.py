@@ -12,7 +12,7 @@ Features:
     - Health checks and monitoring
 
 Usage:
-    from backend.app.core.database import get_db_connection, init_database
+    from app.core.database import get_db_connection, init_database
     
     # Initialize at startup
     await init_database()
@@ -29,7 +29,7 @@ import logging
 from typing import AsyncGenerator
 import asyncpg
 from fastapi import Depends
-from backend.app.db.connection import get_db_pool, init_db_pool
+from app.db.connection import get_db_pool, init_db_pool
 
 logger = logging.getLogger(__name__)
 

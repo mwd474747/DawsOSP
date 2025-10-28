@@ -36,8 +36,8 @@ import sys
 from datetime import datetime
 from typing import Dict, Any, List
 
-from backend.app.services.notifications import NotificationService
-from backend.app.services.dlq import DLQService
+from app.services.notifications import NotificationService
+from app.services.dlq import DLQService
 
 logger = logging.getLogger("DawsOS.Jobs.ReplayDLQ")
 

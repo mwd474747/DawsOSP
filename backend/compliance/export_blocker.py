@@ -28,7 +28,7 @@ from typing import Optional, List, Dict, Any
 import logging
 import json
 
-from backend.compliance.rights_registry import (
+from compliance.rights_registry import (
     get_rights_registry,
     DataSource,
     DataRight,

@@ -19,7 +19,7 @@ Alert Condition Types:
     - news_sentiment: AAPL sentiment < -0.5
 
 Usage:
-    from backend.app.services.alerts import AlertService
+    from app.services.alerts import AlertService
 
     alert_svc = AlertService()
 
@@ -47,8 +47,8 @@ from decimal import Decimal
 from typing import Dict, Any, Optional, List
 from uuid import UUID
 
-from backend.app.services.notifications import NotificationService
-from backend.app.services.alert_delivery import AlertDeliveryService
+from app.services.notifications import NotificationService
+from app.services.alert_delivery import AlertDeliveryService
 
 logger = logging.getLogger("DawsOS.Alerts")
 
@@ -76,8 +76,8 @@ class AlertService:
 
         if use_db:
             try:
-                from backend.app.db.connection import execute_query_one, execute_query
-                from backend.app.db.metrics_queries import get_metrics_queries
+                from app.db.connection import execute_query_one, execute_query
+                from app.db.metrics_queries import get_metrics_queries
 
                 self.execute_query_one = execute_query_one
                 self.execute_query = execute_query
@@ -843,7 +843,7 @@ class AlertService:
 
         # Validate threshold using AlertThresholdValidator
         try:
-            from backend.app.core.alert_validators import AlertThresholdValidator
+            from app.core.alert_validators import AlertThresholdValidator
             AlertThresholdValidator.validate_threshold('dar_breach', threshold)
         except ValueError as e:
             logger.error(f"Invalid DaR threshold: {e}")
@@ -851,8 +851,8 @@ class AlertService:
 
         # Compute DaR using scenarios service
         try:
-            from backend.app.services.scenarios import get_scenario_service
-            from backend.app.services.macro import get_macro_service
+            from app.services.scenarios import get_scenario_service
+            from app.services.macro import get_macro_service
 
             scenario_service = get_scenario_service()
             macro_service = get_macro_service()
@@ -926,7 +926,7 @@ class AlertService:
 
         # Validate threshold
         try:
-            from backend.app.core.alert_validators import AlertThresholdValidator
+            from app.core.alert_validators import AlertThresholdValidator
             AlertThresholdValidator.validate_threshold('drawdown_limit', limit)
         except ValueError as e:
             logger.error(f"Invalid drawdown limit: {e}")
@@ -989,7 +989,7 @@ class AlertService:
 
         # Validate threshold
         try:
-            from backend.app.core.alert_validators import AlertThresholdValidator
+            from app.core.alert_validators import AlertThresholdValidator
             AlertThresholdValidator.validate_threshold('regime_shift', confidence_threshold)
         except ValueError as e:
             logger.error(f"Invalid regime shift confidence: {e}")
@@ -997,7 +997,7 @@ class AlertService:
 
         # Detect current regime
         try:
-            from backend.app.services.macro import get_macro_service
+            from app.services.macro import get_macro_service
 
             macro_service = get_macro_service()
             asof_date = ctx.get("asof_date", date.today())
@@ -1353,7 +1353,7 @@ Time: {context.get('timestamp', 'N/A')}
         try:
             if self.use_db:
                 import json
-                from backend.app.db.connection import execute_statement
+                from app.db.connection import execute_statement
                 await execute_statement(
                     """
                     INSERT INTO alert_dlq (
@@ -1386,7 +1386,7 @@ Time: {context.get('timestamp', 'N/A')}
             ).hexdigest()
 
             if self.use_db:
-                from backend.app.db.connection import execute_statement
+                from app.db.connection import execute_statement
                 await execute_statement(
                     """
                     INSERT INTO alert_deliveries (

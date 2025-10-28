@@ -21,8 +21,8 @@ import logging
 from typing import Any, Dict, List, Optional
 from decimal import Decimal
 
-from backend.app.agents.base_agent import BaseAgent, AgentMetadata
-from backend.app.core.types import RequestCtx
+from app.agents.base_agent import BaseAgent, AgentMetadata
+from app.core.types import RequestCtx
 
 logger = logging.getLogger("DawsOS.ChartsAgent")
 

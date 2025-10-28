@@ -29,7 +29,7 @@ Email Configuration:
     AWS_SES_FROM=alerts@dawsos.com
 
 Usage:
-    from backend.app.services.notifications import NotificationService
+    from app.services.notifications import NotificationService
 
     notif_svc = NotificationService()
 
@@ -88,7 +88,7 @@ class NotificationService:
 
         if use_db:
             try:
-                from backend.app.db.connection import execute_query_one, execute_statement
+                from app.db.connection import execute_query_one, execute_statement
 
                 self.execute_query_one = execute_query_one
                 self.execute_statement = execute_statement
@@ -580,7 +580,7 @@ class NotificationService:
         """
 
         try:
-            from backend.app.db.connection import execute_query
+            from app.db.connection import execute_query
 
             rows = await execute_query(query, user_id, limit, offset)
 

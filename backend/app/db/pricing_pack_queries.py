@@ -24,8 +24,8 @@ from typing import Optional, Dict, Any
 from decimal import Decimal
 import subprocess
 
-from backend.app.core.types import PackHealth, PackStatus
-from backend.app.db.connection import get_db_pool, execute_query_one, execute_statement
+from app.core.types import PackHealth, PackStatus
+from app.db.connection import get_db_pool, execute_query_one, execute_statement
 
 logger = logging.getLogger("DawsOS.PricingPackQueries")
 

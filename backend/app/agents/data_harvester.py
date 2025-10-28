@@ -33,8 +33,8 @@ from typing import Any, Dict, List, Optional
 from decimal import Decimal
 from uuid import UUID
 
-from backend.app.agents.base_agent import BaseAgent, AgentMetadata
-from backend.app.core.types import RequestCtx
+from app.agents.base_agent import BaseAgent, AgentMetadata
+from app.core.types import RequestCtx
 
 logger = logging.getLogger("DawsOS.DataHarvester")
 
@@ -114,7 +114,7 @@ class DataHarvester(BaseAgent):
 
         # Get provider (lazy initialization)
         if provider == "fmp":
-            from backend.app.integrations.fmp_provider import FMPProvider
+            from app.integrations.fmp_provider import FMPProvider
             api_key = os.getenv("FMP_API_KEY")
             if not api_key:
                 result = {
@@ -143,7 +143,7 @@ class DataHarvester(BaseAgent):
                         "provider": "fmp",
                     }
         elif provider == "polygon":
-            from backend.app.providers.polygon_client import get_polygon_client
+            from app.providers.polygon_client import get_polygon_client
             api_key = os.getenv("POLYGON_API_KEY")
             if not api_key:
                 result = {
@@ -239,7 +239,7 @@ class DataHarvester(BaseAgent):
         )
 
         # Get FMP provider
-        from backend.app.integrations.fmp_provider import FMPProvider
+        from app.integrations.fmp_provider import FMPProvider
         api_key = os.getenv("FMP_API_KEY")
 
         if not api_key:
@@ -334,7 +334,7 @@ class DataHarvester(BaseAgent):
         )
 
         # Get NewsAPI provider
-        from backend.app.integrations.news_provider import NewsAPIProvider
+        from app.integrations.news_provider import NewsAPIProvider
         api_key = os.getenv("NEWSAPI_KEY")
 
         if not api_key:
@@ -433,7 +433,7 @@ class DataHarvester(BaseAgent):
         logger.info(f"provider.fetch_macro: series_id={series_id}, limit={limit}")
 
         # Get FRED provider
-        from backend.app.providers.fred_client import get_fred_client
+        from app.providers.fred_client import get_fred_client
         api_key = os.getenv("FRED_API_KEY")
 
         if not api_key:
@@ -531,7 +531,7 @@ class DataHarvester(BaseAgent):
         )
 
         # Get FMP provider
-        from backend.app.integrations.fmp_provider import FMPProvider
+        from app.integrations.fmp_provider import FMPProvider
         api_key = os.getenv("FMP_API_KEY")
 
         if not api_key:

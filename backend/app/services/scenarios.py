@@ -23,7 +23,7 @@ Architecture:
     Portfolio → Factor Betas → Scenario Shock → Delta P&L → Hedge Suggestions
 
 Usage:
-    from backend.app.services.scenarios import get_scenario_service
+    from app.services.scenarios import get_scenario_service
 
     service = get_scenario_service()
     result = await service.apply_scenario(
@@ -42,7 +42,7 @@ from enum import Enum
 from dataclasses import dataclass, field
 import json
 
-from backend.app.db.connection import execute_query, execute_statement, execute_query_one
+from app.db.connection import execute_query, execute_statement, execute_query_one
 
 logger = logging.getLogger("DawsOS.ScenarioService")
 

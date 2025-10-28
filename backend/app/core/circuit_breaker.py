@@ -17,7 +17,7 @@ States:
     HALF_OPEN: Testing if provider recovered (allow 1 request)
 
 Usage:
-    from backend.app.core.circuit_breaker import CircuitBreaker
+    from app.core.circuit_breaker import CircuitBreaker
 
     # Create circuit breaker for provider
     breaker = CircuitBreaker(name="FMP", threshold=3, timeout=60)

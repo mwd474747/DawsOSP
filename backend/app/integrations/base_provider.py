@@ -31,7 +31,7 @@ from typing import Any, Dict, List, Optional
 from opentelemetry import trace
 from prometheus_client import Counter, Gauge, Histogram
 
-from backend.app.core.types import ProviderTimeoutError, RequestCtx, RightsViolationError
+from app.core.types import ProviderTimeoutError, RequestCtx, RightsViolationError
 
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -492,7 +492,7 @@ class BaseProvider(ABC):
             return  # No restrictions
 
         # TODO: Implement rights check against registry
-        # from backend.app.services.rights_registry import get_registry
+        # from app.services.rights_registry import get_registry
         # registry = get_registry()
         # result = registry.check_export([self.name], action, ctx.rights_profile)
         # if not result.allowed:

@@ -19,7 +19,7 @@ Critical Attributes:
     - capability: Capability being invoked
 
 Usage:
-    from backend.observability.tracing import setup_tracing, trace_context
+    from observability.tracing import setup_tracing, trace_context
 
     # Setup once at app startup
     setup_tracing(
@@ -197,7 +197,7 @@ def instrument_fastapi(app):
 
     Usage:
         from fastapi import FastAPI
-        from backend.observability.tracing import instrument_fastapi
+        from observability.tracing import instrument_fastapi
 
         app = FastAPI()
         instrument_fastapi(app)

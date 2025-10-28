@@ -14,7 +14,7 @@ Architecture:
     - Account lockout and security features
 
 Usage:
-    from backend.app.services.auth import get_auth_service
+    from app.services.auth import get_auth_service
 
     auth_service = get_auth_service()
 
@@ -48,7 +48,7 @@ from uuid import UUID, uuid4
 import bcrypt
 import jwt
 
-from backend.app.db.connection import execute_query, execute_query_one, execute_statement
+from app.db.connection import execute_query, execute_query_one, execute_statement
 
 logger = logging.getLogger(__name__)
 
@@ -743,7 +743,7 @@ def get_auth_service() -> AuthService:
         AuthService instance
 
     Example:
-        >>> from backend.app.services.auth import get_auth_service
+        >>> from app.services.auth import get_auth_service
         >>> auth = get_auth_service()
         >>> token = auth.generate_jwt(user_id, email, role)
     """

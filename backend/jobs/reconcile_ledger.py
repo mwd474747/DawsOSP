@@ -42,10 +42,10 @@ from decimal import Decimal
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from backend.app.services.ledger import get_ledger_service, LedgerService
-from backend.app.db.pricing_pack_queries import get_pricing_pack_queries
-from backend.app.db.connection import execute_statement, execute_query
-from backend.app.db.connection import get_db_pool
+from app.services.ledger import get_ledger_service, LedgerService
+from app.db.pricing_pack_queries import get_pricing_pack_queries
+from app.db.connection import execute_statement, execute_query
+from app.db.connection import get_db_pool
 
 logger = logging.getLogger("DawsOS.ReconciliationJob")
 logging.basicConfig(

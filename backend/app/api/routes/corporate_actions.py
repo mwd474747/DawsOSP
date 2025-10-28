@@ -20,15 +20,15 @@ from datetime import date, datetime
 from decimal import Decimal
 import logging
 
-from backend.app.db.connection import get_db_connection_with_rls
-from backend.app.services.corporate_actions import (
+from app.db.connection import get_db_connection_with_rls
+from app.services.corporate_actions import (
     CorporateActionsService,
     CorporateActionError,
     InvalidCorporateActionError,
     InsufficientDataError
 )
-from backend.app.middleware.auth_middleware import verify_token
-from backend.app.services.auth import get_auth_service
+from app.middleware.auth_middleware import verify_token
+from app.services.auth import get_auth_service
 
 logger = logging.getLogger(__name__)
 

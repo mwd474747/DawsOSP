@@ -19,7 +19,7 @@ Condition Types:
     - news_sentiment: AAPL sentiment < -0.5
 
 Usage:
-    from backend.app.core.alert_validators import validate_alert_condition
+    from app.core.alert_validators import validate_alert_condition
 
     condition = {
         "type": "macro",

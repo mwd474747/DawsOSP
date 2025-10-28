@@ -30,7 +30,7 @@ import sys
 from datetime import date, timedelta
 from typing import Dict, Any
 
-from backend.app.db.connection import get_db_pool, execute_query
+from app.db.connection import get_db_pool, execute_query
 
 logger = logging.getLogger("DawsOS.Jobs.PrewarmFactors")
 
@@ -63,7 +63,7 @@ async def prewarm_factors(asof_date: date, pack_id: str) -> Dict[str, Any]:
     cycles_result = {}
 
     try:
-        from backend.app.services.macro import get_macro_service
+        from app.services.macro import get_macro_service
 
         macro_service = get_macro_service()
 
@@ -143,7 +143,7 @@ async def main():
         pack_id = args.pack_id
     else:
         # Get latest pack
-        from backend.app.db.pricing_pack_queries import get_pricing_pack_queries
+        from app.db.pricing_pack_queries import get_pricing_pack_queries
 
         pack_queries = get_pricing_pack_queries()
         pack = await pack_queries.get_latest_pack()

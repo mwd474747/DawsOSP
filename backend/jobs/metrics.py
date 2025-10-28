@@ -128,8 +128,8 @@ class MetricsComputer:
 
         if use_db:
             try:
-                from backend.app.db import get_metrics_queries
-                from backend.jobs.currency_attribution import CurrencyAttribution
+                from app.db import get_metrics_queries
+                from jobs.currency_attribution import CurrencyAttribution
 
                 self.metrics_queries = get_metrics_queries()
                 self.currency_attr = CurrencyAttribution(base_currency="CAD")
@@ -350,7 +350,7 @@ class MetricsComputer:
         """
 
         try:
-            from backend.app.db.connection import execute_query
+            from app.db.connection import execute_query
             rows = await execute_query(query)
             portfolio_ids = [row["id"] for row in rows]
             logger.debug(f"Found {len(portfolio_ids)} active portfolios")
@@ -391,7 +391,7 @@ class MetricsComputer:
         """
 
         try:
-            from backend.app.db.connection import execute_query
+            from app.db.connection import execute_query
             rows = await execute_query(query, portfolio_id, start_date, asof_date)
             returns = [float(row["twr_1d"]) for row in rows]
             logger.debug(f"Loaded {len(returns)} returns for portfolio {portfolio_id}")
@@ -419,8 +419,8 @@ class MetricsComputer:
             return [random.gauss(0.0004, 0.012) for _ in range(min(lookback_days, 252))]
 
         try:
-            from backend.app.db.connection import execute_query_one
-            from backend.app.services.benchmarks import get_benchmark_service
+            from app.db.connection import execute_query_one
+            from app.services.benchmarks import get_benchmark_service
 
             # Get portfolio benchmark and base currency
             query = """
@@ -489,7 +489,7 @@ class MetricsComputer:
         """
 
         try:
-            from backend.app.db.connection import execute_query_one
+            from app.db.connection import execute_query_one
             row = await execute_query_one(query, asof_date)
 
             if row and row["value"]:

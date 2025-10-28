@@ -21,7 +21,7 @@ Dependencies:
     pip install beancount
 
 Usage:
-    from backend.app.services.ledger import LedgerService
+    from app.services.ledger import LedgerService
 
     service = LedgerService(ledger_path="/app/ledger")
 
@@ -52,7 +52,7 @@ except ImportError:
     BEANCOUNT_AVAILABLE = False
     logging.warning("Beancount not installed. Ledger integration disabled.")
 
-from backend.app.db.connection import get_db_pool, execute_statement, execute_query
+from app.db.connection import get_db_pool, execute_statement, execute_query
 
 logger = logging.getLogger("DawsOS.LedgerService")
 

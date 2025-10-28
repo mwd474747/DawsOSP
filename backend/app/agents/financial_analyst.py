@@ -27,15 +27,15 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from backend.app.agents.base_agent import BaseAgent, AgentMetadata
-from backend.app.core.types import RequestCtx
-from backend.app.db import (
+from app.agents.base_agent import BaseAgent, AgentMetadata
+from app.core.types import RequestCtx
+from app.db import (
     get_metrics_queries,
     get_pricing_pack_queries,
     get_db_connection_with_rls,
 )
-from backend.app.services.pricing import get_pricing_service
-from backend.app.services.currency_attribution import CurrencyAttributor
+from app.services.pricing import get_pricing_service
+from app.services.currency_attribution import CurrencyAttributor
 
 logger = logging.getLogger("DawsOS.FinancialAnalyst")
 
@@ -588,7 +588,7 @@ class FinancialAnalyst(BaseAgent):
         )
 
         # Get database connection from services
-        from backend.app.db.connection import get_db_pool
+        from app.db.connection import get_db_pool
         db = get_db_pool()
 
         # Compute currency attribution using service
@@ -778,7 +778,7 @@ class FinancialAnalyst(BaseAgent):
 
         logger.info(f"risk.compute_factor_exposures: portfolio_id={portfolio_id_uuid}, pack={pack}")
 
-        from backend.app.services.factor_analysis import FactorAnalysisService
+        from app.services.factor_analysis import FactorAnalysisService
         factor_service = FactorAnalysisService()
 
         result = await factor_service.compute_factor_exposure(
@@ -814,7 +814,7 @@ class FinancialAnalyst(BaseAgent):
 
         # Get factor exposures from database for historical packs
         # TODO: Implement historical query - for now return current only
-        from backend.app.services.factor_analysis import FactorAnalysisService
+        from app.services.factor_analysis import FactorAnalysisService
         factor_service = FactorAnalysisService()
 
         current = await factor_service.compute_factor_exposure(
@@ -857,7 +857,7 @@ class FinancialAnalyst(BaseAgent):
         logger.info(f"risk.overlay_cycle_phases: portfolio_id={portfolio_id_uuid}, pack={pack}")
 
         # Get factor exposures
-        from backend.app.services.factor_analysis import FactorAnalysisService
+        from app.services.factor_analysis import FactorAnalysisService
         factor_service = FactorAnalysisService()
 
         exposures = await factor_service.compute_factor_exposure(
@@ -866,7 +866,7 @@ class FinancialAnalyst(BaseAgent):
         )
 
         # Get current cycle phases
-        from backend.app.services.cycles import CyclesService
+        from app.services.cycles import CyclesService
         cycles_service = CyclesService()
 
         stdc = await cycles_service.detect_stdc_phase()
@@ -1597,7 +1597,7 @@ class FinancialAnalyst(BaseAgent):
 
         # Fetch from FMP provider
         try:
-            from backend.app.integrations.fmp_provider import FMPProvider
+            from app.integrations.fmp_provider import FMPProvider
             import os
             
             api_key = os.getenv("FMP_API_KEY")
