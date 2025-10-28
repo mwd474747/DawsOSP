@@ -72,6 +72,8 @@ class DataHarvester(BaseAgent):
             "provider.fetch_macro",
             "provider.fetch_ratios",
             "fundamentals.load",  # Alias for buffett_checklist pattern compatibility
+            "news.search",  # Pattern compatibility for news_impact_analysis
+            "news.compute_portfolio_impact",  # Pattern compatibility for news_impact_analysis
         ]
 
     async def provider_fetch_quote(
@@ -112,7 +114,7 @@ class DataHarvester(BaseAgent):
 
         # Get provider (lazy initialization)
         if provider == "fmp":
-            from app.integrations.fmp_provider import FMPProvider
+            from backend.app.integrations.fmp_provider import FMPProvider
             api_key = os.getenv("FMP_API_KEY")
             if not api_key:
                 result = {
@@ -141,7 +143,7 @@ class DataHarvester(BaseAgent):
                         "provider": "fmp",
                     }
         elif provider == "polygon":
-            from app.providers.polygon_client import get_polygon_client
+            from backend.app.providers.polygon_client import get_polygon_client
             api_key = os.getenv("POLYGON_API_KEY")
             if not api_key:
                 result = {
@@ -237,7 +239,7 @@ class DataHarvester(BaseAgent):
         )
 
         # Get FMP provider
-        from app.integrations.fmp_provider import FMPProvider
+        from backend.app.integrations.fmp_provider import FMPProvider
         api_key = os.getenv("FMP_API_KEY")
 
         if not api_key:
@@ -332,7 +334,7 @@ class DataHarvester(BaseAgent):
         )
 
         # Get NewsAPI provider
-        from app.integrations.news_provider import NewsAPIProvider
+        from backend.app.integrations.news_provider import NewsAPIProvider
         api_key = os.getenv("NEWSAPI_KEY")
 
         if not api_key:
@@ -431,7 +433,7 @@ class DataHarvester(BaseAgent):
         logger.info(f"provider.fetch_macro: series_id={series_id}, limit={limit}")
 
         # Get FRED provider
-        from app.providers.fred_client import get_fred_client
+        from backend.app.providers.fred_client import get_fred_client
         api_key = os.getenv("FRED_API_KEY")
 
         if not api_key:
@@ -529,7 +531,7 @@ class DataHarvester(BaseAgent):
         )
 
         # Get FMP provider
-        from app.integrations.fmp_provider import FMPProvider
+        from backend.app.integrations.fmp_provider import FMPProvider
         api_key = os.getenv("FMP_API_KEY")
 
         if not api_key:
@@ -1437,6 +1439,176 @@ class DataHarvester(BaseAgent):
 
         # No match found - default relevance
         return Decimal("0.50")
+
+    async def news_search(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        entities: List[str],
+        lookback_hours: int = 24,
+    ) -> Dict[str, Any]:
+        """
+        Search for news articles related to specified entities.
+
+        Capability: news.search
+        Pattern compatibility for news_impact_analysis.json
+
+        Args:
+            entities: List of symbols/entities to search for
+            lookback_hours: Hours to look back for news (default: 24)
+
+        Returns:
+            Dict with news items and metadata
+        """
+        logger.info(f"news.search: entities={entities}, lookback_hours={lookback_hours}")
+
+        try:
+            # Use existing provider.fetch_news capability
+            news_items = []
+            for entity in entities:
+                news_result = await self.provider_fetch_news(
+                    ctx, state, symbol=entity, provider="newsapi"
+                )
+                if news_result.get("news"):
+                    news_items.extend(news_result["news"])
+
+            # Filter by lookback time
+            from datetime import datetime, timedelta
+            cutoff_time = datetime.now() - timedelta(hours=lookback_hours)
+            
+            filtered_news = []
+            for item in news_items:
+                if item.get("published_at"):
+                    try:
+                        pub_time = datetime.fromisoformat(item["published_at"].replace("Z", "+00:00"))
+                        if pub_time >= cutoff_time:
+                            filtered_news.append(item)
+                    except (ValueError, TypeError):
+                        # Include if we can't parse the date
+                        filtered_news.append(item)
+
+            return {
+                "news_items": filtered_news,
+                "total_count": len(filtered_news),
+                "entities_searched": entities,
+                "lookback_hours": lookback_hours,
+            }
+
+        except Exception as e:
+            logger.error(f"news.search failed: {e}")
+            return {
+                "news_items": [],
+                "total_count": 0,
+                "entities_searched": entities,
+                "lookback_hours": lookback_hours,
+                "error": str(e),
+            }
+
+    async def news_compute_portfolio_impact(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        news_items: List[Dict[str, Any]],
+        positions: List[Dict[str, Any]],
+        min_threshold: float = 0.1,
+    ) -> Dict[str, Any]:
+        """
+        Compute portfolio impact of news items.
+
+        Capability: news.compute_portfolio_impact
+        Pattern compatibility for news_impact_analysis.json
+
+        Args:
+            news_items: List of news items from news.search
+            positions: List of portfolio positions
+            min_threshold: Minimum impact threshold (default: 0.1)
+
+        Returns:
+            Dict with impact analysis results
+        """
+        logger.info(
+            f"news.compute_portfolio_impact: {len(news_items)} news items, "
+            f"{len(positions)} positions, threshold={min_threshold}"
+        )
+
+        try:
+            # Create position lookup by symbol
+            position_lookup = {pos.get("symbol"): pos for pos in positions}
+            
+            # Analyze each news item for portfolio impact
+            impact_analysis = []
+            total_impact_score = 0.0
+            
+            for news_item in news_items:
+                # Simple sentiment analysis (placeholder - could be enhanced with NLP)
+                title = news_item.get("title", "").lower()
+                content = news_item.get("content", "").lower()
+                
+                # Basic sentiment keywords
+                positive_keywords = ["up", "rise", "gain", "profit", "beat", "exceed", "strong", "growth"]
+                negative_keywords = ["down", "fall", "drop", "loss", "miss", "weak", "decline", "crash"]
+                
+                sentiment_score = 0.0
+                for keyword in positive_keywords:
+                    if keyword in title or keyword in content:
+                        sentiment_score += 0.1
+                for keyword in negative_keywords:
+                    if keyword in title or keyword in content:
+                        sentiment_score -= 0.1
+                
+                # Check if news mentions any portfolio symbols
+                mentioned_symbols = []
+                for symbol in position_lookup.keys():
+                    if symbol.lower() in title or symbol.lower() in content:
+                        mentioned_symbols.append(symbol)
+                
+                # Calculate impact for mentioned positions
+                position_impacts = []
+                for symbol in mentioned_symbols:
+                    position = position_lookup[symbol]
+                    weight = position.get("weight", 0.0)  # Portfolio weight
+                    impact_score = abs(sentiment_score) * weight
+                    
+                    if impact_score >= min_threshold:
+                        position_impacts.append({
+                            "symbol": symbol,
+                            "weight": weight,
+                            "impact_score": impact_score,
+                            "sentiment": "positive" if sentiment_score > 0 else "negative",
+                        })
+                        total_impact_score += impact_score
+                
+                if position_impacts:
+                    impact_analysis.append({
+                        "news_item": news_item,
+                        "sentiment_score": sentiment_score,
+                        "mentioned_symbols": mentioned_symbols,
+                        "position_impacts": position_impacts,
+                    })
+            
+            # Sort by impact score
+            impact_analysis.sort(key=lambda x: max(imp["impact_score"] for imp in x["position_impacts"]), reverse=True)
+            
+            return {
+                "impact_analysis": impact_analysis,
+                "total_impact_score": total_impact_score,
+                "high_impact_count": len([item for item in impact_analysis if any(imp["impact_score"] >= min_threshold for imp in item["position_impacts"])]),
+                "min_threshold": min_threshold,
+                "positions_analyzed": len(positions),
+                "news_items_analyzed": len(news_items),
+            }
+
+        except Exception as e:
+            logger.error(f"news.compute_portfolio_impact failed: {e}")
+            return {
+                "impact_analysis": [],
+                "total_impact_score": 0.0,
+                "high_impact_count": 0,
+                "min_threshold": min_threshold,
+                "positions_analyzed": len(positions),
+                "news_items_analyzed": len(news_items),
+                "error": str(e),
+            }
 
 
 # ============================================================================

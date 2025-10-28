@@ -333,6 +333,8 @@ touch .claude/agents/REPORTS_AGENT.md
 ```bash
 # Move enterprise-level specs to archive
 mkdir .claude/agents/archive
+# NOTE (2025-10-27): The archive relocation steps below have already been executed. The repository no longer contains an `.claude/agents/archive/` directory; new snapshots live under `backups/`. This document is kept for historical reference.
+
 mv .claude/agents/business/ALERTS_ARCHITECT.md .claude/agents/archive/
 mv .claude/agents/business/CORPORATE_ACTIONS_ARCHITECT.md .claude/agents/archive/
 mv .claude/agents/infrastructure/INFRASTRUCTURE_ARCHITECT.md .claude/agents/archive/

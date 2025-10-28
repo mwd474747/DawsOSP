@@ -315,7 +315,7 @@ def should_skip_file(file_path: Path, exclude_patterns: List[str]) -> bool:
         '.git/',
         'archived_legacy/',
         'storage/backups/',
-        'archive/',
+        'backups/',
         'tests/',  # Test files are allowed to access agents directly
     ]
 

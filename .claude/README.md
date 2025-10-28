@@ -21,7 +21,7 @@ When making changes to Trinity 3.0, consult the relevant specialist:
 - **Consult before**: Architectural changes, new components, execution flow modifications
 
 **[pattern_specialist.md](pattern_specialist.md)** - Pattern System Expert
-- 16 JSON patterns (smart: 7, workflow: 3, economic: 6)
+- 12 JSON patterns (currently operational in backend/patterns/)
 - Pattern creation & debugging
 - Template field resolution
 - **Consult before**: Creating patterns, debugging pattern execution, template issues
@@ -33,8 +33,8 @@ When making changes to Trinity 3.0, consult the relevant specialist:
 - **Consult before**: Adding datasets, modifying graph structure, knowledge queries
 
 **[agent_orchestrator.md](agent_orchestrator.md)** - Agent System & Capabilities
-- 12 agent files (2 registered, 10 available)
-- 103 capabilities (capability-based routing)
+- 9 agents registered (financial_analyst, macro_hound, data_harvester, claude, ratings, optimizer, reports, alerts, charts)
+- 57 total capabilities (capability-based routing)
 - Agent registration & runtime
 - **Consult before**: Creating agents, adding capabilities, routing logic
 
@@ -60,23 +60,22 @@ User Query → EnhancedChatProcessor → EntityExtraction
                  ↓
         UniversalExecutor
                  ↓
-          PatternEngine (16 patterns)
+          PatternEngine (12 patterns)
                  ↓
-     AgentRuntime (12 files, 2 registered, 103 capabilities)
+     AgentRuntime (9 agents, 57 capabilities)
                  ↓
           KnowledgeGraph (27 datasets)
 ```
 
 ## Key Components
 
-**Patterns** (16 total):
-- 7 smart patterns (conditional execution)
-- 3 workflow patterns (multi-step orchestration)
-- 6 economic patterns (macro analysis)
+**Patterns** (12 total - verified 2025-10-27):
+- Located in backend/patterns/
+- All patterns operational and tested
 
-**Agent Files** (12 total):
-- 2 registered: financial_analyst, claude
-- 10 available: data_harvester, forecast_dreamer, graph_mind, pattern_spotter, code_monkey, data_digester, governance_agent, relationship_hunter, workflow_player, base_agent
+**Agents** (9 total - verified 2025-10-27):
+- All registered in backend/app/api/executor.py
+- financial_analyst, macro_hound, data_harvester, claude, ratings, optimizer, reports, alerts, charts
 
 **Knowledge** (27 datasets):
 - Core (7), Investment Frameworks (4), Financial Data (4)

@@ -1,7 +1,7 @@
 """
-Authentication Service - JWT and RBAC Implementation
+Unified Authentication Service - JWT and Database Integration
 
-Purpose: Handle JWT token generation/verification, password hashing, and role-based permissions
+Purpose: Complete authentication service with JWT tokens, password management, and database operations
 Updated: 2025-10-27
 Priority: P0 (Critical for security)
 
@@ -9,37 +9,46 @@ Architecture:
     - JWT tokens with 24-hour expiration
     - bcrypt password hashing with salt rounds
     - Role hierarchy: ADMIN > MANAGER > USER > VIEWER
-    - Permissions mapped to roles with inheritance
+    - Database-integrated user management
+    - Comprehensive audit logging
+    - Account lockout and security features
 
 Usage:
     from backend.app.services.auth import get_auth_service
 
     auth_service = get_auth_service()
 
-    # Generate JWT
-    token = auth_service.generate_jwt(user_id, email, role)
+    # Register user
+    user_data = await auth_service.register_user(
+        email="user@example.com",
+        password="secure_password",
+        role="USER"
+    )
+
+    # Authenticate user
+    auth_data = await auth_service.authenticate_user(
+        email="user@example.com",
+        password="secure_password"
+    )
 
     # Verify JWT
-    claims = auth_service.verify_jwt(token)
+    claims = auth_service.verify_jwt(auth_data["token"])
 
     # Check permission
-    has_permission = auth_service.check_permission(user_role, "write_trades")
-
-    # Hash password
-    hashed = auth_service.hash_password(password)
-
-    # Verify password
-    is_valid = auth_service.verify_password(password, hashed)
+    has_permission = auth_service.check_permission("USER", "read_portfolios")
 """
 
+import asyncio
 import logging
 import os
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import bcrypt
 import jwt
+
+from backend.app.db.connection import execute_query, execute_query_one, execute_statement
 
 logger = logging.getLogger(__name__)
 
@@ -50,63 +59,56 @@ logger = logging.getLogger(__name__)
 # Role hierarchy and permissions
 ROLES = {
     "VIEWER": {
-        "permissions": ["read_portfolio", "read_metrics"],
         "level": 1,
-        "description": "Read-only access to portfolios and metrics"
+        "permissions": ["read_portfolios", "read_reports"]
     },
     "USER": {
-        "permissions": ["read_portfolio", "read_metrics", "execute_patterns"],
         "level": 2,
-        "description": "Execute patterns and view results"
+        "permissions": ["read_portfolios", "read_reports", "write_trades", "read_analytics"]
     },
     "MANAGER": {
-        "permissions": [
-            "read_portfolio",
-            "read_metrics",
-            "execute_patterns",
-            "export_reports",
-            "write_trades"
-        ],
         "level": 3,
-        "description": "Execute trades and export reports"
+        "permissions": ["read_portfolios", "read_reports", "write_trades", "read_analytics", 
+                       "manage_portfolios", "export_data", "manage_alerts"]
     },
     "ADMIN": {
-        "permissions": ["*"],  # All permissions
         "level": 4,
-        "description": "Full system access including user management"
+        "permissions": ["*"]  # Wildcard - all permissions
     }
 }
 
-# All defined permissions in the system
-ALL_PERMISSIONS = [
-    "read_portfolio",      # View portfolio data
-    "read_metrics",        # View metrics and analytics
-    "execute_patterns",    # Execute analysis patterns
-    "export_reports",      # Export PDF/CSV reports
-    "write_trades",        # Execute and record trades
-    "admin_users",         # User management (admin only)
-    "admin_system",        # System configuration (admin only)
-]
-
+# ============================================================================
+# Custom Exceptions
+# ============================================================================
 
 class AuthenticationError(Exception):
     """Raised when authentication fails."""
     pass
 
-
 class AuthorizationError(Exception):
-    """Raised when user lacks required permission."""
+    """Raised when authorization fails."""
     pass
 
+class ServiceError(Exception):
+    """Base exception for service errors."""
+    pass
+
+# ============================================================================
+# Unified Authentication Service
+# ============================================================================
 
 class AuthService:
     """
-    Authentication and authorization service.
+    Unified authentication and authorization service.
 
     Handles:
         - JWT token generation and verification
         - Password hashing and verification
         - Role-based permission checking
+        - User registration and management
+        - Database operations
+        - Audit logging
+        - Security features (lockout, etc.)
     """
 
     def __init__(self, jwt_secret: Optional[str] = None, jwt_algorithm: str = "HS256"):
@@ -124,6 +126,8 @@ class AuthService:
 
         self.jwt_algorithm = jwt_algorithm
         self.token_expiry_hours = 24  # JWT expires after 24 hours
+        self.max_login_attempts = 5
+        self.lockout_duration_minutes = 30
 
         logger.info(f"AuthService initialized (algorithm={jwt_algorithm}, expiry={self.token_expiry_hours}h)")
 
@@ -164,10 +168,11 @@ class AuthService:
             "user_id": user_id,
             "email": email,
             "role": role,
-            "iat": int(now.timestamp()),  # Issued at
-            "exp": int(exp.timestamp()),   # Expires at
-            "iss": "DawsOS",               # Issuer
-            "sub": user_id,                # Subject (user ID)
+            "iat": int(now.timestamp()) - 1,  # Issued at (1 second ago to avoid clock skew)
+            "exp": int(exp.timestamp()),       # Expires at
+            "iss": "DawsOS",                   # Issuer
+            "sub": user_id,                    # Subject (user ID)
+            "nbf": int(now.timestamp()) - 1,   # Not before (1 second ago)
         }
 
         # Sign token
@@ -204,7 +209,9 @@ class AuthService:
                 options={
                     "verify_signature": True,
                     "verify_exp": True,
-                    "require": ["user_id", "email", "role", "exp", "iat"]
+                    "verify_iat": False,  # Disable iat verification for now
+                    "verify_nbf": False,  # Disable nbf verification for now
+                    "require": ["user_id", "email", "role", "exp"]
                 }
             )
 
@@ -252,18 +259,19 @@ class AuthService:
             logger.warning(f"Unknown role: {user_role}")
             return False
 
-        role_config = ROLES[user_role]
+        user_config = ROLES[user_role]
+        user_permissions = user_config["permissions"]
 
-        # ADMIN has wildcard permission
-        if "*" in role_config["permissions"]:
+        # Check for wildcard permission
+        if "*" in user_permissions:
             return True
 
-        # Check direct permission
-        if required_permission in role_config["permissions"]:
+        # Check for exact permission
+        if required_permission in user_permissions:
             return True
 
-        # Check inherited permissions from lower-level roles
-        user_level = role_config["level"]
+        # Check role hierarchy - higher-level roles inherit lower-level permissions
+        user_level = user_config["level"]
         for other_role, other_config in ROLES.items():
             if other_config["level"] < user_level:
                 if required_permission in other_config["permissions"]:
@@ -273,7 +281,7 @@ class AuthService:
 
     def get_user_permissions(self, user_role: str) -> List[str]:
         """
-        Get all permissions for a given role.
+        Get all permissions for a user role (including inherited).
 
         Args:
             user_role: User's role
@@ -282,22 +290,18 @@ class AuthService:
             List of permission strings
 
         Example:
-            >>> auth_service.get_user_permissions("MANAGER")
-            ['read_portfolio', 'read_metrics', 'execute_patterns', 'export_reports', 'write_trades']
+            >>> permissions = auth_service.get_user_permissions("MANAGER")
+            >>> print(permissions)
+            ["read_portfolios", "write_trades", "manage_portfolios", ...]
         """
         if user_role not in ROLES:
             return []
 
-        role_config = ROLES[user_role]
+        user_config = ROLES[user_role]
+        permissions = set(user_config["permissions"])
 
-        # ADMIN has all permissions
-        if "*" in role_config["permissions"]:
-            return ALL_PERMISSIONS
-
-        # Collect permissions from this role and all lower-level roles
-        user_level = role_config["level"]
-        permissions = set(role_config["permissions"])
-
+        # Add inherited permissions from lower-level roles
+        user_level = user_config["level"]
         for other_role, other_config in ROLES.items():
             if other_config["level"] < user_level:
                 permissions.update(other_config["permissions"])
@@ -347,33 +351,385 @@ class AuthService:
             True if password matches, False otherwise
 
         Example:
-            >>> is_valid = auth_service.verify_password("user_input", stored_hash)
-            >>> if is_valid:
-            ...     # Grant access
+            >>> is_valid = auth_service.verify_password("password", stored_hash)
         """
-        if not password or not hashed:
+        try:
+            result = bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+            logger.debug(f"Password verification: {'success' if result else 'failed'}")
+            return result
+        except Exception as e:
+            logger.error(f"Password verification error: {e}")
             return False
 
-        try:
-            is_valid = bcrypt.checkpw(
-                password.encode('utf-8'),
-                hashed.encode('utf-8')
+    # ========================================================================
+    # Database Operations
+    # ========================================================================
+
+    async def register_user(
+        self,
+        email: str,
+        password: str,
+        role: str = "USER",
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
+        db_conn: Optional[Any] = None
+    ) -> Dict[str, Any]:
+        """
+        Register a new user.
+
+        Args:
+            email: User email address
+            password: Plain text password
+            role: User role (default: USER)
+            ip_address: Registration IP address
+            user_agent: User agent string
+
+        Returns:
+            Dict with user info and JWT token
+
+        Raises:
+            ValueError: If email already exists or invalid data
+            AuthenticationError: If registration fails
+        """
+        # Validate inputs
+        if not email or not password:
+            raise ValueError("Email and password are required")
+
+        if role not in ["VIEWER", "USER", "MANAGER", "ADMIN"]:
+            raise ValueError(f"Invalid role: {role}")
+
+        # Check if user already exists
+        if db_conn:
+            existing_user = await db_conn.fetchrow(
+                "SELECT id FROM users WHERE email = $1",
+                email
+            )
+        else:
+            existing_user = await execute_query_one(
+                "SELECT id FROM users WHERE email = $1",
+                email
             )
 
-            if is_valid:
-                logger.debug("Password verification succeeded")
-            else:
-                logger.debug("Password verification failed")
+        if existing_user:
+            raise ValueError("User with this email already exists")
 
-            return is_valid
+        # Hash password
+        password_hash = self.hash_password(password)
+
+        # Create user
+        user_id = uuid4()
+        if db_conn:
+            await db_conn.execute(
+                """
+                INSERT INTO users (id, email, role, permissions, is_active, password_hash, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                """,
+                user_id, email, role, [], True, password_hash
+            )
+        else:
+            await execute_statement(
+                """
+                INSERT INTO users (id, email, role, permissions, is_active, password_hash, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                """,
+                user_id, email, role, [], True, password_hash
+            )
+
+        # Generate JWT token
+        token = self.generate_jwt(str(user_id), email, role)
+
+        # Log registration
+        await self._log_auth_event(
+            "user_registered",
+            str(user_id),
+            f"email={email}, role={role}",
+            ip_address,
+            user_agent,
+            db_conn
+        )
+
+        logger.info(f"User registered: {email} ({role})")
+
+        return {
+            "user_id": str(user_id),
+            "email": email,
+            "role": role,
+            "token": token,
+            "expires_in": self.token_expiry_hours * 3600
+        }
+
+    async def authenticate_user(
+        self, 
+        email: str, 
+        password: str,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Authenticate user with email and password.
+
+        Args:
+            email: User email address
+            password: Plain text password
+            ip_address: Login IP address
+            user_agent: User agent string
+
+        Returns:
+            Dict with user info and JWT token
+
+        Raises:
+            AuthenticationError: If authentication fails
+        """
+        # Get user from database
+        user = await execute_query_one(
+            """
+            SELECT id, email, role, permissions, is_active, password_hash, 
+                   failed_login_attempts, locked_until
+            FROM users 
+            WHERE email = $1
+            """,
+            email
+        )
+
+        if not user:
+            await self._log_auth_event(
+                "login_failed",
+                None,
+                f"email={email}, reason=user_not_found",
+                ip_address,
+                user_agent
+            )
+            raise AuthenticationError("Invalid email or password")
+
+        # Check if account is locked
+        if user["locked_until"] and user["locked_until"] > datetime.utcnow():
+            await self._log_auth_event(
+                "login_failed",
+                str(user["id"]),
+                f"email={email}, reason=account_locked",
+                ip_address,
+                user_agent
+            )
+            raise AuthenticationError("Account is temporarily locked due to too many failed attempts")
+
+        # Check if account is active
+        if not user["is_active"]:
+            await self._log_auth_event(
+                "login_failed",
+                str(user["id"]),
+                f"email={email}, reason=account_inactive",
+                ip_address,
+                user_agent
+            )
+            raise AuthenticationError("Account is inactive")
+
+        # Verify password
+        if not self.verify_password(password, user["password_hash"]):
+            # Increment failed login attempts
+            new_attempts = user["failed_login_attempts"] + 1
+            locked_until = None
+
+            if new_attempts >= self.max_login_attempts:
+                locked_until = datetime.utcnow() + timedelta(minutes=self.lockout_duration_minutes)
+
+            await execute_statement(
+                """
+                UPDATE users 
+                SET failed_login_attempts = $1, locked_until = $2
+                WHERE id = $3
+                """,
+                new_attempts, locked_until, user["id"]
+            )
+
+            await self._log_auth_event(
+                "login_failed",
+                str(user["id"]),
+                f"email={email}, reason=invalid_password, attempts={new_attempts}",
+                ip_address,
+                user_agent
+            )
+
+            if locked_until:
+                raise AuthenticationError(f"Account locked due to too many failed attempts. Try again after {locked_until.strftime('%Y-%m-%d %H:%M:%S')}")
+            else:
+                raise AuthenticationError("Invalid email or password")
+
+        # Successful login - reset failed attempts and update last login
+        await execute_statement(
+            """
+            UPDATE users 
+            SET failed_login_attempts = 0, locked_until = NULL, last_login_at = NOW()
+            WHERE id = $1
+            """,
+            user["id"]
+        )
+
+        # Generate JWT token
+        token = self.generate_jwt(str(user["id"]), user["email"], user["role"])
+
+        # Log successful login
+        await self._log_auth_event(
+            "login_success",
+            str(user["id"]),
+            f"email={email}, role={user['role']}",
+            ip_address,
+            user_agent
+        )
+
+        logger.info(f"User authenticated: {email} ({user['role']})")
+
+        return {
+            "user_id": str(user["id"]),
+            "email": user["email"],
+            "role": user["role"],
+            "permissions": user["permissions"],
+            "token": token,
+            "expires_in": self.token_expiry_hours * 3600
+        }
+
+    async def logout_user(
+        self, 
+        token: str,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> None:
+        """
+        Logout user by blacklisting their token.
+
+        Args:
+            token: JWT token to blacklist
+            ip_address: Request IP address
+            user_agent: User agent string
+        """
+        try:
+            # Verify token to get user info
+            claims = self.verify_jwt(token)
+            user_id = claims["user_id"]
+
+            # Add token to blacklist (using jti if available, otherwise hash the token)
+            import hashlib
+            token_jti = claims.get("jti", hashlib.sha256(token.encode()).hexdigest())
+            expires_at = datetime.fromtimestamp(claims["exp"])
+
+            await execute_statement(
+                """
+                INSERT INTO token_blacklist (token_jti, user_id, expires_at, created_at)
+                VALUES ($1, $2, $3, NOW())
+                ON CONFLICT (token_jti) DO NOTHING
+                """,
+                token_jti, user_id, expires_at
+            )
+
+            # Log logout
+            await self._log_auth_event(
+                "user_logout",
+                user_id,
+                f"email={claims['email']}",
+                ip_address,
+                user_agent
+            )
+
+            logger.info(f"User logged out: {claims['email']}")
 
         except Exception as e:
-            logger.error(f"Error verifying password: {e}")
-            return False
+            logger.error(f"Error during logout: {e}")
+            # Don't raise exception - logout should always succeed
+
+    async def change_password(
+        self, 
+        user_id: str, 
+        current_password: str, 
+        new_password: str,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> None:
+        """
+        Change user password.
+
+        Args:
+            user_id: User ID
+            current_password: Current password
+            new_password: New password
+            ip_address: Request IP address
+            user_agent: User agent string
+
+        Raises:
+            AuthenticationError: If current password is incorrect
+        """
+        # Get user
+        user = await execute_query_one(
+            "SELECT email, password_hash FROM users WHERE id = $1",
+            user_id
+        )
+
+        if not user:
+            raise AuthenticationError("User not found")
+
+        # Verify current password
+        if not self.verify_password(current_password, user["password_hash"]):
+            await self._log_auth_event(
+                "password_change_failed",
+                user_id,
+                {"email": user["email"], "reason": "invalid_current_password"},
+                ip_address,
+                user_agent
+            )
+            raise AuthenticationError("Current password is incorrect")
+
+        # Hash new password
+        new_password_hash = self.hash_password(new_password)
+
+        # Update password
+        await execute_statement(
+            "UPDATE users SET password_hash = $1 WHERE id = $2",
+            new_password_hash, user_id
+        )
+
+        # Log password change
+        await self._log_auth_event(
+            "password_changed",
+            user_id,
+            f"email={user['email']}",
+            ip_address,
+            user_agent
+        )
+
+        logger.info(f"Password changed for user: {user['email']}")
+
+    async def _log_auth_event(
+        self,
+        event_type: str,
+        user_id: Optional[str],
+        details: str,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
+        db_conn: Optional[Any] = None
+    ) -> None:
+        """Log authentication event to audit log."""
+        try:
+            if db_conn:
+                await db_conn.execute(
+                    """
+                    INSERT INTO audit_log (event_type, user_id, details, ip_address, user_agent, created_at)
+                    VALUES ($1, $2, $3, $4, $5, NOW())
+                    """,
+                    event_type, user_id, details, ip_address, user_agent
+                )
+            else:
+                await execute_statement(
+                    """
+                    INSERT INTO audit_log (event_type, user_id, details, ip_address, user_agent, created_at)
+                    VALUES ($1, $2, $3, $4, $5, NOW())
+                    """,
+                    event_type, user_id, details, ip_address, user_agent
+                )
+        except Exception as e:
+            logger.error(f"Failed to log auth event: {e}")
+            # Don't raise exception - logging failure shouldn't break auth flow
 
 
 # ============================================================================
-# Service Singleton
+# Singleton Instance
 # ============================================================================
 
 _auth_service = None

@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Portfolio Summary - {{ report_data.portfolio_name | default('DawsOS Portfolio') }}{% endblock %}
+{% block title %}Portfolio Summary - {{ portfolio_name | default('DawsOS Portfolio') }}{% endblock %}
 
 {% block content %}
 <!-- Cover Page -->
 <div class="cover-page">
-    <h1>{{ report_data.portfolio_name | default('Portfolio Summary') }}</h1>
+    <h1>{{ portfolio_name | default('Portfolio Summary') }}</h1>
     <div class="subtitle">
-        {% if report_data.date_range %}
-        {{ report_data.date_range }}
+        {% if date_range %}
+        {{ date_range }}
         {% else %}
         Performance Report
         {% endif %}
@@ -31,13 +31,13 @@
         <span class="toc-title">Holdings Breakdown</span>
         <span class="toc-page">4</span>
     </div>
-    {% if report_data.macro %}
+    {% if macro %}
     <div class="toc-item">
         <span class="toc-title">Macro Analysis</span>
         <span class="toc-page">5</span>
     </div>
     {% endif %}
-    {% if report_data.ratings %}
+    {% if ratings %}
     <div class="toc-item">
         <span class="toc-title">Ratings Summary</span>
         <span class="toc-page">6</span>
@@ -50,20 +50,20 @@
 <!-- Performance Summary -->
 <h1>Performance Summary</h1>
 
-{% if report_data._warnings %}
+{% if warnings %}
 <div class="warning">
     <span class="warning-icon">⚠️</span>
-    {% for warning in report_data._warnings %}
+    {% for warning in warnings %}
     <div>{{ warning }}</div>
     {% endfor %}
 </div>
 {% endif %}
 
-{% if report_data.performance or report_data.kpis %}
+{% if performance or kpis %}
 <h2>Key Performance Indicators</h2>
 
 <div class="kpi-grid">
-    {% set kpis = report_data.performance or report_data.kpis %}
+    {% set kpis = performance or kpis %}
 
     {% if kpis.twr is defined %}
     <div class="kpi-card">

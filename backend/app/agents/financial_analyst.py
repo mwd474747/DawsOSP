@@ -778,7 +778,7 @@ class FinancialAnalyst(BaseAgent):
 
         logger.info(f"risk.compute_factor_exposures: portfolio_id={portfolio_id_uuid}, pack={pack}")
 
-        from app.services.factor_analysis import FactorAnalysisService
+        from backend.app.services.factor_analysis import FactorAnalysisService
         factor_service = FactorAnalysisService()
 
         result = await factor_service.compute_factor_exposure(
@@ -814,7 +814,7 @@ class FinancialAnalyst(BaseAgent):
 
         # Get factor exposures from database for historical packs
         # TODO: Implement historical query - for now return current only
-        from app.services.factor_analysis import FactorAnalysisService
+        from backend.app.services.factor_analysis import FactorAnalysisService
         factor_service = FactorAnalysisService()
 
         current = await factor_service.compute_factor_exposure(
@@ -857,7 +857,7 @@ class FinancialAnalyst(BaseAgent):
         logger.info(f"risk.overlay_cycle_phases: portfolio_id={portfolio_id_uuid}, pack={pack}")
 
         # Get factor exposures
-        from app.services.factor_analysis import FactorAnalysisService
+        from backend.app.services.factor_analysis import FactorAnalysisService
         factor_service = FactorAnalysisService()
 
         exposures = await factor_service.compute_factor_exposure(
@@ -866,7 +866,7 @@ class FinancialAnalyst(BaseAgent):
         )
 
         # Get current cycle phases
-        from app.services.cycles import CyclesService
+        from backend.app.services.cycles import CyclesService
         cycles_service = CyclesService()
 
         stdc = await cycles_service.detect_stdc_phase()

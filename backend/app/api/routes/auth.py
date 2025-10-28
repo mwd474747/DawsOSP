@@ -145,58 +145,36 @@ async def login(request: LoginRequest):
         >>> token = response.access_token
     """
     try:
-        # Fetch user from database
-        pool = get_db_pool()
-
-        query = """
-            SELECT id, email, password_hash, role
-            FROM users
-            WHERE email = $1
-        """
-
-        user_row = await pool.fetchrow(query, request.email)
-
-        if not user_row:
-            logger.warning(f"Login failed: user not found (email={request.email})")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
-            )
-
-        # Verify password
         auth_service = get_auth_service()
+        
+        # Use unified authentication service
+        auth_data = await auth_service.authenticate_user(
+            email=request.email,
+            password=request.password,
+            ip_address="127.0.0.1",  # TODO: Get real IP from request
+            user_agent="API Client"  # TODO: Get real user agent
+        )
 
-        if not auth_service.verify_password(request.password, user_row["password_hash"]):
-            logger.warning(f"Login failed: invalid password (email={request.email})")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
-            )
-
-        # Generate JWT
-        user_id = str(user_row["id"])
-        email = user_row["email"]
-        role = user_row["role"]
-
-        token = auth_service.generate_jwt(user_id, email, role)
-
-        logger.info(f"Login successful: user_id={user_id}, email={email}, role={role}")
+        logger.info(f"Login successful: user_id={auth_data['user_id']}, email={request.email}")
 
         # Return token and user info
         return LoginResponse(
-            access_token=token,
+            access_token=auth_data["token"],
             token_type="bearer",
-            expires_in=86400,  # 24 hours
+            expires_in=auth_data["expires_in"],
             user={
-                "id": user_id,
-                "email": email,
-                "role": role
+                "id": auth_data["user_id"],
+                "email": auth_data["email"],
+                "role": auth_data["role"]
             }
         )
 
-    except HTTPException:
-        # Re-raise HTTPExceptions (401s)
-        raise
+    except AuthenticationError as e:
+        logger.warning(f"Login failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
 
     except Exception as e:
         logger.error(f"Login error: {e}")
@@ -385,41 +363,44 @@ async def create_user(
         ... )
     """
     try:
-        from backend.app.services.auth import ROLES
-
-        # Validate role
-        if role not in ROLES:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid role. Must be one of: {list(ROLES.keys())}"
-            )
-
-        # Hash password
         auth_service = get_auth_service()
-        password_hash = auth_service.hash_password(password)
+        
+        # Use unified authentication service
+        user_data = await auth_service.register_user(
+            email=email,
+            password=password,
+            role=role,
+            ip_address="127.0.0.1",  # TODO: Get real IP from request
+            user_agent="API Client"  # TODO: Get real user agent
+        )
 
-        # Insert user
-        pool = get_db_pool()
+        logger.info(f"User created: id={user_data['user_id']}, email={email}, role={role}")
 
-        query = """
-            INSERT INTO users (email, password_hash, role)
-            VALUES ($1, $2, $3)
-            RETURNING id, email, role, created_at
-        """
+        return {
+            "id": user_data["user_id"],
+            "email": user_data["email"],
+            "role": user_data["role"],
+            "created_at": "NOW()"  # TODO: Get actual creation time
+        }
 
-        user_row = await pool.fetchrow(query, email, password_hash, role)
-
-        logger.info(f"User created: id={user_row['id']}, email={email}, role={role}")
-
-        return dict(user_row)
-
-    except Exception as e:
-        if "unique constraint" in str(e).lower():
+    except ValueError as e:
+        if "already exists" in str(e):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"User with email {email} already exists"
             )
+        elif "Invalid role" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid role. Must be one of: {list(ROLES.keys())}"
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
 
+    except Exception as e:
         logger.error(f"Failed to create user: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

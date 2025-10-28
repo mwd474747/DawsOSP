@@ -32,7 +32,7 @@ import httpx
 from typing import Dict, List, Optional, Any
 from datetime import datetime, date, timedelta
 
-from .base_provider import BaseProvider, ProviderConfig, ProviderError
+from .base_provider import BaseProvider, ProviderConfig, ProviderError, ProviderRequest, ProviderResponse
 from .rate_limiter import rate_limit
 
 logger = logging.getLogger(__name__)
@@ -88,7 +88,17 @@ class NewsAPIProvider(BaseProvider):
         self.api_key = api_key
         self.tier = tier
 
-    @rate_limit(requests_per_minute=30)  # Conservative default for dev tier
+    async def call(self, request: ProviderRequest) -> ProviderResponse:
+        """
+        Execute provider call (required by BaseProvider).
+        
+        This method is not used directly by NewsAPIProvider methods,
+        but is required by the abstract base class.
+        """
+        # NewsAPIProvider uses direct HTTP calls in its methods
+        # This is a placeholder implementation
+        raise NotImplementedError("NewsAPIProvider uses direct HTTP calls, not the call() method")
+
     async def search(
         self,
         query: str,
@@ -133,7 +143,7 @@ class NewsAPIProvider(BaseProvider):
             - Business tier: Returns full article content
             - Free tier has 100 requests/day limit
         """
-        url = f"{self.config.base_url}/everything"
+        url = f"{self.base_url}/everything"
 
         # Default date range: last 30 days
         if not from_date:
@@ -186,7 +196,6 @@ class NewsAPIProvider(BaseProvider):
 
         return filtered_articles
 
-    @rate_limit(requests_per_minute=30)
     async def get_top_headlines(
         self,
         country: str = "us",
@@ -211,7 +220,7 @@ class NewsAPIProvider(BaseProvider):
             - Updated more frequently than historical search
             - Same tier restrictions apply
         """
-        url = f"{self.config.base_url}/top-headlines"
+        url = f"{self.base_url}/top-headlines"
 
         params = {
             "apiKey": self.api_key,
@@ -322,8 +331,34 @@ class NewsAPIProvider(BaseProvider):
         """
         return {
             "tier": self.tier,
-            "rate_limit_rpm": self.config.rate_limit_rpm,
+            "rate_limit_rpm": self.rate_limit_rpm,
             "can_export_content": self.can_export_content(),
             "requires_upgrade": self.tier == "dev",
             "upgrade_url": "https://newsapi.org/pricing" if self.tier == "dev" else None,
         }
+
+    async def _request(
+        self, method: str, url: str, params: Optional[Dict] = None, json_body: Optional[Dict] = None
+    ) -> Any:
+        """
+        Make HTTP request using httpx.
+        
+        Args:
+            method: HTTP method (GET, POST, etc.)
+            url: Request URL
+            params: Query parameters
+            json_body: JSON request body
+            
+        Returns:
+            Response JSON data
+        """
+        async with httpx.AsyncClient() as client:
+            response = await client.request(
+                method=method,
+                url=url,
+                params=params,
+                json=json_body,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            return response.json()

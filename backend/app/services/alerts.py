@@ -47,6 +47,9 @@ from decimal import Decimal
 from typing import Dict, Any, Optional, List
 from uuid import UUID
 
+from backend.app.services.notifications import NotificationService
+from backend.app.services.alert_delivery import AlertDeliveryService
+
 logger = logging.getLogger("DawsOS.Alerts")
 
 
@@ -242,6 +245,145 @@ class AlertService:
                 f"({remaining:.1f}h remaining)"
             )
             return False
+
+    def normalize_channels(self, alert: Dict[str, Any]) -> Dict[str, bool]:
+        """
+        Normalize alert channels to unified format.
+
+        Supports both legacy format (notify_email, notify_inapp booleans)
+        and new format (channels JSONB dict).
+
+        Args:
+            alert: Alert configuration dict
+
+        Returns:
+            Channels dict {"inapp": bool, "email": bool}
+        """
+        # Check for new format first
+        if "channels" in alert:
+            return alert["channels"]
+
+        # Fall back to legacy format
+        return {
+            "inapp": alert.get("notify_inapp", True),
+            "email": alert.get("notify_email", False),
+        }
+
+    async def deliver_alert(
+        self,
+        alert: Dict[str, Any],
+        user_id: str,
+        message: str,
+    ) -> bool:
+        """
+        Deliver alert to user via configured channels.
+
+        Includes delivery tracking and DLQ integration.
+
+        Args:
+            alert: Alert configuration dict (includes id, name, condition)
+                   Channels can be specified as:
+                   - "channels": {"inapp": True, "email": False} (new format)
+                   - "notify_inapp": True, "notify_email": False (legacy format)
+            user_id: User UUID
+            message: Alert message to deliver
+
+        Returns:
+            True if delivery succeeded, False otherwise
+
+        Usage:
+            # New format
+            alert = {
+                "id": "alert-123",
+                "name": "VIX Alert",
+                "condition_json": {...},
+                "channels": {"inapp": True, "email": False}
+            }
+            success = await alert_service.deliver_alert(alert, user_id, "VIX exceeded 30")
+
+            # Legacy format (from database)
+            alert = {
+                "id": "alert-123",
+                "name": "VIX Alert",
+                "condition_json": {...},
+                "notify_inapp": True,
+                "notify_email": False
+            }
+            success = await alert_service.deliver_alert(alert, user_id, "VIX exceeded 30")
+        """
+        alert_id = alert.get("id")
+        alert_name = alert.get("name", "Alert")
+        channels = self.normalize_channels(alert)
+
+        logger.info(
+            f"Delivering alert {alert_id} to user {user_id} "
+            f"(channels: {channels})"
+        )
+
+        # Get delivery service for tracking and DLQ
+        delivery_service = AlertDeliveryService(use_db=self.use_db)
+
+        # Check for duplicate delivery (content-based)
+        alert_data = {
+            "condition": alert.get("condition_json"),
+            "message": message,
+            "user_id": user_id,
+        }
+        content_hash = delivery_service.compute_content_hash(alert_data)
+
+        is_duplicate = await delivery_service.check_duplicate_delivery(
+            alert_id=alert_id,
+            content_hash=content_hash,
+            lookback_hours=24,
+        )
+
+        if is_duplicate:
+            logger.warning(
+                f"Alert {alert_id} already delivered recently "
+                "(content-based deduplication)"
+            )
+            return False
+
+        # Get notification service
+        notification_service = NotificationService(use_db=self.use_db)
+
+        # Send notification with DLQ error handling
+        try:
+            success = await notification_service.send_notification(
+                user_id=user_id,
+                alert_id=alert_id,
+                message=message,
+                channels=channels,
+                alert_name=alert_name,
+            )
+
+            if success:
+                # Track successful delivery
+                await delivery_service.track_delivery(
+                    alert_id=alert_id,
+                    alert_data=alert_data,
+                    delivery_methods=[k for k, v in channels.items() if v],
+                )
+                logger.info(f"Alert {alert_id} delivered successfully to user {user_id}")
+            else:
+                logger.warning(
+                    f"Alert {alert_id} not delivered (deduplication or channel unavailable)"
+                )
+
+            return success
+
+        except Exception as e:
+            # Push to DLQ for retry
+            logger.error(f"Failed to deliver alert {alert_id}: {e}", exc_info=True)
+
+            await delivery_service.push_to_dlq(
+                alert_id=alert_id,
+                alert_data=alert_data,
+                error_message=str(e),
+            )
+
+            # Re-raise for caller to handle
+            raise
 
     # ========================================================================
     # Macro Condition Evaluation
@@ -910,3 +1052,384 @@ class AlertService:
         except Exception as e:
             logger.error(f"Failed to evaluate regime shift: {e}", exc_info=True)
             return False
+
+    # ========================================================================
+    # Alert Delivery System (Legacy - Deprecated)
+    # ========================================================================
+    # NOTE: This legacy implementation is deprecated.
+    # Use deliver_alert() (line 272) which integrates with NotificationService
+    # and AlertDeliveryService for proper delivery tracking and DLQ management.
+
+    async def _deliver_alert_legacy(
+        self,
+        alert_id: str,
+        alert_data: Dict[str, Any],
+        delivery_methods: List[str] = None,
+        retry_count: int = 0,
+        max_retries: int = 3
+    ) -> Dict[str, Any]:
+        """
+        DEPRECATED: Use deliver_alert() instead.
+
+        Legacy alert delivery implementation (stub).
+
+        Args:
+            alert_id: Alert ID
+            alert_data: Alert data including condition, context, etc.
+            delivery_methods: List of delivery methods (email, sms, webhook)
+            retry_count: Current retry attempt
+            max_retries: Maximum retry attempts
+
+        Returns:
+            Delivery result with status and details
+        """
+        if delivery_methods is None:
+            delivery_methods = ["email"]  # Default delivery method
+
+        # Check for duplicates
+        if await self._is_duplicate_alert(alert_id, alert_data):
+            logger.info(f"Duplicate alert detected: {alert_id}")
+            return {
+                "status": "duplicate",
+                "alert_id": alert_id,
+                "message": "Alert already delivered recently"
+            }
+
+        # Attempt delivery
+        delivery_result = await self._attempt_delivery(
+            alert_id, alert_data, delivery_methods
+        )
+
+        # Handle delivery failures
+        if not delivery_result["success"]:
+            if retry_count < max_retries:
+                logger.warning(
+                    f"Delivery failed for alert {alert_id}, retrying ({retry_count + 1}/{max_retries})"
+                )
+                # Schedule retry
+                await self._schedule_retry(alert_id, alert_data, delivery_methods, retry_count + 1)
+                return {
+                    "status": "retry_scheduled",
+                    "alert_id": alert_id,
+                    "retry_count": retry_count + 1,
+                    "message": f"Delivery failed, retry scheduled"
+                }
+            else:
+                # Move to Dead Letter Queue
+                logger.error(f"Alert {alert_id} failed after {max_retries} retries, moving to DLQ")
+                await self._move_to_dlq(alert_id, alert_data, delivery_result["error"])
+                return {
+                    "status": "dlq",
+                    "alert_id": alert_id,
+                    "message": "Alert moved to Dead Letter Queue"
+                }
+
+        # Success - log delivery
+        await self._log_delivery_success(alert_id, alert_data, delivery_result)
+        return {
+            "status": "delivered",
+            "alert_id": alert_id,
+            "delivery_methods": delivery_methods,
+            "message": "Alert delivered successfully"
+        }
+
+    async def _is_duplicate_alert(self, alert_id: str, alert_data: Dict[str, Any]) -> bool:
+        """
+        Check if alert is a duplicate based on content and recent delivery.
+
+        Args:
+            alert_id: Alert ID
+            alert_data: Alert data
+
+        Returns:
+            True if duplicate, False otherwise
+        """
+        try:
+            # Create content hash for deduplication
+            import hashlib
+            import json
+            
+            content_hash = hashlib.md5(
+                json.dumps(alert_data, sort_keys=True).encode()
+            ).hexdigest()
+
+            # Check recent deliveries (last 1 hour)
+            query = """
+                SELECT COUNT(*) as count
+                FROM alert_deliveries
+                WHERE alert_id = $1
+                  AND content_hash = $2
+                  AND delivered_at > NOW() - INTERVAL '1 hour'
+            """
+
+            if self.use_db:
+                row = await self.execute_query_one(query, alert_id, content_hash)
+                return row["count"] > 0
+            else:
+                # Stub mode - no deduplication
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to check duplicate alert: {e}")
+            return False
+
+    async def _attempt_delivery(
+        self,
+        alert_id: str,
+        alert_data: Dict[str, Any],
+        delivery_methods: List[str]
+    ) -> Dict[str, Any]:
+        """
+        Attempt to deliver alert via specified methods.
+
+        Args:
+            alert_id: Alert ID
+            alert_data: Alert data
+            delivery_methods: List of delivery methods
+
+        Returns:
+            Delivery result with success status and details
+        """
+        delivery_results = []
+        overall_success = True
+        error_details = []
+
+        for method in delivery_methods:
+            try:
+                if method == "email":
+                    result = await self._deliver_email(alert_id, alert_data)
+                elif method == "sms":
+                    result = await self._deliver_sms(alert_id, alert_data)
+                elif method == "webhook":
+                    result = await self._deliver_webhook(alert_id, alert_data)
+                else:
+                    result = {"success": False, "error": f"Unknown delivery method: {method}"}
+
+                delivery_results.append({
+                    "method": method,
+                    "success": result["success"],
+                    "error": result.get("error")
+                })
+
+                if not result["success"]:
+                    overall_success = False
+                    error_details.append(f"{method}: {result.get('error', 'Unknown error')}")
+
+            except Exception as e:
+                logger.error(f"Delivery method {method} failed: {e}")
+                delivery_results.append({
+                    "method": method,
+                    "success": False,
+                    "error": str(e)
+                })
+                overall_success = False
+                error_details.append(f"{method}: {str(e)}")
+
+        return {
+            "success": overall_success,
+            "results": delivery_results,
+            "error": "; ".join(error_details) if error_details else None
+        }
+
+    async def _deliver_email(self, alert_id: str, alert_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Deliver alert via email.
+
+        Args:
+            alert_id: Alert ID
+            alert_data: Alert data
+
+        Returns:
+            Delivery result
+        """
+        try:
+            # TODO: Integrate with email service (SendGrid, SES, etc.)
+            # For now, log the email content
+            email_content = self._format_email_content(alert_id, alert_data)
+            logger.info(f"EMAIL ALERT {alert_id}: {email_content}")
+            
+            return {"success": True, "message": "Email logged (not sent)"}
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def _deliver_sms(self, alert_id: str, alert_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Deliver alert via SMS.
+
+        Args:
+            alert_id: Alert ID
+            alert_data: Alert data
+
+        Returns:
+            Delivery result
+        """
+        try:
+            # TODO: Integrate with SMS service (Twilio, etc.)
+            # For now, log the SMS content
+            sms_content = self._format_sms_content(alert_id, alert_data)
+            logger.info(f"SMS ALERT {alert_id}: {sms_content}")
+            
+            return {"success": True, "message": "SMS logged (not sent)"}
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def _deliver_webhook(self, alert_id: str, alert_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Deliver alert via webhook.
+
+        Args:
+            alert_id: Alert ID
+            alert_data: Alert data
+
+        Returns:
+            Delivery result
+        """
+        try:
+            # TODO: Implement webhook delivery
+            # For now, log the webhook payload
+            webhook_payload = self._format_webhook_payload(alert_id, alert_data)
+            logger.info(f"WEBHOOK ALERT {alert_id}: {webhook_payload}")
+            
+            return {"success": True, "message": "Webhook logged (not sent)"}
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def _format_email_content(self, alert_id: str, alert_data: Dict[str, Any]) -> str:
+        """Format alert data for email delivery."""
+        condition = alert_data.get("condition", {})
+        context = alert_data.get("context", {})
+        
+        return f"""
+Alert: {alert_id}
+Condition: {condition.get('type', 'unknown')} - {condition.get('entity', 'N/A')}
+Value: {context.get('current_value', 'N/A')}
+Threshold: {condition.get('value', 'N/A')}
+Time: {context.get('timestamp', 'N/A')}
+        """.strip()
+
+    def _format_sms_content(self, alert_id: str, alert_data: Dict[str, Any]) -> str:
+        """Format alert data for SMS delivery."""
+        condition = alert_data.get("condition", {})
+        context = alert_data.get("context", {})
+        
+        return f"ALERT {alert_id}: {condition.get('type', 'unknown')} breach - {context.get('current_value', 'N/A')}"
+
+    def _format_webhook_payload(self, alert_id: str, alert_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Format alert data for webhook delivery."""
+        return {
+            "alert_id": alert_id,
+            "timestamp": alert_data.get("context", {}).get("timestamp"),
+            "condition": alert_data.get("condition", {}),
+            "context": alert_data.get("context", {}),
+            "severity": alert_data.get("severity", "medium")
+        }
+
+    async def _schedule_retry(
+        self,
+        alert_id: str,
+        alert_data: Dict[str, Any],
+        delivery_methods: List[str],
+        retry_count: int
+    ):
+        """Schedule alert for retry delivery."""
+        try:
+            # TODO: Implement retry scheduling (Redis, Celery, etc.)
+            # For now, just log the retry
+            logger.info(f"Retry scheduled for alert {alert_id} (attempt {retry_count})")
+            
+        except Exception as e:
+            logger.error(f"Failed to schedule retry for alert {alert_id}: {e}")
+
+    async def _move_to_dlq(
+        self,
+        alert_id: str,
+        alert_data: Dict[str, Any],
+        error_message: str
+    ):
+        """Move failed alert to Dead Letter Queue."""
+        try:
+            if self.use_db:
+                import json
+                from backend.app.db.connection import execute_statement
+                await execute_statement(
+                    """
+                    INSERT INTO alert_dlq (
+                        alert_id, alert_data, error_message, created_at
+                    ) VALUES ($1, $2, $3, NOW())
+                    """,
+                    alert_id,
+                    json.dumps(alert_data),
+                    error_message
+                )
+            else:
+                logger.info(f"Alert {alert_id} moved to DLQ: {error_message}")
+                
+        except Exception as e:
+            logger.error(f"Failed to move alert {alert_id} to DLQ: {e}")
+
+    async def _log_delivery_success(
+        self,
+        alert_id: str,
+        alert_data: Dict[str, Any],
+        delivery_result: Dict[str, Any]
+    ):
+        """Log successful alert delivery."""
+        try:
+            import hashlib
+            import json
+            
+            content_hash = hashlib.md5(
+                json.dumps(alert_data, sort_keys=True).encode()
+            ).hexdigest()
+
+            if self.use_db:
+                from backend.app.db.connection import execute_statement
+                await execute_statement(
+                    """
+                    INSERT INTO alert_deliveries (
+                        alert_id, content_hash, delivery_methods, delivered_at
+                    ) VALUES ($1, $2, $3, NOW())
+                    """,
+                    alert_id,
+                    content_hash,
+                    json.dumps(delivery_result.get("results", []))
+                )
+            else:
+                logger.info(f"Alert {alert_id} delivered successfully")
+                
+        except Exception as e:
+            logger.error(f"Failed to log delivery success for alert {alert_id}: {e}")
+
+
+# ============================================================================
+# Service Factory
+# ============================================================================
+
+def get_alert_service(use_db: bool = True) -> AlertService:
+    """
+    Get AlertService singleton instance.
+
+    Args:
+        use_db: If True, use real database. If False, use stubs for testing.
+
+    Returns:
+        AlertService instance
+    """
+    global _alert_service_db, _alert_service_stub
+    
+    if use_db:
+        if _alert_service_db is None:
+            _alert_service_db = AlertService(use_db=True)
+        return _alert_service_db
+    else:
+        if _alert_service_stub is None:
+            _alert_service_stub = AlertService(use_db=False)
+        return _alert_service_stub
+
+
+# Singleton instances - separate for db and stub modes
+_alert_service_db = None
+_alert_service_stub = None

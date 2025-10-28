@@ -8,6 +8,7 @@ Updated: 2025-10-23
 
 import sys
 import os
+from pathlib import Path
 
 def check_file(path, min_lines=0):
     """Check if file exists and has minimum lines."""
@@ -29,6 +30,8 @@ def main():
     print("=" * 80)
     print()
     
+    repo_root = Path(__file__).resolve().parent
+
     files = [
         ("backend/app/core/circuit_breaker.py", 400),
         ("backend/app/core/rate_limiter.py", 350),
@@ -46,7 +49,7 @@ def main():
     
     all_ok = True
     for file_path, min_lines in files:
-        full_path = f"/Users/mdawson/Documents/GitHub/DawsOSB/DawsOSP/{file_path}"
+        full_path = repo_root / file_path
         ok, status = check_file(full_path, min_lines)
         
         symbol = "✅" if ok else "❌"

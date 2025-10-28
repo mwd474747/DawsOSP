@@ -73,7 +73,7 @@ services:
 
       # Security & observability
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-dev-secret}
-      OTLP_ENDPOINT: ${OTLP_ENDPOINT:-}
+      OTLP_ENDPOINT: ${OTLP_ENDPOINT:-http://jaeger:4317}
       SENTRY_DSN: ${SENTRY_DSN:-}
 
       # Pricing configuration
@@ -168,6 +168,101 @@ services:
       - dawsos-network
     restart: unless-stopped
 
+  # ============================================================================
+  # Observability: Prometheus (Metrics)
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: dawsos-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - dawsos-network
+    restart: unless-stopped
+    profiles:
+      - observability
+
+  # ============================================================================
+  # Observability: Grafana (Dashboards)
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: dawsos-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: grafana-clock-panel
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - dawsos-network
+    restart: unless-stopped
+    profiles:
+      - observability
+
+  # ============================================================================
+  # Observability: Jaeger (Distributed Tracing)
+  # ============================================================================
+  jaeger:
+    image: jaegertracing/all-in-one:1.51
+    container_name: dawsos-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+      SPAN_STORAGE_TYPE: badger
+      BADGER_EPHEMERAL: "false"
+      BADGER_DIRECTORY_VALUE: /badger/data
+      BADGER_DIRECTORY_KEY: /badger/key
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4317:4317"    # OTLP gRPC receiver
+      - "4318:4318"    # OTLP HTTP receiver
+      - "14268:14268"  # Jaeger collector
+    volumes:
+      - jaeger_data:/badger
+    networks:
+      - dawsos-network
+    restart: unless-stopped
+    profiles:
+      - observability
+
+  # ============================================================================
+  # Observability: OpenTelemetry Collector (Optional)
+  # ============================================================================
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.91.0
+    container_name: dawsos-otel-collector
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./observability/otel/otel-collector-config.yml:/etc/otel-collector-config.yml:ro
+    ports:
+      - "4319:4317"    # OTLP gRPC receiver (non-standard port to avoid conflict)
+      - "8888:8888"    # Prometheus metrics
+      - "13133:13133"  # Health check
+    depends_on:
+      - jaeger
+      - prometheus
+    networks:
+      - dawsos-network
+    restart: unless-stopped
+    profiles:
+      - observability
+
 # ============================================================================
 # Networks
 # ============================================================================
@@ -182,4 +277,10 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  jaeger_data:
     driver: local

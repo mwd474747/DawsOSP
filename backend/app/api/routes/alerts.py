@@ -22,7 +22,7 @@ Features:
 Usage:
     # Create alert
     POST /v1/alerts
-    X-User-ID: 11111111-1111-1111-1111-111111111111
+    Authorization: Bearer <jwt_token>
     {
         "condition_json": {
             "type": "macro",
@@ -52,6 +52,8 @@ from backend.app.core.alert_validators import (
     validate_notification_channels,
 )
 from backend.app.services.alerts import AlertService
+from backend.app.middleware.auth_middleware import verify_token
+from backend.app.services.auth import get_auth_service
 
 logger = logging.getLogger("DawsOS.API.Alerts")
 
@@ -120,40 +122,36 @@ class AlertTestResponse(BaseModel):
 
 
 # ============================================================================
-# Dependency: Get User ID from Header
+# Helper: Get User ID from JWT Claims
 # ============================================================================
 
 
-async def get_current_user_id(
-    x_user_id: Optional[str] = Header(None, description="User ID for RLS context")
-) -> UUID:
+def get_user_id_from_claims(claims: dict) -> UUID:
     """
-    Extract user_id from request header.
-
-    In production, this would come from JWT token validation.
-    For development, we use X-User-ID header.
+    Extract user_id from JWT claims and convert to UUID.
 
     Args:
-        x_user_id: User ID from header
+        claims: JWT claims (user_id, email, role)
 
     Returns:
         User UUID
 
     Raises:
-        HTTPException: If user_id not provided
+        HTTPException: If user_id missing or invalid format
     """
-    if not x_user_id:
+    user_id_str = claims.get("user_id")
+    if not user_id_str:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="X-User-ID header required (or JWT token in production)",
+            detail="JWT token missing user_id claim"
         )
 
     try:
-        return UUID(x_user_id)
+        return UUID(user_id_str)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid user_id format (must be UUID)",
+            detail="Invalid user_id format in JWT token (must be UUID)"
         )
 
 
@@ -164,7 +162,8 @@ async def get_current_user_id(
 
 @router.post("", response_model=AlertResponse, status_code=status.HTTP_201_CREATED)
 async def create_alert(
-    alert: AlertCreate, user_id: UUID = Depends(get_current_user_id)
+    alert: AlertCreate, 
+    claims: dict = Depends(verify_token)
 ) -> AlertResponse:
     """
     Create new alert.
@@ -177,7 +176,7 @@ async def create_alert(
 
     Args:
         alert: Alert creation data
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
 
     Returns:
         Created alert
@@ -185,6 +184,17 @@ async def create_alert(
     Raises:
         HTTPException: If validation or creation fails
     """
+    user_id = get_user_id_from_claims(claims)
+    user_role = claims.get("role", "USER")
+    
+    # RBAC: Check permission to manage alerts
+    auth_service = get_auth_service()
+    if not auth_service.check_permission(user_role, "manage_alerts"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to create alerts"
+        )
+    
     alert_id = uuid4()
 
     logger.info(f"Creating alert for user {user_id}: {alert.condition_json}")
@@ -289,7 +299,7 @@ async def create_alert(
 
 @router.get("", response_model=List[AlertResponse])
 async def list_alerts(
-    user_id: UUID = Depends(get_current_user_id),
+    claims: dict = Depends(verify_token),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum results"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
@@ -298,7 +308,7 @@ async def list_alerts(
     List user's alerts (RLS filtered).
 
     Args:
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
         is_active: Filter by active status
         limit: Maximum results
         offset: Offset for pagination
@@ -306,6 +316,7 @@ async def list_alerts(
     Returns:
         List of alerts
     """
+    user_id = get_user_id_from_claims(claims)
     logger.debug(f"Listing alerts for user {user_id}")
 
     try:
@@ -369,14 +380,15 @@ async def list_alerts(
 
 @router.get("/{alert_id}", response_model=AlertResponse)
 async def get_alert(
-    alert_id: UUID, user_id: UUID = Depends(get_current_user_id)
+    alert_id: UUID, 
+    claims: dict = Depends(verify_token)
 ) -> AlertResponse:
     """
     Get alert by ID (RLS filtered).
 
     Args:
         alert_id: Alert UUID
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
 
     Returns:
         Alert details
@@ -384,6 +396,7 @@ async def get_alert(
     Raises:
         HTTPException: If alert not found
     """
+    user_id = get_user_id_from_claims(claims)
     logger.debug(f"Getting alert {alert_id} for user {user_id}")
 
     try:
@@ -441,7 +454,7 @@ async def get_alert(
 async def update_alert(
     alert_id: UUID,
     alert_update: AlertUpdate,
-    user_id: UUID = Depends(get_current_user_id),
+    claims: dict = Depends(verify_token),
 ) -> AlertResponse:
     """
     Update alert (RLS filtered).
@@ -449,7 +462,7 @@ async def update_alert(
     Args:
         alert_id: Alert UUID
         alert_update: Alert update data
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
 
     Returns:
         Updated alert
@@ -457,6 +470,17 @@ async def update_alert(
     Raises:
         HTTPException: If alert not found or update fails
     """
+    user_id = get_user_id_from_claims(claims)
+    user_role = claims.get("role", "USER")
+    
+    # RBAC: Check permission to manage alerts
+    auth_service = get_auth_service()
+    if not auth_service.check_permission(user_role, "manage_alerts"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to update alerts"
+        )
+    
     logger.info(f"Updating alert {alert_id} for user {user_id}")
 
     # Validate condition if provided
@@ -572,18 +596,30 @@ async def update_alert(
 
 @router.delete("/{alert_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_alert(
-    alert_id: UUID, user_id: UUID = Depends(get_current_user_id)
-):
+    alert_id: UUID, 
+    claims: dict = Depends(verify_token)
+) -> None:
     """
     Delete alert (soft delete - sets is_active=false).
 
     Args:
         alert_id: Alert UUID
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
 
     Raises:
         HTTPException: If alert not found
     """
+    user_id = get_user_id_from_claims(claims)
+    user_role = claims.get("role", "USER")
+    
+    # RBAC: Check permission to manage alerts
+    auth_service = get_auth_service()
+    if not auth_service.check_permission(user_role, "manage_alerts"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to delete alerts"
+        )
+    
     logger.info(f"Deleting alert {alert_id} for user {user_id}")
 
     try:
@@ -619,7 +655,8 @@ async def delete_alert(
 
 @router.post("/{alert_id}/test", response_model=AlertTestResponse)
 async def test_alert(
-    alert_id: UUID, user_id: UUID = Depends(get_current_user_id)
+    alert_id: UUID, 
+    claims: dict = Depends(verify_token)
 ) -> AlertTestResponse:
     """
     Test alert condition (dry run).
@@ -628,7 +665,7 @@ async def test_alert(
 
     Args:
         alert_id: Alert UUID
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
 
     Returns:
         Test results (condition met, current value, would trigger)
@@ -636,6 +673,7 @@ async def test_alert(
     Raises:
         HTTPException: If alert not found
     """
+    user_id = get_user_id_from_claims(claims)
     logger.info(f"Testing alert {alert_id} for user {user_id}")
 
     try:

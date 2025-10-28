@@ -38,6 +38,15 @@ from backend.app.services.rights_registry import get_registry, ExportCheckResult
 
 logger = logging.getLogger(__name__)
 
+# Custom exceptions
+class ServiceError(Exception):
+    """Base exception for service errors."""
+    pass
+
+class RightsViolationError(ServiceError):
+    """Raised when export rights are violated."""
+    pass
+
 # WeasyPrint imported conditionally (may not be available in all environments)
 try:
     from weasyprint import HTML, CSS
@@ -143,7 +152,7 @@ class ReportService:
 
         # Generate PDF
         if WEASYPRINT_AVAILABLE:
-            pdf_bytes = self._generate_pdf_weasyprint(html_content)
+            pdf_bytes = self._generate_pdf_weasyprint(html_content, rights_check.watermark)
         else:
             # Fallback: return HTML as bytes
             logger.warning("WeasyPrint not available - returning HTML instead of PDF")
@@ -376,28 +385,125 @@ class ReportService:
 
         return html
 
-    def _generate_pdf_weasyprint(self, html_content: str) -> bytes:
+    def _generate_pdf_weasyprint(self, html_content: str, watermark: Optional[Any] = None) -> bytes:
         """
-        Generate PDF from HTML using WeasyPrint.
+        Generate PDF from HTML using WeasyPrint with watermark support.
 
         Args:
             html_content: HTML string
+            watermark: Optional watermark configuration
 
         Returns:
             PDF bytes
         """
-        # Check for custom CSS
-        css_path = self.templates_dir / "dawsos_pdf.css"
-
-        if css_path.exists():
-            css = CSS(filename=str(css_path))
-            pdf_bytes = HTML(string=html_content).write_pdf(stylesheets=[css])
+        try:
+            from weasyprint import HTML, CSS
+            from weasyprint.text.fonts import FontConfiguration
+            
+            # Create font configuration for better font handling
+            font_config = FontConfiguration()
+            
+            # Create HTML document
+            html_doc = HTML(string=html_content)
+            
+            # Prepare stylesheets
+            stylesheets = []
+            
+            # Check for custom CSS
+            css_path = self.templates_dir / "dawsos_pdf.css"
+            if css_path.exists():
+                stylesheets.append(CSS(filename=str(css_path)))
+            
+            # Add watermark CSS if watermark is required
+            if watermark:
+                watermark_css = self._generate_watermark_css(watermark)
+                stylesheets.append(CSS(string=watermark_css))
+            
+            # Generate PDF with proper styling
+            pdf_bytes = html_doc.write_pdf(
+                font_config=font_config,
+                stylesheets=stylesheets,
+                optimize_images=True,
+                jpeg_quality=85
+            )
+            
+            logger.info(f"Generated PDF: {len(pdf_bytes)} bytes")
+            return pdf_bytes
+            
+        except ImportError:
+            raise ServiceError("WeasyPrint not available. Install with: pip install weasyprint")
+        except Exception as e:
+            logger.error(f"PDF generation failed: {str(e)}")
+            raise ServiceError(f"PDF generation failed: {str(e)}")
+    
+    def _generate_watermark_css(self, watermark: Any) -> str:
+        """
+        Generate CSS for watermark overlay.
+        
+        Args:
+            watermark: Watermark configuration object
+            
+        Returns:
+            CSS string for watermark styling
+        """
+        watermark_text = getattr(watermark, 'text', 'CONFIDENTIAL')
+        opacity = getattr(watermark, 'opacity', 0.3)
+        position = getattr(watermark, 'position', 'diagonal')
+        
+        if position == 'diagonal':
+            css = f"""
+            @page {{
+                @top-right {{
+                    content: "{watermark_text}";
+                    font-size: 24pt;
+                    color: rgba(0, 0, 0, {opacity});
+                    transform: rotate(-45deg);
+                    transform-origin: center;
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    z-index: -1;
+                }}
+            }}
+            
+            .watermark {{
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                font-size: 48pt;
+                color: rgba(0, 0, 0, {opacity});
+                z-index: -1;
+                pointer-events: none;
+                user-select: none;
+            }}
+            
+            .watermark::before {{
+                content: "{watermark_text}";
+            }}
+            """
         else:
-            # Use default styling
-            pdf_bytes = HTML(string=html_content).write_pdf()
-
-        logger.info(f"Generated PDF: {len(pdf_bytes)} bytes")
-        return pdf_bytes
+            # Default centered watermark
+            css = f"""
+            .watermark {{
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 36pt;
+                color: rgba(0, 0, 0, {opacity});
+                z-index: -1;
+                pointer-events: none;
+                user-select: none;
+                text-align: center;
+            }}
+            
+            .watermark::before {{
+                content: "{watermark_text}";
+            }}
+            """
+        
+        return css
 
     def _generate_fallback_html(
         self,
@@ -428,14 +534,24 @@ class ReportService:
         body {{ font-family: Arial, sans-serif; margin: 40px; }}
         h1 {{ color: #00ACC1; }}
         .attribution {{ font-size: 10px; color: #666; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; }}
-        .watermark {{ opacity: 0.3; font-size: 48px; text-align: center; color: #ccc; }}
+        .watermark {{ 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%) rotate(-45deg); 
+            font-size: 48pt; 
+            color: rgba(0, 0, 0, {getattr(watermark, 'opacity', 0.3) if watermark else 0.3}); 
+            z-index: -1; 
+            pointer-events: none; 
+            user-select: none; 
+        }}
         pre {{ background: #f5f5f5; padding: 10px; overflow: auto; }}
     </style>
 </head>
 <body>
     <h1>DawsOS Portfolio Report</h1>
 
-    {f'<div class="watermark">{watermark.text}</div>' if watermark else ''}
+    {f'<div class="watermark">{getattr(watermark, "text", "CONFIDENTIAL")}</div>' if watermark else ''}
 
     <h2>Report Data</h2>
     <pre>{json.dumps(report_data, indent=2, default=str)}</pre>
@@ -523,16 +639,70 @@ class ReportService:
             allowed: Whether export was allowed
             rights_check: Rights check result
         """
-        # TODO: Write to audit_log table in database
-        # For now, just log to file
-        logger.info(
-            f"AUDIT: {export_type.upper()} export "
-            f"{'ALLOWED' if allowed else 'BLOCKED'} - "
-            f"title='{title}', providers={providers}, "
-            f"user_id={user_id}, portfolio_id={portfolio_id}, "
-            f"environment={self.environment}, "
-            f"timestamp={rights_check.timestamp.isoformat()}"
-        )
+        try:
+            from backend.app.db.connection import execute_statement
+            
+            # Prepare audit log data
+            audit_data = {
+                "export_type": export_type,
+                "providers": providers,
+                "title": title,
+                "user_id": user_id,
+                "portfolio_id": portfolio_id,
+                "allowed": allowed,
+                "environment": self.environment,
+                "blocked_providers": rights_check.blocked_providers,
+                "attributions": rights_check.attributions,
+                "timestamp": rights_check.timestamp
+            }
+            
+            # Insert into audit_log table
+            await execute_statement(
+                """
+                INSERT INTO audit_log (
+                    user_id, event_type, details, ip_address, user_agent, created_at
+                ) VALUES ($1, $2, $3, $4, $5, $6)
+                """,
+                user_id,
+                f"export_{export_type}",
+                f"export_type={export_type}, providers={providers}, title={title}, "
+                f"allowed={allowed}, environment={self.environment}, "
+                f"blocked_providers={rights_check.blocked_providers}",
+                "127.0.0.1",  # TODO: Get real IP from request context
+                "ReportService",  # TODO: Get real user agent
+                rights_check.timestamp
+            )
+            
+            # Handle both string and datetime timestamps
+            timestamp_str = rights_check.timestamp
+            if hasattr(rights_check.timestamp, 'isoformat'):
+                timestamp_str = rights_check.timestamp.isoformat()
+            
+            logger.info(
+                f"AUDIT: {export_type.upper()} export "
+                f"{'ALLOWED' if allowed else 'BLOCKED'} - "
+                f"title='{title}', providers={providers}, "
+                f"user_id={user_id}, portfolio_id={portfolio_id}, "
+                f"environment={self.environment}, "
+                f"timestamp={timestamp_str}"
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to log export audit: {e}")
+            # Fallback to file logging
+            # Handle both string and datetime timestamps for fallback
+            timestamp_str = rights_check.timestamp
+            if hasattr(rights_check.timestamp, 'isoformat'):
+                timestamp_str = rights_check.timestamp.isoformat()
+            
+            logger.info(
+                f"AUDIT: {export_type.upper()} export "
+                f"{'ALLOWED' if allowed else 'BLOCKED'} - "
+                f"title='{title}', providers={providers}, "
+                f"user_id={user_id}, portfolio_id={portfolio_id}, "
+                f"environment={self.environment}, "
+                f"timestamp={timestamp_str}"
+            )
 
 
 # ============================================================================

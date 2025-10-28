@@ -62,14 +62,15 @@ graph.save('dawsos/storage/graph.json')
 ## Decisions Log Rotation
 
 Agent execution decisions are kept in `dawsos/storage/agent_memory/decisions.json`.
-When this file exceeds 5 MB, `AgentRuntime` archives it under
-`dawsos/storage/agent_memory/archive/decisions_YYYYMMDD_HHMMSS.json`. To review:
+When this file exceeds 5 MB, `AgentRuntime` rotates it into the
+`dawsos/storage/backups/agent_memory/decisions_YYYYMMDD_HHMMSS.json` directory.
+To review the rotated snapshots:
 
 ```python
-ls dawsos/storage/agent_memory/archive/
+ls dawsos/storage/backups/agent_memory/
 ```
 
-Keep the archive directory backed up alongside the main graph.
+Keep the `storage/backups/agent_memory/` directory backed up alongside the main graph.
 
 ---
 
@@ -91,4 +92,3 @@ Keep the archive directory backed up alongside the main graph.
 - Store backups off-site or in cloud storage for redundancy.
 - Schedule regular backup verification via CI or cron.
 - Document the recovery process in team runbooks and rehearse periodically.
-

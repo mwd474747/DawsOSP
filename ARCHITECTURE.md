@@ -12,7 +12,8 @@ Trinity 3.0 is a financial intelligence platform that combines real-time market 
 
 **Core Capabilities**:
 - Real-time market data (stocks, indices, VIX)
-- 16 pre-built analysis patterns (economy, smart analysis, workflows)
+- 12 production patterns (economy, smart analysis, workflows) - *Note: Legacy docs may reference 14-16 patterns*
+- 53 agent capabilities across 7 registered agents - *Note: Legacy docs may reference 103 capabilities*
 - 27 financial knowledge datasets
 - AI-powered synthesis (requires Anthropic API key)
 - Network graph-based knowledge representation
@@ -323,7 +324,7 @@ See [requirements.txt](requirements.txt) for full list
 - [MASTER_TASK_LIST.md](MASTER_TASK_LIST.md) - Gaps and fixes
 - [CONFIGURATION.md](CONFIGURATION.md) - API setup
 - [DEVELOPMENT.md](DEVELOPMENT.md) - Developer guide
-- [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) - All 103 capabilities
+- [CAPABILITY_ROUTING_GUIDE.md](CAPABILITY_ROUTING_GUIDE.md) - Current: 53 capabilities (legacy doc may reference aspirational 103)
 - [PATTERN_AUTHORING_GUIDE.md](PATTERN_AUTHORING_GUIDE.md) - Pattern creation
 
 ---

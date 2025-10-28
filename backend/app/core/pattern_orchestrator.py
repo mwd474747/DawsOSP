@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from backend.app.core.types import RequestCtx
+from backend.observability.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ class Trace:
     pattern execution for full reproducibility and debugging.
     """
 
-    def __init__(self, pattern_id: str, ctx: RequestCtx):
+    def __init__(self, pattern_id: str, ctx: RequestCtx, agent_runtime=None):
         self.pattern_id = pattern_id
         self.pricing_pack_id = ctx.pricing_pack_id
         self.ledger_commit_hash = ctx.ledger_commit_hash
@@ -54,6 +55,7 @@ class Trace:
         self.capabilities_used: set[str] = set()
         self.sources: set[str] = set()
         self.per_panel_staleness: List[Dict[str, Any]] = []
+        self.agent_runtime = agent_runtime  # For cache stats
 
     def add_step(
         self,
@@ -127,9 +129,9 @@ class Trace:
         Serialize trace to dict for API response.
 
         Returns:
-            Dict with pattern_id, pricing_pack_id, ledger_commit_hash, agents, capabilities, sources, steps
+            Dict with pattern_id, pricing_pack_id, ledger_commit_hash, agents, capabilities, sources, steps, cache_stats
         """
-        return {
+        trace_dict = {
             "pattern_id": self.pattern_id,
             "pricing_pack_id": self.pricing_pack_id,
             "ledger_commit_hash": self.ledger_commit_hash,
@@ -141,6 +143,13 @@ class Trace:
             "per_panel_staleness": self.per_panel_staleness,
             "steps": self.steps,
         }
+
+        # Add cache stats if agent_runtime available
+        if self.agent_runtime:
+            cache_stats = self.agent_runtime.get_cache_stats(self.request_id)
+            trace_dict["cache_stats"] = cache_stats
+
+        return trace_dict
 
 
 # ============================================================================
@@ -273,24 +282,33 @@ class PatternOrchestrator:
 
         logger.info(f"Executing pattern: {pattern_id}")
 
+        # Get metrics registry for pattern-level tracking
+        metrics = get_metrics()
+
+        # Start pattern timing
+        import time
+        pattern_start_time = time.time()
+        pattern_status = "success"
+
         # Initialize execution state
         state = {
             "ctx": ctx.to_dict(),  # Context accessible via {{ctx.foo}}
             "inputs": inputs,       # Inputs accessible via {{inputs.foo}}
         }
-        trace = Trace(pattern_id, ctx)
+        trace = Trace(pattern_id, ctx, agent_runtime=self.agent_runtime)
 
-        # Execute steps
-        for step_idx, step in enumerate(spec["steps"]):
-            capability = step["capability"]
-            logger.debug(f"Step {step_idx}: {capability}")
+        # Execute steps with metrics tracking
+        try:
+            for step_idx, step in enumerate(spec["steps"]):
+                capability = step["capability"]
+                logger.debug(f"Step {step_idx}: {capability}")
 
-            # Evaluate condition if present
-            if "condition" in step:
-                if not self._eval_condition(step["condition"], state):
-                    trace.skip_step(capability, "condition_not_met")
-                    logger.debug(f"Skipped {capability}: condition not met")
-                    continue
+                # Evaluate condition if present
+                if "condition" in step:
+                    if not self._eval_condition(step["condition"], state):
+                        trace.skip_step(capability, "condition_not_met")
+                        logger.debug(f"Skipped {capability}: condition not met")
+                        continue
 
             # Resolve template arguments
             try:
@@ -315,6 +333,14 @@ class PatternOrchestrator:
 
                 duration = time.time() - start_time
 
+                # Record step duration metrics
+                if metrics:
+                    metrics.pattern_step_duration.labels(
+                        pattern_id=pattern_id,
+                        step_index=str(step_idx),
+                        capability=capability,
+                    ).observe(duration)
+
                 # Store result in state
                 result_key = step.get("as", "last")
                 logger.info(f"📦 Storing result from {capability} in state['{result_key}']")
@@ -333,6 +359,23 @@ class PatternOrchestrator:
                 trace.add_error(capability, error_msg)
                 raise
 
+        except Exception as e:
+            # Pattern failed - record error status
+            pattern_status = "error"
+            error_msg = f"Pattern execution failed: {e}"
+            logger.error(error_msg, exc_info=True)
+            trace.add_error("pattern_execution", error_msg)
+            raise
+        finally:
+            # Record pattern-level metrics
+            pattern_duration = time.time() - pattern_start_time
+            if metrics:
+                metrics.record_pattern_execution(pattern_id, pattern_status)
+                metrics.api_latency.labels(
+                    pattern_id=pattern_id,
+                    status=pattern_status,
+                ).observe(pattern_duration)
+
         # Extract outputs
         outputs = {}
         for output_key in spec.get("outputs", []):
@@ -348,10 +391,16 @@ class PatternOrchestrator:
 
         logger.info(f"Pattern {pattern_id} completed successfully")
 
+        # Get trace with cache stats before cleanup
+        trace_data = trace.serialize()
+
+        # Cleanup request cache after pattern execution
+        self.agent_runtime.clear_request_cache(ctx.request_id)
+
         return {
             "data": outputs,
             "charts": charts,
-            "trace": trace.serialize(),
+            "trace": trace_data,
         }
 
     def _resolve_args(self, args: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]:

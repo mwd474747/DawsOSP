@@ -20,8 +20,8 @@ from datetime import date, datetime
 from decimal import Decimal
 import logging
 
-from ...core.database import get_db_connection_with_rls
-from ...services.trade_execution import (
+from backend.app.db.connection import get_db_connection_with_rls
+from backend.app.services.trade_execution import (
     TradeExecutionService,
     TradeType,
     LotSelectionMethod,
@@ -29,6 +29,8 @@ from ...services.trade_execution import (
     InsufficientSharesError,
     InvalidTradeError
 )
+from backend.app.middleware.auth_middleware import verify_token
+from backend.app.services.auth import get_auth_service
 
 logger = logging.getLogger(__name__)
 
@@ -188,36 +190,32 @@ class PositionItem(BaseModel):
 # Dependencies
 # ============================================================================
 
-async def get_current_user_id(
-    x_user_id: Optional[str] = Header(None)
-) -> UUID:
+def get_user_id_from_claims(claims: dict) -> UUID:
     """
-    Extract user_id from X-User-ID header.
-
-    For UAT: Use header directly
-    For Production: Extract from JWT token
+    Extract user_id from JWT claims and convert to UUID.
 
     Args:
-        x_user_id: X-User-ID header value
+        claims: JWT claims dict from verify_token dependency
 
     Returns:
         User UUID
 
     Raises:
-        HTTPException: If header missing or invalid
+        HTTPException: If user_id is invalid
     """
-    if not x_user_id:
+    user_id_str = claims.get("user_id")
+    if not user_id_str:
         raise HTTPException(
             status_code=401,
-            detail="X-User-ID header required (JWT auth in production)"
+            detail="JWT token missing user_id claim"
         )
 
     try:
-        return UUID(x_user_id)
+        return UUID(user_id_str)
     except ValueError:
         raise HTTPException(
             status_code=400,
-            detail="Invalid X-User-ID format (must be UUID)"
+            detail="Invalid user_id format in JWT token (must be UUID)"
         )
 
 
@@ -228,7 +226,7 @@ async def get_current_user_id(
 @router.post("", response_model=TradeResponse, status_code=201)
 async def execute_trade(
     trade: TradeRequest,
-    user_id: UUID = Depends(get_current_user_id)
+    claims: dict = Depends(verify_token)
 ) -> TradeResponse:
     """
     Execute a buy or sell trade.
@@ -250,9 +248,20 @@ async def execute_trade(
 
     **UAT Coverage**: UAT-003, UAT-004, UAT-005
     """
+    user_id = get_user_id_from_claims(claims)
+    user_role = claims.get("role", "USER")
+    
+    # RBAC: Check permission to write trades
+    auth_service = get_auth_service()
+    if not auth_service.check_permission(user_role, "write_trades"):
+        raise HTTPException(
+            status_code=403,
+            detail="Insufficient permissions to execute trades"
+        )
+    
     logger.info(
         f"Trade request: user_id={user_id}, portfolio_id={trade.portfolio_id}, "
-        f"type={trade.trade_type}, symbol={trade.symbol}, qty={trade.qty}"
+        f"type={trade.trade_type}, symbol={trade.symbol}, qty={trade.qty}, role={user_role}"
     )
 
     try:
@@ -377,7 +386,7 @@ async def execute_trade(
 @router.get("", response_model=List[TransactionListItem])
 async def list_trades(
     portfolio_id: UUID,
-    user_id: UUID = Depends(get_current_user_id),
+    claims: dict = Depends(verify_token),
     symbol: Optional[str] = None,
     trade_type: Optional[Literal["buy", "sell"]] = None,
     start_date: Optional[date] = None,
@@ -398,6 +407,7 @@ async def list_trades(
 
     **UAT Coverage**: UAT-006
     """
+    user_id = get_user_id_from_claims(claims)
     logger.info(
         f"List trades: user_id={user_id}, portfolio_id={portfolio_id}, "
         f"symbol={symbol}, type={trade_type}"
@@ -465,7 +475,7 @@ async def list_trades(
 @router.get("/lots", response_model=List[LotListItem])
 async def list_lots(
     portfolio_id: UUID,
-    user_id: UUID = Depends(get_current_user_id),
+    claims: dict = Depends(verify_token),
     symbol: Optional[str] = None,
     open_only: bool = Query(True, description="Show only open lots")
 ) -> List[LotListItem]:
@@ -480,6 +490,7 @@ async def list_lots(
 
     **UAT Coverage**: UAT-007
     """
+    user_id = get_user_id_from_claims(claims)
     logger.info(
         f"List lots: user_id={user_id}, portfolio_id={portfolio_id}, "
         f"symbol={symbol}, open_only={open_only}"
@@ -534,7 +545,7 @@ async def list_lots(
 @router.get("/positions", response_model=List[PositionItem])
 async def list_positions(
     portfolio_id: UUID,
-    user_id: UUID = Depends(get_current_user_id)
+    claims: dict = Depends(verify_token)
 ) -> List[PositionItem]:
     """
     List current positions for a portfolio (aggregated from open lots).
@@ -548,6 +559,7 @@ async def list_positions(
 
     **UAT Coverage**: UAT-008
     """
+    user_id = get_user_id_from_claims(claims)
     logger.info(f"List positions: user_id={user_id}, portfolio_id={portfolio_id}")
 
     try:

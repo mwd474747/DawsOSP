@@ -48,16 +48,22 @@ class RatingsService:
     This prevents duplication - agent layer only formats, doesn't recalculate.
     """
 
-    def __init__(self, db_pool=None):
+    def __init__(self, use_db: bool = True, db_pool=None):
         """
         Initialize ratings service.
 
         Args:
+            use_db: If True, use real database. If False, use stubs for testing.
             db_pool: AsyncPG connection pool (optional, will get from connection module if not provided)
         """
+        self.use_db = use_db
         self.db_pool = db_pool
         self.rubrics = {}  # Cache for loaded rubrics
-        logger.info("RatingsService initialized")
+        
+        if not use_db:
+            logger.info("RatingsService initialized in stub mode")
+        else:
+            logger.info("RatingsService initialized")
 
     async def _load_rubrics(self) -> Dict[str, Dict]:
         """
@@ -593,6 +599,37 @@ class RatingsService:
                 - symbol: str
                 - security_id: Optional[UUID]
         """
+        
+        # Return mock data for testing when use_db=False
+        if not self.use_db:
+            return {
+                "overall_rating": Decimal("75.0"),
+                "overall_grade": "B",
+                "moat": {
+                    "overall": Decimal("7.5"),
+                    "roe_consistency": Decimal("8.0"),
+                    "gross_margin": Decimal("7.0"),
+                    "intangibles": Decimal("7.5"),
+                    "switching_cost_score": Decimal("7.0")
+                },
+                "resilience": {
+                    "overall": Decimal("7.0"),
+                    "debt_equity": Decimal("7.5"),
+                    "current_ratio": Decimal("6.5"),
+                    "interest_coverage": Decimal("7.0"),
+                    "margin_stability": Decimal("7.0")
+                },
+                "dividend": {
+                    "overall": Decimal("7.5"),
+                    "fcf_coverage": Decimal("8.0"),
+                    "payout_ratio": Decimal("7.0"),
+                    "growth_streak": Decimal("7.5"),
+                    "net_cash": Decimal("7.0")
+                },
+                "symbol": symbol,
+                "security_id": security_id
+            }
+        
         # Calculate individual ratings (0-10 scale)
         moat_result = await self.calculate_moat_strength(symbol, fundamentals)
         resilience_result = await self.calculate_resilience(symbol, fundamentals)

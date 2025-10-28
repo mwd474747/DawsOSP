@@ -3,7 +3,7 @@
 **Date**: October 26, 2025
 **Task**: Implement complete ratings service for DawsOS
 **Status**: ✅ COMPLETE
-**Location**: `/Users/mdawson/Documents/GitHub/DawsOSB/DawsOSP/backend/app/services/ratings.py`
+**Location**: `<repo-root>/backend/app/services/ratings.py`
 
 ---
 
@@ -308,7 +308,7 @@ CREATE TABLE rating_rubrics (
 
 ### Seed Data
 
-**Location**: `/Users/mdawson/Documents/GitHub/DawsOSB/DawsOSP/backend/db/seeds/001_rating_rubrics.sql`
+**Location**: `<repo-root>/backend/db/seeds/001_rating_rubrics.sql`
 
 **Research-Based Weights**:
 

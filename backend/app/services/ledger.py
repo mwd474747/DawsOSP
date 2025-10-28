@@ -46,7 +46,7 @@ from uuid import UUID, uuid4
 try:
     from beancount import loader
     from beancount.core import data, amount, position, getters
-    from beancount.ops import holdings
+    # Note: holdings module not available in beancount 3.2.0, using alternative approach
     BEANCOUNT_AVAILABLE = True
 except ImportError:
     BEANCOUNT_AVAILABLE = False

@@ -126,7 +126,7 @@ class MacroHound(BaseAgent):
         logger.info(f"macro.detect_regime: asof_date={asof}")
 
         # Get macro service (singleton pattern for now, TODO: DI)
-        from app.services.macro import get_macro_service
+        from backend.app.services.macro import get_macro_service
         macro_service = get_macro_service()
 
         try:
@@ -215,7 +215,7 @@ class MacroHound(BaseAgent):
         logger.info(f"macro.compute_cycles: asof_date={asof}")
 
         # Get cycles service (singleton pattern for now, TODO: DI)
-        from app.services.cycles import get_cycles_service
+        from backend.app.services.cycles import get_cycles_service
         cycles_service = get_cycles_service()
 
         try:
@@ -316,7 +316,7 @@ class MacroHound(BaseAgent):
         logger.info(f"macro.get_indicators: asof_date={asof}")
 
         # Get macro service
-        from app.services.macro import get_macro_service
+        from backend.app.services.macro import get_macro_service
         macro_service = get_macro_service()
 
         try:
@@ -424,7 +424,7 @@ class MacroHound(BaseAgent):
         )
 
         # Get scenario service
-        from app.services.scenarios import get_scenario_service, ShockType
+        from backend.app.services.scenarios import get_scenario_service, ShockType
 
         scenario_service = get_scenario_service()
 
@@ -607,11 +607,11 @@ class MacroHound(BaseAgent):
         )
 
         # Get scenario service
-        from app.services.scenarios import get_scenario_service
+        from backend.app.services.scenarios import get_scenario_service
         scenario_service = get_scenario_service()
 
         # Get macro service to detect current regime
-        from app.services.macro import get_macro_service
+        from backend.app.services.macro import get_macro_service
         macro_service = get_macro_service()
 
         try:
@@ -907,7 +907,7 @@ class MacroHound(BaseAgent):
         """
         logger.info(f"scenarios.deleveraging_austerity: portfolio={portfolio_id}, ltdc_phase={ltdc_phase}")
 
-        from app.services.scenarios import ScenariosService
+        from backend.app.services.scenarios import ScenariosService
         scenarios_service = ScenariosService()
 
         # Define austerity scenario shocks
@@ -947,7 +947,7 @@ class MacroHound(BaseAgent):
         """
         logger.info(f"scenarios.deleveraging_default: portfolio={portfolio_id}, ltdc_phase={ltdc_phase}")
 
-        from app.services.scenarios import ScenariosService
+        from backend.app.services.scenarios import ScenariosService
         scenarios_service = ScenariosService()
 
         # Define default scenario shocks (severe deflation)
@@ -987,7 +987,7 @@ class MacroHound(BaseAgent):
         """
         logger.info(f"scenarios.deleveraging_money_printing: portfolio={portfolio_id}, ltdc_phase={ltdc_phase}")
 
-        from app.services.scenarios import ScenariosService
+        from backend.app.services.scenarios import ScenariosService
         scenarios_service = ScenariosService()
 
         # Define money printing scenario shocks (inflation)

@@ -2,7 +2,7 @@
 
 **Date**: October 27, 2025  
 **Status**: SUCCESSFUL  
-**Repository**: `/Users/mdawson/Documents/GitHub/DawsOSP-Clean`
+**Repository**: `<repo-root>`
 
 ---
 
@@ -15,8 +15,8 @@ Successfully created a **clean, properly configured DawsOSP repository** with al
 ## ✅ **WHAT WAS COMPLETED**
 
 ### 1. **Clean Repository Creation**
-- **Source**: Copied from `/Users/mdawson/Documents/GitHub/DawsOSB/DawsOSP` (original with fixes)
-- **Location**: `/Users/mdawson/Documents/GitHub/DawsOSP-Clean`
+- **Source**: Copied from `<archived-DawsOSB>/DawsOSP` (original with fixes)
+- **Location**: `<repo-root>`
 - **Status**: ✅ Complete
 
 ### 2. **Import Fixes Verified**
@@ -84,7 +84,7 @@ Successfully created a **clean, properly configured DawsOSP repository** with al
 ## 📁 **Repository Structure**
 
 ```
-/Users/mdawson/Documents/GitHub/DawsOSP-Clean/
+<repo-root>/
 ├── backend/
 │   ├── __init__.py ✅
 │   ├── app/
@@ -112,7 +112,7 @@ Successfully created a **clean, properly configured DawsOSP repository** with al
 ## 🎯 **NEXT STEPS**
 
 ### **Immediate Actions**
-1. **Switch to Clean Repository**: `cd /Users/mdawson/Documents/GitHub/DawsOSP-Clean`
+1. **Switch to Clean Repository**: `cd <repo-root>`
 2. **Activate Environment**: `source venv-clean/bin/activate`
 3. **Start Development**: All import issues resolved
 
@@ -165,5 +165,5 @@ Successfully created a **clean, properly configured DawsOSP repository** with al
 
 The clean repository setup is **100% COMPLETE** and **READY FOR DEVELOPMENT**. All import path issues have been resolved, the test suite is functional, and all dependencies are installed. The repository is now properly configured for the roadmap work ahead.
 
-**Repository Location**: `/Users/mdawson/Documents/GitHub/DawsOSP-Clean`  
+**Repository Location**: `<repo-root>`  
 **Status**: ✅ **PRODUCTION READY FOR DEVELOPMENT**

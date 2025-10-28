@@ -36,13 +36,15 @@ from typing import Dict, List, Optional, Any
 from uuid import UUID
 from decimal import Decimal
 
-from fastapi import APIRouter, HTTPException, Query, Path, Body, Header
+from fastapi import APIRouter, HTTPException, Query, Path, Body, Header, Depends
 from pydantic import BaseModel, Field, validator
 
 from backend.app.services.macro import get_macro_service, Regime
 from backend.app.services.scenarios import get_scenario_service, ShockType
 from backend.app.services.risk import get_risk_service
 from backend.app.db.connection import get_db_connection_with_rls
+from backend.app.middleware.auth_middleware import verify_token
+from backend.app.services.auth import get_auth_service
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +66,7 @@ class RegimeResponse(BaseModel):
     regime: str = Field(..., description="Current regime (EARLY_EXPANSION, MID_EXPANSION, etc.)")
     regime_name: str = Field(..., description="Human-readable regime name")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence in classification (0-1)")
-    date: date = Field(..., description="As-of date for classification")
+    asof_date: date = Field(..., description="As-of date for classification")
 
     # Probabilities for all regimes
     probabilities: Dict[str, float] = Field(
@@ -82,7 +84,7 @@ class RegimeResponse(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "regime": "MID_EXPANSION",
                 "regime_name": "Mid Expansion",
@@ -118,7 +120,7 @@ class RegimeHistoryResponse(BaseModel):
     transitions: int = Field(..., description="Number of regime transitions in period")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "regimes": [
                     {
@@ -141,10 +143,10 @@ class IndicatorsResponse(BaseModel):
 
     indicators: Dict[str, float] = Field(..., description="Raw indicator values")
     zscores: Dict[str, float] = Field(..., description="Z-scores (252-day rolling window)")
-    date: date = Field(..., description="As-of date")
+    asof_date: date = Field(..., description="As-of date")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "indicators": {
                     "T10Y2Y": 0.45,
@@ -182,7 +184,7 @@ class ScenarioRequest(BaseModel):
         return v
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "portfolio_id": "123e4567-e89b-12d3-a456-426614174000",
                 "shock_type": "rates_up",
@@ -215,7 +217,7 @@ class ScenarioResponse(BaseModel):
     shock_definition: Dict[str, float] = Field(..., description="Factor shocks applied")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "shock_type": "rates_up",
                 "portfolio_id": "123e4567-e89b-12d3-a456-426614174000",
@@ -260,7 +262,7 @@ class DaRRequest(BaseModel):
         return v
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "portfolio_id": "123e4567-e89b-12d3-a456-426614174000",
                 "confidence": 0.95,
@@ -292,7 +294,7 @@ class DaRResponse(BaseModel):
     current_nav: Decimal = Field(..., description="Current portfolio NAV")
 
     class Config:
-        schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "portfolio_id": "123e4567-e89b-12d3-a456-426614174000",
                 "confidence": 0.95,
@@ -307,6 +309,33 @@ class DaRResponse(BaseModel):
                 "current_nav": 500000.0,
             }
         }
+
+
+# ============================================================================
+# Helper: Get User ID from JWT Claims
+# ============================================================================
+
+
+def get_user_id_from_claims(claims: dict) -> str:
+    """
+    Extract user_id from JWT claims.
+
+    Args:
+        claims: JWT claims (user_id, email, role)
+
+    Returns:
+        User ID string
+
+    Raises:
+        HTTPException: If user_id missing
+    """
+    user_id = claims.get("user_id")
+    if not user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="JWT token missing user_id claim"
+        )
+    return user_id
 
 
 # ============================================================================
@@ -364,7 +393,7 @@ async def get_current_regime(
             regime=classification.regime.value,
             regime_name=classification.regime_name,
             confidence=classification.confidence,
-            date=classification.date,
+            asof_date=classification.date,
             probabilities=classification.regime_probabilities,
             drivers=classification.drivers,
             indicators=classification.indicators,
@@ -507,7 +536,7 @@ async def get_indicators(
         return IndicatorsResponse(
             indicators=classification.indicators,
             zscores=classification.drivers,  # drivers = z-scores
-            date=classification.date,
+            asof_date=classification.date,
         )
 
     except Exception as e:
@@ -541,14 +570,14 @@ async def get_indicators(
 )
 async def run_scenario(
     request: ScenarioRequest = Body(...),
-    x_user_id: str = Header(..., alias="X-User-ID"),
+    claims: dict = Depends(verify_token),
 ) -> ScenarioResponse:
     """
     Run scenario stress test.
 
     Args:
         request: ScenarioRequest with portfolio_id, shock_type, pack_id
-        x_user_id: User ID from header (for RLS)
+        claims: JWT claims (user_id, email, role)
 
     Returns:
         ScenarioResponse with delta P&L, winners, losers, and hedge suggestions
@@ -558,6 +587,16 @@ async def run_scenario(
         HTTPException 404: Portfolio not found
         HTTPException 500: Error running scenario
     """
+    user_id = get_user_id_from_claims(claims)
+    user_role = claims.get("role", "USER")
+    
+    # RBAC: Check permission to read analytics
+    auth_service = get_auth_service()
+    if not auth_service.check_permission(user_role, "read_analytics"):
+        raise HTTPException(
+            status_code=403,
+            detail="Insufficient permissions to run scenario analysis"
+        )
     try:
         # Get scenario service
         scenario_service = get_scenario_service()
@@ -624,14 +663,14 @@ async def run_scenario(
 )
 async def compute_dar(
     request: DaRRequest = Body(...),
-    x_user_id: str = Header(..., alias="X-User-ID"),
+    claims: dict = Depends(verify_token),
 ) -> DaRResponse:
     """
     Compute Drawdown at Risk (DaR).
 
     Args:
         request: DaRRequest with portfolio_id, confidence, regime, horizon_days
-        x_user_id: User ID from header (for RLS)
+        claims: JWT claims (user_id, email, role)
 
     Returns:
         DaRResponse with DaR, distribution statistics, and metadata
@@ -640,6 +679,16 @@ async def compute_dar(
         HTTPException 404: Portfolio not found
         HTTPException 500: Error computing DaR
     """
+    user_id = get_user_id_from_claims(claims)
+    user_role = claims.get("role", "USER")
+    
+    # RBAC: Check permission to read analytics
+    auth_service = get_auth_service()
+    if not auth_service.check_permission(user_role, "read_analytics"):
+        raise HTTPException(
+            status_code=403,
+            detail="Insufficient permissions to compute risk analytics"
+        )
     try:
         # Get services
         risk_service = get_risk_service()

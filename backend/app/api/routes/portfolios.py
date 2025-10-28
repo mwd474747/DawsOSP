@@ -26,6 +26,8 @@ from fastapi import APIRouter, Depends, HTTPException, Header, status
 from pydantic import BaseModel, Field
 
 from backend.app.db.connection import get_db_connection_with_rls
+from backend.app.middleware.auth_middleware import verify_token
+from backend.app.services.auth import get_auth_service
 
 logger = logging.getLogger("DawsOS.API.Portfolios")
 
@@ -70,40 +72,36 @@ class PortfolioResponse(BaseModel):
 
 
 # ============================================================================
-# Dependency: Get User ID from Header
+# Dependency: Get User ID from JWT Claims
 # ============================================================================
 
 
-async def get_current_user_id(
-    x_user_id: Optional[str] = Header(None, description="User ID for RLS context")
-) -> UUID:
+def get_user_id_from_claims(claims: dict) -> UUID:
     """
-    Extract user_id from request header.
-
-    In production, this would come from JWT token validation.
-    For UAT, we use X-User-ID header.
+    Extract user_id from JWT claims and convert to UUID.
 
     Args:
-        x_user_id: User ID from header
+        claims: JWT claims dict from verify_token dependency
 
     Returns:
         User UUID
 
     Raises:
-        HTTPException: If user_id not provided
+        HTTPException: If user_id is invalid
     """
-    if not x_user_id:
+    user_id_str = claims.get("user_id")
+    if not user_id_str:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="X-User-ID header required (or JWT token in production)"
+            detail="JWT token missing user_id claim"
         )
 
     try:
-        return UUID(x_user_id)
+        return UUID(user_id_str)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid user_id format (must be UUID)"
+            detail="Invalid user_id format in JWT token (must be UUID)"
         )
 
 
@@ -115,7 +113,7 @@ async def get_current_user_id(
 @router.post("", response_model=PortfolioResponse, status_code=status.HTTP_201_CREATED)
 async def create_portfolio(
     portfolio: PortfolioCreate,
-    user_id: UUID = Depends(get_current_user_id)
+    claims: dict = Depends(verify_token)
 ) -> PortfolioResponse:
     """
     Create new portfolio.
@@ -130,7 +128,7 @@ async def create_portfolio(
 
     Args:
         portfolio: Portfolio creation data
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
 
     Returns:
         Created portfolio
@@ -138,11 +136,22 @@ async def create_portfolio(
     Raises:
         HTTPException: If creation fails
     """
+    user_id = get_user_id_from_claims(claims)
+    user_role = claims.get("role", "USER")
+    
+    # RBAC: Check permission to manage portfolios
+    auth_service = get_auth_service()
+    if not auth_service.check_permission(user_role, "manage_portfolios"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to create portfolios"
+        )
+    
     portfolio_id = uuid4()
 
     logger.info(
         f"Creating portfolio: name={portfolio.name}, "
-        f"user_id={user_id}, portfolio_id={portfolio_id}"
+        f"user_id={user_id}, portfolio_id={portfolio_id}, role={user_role}"
     )
 
     try:
@@ -190,7 +199,7 @@ async def create_portfolio(
 
 @router.get("", response_model=List[PortfolioResponse])
 async def list_portfolios(
-    user_id: UUID = Depends(get_current_user_id),
+    claims: dict = Depends(verify_token),
     is_active: Optional[bool] = None
 ) -> List[PortfolioResponse]:
     """
@@ -201,12 +210,13 @@ async def list_portfolios(
     RLS ensures users only see their own portfolios.
 
     Args:
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
         is_active: Optional filter for active portfolios
 
     Returns:
         List of portfolios (RLS filtered)
     """
+    user_id = get_user_id_from_claims(claims)
     logger.info(f"Listing portfolios for user: {user_id}")
 
     try:
@@ -262,7 +272,7 @@ async def list_portfolios(
 @router.get("/{portfolio_id}", response_model=PortfolioResponse)
 async def get_portfolio(
     portfolio_id: UUID,
-    user_id: UUID = Depends(get_current_user_id)
+    claims: dict = Depends(verify_token)
 ) -> PortfolioResponse:
     """
     Get single portfolio by ID.
@@ -271,7 +281,7 @@ async def get_portfolio(
 
     Args:
         portfolio_id: Portfolio UUID
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
 
     Returns:
         Portfolio details
@@ -279,6 +289,7 @@ async def get_portfolio(
     Raises:
         HTTPException: If portfolio not found or access denied (RLS)
     """
+    user_id = get_user_id_from_claims(claims)
     logger.info(f"Getting portfolio: {portfolio_id} for user: {user_id}")
 
     try:
@@ -327,7 +338,7 @@ async def get_portfolio(
 async def update_portfolio(
     portfolio_id: UUID,
     updates: PortfolioUpdate,
-    user_id: UUID = Depends(get_current_user_id)
+    claims: dict = Depends(verify_token)
 ) -> PortfolioResponse:
     """
     Update portfolio.
@@ -335,7 +346,7 @@ async def update_portfolio(
     Args:
         portfolio_id: Portfolio UUID
         updates: Fields to update
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
 
     Returns:
         Updated portfolio
@@ -343,7 +354,18 @@ async def update_portfolio(
     Raises:
         HTTPException: If portfolio not found or access denied
     """
-    logger.info(f"Updating portfolio: {portfolio_id} for user: {user_id}")
+    user_id = get_user_id_from_claims(claims)
+    user_role = claims.get("role", "USER")
+    
+    # RBAC: Check permission to manage portfolios
+    auth_service = get_auth_service()
+    if not auth_service.check_permission(user_role, "manage_portfolios"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to update portfolios"
+        )
+    
+    logger.info(f"Updating portfolio: {portfolio_id} for user: {user_id}, role: {user_role}")
 
     # Build dynamic UPDATE query based on provided fields
     update_fields = []
@@ -424,19 +446,30 @@ async def update_portfolio(
 @router.delete("/{portfolio_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_portfolio(
     portfolio_id: UUID,
-    user_id: UUID = Depends(get_current_user_id)
+    claims: dict = Depends(verify_token)
 ) -> None:
     """
     Soft delete portfolio (set is_active = false).
 
     Args:
         portfolio_id: Portfolio UUID
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
 
     Raises:
         HTTPException: If portfolio not found or access denied
     """
-    logger.info(f"Deleting portfolio: {portfolio_id} for user: {user_id}")
+    user_id = get_user_id_from_claims(claims)
+    user_role = claims.get("role", "USER")
+    
+    # RBAC: Check permission to manage portfolios
+    auth_service = get_auth_service()
+    if not auth_service.check_permission(user_role, "manage_portfolios"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to delete portfolios"
+        )
+    
+    logger.info(f"Deleting portfolio: {portfolio_id} for user: {user_id}, role: {user_role}")
 
     try:
         async with get_db_connection_with_rls(str(user_id)) as conn:

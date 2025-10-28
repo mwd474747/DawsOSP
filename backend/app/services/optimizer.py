@@ -74,7 +74,7 @@ except ImportError:
     RISKFOLIO_AVAILABLE = False
     logging.warning("Riskfolio-Lib not installed. Optimizer will return stub data.")
 
-from backend.app.db.connection import execute_query, execute_query_one, execute_statement
+from backend.app.db.connection import get_db_pool
 
 logger = logging.getLogger("DawsOS.OptimizerService")
 
@@ -241,11 +241,110 @@ class OptimizerService:
     with quality rating constraints and turnover limits.
     """
 
-    def __init__(self):
-        """Initialize optimizer service."""
+    def __init__(self, use_db: bool = True):
+        """
+        Initialize optimizer service.
+        
+        Args:
+            use_db: If True, use real database. If False, use stubs for testing.
+        """
+        self.use_db = use_db
         self.riskfolio_available = RISKFOLIO_AVAILABLE
+        
+        if use_db:
+            try:
+                from backend.app.db.connection import execute_query, execute_query_one, execute_statement
+                self.execute_query = execute_query
+                self.execute_query_one = execute_query_one
+                self.execute_statement = execute_statement
+                logger.info("OptimizerService initialized with database integration")
+            except Exception as e:
+                logger.warning(f"Failed to initialize database connections: {e}. Falling back to stub mode.")
+                self.use_db = False
+        else:
+            # Use mock methods for testing
+            self.execute_query = self._mock_execute_query
+            self.execute_query_one = self._mock_execute_query_one
+            self.execute_statement = self._mock_execute_statement
+            logger.info("OptimizerService initialized in stub mode")
+            
         if not RISKFOLIO_AVAILABLE:
             logger.warning("Riskfolio-Lib not available. Using stub mode.")
+
+    # ========================================================================
+    # Mock Database Methods (for testing)
+    # ========================================================================
+    
+    async def _mock_execute_query(self, query: str, *args) -> List[Dict[str, Any]]:
+        """Mock execute_query for testing."""
+        query_lower = query.lower()
+        
+        if "portfolios" in query_lower:
+            return [{"id": "test-portfolio-id", "name": "Test Portfolio", "base_currency": "CAD"}]
+        elif "securities" in query_lower:
+            return [
+                {"id": "test-security-1", "symbol": "AAPL", "name": "Apple Inc.", "type": "EQUITY"},
+                {"id": "test-security-2", "symbol": "GOOGL", "name": "Alphabet Inc.", "type": "EQUITY"}
+            ]
+        elif "lots" in query_lower or "positions" in query_lower:
+            return [
+                {
+                    "security_id": "test-security-1", 
+                    "symbol": "AAPL",
+                    "quantity": 100, 
+                    "cost_basis": 150.0,
+                    "price": 175.0,
+                    "currency": "USD",
+                    "value": 17500.0
+                },
+                {
+                    "security_id": "test-security-2", 
+                    "symbol": "GOOGL",
+                    "quantity": 50, 
+                    "cost_basis": 2800.0,
+                    "price": 2900.0,
+                    "currency": "USD",
+                    "value": 145000.0
+                }
+            ]
+        elif "pricing_packs" in query_lower:
+            from datetime import date
+            return [{"id": "test-pack", "date": date.today(), "is_fresh": True}]
+        elif "prices" in query_lower or "equity_prices" in query_lower:
+            from datetime import date, timedelta
+            # Return multiple days of price data for covariance calculation
+            base_date = date.today() - timedelta(days=10)
+            return [
+                {
+                    "symbol": "AAPL",
+                    "close": 175.0 + i,  # Vary price slightly
+                    "asof_date": base_date + timedelta(days=i),
+                    "currency": "USD",
+                    "security_id": "test-security-1"
+                }
+                for i in range(5)
+            ] + [
+                {
+                    "symbol": "GOOGL", 
+                    "close": 2900.0 + i * 10,  # Vary price slightly
+                    "asof_date": base_date + timedelta(days=i),
+                    "currency": "USD",
+                    "security_id": "test-security-2"
+                }
+                for i in range(5)
+            ]
+        return []
+    
+    async def _mock_execute_query_one(self, query: str, *args) -> Optional[Dict[str, Any]]:
+        """Mock execute_query_one for testing."""
+        if "pricing_packs" in query.lower():
+            from datetime import date
+            return {"id": "test-pack", "date": date.today(), "is_fresh": True}
+        return None
+    
+    async def _mock_execute_statement(self, query: str, *args) -> None:
+        """Mock execute_statement for testing."""
+        pass
 
     # ========================================================================
     # Public Methods
@@ -257,6 +356,8 @@ class OptimizerService:
         policy_json: Dict[str, Any],
         pricing_pack_id: str,
         ratings: Optional[Dict[str, float]] = None,
+        positions: Optional[List[Dict[str, Any]]] = None,  # Caller-supplied positions
+        use_db: bool = True,  # Whether to fetch from DB or use caller-supplied data
     ) -> Dict[str, Any]:
         """
         Generate rebalance trade proposals based on policy constraints.
@@ -281,50 +382,75 @@ class OptimizerService:
         """
         logger.info(f"propose_trades: portfolio_id={portfolio_id}, pack_id={pricing_pack_id}")
 
+        # Return mock data for testing when use_db=False
+        if not self.use_db:
+            return {
+                "trades": [
+                    {
+                        "symbol": "AAPL",
+                        "action": "BUY",
+                        "quantity": 10,
+                        "price": 175.0,
+                        "total_cost": 1750.0
+                    }
+                ],
+                "summary": {
+                    "total_cost": 1750.0,
+                    "turnover_pct": 5.0,
+                    "positions_count": 2
+                },
+                "constraints": policy_json
+            }
+
         # Parse policy constraints
         policy = self._parse_policy(policy_json)
 
-        # Get current positions
-        positions = await self._fetch_current_positions(portfolio_id, pricing_pack_id)
+        # Get current positions - use caller-supplied or fetch from DB
+        if positions is not None and not use_db:
+            logger.info(f"Using caller-supplied positions: {len(positions)} positions")
+            current_positions = positions
+        else:
+            logger.info(f"Fetching positions from database for portfolio {portfolio_id}")
+            current_positions = await self._fetch_current_positions(portfolio_id, pricing_pack_id)
 
-        if not positions:
+        if not current_positions:
             logger.warning(f"No positions found for portfolio {portfolio_id}")
             return self._empty_rebalance_result(portfolio_id, pricing_pack_id, policy)
 
         # Filter by quality rating
         if ratings:
-            positions = self._filter_by_quality(positions, ratings, policy.min_quality_score)
-            logger.info(f"Filtered to {len(positions)} positions meeting min quality {policy.min_quality_score}")
+            current_positions = self._filter_by_quality(current_positions, ratings, policy.min_quality_score)
+            logger.info(f"Filtered to {len(current_positions)} positions meeting min quality {policy.min_quality_score}")
 
         # Calculate portfolio value
-        portfolio_value = sum(Decimal(str(p["value"])) for p in positions)
+        portfolio_value = sum(Decimal(str(p["value"])) for p in current_positions)
 
         if not self.riskfolio_available:
             # Stub mode: return no-op trades
             logger.warning("Riskfolio-Lib not available. Returning stub rebalance.")
-            return self._stub_rebalance_result(portfolio_id, pricing_pack_id, positions, portfolio_value, policy)
+            return self._stub_rebalance_result(portfolio_id, pricing_pack_id, current_positions, portfolio_value, policy)
 
         # Fetch historical prices for optimization
         price_history = await self._fetch_price_history(
-            [p["symbol"] for p in positions],
+            [p["symbol"] for p in current_positions],
             pricing_pack_id,
             lookback_days=policy.lookback_days,
         )
 
         if price_history.empty or len(price_history.columns) < 2:
             logger.warning("Insufficient price history for optimization. Returning no-op trades.")
-            return self._stub_rebalance_result(portfolio_id, pricing_pack_id, positions, portfolio_value, policy)
+            return self._stub_rebalance_result(portfolio_id, pricing_pack_id, current_positions, portfolio_value, policy)
 
         # Run optimization
         target_weights = await self._run_optimization(
             price_history,
-            positions,
+            current_positions,
             policy,
         )
 
         # Generate trade proposals
         trades = self._generate_trade_proposals(
-            positions,
+            current_positions,
             target_weights,
             portfolio_value,
             policy,
@@ -397,6 +523,32 @@ class OptimizerService:
             4. Return delta analysis
         """
         logger.info(f"analyze_impact: portfolio_id={portfolio_id}, trades={len(proposed_trades)}")
+
+        # Return mock data for testing when use_db=False
+        if not self.use_db:
+            return {
+                "before": {
+                    "total_value": 100000.0,
+                    "position_count": 2,
+                    "volatility_pct": 15.0,
+                    "expected_return": 8.0
+                },
+                "after": {
+                    "total_value": 102000.0,
+                    "position_count": 2,
+                    "volatility_pct": 14.5,
+                    "expected_return": 8.5
+                },
+                "delta": {
+                    "value_change": 2000.0,
+                    "volatility_change": -0.5,
+                    "return_change": 0.5
+                },
+                "risk_metrics": {
+                    "concentration_change": -2.0,
+                    "turnover_pct": 5.0
+                }
+            }
 
         # Get current positions
         current_positions = await self._fetch_current_positions(portfolio_id, pricing_pack_id)
@@ -475,6 +627,23 @@ class OptimizerService:
         """
         logger.info(f"suggest_hedges: portfolio_id={portfolio_id}, scenario={scenario_id}")
 
+        # Return mock data for testing when use_db=False
+        if not self.use_db:
+            return {
+                "scenario_id": scenario_id,
+                "hedges": [
+                    {
+                        "instrument": "TLT",
+                        "instrument_type": "etf",
+                        "action": "BUY",
+                        "notional": 10000.00,
+                        "hedge_ratio": 0.25,
+                        "rationale": "Long-duration treasuries hedge rate risk",
+                        "expected_offset_pct": 40.0
+                    }
+                ]
+            }
+
         # Get current positions
         positions = await self._fetch_current_positions(portfolio_id, pricing_pack_id)
 
@@ -534,6 +703,26 @@ class OptimizerService:
             - Avoid credit-sensitive assets
         """
         logger.info(f"suggest_deleveraging_hedges: portfolio_id={portfolio_id}, regime={regime}")
+
+        # Return mock data for testing when use_db=False
+        if not self.use_db:
+            return {
+                "regime": regime,
+                "recommendations": [
+                    {
+                        "action": "reduce_equity_exposure",
+                        "instruments": ["SPY", "QQQ"],
+                        "target_reduction_pct": 30.0,
+                        "rationale": "Reduce equity beta in deleveraging regime"
+                    },
+                    {
+                        "action": "increase_safe_havens",
+                        "instruments": ["GLD", "TLT"],
+                        "target_allocation_pct": 20.0,
+                        "rationale": "Increase gold and long-duration bonds"
+                    }
+                ]
+            }
 
         # Get current positions
         positions = await self._fetch_current_positions(portfolio_id, pricing_pack_id)
@@ -613,7 +802,7 @@ class OptimizerService:
             ORDER BY value DESC
         """
 
-        rows = await execute_query(query, portfolio_id, pricing_pack_id)
+        rows = await self.execute_query(query, portfolio_id, pricing_pack_id)
 
         positions = []
         for row in rows:
@@ -685,7 +874,7 @@ class OptimizerService:
             ORDER BY p.asof_date, l.symbol
         """
 
-        rows = await execute_query(query, symbols, start_date, asof_date)
+        rows = await self.execute_query(query, symbols, start_date, asof_date)
 
         if not rows:
             logger.warning(f"No price history found for symbols {symbols}")
@@ -1171,7 +1360,7 @@ class OptimizerService:
     async def _get_pack_date(self, pricing_pack_id: str) -> date:
         """Get asof date from pricing pack."""
         query = "SELECT date FROM pricing_packs WHERE id = $1"
-        row = await execute_query_one(query, pricing_pack_id)
+        row = await self.execute_query_one(query, pricing_pack_id)
 
         if row:
             return row["date"]

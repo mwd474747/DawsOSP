@@ -28,6 +28,7 @@ from backend.app.agents.base_agent import BaseAgent
 from backend.app.core.types import RequestCtx
 from backend.compliance.attribution import get_attribution_manager
 from backend.compliance.rights_registry import get_rights_registry
+from backend.observability.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -181,6 +182,11 @@ class AgentRuntime:
         self.capability_map: Dict[str, str] = {}  # capability → agent_name
         self.circuit_breaker = CircuitBreaker()
 
+        # Request-level capability cache
+        # Format: {request_id: {cache_key: result}}
+        self._request_caches: Dict[str, Dict[str, Any]] = {}
+        self._cache_stats: Dict[str, Dict[str, int]] = {}  # {request_id: {hits: N, misses: N}}
+
         # Rights enforcement
         self.enable_rights_enforcement = enable_rights_enforcement
         if enable_rights_enforcement:
@@ -191,6 +197,102 @@ class AgentRuntime:
             self._attribution_manager = None
             self._rights_registry = None
             logger.info("AgentRuntime initialized (rights enforcement disabled)")
+
+    def _get_cache_key(self, capability: str, kwargs: Dict[str, Any]) -> str:
+        """
+        Generate cache key for capability + arguments.
+
+        Args:
+            capability: Capability name
+            kwargs: Capability arguments
+
+        Returns:
+            MD5 hash of capability + sorted args
+        """
+        import hashlib
+        import json
+
+        # Sort kwargs for consistent hashing
+        sorted_args = json.dumps(kwargs, sort_keys=True, default=str)
+        key_str = f"{capability}:{sorted_args}"
+        return hashlib.md5(key_str.encode()).hexdigest()
+
+    def _get_cached_result(self, request_id: str, cache_key: str) -> Optional[Any]:
+        """
+        Get cached result if exists.
+
+        Args:
+            request_id: Request identifier
+            cache_key: Cache key
+
+        Returns:
+            Cached result or None
+        """
+        request_cache = self._request_caches.get(request_id, {})
+        if cache_key in request_cache:
+            # Update stats
+            if request_id not in self._cache_stats:
+                self._cache_stats[request_id] = {"hits": 0, "misses": 0}
+            self._cache_stats[request_id]["hits"] += 1
+            logger.debug(f"Cache HIT: request={request_id[:8]}, key={cache_key[:8]}")
+            return request_cache[cache_key]
+
+        # Cache miss
+        if request_id not in self._cache_stats:
+            self._cache_stats[request_id] = {"hits": 0, "misses": 0}
+        self._cache_stats[request_id]["misses"] += 1
+        logger.debug(f"Cache MISS: request={request_id[:8]}, key={cache_key[:8]}")
+        return None
+
+    def _set_cached_result(self, request_id: str, cache_key: str, result: Any):
+        """
+        Cache capability result.
+
+        Args:
+            request_id: Request identifier
+            cache_key: Cache key
+            result: Result to cache
+        """
+        if request_id not in self._request_caches:
+            self._request_caches[request_id] = {}
+        self._request_caches[request_id][cache_key] = result
+        logger.debug(f"Cache SET: request={request_id[:8]}, key={cache_key[:8]}")
+
+    def get_cache_stats(self, request_id: str) -> Dict[str, Any]:
+        """
+        Get cache statistics for request.
+
+        Args:
+            request_id: Request identifier
+
+        Returns:
+            Dict with hits, misses, hit_rate
+        """
+        stats = self._cache_stats.get(request_id, {"hits": 0, "misses": 0})
+        total = stats["hits"] + stats["misses"]
+        hit_rate = stats["hits"] / total if total > 0 else 0.0
+
+        return {
+            "hits": stats["hits"],
+            "misses": stats["misses"],
+            "total": total,
+            "hit_rate": hit_rate,
+        }
+
+    def clear_request_cache(self, request_id: str):
+        """
+        Clear cache for specific request (cleanup after request completes).
+
+        Args:
+            request_id: Request identifier
+        """
+        if request_id in self._request_caches:
+            cache_size = len(self._request_caches[request_id])
+            del self._request_caches[request_id]
+            logger.debug(f"Cleared cache for request {request_id[:8]} ({cache_size} entries)")
+
+        if request_id in self._cache_stats:
+            del self._cache_stats[request_id]
 
     def register_agent(self, agent: BaseAgent):
         """
@@ -287,7 +389,7 @@ class AgentRuntime:
         **kwargs,
     ) -> Any:
         """
-        Route capability to correct agent and execute.
+        Route capability to correct agent and execute (with request-level caching).
 
         Args:
             capability: Capability name (e.g., "ledger.positions")
@@ -326,7 +428,22 @@ class AgentRuntime:
                 },
             )
 
-        # Execute capability
+        # Check cache first
+        cache_key = self._get_cache_key(capability, kwargs)
+        cached_result = self._get_cached_result(ctx.request_id, cache_key)
+        if cached_result is not None:
+            logger.debug(
+                f"Cache HIT for {capability} in {agent_name} "
+                f"(request_id={ctx.request_id[:8]})"
+            )
+            return cached_result
+
+        # Execute capability (cache miss) with metrics tracking
+        metrics = get_metrics()
+        import time
+        agent_start_time = time.time()
+        agent_status = "success"
+
         try:
             logger.debug(
                 f"Routing {capability} to {agent_name} "
@@ -339,16 +456,48 @@ class AgentRuntime:
             if self.enable_rights_enforcement and self._attribution_manager:
                 result = self._add_attributions(result)
 
+            # Cache the result
+            self._set_cached_result(ctx.request_id, cache_key, result)
+
             self.circuit_breaker.record_success(agent_name)
+
+            # Record circuit breaker state in metrics
+            if metrics:
+                cb_status = self.circuit_breaker.get_status(agent_name)
+                state_value = cb_status.get("state", "CLOSED")
+                metrics.record_circuit_breaker_state(agent_name, state_value)
+
             return result
 
         except Exception as e:
+            agent_status = "error"
             self.circuit_breaker.record_failure(agent_name)
+
+            # Record circuit breaker state in metrics
+            if metrics:
+                cb_status = self.circuit_breaker.get_status(agent_name)
+                state_value = cb_status.get("state", "CLOSED")
+                metrics.record_circuit_breaker_state(agent_name, state_value)
+
             logger.error(
                 f"Capability {capability} failed in {agent_name}: {e}",
                 exc_info=True,
             )
             raise
+        finally:
+            # Record agent invocation metrics
+            agent_duration = time.time() - agent_start_time
+            if metrics:
+                metrics.agent_invocations.labels(
+                    agent_name=agent_name,
+                    capability=capability,
+                    status=agent_status,
+                ).inc()
+
+                metrics.agent_latency.labels(
+                    agent_name=agent_name,
+                    capability=capability,
+                ).observe(agent_duration)
 
     def _add_attributions(self, result: Any) -> Any:
         """

@@ -7,19 +7,19 @@ set -e
 echo "=== DOCUMENTATION REFACTORING SCRIPT ==="
 echo ""
 
-# Create backup directory
+# Create backup directory (use backups/ to avoid reintroducing archive/)
 echo "1. Creating backup..."
-mkdir -p archive/old_docs_backup
-cp *.md archive/old_docs_backup/ 2>/dev/null || true
+mkdir -p backups/documentation
+cp *.md backups/documentation/ 2>/dev/null || true
 
-# Create session reports directory
+# Create session reports directory (legacy content lives under backups/)
 echo "2. Creating session_reports directory..."
-mkdir -p archive/session_reports
+mkdir -p backups/session_reports
 
 # Archive historical files
 echo "3. Archiving historical files..."
-[ -f "NAMING_FIXES_COMPLETE.md" ] && mv NAMING_FIXES_COMPLETE.md archive/session_reports/2025-10-21_naming_fixes.md
-[ -f "PLAN_VALIDATION_AND_UX_SIMULATION.md" ] && mv PLAN_VALIDATION_AND_UX_SIMULATION.md archive/session_reports/2025-10-21_ux_validation.md
+[ -f "NAMING_FIXES_COMPLETE.md" ] && mv NAMING_FIXES_COMPLETE.md backups/session_reports/2025-10-21_naming_fixes.md
+[ -f "PLAN_VALIDATION_AND_UX_SIMULATION.md" ] && mv PLAN_VALIDATION_AND_UX_SIMULATION.md backups/session_reports/2025-10-21_ux_validation.md
 
 # Delete outdated file
 echo "4. Deleting outdated file..."

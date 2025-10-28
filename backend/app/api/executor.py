@@ -138,9 +138,19 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
         reports_agent = ReportsAgent("reports", services)
         _agent_runtime.register_agent(reports_agent)
 
+        # 8. Alerts Agent - Alert suggestions and threshold-based creation
+        from backend.app.agents.alerts_agent import AlertsAgent
+        alerts_agent = AlertsAgent("alerts", services)
+        _agent_runtime.register_agent(alerts_agent)
+
+        # 9. Charts Agent - Chart formatting and visualization specs
+        from backend.app.agents.charts_agent import ChartsAgent
+        charts_agent = ChartsAgent("charts", services)
+        _agent_runtime.register_agent(charts_agent)
+
         logger.info(
-            "Agent runtime initialized with 7 agents: "
-            "financial_analyst, macro_hound, data_harvester, claude, ratings, optimizer, reports"
+            "Agent runtime initialized with 9 agents: "
+            "financial_analyst, macro_hound, data_harvester, claude, ratings, optimizer, reports, alerts, charts"
         )
 
     return _agent_runtime
@@ -352,53 +362,6 @@ class ErrorResponse(BaseModel):
 
 
 # ============================================================================
-# Dependencies
-# ============================================================================
-
-
-async def get_current_user(x_user_id: Optional[str] = Header(default=None)) -> dict:
-    """
-    DEPRECATED: Legacy stub authentication.
-
-    Use JWT authentication via verify_token dependency instead.
-    This endpoint is preserved for backward compatibility but will be removed.
-
-    For production use, endpoints should use:
-        claims: Dict = Depends(verify_token)
-
-    Clients must supply `X-User-ID` with a valid UUID so downstream database
-    queries can set the correct RLS context. This keeps portfolio data isolated
-    per tenant even in development environments.
-    """
-    logger.warning("DEPRECATED: Using legacy X-User-ID authentication. Migrate to JWT.")
-
-    if not x_user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
-                "error": "unauthorized",
-                "message": "X-User-ID header is required (DEPRECATED - use JWT Authorization header)"
-            },
-        )
-
-    try:
-        user_uuid = uuid.UUID(x_user_id)
-    except (ValueError, AttributeError):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "error": "invalid_user_id",
-                "message": "X-User-ID must be a valid UUID string"
-            },
-        )
-
-    return {
-        "id": str(user_uuid),
-        "role": "USER",  # Default role for legacy auth
-    }
-
-
-# ============================================================================
 # Metrics Endpoint
 # ============================================================================
 
@@ -433,7 +396,6 @@ async def metrics_endpoint():
 async def execute(
     req: ExecuteRequest,
     claims: dict = Depends(verify_token),  # JWT authentication (production)
-    # user: dict = Depends(get_current_user),  # Legacy auth (deprecated)
 ) -> ExecuteResponse:
     """
     Execute pattern with freshness gate and JWT authentication.
@@ -485,12 +447,12 @@ async def execute(
     ) as span:
         try:
             with metrics_registry.time_request(req.pattern_id) if metrics_registry else nullcontext():
-                logger.info(f"Execute request: pattern={req.pattern_id}, user={user['id']}, request_id={request_id}")
+                logger.info(f"Execute request: pattern={req.pattern_id}, user={claims['user_id']}, request_id={request_id}")
 
                 # Add pattern attributes to span
                 add_pattern_attributes(span, req.pattern_id, req.inputs)
 
-                return await _execute_pattern_internal(req, user, request_id, started_at, span, metrics_registry)
+                return await _execute_pattern_internal(req, claims, request_id, started_at, span, metrics_registry)
 
         except HTTPException:
             # Re-raise HTTP exceptions (already formatted)
@@ -525,7 +487,7 @@ async def execute(
 
 async def _execute_pattern_internal(
     req: ExecuteRequest,
-    user: dict,
+    claims: dict,
     request_id: str,
     started_at: datetime,
     span,

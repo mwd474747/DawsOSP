@@ -59,7 +59,7 @@ The checker automatically skips:
 - `.git/` - Git metadata
 - `archived_legacy/` - Archived code
 - `storage/backups/` - Backup files
-- `archive/` - Archive directory
+- `backups/` - Local backups created by helper scripts
 - `tests/` - Test files (allowed to access agents directly)
 
 ## Usage

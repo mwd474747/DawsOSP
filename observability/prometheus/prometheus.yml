@@ -1,0 +1,130 @@
+# Prometheus Configuration for DawsOS
+# Purpose: Scrape metrics from backend API and workers
+# Updated: 2025-10-27
+
+global:
+  scrape_interval: 15s       # Default scrape interval
+  evaluation_interval: 15s   # Evaluate rules every 15 seconds
+  scrape_timeout: 10s        # Timeout for scraping
+
+  # Attach labels to all time series
+  external_labels:
+    cluster: 'dawsos-dev'
+    environment: 'development'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - 'alertmanager:9093'
+
+# Load rules once and periodically evaluate them
+rule_files:
+  # - "alerts/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # ============================================================================
+  # DawsOS Backend API - Metrics Endpoint
+  # ============================================================================
+  - job_name: 'dawsos-backend'
+    static_configs:
+      - targets: ['backend:8000']
+        labels:
+          service: 'backend'
+          component: 'api'
+
+    # Scrape /metrics endpoint
+    metrics_path: '/metrics'
+
+    # Scrape interval (override global)
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # ============================================================================
+  # DawsOS Worker - Background Jobs
+  # ============================================================================
+  - job_name: 'dawsos-worker'
+    static_configs:
+      - targets: ['worker:8001']
+        labels:
+          service: 'worker'
+          component: 'jobs'
+
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # ============================================================================
+  # Prometheus Self-Monitoring
+  # ============================================================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          component: 'monitoring'
+
+    scrape_interval: 30s
+
+  # ============================================================================
+  # OpenTelemetry Collector (Optional)
+  # ============================================================================
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8888']
+        labels:
+          service: 'otel-collector'
+          component: 'observability'
+
+    scrape_interval: 30s
+
+  # ============================================================================
+  # PostgreSQL Exporter (Optional - if added later)
+  # ============================================================================
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+  #       labels:
+  #         service: 'postgres'
+  #         component: 'database'
+  #   scrape_interval: 30s
+
+  # ============================================================================
+  # Redis Exporter (Optional - if added later)
+  # ============================================================================
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+  #       labels:
+  #         service: 'redis'
+  #         component: 'cache'
+  #   scrape_interval: 30s
+
+# ============================================================================
+# Recording Rules (Optional)
+# ============================================================================
+# Pre-compute frequently used queries for performance
+
+# Example:
+# groups:
+#   - name: dawsos_aggregations
+#     interval: 60s
+#     rules:
+#       - record: dawsos:api_requests:rate5m
+#         expr: rate(api_requests_total[5m])
+#
+#       - record: dawsos:agent_errors:rate5m
+#         expr: rate(agent_invocations_total{status="error"}[5m])
+
+# ============================================================================
+# Storage Configuration
+# ============================================================================
+storage:
+  tsdb:
+    # Retention period (30 days)
+    retention.time: 30d
+
+    # Max storage size (optional)
+    # retention.size: 50GB

@@ -71,15 +71,15 @@ from backend.app.core.pattern_orchestrator import get_pattern_orchestrator
 ### Why This "Works" in Production
 
 When `run_api.sh` runs:
-1. PYTHONPATH = `/Users/mdawson/Documents/GitHub/DawsOSB/DawsOSP` (project root)
-2. Current directory = `/Users/mdawson/Documents/GitHub/DawsOSB/DawsOSP/backend`
+1. PYTHONPATH = `<repo-root>` (project root)
+2. Current directory = `<repo-root>/backend`
 3. Import `from app.X`:
    - Python looks in PYTHONPATH
-   - Finds `/Users/mdawson/Documents/GitHub/DawsOSB/DawsOSP/backend/app/`
+   - Finds `<repo-root>/backend/app/`
    - ✅ Works!
 4. Import `from backend.app.X`:
    - Python looks in PYTHONPATH
-   - Finds `/Users/mdawson/Documents/GitHub/DawsOSB/DawsOSP/backend/app/`
+   - Finds `<repo-root>/backend/app/`
    - ✅ Works (accidentally)!
 
 ### Why Tests Fail
@@ -351,7 +351,7 @@ python3 -c "from backend.app.api.executor import app; print('✅ Executor import
 python3 -c "from backend.app.agents.financial_analyst import FinancialAnalyst; print('✅ Agent imports OK')"
 
 # 3. Run tests
-cd /Users/mdawson/Documents/GitHub/DawsOSB/DawsOSP
+cd <repo-root>
 pytest backend/tests/ -v --tb=short
 
 # 4. Start application

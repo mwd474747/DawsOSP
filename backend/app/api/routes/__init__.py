@@ -1,20 +1,24 @@
 """
 DawsOS API Routes
 
-Purpose: REST API route modules
+Purpose: REST API route modules with JWT authentication
 Updated: 2025-10-27
 Priority: P0 (Phase 4 Task 1)
 
+Authentication:
+    All routes require JWT authentication via Authorization header:
+    Authorization: Bearer <jwt_token>
+
 Modules:
-    - auth: Authentication and user management endpoints (NEW)
+    - auth: Authentication and user management endpoints
     - metrics: Metrics retrieval endpoints
     - attribution: Currency attribution endpoints
-    - portfolios: Portfolio CRUD endpoints
-    - trades: Trade execution endpoints
-    - corporate_actions: Corporate actions endpoints
-    - alerts: Alert management endpoints
-    - notifications: Notification management endpoints
-    - macro: Macro regime and scenario analysis endpoints
+    - portfolios: Portfolio CRUD endpoints (JWT + RBAC)
+    - trades: Trade execution endpoints (JWT + RBAC)
+    - corporate_actions: Corporate actions endpoints (JWT + RBAC)
+    - alerts: Alert management endpoints (JWT + RBAC)
+    - notifications: Notification management endpoints (JWT + RBAC)
+    - macro: Macro regime and scenario analysis endpoints (JWT + RBAC)
 
 Usage:
     from app.api.routes.auth import router as auth_router

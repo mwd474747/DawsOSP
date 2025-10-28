@@ -1,6 +1,9 @@
 # DawsOS Backend Requirements
 # Updated: 2025-10-22
 
+# Job Scheduling
+apscheduler>=3.10.4
+
 # Web Framework
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0

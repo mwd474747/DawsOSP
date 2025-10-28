@@ -107,7 +107,6 @@ Automatically skipped:
 - `__pycache__/`
 - `archived_legacy/`
 - `storage/backups/`
-- `archive/`
 
 ## 🔧 Quick Fixes
 

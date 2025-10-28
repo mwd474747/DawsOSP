@@ -307,8 +307,9 @@ class PolygonClient:
 
         data = await self._request(endpoint, params)
 
-        # Check response status
-        if data.get("status") != "OK":
+        # Check response status (Polygon returns "OK" or "DELAYED" for successful requests)
+        status = data.get("status")
+        if status not in ["OK", "DELAYED"]:
             error = data.get("error", "Unknown error")
             raise PolygonError(f"API error: {error}")
 
@@ -389,8 +390,9 @@ class PolygonClient:
 
         data = await self._request(endpoint, params)
 
-        # Check response status
-        if data.get("status") != "OK":
+        # Check response status (Polygon returns "OK" or "DELAYED" for successful requests)
+        status = data.get("status")
+        if status not in ["OK", "DELAYED"]:
             error = data.get("error", "Unknown error")
             raise PolygonError(f"API error: {error}")
 
@@ -440,8 +442,9 @@ class PolygonClient:
 
         data = await self._request(endpoint, params)
 
-        # Check response status
-        if data.get("status") != "OK":
+        # Check response status (Polygon returns "OK" or "DELAYED" for successful requests)
+        status = data.get("status")
+        if status not in ["OK", "DELAYED"]:
             error = data.get("error", "Unknown error")
             raise PolygonError(f"API error: {error}")
 
@@ -474,8 +477,9 @@ class PolygonClient:
 
         data = await self._request(endpoint)
 
-        # Check response status
-        if data.get("status") != "OK":
+        # Check response status (Polygon returns "OK" or "DELAYED" for successful requests)
+        status = data.get("status")
+        if status not in ["OK", "DELAYED"]:
             error = data.get("error", "Unknown error")
             raise PolygonError(f"API error: {error}")
 

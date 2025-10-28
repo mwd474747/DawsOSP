@@ -20,11 +20,11 @@ Features:
 Usage:
     # Get unread notifications
     GET /v1/notifications?unread_only=true
-    X-User-ID: 11111111-1111-1111-1111-111111111111
+    Authorization: Bearer <jwt_token>
 
     # Mark as read
     PATCH /v1/notifications/{notification_id}/read
-    X-User-ID: 11111111-1111-1111-1111-111111111111
+    Authorization: Bearer <jwt_token>
 """
 
 import logging
@@ -37,6 +37,8 @@ from pydantic import BaseModel, Field
 
 from backend.app.db.connection import get_db_connection_with_rls
 from backend.app.services.notifications import NotificationService
+from backend.app.middleware.auth_middleware import verify_token
+from backend.app.services.auth import get_auth_service
 
 logger = logging.getLogger("DawsOS.API.Notifications")
 
@@ -74,40 +76,36 @@ class NotificationListResponse(BaseModel):
 
 
 # ============================================================================
-# Dependency: Get User ID from Header
+# Helper: Get User ID from JWT Claims
 # ============================================================================
 
 
-async def get_current_user_id(
-    x_user_id: Optional[str] = Header(None, description="User ID for RLS context")
-) -> UUID:
+def get_user_id_from_claims(claims: dict) -> UUID:
     """
-    Extract user_id from request header.
-
-    In production, this would come from JWT token validation.
-    For development, we use X-User-ID header.
+    Extract user_id from JWT claims and convert to UUID.
 
     Args:
-        x_user_id: User ID from header
+        claims: JWT claims (user_id, email, role)
 
     Returns:
         User UUID
 
     Raises:
-        HTTPException: If user_id not provided
+        HTTPException: If user_id missing or invalid format
     """
-    if not x_user_id:
+    user_id_str = claims.get("user_id")
+    if not user_id_str:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="X-User-ID header required (or JWT token in production)",
+            detail="JWT token missing user_id claim"
         )
 
     try:
-        return UUID(x_user_id)
+        return UUID(user_id_str)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid user_id format (must be UUID)",
+            detail="Invalid user_id format in JWT token (must be UUID)"
         )
 
 
@@ -118,7 +116,7 @@ async def get_current_user_id(
 
 @router.get("", response_model=NotificationListResponse)
 async def list_notifications(
-    user_id: UUID = Depends(get_current_user_id),
+    claims: dict = Depends(verify_token),
     unread_only: bool = Query(False, description="Filter to unread notifications only"),
     limit: int = Query(50, ge=1, le=100, description="Maximum results"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
@@ -127,7 +125,7 @@ async def list_notifications(
     List user's notifications (RLS filtered).
 
     Args:
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
         unread_only: Filter to unread notifications only
         limit: Maximum results (default: 50, max: 100)
         offset: Offset for pagination
@@ -135,6 +133,7 @@ async def list_notifications(
     Returns:
         Paginated list of notifications
     """
+    user_id = get_user_id_from_claims(claims)
     logger.debug(
         f"Listing notifications for user {user_id} "
         f"(unread_only={unread_only}, limit={limit}, offset={offset})"
@@ -215,14 +214,15 @@ async def list_notifications(
 
 @router.patch("/{notification_id}/read", response_model=NotificationResponse)
 async def mark_notification_read(
-    notification_id: UUID, user_id: UUID = Depends(get_current_user_id)
+    notification_id: UUID, 
+    claims: dict = Depends(verify_token)
 ) -> NotificationResponse:
     """
     Mark notification as read.
 
     Args:
         notification_id: Notification UUID
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
 
     Returns:
         Updated notification
@@ -230,6 +230,7 @@ async def mark_notification_read(
     Raises:
         HTTPException: If notification not found
     """
+    user_id = get_user_id_from_claims(claims)
     logger.info(f"Marking notification {notification_id} as read for user {user_id}")
 
     try:
@@ -315,18 +316,20 @@ async def mark_notification_read(
 
 @router.delete("/{notification_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_notification(
-    notification_id: UUID, user_id: UUID = Depends(get_current_user_id)
-):
+    notification_id: UUID, 
+    claims: dict = Depends(verify_token)
+) -> None:
     """
     Delete notification.
 
     Args:
         notification_id: Notification UUID
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
 
     Raises:
         HTTPException: If notification not found
     """
+    user_id = get_user_id_from_claims(claims)
     logger.info(f"Deleting notification {notification_id} for user {user_id}")
 
     try:
@@ -360,13 +363,14 @@ async def delete_notification(
 
 
 @router.post("/mark-all-read", status_code=status.HTTP_204_NO_CONTENT)
-async def mark_all_notifications_read(user_id: UUID = Depends(get_current_user_id)):
+async def mark_all_notifications_read(claims: dict = Depends(verify_token)) -> None:
     """
     Mark all unread notifications as read.
 
     Args:
-        user_id: Current user ID (from header/JWT)
+        claims: JWT claims (user_id, email, role)
     """
+    user_id = get_user_id_from_claims(claims)
     logger.info(f"Marking all notifications as read for user {user_id}")
 
     try:

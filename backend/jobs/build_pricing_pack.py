@@ -37,6 +37,7 @@ import asyncio
 import argparse
 import logging
 import sys
+from pathlib import Path
 import time
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -45,7 +46,8 @@ import hashlib
 import json
 
 # Add parent directory to path for imports
-sys.path.insert(0, '/Users/mdawson/Documents/GitHub/DawsOSB/DawsOSP')
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
 
 from backend.app.db.connection import get_db_pool, execute_statement, execute_query_one, execute_query
 from backend.app.db.pricing_pack_queries import get_pricing_pack_queries

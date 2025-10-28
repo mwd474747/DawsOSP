@@ -1,5 +1,22 @@
 # Trinity 3.0 Migration Agents - Creation Summary
 
+> **⚠️ HISTORICAL DOCUMENT - October 2025**
+>
+> This document describes the **aspirational architecture** from the Trinity 3.0 migration planning phase.
+> Many counts referenced here (103 capabilities, 14-16 patterns) were targets, not current reality.
+>
+> **For current verified counts**, see:
+> - [TASK_INVENTORY_2025-10-24.md](../.ops/TASK_INVENTORY_2025-10-24.md) - Verified component counts
+> - [CLAUDE.md](../CLAUDE.md) - Current architecture state
+>
+> **Actual Current State (Verified 2025-10-27)**:
+> - 7 agents registered
+> - 53 total capabilities
+> - 12 patterns operational
+> - 649 tests collected
+
+---
+
 **Created**: Following user request to configure Claude agents for Trinity 3.0 migration work
 
 ---

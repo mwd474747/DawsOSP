@@ -14,19 +14,21 @@ Created: 2025-10-23
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Dict, Any
 from uuid import UUID
 from datetime import date, datetime
 from decimal import Decimal
 import logging
 
-from ...db.connection import get_db_connection_with_rls
-from ...services.corporate_actions import (
+from backend.app.db.connection import get_db_connection_with_rls
+from backend.app.services.corporate_actions import (
     CorporateActionsService,
     CorporateActionError,
     InvalidCorporateActionError,
     InsufficientDataError
 )
+from backend.app.middleware.auth_middleware import verify_token
+from backend.app.services.auth import get_auth_service
 
 logger = logging.getLogger(__name__)
 
@@ -241,36 +243,32 @@ class DividendHistoryItem(BaseModel):
 # Dependencies
 # ============================================================================
 
-async def get_current_user_id(
-    x_user_id: Optional[str] = Header(None)
-) -> UUID:
+def get_user_id_from_claims(claims: dict) -> UUID:
     """
-    Extract user_id from X-User-ID header.
-
-    For UAT: Use header directly
-    For Production: Extract from JWT token
+    Extract user_id from JWT claims and convert to UUID.
 
     Args:
-        x_user_id: X-User-ID header value
+        claims: JWT claims dict from verify_token dependency
 
     Returns:
         User UUID
 
     Raises:
-        HTTPException: If header missing or invalid
+        HTTPException: If user_id is invalid
     """
-    if not x_user_id:
+    user_id_str = claims.get("user_id")
+    if not user_id_str:
         raise HTTPException(
             status_code=401,
-            detail="X-User-ID header required (JWT auth in production)"
+            detail="JWT token missing user_id claim"
         )
 
     try:
-        return UUID(x_user_id)
+        return UUID(user_id_str)
     except ValueError:
         raise HTTPException(
             status_code=400,
-            detail="Invalid X-User-ID format (must be UUID)"
+            detail="Invalid user_id format in JWT token (must be UUID)"
         )
 
 
@@ -281,7 +279,7 @@ async def get_current_user_id(
 @router.post("/dividends", response_model=DividendResponse, status_code=201)
 async def record_dividend(
     dividend: DividendRequest,
-    user_id: UUID = Depends(get_current_user_id)
+    claims: dict = Depends(verify_token)
 ) -> DividendResponse:
     """
     Record a dividend payment.
@@ -308,9 +306,20 @@ async def record_dividend(
 
     **UAT Coverage**: UAT-009, UAT-010 (ADR pay-date FX golden test)
     """
+    user_id = get_user_id_from_claims(claims)
+    user_role = claims.get("role", "USER")
+    
+    # RBAC: Check permission to write trades (corporate actions are trade-related)
+    auth_service = get_auth_service()
+    if not auth_service.check_permission(user_role, "write_trades"):
+        raise HTTPException(
+            status_code=403,
+            detail="Insufficient permissions to record corporate actions"
+        )
+    
     logger.info(
         f"Dividend request: user_id={user_id}, portfolio_id={dividend.portfolio_id}, "
-        f"symbol={dividend.symbol}, shares={dividend.shares}, pay_date={dividend.pay_date}"
+        f"symbol={dividend.symbol}, shares={dividend.shares}, pay_date={dividend.pay_date}, role={user_role}"
     )
 
     try:
@@ -370,7 +379,7 @@ async def record_dividend(
 @router.post("/splits", response_model=SplitResponse, status_code=201)
 async def record_split(
     split: SplitRequest,
-    user_id: UUID = Depends(get_current_user_id)
+    claims: dict = Depends(verify_token)
 ) -> SplitResponse:
     """
     Record a stock split and adjust all open lots.
@@ -392,6 +401,7 @@ async def record_split(
 
     **UAT Coverage**: UAT-011
     """
+    user_id = get_user_id_from_claims(claims)
     logger.info(
         f"Split request: user_id={user_id}, portfolio_id={split.portfolio_id}, "
         f"symbol={split.symbol}, split_ratio={split.split_ratio}"
@@ -441,7 +451,7 @@ async def record_split(
 @router.post("/withholding-tax", response_model=WithholdingTaxResponse, status_code=201)
 async def record_withholding_tax(
     tax: WithholdingTaxRequest,
-    user_id: UUID = Depends(get_current_user_id)
+    claims: dict = Depends(verify_token)
 ) -> WithholdingTaxResponse:
     """
     Record ADR withholding tax.
@@ -456,6 +466,7 @@ async def record_withholding_tax(
 
     **UAT Coverage**: UAT-012
     """
+    user_id = get_user_id_from_claims(claims)
     logger.info(
         f"Withholding tax request: user_id={user_id}, portfolio_id={tax.portfolio_id}, "
         f"symbol={tax.symbol}, tax_amount={tax.tax_amount}"
@@ -515,7 +526,7 @@ async def record_withholding_tax(
 @router.get("/dividends", response_model=List[DividendHistoryItem])
 async def list_dividends(
     portfolio_id: UUID,
-    user_id: UUID = Depends(get_current_user_id),
+    claims: dict = Depends(verify_token),
     symbol: Optional[str] = None,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None
@@ -532,6 +543,7 @@ async def list_dividends(
 
     **UAT Coverage**: UAT-013
     """
+    user_id = get_user_id_from_claims(claims)
     logger.info(
         f"List dividends: user_id={user_id}, portfolio_id={portfolio_id}, "
         f"symbol={symbol}"

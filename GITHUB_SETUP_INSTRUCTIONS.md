@@ -10,7 +10,7 @@ The DawsOSP repository has been successfully pushed to GitHub!
 
 ## Completed Migration
 
-**Local Repository**: `/Users/mdawson/Documents/GitHub/DawsOSP-new`
+**Local Repository**: `<repo-root>`
 **Branch**: main
 **Commits**: 504 commits with full history
 **Files**: 733 files
@@ -31,7 +31,7 @@ The DawsOSP repository has been successfully pushed to GitHub!
 
 **Push Commands Used**:
 ```bash
-cd /Users/mdawson/Documents/GitHub/DawsOSP-new
+cd <repo-root>
 git remote set-url origin https://github.com/mwd474747/DawsOSP.git
 git push -u origin main --force
 git push origin --tags
@@ -118,12 +118,11 @@ Add GitHub-specific badges to README.md:
 Once verified on GitHub:
 
 ```bash
-# Archive the old DawsOSB/DawsOSP working copy
-cd /Users/mdawson/Documents/GitHub
-mv DawsOSB/DawsOSP DawsOSB/DawsOSP-archive-$(date +%Y%m%d)
+
+cd <repo-root>/..
 
 # Or delete if no longer needed
-# rm -rf DawsOSB/DawsOSP
+
 ```
 
 ---
@@ -165,7 +164,7 @@ Repository push completed successfully:
 ## Next Steps After Push
 
 1. **Continue Working from This Repository**:
-   - Current location: `/Users/mdawson/Documents/GitHub/DawsOSP-new`
+   - Current location: `<repo-root>`
    - Already synced with GitHub
    - Ready for development
 
@@ -184,7 +183,7 @@ Repository push completed successfully:
    ```
 
 4. **Archive Old Working Copy**:
-   - Old location: `/Users/mdawson/Documents/GitHub/DawsOSB/DawsOSP` (can be archived or deleted)
+   - Old location: `<archived-DawsOSB>/DawsOSP` (archived)
    - Bundle file: `dawsosp.bundle` (can be deleted after verification)
    - New canonical location: https://github.com/mwd474747/DawsOSP
 

@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Divine Proportions Design System - Global Styles */
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+}
+
+@layer components {
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white/10 backdrop-blur-glass border border-white/20;
+  }
+  
+  /* Professional metric card */
+  .metric-card {
+    @apply bg-white rounded-fib4 shadow-fib2 border border-slate-200 p-fib6;
+  }
+  
+  /* Buffett rating badge */
+  .rating-badge {
+    @apply inline-flex items-center px-fib3 py-fib1 rounded-fib2 text-xs font-medium;
+  }
+  
+  .rating-excellent {
+    @apply bg-accent-100 text-accent-800 border border-accent-200;
+  }
+  
+  .rating-good {
+    @apply bg-primary-100 text-primary-800 border border-primary-200;
+  }
+  
+  .rating-fair {
+    @apply bg-warning-100 text-warning-800 border border-warning-200;
+  }
+  
+  .rating-poor {
+    @apply bg-red-100 text-red-800 border border-red-200;
+  }
+  
+  /* Financial data styling */
+  .profit {
+    @apply text-profit font-medium;
+  }
+  
+  .loss {
+    @apply text-loss font-medium;
+  }
+  
+  .neutral {
+    @apply text-neutral font-medium;
+  }
+}
+
+@layer utilities {
+  /* Fibonacci spacing utilities */
+  .space-fib1 > * + * { margin-top: theme('spacing.fib1'); }
+  .space-fib2 > * + * { margin-top: theme('spacing.fib2'); }
+  .space-fib3 > * + * { margin-top: theme('spacing.fib3'); }
+  .space-fib4 > * + * { margin-top: theme('spacing.fib4'); }
+  .space-fib5 > * + * { margin-top: theme('spacing.fib5'); }
+}

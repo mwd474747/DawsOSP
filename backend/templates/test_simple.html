@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Portfolio Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .kpi { display: inline-block; margin: 10px; padding: 15px; border: 1px solid #ccc; }
+        .holdings { width: 100%; border-collapse: collapse; }
+        .holdings th, .holdings td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        .holdings th { background-color: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ portfolio_name | default('Portfolio Summary') }}</h1>
+        <p>Generated: {{ timestamp }}</p>
+    </div>
+
+    <h2>Performance Summary</h2>
+    <div class="kpi">
+        <strong>Total Value:</strong> ${{ "{:,.0f}".format(total_value) }}
+    </div>
+    <div class="kpi">
+        <strong>1-Day Return:</strong> {{ "%.2f".format(performance.twr_1d * 100) }}%
+    </div>
+    <div class="kpi">
+        <strong>1-Month Return:</strong> {{ "%.2f".format(performance.twr_1m * 100) }}%
+    </div>
+    <div class="kpi">
+        <strong>YTD Return:</strong> {{ "%.2f".format(performance.twr_ytd * 100) }}%
+    </div>
+
+    <h2>Holdings</h2>
+    <table class="holdings">
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Quantity</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for position in positions %}
+            <tr>
+                <td>{{ position.symbol }}</td>
+                <td>{{ position.quantity }}</td>
+                <td>${{ "{:,.0f}".format(position.value) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if attributions %}
+    <div style="margin-top: 30px; font-size: 10px; color: #666;">
+        <p>Data Sources: {{ attributions | join(', ') }}</p>
+    </div>
+    {% endif %}
+
+    {% if watermark %}
+    <div style="position: fixed; bottom: 10px; right: 10px; font-size: 8px; color: #ccc; opacity: 0.5;">
+        {{ watermark }}
+    </div>
+    {% endif %}
+</body>
+</html>

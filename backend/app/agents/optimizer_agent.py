@@ -70,6 +70,8 @@ class OptimizerAgent(BaseAgent):
         state: Dict[str, Any],
         portfolio_id: Optional[str] = None,
         policy_json: Optional[Dict[str, Any]] = None,
+        policies: Optional[Dict[str, Any]] = None,  # Pattern compatibility
+        constraints: Optional[Dict[str, Any]] = None,  # Pattern compatibility
         positions: Optional[List[Dict[str, Any]]] = None,
         ratings: Optional[Dict[str, float]] = None,
         **kwargs,
@@ -116,6 +118,14 @@ class OptimizerAgent(BaseAgent):
             raise ValueError("portfolio_id required for optimizer.propose_trades")
 
         portfolio_uuid = UUID(portfolio_id)
+
+        # Merge policies and constraints for pattern compatibility
+        if policies or constraints:
+            # Use policies as base, merge with constraints
+            merged_policy = policies or {}
+            if constraints:
+                merged_policy.update(constraints)
+            policy_json = merged_policy
 
         # Default policy if not provided
         if not policy_json:
@@ -165,6 +175,8 @@ class OptimizerAgent(BaseAgent):
                 policy_json=policy_json,
                 pricing_pack_id=pricing_pack_id,
                 ratings=ratings,
+                positions=positions,  # Pass caller-supplied positions
+                use_db=positions is None,  # Use DB only if positions not provided
             )
 
             # Attach metadata
@@ -314,6 +326,8 @@ class OptimizerAgent(BaseAgent):
         state: Dict[str, Any],
         portfolio_id: Optional[str] = None,
         scenario_id: Optional[str] = None,
+        scenario_result: Optional[Dict[str, Any]] = None,  # Pattern compatibility
+        max_cost_bps: float = 20.0,
         **kwargs,
     ) -> Dict[str, Any]:
         """
@@ -356,9 +370,16 @@ class OptimizerAgent(BaseAgent):
 
         portfolio_uuid = UUID(portfolio_id)
 
-        # Require scenario_id
-        if not scenario_id:
-            raise ValueError("scenario_id required for optimizer.suggest_hedges")
+        # Handle scenario_result from pattern or scenario_id parameter
+        if scenario_result:
+            # Extract scenario_id from scenario_result object
+            if isinstance(scenario_result, dict):
+                scenario_id = scenario_result.get("scenario_id") or scenario_result.get("id")
+                if not scenario_id:
+                    # Try to infer from scenario type or name
+                    scenario_id = scenario_result.get("scenario_type") or scenario_result.get("name") or "unknown"
+        elif not scenario_id:
+            raise ValueError("Either scenario_id or scenario_result required for optimizer.suggest_hedges")
 
         # Get pricing_pack_id from context
         pricing_pack_id = ctx.pricing_pack_id
@@ -412,6 +433,8 @@ class OptimizerAgent(BaseAgent):
         state: Dict[str, Any],
         portfolio_id: Optional[str] = None,
         regime: Optional[str] = None,
+        scenarios: Optional[Dict[str, Any]] = None,  # Pattern compatibility
+        ltdc_phase: Optional[str] = None,  # Pattern compatibility
         **kwargs,
     ) -> Dict[str, Any]:
         """
@@ -456,15 +479,43 @@ class OptimizerAgent(BaseAgent):
 
         portfolio_uuid = UUID(portfolio_id)
 
-        # Get regime from state if not provided
-        if not regime:
+        # Resolve regime from pattern parameters or state
+        if ltdc_phase:
+            # Map LTDC phase to regime
+            regime_mapping = {
+                "Phase 1": "LATE_EXPANSION",
+                "Phase 2": "DELEVERAGING", 
+                "Phase 3": "DEPRESSION",
+                "Phase 4": "EARLY_EXPANSION",
+            }
+            regime = regime_mapping.get(ltdc_phase, "LATE_EXPANSION")
+        elif scenarios:
+            # Infer regime from scenario results
+            # Look for the most severe scenario impact
+            max_impact = 0.0
+            regime = "LATE_EXPANSION"  # Default
+            for scenario_name, scenario_result in scenarios.items():
+                if isinstance(scenario_result, dict):
+                    impact = scenario_result.get("total_delta_pct", 0.0)
+                    if impact > max_impact:
+                        max_impact = impact
+                        # Map scenario to regime
+                        if "default" in scenario_name.lower():
+                            regime = "DEPRESSION"
+                        elif "austerity" in scenario_name.lower():
+                            regime = "DELEVERAGING"
+                        elif "money_printing" in scenario_name.lower():
+                            regime = "LATE_EXPANSION"
+        elif not regime:
+            # Get regime from state if not provided
             regime_result = state.get("regime")
             if regime_result and isinstance(regime_result, dict):
                 regime = regime_result.get("regime")
+        
         if not regime:
             raise ValueError(
                 "regime required for optimizer.suggest_deleveraging_hedges. "
-                "Run macro.detect_regime first."
+                "Provide regime, ltdc_phase, scenarios, or run macro.detect_regime first."
             )
 
         # Get pricing_pack_id from context

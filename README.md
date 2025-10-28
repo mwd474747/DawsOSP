@@ -1,6 +1,6 @@
 # DawsOS - Portfolio Intelligence Platform
 
-**Version**: 0.7 (Production Ready)
+**Version**: 0.9 (Production Ready)
 **Architecture**: Trinity 3.0 Framework
 **Repository**: [DawsOSP](https://github.com/mwd474747/DawsOSP)
 
@@ -72,7 +72,11 @@ DawsOS is a **portfolio-first, explainable decision engine** that combines:
 - Macro regime detection and cycle analysis (STDC, LTDC, Empire)
 - Buffett quality ratings (dividend safety, moat strength, resilience)
 - Portfolio optimization with policy constraints
+- JWT authentication with role-based access control (RBAC)
+- PDF export generation with WeasyPrint
 - Rights-enforced exports and comprehensive observability
+- Alert system with multiple delivery channels
+- Chart formatting and visualization
 
 ---
 

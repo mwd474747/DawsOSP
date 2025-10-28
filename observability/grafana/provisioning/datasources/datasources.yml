@@ -1,0 +1,61 @@
+# Grafana Datasource Provisioning
+# Purpose: Auto-configure Prometheus and Jaeger datasources
+# Updated: 2025-10-27
+
+apiVersion: 1
+
+datasources:
+  # ============================================================================
+  # Prometheus - Metrics
+  # ============================================================================
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: "POST"
+    version: 1
+
+  # ============================================================================
+  # Jaeger - Distributed Tracing
+  # ============================================================================
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    editable: true
+    jsonData:
+      tracesToLogs:
+        # Link traces to logs (if Loki is added later)
+        datasourceUid: 'loki'
+        tags: ['trace_id', 'span_id']
+    version: 1
+
+  # ============================================================================
+  # Future Datasources
+  # ============================================================================
+  # - name: Loki
+  #   type: loki
+  #   access: proxy
+  #   url: http://loki:3100
+  #   editable: true
+  #   jsonData:
+  #     maxLines: 1000
+  #   version: 1
+
+  # - name: PostgreSQL
+  #   type: postgres
+  #   url: postgres:5432
+  #   database: dawsos
+  #   user: dawsos
+  #   secureJsonData:
+  #     password: 'dawsos'
+  #   jsonData:
+  #     sslmode: 'disable'
+  #     maxOpenConns: 10
+  #     maxIdleConns: 5
+  #   version: 1

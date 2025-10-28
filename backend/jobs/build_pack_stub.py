@@ -31,14 +31,16 @@ import asyncio
 import argparse
 import logging
 import sys
+from pathlib import Path
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import List, Dict
 import hashlib
 import json
 
-# Add parent directory to path for imports
-sys.path.insert(0, '/Users/mdawson/Documents/GitHub/DawsOSB/DawsOSP')
+# Add repository root to path for imports
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
 
 from backend.app.db.connection import get_db_pool, execute_statement, execute_query_one
 from backend.app.db.pricing_pack_queries import get_pricing_pack_queries

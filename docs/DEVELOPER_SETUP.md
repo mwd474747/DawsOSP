@@ -1,5 +1,7 @@
 # DawsOS Developer Setup Guide
 
+> ⚠️ **Archived Guide (Trinity 3.0)** — This document describes the former `DawsOSB` monorepo layout. Core concepts remain useful, but for the active DawsOSP repository see [`DEVELOPMENT_GUIDE.md`](../DEVELOPMENT_GUIDE.md). Commands below reference the legacy directory structure.
+
 **Last Updated:** October 4, 2025
 **DawsOS Version:** 1.0 (15-agent Trinity architecture)
 
@@ -8,8 +10,9 @@
 ## Quick Start (5 minutes)
 
 ```bash
-# 1. Clone and navigate
-cd /path/to/DawsOSB
+# 1. Clone and navigate (legacy instructions)
+git clone https://github.com/mwd474747/DawsOSP.git
+cd DawsOSP
 
 # 2. Create virtual environment
 python3 -m venv dawsos/venv
@@ -46,8 +49,8 @@ streamlit run dawsos/main.py
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
-cd DawsOSB
+git clone https://github.com/mwd474747/DawsOSP.git
+cd DawsOSP
 ```
 
 ### 2. Create Virtual Environment
