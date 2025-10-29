@@ -7,6 +7,8 @@ Version 5.0.0 - Complete Feature Implementation
 import os
 import logging
 import math
+import time
+import asyncio
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 import json
@@ -73,6 +75,11 @@ CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
 
 # Database connection pool
 db_pool = None
+
+# FRED Cache variables
+fred_cache = {}
+fred_cache_timestamp = None
+FRED_CACHE_DURATION = 3600  # Cache for 1 hour
 
 # Active alerts storage with mock data
 ACTIVE_ALERTS = [
@@ -838,10 +845,183 @@ def generate_hedge_suggestions(scenario_type: str, portfolio: dict) -> List[dict
     
     return hedges
 
+# FRED API Integration
+class FREDClient:
+    """Client for fetching Federal Reserve Economic Data"""
+    
+    def __init__(self):
+        self.api_key = os.getenv("FRED_API_KEY")
+        self.base_url = "https://api.stlouisfed.org/fred/series/observations"
+        
+        # Map our indicators to FRED series IDs
+        self.series_mapping = {
+            "gdp_growth": "A191RL1Q225SBEA",  # Real GDP Growth Rate
+            "inflation": "CPIAUCSL",  # Consumer Price Index
+            "unemployment": "UNRATE",  # Unemployment Rate
+            "interest_rate": "DFF",  # Federal Funds Rate
+            "m2_growth": "M2SL",  # M2 Money Supply
+            "debt_to_gdp": "GFDEGDQ188S",  # Federal Debt to GDP
+            "credit_growth": "TOTLL",  # Total Loans and Leases
+            "vix": "VIXCLS",  # VIX Volatility Index
+            "pmi": "MANEMP",  # Manufacturing Employment (proxy for PMI)
+            "consumer_confidence": "UMCSENT",  # Consumer Sentiment
+            "yield_curve": "T10Y2Y",  # 10Y-2Y Treasury Spread
+            "dollar_index": "DTWEXBGS",  # Trade Weighted Dollar Index
+            "productivity_growth": "OPHNFB",  # Nonfarm Business Productivity
+            "fiscal_deficit": "FYFSGDA188S",  # Federal Surplus/Deficit as % of GDP
+            "credit_spreads": "BAMLH0A0HYM2",  # High Yield Credit Spreads
+        }
+    
+    async def fetch_indicator(self, indicator_name: str, series_id: str) -> Optional[float]:
+        """Fetch latest value for a single indicator from FRED API"""
+        if not self.api_key:
+            return None
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                params = {
+                    "series_id": series_id,
+                    "api_key": self.api_key,
+                    "file_type": "json",
+                    "sort_order": "desc",
+                    "limit": 13  # Get last 13 observations for YoY calculations
+                }
+                
+                response = await client.get(self.base_url, params=params)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    observations = data.get("observations", [])
+                    
+                    if observations:
+                        # Get the latest value
+                        latest_value = float(observations[0]["value"])
+                        
+                        # For growth rates, calculate YoY change
+                        if indicator_name in ["gdp_growth", "m2_growth", "productivity_growth"]:
+                            if len(observations) >= 13:
+                                year_ago_value = float(observations[12]["value"])
+                                return ((latest_value - year_ago_value) / year_ago_value) * 100
+                        
+                        # For CPI, calculate inflation rate
+                        elif indicator_name == "inflation":
+                            if len(observations) >= 13:
+                                year_ago_value = float(observations[12]["value"])
+                                return ((latest_value - year_ago_value) / year_ago_value) * 100
+                        
+                        # For PMI proxy (manufacturing employment), normalize
+                        elif indicator_name == "pmi":
+                            # Convert employment level to PMI-like scale (50 = neutral)
+                            # Positive YoY change = above 50, negative = below 50
+                            if len(observations) >= 13:
+                                year_ago_value = float(observations[12]["value"])
+                                yoy_change = ((latest_value - year_ago_value) / year_ago_value) * 100
+                                # Map to PMI scale: 0% change = 50, +2% = 52, -2% = 48
+                                return 50 + yoy_change
+                        
+                        # For other indicators, return as-is
+                        else:
+                            return latest_value
+                
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error fetching {indicator_name} from FRED: {e}")
+            return None
+    
+    async def fetch_all_indicators(self) -> Dict[str, float]:
+        """Fetch all indicators from FRED API with parallel requests"""
+        if not self.api_key:
+            logger.info("FRED API key not configured. Using cached or default indicators.")
+            return {}
+        
+        indicators = {}
+        
+        try:
+            # Fetch all indicators in parallel
+            async with httpx.AsyncClient() as client:
+                tasks = []
+                for indicator_name, series_id in self.series_mapping.items():
+                    tasks.append(self.fetch_indicator(indicator_name, series_id))
+                
+                # Wait for all requests to complete
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                
+                # Process results
+                for (indicator_name, _), result in zip(self.series_mapping.items(), results):
+                    if isinstance(result, Exception):
+                        logger.warning(f"Failed to fetch {indicator_name}: {result}")
+                    elif result is not None:
+                        indicators[indicator_name] = result
+                
+                # Add calculated indicators
+                if "interest_rate" in indicators and "inflation" in indicators:
+                    # Calculate real interest rate
+                    indicators["real_interest_rate"] = calculate_real_rates(
+                        indicators["interest_rate"], 
+                        indicators["inflation"]
+                    )
+                
+                logger.info(f"Successfully fetched {len(indicators)} indicators from FRED")
+                
+        except Exception as e:
+            logger.error(f"Error fetching indicators from FRED: {e}")
+        
+        return indicators
+
+# Data Processing Functions
+def calculate_growth_rate(series_values: List[float]) -> float:
+    """Calculate year-over-year growth rate"""
+    if len(series_values) < 2:
+        return 0.0
+    return ((series_values[-1] - series_values[-13]) / series_values[-13]) * 100
+
+def calculate_real_rates(nominal_rate: float, inflation: float) -> float:
+    """Calculate real interest rates"""
+    return nominal_rate - inflation
+
+# Caching Functions
+async def get_cached_fred_data() -> Dict[str, float]:
+    """Get FRED data from cache or fetch fresh if expired"""
+    global fred_cache, fred_cache_timestamp
+    
+    # Check if cache is valid
+    if fred_cache_timestamp and (time.time() - fred_cache_timestamp) < FRED_CACHE_DURATION:
+        logger.info("Using cached FRED data")
+        return fred_cache
+    
+    # Fetch fresh data
+    fred_client = FREDClient()
+    fresh_data = await fred_client.fetch_all_indicators()
+    
+    if fresh_data:
+        fred_cache = fresh_data
+        fred_cache_timestamp = time.time()
+        logger.info("FRED cache updated with fresh data")
+    
+    return fresh_data
+
+# Database Storage Functions
+async def store_macro_indicators(indicators: Dict[str, float], conn) -> None:
+    """Store macro indicators in database"""
+    query = """
+        INSERT INTO macro_indicators (indicator_name, value, last_updated, is_current)
+        VALUES ($1, $2, NOW(), true)
+        ON CONFLICT (indicator_name) WHERE is_current = true
+        DO UPDATE SET value = EXCLUDED.value, last_updated = NOW()
+    """
+    
+    try:
+        for name, value in indicators.items():
+            await conn.execute(query, name, value)
+        logger.info(f"Stored {len(indicators)} indicators in database")
+    except Exception as e:
+        logger.error(f"Error storing indicators in database: {e}")
+
 # Macro Regime Detection
 async def detect_macro_regime() -> dict:
-    """Implement macro regime detection logic using database or environment variables"""
-    # Try to fetch macro indicators from database or environment
+    """Implement macro regime detection logic using FRED API, database, or environment variables"""
+    # Try to fetch macro indicators from FRED API first, then database, then environment
     indicators = {}
     
     if USE_MOCK_DATA:
@@ -859,8 +1039,31 @@ async def detect_macro_regime() -> dict:
             "consumer_confidence": 68.0
         }
     else:
-        # Production mode - try database first, then environment variables
-        if db_pool:
+        # Production mode - try FRED API first, then database, then environment variables
+        fred_client = FREDClient()
+        
+        if fred_client.api_key:
+            try:
+                # Try to fetch from FRED API using cache
+                fred_data = await get_cached_fred_data()
+                if fred_data:
+                    indicators.update(fred_data)
+                    logger.info(f"Fetched {len(fred_data)} indicators from FRED API")
+                    
+                    # Store in database for historical tracking
+                    if db_pool:
+                        try:
+                            async with db_pool.acquire() as conn:
+                                await store_macro_indicators(fred_data, conn)
+                        except Exception as e:
+                            logger.warning(f"Could not store FRED data in database: {e}")
+            except Exception as e:
+                logger.warning(f"Could not fetch from FRED API: {e}")
+        else:
+            logger.info("FRED API key not configured. Using cached or default indicators.")
+        
+        # If FRED didn't work, try database
+        if not indicators and db_pool:
             try:
                 async with db_pool.acquire() as conn:
                     # Try to fetch from macro_indicators table
@@ -874,11 +1077,12 @@ async def detect_macro_regime() -> dict:
                     if rows:
                         for row in rows:
                             indicators[row["indicator_name"]] = float(row["value"])
+                        logger.info(f"Fetched {len(indicators)} indicators from database")
                     
             except Exception as e:
                 logger.warning(f"Could not fetch macro indicators from database: {e}")
         
-        # If no database data, try environment variables as fallback
+        # Final fallback to environment variables
         if not indicators:
             # Try to get from environment variables or use defaults
             indicators = {
@@ -893,6 +1097,7 @@ async def detect_macro_regime() -> dict:
                 "pmi": float(os.getenv("MACRO_PMI", "50.0")),
                 "consumer_confidence": float(os.getenv("MACRO_CONSUMER_CONFIDENCE", "70.0"))
             }
+            logger.info("Using environment variables for macro indicators")
     
     # Detect regime based on indicators
     regime = "Unknown"
@@ -2086,6 +2291,22 @@ async def get_transactions(page: int = 1, page_size: int = 20):
             status_code=503,
             detail="Transaction service temporarily unavailable. Please try again later."
         )
+
+@app.get("/api/test-fred")
+async def test_fred():
+    """Test FRED API integration"""
+    fred_client = FREDClient()
+    if not fred_client.api_key:
+        return {"status": "error", "message": "FRED API key not configured"}
+    
+    try:
+        data = await fred_client.fetch_all_indicators()
+        if data:
+            return {"status": "success", "indicators": data, "count": len(data)}
+        else:
+            return {"status": "error", "message": "No data returned from FRED API"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.get("/api/export/pdf")
 async def export_portfolio_pdf():
