@@ -886,28 +886,129 @@
 
         // Load Macro Insights
         async function loadMacro() {
-            showTab('overview');
-            const response = await fetch(`${API_BASE}/execute`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`
-                },
-                body: JSON.stringify({
-                    pattern: 'macro_cycles_overview',
-                    inputs: {}
-                })
-            });
+            try {
+                const response = await fetch(`${API_BASE}/execute`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        pattern: 'macro_cycles_overview',
+                        inputs: {}
+                    })
+                });
 
-            if (response.ok) {
-                const data = await response.json();
-                const macro = data.result;
-                alert(`Macro Regime: ${macro.regime}\nRisk Level: ${macro.risk_level}\n\nIndicators:\n` +
-                    `- GDP Growth: ${macro.indicators.gdp_growth}%\n` +
-                    `- Inflation: ${macro.indicators.inflation}%\n` +
-                    `- Interest Rate: ${macro.indicators.interest_rate}%\n` +
-                    `- VIX: ${macro.indicators.vix}\n\n` +
-                    `Recommendations:\n${macro.recommendations.join('\n')}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const macro = data.result;
+                    
+                    // Create a modal to display macro insights
+                    const modalHtml = `
+                        <div id="macroModal" style="
+                            position: fixed;
+                            top: 0;
+                            left: 0;
+                            width: 100%;
+                            height: 100%;
+                            background: rgba(0,0,0,0.5);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            z-index: 1000;
+                        ">
+                            <div style="
+                                background: white;
+                                border-radius: 20px;
+                                padding: 2.5rem;
+                                max-width: 700px;
+                                width: 90%;
+                                max-height: 90vh;
+                                overflow-y: auto;
+                                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                            ">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                                    <h2 style="margin: 0; color: #333;">Macro Economic Insights</h2>
+                                    <button onclick="document.getElementById('macroModal').remove()" style="
+                                        background: none;
+                                        border: none;
+                                        font-size: 1.5rem;
+                                        cursor: pointer;
+                                        color: #999;
+                                    ">×</button>
+                                </div>
+                                
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                                    <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 1.5rem; border-radius: 15px;">
+                                        <div style="font-size: 0.9rem; opacity: 0.9;">Current Regime</div>
+                                        <div style="font-size: 1.5rem; font-weight: bold; margin-top: 0.5rem;">${macro.regime}</div>
+                                    </div>
+                                    <div style="background: ${macro.risk_level === 'High' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : macro.risk_level === 'Medium-High' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'linear-gradient(135deg, #10b981, #059669)'}; color: white; padding: 1.5rem; border-radius: 15px;">
+                                        <div style="font-size: 0.9rem; opacity: 0.9;">Risk Level</div>
+                                        <div style="font-size: 1.5rem; font-weight: bold; margin-top: 0.5rem;">${macro.risk_level}</div>
+                                    </div>
+                                </div>
+                                
+                                <div style="margin-bottom: 2rem;">
+                                    <h3 style="color: #333; margin-bottom: 1rem;">Key Economic Indicators</h3>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px;">
+                                            <div style="color: #666; font-size: 0.9rem;">GDP Growth</div>
+                                            <div style="font-size: 1.3rem; font-weight: bold; color: #333;">${macro.indicators.gdp_growth}%</div>
+                                        </div>
+                                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px;">
+                                            <div style="color: #666; font-size: 0.9rem;">Inflation</div>
+                                            <div style="font-size: 1.3rem; font-weight: bold; color: #333;">${macro.indicators.inflation}%</div>
+                                        </div>
+                                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px;">
+                                            <div style="color: #666; font-size: 0.9rem;">Unemployment</div>
+                                            <div style="font-size: 1.3rem; font-weight: bold; color: #333;">${macro.indicators.unemployment}%</div>
+                                        </div>
+                                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px;">
+                                            <div style="color: #666; font-size: 0.9rem;">Interest Rate</div>
+                                            <div style="font-size: 1.3rem; font-weight: bold; color: #333;">${macro.indicators.interest_rate}%</div>
+                                        </div>
+                                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px;">
+                                            <div style="color: #666; font-size: 0.9rem;">VIX Index</div>
+                                            <div style="font-size: 1.3rem; font-weight: bold; color: #333;">${macro.indicators.vix}</div>
+                                        </div>
+                                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px;">
+                                            <div style="color: #666; font-size: 0.9rem;">Dollar Index</div>
+                                            <div style="font-size: 1.3rem; font-weight: bold; color: #333;">${macro.indicators.dollar_index}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div style="margin-bottom: 1rem;">
+                                    <h3 style="color: #333; margin-bottom: 1rem;">Strategic Recommendations</h3>
+                                    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px;">
+                                        ${macro.recommendations.map(rec => `
+                                            <div style="padding: 0.5rem 0; border-bottom: 1px solid #e0e0e0;">
+                                                <span style="color: #667eea; margin-right: 0.5rem;">•</span>
+                                                ${rec}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Remove existing modal if present
+                    const existingModal = document.getElementById('macroModal');
+                    if (existingModal) {
+                        existingModal.remove();
+                    }
+                    
+                    // Add modal to the page
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    
+                } else {
+                    alert('Failed to load macro insights. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error loading macro insights:', error);
+                alert('An error occurred while loading macro insights.');
             }
         }
     </script>

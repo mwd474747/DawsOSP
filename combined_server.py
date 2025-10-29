@@ -1243,6 +1243,33 @@ async def execute_pattern(request: ExecuteRequest):
             "status": "success"
         }
     
+    elif pattern == "macro_cycles_overview":
+        # Get macro data and transform for UI
+        macro_data = detect_macro_regime()
+        
+        # Transform to match UI expectations
+        result = {
+            "regime": macro_data["current_regime"],  # Map current_regime to regime
+            "risk_level": macro_data["risk_level"],
+            "indicators": {
+                "gdp_growth": macro_data["indicators"]["gdp_growth"],
+                "inflation": macro_data["indicators"]["inflation"], 
+                "unemployment": macro_data["indicators"]["unemployment"],
+                "interest_rate": macro_data["indicators"]["interest_rate"],
+                "vix": macro_data["indicators"]["vix"],
+                "dollar_index": macro_data["indicators"]["dollar_index"]
+            },
+            "recommendations": macro_data["recommendations"],
+            # Include additional useful fields
+            "trend": macro_data.get("trend", "Unknown"),
+            "portfolio_risk_assessment": macro_data.get("portfolio_risk_assessment", {})
+        }
+        
+        return {
+            "result": result,
+            "status": "success"
+        }
+    
     else:
         return {
             "result": {"message": f"Pattern {pattern} executed"},
