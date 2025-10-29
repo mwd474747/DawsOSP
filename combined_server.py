@@ -1417,11 +1417,14 @@ class EmpireCycleAnalyzer:
         self.empire_indicators["education"] = self.estimate_education_score(indicators)
         self.empire_indicators["innovation"] = self.estimate_innovation_score(indicators)
         self.empire_indicators["competitiveness"] = indicators.get("productivity_growth", 1.5) * 20 + 30
-        self.empire_indicators["economic_output"] = 23.0  # US share of global GDP
-        self.empire_indicators["world_trade_share"] = 11.0  # US share of global trade
-        self.empire_indicators["military_strength"] = 95.0  # US military dominance
-        self.empire_indicators["financial_center"] = 85.0  # NYC financial dominance
-        self.empire_indicators["reserve_currency"] = 59.0  # USD share of reserves
+        
+        # Use real data from MacroDataAgent when available, fallback to estimates
+        self.empire_indicators["economic_output"] = indicators.get("economic_output_share", 
+                                                                   indicators.get("gdp_share", 23.0))
+        self.empire_indicators["world_trade_share"] = indicators.get("world_trade_share", 11.0)
+        self.empire_indicators["military_strength"] = indicators.get("military_strength", 95.0)
+        self.empire_indicators["financial_center"] = indicators.get("financial_center_score", 85.0)
+        self.empire_indicators["reserve_currency"] = indicators.get("reserve_currency_share", 59.0)
         
         # Determine phase based on indicators
         avg_score = sum(self.empire_indicators.values()) / len(self.empire_indicators)
