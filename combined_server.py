@@ -897,8 +897,12 @@ class FREDClient:
                         # Get the latest value
                         latest_value = float(observations[0]["value"])
                         
-                        # For growth rates, calculate YoY change
-                        if indicator_name in ["gdp_growth", "m2_growth", "productivity_growth"]:
+                        # For indicators that are already rates/percentages, return directly
+                        if indicator_name == "gdp_growth":
+                            # A191RL1Q225SBEA is already annualized GDP growth rate
+                            return latest_value
+                        elif indicator_name in ["m2_growth", "credit_growth", "productivity_growth"]:
+                            # These need YoY calculation
                             if len(observations) >= 13:
                                 year_ago_value = float(observations[12]["value"])
                                 return ((latest_value - year_ago_value) / year_ago_value) * 100
@@ -1001,6 +1005,316 @@ async def get_cached_fred_data() -> Dict[str, float]:
     
     return fresh_data
 
+# Dalio Cycles Framework
+class DalioCycleAnalyzer:
+    """Analyzer for Ray Dalio's economic cycles"""
+    
+    def __init__(self):
+        # Short-term debt cycle phases (5-8 years)
+        self.stdc_phases = {
+            "EARLY_EXPANSION": {"growth": "accelerating", "inflation": "low", "policy": "accommodative"},
+            "LATE_EXPANSION": {"growth": "strong", "inflation": "rising", "policy": "tightening"},
+            "EARLY_CONTRACTION": {"growth": "slowing", "inflation": "high", "policy": "tight"},
+            "RECESSION": {"growth": "negative", "inflation": "falling", "policy": "easing"}
+        }
+        
+        # Long-term debt cycle phases (75-100 years)
+        self.ltdc_phases = {
+            "EARLY": {"debt_to_income": "low", "debt_growth": "healthy", "interest_burden": "low"},
+            "BUBBLE": {"debt_to_income": "high", "debt_growth": "excessive", "interest_burden": "rising"},
+            "TOP": {"debt_to_income": "peak", "debt_growth": "slowing", "interest_burden": "high"},
+            "DEPRESSION": {"debt_to_income": "deleveraging", "debt_growth": "negative", "interest_burden": "crushing"},
+            "NORMALIZATION": {"debt_to_income": "stabilizing", "debt_growth": "resuming", "interest_burden": "manageable"}
+        }
+    
+    def detect_stdc_phase(self, indicators: dict) -> dict:
+        """Detect current phase in short-term debt cycle"""
+        gdp_growth = indicators.get("gdp_growth", 2.0)
+        inflation = indicators.get("inflation", 2.5)
+        interest_rate = indicators.get("interest_rate", 5.0)
+        unemployment = indicators.get("unemployment", 4.0)
+        
+        # Decision tree for STDC phase detection
+        if gdp_growth > 2.5 and inflation < 2.5 and unemployment > 4:
+            phase = "EARLY_EXPANSION"
+        elif gdp_growth > 2.5 and inflation > 2.5 and unemployment < 4:
+            phase = "LATE_EXPANSION"
+        elif gdp_growth < 1.5 and inflation > 2.5:
+            phase = "EARLY_CONTRACTION"
+        elif gdp_growth < 0 or unemployment > 5.5:
+            phase = "RECESSION"
+        else:
+            phase = "MID_EXPANSION"
+        
+        return {
+            "phase": phase,
+            "metrics": {
+                "gdp_growth": gdp_growth,
+                "inflation": inflation,
+                "unemployment": unemployment,
+                "interest_rate": interest_rate
+            }
+        }
+    
+    def detect_ltdc_phase(self, indicators: dict) -> dict:
+        """Detect current phase in long-term debt cycle"""
+        debt_to_gdp = indicators.get("debt_to_gdp", 100.0)
+        credit_growth = indicators.get("credit_growth", 5.0)
+        interest_rate = indicators.get("interest_rate", 5.0)
+        real_rate = indicators.get("real_interest_rate", 2.5)
+        
+        # Decision tree for LTDC phase detection
+        if debt_to_gdp < 60:
+            phase = "EARLY"
+        elif debt_to_gdp > 100 and credit_growth > 10:
+            phase = "BUBBLE"
+        elif debt_to_gdp > 120 and credit_growth < 5:
+            phase = "TOP"
+        elif debt_to_gdp > 100 and credit_growth < 0:
+            phase = "DEPRESSION"
+        else:
+            phase = "NORMALIZATION"
+        
+        return {
+            "phase": phase,
+            "metrics": {
+                "debt_to_gdp": debt_to_gdp,
+                "credit_growth": credit_growth,
+                "interest_burden": (debt_to_gdp * interest_rate) / 100
+            }
+        }
+    
+    def get_deleveraging_score(self, indicators: dict) -> float:
+        """Calculate deleveraging pressure score (0-100)"""
+        debt_to_gdp = indicators.get("debt_to_gdp", 100.0)
+        fiscal_deficit = abs(indicators.get("fiscal_deficit", -5.0))
+        interest_rate = indicators.get("interest_rate", 5.0)
+        
+        # Higher debt + deficit + rates = more deleveraging pressure
+        score = min(100, (debt_to_gdp / 2) + (fiscal_deficit * 5) + (interest_rate * 3))
+        return score
+
+class EmpireCycleAnalyzer:
+    """Tracks Ray Dalio's Empire Cycle - Rise and Decline of Nations"""
+    
+    def __init__(self):
+        self.empire_phases = {
+            "RISE": {"education": "high", "innovation": "increasing", "debt": "low"},
+            "PEAK": {"reserve_currency": True, "trade_share": "dominant", "military": "supreme"},
+            "DECLINE_EARLY": {"education": "declining", "wealth_gap": "widening", "debt": "high"},
+            "DECLINE_LATE": {"internal_conflict": "high", "currency": "weakening", "productivity": "falling"},
+            "COLLAPSE": {"civil_disorder": "extreme", "currency_crisis": True, "power_transition": True}
+        }
+        
+        # 8 Key Empire Indicators (Dalio's framework)
+        self.empire_indicators = {
+            "education": 0,  # 0-100 score
+            "innovation": 0,  # 0-100 score  
+            "competitiveness": 0,  # 0-100 score
+            "economic_output": 0,  # Share of global GDP
+            "world_trade_share": 0,  # % of global trade
+            "military_strength": 0,  # 0-100 score
+            "financial_center": 0,  # 0-100 score
+            "reserve_currency": 0  # % of global reserves
+        }
+    
+    def detect_empire_phase(self, indicators: dict) -> dict:
+        """Detect current phase in empire cycle"""
+        # Map economic indicators to empire indicators
+        self.empire_indicators["education"] = self.estimate_education_score(indicators)
+        self.empire_indicators["innovation"] = self.estimate_innovation_score(indicators)
+        self.empire_indicators["competitiveness"] = indicators.get("productivity_growth", 1.5) * 20 + 30
+        self.empire_indicators["economic_output"] = 23.0  # US share of global GDP
+        self.empire_indicators["world_trade_share"] = 11.0  # US share of global trade
+        self.empire_indicators["military_strength"] = 95.0  # US military dominance
+        self.empire_indicators["financial_center"] = 85.0  # NYC financial dominance
+        self.empire_indicators["reserve_currency"] = 59.0  # USD share of reserves
+        
+        # Determine phase based on indicators
+        avg_score = sum(self.empire_indicators.values()) / len(self.empire_indicators)
+        
+        if avg_score > 75:
+            return {"phase": "PEAK", "score": avg_score, "trend": "stable"}
+        elif avg_score > 60:
+            return {"phase": "DECLINE_EARLY", "score": avg_score, "trend": "declining"}
+        elif avg_score > 45:
+            return {"phase": "DECLINE_LATE", "score": avg_score, "trend": "accelerating_decline"}
+        elif avg_score > 30:
+            return {"phase": "RISE", "score": avg_score, "trend": "ascending"}
+        else:
+            return {"phase": "COLLAPSE", "score": avg_score, "trend": "transitioning"}
+    
+    def estimate_education_score(self, indicators):
+        # Proxy: inverse of unemployment + productivity growth
+        return max(0, min(100, (10 - indicators.get("unemployment", 4)) * 10 + 
+                         indicators.get("productivity_growth", 1.5) * 10))
+    
+    def estimate_innovation_score(self, indicators):
+        # Proxy: productivity growth + inverse of interest rates
+        return max(0, min(100, indicators.get("productivity_growth", 1.5) * 30 + 
+                         (10 - indicators.get("interest_rate", 5)) * 5))
+
+class InternalCycleAnalyzer:
+    """Tracks Ray Dalio's Internal Order/Disorder Cycle"""
+    
+    def __init__(self):
+        self.internal_stages = {
+            1: "NEW_ORDER",  # Post-conflict consolidation
+            2: "BUILDING",   # System establishment
+            3: "PROSPERITY", # Peace and prosperity
+            4: "BUBBLE",     # Excesses and gaps emerge
+            5: "CRISIS",     # Financial distress + conflict
+            6: "CIVIL_WAR"   # Open conflict/revolution
+        }
+        
+        self.conflict_indicators = {
+            "wealth_gap": 0,  # Gini coefficient
+            "political_polarization": 0,  # 0-100
+            "fiscal_deficit": 0,  # % of GDP
+            "social_unrest": 0,  # 0-100
+            "institutional_trust": 0  # 0-100
+        }
+    
+    def detect_internal_stage(self, indicators: dict) -> dict:
+        """Detect stage in internal order/disorder cycle"""
+        
+        # Calculate wealth gap (use Gini coefficient proxy)
+        wealth_gap = indicators.get("wealth_gap", 0.35)  # US Gini ~0.48
+        
+        # Calculate political polarization (proxy from various factors)
+        polarization = self.calculate_polarization(indicators)
+        
+        # Fiscal health
+        fiscal_deficit = abs(indicators.get("fiscal_deficit", -5.0))
+        
+        # Determine stage based on Dalio's criteria
+        if fiscal_deficit > 6 and wealth_gap > 0.40:
+            if polarization > 70:
+                return {"stage": 6, "name": "CIVIL_WAR", "risk": "EXTREME"}
+            else:
+                return {"stage": 5, "name": "CRISIS", "risk": "HIGH"}
+        elif wealth_gap > 0.35 and fiscal_deficit > 4:
+            return {"stage": 4, "name": "BUBBLE", "risk": "MEDIUM-HIGH"}
+        elif wealth_gap < 0.30 and fiscal_deficit < 3:
+            return {"stage": 3, "name": "PROSPERITY", "risk": "LOW"}
+        elif fiscal_deficit < 2:
+            return {"stage": 2, "name": "BUILDING", "risk": "LOW"}
+        else:
+            return {"stage": 1, "name": "NEW_ORDER", "risk": "MEDIUM"}
+    
+    def calculate_polarization(self, indicators):
+        # Estimate political polarization from economic stress
+        unemployment = indicators.get("unemployment", 4.0)
+        inflation = indicators.get("inflation", 2.5)
+        wealth_gap = indicators.get("wealth_gap", 0.35)
+        
+        # Higher unemployment + inflation + wealth gap = more polarization
+        polarization = (unemployment * 5 + inflation * 10 + wealth_gap * 100) / 2
+        return min(100, max(0, polarization))
+    
+    def get_civil_war_probability(self, indicators):
+        """Calculate probability of civil conflict based on Dalio's framework"""
+        # Key formula: bankruptcy + wealth gap = civil war risk
+        fiscal_deficit = abs(indicators.get("fiscal_deficit", -5.0))
+        wealth_gap = indicators.get("wealth_gap", 0.35)
+        debt_to_gdp = indicators.get("debt_to_gdp", 125.0)
+        
+        # Risk factors
+        risk_score = 0
+        if fiscal_deficit > 6: risk_score += 30
+        if wealth_gap > 0.40: risk_score += 30
+        if debt_to_gdp > 100: risk_score += 20
+        if indicators.get("unemployment", 4) > 6: risk_score += 10
+        if self.calculate_polarization(indicators) > 60: risk_score += 10
+        
+        return min(100, risk_score)
+
+# Helper functions for comprehensive analysis
+def determine_combined_regime(stdc_phase: str, ltdc_phase: str) -> str:
+    """Determine combined regime from short and long term cycles"""
+    if ltdc_phase == "DEPRESSION":
+        return "Deleveraging"
+    elif ltdc_phase == "BUBBLE" and stdc_phase == "LATE_EXPANSION":
+        return "Peak Bubble"
+    elif stdc_phase == "RECESSION":
+        return "Recession"
+    elif stdc_phase == "EARLY_EXPANSION":
+        return "Recovery"
+    elif stdc_phase == "LATE_EXPANSION":
+        return "Late Cycle"
+    else:
+        return "Mid Cycle"
+
+def calculate_comprehensive_risk(stdc, ltdc, empire, internal):
+    """Calculate overall risk from all 4 cycles"""
+    risk_score = 0
+    
+    # STDC risk
+    if stdc["phase"] in ["LATE_EXPANSION", "EARLY_CONTRACTION"]:
+        risk_score += 20
+    elif stdc["phase"] == "RECESSION":
+        risk_score += 30
+    
+    # LTDC risk
+    if ltdc["phase"] in ["BUBBLE", "TOP"]:
+        risk_score += 25
+    elif ltdc["phase"] == "DEPRESSION":
+        risk_score += 40
+    
+    # Empire risk
+    if empire["phase"] in ["DECLINE_LATE", "COLLAPSE"]:
+        risk_score += 30
+    elif empire["phase"] == "DECLINE_EARLY":
+        risk_score += 15
+    
+    # Internal risk
+    if internal["stage"] >= 5:
+        risk_score += 35
+    elif internal["stage"] == 4:
+        risk_score += 20
+    
+    # Determine level
+    if risk_score >= 80:
+        level = "EXTREME"
+    elif risk_score >= 60:
+        level = "HIGH"
+    elif risk_score >= 40:
+        level = "MEDIUM-HIGH"
+    elif risk_score >= 20:
+        level = "MEDIUM"
+    else:
+        level = "LOW"
+    
+    return {"level": level, "score": risk_score, "details": "Multi-cycle risk assessment"}
+
+def generate_comprehensive_recommendations(stdc, ltdc, empire, internal, indicators):
+    """Generate recommendations based on all 4 cycles"""
+    recommendations = []
+    
+    # Critical warnings first
+    if internal["stage"] >= 5:
+        recommendations.append("⚠️ CRITICAL: High civil conflict risk - maximize portfolio safety")
+    
+    if ltdc["phase"] in ["BUBBLE", "TOP"]:
+        recommendations.append("Long-term debt cycle peaking - prepare for potential deleveraging")
+    
+    if empire["phase"] in ["DECLINE_LATE", "COLLAPSE"]:
+        recommendations.append("Empire cycle declining - consider geographic diversification")
+    
+    # Asset allocation recommendations
+    if stdc["phase"] == "LATE_EXPANSION" and ltdc["phase"] == "BUBBLE":
+        recommendations.append("Reduce risk assets - both short and long cycles are extended")
+        recommendations.append("Increase cash and defensive positions")
+    
+    # Specific actions based on indicators
+    if indicators.get("wealth_gap", 0) > 0.45:
+        recommendations.append("Extreme wealth inequality - expect policy changes and higher taxes")
+    
+    if indicators.get("debt_to_gdp", 0) > 120:
+        recommendations.append("Unsustainable debt levels - prepare for currency debasement")
+    
+    return recommendations[:6]  # Return top 6 most important
+
 # Database Storage Functions
 async def store_macro_indicators(indicators: Dict[str, float], conn) -> None:
     """Store macro indicators in database"""
@@ -1020,7 +1334,7 @@ async def store_macro_indicators(indicators: Dict[str, float], conn) -> None:
 
 # Macro Regime Detection
 async def detect_macro_regime() -> dict:
-    """Implement macro regime detection logic using FRED API, database, or environment variables"""
+    """Implement comprehensive Dalio framework with all 4 cycles"""
     # Try to fetch macro indicators from FRED API first, then database, then environment
     indicators = {}
     
@@ -1036,7 +1350,14 @@ async def detect_macro_regime() -> dict:
             "dollar_index": 104.2,
             "credit_spreads": 1.2,
             "pmi": 48.5,  # Below 50 indicates contraction
-            "consumer_confidence": 68.0
+            "consumer_confidence": 68.0,
+            "debt_to_gdp": 125.0,
+            "credit_growth": 3.5,
+            "productivity_growth": 1.2,
+            "fiscal_deficit": -5.8,
+            "wealth_gap": 0.48,  # US Gini coefficient
+            "m2_growth": 4.5,
+            "real_interest_rate": 2.05
         }
     else:
         # Production mode - try FRED API first, then database, then environment variables
@@ -1095,32 +1416,43 @@ async def detect_macro_regime() -> dict:
                 "dollar_index": float(os.getenv("MACRO_DOLLAR_INDEX", "100.0")),
                 "credit_spreads": float(os.getenv("MACRO_CREDIT_SPREADS", "1.0")),
                 "pmi": float(os.getenv("MACRO_PMI", "50.0")),
-                "consumer_confidence": float(os.getenv("MACRO_CONSUMER_CONFIDENCE", "70.0"))
+                "consumer_confidence": float(os.getenv("MACRO_CONSUMER_CONFIDENCE", "70.0")),
+                "debt_to_gdp": float(os.getenv("MACRO_DEBT_TO_GDP", "125.0")),
+                "credit_growth": float(os.getenv("MACRO_CREDIT_GROWTH", "5.0")),
+                "productivity_growth": float(os.getenv("MACRO_PRODUCTIVITY_GROWTH", "1.5")),
+                "fiscal_deficit": float(os.getenv("MACRO_FISCAL_DEFICIT", "-5.0")),
+                "wealth_gap": float(os.getenv("MACRO_WEALTH_GAP", "0.48")),
+                "m2_growth": float(os.getenv("MACRO_M2_GROWTH", "5.0"))
             }
+            
+            # Calculate real interest rate if not present
+            if "real_interest_rate" not in indicators:
+                indicators["real_interest_rate"] = indicators["interest_rate"] - indicators["inflation"]
+            
             logger.info("Using environment variables for macro indicators")
     
-    # Detect regime based on indicators
-    regime = "Unknown"
-    risk_level = "Medium"
+    # Add wealth gap indicator if not present (US Gini coefficient ~0.48)
+    if "wealth_gap" not in indicators:
+        indicators["wealth_gap"] = float(os.getenv("MACRO_WEALTH_GAP", "0.48"))
     
-    if indicators["gdp_growth"] > 3 and indicators["inflation"] < 2.5:
-        regime = "Goldilocks"
-        risk_level = "Low"
-    elif indicators["gdp_growth"] > 2 and indicators["inflation"] > 3:
-        regime = "Late Cycle Expansion"
-        risk_level = "Medium-High"
-    elif indicators["gdp_growth"] < 1 and indicators["inflation"] > 3:
-        regime = "Stagflation"
-        risk_level = "High"
-    elif indicators["gdp_growth"] < 0:
-        regime = "Recession"
-        risk_level = "High"
-    elif indicators["yield_curve"] < 0 and indicators["pmi"] < 50:
-        regime = "Pre-Recession"
-        risk_level = "High"
-    else:
-        regime = "Mid Cycle"
-        risk_level = "Medium"
+    # Initialize all cycle analyzers
+    dalio_analyzer = DalioCycleAnalyzer()
+    empire_analyzer = EmpireCycleAnalyzer()
+    internal_analyzer = InternalCycleAnalyzer()
+    
+    # Detect all cycle positions
+    stdc_result = dalio_analyzer.detect_stdc_phase(indicators)
+    ltdc_result = dalio_analyzer.detect_ltdc_phase(indicators)
+    empire_result = empire_analyzer.detect_empire_phase(indicators)
+    internal_result = internal_analyzer.detect_internal_stage(indicators)
+    
+    # Calculate comprehensive risk assessment
+    overall_risk = calculate_comprehensive_risk(stdc_result, ltdc_result, empire_result, internal_result)
+    
+    # Generate unified recommendations
+    recommendations = generate_comprehensive_recommendations(
+        stdc_result, ltdc_result, empire_result, internal_result, indicators
+    )
     
     # Generate portfolio recommendations based on regime
     # Use mock portfolio data for recommendations in production mode
@@ -1140,25 +1472,47 @@ async def detect_macro_regime() -> dict:
             ]
         }
     
-    recommendations = generate_macro_recommendations(regime, indicators, portfolio)
-    
     # Assess portfolio risk in current regime
-    portfolio_risk_assessment = assess_portfolio_risk(portfolio, regime, indicators)
+    combined_regime = determine_combined_regime(stdc_result["phase"], ltdc_result["phase"])
+    portfolio_risk_assessment = assess_portfolio_risk(portfolio, combined_regime, indicators)
     
     return {
-        "current_regime": regime,
+        "current_regime": combined_regime,
+        "risk_level": overall_risk["level"],
+        
+        # All 4 cycles
+        "stdc_phase": stdc_result["phase"],
+        "stdc_metrics": stdc_result.get("metrics", {}),
+        
+        "ltdc_phase": ltdc_result["phase"],
+        "debt_metrics": ltdc_result.get("metrics", {}),
+        
+        "empire_phase": empire_result["phase"],
+        "empire_score": empire_result["score"],
+        "empire_indicators": empire_analyzer.empire_indicators,
+        
+        "internal_stage": internal_result["stage"],
+        "internal_stage_name": internal_result["name"],
+        "civil_war_probability": internal_analyzer.get_civil_war_probability(indicators),
+        
         "indicators": indicators,
-        "risk_level": risk_level,
-        "trend": "Deteriorating" if indicators["pmi"] < 50 else "Improving" if indicators["pmi"] > 52 else "Neutral",
+        "recommendations": recommendations,
+        "deleveraging_score": dalio_analyzer.get_deleveraging_score(indicators) if ltdc_result["phase"] == "DEPRESSION" else None,
+        
+        # Additional analysis
+        "wealth_gap": indicators.get("wealth_gap", 0.48),
+        "political_polarization": internal_analyzer.calculate_polarization(indicators),
+        "trend": "Complex multi-cycle dynamics",
+        "portfolio_risk_assessment": portfolio_risk_assessment,
+        
+        # Legacy fields for backward compatibility
         "regime_probability": {
-            regime: 0.65,
+            combined_regime: 0.65,
             "Alternative": 0.35
         },
-        "portfolio_risk_assessment": portfolio_risk_assessment,
-        "recommendations": recommendations,
         "next_review": "Monthly",
         "key_risks": identify_key_risks(indicators),
-        "opportunities": identify_opportunities(regime, indicators)
+        "opportunities": identify_opportunities(combined_regime, indicators)
     }
 
 def generate_macro_recommendations(regime: str, indicators: dict, portfolio: dict) -> List[str]:
@@ -2044,59 +2398,56 @@ async def execute_pattern(request: ExecuteRequest):
         }
     
     elif pattern == "macro_cycles_overview":
-        # Get macro data and transform for UI
+        # Get macro data with all 4 cycles
         macro_data = await detect_macro_regime()
         
-        # Add Dalio cycle data (simulated for now)
-        # In production, this would come from actual cycle detection algorithms
-        stdc_phase = "MID_EXPANSION"  # Could be: EARLY_RECOVERY, MID_EXPANSION, LATE_EXPANSION, EARLY_CONTRACTION, RECESSION
-        ltdc_phase = "BUBBLE"  # Could be: PROSPERITY, BUBBLE, TOP, DEPRESSION, NORMALIZATION
-        
-        # Transform to match UI expectations with Dalio cycle enhancements
+        # Transform to match UI expectations with actual Dalio cycle data
         result = {
-            "regime": macro_data["current_regime"],  # Map current_regime to regime
+            "regime": macro_data["current_regime"],
             "risk_level": macro_data["risk_level"],
             "indicators": {
-                "gdp_growth": macro_data["indicators"]["gdp_growth"],
-                "inflation": macro_data["indicators"]["inflation"], 
-                "unemployment": macro_data["indicators"]["unemployment"],
-                "interest_rate": macro_data["indicators"]["interest_rate"],
-                "vix": macro_data["indicators"]["vix"],
-                "dollar_index": macro_data["indicators"]["dollar_index"]
+                "gdp_growth": macro_data["indicators"].get("gdp_growth", 0),
+                "inflation": macro_data["indicators"].get("inflation", 0), 
+                "unemployment": macro_data["indicators"].get("unemployment", 0),
+                "interest_rate": macro_data["indicators"].get("interest_rate", 0),
+                "vix": macro_data["indicators"].get("vix", 0),
+                "dollar_index": macro_data["indicators"].get("dollar_index", 0)
             },
             "recommendations": macro_data["recommendations"],
-            # Include additional useful fields
-            "trend": macro_data.get("trend", "Unknown"),
+            "trend": macro_data.get("trend", "Complex multi-cycle dynamics"),
             "portfolio_risk_assessment": macro_data.get("portfolio_risk_assessment", {}),
             
-            # Dalio cycle data
-            "stdc_phase": stdc_phase,
-            "ltdc_phase": ltdc_phase,
-            "stdc_metrics": {
-                "credit_growth": 3.5,  # Example percentage
-                "rate_cycle": "Rising",  # Could be: Rising, Peak, Falling, Trough
-                "duration": "18 months"
-            },
-            "debt_metrics": {
-                "debt_to_gdp": 125.0,  # Percentage
-                "debt_service_ratio": 12.5,  # Percentage
-                "deleveraging_risk": "Medium",  # Could be: Low, Medium, High, Critical
-                "credit_impulse": -2.1,  # Percentage change
-                "real_rates": 2.3,  # Percentage
-                "productivity_growth": 1.8  # Percentage
-            },
-            "deleveraging_score": None,  # Set to a value (0-100) during deleveraging phases
+            # Short-term debt cycle (5-8 years)
+            "stdc_phase": macro_data.get("stdc_phase", "UNKNOWN"),
+            "stdc_metrics": macro_data.get("stdc_metrics", {}),
+            
+            # Long-term debt cycle (75-100 years)  
+            "ltdc_phase": macro_data.get("ltdc_phase", "UNKNOWN"),
+            "debt_metrics": macro_data.get("debt_metrics", {}),
+            "deleveraging_score": macro_data.get("deleveraging_score"),
+            
+            # Empire cycle (250 years)
+            "empire_phase": macro_data.get("empire_phase", "UNKNOWN"),
+            "empire_score": macro_data.get("empire_score", 0),
+            "empire_indicators": macro_data.get("empire_indicators", {}),
+            
+            # Internal order/disorder cycle
+            "internal_stage": macro_data.get("internal_stage", 0),
+            "internal_stage_name": macro_data.get("internal_stage_name", "UNKNOWN"),
+            "civil_war_probability": macro_data.get("civil_war_probability", 0),
+            "political_polarization": macro_data.get("political_polarization", 0),
+            
+            # Additional metrics
+            "wealth_gap": macro_data.get("wealth_gap", 0.48),
+            
+            # Deleveraging levers only if in depression phase
             "deleveraging_levers": {
                 "austerity": "20%",
                 "defaults": "15%",
                 "redistribution": "25%",
                 "printing": "40%"
-            } if ltdc_phase == "DEPRESSION" else None
+            } if macro_data.get("ltdc_phase") == "DEPRESSION" else None
         }
-        
-        # Dynamically set deleveraging score if in deleveraging phase
-        if ltdc_phase in ["DEPRESSION", "TOP"]:
-            result["deleveraging_score"] = 72  # Example score
         
         return {
             "result": result,
@@ -2338,6 +2689,47 @@ async def test_fred():
             return {"status": "success", "indicators": data, "count": len(data)}
         else:
             return {"status": "error", "message": "No data returned from FRED API"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/test-macro-cycles")
+async def test_macro_cycles():
+    """Test comprehensive macro analysis with all 4 Dalio cycles"""
+    try:
+        # Get the complete macro regime detection with all 4 cycles
+        macro_data = await detect_macro_regime()
+        
+        return {
+            "status": "success",
+            "data": macro_data,
+            "cycles_summary": {
+                "short_term_debt_cycle": {
+                    "phase": macro_data.get("stdc_phase"),
+                    "metrics": macro_data.get("stdc_metrics", {})
+                },
+                "long_term_debt_cycle": {
+                    "phase": macro_data.get("ltdc_phase"),
+                    "metrics": macro_data.get("debt_metrics", {}),
+                    "deleveraging_score": macro_data.get("deleveraging_score")
+                },
+                "empire_cycle": {
+                    "phase": macro_data.get("empire_phase"),
+                    "score": macro_data.get("empire_score"),
+                    "indicators": macro_data.get("empire_indicators", {})
+                },
+                "internal_order_cycle": {
+                    "stage": macro_data.get("internal_stage"),
+                    "stage_name": macro_data.get("internal_stage_name"),
+                    "civil_war_probability": macro_data.get("civil_war_probability"),
+                    "polarization": macro_data.get("political_polarization")
+                }
+            },
+            "risk_assessment": {
+                "overall_level": macro_data.get("risk_level"),
+                "wealth_gap": macro_data.get("wealth_gap"),
+                "recommendations": macro_data.get("recommendations", [])
+            }
+        }
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
