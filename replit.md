@@ -15,6 +15,18 @@ DawsOS is a comprehensive portfolio management and intelligence platform that co
 - PDF report generation
 - Portfolio optimization recommendations
 
+## Recent Updates
+
+### October 29, 2025 - Macro Dashboard Enhancement
+- **New Navigation Item**: Added "Macro Dashboard" as the 8th tab in the navigation bar
+- **Dedicated Page**: Moved macro economic insights from modal popup to full-page dashboard
+- **Enhanced Visualization**: 
+  - Grid layout for economic indicators with visual status indicators
+  - Market outlook sections for near-term and medium-term forecasts
+  - Color-coded risk levels and regime indicators
+- **Interactive Features**: "Refresh Macro Data" button for manual updates
+- **Database Integration**: Fully migrated from mock data to PostgreSQL with comprehensive seed data
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -128,7 +140,7 @@ Preferred communication style: Simple, everyday language.
 
 **Super Admin Account**:
 - Email: michael@dawsos.com
-- Password: mozzuq-byfqyQ-5tefvu
+- Password: admin123
 - Role: ADMIN
 
 **Security Features**:

@@ -443,6 +443,7 @@
                 <button class="tab" onclick="showTab('alerts')">Alerts</button>
                 <button class="tab" onclick="showTab('ai')">AI Analysis</button>
                 <button class="tab" onclick="showTab('optimize')">Optimize</button>
+                <button class="tab" onclick="showTab('macro')">Macro Dashboard</button>
             </div>
 
             <!-- Overview Tab -->
@@ -761,6 +762,19 @@
                     </div>
                     <button class="btn" onclick="runOptimization()">Generate Recommendations</button>
                     <div id="optimizationResults" style="margin-top: 2rem;"></div>
+                </div>
+            </div>
+
+            <!-- Macro Dashboard Tab -->
+            <div class="tab-content" id="macro-tab">
+                <div style="background: white; border-radius: 20px; padding: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                    <h2 style="color: #333; margin-bottom: 1.5rem;">Macro Economic Dashboard</h2>
+                    <button class="btn" onclick="loadMacroData()" style="width: auto; padding: 0.75rem 2rem; margin-bottom: 2rem;">
+                        Refresh Macro Data
+                    </button>
+                    <div id="macroContent">
+                        <div class="loading">Click "Refresh Macro Data" to load economic indicators...</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1455,8 +1469,19 @@
             }, 3000);
         }
 
-        // Load Macro Insights
-        async function loadMacro() {
+        // Load Macro Insights (from Overview tab)
+        function loadMacro() {
+            // Switch to the macro dashboard tab
+            showTab('macro');
+            // Load the macro data
+            loadMacroData();
+        }
+
+        // Load Macro Data for Dashboard
+        async function loadMacroData() {
+            const macroContent = document.getElementById('macroContent');
+            macroContent.innerHTML = '<div class="loading">Loading macro economic data...</div>';
+            
             try {
                 const response = await fetch(`${API_BASE}/execute`, {
                     method: 'POST',
@@ -1474,112 +1499,116 @@
                     const data = await response.json();
                     const macro = data.result;
                     
-                    // Create a modal to display macro insights
-                    const modalHtml = `
-                        <div id="macroModal" style="
-                            position: fixed;
-                            top: 0;
-                            left: 0;
-                            width: 100%;
-                            height: 100%;
-                            background: rgba(0,0,0,0.5);
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            z-index: 1000;
-                        ">
-                            <div style="
-                                background: white;
-                                border-radius: 20px;
-                                padding: 2.5rem;
-                                max-width: 700px;
-                                width: 90%;
-                                max-height: 90vh;
-                                overflow-y: auto;
-                                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                            ">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                                    <h2 style="margin: 0; color: #333;">Macro Economic Insights</h2>
-                                    <button onclick="document.getElementById('macroModal').remove()" style="
-                                        background: none;
-                                        border: none;
-                                        font-size: 1.5rem;
-                                        cursor: pointer;
-                                        color: #999;
-                                    ">×</button>
-                                </div>
-                                
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
-                                    <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 1.5rem; border-radius: 15px;">
-                                        <div style="font-size: 0.9rem; opacity: 0.9;">Current Regime</div>
-                                        <div style="font-size: 1.5rem; font-weight: bold; margin-top: 0.5rem;">${macro.regime}</div>
-                                    </div>
-                                    <div style="background: ${macro.risk_level === 'High' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : macro.risk_level === 'Medium-High' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'linear-gradient(135deg, #10b981, #059669)'}; color: white; padding: 1.5rem; border-radius: 15px;">
-                                        <div style="font-size: 0.9rem; opacity: 0.9;">Risk Level</div>
-                                        <div style="font-size: 1.5rem; font-weight: bold; margin-top: 0.5rem;">${macro.risk_level}</div>
+                    // Display macro data directly in the tab
+                    const macroHtml = `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                            <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 1.5rem; border-radius: 15px;">
+                                <div style="font-size: 0.9rem; opacity: 0.9;">Current Regime</div>
+                                <div style="font-size: 2rem; font-weight: bold; margin-top: 0.5rem;">${macro.regime}</div>
+                            </div>
+                            <div style="background: ${macro.risk_level === 'High' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : macro.risk_level === 'Medium-High' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'linear-gradient(135deg, #10b981, #059669)'}; color: white; padding: 1.5rem; border-radius: 15px;">
+                                <div style="font-size: 0.9rem; opacity: 0.9;">Risk Level</div>
+                                <div style="font-size: 2rem; font-weight: bold; margin-top: 0.5rem;">${macro.risk_level}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 2rem;">
+                            <h3 style="color: #333; margin-bottom: 1.5rem; font-size: 1.5rem;">Key Economic Indicators</h3>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border: 1px solid #e0e0e0;">
+                                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">GDP Growth</div>
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: #333;">${macro.indicators.gdp_growth}%</div>
+                                    <div style="font-size: 0.8rem; color: ${macro.indicators.gdp_growth > 2 ? '#10b981' : macro.indicators.gdp_growth > 0 ? '#f59e0b' : '#ef4444'};">
+                                        ${macro.indicators.gdp_growth > 2 ? '↑ Strong' : macro.indicators.gdp_growth > 0 ? '→ Moderate' : '↓ Weak'}
                                     </div>
                                 </div>
-                                
-                                <div style="margin-bottom: 2rem;">
-                                    <h3 style="color: #333; margin-bottom: 1rem;">Key Economic Indicators</h3>
-                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
-                                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px;">
-                                            <div style="color: #666; font-size: 0.9rem;">GDP Growth</div>
-                                            <div style="font-size: 1.3rem; font-weight: bold; color: #333;">${macro.indicators.gdp_growth}%</div>
-                                        </div>
-                                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px;">
-                                            <div style="color: #666; font-size: 0.9rem;">Inflation</div>
-                                            <div style="font-size: 1.3rem; font-weight: bold; color: #333;">${macro.indicators.inflation}%</div>
-                                        </div>
-                                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px;">
-                                            <div style="color: #666; font-size: 0.9rem;">Unemployment</div>
-                                            <div style="font-size: 1.3rem; font-weight: bold; color: #333;">${macro.indicators.unemployment}%</div>
-                                        </div>
-                                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px;">
-                                            <div style="color: #666; font-size: 0.9rem;">Interest Rate</div>
-                                            <div style="font-size: 1.3rem; font-weight: bold; color: #333;">${macro.indicators.interest_rate}%</div>
-                                        </div>
-                                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px;">
-                                            <div style="color: #666; font-size: 0.9rem;">VIX Index</div>
-                                            <div style="font-size: 1.3rem; font-weight: bold; color: #333;">${macro.indicators.vix}</div>
-                                        </div>
-                                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px;">
-                                            <div style="color: #666; font-size: 0.9rem;">Dollar Index</div>
-                                            <div style="font-size: 1.3rem; font-weight: bold; color: #333;">${macro.indicators.dollar_index}</div>
-                                        </div>
+                                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border: 1px solid #e0e0e0;">
+                                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Inflation</div>
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: #333;">${macro.indicators.inflation}%</div>
+                                    <div style="font-size: 0.8rem; color: ${macro.indicators.inflation < 2 ? '#667eea' : macro.indicators.inflation < 4 ? '#10b981' : '#ef4444'};">
+                                        ${macro.indicators.inflation < 2 ? 'Below Target' : macro.indicators.inflation < 4 ? 'On Target' : 'Above Target'}
                                     </div>
                                 </div>
-                                
-                                <div style="margin-bottom: 1rem;">
-                                    <h3 style="color: #333; margin-bottom: 1rem;">Strategic Recommendations</h3>
-                                    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px;">
-                                        ${macro.recommendations.map(rec => `
-                                            <div style="padding: 0.5rem 0; border-bottom: 1px solid #e0e0e0;">
-                                                <span style="color: #667eea; margin-right: 0.5rem;">•</span>
-                                                ${rec}
-                                            </div>
-                                        `).join('')}
+                                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border: 1px solid #e0e0e0;">
+                                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Unemployment</div>
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: #333;">${macro.indicators.unemployment}%</div>
+                                    <div style="font-size: 0.8rem; color: ${macro.indicators.unemployment < 4 ? '#10b981' : macro.indicators.unemployment < 6 ? '#f59e0b' : '#ef4444'};">
+                                        ${macro.indicators.unemployment < 4 ? 'Full Employment' : macro.indicators.unemployment < 6 ? 'Healthy' : 'Elevated'}
                                     </div>
+                                </div>
+                                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border: 1px solid #e0e0e0;">
+                                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Interest Rate</div>
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: #333;">${macro.indicators.interest_rate}%</div>
+                                    <div style="font-size: 0.8rem; color: #667eea;">
+                                        Fed Funds Rate
+                                    </div>
+                                </div>
+                                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border: 1px solid #e0e0e0;">
+                                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">VIX Index</div>
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: #333;">${macro.indicators.vix}</div>
+                                    <div style="font-size: 0.8rem; color: ${macro.indicators.vix < 20 ? '#10b981' : macro.indicators.vix < 30 ? '#f59e0b' : '#ef4444'};">
+                                        ${macro.indicators.vix < 20 ? 'Low Volatility' : macro.indicators.vix < 30 ? 'Moderate' : 'High Volatility'}
+                                    </div>
+                                </div>
+                                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border: 1px solid #e0e0e0;">
+                                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Dollar Index</div>
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: #333;">${macro.indicators.dollar_index}</div>
+                                    <div style="font-size: 0.8rem; color: ${macro.indicators.dollar_index > 100 ? '#10b981' : '#f59e0b'};">
+                                        ${macro.indicators.dollar_index > 100 ? 'Strong USD' : 'Weak USD'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 2rem;">
+                            <h3 style="color: #333; margin-bottom: 1.5rem; font-size: 1.5rem;">Strategic Recommendations</h3>
+                            <div style="background: linear-gradient(135deg, #f8f9fa, #ffffff); padding: 2rem; border-radius: 15px; border: 1px solid #e0e0e0;">
+                                ${macro.recommendations.map(rec => `
+                                    <div style="padding: 1rem; margin-bottom: 1rem; background: white; border-radius: 10px; border-left: 4px solid #667eea;">
+                                        <span style="color: #667eea; margin-right: 0.75rem; font-size: 1.2rem;">📊</span>
+                                        <span style="color: #333; line-height: 1.6;">${rec}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 2rem;">
+                            <h3 style="color: #333; margin-bottom: 1.5rem; font-size: 1.5rem;">Market Outlook</h3>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                                <div style="background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #e0e0e0;">
+                                    <h4 style="color: #667eea; margin-bottom: 1rem;">📈 Near-term (1-3 months)</h4>
+                                    <p style="color: #666; line-height: 1.6;">
+                                        ${macro.risk_level === 'High' ? 
+                                            'Elevated volatility expected. Consider defensive positioning and increased cash allocations.' :
+                                            macro.risk_level === 'Medium-High' ?
+                                            'Moderate uncertainty. Maintain diversification and monitor key economic releases closely.' :
+                                            'Stable conditions with opportunities for risk-on positioning. Consider growth-oriented allocations.'}
+                                    </p>
+                                </div>
+                                <div style="background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #e0e0e0;">
+                                    <h4 style="color: #764ba2; margin-bottom: 1rem;">🎯 Medium-term (3-12 months)</h4>
+                                    <p style="color: #666; line-height: 1.6;">
+                                        ${macro.regime === 'Expansion' ? 
+                                            'Economic expansion likely to continue. Favor cyclical sectors and risk assets.' :
+                                            macro.regime === 'Slowdown' ?
+                                            'Growth deceleration expected. Rotate into quality names and defensive sectors.' :
+                                            macro.regime === 'Recovery' ?
+                                            'Economic recovery underway. Consider early-cycle sectors and value opportunities.' :
+                                            'Uncertain outlook. Focus on capital preservation and high-quality assets.'}
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     `;
                     
-                    // Remove existing modal if present
-                    const existingModal = document.getElementById('macroModal');
-                    if (existingModal) {
-                        existingModal.remove();
-                    }
-                    
-                    // Add modal to the page
-                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    macroContent.innerHTML = macroHtml;
                     
                 } else {
-                    alert('Failed to load macro insights. Please try again.');
+                    macroContent.innerHTML = '<div class="error-message">Failed to load macro insights. Please try again.</div>';
                 }
             } catch (error) {
                 console.error('Error loading macro insights:', error);
-                alert('An error occurred while loading macro insights.');
+                macroContent.innerHTML = '<div class="error-message">An error occurred while loading macro insights. Please try again.</div>';
             }
         }
     </script>
