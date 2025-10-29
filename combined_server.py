@@ -3073,32 +3073,10 @@ async def execute_pattern(request: ExecuteRequest):
                 "status": "success"
             }
         else:
-            # Production mode: Use MacroAwareScenarioService
+            # Production mode: Call the main scenario endpoint
             try:
-                from backend.app.services.macro_aware_scenarios import MacroAwareScenarioService
-                
-                macro_aware_service = MacroAwareScenarioService()
-                
-                scenario_mapping = {
-                    "market_crash": "MARKET_CRASH",
-                    "interest_rate": "INTEREST_RATE_HIKE",
-                    "inflation": "HIGH_INFLATION",
-                    "tech_crash": "TECH_CRASH",
-                    "energy_crisis": "ENERGY_CRISIS",
-                    "credit_crunch": "CREDIT_CRUNCH",
-                    "geopolitical": "GEOPOLITICAL_CONFLICT",
-                    "currency": "CURRENCY_CRISIS",
-                    "recovery": "RECOVERY_RALLY"
-                }
-                
-                shock_type = scenario_mapping.get(scenario, "MARKET_CRASH")
-                portfolio_value = 1000000  # $1M portfolio
-                
-                result = await macro_aware_service.analyze_scenario_impact(
-                    shock_type=shock_type,
-                    portfolio_value=portfolio_value,
-                    portfolio_holdings=[]  # TODO: Get from database
-                )
+                # Reuse the logic from the /api/scenario endpoint
+                result = await analyze_scenario(scenario)
                 
                 return {
                     "result": result,
@@ -3221,39 +3199,139 @@ async def analyze_scenario(scenario: str = "market_crash"):
     if USE_MOCK_DATA:
         return calculate_scenario_impact(scenario)
     
-    # Production mode: Use MacroAwareScenarioService
+    # Production mode: Use simplified macro-aware scenario analysis
     try:
-        # Import here to avoid circular imports
-        from backend.app.services.macro_aware_scenarios import MacroAwareScenarioService
+        # Get current macro regime
+        macro_data = await detect_macro_regime()
+        current_regime = macro_data.get("current_regime", "Mid Expansion")
+        stdc_phase = macro_data.get("stdc_phase", "MID_CYCLE")
+        ltdc_phase = macro_data.get("ltdc_phase", "STABLE")
         
-        # Initialize the service
-        macro_aware_service = MacroAwareScenarioService()
-        
-        # Map the simple scenario names to shock types
-        scenario_mapping = {
-            "market_crash": "MARKET_CRASH",
-            "interest_rate": "INTEREST_RATE_HIKE",
-            "inflation": "HIGH_INFLATION",
-            "tech_crash": "TECH_CRASH",
-            "energy_crisis": "ENERGY_CRISIS",
-            "credit_crunch": "CREDIT_CRUNCH",
-            "geopolitical": "GEOPOLITICAL_CONFLICT",
-            "currency": "CURRENCY_CRISIS",
-            "recovery": "RECOVERY_RALLY"
+        # Map scenario to base impacts
+        scenario_impacts = {
+            "market_crash": {"base_impact": -20, "probability": 15, "name": "Market Crash (-20%)"},
+            "interest_rate": {"base_impact": -8, "probability": 30, "name": "Interest Rate Hike"},
+            "inflation": {"base_impact": -5, "probability": 25, "name": "High Inflation Scenario"},
+            "tech_crash": {"base_impact": -15, "probability": 20, "name": "Tech Sector Crash"},
+            "recovery": {"base_impact": 15, "probability": 20, "name": "Recovery Rally"}
         }
         
-        shock_type = scenario_mapping.get(scenario, "MARKET_CRASH")
+        base_scenario = scenario_impacts.get(scenario, scenario_impacts["market_crash"])
         
-        # Get portfolio data (for now, use a sample portfolio)
-        # TODO: Get actual portfolio from database based on user
-        portfolio_value = 1000000  # $1M portfolio
+        # Apply regime-based adjustments
+        impact_multiplier = 1.0
+        probability_multiplier = 1.0
+        regime_reasoning = "Neutral regime impact"
         
-        # Analyze the scenario
-        result = await macro_aware_service.analyze_scenario_impact(
-            shock_type=shock_type,
-            portfolio_value=portfolio_value,
-            portfolio_holdings=[]  # TODO: Get from database
-        )
+        if current_regime == "Late Expansion":
+            if scenario == "market_crash":
+                impact_multiplier = 1.3
+                probability_multiplier = 2.5
+                regime_reasoning = "Late expansion significantly increases crash probability and severity"
+            elif scenario == "interest_rate":
+                probability_multiplier = 2.0
+                regime_reasoning = "Central banks likely to tighten in late expansion"
+                
+        elif current_regime == "Deep Contraction":
+            if scenario == "recovery":
+                impact_multiplier = 1.5
+                probability_multiplier = 2.0
+                regime_reasoning = "Deep contractions often lead to sharp relief rallies"
+            elif scenario == "market_crash":
+                impact_multiplier = 1.4
+                regime_reasoning = "Cascading selloffs common in deep contractions"
+                
+        # Apply LTDC modifiers
+        if ltdc_phase == "BUBBLE":
+            if scenario in ["market_crash", "tech_crash"]:
+                impact_multiplier *= 1.5
+                regime_reasoning += ". LTDC bubble phase amplifies downside risks"
+                
+        # Calculate final impacts
+        portfolio_value = 1000000  # $1M sample portfolio
+        final_impact = base_scenario["base_impact"] * impact_multiplier
+        final_probability = base_scenario["probability"] * probability_multiplier
+        portfolio_impact = portfolio_value * (final_impact / 100)
+        
+        # Generate recommendations based on scenario and regime
+        recommendations = []
+        if scenario == "market_crash":
+            if current_regime == "Late Expansion":
+                recommendations = [
+                    "Reduce equity exposure - late cycle crash risks elevated",
+                    "Increase allocation to defensive sectors",
+                    "Consider put options for downside protection"
+                ]
+            else:
+                recommendations = [
+                    "Review portfolio risk levels",
+                    "Consider defensive positioning",
+                    "Maintain adequate cash reserves"
+                ]
+        elif scenario == "recovery":
+            recommendations = [
+                "Increase equity exposure, particularly cyclicals",
+                "Consider small-cap opportunities",
+                "Rotate into growth sectors"
+            ]
+            
+        # Generate hedge suggestions
+        hedge_suggestions = []
+        if scenario in ["market_crash", "tech_crash"]:
+            hedge_suggestions = [
+                {"instrument": "SPY Put Options", "size": 50000, "rationale": "Direct downside protection"},
+                {"instrument": "VIX Calls", "size": 30000, "rationale": "Volatility hedge"}
+            ]
+        elif scenario == "interest_rate":
+            hedge_suggestions = [
+                {"instrument": "TLT Puts", "size": 40000, "rationale": "Profit from falling bond prices"},
+                {"instrument": "Floating Rate Notes", "size": 60000, "rationale": "Income increases with rates"}
+            ]
+            
+        # Find historical analogues
+        historical_analogues = []
+        if current_regime == "Late Expansion" and ltdc_phase == "BUBBLE":
+            historical_analogues = [
+                "2007 Q2-Q3: Subprime brewing | Similar regime/LTDC | S&P -57% crash followed",
+                "2000 Q1: Tech bubble peak | Late cycle high valuations | Nasdaq -78% crash",
+                "1929 Q3: Roaring twenties end | LTDC bubble peak | S&P -89% crash"
+            ]
+        elif current_regime == "Deep Contraction":
+            historical_analogues = [
+                "2008 Q4: Financial crisis | Deleveraging begins | S&P -57%",
+                "1931: Great Depression deepening | All cycles negative | S&P -43%",
+                "1973-1974: Oil crisis + stagflation | Empire challenged | S&P -48%"
+            ]
+        else:
+            historical_analogues = [
+                "Current configuration has moderate historical precedent",
+                "Similar periods showed mixed outcomes"
+            ]
+            
+        result = {
+            "scenario_name": base_scenario["name"],
+            "description": f"Analyzing {scenario} scenario with macro-aware adjustments",
+            "macro_context": {
+                "current_regime": current_regime,
+                "stdc_phase": stdc_phase,
+                "ltdc_phase": ltdc_phase,
+                "regime_influence": regime_reasoning
+            },
+            "impact_analysis": {
+                "base_impact_percent": round(final_impact, 2),
+                "portfolio_impact_amount": round(portfolio_impact, 2),
+                "adjusted_probability": round(final_probability, 1),
+                "confidence_level": 75 if current_regime == "Mid Expansion" else 85
+            },
+            "risk_metrics": {
+                "var_95": round(portfolio_impact * 0.7, 2),
+                "cvar_95": round(portfolio_impact * 0.85, 2),
+                "max_drawdown": round(abs(final_impact) * 1.2, 2)
+            },
+            "recommendations": recommendations,
+            "historical_analogues": historical_analogues,
+            "hedge_suggestions": hedge_suggestions
+        }
         
         return result
         
