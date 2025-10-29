@@ -1183,7 +1183,7 @@ class InternalDataFetcher:
         
         return min(100, unrest_score)
 
-def calculate_credit_impulse(current_credit_growth: float, previous_credit_growth: float = None) -> float:
+def calculate_credit_impulse(current_credit_growth: float, previous_credit_growth: Optional[float] = None) -> float:
     """
     Calculate credit impulse (change in credit growth rate)
     Credit impulse = Current period credit growth - Previous period credit growth
@@ -1948,13 +1948,8 @@ async def detect_macro_regime() -> dict:
     internal_result = internal_analyzer.detect_internal_stage(indicators)
     
     # Calculate social unrest score for display
-    social_unrest_score = indicators.get("social_unrest", 
-        internal_analyzer.calculate_social_unrest(
-            indicators, 
-            indicators.get("wealth_gap", 0.485),
-            indicators.get("political_polarization", 71.0)
-        )
-    )
+    # Social unrest should already be in indicators from InternalDataFetcher
+    social_unrest_score = indicators.get("social_unrest", 0)
     
     internal_result["real_data"] = {
         "gini_coefficient": indicators.get("wealth_gap", 0.485),
