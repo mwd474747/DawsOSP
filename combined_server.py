@@ -3073,10 +3073,44 @@ async def execute_pattern(request: ExecuteRequest):
                 "status": "success"
             }
         else:
-            raise HTTPException(
-                status_code=501,
-                detail="Scenario analysis not yet implemented for production mode"
-            )
+            # Production mode: Use MacroAwareScenarioService
+            try:
+                from backend.app.services.macro_aware_scenarios import MacroAwareScenarioService
+                
+                macro_aware_service = MacroAwareScenarioService()
+                
+                scenario_mapping = {
+                    "market_crash": "MARKET_CRASH",
+                    "interest_rate": "INTEREST_RATE_HIKE",
+                    "inflation": "HIGH_INFLATION",
+                    "tech_crash": "TECH_CRASH",
+                    "energy_crisis": "ENERGY_CRISIS",
+                    "credit_crunch": "CREDIT_CRUNCH",
+                    "geopolitical": "GEOPOLITICAL_CONFLICT",
+                    "currency": "CURRENCY_CRISIS",
+                    "recovery": "RECOVERY_RALLY"
+                }
+                
+                shock_type = scenario_mapping.get(scenario, "MARKET_CRASH")
+                portfolio_value = 1000000  # $1M portfolio
+                
+                result = await macro_aware_service.analyze_scenario_impact(
+                    shock_type=shock_type,
+                    portfolio_value=portfolio_value,
+                    portfolio_holdings=[]  # TODO: Get from database
+                )
+                
+                return {
+                    "result": result,
+                    "status": "success"
+                }
+                
+            except Exception as e:
+                logger.error(f"Scenario analysis error: {e}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Error analyzing scenario: {str(e)}"
+                )
     
     elif pattern == "macro_regime_detection":
         return {
@@ -3187,12 +3221,48 @@ async def analyze_scenario(scenario: str = "market_crash"):
     if USE_MOCK_DATA:
         return calculate_scenario_impact(scenario)
     
-    # In production, this should use real portfolio data
-    # For now, return a service unavailable error
-    raise HTTPException(
-        status_code=501,
-        detail="Scenario analysis not yet implemented for production mode. Please set USE_MOCK_DATA=true for demo."
-    )
+    # Production mode: Use MacroAwareScenarioService
+    try:
+        # Import here to avoid circular imports
+        from backend.app.services.macro_aware_scenarios import MacroAwareScenarioService
+        
+        # Initialize the service
+        macro_aware_service = MacroAwareScenarioService()
+        
+        # Map the simple scenario names to shock types
+        scenario_mapping = {
+            "market_crash": "MARKET_CRASH",
+            "interest_rate": "INTEREST_RATE_HIKE",
+            "inflation": "HIGH_INFLATION",
+            "tech_crash": "TECH_CRASH",
+            "energy_crisis": "ENERGY_CRISIS",
+            "credit_crunch": "CREDIT_CRUNCH",
+            "geopolitical": "GEOPOLITICAL_CONFLICT",
+            "currency": "CURRENCY_CRISIS",
+            "recovery": "RECOVERY_RALLY"
+        }
+        
+        shock_type = scenario_mapping.get(scenario, "MARKET_CRASH")
+        
+        # Get portfolio data (for now, use a sample portfolio)
+        # TODO: Get actual portfolio from database based on user
+        portfolio_value = 1000000  # $1M portfolio
+        
+        # Analyze the scenario
+        result = await macro_aware_service.analyze_scenario_impact(
+            shock_type=shock_type,
+            portfolio_value=portfolio_value,
+            portfolio_holdings=[]  # TODO: Get from database
+        )
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Scenario analysis error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error analyzing scenario: {str(e)}"
+        )
 
 @app.get("/api/macro")
 async def get_macro_regime():
