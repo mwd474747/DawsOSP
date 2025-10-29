@@ -14,10 +14,13 @@ import hashlib
 from uuid import uuid4
 import random
 from collections import defaultdict
+import csv
+import io
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import jwt
@@ -122,6 +125,72 @@ PORTFOLIO_HOLDINGS = [
     {"symbol": "META", "quantity": 35, "price": 343.00, "sector": "Technology", "beta": 1.29, "dividend_yield": 0.0},
     {"symbol": "BRK.B", "quantity": 80, "price": 350.00, "sector": "Financial", "beta": 0.87, "dividend_yield": 0.0}
 ]
+
+# Mock transaction history data
+MOCK_TRANSACTIONS = [
+    {"date": "2024-01-15", "type": "buy", "symbol": "AAPL", "shares": 100, "price": 185.00, "amount": -18500.00, "realized_gain": 0},
+    {"date": "2024-02-20", "type": "buy", "symbol": "MSFT", "shares": 75, "price": 380.00, "amount": -28500.00, "realized_gain": 0},
+    {"date": "2024-03-15", "type": "dividend", "symbol": "AAPL", "shares": 100, "price": 0.24, "amount": 24.00, "realized_gain": 24.00},
+    {"date": "2024-04-10", "type": "buy", "symbol": "NVDA", "shares": 30, "price": 500.00, "amount": -15000.00, "realized_gain": 0},
+    {"date": "2024-05-15", "type": "dividend", "symbol": "MSFT", "shares": 75, "price": 0.75, "amount": 56.25, "realized_gain": 56.25},
+    {"date": "2024-06-01", "type": "buy", "symbol": "GOOGL", "shares": 50, "price": 140.00, "amount": -7000.00, "realized_gain": 0},
+    {"date": "2024-06-15", "type": "dividend", "symbol": "AAPL", "shares": 100, "price": 0.24, "amount": 24.00, "realized_gain": 24.00},
+    {"date": "2024-07-01", "type": "buy", "symbol": "AMZN", "shares": 40, "price": 150.00, "amount": -6000.00, "realized_gain": 0},
+    {"date": "2024-07-20", "type": "sell", "symbol": "TSLA", "shares": 10, "price": 250.00, "amount": 2500.00, "realized_gain": 300.00},
+    {"date": "2024-08-01", "type": "buy", "symbol": "META", "shares": 35, "price": 343.00, "amount": -12005.00, "realized_gain": 0},
+    {"date": "2024-08-15", "type": "dividend", "symbol": "MSFT", "shares": 75, "price": 0.75, "amount": 56.25, "realized_gain": 56.25},
+    {"date": "2024-09-01", "type": "buy", "symbol": "BRK.B", "shares": 80, "price": 350.00, "amount": -28000.00, "realized_gain": 0},
+    {"date": "2024-09-15", "type": "dividend", "symbol": "AAPL", "shares": 100, "price": 0.24, "amount": 24.00, "realized_gain": 24.00},
+    {"date": "2024-10-01", "type": "buy", "symbol": "TSLA", "shares": 35, "price": 220.00, "amount": -7700.00, "realized_gain": 0},
+    {"date": "2024-10-10", "type": "sell", "symbol": "NVDA", "shares": 5, "price": 550.00, "amount": 2750.00, "realized_gain": 250.00},
+    {"date": "2024-11-01", "type": "dividend", "symbol": "NVDA", "shares": 25, "price": 0.04, "amount": 1.00, "realized_gain": 1.00},
+    {"date": "2024-11-15", "type": "dividend", "symbol": "MSFT", "shares": 75, "price": 0.75, "amount": 56.25, "realized_gain": 56.25},
+    {"date": "2024-12-01", "type": "sell", "symbol": "GOOGL", "shares": 10, "price": 145.00, "amount": 1450.00, "realized_gain": 50.00},
+    {"date": "2024-12-15", "type": "dividend", "symbol": "AAPL", "shares": 100, "price": 0.24, "amount": 24.00, "realized_gain": 24.00},
+    {"date": "2025-01-02", "type": "buy", "symbol": "AAPL", "shares": 20, "price": 190.00, "amount": -3800.00, "realized_gain": 0},
+    {"date": "2025-01-10", "type": "sell", "symbol": "META", "shares": 5, "price": 360.00, "amount": 1800.00, "realized_gain": 85.00},
+    {"date": "2025-01-15", "type": "dividend", "symbol": "BRK.B", "shares": 80, "price": 0.00, "amount": 0.00, "realized_gain": 0},
+    {"date": "2025-01-20", "type": "buy", "symbol": "MSFT", "shares": 10, "price": 385.00, "amount": -3850.00, "realized_gain": 0},
+    {"date": "2025-01-25", "type": "sell", "symbol": "AMZN", "shares": 5, "price": 155.00, "amount": 775.00, "realized_gain": 25.00},
+    {"date": "2025-02-01", "type": "dividend", "symbol": "MSFT", "shares": 85, "price": 0.75, "amount": 63.75, "realized_gain": 63.75}
+]
+
+def get_portfolio_transactions(page: int = 1, page_size: int = 20):
+    """Get paginated transaction history"""
+    # Sort transactions by date (newest first)
+    sorted_transactions = sorted(MOCK_TRANSACTIONS, key=lambda x: x["date"], reverse=True)
+    
+    # Calculate pagination
+    total_transactions = len(sorted_transactions)
+    total_pages = math.ceil(total_transactions / page_size)
+    start_idx = (page - 1) * page_size
+    end_idx = start_idx + page_size
+    
+    # Get paginated transactions
+    paginated_transactions = sorted_transactions[start_idx:end_idx]
+    
+    # Calculate summary statistics
+    total_invested = sum(t["amount"] for t in MOCK_TRANSACTIONS if t["type"] == "buy")
+    total_sold = sum(t["amount"] for t in MOCK_TRANSACTIONS if t["type"] == "sell")
+    total_dividends = sum(t["amount"] for t in MOCK_TRANSACTIONS if t["type"] == "dividend")
+    total_realized_gains = sum(t["realized_gain"] for t in MOCK_TRANSACTIONS)
+    
+    return {
+        "transactions": paginated_transactions,
+        "pagination": {
+            "page": page,
+            "page_size": page_size,
+            "total_transactions": total_transactions,
+            "total_pages": total_pages
+        },
+        "summary": {
+            "total_invested": abs(total_invested),
+            "total_sold": total_sold,
+            "total_dividends": total_dividends,
+            "total_realized_gains": total_realized_gains,
+            "net_cash_flow": total_invested + total_sold + total_dividends
+        }
+    }
 
 # Database Functions
 async def init_db():
@@ -1270,6 +1339,15 @@ async def execute_pattern(request: ExecuteRequest):
             "status": "success"
         }
     
+    elif pattern == "portfolio_transactions":
+        # Get transaction data with pagination
+        page = inputs.get("page", 1)
+        page_size = inputs.get("page_size", 20)
+        return {
+            "result": get_portfolio_transactions(page, page_size),
+            "status": "success"
+        }
+    
     else:
         return {
             "result": {"message": f"Pattern {pattern} executed"},
@@ -1336,6 +1414,147 @@ async def get_metrics():
             "var_95": portfolio["var_95"]
         }
     }
+
+@app.get("/api/transactions")
+async def get_transactions(page: int = 1, page_size: int = 20):
+    """Get transaction history with pagination"""
+    return get_portfolio_transactions(page, page_size)
+
+@app.get("/api/export/pdf")
+async def export_portfolio_pdf():
+    """Export portfolio summary as PDF (simplified HTML version)"""
+    portfolio = calculate_portfolio_metrics()
+    
+    # Generate simple HTML report
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Portfolio Report - DawsOS</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; padding: 20px; }}
+            h1 {{ color: #667eea; }}
+            table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+            th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
+            th {{ background: #f8f9fa; }}
+            .header {{ border-bottom: 2px solid #667eea; padding-bottom: 10px; margin-bottom: 20px; }}
+            .summary {{ background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>DawsOS Portfolio Report</h1>
+            <p>Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}</p>
+        </div>
+        
+        <div class="summary">
+            <h2>Portfolio Summary</h2>
+            <p><strong>Total Value:</strong> ${portfolio['total_value']:,.2f}</p>
+            <p><strong>Total Gain:</strong> ${portfolio['unrealized_pnl']:,.2f}</p>
+            <p><strong>YTD Return:</strong> {portfolio['returns_ytd']*100:.2f}%</p>
+            <p><strong>Sharpe Ratio:</strong> {portfolio['sharpe_ratio']:.2f}</p>
+        </div>
+        
+        <h2>Holdings</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Value</th>
+                    <th>Weight</th>
+                </tr>
+            </thead>
+            <tbody>
+                {"".join([f'''
+                <tr>
+                    <td>{h["symbol"]}</td>
+                    <td>{h["quantity"]}</td>
+                    <td>${h["price"]:.2f}</td>
+                    <td>${h["value"]:,.2f}</td>
+                    <td>{h["weight"]*100:.1f}%</td>
+                </tr>
+                ''' for h in portfolio["holdings"]])}
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #666;">
+            <p>Generated by DawsOS Portfolio Intelligence Platform</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return Response(
+        content=html_content,
+        media_type="text/html",
+        headers={{
+            "Content-Disposition": f"attachment; filename=portfolio_report_{datetime.utcnow().strftime('%Y%m%d')}.html"
+        }}
+    )
+
+@app.get("/api/export/csv")
+async def export_portfolio_csv(export_type: str = "holdings"):
+    """Export portfolio data as CSV"""
+    
+    if export_type == "transactions":
+        # Export transactions
+        transactions = get_portfolio_transactions(1, 1000)["transactions"]  # Get all transactions
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write headers
+        writer.writerow(["Date", "Type", "Symbol", "Shares", "Price", "Amount", "Realized Gain"])
+        
+        # Write data
+        for t in transactions:
+            writer.writerow([
+                t["date"],
+                t["type"],
+                t["symbol"],
+                t["shares"],
+                f"${t['price']:.2f}",
+                f"${t['amount']:.2f}",
+                f"${t['realized_gain']:.2f}"
+            ])
+        
+        csv_content = output.getvalue()
+        filename = f"transactions_{datetime.utcnow().strftime('%Y%m%d')}.csv"
+        
+    else:
+        # Export holdings (default)
+        portfolio = calculate_portfolio_metrics()
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write headers
+        writer.writerow(["Symbol", "Quantity", "Price", "Value", "Weight", "Sector", "Beta"])
+        
+        # Write data
+        for h in portfolio["holdings"]:
+            writer.writerow([
+                h["symbol"],
+                h["quantity"],
+                f"${h['price']:.2f}",
+                f"${h['value']:.2f}",
+                f"{h['weight']*100:.2f}%",
+                h["sector"],
+                h["beta"]
+            ])
+        
+        csv_content = output.getvalue()
+        filename = f"holdings_{datetime.utcnow().strftime('%Y%m%d')}.csv"
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={{
+            "Content-Disposition": f"attachment; filename={filename}"
+        }}
+    )
 
 if __name__ == "__main__":
     import sys
