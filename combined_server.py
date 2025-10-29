@@ -30,6 +30,9 @@ import asyncpg
 import uvicorn
 import httpx
 
+# Import MacroDataAgent for enhanced macro data fetching
+from backend.app.services.macro_data_agent import enhance_macro_data
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -1831,6 +1834,13 @@ async def detect_macro_regime() -> dict:
                     
             except Exception as e:
                 logger.warning(f"Could not fetch macro indicators from database: {e}")
+        
+        # NEW: Enhance with additional data sources from MacroDataAgent
+        try:
+            indicators = await enhance_macro_data(indicators)
+            logger.info("Enhanced indicators with MacroDataAgent data")
+        except Exception as e:
+            logger.warning(f"Could not enhance with MacroDataAgent: {e}")
         
         # Final fallback to environment variables
         if not indicators:
