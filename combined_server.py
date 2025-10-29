@@ -1264,6 +1264,100 @@ class DalioCycleAnalyzer:
         # Higher debt + deficit + rates = more deleveraging pressure
         score = min(100, (debt_to_gdp / 2) + (fiscal_deficit * 5) + (interest_rate * 3))
         return score
+    
+    def get_stdc_reasoning(self, indicators: dict) -> dict:
+        """Generate detailed reasoning for STDC phase detection"""
+        reasoning = {
+            "raw_data": {},
+            "calculations": {},
+            "logic_chain": [],
+            "conclusion": ""
+        }
+        
+        # Capture raw data points
+        gdp = indicators.get("gdp_growth", 0)
+        inflation = indicators.get("inflation", 0)
+        unemployment = indicators.get("unemployment", 0)
+        rates = indicators.get("interest_rate", 0)
+        credit = indicators.get("credit_growth", 0)
+        
+        reasoning["raw_data"] = {
+            "gdp_growth": f"{gdp:.2f}%",
+            "inflation": f"{inflation:.2f}%",
+            "unemployment": f"{unemployment:.2f}%",
+            "interest_rates": f"{rates:.2f}%",
+            "credit_growth": f"{credit:.2f}%"
+        }
+        
+        # Show calculations
+        reasoning["calculations"]["capacity_utilization"] = f"GDP ({gdp:.1f}%) + Low unemployment ({unemployment:.1f}%) suggests {('high' if gdp > 3 else 'moderate')} capacity use"
+        reasoning["calculations"]["inflation_pressure"] = f"Inflation at {inflation:.1f}% is {('above' if inflation > 2.5 else 'below')} target"
+        reasoning["calculations"]["monetary_stance"] = f"Rates at {rates:.1f}% are {('restrictive' if rates > 4 else 'accommodative' if rates < 2 else 'neutral')}"
+        
+        # Build logic chain
+        if gdp > 3 and unemployment < 4:
+            reasoning["logic_chain"].append(f"Strong GDP ({gdp:.1f}%) + Low unemployment ({unemployment:.1f}%) → Economy operating above potential")
+        if inflation > 2.5:
+            reasoning["logic_chain"].append(f"Inflation ({inflation:.1f}%) above target → Price pressures building")
+        if rates > 2:
+            reasoning["logic_chain"].append(f"Interest rates ({rates:.1f}%) elevated → Central bank tightening")
+        if credit < 0:
+            reasoning["logic_chain"].append(f"Credit growth negative ({credit:.1f}%) → Credit contraction signals stress")
+        
+        # Determine phase with reasoning
+        phase_result = self.detect_stdc_phase(indicators)
+        phase = phase_result["phase"] if isinstance(phase_result, dict) else phase_result
+        
+        if "EXPANSION" in phase:
+            reasoning["conclusion"] = "EXPANSION: Strong growth, low unemployment, building inflation pressures"
+        elif "RECESSION" in phase:
+            reasoning["conclusion"] = "RECESSION: Negative growth, rising unemployment, central bank easing"
+        elif "CONTRACTION" in phase:
+            reasoning["conclusion"] = "CONTRACTION: Growth slowing, unemployment rising, credit contracting"
+        else:
+            reasoning["conclusion"] = f"{phase}: Mixed signals in economic indicators"
+        
+        return reasoning
+
+    def get_ltdc_reasoning(self, indicators: dict) -> dict:
+        """Generate detailed reasoning for LTDC phase detection"""
+        reasoning = {
+            "raw_data": {},
+            "calculations": {},
+            "logic_chain": [],
+            "conclusion": ""
+        }
+        
+        debt_to_gdp = indicators.get("debt_to_gdp", 100)
+        real_rates = indicators.get("real_interest_rate", 2)
+        credit_growth = indicators.get("credit_growth", 0)
+        fiscal_deficit = indicators.get("fiscal_deficit", -3)
+        
+        reasoning["raw_data"] = {
+            "debt_to_gdp": f"{debt_to_gdp:.1f}%",
+            "real_rates": f"{real_rates:.2f}%",
+            "credit_growth": f"{credit_growth:.2f}%",
+            "fiscal_deficit": f"{fiscal_deficit:.1f}% of GDP"
+        }
+        
+        # Key calculations
+        debt_service = debt_to_gdp * (real_rates / 100) if real_rates > 0 else 0
+        reasoning["calculations"]["debt_service_burden"] = f"Debt service: {debt_to_gdp:.0f}% × {real_rates:.1f}% = {debt_service:.1f}% of GDP"
+        reasoning["calculations"]["debt_sustainability"] = f"{'Unsustainable' if debt_to_gdp > 100 and real_rates > 3 else 'Manageable' if debt_to_gdp < 80 else 'Elevated risk'}"
+        
+        # Build logic chain
+        if debt_to_gdp > 100:
+            reasoning["logic_chain"].append(f"Debt/GDP ({debt_to_gdp:.0f}%) exceeds 100% → Entering danger zone")
+        if real_rates < 0:
+            reasoning["logic_chain"].append(f"Negative real rates ({real_rates:.1f}%) → Financial repression to manage debt")
+        if debt_to_gdp > 90 and credit_growth < 0:
+            reasoning["logic_chain"].append(f"High debt + negative credit impulse → Deleveraging pressure")
+        
+        phase_result = self.detect_ltdc_phase(indicators)
+        phase = phase_result["phase"] if isinstance(phase_result, dict) else phase_result
+        reasoning["conclusion"] = f"{phase}: Long-term debt dynamics suggest {('crisis risk' if debt_to_gdp > 120 else 'normalization' if debt_to_gdp > 80 else 'healthy leverage')}"
+        
+        return reasoning
 
 class EmpireCycleAnalyzer:
     """Tracks Ray Dalio's Empire Cycle - Rise and Decline of Nations"""
@@ -1324,6 +1418,54 @@ class EmpireCycleAnalyzer:
         # Proxy: productivity growth + inverse of interest rates
         return max(0, min(100, indicators.get("productivity_growth", 1.5) * 30 + 
                          (10 - indicators.get("interest_rate", 5)) * 5))
+    
+    def get_empire_reasoning(self, indicators: dict) -> dict:
+        """Generate detailed reasoning for Empire Cycle phase"""
+        reasoning = {
+            "raw_data": {},
+            "calculations": {},
+            "logic_chain": [],
+            "conclusion": ""
+        }
+        
+        # Raw empire indicators
+        reasoning["raw_data"] = {
+            "gdp_share": f"{indicators.get('economic_output_share', 23.9):.1f}% of global",
+            "trade_share": f"{indicators.get('world_trade_share', 10.9):.1f}% of global",
+            "reserve_currency": f"{indicators.get('reserve_currency_share', 58.4):.1f}% of reserves",
+            "military_spending": f"{indicators.get('military_strength', 38.0):.1f}% of global",
+            "education_score": f"{indicators.get('education_score', 60):.0f}/100",
+            "innovation_score": f"{indicators.get('innovation_score', 65):.0f}/100"
+        }
+        
+        # Calculate empire strength
+        gdp_weight = indicators.get('economic_output_share', 23.9) * 2  # Double weight
+        reserve_weight = indicators.get('reserve_currency_share', 58.4) * 1.5
+        military_weight = indicators.get('military_strength', 38.0)
+        
+        empire_score = (gdp_weight + reserve_weight + military_weight) / 3
+        
+        reasoning["calculations"]["empire_strength"] = f"GDP({indicators.get('economic_output_share', 23.9):.1f}%×2) + Reserve({indicators.get('reserve_currency_share', 58.4):.1f}%×1.5) + Military({indicators.get('military_strength', 38.0):.1f}%) = Score: {empire_score:.1f}"
+        
+        # Logic chain for empire phase
+        if indicators.get('reserve_currency_share', 58.4) < 60:
+            reasoning["logic_chain"].append("Reserve currency share <60% → Early sign of empire transition")
+        if indicators.get('education_score', 60) < 50:
+            reasoning["logic_chain"].append("Education declining → First indicator of empire decline (Dalio's key insight)")
+        if indicators.get('economic_output_share', 23.9) > 20:
+            reasoning["logic_chain"].append("GDP share >20% → Still economically dominant")
+        if indicators.get('military_strength', 38.0) > 35:
+            reasoning["logic_chain"].append("Military spending >35% global → Maintaining military supremacy")
+        
+        # Determine phase
+        if empire_score > 70:
+            reasoning["conclusion"] = "PEAK: Empire at maximum power but showing early decline signals"
+        elif empire_score > 50:
+            reasoning["conclusion"] = "MATURE: Strong empire position but past absolute peak"
+        else:
+            reasoning["conclusion"] = "DECLINING: Loss of empire dominance accelerating"
+        
+        return reasoning
 
 class InternalCycleAnalyzer:
     """Tracks Ray Dalio's Internal Order/Disorder Cycle"""
@@ -1399,6 +1541,63 @@ class InternalCycleAnalyzer:
         if self.calculate_polarization(indicators) > 60: risk_score += 10
         
         return min(100, risk_score)
+    
+    def get_internal_reasoning(self, indicators: dict) -> dict:
+        """Generate detailed reasoning for Internal Order/Disorder stage"""
+        reasoning = {
+            "raw_data": {},
+            "calculations": {},
+            "logic_chain": [],
+            "conclusion": ""
+        }
+        
+        wealth_gap = indicators.get("wealth_gap", 0.418)
+        polarization = indicators.get("political_polarization", 82.3)
+        fiscal_deficit = abs(indicators.get("fiscal_deficit", -6.0))
+        unemployment = indicators.get("unemployment", 4.3)
+        
+        reasoning["raw_data"] = {
+            "gini_coefficient": f"{wealth_gap:.3f}",
+            "top_1_percent_wealth": f"{indicators.get('top_1_percent', 0.35)*100:.1f}%",
+            "political_polarization": f"{polarization:.1f}%",
+            "fiscal_deficit": f"{fiscal_deficit:.1f}% of GDP",
+            "unemployment": f"{unemployment:.1f}%",
+            "institutional_trust": f"{indicators.get('institutional_trust', 27):.0f}%"
+        }
+        
+        # Calculate civil war probability (Dalio formula)
+        civil_war_prob = 0
+        if wealth_gap > 0.45:
+            civil_war_prob += 30
+            reasoning["logic_chain"].append(f"Gini >{0.45} → +30% conflict risk")
+        if polarization > 70:
+            civil_war_prob += 30
+            reasoning["logic_chain"].append(f"Polarization >{70}% → +30% conflict risk")
+        if fiscal_deficit > 5:
+            civil_war_prob += 20
+            reasoning["logic_chain"].append(f"Deficit >{5}% GDP → +20% conflict risk")
+        if unemployment > 6:
+            civil_war_prob += 20
+            reasoning["logic_chain"].append(f"Unemployment >{6}% → +20% conflict risk")
+        
+        reasoning["calculations"]["civil_war_calculation"] = f"Base risk factors sum to {civil_war_prob}% probability"
+        
+        # Determine stage with detailed reasoning
+        result = self.detect_internal_stage(indicators)
+        stage = result["stage"] if isinstance(result, dict) else result
+        
+        if stage >= 5:
+            reasoning["conclusion"] = "STAGE 5+ - CRISIS: Multiple red flags present. Historical parallel: 1930s, pre-civil war conditions"
+        elif stage == 4:
+            reasoning["conclusion"] = "STAGE 4 - DISORDER: Growing conflicts, weakening institutions"
+        elif stage == 3:
+            reasoning["conclusion"] = "STAGE 3 - PEAK: Prosperity but growing inequality seeds of future conflict"
+        else:
+            reasoning["conclusion"] = f"STAGE {stage} - Early cycle: System building or consolidation phase"
+        
+        reasoning["logic_chain"].append(f"Dalio's framework: High inequality + high debt + political extremism = Stage {stage}")
+        
+        return reasoning
 
 # Helper functions for comprehensive analysis
 def determine_combined_regime(stdc_phase: str, ltdc_phase: str) -> str:
@@ -1485,6 +1684,65 @@ def generate_comprehensive_recommendations(stdc, ltdc, empire, internal, indicat
         recommendations.append("Unsustainable debt levels - prepare for currency debasement")
     
     return recommendations[:6]  # Return top 6 most important
+
+def generate_synthesis_reasoning(indicators, stdc, ltdc, empire, internal):
+    """Synthesize reasoning across all cycles"""
+    synthesis = {
+        "combined_assessment": [],
+        "risk_factors": [],
+        "historical_parallels": [],
+        "key_insights": []
+    }
+    
+    # Extract phase names from results
+    stdc_phase = stdc["phase"] if isinstance(stdc, dict) else stdc
+    ltdc_phase = ltdc["phase"] if isinstance(ltdc, dict) else ltdc
+    empire_phase = empire["phase"] if isinstance(empire, dict) else empire
+    internal_stage = internal["stage"] if isinstance(internal, dict) else internal
+    
+    # Cross-cycle analysis
+    if "PEAK" in stdc_phase and ltdc_phase == "NORMALIZATION":
+        synthesis["combined_assessment"].append("Short cycle peaking while long cycle stressed → Heightened recession risk")
+    
+    if "LATE_EXPANSION" in stdc_phase and ltdc_phase in ["BUBBLE", "TOP"]:
+        synthesis["combined_assessment"].append("Both short and long cycles extended → Major correction likely")
+    
+    if empire_phase == "PEAK" and internal_stage >= 5:
+        synthesis["combined_assessment"].append("Empire at peak + internal disorder → Historical transition point (Rome 180AD, Britain 1914)")
+    
+    # Risk synthesis
+    debt_to_gdp = indicators.get("debt_to_gdp", 100)
+    wealth_gap = indicators.get("wealth_gap", 0.418)
+    
+    if debt_to_gdp > 100 and wealth_gap > 0.45:
+        synthesis["risk_factors"].append("CRITICAL: High debt + extreme inequality = social instability risk")
+    
+    if indicators.get("real_interest_rate", 2) < 0:
+        synthesis["risk_factors"].append("Negative real rates → Financial repression environment")
+    
+    if indicators.get("fiscal_deficit", -5) < -6:
+        synthesis["risk_factors"].append("Large fiscal deficits → Unsustainable government spending")
+    
+    # Historical parallels
+    if internal_stage >= 5:
+        synthesis["historical_parallels"].append("1930s: Similar wealth gap, political polarization preceded conflict")
+    
+    if isinstance(empire, dict) and empire.get("score", 0) < 80 and empire.get("score", 0) > 60:
+        synthesis["historical_parallels"].append("1960s Britain: Empire transition from dominance to partnership")
+    
+    if debt_to_gdp > 120:
+        synthesis["historical_parallels"].append("Post-WWII debt levels: Required financial repression to resolve")
+    
+    # Key Dalio insights
+    if debt_to_gdp > 100 and indicators.get("real_interest_rate", 2) < 0:
+        synthesis["key_insights"].append(f"Dalio Principle: When debt > 100% GDP and real rates < 0, expect financial repression")
+    
+    synthesis["key_insights"].append(f"Empire Cycle: Education decline precedes economic decline by 10-20 years")
+    
+    if wealth_gap > 0.45 and debt_to_gdp > 100:
+        synthesis["key_insights"].append("Dalio's Formula: High debt + high inequality = recipe for revolution or war")
+    
+    return synthesis
 
 # Database Storage Functions
 async def store_macro_indicators(indicators: Dict[str, float], conn) -> None:
@@ -1653,6 +1911,15 @@ async def detect_macro_regime() -> dict:
         "trust": indicators.get("institutional_trust", 27.0)
     }
     
+    # NEW: Generate detailed reasoning for each cycle
+    reasoning = {
+        "stdc": dalio_analyzer.get_stdc_reasoning(indicators),
+        "ltdc": dalio_analyzer.get_ltdc_reasoning(indicators),
+        "empire": empire_analyzer.get_empire_reasoning(indicators),
+        "internal": internal_analyzer.get_internal_reasoning(indicators),
+        "synthesis": generate_synthesis_reasoning(indicators, stdc_result, ltdc_result, empire_result, internal_result)
+    }
+    
     # Calculate comprehensive risk assessment
     overall_risk = calculate_comprehensive_risk(stdc_result, ltdc_result, empire_result, internal_result)
     
@@ -1711,6 +1978,15 @@ async def detect_macro_regime() -> dict:
         "political_polarization": internal_analyzer.calculate_polarization(indicators),
         "trend": "Complex multi-cycle dynamics",
         "portfolio_risk_assessment": portfolio_risk_assessment,
+        
+        # NEW: Add reasoning chains and data sources
+        "reasoning": reasoning,
+        "data_sources": {
+            "fred_api": "Federal Reserve Economic Data (15+ indicators)",
+            "world_bank": "Gini coefficient, inequality metrics",
+            "imf": "Reserve currency composition (COFER)",
+            "static_estimates": "Empire metrics from WTO, SIPRI"
+        },
         
         # Legacy fields for backward compatibility
         "regime_probability": {
