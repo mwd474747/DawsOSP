@@ -2047,7 +2047,12 @@ async def execute_pattern(request: ExecuteRequest):
         # Get macro data and transform for UI
         macro_data = await detect_macro_regime()
         
-        # Transform to match UI expectations
+        # Add Dalio cycle data (simulated for now)
+        # In production, this would come from actual cycle detection algorithms
+        stdc_phase = "MID_EXPANSION"  # Could be: EARLY_RECOVERY, MID_EXPANSION, LATE_EXPANSION, EARLY_CONTRACTION, RECESSION
+        ltdc_phase = "BUBBLE"  # Could be: PROSPERITY, BUBBLE, TOP, DEPRESSION, NORMALIZATION
+        
+        # Transform to match UI expectations with Dalio cycle enhancements
         result = {
             "regime": macro_data["current_regime"],  # Map current_regime to regime
             "risk_level": macro_data["risk_level"],
@@ -2062,8 +2067,36 @@ async def execute_pattern(request: ExecuteRequest):
             "recommendations": macro_data["recommendations"],
             # Include additional useful fields
             "trend": macro_data.get("trend", "Unknown"),
-            "portfolio_risk_assessment": macro_data.get("portfolio_risk_assessment", {})
+            "portfolio_risk_assessment": macro_data.get("portfolio_risk_assessment", {}),
+            
+            # Dalio cycle data
+            "stdc_phase": stdc_phase,
+            "ltdc_phase": ltdc_phase,
+            "stdc_metrics": {
+                "credit_growth": 3.5,  # Example percentage
+                "rate_cycle": "Rising",  # Could be: Rising, Peak, Falling, Trough
+                "duration": "18 months"
+            },
+            "debt_metrics": {
+                "debt_to_gdp": 125.0,  # Percentage
+                "debt_service_ratio": 12.5,  # Percentage
+                "deleveraging_risk": "Medium",  # Could be: Low, Medium, High, Critical
+                "credit_impulse": -2.1,  # Percentage change
+                "real_rates": 2.3,  # Percentage
+                "productivity_growth": 1.8  # Percentage
+            },
+            "deleveraging_score": None,  # Set to a value (0-100) during deleveraging phases
+            "deleveraging_levers": {
+                "austerity": "20%",
+                "defaults": "15%",
+                "redistribution": "25%",
+                "printing": "40%"
+            } if ltdc_phase == "DEPRESSION" else None
         }
+        
+        # Dynamically set deleveraging score if in deleveraging phase
+        if ltdc_phase in ["DEPRESSION", "TOP"]:
+            result["deleveraging_score"] = 72  # Example score
         
         return {
             "result": result,

@@ -768,12 +768,128 @@
             <!-- Macro Dashboard Tab -->
             <div class="tab-content" id="macro-tab">
                 <div style="background: white; border-radius: 20px; padding: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-                    <h2 style="color: #333; margin-bottom: 1.5rem;">Macro Economic Dashboard</h2>
+                    <h2 style="color: #333; margin-bottom: 1.5rem;">Macro Economic Dashboard - Dalio Framework</h2>
                     <button class="btn" onclick="loadMacroData()" style="width: auto; padding: 0.75rem 2rem; margin-bottom: 2rem;">
                         Refresh Macro Data
                     </button>
+                    
                     <div id="macroContent">
-                        <div class="loading">Click "Refresh Macro Data" to load economic indicators...</div>
+                        <!-- Dalio Cycles Overview -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                            <!-- Short-Term Debt Cycle Card -->
+                            <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 15px; padding: 1.5rem;">
+                                <h3 style="color: #667eea; font-size: 1.2rem; margin-bottom: 1rem;">
+                                    Short-Term Debt Cycle (5-8 years)
+                                </h3>
+                                <div style="margin-bottom: 1rem;">
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: #333;" id="stdc-phase">--</div>
+                                    <div style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">Position in cycle</div>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">Credit Growth</span>
+                                        <span style="font-weight: 600;" id="stdc-credit">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">Interest Rate Cycle</span>
+                                        <span style="font-weight: 600;" id="stdc-rates">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">Phase Duration</span>
+                                        <span style="font-weight: 600;" id="stdc-duration">--</span>
+                                    </div>
+                                </div>
+                                <!-- Visual cycle indicator -->
+                                <div style="margin-top: 1rem;">
+                                    <canvas id="stdc-cycle-chart" width="300" height="100"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- Long-Term Debt Cycle Card -->
+                            <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 15px; padding: 1.5rem;">
+                                <h3 style="color: #667eea; font-size: 1.2rem; margin-bottom: 1rem;">
+                                    Long-Term Debt Cycle (75-100 years)
+                                </h3>
+                                <div style="margin-bottom: 1rem;">
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: #333;" id="ltdc-phase">--</div>
+                                    <div style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">Position in cycle</div>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">Debt/GDP Ratio</span>
+                                        <span style="font-weight: 600;" id="ltdc-debt-gdp">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">Debt Service Ratio</span>
+                                        <span style="font-weight: 600;" id="ltdc-service">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">Deleveraging Risk</span>
+                                        <span style="font-weight: 600;" id="ltdc-risk">--</span>
+                                    </div>
+                                </div>
+                                <!-- Visual cycle indicator -->
+                                <div style="margin-top: 1rem;">
+                                    <canvas id="ltdc-cycle-chart" width="300" height="100"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Debt Metrics Section -->
+                        <div style="background: #f8f9fa; border-radius: 15px; padding: 1.5rem; margin-bottom: 2rem;">
+                            <h3 style="color: #667eea; margin-bottom: 1rem;">Debt Dynamics</h3>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: #333;" id="debt-to-gdp">--</div>
+                                    <div style="font-size: 0.85rem; color: #666;">Debt/GDP</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: #333;" id="credit-impulse">--</div>
+                                    <div style="font-size: 0.85rem; color: #666;">Credit Impulse</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: #333;" id="real-rates">--</div>
+                                    <div style="font-size: 0.85rem; color: #666;">Real Rates</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: #333;" id="productivity">--</div>
+                                    <div style="font-size: 0.85rem; color: #666;">Productivity</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Deleveraging Analysis (shown only during deleveraging) -->
+                        <div id="deleveraging-section" style="display: none; background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1)); border: 2px solid rgba(251, 191, 36, 0.4); border-radius: 15px; padding: 1.5rem; margin-bottom: 2rem;">
+                            <h3 style="color: #f59e0b; margin-bottom: 1rem;">Deleveraging Analysis</h3>
+                            <div style="margin-bottom: 1rem;">
+                                <div style="font-size: 1.4rem; font-weight: bold; color: #333;">
+                                    Beautiful Deleveraging Score: <span id="deleveraging-score">--</span>/100
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+                                <div>
+                                    <div style="font-size: 1.2rem; color: #333;" id="lever-austerity">--</div>
+                                    <div style="font-size: 0.85rem; color: #666;">Austerity</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.2rem; color: #333;" id="lever-defaults">--</div>
+                                    <div style="font-size: 0.85rem; color: #666;">Debt Restructuring</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.2rem; color: #333;" id="lever-redistribution">--</div>
+                                    <div style="font-size: 0.85rem; color: #666;">Redistribution</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.2rem; color: #333;" id="lever-printing">--</div>
+                                    <div style="font-size: 0.85rem; color: #666;">Money Printing</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Original Indicators Section -->
+                        <div id="macro-indicators-grid" style="display: none;">
+                            <!-- Will be filled by existing loadMacroData function -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1477,10 +1593,73 @@
             loadMacroData();
         }
 
+        // Helper function to format phase names
+        function formatPhase(phase) {
+            if (!phase) return '--';
+            // Convert UPPER_SNAKE_CASE to Title Case
+            return phase.toLowerCase().split('_').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+        
+        // Helper function to draw cycle charts
+        function drawCycleChart(canvasId, phase, cycleType) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            // Define phase positions for each cycle type
+            const phases = cycleType === 'STDC' ? 
+                ['EARLY_RECOVERY', 'MID_EXPANSION', 'LATE_EXPANSION', 'EARLY_CONTRACTION', 'RECESSION'] :
+                ['PROSPERITY', 'BUBBLE', 'TOP', 'DEPRESSION', 'NORMALIZATION'];
+            
+            const currentIndex = phases.indexOf(phase);
+            if (currentIndex === -1) return;
+            
+            // Draw cycle curve
+            ctx.strokeStyle = '#9333ea'; // Purple
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            // Draw sine wave
+            for (let x = 0; x < width; x++) {
+                const y = height/2 + Math.sin((x/width) * Math.PI * 2) * (height/3);
+                if (x === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            // Mark current position
+            const posX = (currentIndex / phases.length) * width + 30;
+            const posY = height/2 + Math.sin((currentIndex / phases.length) * Math.PI * 2) * (height/3);
+            
+            // Draw position marker
+            ctx.fillStyle = '#f59e0b'; // Amber
+            ctx.beginPath();
+            ctx.arc(posX, posY, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Add glow effect
+            ctx.shadowColor = '#f59e0b';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(posX, posY, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+        
         // Load Macro Data for Dashboard
         async function loadMacroData() {
             const macroContent = document.getElementById('macroContent');
-            macroContent.innerHTML = '<div class="loading">Loading macro economic data...</div>';
             
             try {
                 const response = await fetch(`${API_BASE}/execute`, {
@@ -1499,8 +1678,53 @@
                     const data = await response.json();
                     const macro = data.result;
                     
-                    // Display macro data directly in the tab
-                    const macroHtml = `
+                    // Update STDC display
+                    if (macro.stdc_phase) {
+                        document.getElementById('stdc-phase').textContent = formatPhase(macro.stdc_phase);
+                        document.getElementById('stdc-credit').textContent = `${macro.stdc_metrics?.credit_growth || '--'}%`;
+                        document.getElementById('stdc-rates').textContent = macro.stdc_metrics?.rate_cycle || '--';
+                        document.getElementById('stdc-duration').textContent = macro.stdc_metrics?.duration || '--';
+                        
+                        // Draw STDC cycle visualization
+                        drawCycleChart('stdc-cycle-chart', macro.stdc_phase, 'STDC');
+                    }
+                    
+                    // Update LTDC display
+                    if (macro.ltdc_phase) {
+                        document.getElementById('ltdc-phase').textContent = formatPhase(macro.ltdc_phase);
+                        document.getElementById('ltdc-debt-gdp').textContent = `${macro.debt_metrics?.debt_to_gdp || '--'}%`;
+                        document.getElementById('ltdc-service').textContent = `${macro.debt_metrics?.debt_service_ratio || '--'}%`;
+                        document.getElementById('ltdc-risk').textContent = macro.debt_metrics?.deleveraging_risk || '--';
+                        
+                        // Draw LTDC cycle visualization
+                        drawCycleChart('ltdc-cycle-chart', macro.ltdc_phase, 'LTDC');
+                    }
+                    
+                    // Update debt metrics
+                    if (macro.debt_metrics) {
+                        document.getElementById('debt-to-gdp').textContent = `${macro.debt_metrics.debt_to_gdp}%`;
+                        document.getElementById('credit-impulse').textContent = `${macro.debt_metrics.credit_impulse}%`;
+                        document.getElementById('real-rates').textContent = `${macro.debt_metrics.real_rates}%`;
+                        document.getElementById('productivity').textContent = `${macro.debt_metrics.productivity_growth}%`;
+                    }
+                    
+                    // Show deleveraging section if applicable
+                    if (macro.deleveraging_score !== null && macro.deleveraging_score !== undefined) {
+                        document.getElementById('deleveraging-section').style.display = 'block';
+                        document.getElementById('deleveraging-score').textContent = macro.deleveraging_score;
+                        // Update lever metrics if available
+                        if (macro.deleveraging_levers) {
+                            document.getElementById('lever-austerity').textContent = macro.deleveraging_levers.austerity || '--';
+                            document.getElementById('lever-defaults').textContent = macro.deleveraging_levers.defaults || '--';
+                            document.getElementById('lever-redistribution').textContent = macro.deleveraging_levers.redistribution || '--';
+                            document.getElementById('lever-printing').textContent = macro.deleveraging_levers.printing || '--';
+                        }
+                    } else {
+                        document.getElementById('deleveraging-section').style.display = 'none';
+                    }
+                    
+                    // Also show the original indicators in a separate section
+                    const indicatorsHtml = `
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
                             <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 1.5rem; border-radius: 15px;">
                                 <div style="font-size: 0.9rem; opacity: 0.9;">Current Regime</div>
@@ -1601,10 +1825,26 @@
                         </div>
                     `;
                     
-                    macroContent.innerHTML = macroHtml;
+                    // Update the original indicators grid
+                    document.getElementById('macro-indicators-grid').innerHTML = indicatorsHtml;
+                    document.getElementById('macro-indicators-grid').style.display = 'block';
                     
                 } else {
-                    macroContent.innerHTML = '<div class="error-message">Failed to load macro insights. Please try again.</div>';
+                    // Reset all elements to default state on error
+                    document.getElementById('stdc-phase').textContent = '--';
+                    document.getElementById('stdc-credit').textContent = '--';
+                    document.getElementById('stdc-rates').textContent = '--';
+                    document.getElementById('stdc-duration').textContent = '--';
+                    document.getElementById('ltdc-phase').textContent = '--';
+                    document.getElementById('ltdc-debt-gdp').textContent = '--';
+                    document.getElementById('ltdc-service').textContent = '--';
+                    document.getElementById('ltdc-risk').textContent = '--';
+                    document.getElementById('debt-to-gdp').textContent = '--';
+                    document.getElementById('credit-impulse').textContent = '--';
+                    document.getElementById('real-rates').textContent = '--';
+                    document.getElementById('productivity').textContent = '--';
+                    document.getElementById('deleveraging-section').style.display = 'none';
+                    document.getElementById('macro-indicators-grid').innerHTML = '<div class="error-message">Failed to load macro insights. Please try again.</div>';
                 }
             } catch (error) {
                 console.error('Error loading macro insights:', error);

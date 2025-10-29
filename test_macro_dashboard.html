@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Macro Dashboard</title>
+</head>
+<body>
+    <h1>Testing Macro Dashboard</h1>
+    <p>Logging in and navigating to Macro Dashboard...</p>
+    
+    <script>
+        // Auto-login and navigate to macro dashboard
+        async function testMacroDashboard() {
+            try {
+                // Login first
+                const loginResponse = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'michael@dawsos.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                if (loginResponse.ok) {
+                    const loginData = await loginResponse.json();
+                    localStorage.setItem('auth_token', loginData.access_token);
+                    
+                    // Now navigate to main page with macro tab
+                    window.location.href = '/#macro';
+                } else {
+                    console.error('Login failed');
+                }
+            } catch (error) {
+                console.error('Test failed:', error);
+            }
+        }
+        
+        // Run test after page loads
+        window.onload = testMacroDashboard;
+    </script>
+</body>
+</html>
