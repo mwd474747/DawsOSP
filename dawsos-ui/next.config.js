@@ -20,6 +20,9 @@ const nextConfig = {
   },
   
   trailingSlash: false,
+  
+  // React configuration
+  reactStrictMode: false,
 }
 
 module.exports = nextConfig

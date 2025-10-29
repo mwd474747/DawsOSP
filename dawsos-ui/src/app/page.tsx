@@ -1,129 +1,132 @@
-import Link from 'next/link'
+import Link from 'next/link';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
+const stats = [
+  { label: 'Total Value', value: '$1,234,567', change: '+12.5%', trend: 'up' },
+  { label: "Today's P&L", value: '+$12,345', change: '+2.3%', trend: 'up' },
+  { label: 'YTD Return', value: '+15.2%', change: '+0.8%', trend: 'up' },
+  { label: 'Sharpe Ratio', value: '1.85', change: '+0.12', trend: 'up' },
+];
+
+const cards = [
+  {
+    href: '/portfolio',
+    title: 'Portfolio Overview',
+    description: 'Comprehensive portfolio analysis with KPIs and performance metrics',
+    emoji: '📊'
+  },
+  {
+    href: '/macro',
+    title: 'Macro Dashboard',
+    description: 'Market regime analysis, economic cycles, and factor monitoring',
+    emoji: '🌍'
+  },
+  {
+    href: '/holdings',
+    title: 'Holdings Detail',
+    description: 'Detailed holdings analysis with risk metrics and attribution',
+    emoji: '📈'
+  },
+  {
+    href: '/scenarios',
+    title: 'Scenarios',
+    description: 'Stress testing and what-if analysis for portfolio assessment',
+    emoji: '🎯'
+  },
+  {
+    href: '/alerts',
+    title: 'Alerts',
+    description: 'Real-time alert management and risk monitoring system',
+    emoji: '🔔'
+  },
+  {
+    href: '/reports',
+    title: 'Reports',
+    description: 'Generate comprehensive PDF reports and export portfolio data',
+    emoji: '📄'
+  }
+];
+
 export default function Home() {
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <div className="max-w-7xl mx-auto px-8 py-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">
-            DawsOS Portfolio Intelligence
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl animate-float" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-green-500/10 to-blue-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }} />
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-8">
+        <div className="text-center mb-12">
+          <h1 className="text-5xl lg:text-6xl font-bold mb-4">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+              DawsOS Portfolio
+            </span>
+            <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+              Intelligence
+            </span>
           </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-400">
-            Advanced portfolio analysis and risk management platform
+          <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+            Advanced portfolio analysis and risk management platform with real-time insights
           </p>
         </div>
 
-        {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <Link href="/portfolio" className="group">
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mr-4">
-                  <span className="text-white text-xl">📊</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Portfolio Overview</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="glass-card-dark p-6 hover:scale-105 transition-transform duration-300"
+            >
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-sm text-slate-400">{stat.label}</p>
+                <span className={stat.trend === 'up' ? 'text-green-400' : 'text-red-400'}>
+                  {stat.trend === 'up' ? '↑' : '↓'}
+                </span>
               </div>
-              <p className="text-slate-600 dark:text-slate-400">
-                Comprehensive portfolio analysis with KPIs, performance metrics, and attribution analysis.
-              </p>
-            </div>
-          </Link>
-
-          <Link href="/macro" className="group">
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mr-4">
-                  <span className="text-white text-xl">🌍</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Macro Dashboard</h3>
+              <p className="text-3xl font-bold text-white mb-1">{stat.value}</p>
+              <div className="flex items-center gap-2">
+                <span className={`text-sm ${stat.trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                  {stat.change}
+                </span>
+                <span className="text-xs text-slate-500">24h</span>
               </div>
-              <p className="text-slate-600 dark:text-slate-400">
-                Market regime analysis, economic cycles, and factor exposure monitoring.
-              </p>
             </div>
-          </Link>
-
-          <Link href="/holdings" className="group">
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mr-4">
-                  <span className="text-white text-xl">📈</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Holdings Detail</h3>
-              </div>
-              <p className="text-slate-600 dark:text-slate-400">
-                Detailed holdings analysis with risk metrics and performance attribution.
-              </p>
-            </div>
-          </Link>
-
-          <Link href="/scenarios" className="group">
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mr-4">
-                  <span className="text-white text-xl">🎯</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Scenarios</h3>
-              </div>
-              <p className="text-slate-600 dark:text-slate-400">
-                Stress testing and what-if analysis for portfolio risk assessment.
-              </p>
-            </div>
-          </Link>
-
-          <Link href="/alerts" className="group">
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center mr-4">
-                  <span className="text-white text-xl">🔔</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Alerts</h3>
-              </div>
-              <p className="text-slate-600 dark:text-slate-400">
-                Real-time alert management and risk monitoring system.
-              </p>
-            </div>
-          </Link>
-
-          <Link href="/reports" className="group">
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-indigo-500 rounded-lg flex items-center justify-center mr-4">
-                  <span className="text-white text-xl">📄</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Reports</h3>
-              </div>
-              <p className="text-slate-600 dark:text-slate-400">
-                Generate comprehensive PDF reports and export portfolio data.
-              </p>
-            </div>
-          </Link>
+          ))}
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-            <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Value</h3>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">$1,234,567</p>
-          </div>
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-            <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">Today's P&L</h3>
-            <p className="text-2xl font-bold text-green-600">+$12,345</p>
-          </div>
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-            <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">YTD Return</h3>
-            <p className="text-2xl font-bold text-green-600">+15.2%</p>
-          </div>
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-            <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">Sharpe Ratio</h3>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">1.85</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {cards.map((card) => (
+            <Link key={card.href} href={card.href}>
+              <div className="glass-card-dark p-6 h-full hover:shadow-glow hover:scale-105 transition-all duration-300 cursor-pointer">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="text-4xl">{card.emoji}</div>
+                  <span className="text-slate-500">→</span>
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  {card.title}
+                </h3>
+                <p className="text-slate-400">
+                  {card.description}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        <div className="mt-12 text-center">
+          <div className="inline-flex gap-4">
+            <button className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-semibold hover:shadow-glow transition-all duration-300 hover:scale-105">
+              ⚡ Quick Analysis
+            </button>
+            <button className="px-8 py-3 glass-card-dark text-white rounded-full font-semibold hover:shadow-glow transition-all duration-300 hover:scale-105">
+              💰 Market Overview
+            </button>
           </div>
         </div>
       </div>
     </main>
-  )
+  );
 }

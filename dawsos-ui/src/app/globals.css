@@ -2,69 +2,165 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Divine Proportions Design System - Global Styles */
-
 @layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+  }
+  
   html {
+    @apply scroll-smooth;
     font-family: 'Inter', system-ui, sans-serif;
   }
   
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    @apply bg-gradient-to-br from-slate-50 via-white to-blue-50 text-slate-900 antialiased min-h-screen;
+    background-attachment: fixed;
   }
 }
 
 @layer components {
-  /* Glass morphism effect */
-  .glass {
-    @apply bg-white/10 backdrop-blur-glass border border-white/20;
+  /* Glassmorphic Card */
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-glass border border-white/20 rounded-glass shadow-glass;
   }
   
-  /* Professional metric card */
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300 hover:bg-white/80 hover:shadow-glow hover:scale-[1.02] hover:border-primary-400/30;
+  }
+  
+  /* Neumorphic Card */
+  .neumorphic-card {
+    @apply bg-gradient-to-br from-white to-slate-50 rounded-neumorphic shadow-neumorphic;
+  }
+  
+  .neumorphic-button {
+    @apply bg-gradient-to-br from-white to-slate-50 rounded-glass px-6 py-3 font-medium shadow-neumorphic transition-all duration-300 hover:shadow-neumorphic-inset active:scale-95;
+  }
+  
+  /* Modern Button */
+  .btn-primary {
+    @apply relative inline-flex items-center justify-center px-6 py-3 font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 rounded-glass shadow-lg transition-all duration-300 hover:shadow-glow hover:scale-105 active:scale-95 overflow-hidden;
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 font-semibold text-slate-700 bg-gradient-to-r from-slate-100 to-slate-200 rounded-glass shadow-md transition-all duration-300 hover:shadow-lg hover:scale-105 active:scale-95;
+  }
+  
+  .btn-glass {
+    @apply inline-flex items-center justify-center px-6 py-3 font-semibold text-primary-600 bg-white/20 backdrop-blur-glass border border-white/30 rounded-glass shadow-glass transition-all duration-300 hover:bg-white/30 hover:shadow-glow hover:scale-105 active:scale-95;
+  }
+  
+  /* Metric Cards */
   .metric-card {
-    @apply bg-white rounded-fib4 shadow-fib2 border border-slate-200 p-fib6;
+    @apply relative overflow-hidden bg-gradient-to-br from-white/90 to-white/70 backdrop-blur-glass rounded-glass p-6 shadow-card border border-white/20 transition-all duration-300 hover:shadow-glow hover:scale-[1.01];
   }
   
-  /* Buffett rating badge */
-  .rating-badge {
-    @apply inline-flex items-center px-fib3 py-fib1 rounded-fib2 text-xs font-medium;
+  /* Chart Container */
+  .chart-container {
+    @apply bg-white/60 backdrop-blur-glass rounded-glass p-6 shadow-glass border border-white/20;
   }
   
-  .rating-excellent {
-    @apply bg-accent-100 text-accent-800 border border-accent-200;
+  /* Input Styles */
+  .input-glass {
+    @apply w-full px-4 py-3 bg-white/50 backdrop-blur-glass border border-white/30 rounded-glass focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50 transition-all duration-300 placeholder:text-slate-400;
   }
   
-  .rating-good {
-    @apply bg-primary-100 text-primary-800 border border-primary-200;
+  /* Badge Styles */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
   }
   
-  .rating-fair {
-    @apply bg-warning-100 text-warning-800 border border-warning-200;
+  .badge-success {
+    @apply bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200;
   }
   
-  .rating-poor {
-    @apply bg-red-100 text-red-800 border border-red-200;
+  .badge-warning {
+    @apply bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border border-amber-200;
   }
   
-  /* Financial data styling */
+  .badge-danger {
+    @apply bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border border-red-200;
+  }
+  
+  .badge-info {
+    @apply bg-gradient-to-r from-blue-100 to-sky-100 text-blue-800 border border-blue-200;
+  }
+  
+  /* Financial Indicators */
   .profit {
-    @apply text-profit font-medium;
+    @apply text-green-600 font-semibold;
   }
   
   .loss {
-    @apply text-loss font-medium;
+    @apply text-red-600 font-semibold;
   }
   
   .neutral {
-    @apply text-neutral font-medium;
+    @apply text-slate-600 font-medium;
+  }
+  
+  /* Loading Skeleton */
+  .skeleton {
+    @apply relative overflow-hidden bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 rounded-glass animate-shimmer;
+    background-size: 200% 100%;
+  }
+  
+  /* Scrollbar Styles */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400;
+  }
+  
+  /* Grid Background Pattern */
+  .grid-background {
+    background-image: linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+  
+  /* Animated Gradient Background */
+  .animated-gradient {
+    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+    background-size: 400% 400%;
+    animation: gradient-shift 15s ease infinite;
   }
 }
 
 @layer utilities {
-  /* Fibonacci spacing utilities */
-  .space-fib1 > * + * { margin-top: theme('spacing.fib1'); }
-  .space-fib2 > * + * { margin-top: theme('spacing.fib2'); }
-  .space-fib3 > * + * { margin-top: theme('spacing.fib3'); }
-  .space-fib4 > * + * { margin-top: theme('spacing.fib4'); }
-  .space-fib5 > * + * { margin-top: theme('spacing.fib5'); }
+  /* Text Gradient */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent;
+  }
+  
+  /* Hover Lift */
+  .hover-lift {
+    @apply transition-transform duration-300 hover:-translate-y-1;
+  }
+  
+  /* Focus Glow */
+  .focus-glow {
+    @apply focus:shadow-glow focus:outline-none;
+  }
+  
+  /* Card Hover Animation */
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
+  }
+  
+  /* Pulse Animation */
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
 }

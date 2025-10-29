@@ -5,49 +5,35 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  darkMode: 'class',
   theme: {
     extend: {
-      // Divine Proportions Design System
-      spacing: {
-        // Fibonacci sequence spacing (px)
-        'fib1': '2px',   // 2
-        'fib2': '3px',   // 3  
-        'fib3': '5px',   // 5
-        'fib4': '8px',   // 8
-        'fib5': '13px',  // 13
-        'fib6': '21px',  // 21
-        'fib7': '34px',  // 34
-        'fib8': '55px',  // 55
-        'fib9': '89px',  // 89
-        'fib10': '144px', // 144
-        'fib11': '233px', // 233
-        'fib12': '377px', // 377
-      },
       colors: {
-        // Golden angle color distribution
+        background: "var(--background)",
+        foreground: "var(--foreground)",
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe', 
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9', // Primary blue (180°)
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50: '#e6f4ff',
+          100: '#bae0ff',
+          200: '#91caff',
+          300: '#69b4ff',
+          400: '#4096ff',
+          500: '#1677ff',
+          600: '#0958d9',
+          700: '#003eb3',
+          800: '#002c8c',
+          900: '#001d66',
         },
         secondary: {
-          50: '#fef7ff',
-          100: '#fceeff',
-          200: '#f8d9ff',
-          300: '#f2b5ff',
-          400: '#e882ff',
-          500: '#dc4fff', // Secondary purple (252°)
-          600: '#c026d3',
-          700: '#a21caf',
-          800: '#86198f',
-          900: '#701a75',
+          50: '#f3f0ff',
+          100: '#e9e3ff',
+          200: '#d5c7ff',
+          300: '#b79eff',
+          400: '#9568ff',
+          500: '#7c3aed',
+          600: '#6d28d9',
+          700: '#5b21b6',
+          800: '#4c1d95',
+          900: '#3b0764',
         },
         accent: {
           50: '#f0fdf4',
@@ -55,53 +41,126 @@ module.exports = {
           200: '#bbf7d0',
           300: '#86efac',
           400: '#4ade80',
-          500: '#22c55e', // Accent green (137.5°)
+          500: '#22c55e',
           600: '#16a34a',
           700: '#15803d',
           800: '#166534',
           900: '#14532d',
         },
-        warning: {
-          50: '#fffbeb',
-          100: '#fef3c7',
-          200: '#fde68a',
-          300: '#fcd34d',
-          400: '#fbbf24',
-          500: '#f59e0b', // Warning amber (36°)
-          600: '#d97706',
-          700: '#b45309',
-          800: '#92400e',
-          900: '#78350f',
-        },
-        // Financial data colors
         profit: '#22c55e',
         loss: '#ef4444',
         neutral: '#6b7280',
+        warning: {
+          100: '#fef3c7',
+          500: '#f59e0b',
+          800: '#92400e',
+        }
       },
-      boxShadow: {
-        // φ-based shadow opacity
-        'fib1': '0 1px 2px 0 rgba(0, 0, 0, 0.21)', // 21%
-        'fib2': '0 1px 3px 0 rgba(0, 0, 0, 0.13)', // 13%
-        'fib3': '0 4px 6px -1px rgba(0, 0, 0, 0.08)', // 8%
-        'fib4': '0 10px 15px -3px rgba(0, 0, 0, 0.05)', // 5%
-        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-      },
-      animation: {
-        // Fibonacci animation timing
-        'fib1': '89ms ease-in-out',
-        'fib2': '144ms ease-in-out', 
-        'fib3': '233ms ease-in-out',
-        'fib4': '377ms ease-in-out',
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+        'glass-gradient': 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+        'dark-gradient': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'ocean-gradient': 'linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%)',
+        'sunset-gradient': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+        'aurora-gradient': 'linear-gradient(45deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #fda085 100%)',
+        'mesh-gradient': 'radial-gradient(at 40% 20%, #4f46e5 0px, transparent 50%), radial-gradient(at 80% 0%, #7c3aed 0px, transparent 50%), radial-gradient(at 0% 50%, #0ea5e9 0px, transparent 50%), radial-gradient(at 80% 50%, #22c55e 0px, transparent 50%), radial-gradient(at 0% 100%, #ec4899 0px, transparent 50%)',
+        'neumorphic-gradient': 'linear-gradient(145deg, #e6e6e6, #ffffff)',
+        'neumorphic-gradient-dark': 'linear-gradient(145deg, #1a1a1a, #2a2a2a)',
       },
       backdropBlur: {
-        'glass': '16px',
+        xs: '2px',
+        glass: '12px',
+        heavy: '24px',
+      },
+      boxShadow: {
+        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+        'glass-dark': '0 8px 32px 0 rgba(0, 0, 0, 0.5)',
+        'neumorphic': '20px 20px 60px #d1d1d1, -20px -20px 60px #ffffff',
+        'neumorphic-dark': '10px 10px 20px #0a0a0a, -10px -10px 20px #2a2a2a',
+        'neumorphic-inset': 'inset 5px 5px 10px #d1d1d1, inset -5px -5px 10px #ffffff',
+        'neumorphic-inset-dark': 'inset 5px 5px 10px #0a0a0a, inset -5px -5px 10px #2a2a2a',
+        'glow': '0 0 20px rgba(22, 119, 255, 0.3)',
+        'glow-lg': '0 0 40px rgba(22, 119, 255, 0.5)',
+        'card': '0 10px 40px rgba(0, 0, 0, 0.1)',
+      },
+      spacing: {
+        'fib1': '0.125rem',
+        'fib2': '0.25rem', 
+        'fib3': '0.5rem',
+        'fib4': '0.75rem',
+        'fib5': '1.25rem',
+        'fib6': '2rem',
+        'fib7': '3rem',
+        'fib8': '5rem',
+        'fib9': '8rem',
       },
       borderRadius: {
-        'fib1': '2px',
-        'fib2': '3px',
-        'fib3': '5px',
-        'fib4': '8px',
-        'fib5': '13px',
+        'fib1': '0.125rem',
+        'fib2': '0.25rem',
+        'fib3': '0.5rem',
+        'fib4': '0.75rem',
+        'glass': '1rem',
+        'neumorphic': '1.5rem',
+      },
+      animation: {
+        'float': 'float 6s ease-in-out infinite',
+        'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+        'slide-up': 'slide-up 0.3s ease-out',
+        'slide-down': 'slide-down 0.3s ease-out',
+        'slide-in-right': 'slide-in-right 0.3s ease-out',
+        'slide-in-left': 'slide-in-left 0.3s ease-out',
+        'fade-in': 'fade-in 0.5s ease-out',
+        'scale-in': 'scale-in 0.3s ease-out',
+        'shimmer': 'shimmer 2s linear infinite',
+        'gradient-shift': 'gradient-shift 5s ease infinite',
+        'rotate-slow': 'rotate-slow 15s linear infinite',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-20px)' },
+        },
+        'pulse-glow': {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(22, 119, 255, 0.3)' },
+          '50%': { boxShadow: '0 0 40px rgba(22, 119, 255, 0.6)' },
+        },
+        'slide-up': {
+          '0%': { transform: 'translateY(10px)', opacity: 0 },
+          '100%': { transform: 'translateY(0)', opacity: 1 },
+        },
+        'slide-down': {
+          '0%': { transform: 'translateY(-10px)', opacity: 0 },
+          '100%': { transform: 'translateY(0)', opacity: 1 },
+        },
+        'slide-in-right': {
+          '0%': { transform: 'translateX(10px)', opacity: 0 },
+          '100%': { transform: 'translateX(0)', opacity: 1 },
+        },
+        'slide-in-left': {
+          '0%': { transform: 'translateX(-10px)', opacity: 0 },
+          '100%': { transform: 'translateX(0)', opacity: 1 },
+        },
+        'fade-in': {
+          '0%': { opacity: 0 },
+          '100%': { opacity: 1 },
+        },
+        'scale-in': {
+          '0%': { transform: 'scale(0.9)', opacity: 0 },
+          '100%': { transform: 'scale(1)', opacity: 1 },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        'gradient-shift': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+        'rotate-slow': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
       },
     },
   },

@@ -153,10 +153,10 @@ async def init_db():
             ''')
             
             # Create default admin user if not exists
-            # Use a shorter password for bcrypt compatibility (max 72 bytes)
             try:
-                default_password = "admin123"  # Simple password for demo
-                hashed_password = pwd_context.hash(default_password)
+                default_password = "admin123"  # Short password for bcrypt
+                # Ensure password is within bcrypt's 72 byte limit
+                hashed_password = pwd_context.hash(default_password[:72])
                 await conn.execute('''
                     INSERT INTO users (email, hashed_password, role)
                     VALUES ($1, $2, 'ADMIN')
@@ -416,11 +416,168 @@ async def execute_pattern(request: ExecuteRequest):
             "status": "success"
         }
     
+    elif pattern == "portfolio_scenario_analysis":
+        # Comprehensive scenario analysis response
+        return {
+            "result": {
+                "scenarios": [
+                    {
+                        "id": "market_crash",
+                        "name": "Market Crash",
+                        "description": "Severe market downturn with 30% equity decline",
+                        "probability": 0.15,
+                        "impact": -0.25,
+                        "regime": "RECESSION",
+                        "factors": ["GDP Growth", "Unemployment", "Market Volatility"],
+                        "portfolio_impact": -0.28,
+                        "duration_months": 18,
+                    },
+                    {
+                        "id": "interest_rate_spike",
+                        "name": "Interest Rate Spike",
+                        "description": "Fed raises rates by 200bps to combat inflation",
+                        "probability": 0.25,
+                        "impact": -0.15,
+                        "regime": "STAGFLATION",
+                        "factors": ["Interest Rates", "Inflation", "Bond Yields"],
+                        "portfolio_impact": -0.18,
+                        "duration_months": 12,
+                    },
+                    {
+                        "id": "inflation_surge",
+                        "name": "Inflation Surge",
+                        "description": "Inflation rises above 6% for extended period",
+                        "probability": 0.30,
+                        "impact": -0.12,
+                        "regime": "STAGFLATION",
+                        "factors": ["CPI", "PPI", "Wage Growth"],
+                        "portfolio_impact": -0.15,
+                        "duration_months": 24,
+                    },
+                    {
+                        "id": "soft_landing",
+                        "name": "Soft Landing",
+                        "description": "Economy slows gradually without recession",
+                        "probability": 0.20,
+                        "impact": -0.05,
+                        "regime": "MID_EXPANSION",
+                        "factors": ["GDP Growth", "Employment", "Consumer Confidence"],
+                        "portfolio_impact": -0.03,
+                        "duration_months": 9,
+                    },
+                    {
+                        "id": "economic_boom",
+                        "name": "Economic Boom",
+                        "description": "Strong growth with controlled inflation",
+                        "probability": 0.10,
+                        "impact": 0.15,
+                        "regime": "EARLY_EXPANSION",
+                        "factors": ["GDP Growth", "Corporate Earnings", "Employment"],
+                        "portfolio_impact": 0.22,
+                        "duration_months": 36,
+                    }
+                ],
+                "portfolio_metrics": {
+                    "total_portfolio_value": 1500000.00,
+                    "worst_case_loss": -420000.00,
+                    "best_case_gain": 330000.00,
+                    "expected_value": -67500.00,
+                    "var_95": -0.18,
+                    "cvar_95": -0.25,
+                    "max_drawdown": -0.28,
+                    "recovery_time_months": 24
+                },
+                "hedge_suggestions": [
+                    {
+                        "instrument": "SPY Put Options",
+                        "strike": 420,
+                        "expiry": "2025-12-19",
+                        "cost_bps": 150,
+                        "protection": 0.85,
+                        "description": "Protects against market decline below 420",
+                    },
+                    {
+                        "instrument": "VIX Calls",
+                        "strike": 25,
+                        "expiry": "2025-12-19",
+                        "cost_bps": 80,
+                        "protection": 0.60,
+                        "description": "Hedges against volatility spike",
+                    },
+                    {
+                        "instrument": "TLT (Treasury Bonds)",
+                        "allocation": 0.15,
+                        "cost_bps": 20,
+                        "protection": 0.40,
+                        "description": "Flight to quality hedge",
+                    },
+                    {
+                        "instrument": "Gold ETF (GLD)",
+                        "allocation": 0.10,
+                        "cost_bps": 25,
+                        "protection": 0.45,
+                        "description": "Inflation hedge and safe haven",
+                    }
+                ]
+            },
+            "status": "success"
+        }
+    
     elif pattern == "claude_analysis":
         prompt = inputs.get("prompt", "Analyze my portfolio")
         analysis = await get_claude_analysis(prompt, portfolio_data)
         return {
             "result": analysis,
+            "status": "success"
+        }
+    
+    elif pattern == "portfolio_scenario_analysis":
+        scenario = inputs.get("scenario", "market_crash")
+        
+        scenarios = {
+            "market_crash": {
+                "scenario_name": "Market Crash (-20%)",
+                "description": "Severe market downturn simulation with 20% decline across equity markets",
+                "portfolio_impact": -18.5,
+                "risk_level": "High",
+                "confidence": 85,
+                "recommendations": [
+                    "Consider increasing cash allocation to 15-20%",
+                    "Add defensive assets like bonds or gold",
+                    "Review stop-loss orders on volatile positions",
+                    "Diversify into non-correlated assets"
+                ]
+            },
+            "interest_rate": {
+                "scenario_name": "Interest Rate Hike (+2%)",
+                "description": "Federal Reserve raises rates by 200 basis points",
+                "portfolio_impact": -12.3,
+                "risk_level": "Medium",
+                "confidence": 75,
+                "recommendations": [
+                    "Reduce duration in bond holdings",
+                    "Consider floating-rate securities",
+                    "Focus on financial sector opportunities",
+                    "Review tech stock valuations"
+                ]
+            },
+            "inflation": {
+                "scenario_name": "High Inflation (6%+)",
+                "description": "Sustained inflation above 6% for multiple quarters",
+                "portfolio_impact": -8.7,
+                "risk_level": "Medium",
+                "confidence": 70,
+                "recommendations": [
+                    "Increase allocation to TIPS or I Bonds",
+                    "Consider real estate and commodities",
+                    "Focus on companies with pricing power",
+                    "Reduce cash holdings"
+                ]
+            }
+        }
+        
+        return {
+            "result": scenarios.get(scenario, scenarios["market_crash"]),
             "status": "success"
         }
     
