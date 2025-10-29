@@ -3135,7 +3135,11 @@ async def execute_pattern(request: ExecuteRequest):
                 "defaults": "15%",
                 "redistribution": "25%",
                 "printing": "40%"
-            } if macro_data.get("ltdc_phase") == "DEPRESSION" else None
+            } if macro_data.get("ltdc_phase") == "DEPRESSION" else None,
+            
+            # NEW: Include reasoning chains for transparency
+            "reasoning": macro_data.get("reasoning", {}),
+            "data_sources": macro_data.get("data_sources", {})
         }
         
         return {
