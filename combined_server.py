@@ -918,6 +918,10 @@ class FREDClient:
                         if indicator_name == "gdp_growth":
                             # A191RL1Q225SBEA is already annualized GDP growth rate
                             return latest_value
+                        elif indicator_name == "fiscal_deficit":
+                            # FYFSGDA188S is federal surplus/deficit as % of GDP
+                            # Note: Positive value is surplus, negative is deficit
+                            return latest_value
                         elif indicator_name in ["m2_growth", "credit_growth", "productivity_growth"]:
                             # These need YoY calculation
                             if len(observations) >= 13:
@@ -1942,11 +1946,22 @@ async def detect_macro_regime() -> dict:
     
     # Internal stage detection with real data
     internal_result = internal_analyzer.detect_internal_stage(indicators)
+    
+    # Calculate social unrest score for display
+    social_unrest_score = indicators.get("social_unrest", 
+        internal_analyzer.calculate_social_unrest(
+            indicators, 
+            indicators.get("wealth_gap", 0.485),
+            indicators.get("political_polarization", 71.0)
+        )
+    )
+    
     internal_result["real_data"] = {
         "gini_coefficient": indicators.get("wealth_gap", 0.485),
         "top_1_percent": indicators.get("top_1_percent", 0.35),
         "polarization": indicators.get("political_polarization", 71.0),
-        "trust": indicators.get("institutional_trust", 27.0)
+        "trust": indicators.get("institutional_trust", 27.0),
+        "social_unrest": social_unrest_score
     }
     
     # NEW: Generate detailed reasoning for each cycle
@@ -2024,6 +2039,8 @@ async def detect_macro_regime() -> dict:
         # Additional analysis
         "wealth_gap": indicators.get("wealth_gap", 0.48),
         "political_polarization": internal_analyzer.calculate_polarization(indicators),
+        "fiscal_deficit": indicators.get("fiscal_deficit", -5.8),
+        "social_unrest": social_unrest_score,
         "trend": "Complex multi-cycle dynamics",
         "portfolio_risk_assessment": portfolio_risk_assessment,
         
@@ -3034,6 +3051,8 @@ async def execute_pattern(request: ExecuteRequest):
             
             # Additional metrics
             "wealth_gap": macro_data.get("wealth_gap", 0.48),
+            "fiscal_deficit": macro_data.get("fiscal_deficit", -5.8),
+            "social_unrest": macro_data.get("social_unrest", 0),
             
             # Deleveraging levers only if in depression phase
             "deleveraging_levers": {
