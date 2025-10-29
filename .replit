@@ -40,7 +40,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && python simple_api.py"
+args = "cd backend && python api_server.py"
 waitForPort = 8000
 
 [workflows.workflow.metadata]
@@ -57,3 +57,7 @@ externalPort = 3001
 [[ports]]
 localPort = 38857
 externalPort = 3000
+
+[[ports]]
+localPort = 8000
+externalPort = 8000
