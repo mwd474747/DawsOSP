@@ -1998,7 +1998,17 @@ async def detect_macro_regime() -> dict:
         
         "empire_phase": empire_result["phase"],
         "empire_score": empire_result["score"],
-        "empire_indicators": empire_analyzer.empire_indicators,
+        # Map empire indicators to match UI expected field names
+        "empire_indicators": {
+            "education_score": empire_analyzer.empire_indicators.get("education", 0),
+            "innovation_score": empire_analyzer.empire_indicators.get("innovation", 0),
+            "competitiveness_score": empire_analyzer.empire_indicators.get("competitiveness", 0),
+            "economic_output_share": empire_analyzer.empire_indicators.get("economic_output", 0),
+            "world_trade_share": empire_analyzer.empire_indicators.get("world_trade_share", 0),
+            "military_strength": empire_analyzer.empire_indicators.get("military_strength", 0),
+            "financial_center_score": empire_analyzer.empire_indicators.get("financial_center", 0),
+            "reserve_currency_share": empire_analyzer.empire_indicators.get("reserve_currency", 0)
+        },
         
         "internal_stage": internal_result["stage"],
         "internal_stage_name": internal_result["name"],
