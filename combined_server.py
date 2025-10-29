@@ -69,8 +69,64 @@ CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
 # Database connection pool
 db_pool = None
 
-# Active alerts storage
-ACTIVE_ALERTS = []
+# Active alerts storage with mock data
+ACTIVE_ALERTS = [
+    {
+        "id": "alert-001",
+        "type": "price",
+        "condition": "below",
+        "symbol": "AAPL",
+        "threshold": 180.00,
+        "message": "Apple stock below $180 support level",
+        "active": True,
+        "last_triggered": None,
+        "created_at": "2025-01-15T10:30:00Z"
+    },
+    {
+        "id": "alert-002", 
+        "type": "portfolio",
+        "condition": "below",
+        "metric": "total_value",
+        "threshold": 100000,
+        "message": "Portfolio value dropped below $100k",
+        "active": True,
+        "last_triggered": None,
+        "created_at": "2025-01-10T09:00:00Z"
+    },
+    {
+        "id": "alert-003",
+        "type": "price",
+        "condition": "above",
+        "symbol": "NVDA",
+        "threshold": 550.00,
+        "message": "NVIDIA reached target price of $550",
+        "active": False,
+        "last_triggered": "2025-01-18T14:30:00Z",
+        "created_at": "2025-01-05T11:00:00Z"
+    },
+    {
+        "id": "alert-004",
+        "type": "macro",
+        "condition": "above",
+        "metric": "vix",
+        "threshold": 25.0,
+        "message": "Market volatility spike - VIX above 25",
+        "active": True,
+        "last_triggered": None,
+        "created_at": "2025-01-12T13:45:00Z"
+    },
+    {
+        "id": "alert-005",
+        "type": "portfolio",
+        "condition": "change",
+        "metric": "sharpe_ratio",
+        "threshold": -0.2,
+        "message": "Sharpe ratio deteriorating",
+        "active": True,
+        "last_triggered": None,
+        "created_at": "2025-01-08T15:20:00Z"
+    }
+]
 
 # Default users
 USERS_DB = {
@@ -662,83 +718,56 @@ def identify_opportunities(regime: str, indicators: dict) -> List[str]:
 
 # Smart Alerts System
 def check_alerts() -> List[dict]:
-    """Check and generate alerts based on portfolio metrics"""
-    alerts = []
-    portfolio = calculate_portfolio_metrics()
-    
-    # Portfolio value alerts
-    if portfolio["returns_1d"] < -0.02:
-        alerts.append({
-            "id": str(uuid4()),
-            "type": "portfolio",
-            "severity": "high",
-            "title": "Significant Daily Loss",
-            "message": f"Portfolio down {abs(portfolio['returns_1d']*100):.2f}% today",
-            "timestamp": datetime.utcnow().isoformat()
-        })
-    
-    # Risk threshold alerts
-    if portfolio["portfolio_beta"] > 1.5:
-        alerts.append({
-            "id": str(uuid4()),
-            "type": "risk",
-            "severity": "medium",
-            "title": "High Portfolio Beta",
-            "message": f"Portfolio beta of {portfolio['portfolio_beta']:.2f} indicates high volatility",
-            "timestamp": datetime.utcnow().isoformat()
-        })
-    
-    # Individual holding alerts
-    for holding in portfolio["holdings"]:
-        if holding["change"] < -0.03:
-            alerts.append({
-                "id": str(uuid4()),
-                "type": "price",
-                "severity": "medium",
-                "title": f"{holding['symbol']} Down Significantly",
-                "message": f"{holding['symbol']} down {abs(holding['change']*100):.2f}% today",
-                "timestamp": datetime.utcnow().isoformat()
-            })
-        
-        # Concentration alerts
-        if holding["weight"] > 0.25:
-            alerts.append({
-                "id": str(uuid4()),
-                "type": "concentration",
-                "severity": "low",
-                "title": f"High Concentration in {holding['symbol']}",
-                "message": f"{holding['symbol']} represents {holding['weight']*100:.1f}% of portfolio",
-                "timestamp": datetime.utcnow().isoformat()
-            })
-    
-    # VaR alert
-    if portfolio["var_95"] > portfolio["total_value"] * 0.03:
-        alerts.append({
-            "id": str(uuid4()),
-            "type": "risk",
-            "severity": "high",
-            "title": "Elevated Value at Risk",
-            "message": f"95% VaR of ${portfolio['var_95']:,.2f} exceeds 3% threshold",
-            "timestamp": datetime.utcnow().isoformat()
-        })
-    
-    return alerts
+    """Get all configured alerts"""
+    return ACTIVE_ALERTS
 
-def create_alert(alert_config: AlertConfig) -> dict:
+def create_alert(alert_data: dict) -> dict:
     """Create a new alert configuration"""
-    alert_id = str(uuid4())
+    alert_id = f"alert-{str(uuid4())[:8]}"
+    
+    # Build alert object based on type
     alert = {
         "id": alert_id,
-        "type": alert_config.type,
-        "symbol": alert_config.symbol,
-        "threshold": alert_config.threshold,
-        "condition": alert_config.condition,
-        "notification_channel": alert_config.notification_channel,
-        "created_at": datetime.utcnow().isoformat(),
-        "status": "active"
+        "type": alert_data.get("type"),
+        "condition": alert_data.get("condition"),
+        "threshold": alert_data.get("threshold"),
+        "message": alert_data.get("message"),
+        "active": True,
+        "last_triggered": None,
+        "created_at": datetime.utcnow().isoformat()
     }
+    
+    # Add type-specific fields
+    if alert["type"] == "price":
+        alert["symbol"] = alert_data.get("symbol")
+    elif alert["type"] in ["portfolio", "macro"]:
+        alert["metric"] = alert_data.get("metric")
+    
     ACTIVE_ALERTS.append(alert)
     return alert
+
+def update_alert(alert_id: str, updates: dict) -> Optional[dict]:
+    """Update an existing alert"""
+    for alert in ACTIVE_ALERTS:
+        if alert["id"] == alert_id:
+            # Update allowed fields
+            if "active" in updates:
+                alert["active"] = updates["active"]
+            if "threshold" in updates:
+                alert["threshold"] = updates["threshold"]
+            if "message" in updates:
+                alert["message"] = updates["message"]
+            return alert
+    return None
+
+def delete_alert(alert_id: str) -> bool:
+    """Delete an alert by ID"""
+    global ACTIVE_ALERTS
+    for i, alert in enumerate(ACTIVE_ALERTS):
+        if alert["id"] == alert_id:
+            ACTIVE_ALERTS.pop(i)
+            return True
+    return False
 
 # Claude AI Integration
 async def analyze_with_claude(query: str, context: dict) -> dict:
@@ -1375,9 +1404,28 @@ async def get_alerts():
     return check_alerts()
 
 @app.post("/api/alerts")
-async def create_new_alert(alert_config: AlertConfig):
+async def create_new_alert(request: Request):
     """Create a new alert"""
-    return create_alert(alert_config)
+    alert_data = await request.json()
+    return create_alert(alert_data)
+
+@app.delete("/api/alerts/{alert_id}")
+async def delete_alert_endpoint(alert_id: str):
+    """Delete an alert by ID"""
+    if delete_alert(alert_id):
+        return {"status": "success", "message": f"Alert {alert_id} deleted"}
+    else:
+        raise HTTPException(status_code=404, detail="Alert not found")
+
+@app.put("/api/alerts/{alert_id}")
+async def update_alert_endpoint(alert_id: str, request: Request):
+    """Update an alert (toggle active status or modify settings)"""
+    updates = await request.json()
+    updated_alert = update_alert(alert_id, updates)
+    if updated_alert:
+        return updated_alert
+    else:
+        raise HTTPException(status_code=404, detail="Alert not found")
 
 @app.post("/api/ai/analyze")
 async def ai_analysis(request: AIAnalysisRequest):
@@ -1489,9 +1537,9 @@ async def export_portfolio_pdf():
     return Response(
         content=html_content,
         media_type="text/html",
-        headers={{
+        headers={
             "Content-Disposition": f"attachment; filename=portfolio_report_{datetime.utcnow().strftime('%Y%m%d')}.html"
-        }}
+        }
     )
 
 @app.get("/api/export/csv")
@@ -1551,9 +1599,9 @@ async def export_portfolio_csv(export_type: str = "holdings"):
     return Response(
         content=csv_content,
         media_type="text/csv",
-        headers={{
+        headers={
             "Content-Disposition": f"attachment; filename={filename}"
-        }}
+        }
     )
 
 if __name__ == "__main__":

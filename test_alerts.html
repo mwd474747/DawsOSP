@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alert System Test</title>
+</head>
+<body>
+    <h1>DawsOS Alert System Test</h1>
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        let authToken = '';
+        const results = document.getElementById('results');
+
+        function log(message, success = true) {
+            const p = document.createElement('p');
+            p.style.color = success ? 'green' : 'red';
+            p.textContent = `${success ? '✓' : '✗'} ${message}`;
+            results.appendChild(p);
+            console.log(message);
+        }
+
+        async function runTests() {
+            try {
+                // Test 1: Login
+                log('Testing login...');
+                const loginResponse = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'michael@dawsos.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                if (!loginResponse.ok) throw new Error('Login failed');
+                const loginData = await loginResponse.json();
+                authToken = loginData.access_token;
+                log('Login successful');
+
+                // Test 2: Get existing alerts
+                log('Testing GET /api/alerts...');
+                const alertsResponse = await fetch(`${API_BASE}/api/alerts`);
+                if (!alertsResponse.ok) throw new Error('Failed to get alerts');
+                const alerts = await alertsResponse.json();
+                log(`Retrieved ${alerts.length} alerts`);
+
+                // Test 3: Create a new price alert
+                log('Testing POST /api/alerts (Price Alert)...');
+                const newAlert = {
+                    type: 'price',
+                    symbol: 'AAPL',
+                    condition: 'above',
+                    threshold: 200,
+                    message: 'Test price alert for AAPL above $200'
+                };
+                
+                const createResponse = await fetch(`${API_BASE}/api/alerts`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(newAlert)
+                });
+                
+                if (!createResponse.ok) throw new Error('Failed to create alert');
+                const createdAlert = await createResponse.json();
+                log(`Created alert with ID: ${createdAlert.id}`);
+
+                // Test 4: Toggle alert status
+                log('Testing PUT /api/alerts/{id} (Toggle status)...');
+                const toggleResponse = await fetch(`${API_BASE}/api/alerts/${createdAlert.id}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ active: false })
+                });
+                
+                if (!toggleResponse.ok) throw new Error('Failed to toggle alert');
+                log('Alert status toggled successfully');
+
+                // Test 5: Delete alert
+                log('Testing DELETE /api/alerts/{id}...');
+                const deleteResponse = await fetch(`${API_BASE}/api/alerts/${createdAlert.id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!deleteResponse.ok) throw new Error('Failed to delete alert');
+                log('Alert deleted successfully');
+
+                // Test 6: Create portfolio alert
+                log('Testing POST /api/alerts (Portfolio Alert)...');
+                const portfolioAlert = {
+                    type: 'portfolio',
+                    metric: 'sharpe_ratio',
+                    condition: 'below',
+                    threshold: 0.5,
+                    message: 'Sharpe ratio below acceptable threshold'
+                };
+                
+                const portfolioResponse = await fetch(`${API_BASE}/api/alerts`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(portfolioAlert)
+                });
+                
+                if (!portfolioResponse.ok) throw new Error('Failed to create portfolio alert');
+                log('Portfolio alert created successfully');
+
+                // Test 7: Create macro alert
+                log('Testing POST /api/alerts (Macro Alert)...');
+                const macroAlert = {
+                    type: 'macro',
+                    metric: 'vix',
+                    condition: 'above',
+                    threshold: 30,
+                    message: 'VIX volatility spike warning'
+                };
+                
+                const macroResponse = await fetch(`${API_BASE}/api/alerts`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(macroAlert)
+                });
+                
+                if (!macroResponse.ok) throw new Error('Failed to create macro alert');
+                log('Macro alert created successfully');
+
+                // Final test: Verify all alerts
+                const finalResponse = await fetch(`${API_BASE}/api/alerts`);
+                const finalAlerts = await finalResponse.json();
+                log(`Final alert count: ${finalAlerts.length} alerts`);
+                
+                log('🎉 All tests passed successfully!');
+                
+            } catch (error) {
+                log(`Error: ${error.message}`, false);
+            }
+        }
+
+        // Run tests when page loads
+        window.onload = () => {
+            runTests();
+        };
+    </script>
+</body>
+</html>

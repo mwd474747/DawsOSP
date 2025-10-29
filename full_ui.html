@@ -381,6 +381,28 @@
         }
         
         .loading-pulse { animation: pulse 2s infinite; }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -605,8 +627,112 @@
             <!-- Alerts Tab -->
             <div class="tab-content" id="alerts-tab">
                 <div class="alerts-container">
-                    <h3>Smart Alerts</h3>
-                    <div id="alertsList"></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h3>Alert Management <span id="alertCount" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.9rem; margin-left: 1rem;">0</span></h3>
+                        <button onclick="toggleCreateAlertForm()" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                            + New Alert
+                        </button>
+                    </div>
+                    
+                    <!-- Create New Alert Form -->
+                    <div id="createAlertForm" style="display: none; background: rgba(102, 126, 234, 0.1); padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem;">
+                        <h4 style="margin-bottom: 1.5rem;">Create New Alert</h4>
+                        <div style="display: grid; gap: 1rem;">
+                            <div>
+                                <label style="display: block; margin-bottom: 0.5rem; color: #666;">Alert Type</label>
+                                <select id="alertType" onchange="updateAlertForm()" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+                                    <option value="price">💹 Price Alert</option>
+                                    <option value="portfolio">📊 Portfolio Alert</option>
+                                    <option value="macro">🌍 Macro Alert</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Dynamic fields based on type -->
+                            <div id="alertTypeFields">
+                                <!-- Price Alert Fields (default) -->
+                                <div id="priceFields">
+                                    <div style="margin-bottom: 1rem;">
+                                        <label style="display: block; margin-bottom: 0.5rem; color: #666;">Symbol</label>
+                                        <select id="alertSymbol" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+                                            <option value="AAPL">AAPL - Apple</option>
+                                            <option value="GOOGL">GOOGL - Google</option>
+                                            <option value="MSFT">MSFT - Microsoft</option>
+                                            <option value="AMZN">AMZN - Amazon</option>
+                                            <option value="NVDA">NVDA - NVIDIA</option>
+                                            <option value="TSLA">TSLA - Tesla</option>
+                                            <option value="META">META - Meta</option>
+                                            <option value="BRK.B">BRK.B - Berkshire</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Portfolio Alert Fields (hidden by default) -->
+                                <div id="portfolioFields" style="display: none;">
+                                    <div style="margin-bottom: 1rem;">
+                                        <label style="display: block; margin-bottom: 0.5rem; color: #666;">Metric</label>
+                                        <select id="portfolioMetric" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+                                            <option value="total_value">Total Portfolio Value</option>
+                                            <option value="unrealized_pnl">Unrealized P&L</option>
+                                            <option value="sharpe_ratio">Sharpe Ratio</option>
+                                            <option value="portfolio_beta">Portfolio Beta</option>
+                                            <option value="volatility">Volatility</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Macro Alert Fields (hidden by default) -->
+                                <div id="macroFields" style="display: none;">
+                                    <div style="margin-bottom: 1rem;">
+                                        <label style="display: block; margin-bottom: 0.5rem; color: #666;">Indicator</label>
+                                        <select id="macroIndicator" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+                                            <option value="vix">VIX - Volatility Index</option>
+                                            <option value="interest_rate">Interest Rate</option>
+                                            <option value="inflation">Inflation Rate</option>
+                                            <option value="gdp_growth">GDP Growth</option>
+                                            <option value="unemployment">Unemployment Rate</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 0.5rem; color: #666;">Condition</label>
+                                    <select id="alertCondition" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+                                        <option value="above">Above</option>
+                                        <option value="below">Below</option>
+                                        <option value="change">Change %</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 0.5rem; color: #666;">Threshold</label>
+                                    <input type="number" id="alertThreshold" placeholder="Enter value" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label style="display: block; margin-bottom: 0.5rem; color: #666;">Alert Message</label>
+                                <input type="text" id="alertMessage" placeholder="Enter alert description" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+                            </div>
+                            
+                            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                                <button onclick="createAlert()" style="flex: 1; padding: 0.75rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                    Create Alert
+                                </button>
+                                <button onclick="toggleCreateAlertForm()" style="flex: 1; padding: 0.75rem; background: #e0e0e0; color: #666; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Active Alerts Section -->
+                    <div>
+                        <h4 style="margin-bottom: 1.5rem;">Active Alerts</h4>
+                        <div id="alertsList" style="display: grid; gap: 1rem;">
+                            <!-- Alerts will be populated here -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -772,15 +898,236 @@
                 if (response.ok) {
                     const data = await response.json();
                     const alertsList = document.getElementById('alertsList');
-                    alertsList.innerHTML = data.map(alert => `
-                        <div class="alert-item">
-                            <strong>${alert.type.toUpperCase()}</strong>: ${alert.message}
-                        </div>
-                    `).join('');
+                    const alertCount = document.getElementById('alertCount');
+                    
+                    // Update alert count
+                    const activeCount = data.filter(a => a.active).length;
+                    alertCount.textContent = data.length > 0 ? `${activeCount}/${data.length}` : '0';
+                    
+                    if (data.length === 0) {
+                        alertsList.innerHTML = `
+                            <div style="text-align: center; padding: 2rem; color: #999;">
+                                <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+                                <p>No alerts configured yet. Click "New Alert" to create your first alert.</p>
+                            </div>
+                        `;
+                    } else {
+                        alertsList.innerHTML = data.map(alert => {
+                            const icon = alert.type === 'price' ? '💹' : alert.type === 'portfolio' ? '📊' : '🌍';
+                            const bgColor = alert.active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(156, 163, 175, 0.1)';
+                            const borderColor = alert.active ? '#10b981' : '#9ca3af';
+                            
+                            let details = '';
+                            if (alert.type === 'price') {
+                                details = `${alert.symbol} ${alert.condition} $${alert.threshold}`;
+                            } else if (alert.type === 'portfolio') {
+                                details = `${alert.metric} ${alert.condition} ${alert.threshold}`;
+                            } else if (alert.type === 'macro') {
+                                details = `${alert.metric} ${alert.condition} ${alert.threshold}`;
+                            }
+                            
+                            return `
+                                <div style="background: ${bgColor}; border-left: 4px solid ${borderColor}; padding: 1.5rem; border-radius: 10px; transition: all 0.3s;">
+                                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                                        <div style="flex: 1;">
+                                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                                                <span style="font-size: 1.5rem;">${icon}</span>
+                                                <strong style="text-transform: uppercase; color: ${borderColor}; font-size: 0.9rem;">
+                                                    ${alert.type} ALERT
+                                                </strong>
+                                                ${alert.last_triggered ? `<span style="background: #fbbf24; color: #78350f; padding: 0.25rem 0.5rem; border-radius: 5px; font-size: 0.75rem;">Triggered</span>` : ''}
+                                            </div>
+                                            <div style="font-size: 1.1rem; margin-bottom: 0.5rem;">${alert.message}</div>
+                                            <div style="color: #666; font-size: 0.9rem;">
+                                                <strong>Condition:</strong> ${details}
+                                            </div>
+                                            <div style="color: #999; font-size: 0.8rem; margin-top: 0.5rem;">
+                                                Created: ${new Date(alert.created_at).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                            <label class="toggle-switch" style="position: relative; display: inline-block; width: 50px; height: 26px;">
+                                                <input type="checkbox" ${alert.active ? 'checked' : ''} onchange="toggleAlert('${alert.id}', this.checked)" style="opacity: 0; width: 0; height: 0;">
+                                                <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: ${alert.active ? '#10b981' : '#ccc'}; transition: .4s; border-radius: 34px;">
+                                                    <span style="position: absolute; content: ''; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; transform: ${alert.active ? 'translateX(24px)' : 'translateX(0)'};"></span>
+                                                </span>
+                                            </label>
+                                            <button onclick="deleteAlert('${alert.id}')" style="background: #ef4444; color: white; border: none; padding: 0.5rem; border-radius: 5px; cursor: pointer;" title="Delete Alert">
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
                 }
             } catch (error) {
                 console.error('Error loading alerts:', error);
             }
+        }
+        
+        // Toggle create alert form
+        function toggleCreateAlertForm() {
+            const form = document.getElementById('createAlertForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            if (form.style.display === 'block') {
+                updateAlertForm(); // Initialize form with default type
+            }
+        }
+        
+        // Update alert form based on selected type
+        function updateAlertForm() {
+            const alertType = document.getElementById('alertType').value;
+            const priceFields = document.getElementById('priceFields');
+            const portfolioFields = document.getElementById('portfolioFields');
+            const macroFields = document.getElementById('macroFields');
+            
+            // Hide all type-specific fields
+            priceFields.style.display = 'none';
+            portfolioFields.style.display = 'none';
+            macroFields.style.display = 'none';
+            
+            // Show relevant fields
+            if (alertType === 'price') {
+                priceFields.style.display = 'block';
+            } else if (alertType === 'portfolio') {
+                portfolioFields.style.display = 'block';
+            } else if (alertType === 'macro') {
+                macroFields.style.display = 'block';
+            }
+        }
+        
+        // Create new alert
+        async function createAlert() {
+            const alertType = document.getElementById('alertType').value;
+            const condition = document.getElementById('alertCondition').value;
+            const threshold = parseFloat(document.getElementById('alertThreshold').value);
+            const message = document.getElementById('alertMessage').value;
+            
+            if (!threshold || !message) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            const alertData = {
+                type: alertType,
+                condition: condition,
+                threshold: threshold,
+                message: message
+            };
+            
+            // Add type-specific fields
+            if (alertType === 'price') {
+                alertData.symbol = document.getElementById('alertSymbol').value;
+            } else if (alertType === 'portfolio') {
+                alertData.metric = document.getElementById('portfolioMetric').value;
+            } else if (alertType === 'macro') {
+                alertData.metric = document.getElementById('macroIndicator').value;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/alerts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(alertData)
+                });
+                
+                if (response.ok) {
+                    showNotification('Alert created successfully!', 'success');
+                    toggleCreateAlertForm();
+                    loadAlerts(); // Reload alerts list
+                    
+                    // Clear form
+                    document.getElementById('alertThreshold').value = '';
+                    document.getElementById('alertMessage').value = '';
+                } else {
+                    showNotification('Failed to create alert', 'error');
+                }
+            } catch (error) {
+                console.error('Error creating alert:', error);
+                showNotification('Error creating alert', 'error');
+            }
+        }
+        
+        // Toggle alert active status
+        async function toggleAlert(alertId, active) {
+            try {
+                const response = await fetch(`${API_BASE}/api/alerts/${alertId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ active })
+                });
+                
+                if (response.ok) {
+                    showNotification(active ? 'Alert activated' : 'Alert deactivated', 'success');
+                    loadAlerts(); // Reload alerts list
+                } else {
+                    showNotification('Failed to update alert', 'error');
+                }
+            } catch (error) {
+                console.error('Error toggling alert:', error);
+                showNotification('Error updating alert', 'error');
+            }
+        }
+        
+        // Delete alert
+        async function deleteAlert(alertId) {
+            if (!confirm('Are you sure you want to delete this alert?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/alerts/${alertId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    showNotification('Alert deleted successfully', 'success');
+                    loadAlerts(); // Reload alerts list
+                } else {
+                    showNotification('Failed to delete alert', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting alert:', error);
+                showNotification('Error deleting alert', 'error');
+            }
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#667eea'};
+                color: white;
+                border-radius: 10px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
         }
 
         // Run scenario
