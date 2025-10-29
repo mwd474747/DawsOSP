@@ -2771,9 +2771,26 @@ async def shutdown_event():
         await db_pool.close()
     logger.info("Enhanced server shutdown")
 
+@app.get("/scenarios")
+async def scenarios_page():
+    """Serve the scenarios dashboard page"""
+    try:
+        with open("scenario_dashboard.html", "r") as f:
+            return HTMLResponse(content=f.read())
+    except:
+        return HTMLResponse(content="<h1>Scenario Dashboard not found</h1>", status_code=404)
+
 @app.get("/")
 async def root():
     """Root endpoint - serve HTML"""
+    # Try to read scenario dashboard if requested
+    if os.path.exists("scenario_dashboard.html"):
+        try:
+            with open("scenario_dashboard.html", "r") as f:
+                return HTMLResponse(content=f.read())
+        except:
+            pass
+    
     # Try to read full UI from file, fall back to embedded if not found
     try:
         with open("full_ui.html", "r") as f:
