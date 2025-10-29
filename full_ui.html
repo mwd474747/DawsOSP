@@ -934,8 +934,11 @@
                             
                             <!-- Long-Term Debt Cycle Card -->
                             <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 15px; padding: 1.5rem;">
-                                <h3 style="color: #667eea; font-size: 1.2rem; margin-bottom: 1rem;">
+                                <h3 style="color: #667eea; font-size: 1.2rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
                                     Long-Term Debt Cycle (75-100 years)
+                                    <button onclick="toggleReasoning('ltdc')" style="font-size: 0.75rem; background: rgba(102, 126, 234, 0.2); color: white; border: 1px solid rgba(102, 126, 234, 0.5); padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer;">
+                                        📊 Show Reasoning
+                                    </button>
                                 </h3>
                                 <div style="margin-bottom: 1rem;">
                                     <div style="font-size: 1.8rem; font-weight: bold; color: #333;" id="ltdc-phase">--</div>
@@ -959,6 +962,43 @@
                                 <div style="margin-top: 1rem;">
                                     <canvas id="ltdc-cycle-chart" width="300" height="100"></canvas>
                                 </div>
+                                
+                                <!-- LTDC Reasoning Panel (hidden by default) -->
+                                <div id="ltdc-reasoning" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(51, 51, 51, 0.3); border-radius: 10px;">
+                                    <h4 style="font-size: 1rem; font-weight: 600; color: #667eea; margin-bottom: 0.75rem;">📈 Analysis Breakdown</h4>
+                                    
+                                    <!-- Raw Data Points -->
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <h5 style="font-size: 0.85rem; font-weight: 600; color: #999; margin-bottom: 0.5rem;">Raw Data:</h5>
+                                        <div id="ltdc-raw-data" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem;">
+                                            <!-- Populated by JS -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Calculations -->
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <h5 style="font-size: 0.85rem; font-weight: 600; color: #999; margin-bottom: 0.5rem;">Calculations:</h5>
+                                        <div id="ltdc-calculations" style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; color: #333;">
+                                            <!-- Populated by JS -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Logic Chain -->
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <h5 style="font-size: 0.85rem; font-weight: 600; color: #999; margin-bottom: 0.5rem;">Logic Chain:</h5>
+                                        <div id="ltdc-logic" style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                            <!-- Populated by JS -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Conclusion -->
+                                    <div style="padding: 0.75rem; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
+                                        <h5 style="font-size: 0.85rem; font-weight: 600; color: #667eea; margin-bottom: 0.25rem;">Conclusion:</h5>
+                                        <div id="ltdc-conclusion" style="font-size: 0.85rem; color: #333;">
+                                            <!-- Populated by JS -->
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -966,8 +1006,11 @@
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
                             <!-- Empire Cycle Card (250 years) -->
                             <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(139, 92, 246, 0.1)); border: 2px solid rgba(147, 51, 234, 0.3); border-radius: 15px; padding: 1.5rem;">
-                                <h3 style="color: #9333ea; font-size: 1.2rem; margin-bottom: 1rem;">
+                                <h3 style="color: #9333ea; font-size: 1.2rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
                                     Empire Cycle (250 years)
+                                    <button onclick="toggleReasoning('empire')" style="font-size: 0.75rem; background: rgba(147, 51, 234, 0.2); color: white; border: 1px solid rgba(147, 51, 234, 0.5); padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer;">
+                                        📊 Show Reasoning
+                                    </button>
                                 </h3>
                                 <div style="margin-bottom: 1rem;">
                                     <div style="font-size: 1.8rem; font-weight: bold; color: #333;" id="empire-phase">--</div>
@@ -1016,12 +1059,52 @@
                                 <div style="margin-top: 1rem; text-align: center;">
                                     <span id="empire-trend" style="font-size: 1.1rem; font-weight: 600;">--</span>
                                 </div>
+                                
+                                <!-- Empire Reasoning Panel (hidden by default) -->
+                                <div id="empire-reasoning" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(51, 51, 51, 0.3); border-radius: 10px;">
+                                    <h4 style="font-size: 1rem; font-weight: 600; color: #9333ea; margin-bottom: 0.75rem;">📈 Analysis Breakdown</h4>
+                                    
+                                    <!-- Raw Data Points -->
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <h5 style="font-size: 0.85rem; font-weight: 600; color: #999; margin-bottom: 0.5rem;">Raw Data:</h5>
+                                        <div id="empire-raw-data" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem;">
+                                            <!-- Populated by JS -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Calculations -->
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <h5 style="font-size: 0.85rem; font-weight: 600; color: #999; margin-bottom: 0.5rem;">Calculations:</h5>
+                                        <div id="empire-calculations" style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; color: #333;">
+                                            <!-- Populated by JS -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Logic Chain -->
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <h5 style="font-size: 0.85rem; font-weight: 600; color: #999; margin-bottom: 0.5rem;">Logic Chain:</h5>
+                                        <div id="empire-logic" style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                            <!-- Populated by JS -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Conclusion -->
+                                    <div style="padding: 0.75rem; background: rgba(147, 51, 234, 0.1); border-radius: 8px;">
+                                        <h5 style="font-size: 0.85rem; font-weight: 600; color: #9333ea; margin-bottom: 0.25rem;">Conclusion:</h5>
+                                        <div id="empire-conclusion" style="font-size: 0.85rem; color: #333;">
+                                            <!-- Populated by JS -->
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- Internal Order/Disorder Cycle Card -->
                             <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(245, 158, 11, 0.1)); border: 2px solid rgba(239, 68, 68, 0.3); border-radius: 15px; padding: 1.5rem;">
-                                <h3 style="color: #ef4444; font-size: 1.2rem; margin-bottom: 1rem;">
+                                <h3 style="color: #ef4444; font-size: 1.2rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
                                     Internal Order/Disorder Cycle
+                                    <button onclick="toggleReasoning('internal')" style="font-size: 0.75rem; background: rgba(239, 68, 68, 0.2); color: white; border: 1px solid rgba(239, 68, 68, 0.5); padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer;">
+                                        📊 Show Reasoning
+                                    </button>
                                 </h3>
                                 <div style="margin-bottom: 1rem;">
                                     <div style="font-size: 1.5rem; font-weight: bold; color: #333;">
@@ -1074,6 +1157,43 @@
                                     <div style="display: flex; justify-content: space-between;">
                                         <span style="color: #666;">Social Unrest</span>
                                         <span style="color: #333; font-weight: 600;" id="internal-unrest">--</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Internal Reasoning Panel (hidden by default) -->
+                                <div id="internal-reasoning" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(51, 51, 51, 0.3); border-radius: 10px;">
+                                    <h4 style="font-size: 1rem; font-weight: 600; color: #ef4444; margin-bottom: 0.75rem;">📈 Analysis Breakdown</h4>
+                                    
+                                    <!-- Raw Data Points -->
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <h5 style="font-size: 0.85rem; font-weight: 600; color: #999; margin-bottom: 0.5rem;">Raw Data:</h5>
+                                        <div id="internal-raw-data" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem;">
+                                            <!-- Populated by JS -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Calculations -->
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <h5 style="font-size: 0.85rem; font-weight: 600; color: #999; margin-bottom: 0.5rem;">Calculations:</h5>
+                                        <div id="internal-calculations" style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; color: #333;">
+                                            <!-- Populated by JS -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Logic Chain -->
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <h5 style="font-size: 0.85rem; font-weight: 600; color: #999; margin-bottom: 0.5rem;">Logic Chain:</h5>
+                                        <div id="internal-logic" style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                            <!-- Populated by JS -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Conclusion -->
+                                    <div style="padding: 0.75rem; background: rgba(239, 68, 68, 0.1); border-radius: 8px;">
+                                        <h5 style="font-size: 0.85rem; font-weight: 600; color: #ef4444; margin-bottom: 0.25rem;">Conclusion:</h5>
+                                        <div id="internal-conclusion" style="font-size: 0.85rem; color: #333;">
+                                            <!-- Populated by JS -->
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1935,45 +2055,92 @@
         
         // Display reasoning data in the UI
         function displayReasoning(cycle, reasoning) {
-            // Display raw data
+            if (!reasoning) return;
+            
+            // Display raw data as key-value pairs
             const rawDataEl = document.getElementById(`${cycle}-raw-data`);
             if (rawDataEl && reasoning.raw_data) {
-                rawDataEl.innerHTML = Object.entries(reasoning.raw_data)
-                    .map(([key, value]) => `
-                        <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #999;">${formatLabel(key)}:</span>
-                            <span style="color: #333; font-family: monospace;">${value}</span>
-                        </div>
-                    `).join('');
+                const rawDataHtml = Object.entries(reasoning.raw_data)
+                    .map(([key, value]) => {
+                        // Format the value properly
+                        let formattedValue = value;
+                        if (typeof value === 'number') {
+                            formattedValue = value.toFixed(2);
+                            // Add % or other units if appropriate
+                            if (key.toLowerCase().includes('rate') || key.toLowerCase().includes('growth') || key.toLowerCase().includes('ratio')) {
+                                formattedValue += '%';
+                            }
+                        } else if (typeof value === 'object') {
+                            formattedValue = JSON.stringify(value);
+                        }
+                        
+                        return `
+                            <div style="display: flex; justify-content: space-between; padding: 0.25rem 0;">
+                                <span style="color: #999; font-size: 0.8rem;">${formatLabel(key)}:</span>
+                                <span style="color: #333; font-family: monospace; font-weight: 600; font-size: 0.8rem;">${formattedValue}</span>
+                            </div>
+                        `;
+                    }).join('');
+                rawDataEl.innerHTML = rawDataHtml || '<span style="color: #999; font-size: 0.8rem;">No raw data available</span>';
             }
             
-            // Display calculations
+            // Display calculations as formatted text blocks
             const calcEl = document.getElementById(`${cycle}-calculations`);
             if (calcEl && reasoning.calculations) {
-                calcEl.innerHTML = Object.entries(reasoning.calculations)
-                    .map(([key, value]) => `
+                let calculationsHtml;
+                if (Array.isArray(reasoning.calculations)) {
+                    calculationsHtml = reasoning.calculations
+                        .map(calc => `
+                            <div style="padding: 0.5rem; background: rgba(255, 255, 255, 0.3); border-radius: 5px; margin: 0.25rem 0;">
+                                <span style="color: #333; font-size: 0.8rem;">${calc}</span>
+                            </div>
+                        `).join('');
+                } else if (typeof reasoning.calculations === 'object') {
+                    calculationsHtml = Object.entries(reasoning.calculations)
+                        .map(([key, value]) => `
+                            <div style="padding: 0.5rem; background: rgba(255, 255, 255, 0.3); border-radius: 5px; margin: 0.25rem 0;">
+                                <strong style="color: #667eea; font-size: 0.8rem;">${formatLabel(key)}:</strong>
+                                <span style="color: #333; font-size: 0.8rem;"> ${value}</span>
+                            </div>
+                        `).join('');
+                } else {
+                    calculationsHtml = `
                         <div style="padding: 0.5rem; background: rgba(255, 255, 255, 0.3); border-radius: 5px; margin: 0.25rem 0;">
-                            <span style="color: #333;">${value}</span>
+                            <span style="color: #333; font-size: 0.8rem;">${reasoning.calculations}</span>
                         </div>
-                    `).join('');
+                    `;
+                }
+                calcEl.innerHTML = calculationsHtml || '<span style="color: #999; font-size: 0.8rem;">No calculations available</span>';
             }
             
-            // Display logic chain
+            // Display logic chain as bullet points
             const logicEl = document.getElementById(`${cycle}-logic`);
             if (logicEl && reasoning.logic_chain) {
-                logicEl.innerHTML = reasoning.logic_chain
-                    .map((item, index) => `
-                        <div style="display: flex; align-items: flex-start;">
-                            <span style="color: #667eea; margin-right: 0.5rem;">${index + 1}.</span>
-                            <span style="color: #333;">${item}</span>
-                        </div>
-                    `).join('');
+                let logicHtml;
+                if (Array.isArray(reasoning.logic_chain)) {
+                    logicHtml = reasoning.logic_chain
+                        .map((item, index) => `
+                            <div style="display: flex; align-items: flex-start; margin-bottom: 0.5rem;">
+                                <span style="color: #667eea; margin-right: 0.5rem; font-weight: bold; font-size: 0.8rem;">${index + 1}.</span>
+                                <span style="color: #333; font-size: 0.8rem; line-height: 1.4;">${item}</span>
+                            </div>
+                        `).join('');
+                } else {
+                    logicHtml = `<span style="color: #333; font-size: 0.8rem;">${reasoning.logic_chain}</span>`;
+                }
+                logicEl.innerHTML = logicHtml || '<span style="color: #999; font-size: 0.8rem;">No logic chain available</span>';
             }
             
-            // Display conclusion
+            // Display conclusion as a summary
             const conclusionEl = document.getElementById(`${cycle}-conclusion`);
             if (conclusionEl && reasoning.conclusion) {
-                conclusionEl.innerHTML = reasoning.conclusion;
+                conclusionEl.innerHTML = `
+                    <div style="font-size: 0.85rem; color: #333; line-height: 1.5;">
+                        ${reasoning.conclusion}
+                    </div>
+                `;
+            } else if (conclusionEl) {
+                conclusionEl.innerHTML = '<span style="color: #999; font-size: 0.8rem;">No conclusion available</span>';
             }
         }
         
