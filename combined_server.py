@@ -32,6 +32,11 @@ import httpx
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Mock Data Isolation Flag - Set to false for production
+USE_MOCK_DATA = os.getenv("USE_MOCK_DATA", "false").lower() == "true"
+if USE_MOCK_DATA:
+    logger.warning("WARNING: Mock data mode is enabled. This should only be used for development/testing.")
+
 # Initialize FastAPI app
 app = FastAPI(
     title="DawsOS Enhanced Server",
@@ -211,42 +216,127 @@ MOCK_TRANSACTIONS = [
     {"date": "2025-02-01", "type": "dividend", "symbol": "MSFT", "shares": 85, "price": 0.75, "amount": 63.75, "realized_gain": 63.75}
 ]
 
-def get_portfolio_transactions(page: int = 1, page_size: int = 20):
-    """Get paginated transaction history"""
-    # Sort transactions by date (newest first)
-    sorted_transactions = sorted(MOCK_TRANSACTIONS, key=lambda x: x["date"], reverse=True)
-    
-    # Calculate pagination
-    total_transactions = len(sorted_transactions)
-    total_pages = math.ceil(total_transactions / page_size)
-    start_idx = (page - 1) * page_size
-    end_idx = start_idx + page_size
-    
-    # Get paginated transactions
-    paginated_transactions = sorted_transactions[start_idx:end_idx]
-    
-    # Calculate summary statistics
-    total_invested = sum(t["amount"] for t in MOCK_TRANSACTIONS if t["type"] == "buy")
-    total_sold = sum(t["amount"] for t in MOCK_TRANSACTIONS if t["type"] == "sell")
-    total_dividends = sum(t["amount"] for t in MOCK_TRANSACTIONS if t["type"] == "dividend")
-    total_realized_gains = sum(t["realized_gain"] for t in MOCK_TRANSACTIONS)
-    
-    return {
-        "transactions": paginated_transactions,
-        "pagination": {
-            "page": page,
-            "page_size": page_size,
-            "total_transactions": total_transactions,
-            "total_pages": total_pages
-        },
-        "summary": {
-            "total_invested": abs(total_invested),
-            "total_sold": total_sold,
-            "total_dividends": total_dividends,
-            "total_realized_gains": total_realized_gains,
-            "net_cash_flow": total_invested + total_sold + total_dividends
+async def get_portfolio_transactions(user_email: str, page: int = 1, page_size: int = 20):
+    """Get paginated transaction history from database only"""
+    # Check for mock mode
+    if USE_MOCK_DATA:
+        # Sort transactions by date (newest first)
+        sorted_transactions = sorted(MOCK_TRANSACTIONS, key=lambda x: x["date"], reverse=True)
+        
+        # Calculate pagination
+        total_transactions = len(sorted_transactions)
+        total_pages = math.ceil(total_transactions / page_size)
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        
+        # Get paginated transactions
+        paginated_transactions = sorted_transactions[start_idx:end_idx]
+        
+        # Calculate summary statistics
+        total_invested = sum(t["amount"] for t in MOCK_TRANSACTIONS if t["type"] == "buy")
+        total_sold = sum(t["amount"] for t in MOCK_TRANSACTIONS if t["type"] == "sell")
+        total_dividends = sum(t["amount"] for t in MOCK_TRANSACTIONS if t["type"] == "dividend")
+        total_realized_gains = sum(t["realized_gain"] for t in MOCK_TRANSACTIONS)
+        
+        return {
+            "transactions": paginated_transactions,
+            "pagination": {
+                "page": page,
+                "page_size": page_size,
+                "total_transactions": total_transactions,
+                "total_pages": total_pages
+            },
+            "summary": {
+                "total_invested": abs(total_invested),
+                "total_sold": total_sold,
+                "total_dividends": total_dividends,
+                "total_realized_gains": total_realized_gains,
+                "net_cash_flow": total_invested + total_sold + total_dividends
+            }
         }
-    }
+    
+    # Production mode - database only
+    if not db_pool:
+        logger.error("Database connection not available for transactions")
+        raise HTTPException(
+            status_code=503,
+            detail="Transaction service temporarily unavailable. Please try again later."
+        )
+    
+    try:
+        transactions = await get_user_transactions(user_email)
+        
+        if not transactions:
+            # Return empty result set instead of error
+            return {
+                "transactions": [],
+                "pagination": {
+                    "page": page,
+                    "page_size": page_size,
+                    "total_transactions": 0,
+                    "total_pages": 0
+                },
+                "summary": {
+                    "total_invested": 0,
+                    "total_sold": 0,
+                    "total_dividends": 0,
+                    "total_realized_gains": 0,
+                    "net_cash_flow": 0
+                }
+            }
+        
+        # Convert database rows to appropriate format
+        formatted_transactions = []
+        for row in transactions:
+            formatted_transactions.append({
+                "date": row["trade_date"].strftime("%Y-%m-%d") if row["trade_date"] else "",
+                "type": row["type"],
+                "symbol": row["symbol"],
+                "shares": float(row["quantity"]) if row["quantity"] else 0,
+                "price": float(row["price"]) if row["price"] else 0,
+                "amount": float(row["amount"]) if row["amount"] else 0,
+                "realized_gain": 0,  # TODO: Calculate from database
+                "security_name": row["security_name"]
+            })
+        
+        # Pagination
+        total_transactions = len(formatted_transactions)
+        total_pages = math.ceil(total_transactions / page_size)
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_transactions = formatted_transactions[start_idx:end_idx]
+        
+        # Calculate summary statistics from all transactions
+        total_invested = sum(t["amount"] for t in formatted_transactions if t["type"] == "buy")
+        total_sold = sum(t["amount"] for t in formatted_transactions if t["type"] == "sell")
+        total_dividends = sum(t["amount"] for t in formatted_transactions if t["type"] == "dividend")
+        total_realized_gains = 0  # TODO: Calculate from database
+        
+        return {
+            "transactions": paginated_transactions,
+            "pagination": {
+                "page": page,
+                "page_size": page_size,
+                "total_transactions": total_transactions,
+                "total_pages": total_pages
+            },
+            "summary": {
+                "total_invested": abs(total_invested),
+                "total_sold": total_sold,
+                "total_dividends": total_dividends,
+                "total_realized_gains": total_realized_gains,
+                "net_cash_flow": total_invested + total_sold + total_dividends
+            }
+        }
+    
+    except HTTPException:
+        raise  # Re-raise HTTPException as-is
+    except Exception as e:
+        logger.error(f"Error fetching transactions: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Transaction service temporarily unavailable. Please try again later."
+        )
 
 # Database Functions
 async def init_db():
@@ -351,50 +441,101 @@ async def get_user_alerts(user_email: str):
         return None
 
 async def calculate_portfolio_metrics_from_db(user_email: str) -> dict:
-    """Calculate portfolio metrics from database data"""
+    """Calculate portfolio metrics from database data - no fallbacks"""
+    if not db_pool:
+        logger.error("Database connection not available for portfolio metrics")
+        raise HTTPException(
+            status_code=503,
+            detail="Portfolio service temporarily unavailable. Please try again later."
+        )
+    
     portfolio_data = await get_portfolio_data(user_email)
     
     if not portfolio_data:
-        # Fallback to mock data if database not available
-        return calculate_portfolio_metrics()
+        logger.error(f"No portfolio data found for user: {user_email}")
+        # Return empty portfolio instead of error for better UX
+        return {
+            "id": str(uuid4()),
+            "name": "Empty Portfolio",
+            "total_value": 0,
+            "total_cost_basis": 0,
+            "unrealized_pnl": 0,
+            "returns_1d": 0,
+            "returns_1w": 0,
+            "returns_1m": 0,
+            "returns_ytd": 0,
+            "risk_score": 0,
+            "portfolio_beta": 0,
+            "portfolio_volatility": 0,
+            "sharpe_ratio": 0,
+            "max_drawdown": 0,
+            "var_95": 0,
+            "holdings": [],
+            "sector_allocation": {},
+            "last_updated": datetime.utcnow().isoformat()
+        }
     
     total_value = 0
     total_cost_basis = 0
     portfolio_holdings = []
     
     for row in portfolio_data:
-        price = float(row["price"]) if row["price"] else 185.00  # Default price if missing
+        price = float(row["price"]) if row["price"] else 0
         quantity = float(row["quantity"])
         cost_basis = float(row["cost_basis"]) if row["cost_basis"] else 0
         value = quantity * price
         total_value += value
         total_cost_basis += cost_basis
         
-        portfolio_holdings.append({
-            "symbol": row["symbol"],
-            "quantity": quantity,
-            "price": price,
-            "value": value,
-            "cost_basis": cost_basis,
-            "security_name": row["security_name"],
-            "sector": row["sector"] or "Technology"  # Default sector
-        })
+        if value > 0:  # Only include holdings with value
+            portfolio_holdings.append({
+                "symbol": row["symbol"],
+                "quantity": quantity,
+                "price": price,
+                "value": value,
+                "cost_basis": cost_basis,
+                "security_name": row["security_name"],
+                "sector": row["sector"] or "Other"
+            })
+    
+    if total_value == 0:
+        # Return minimal portfolio if no value
+        return {
+            "id": str(uuid4()),
+            "name": "Main Portfolio",
+            "total_value": 0,
+            "total_cost_basis": total_cost_basis,
+            "unrealized_pnl": 0,
+            "returns_1d": 0,
+            "returns_1w": 0,
+            "returns_1m": 0,
+            "returns_ytd": 0,
+            "risk_score": 0,
+            "portfolio_beta": 0,
+            "portfolio_volatility": 0,
+            "sharpe_ratio": 0,
+            "max_drawdown": 0,
+            "var_95": 0,
+            "holdings": portfolio_holdings,
+            "sector_allocation": {},
+            "last_updated": datetime.utcnow().isoformat()
+        }
     
     # Calculate weights and metrics
     for holding in portfolio_holdings:
         holding["weight"] = round(holding["value"] / total_value, 4) if total_value > 0 else 0
-        holding["change"] = round(random.uniform(-0.03, 0.04), 4)  # Simulated daily change
-        holding["beta"] = 1.2  # Default beta
+        holding["change"] = round(random.uniform(-0.03, 0.04), 4)  # Simulated daily change (TODO: fetch real data)
+        holding["beta"] = 1.2  # Default beta (TODO: fetch real beta from database)
     
     # Calculate portfolio metrics
     unrealized_pnl = total_value - total_cost_basis
-    returns_1d = random.uniform(-0.02, 0.03)
-    returns_1w = returns_1d * 5 + random.uniform(-0.01, 0.01)
-    returns_1m = returns_1d * 22 + random.uniform(-0.02, 0.02)
+    returns_1d = random.uniform(-0.02, 0.03)  # TODO: Calculate from historical data
+    returns_1w = returns_1d * 5 + random.uniform(-0.01, 0.01)  # TODO: Calculate from historical data
+    returns_1m = returns_1d * 22 + random.uniform(-0.02, 0.02)  # TODO: Calculate from historical data
     returns_ytd = (unrealized_pnl / total_cost_basis) if total_cost_basis > 0 else 0
     
     # Risk metrics
-    portfolio_beta = 1.2  # Simplified
+    portfolio_beta = 1.2  # TODO: Calculate weighted beta
     portfolio_volatility = portfolio_beta * 0.15
     risk_score = min(portfolio_beta / 2, 1.0)
     sharpe_ratio = (returns_ytd - 0.04) / portfolio_volatility if portfolio_volatility > 0 else 0
@@ -413,8 +554,8 @@ async def calculate_portfolio_metrics_from_db(user_email: str) -> dict:
         "portfolio_beta": round(portfolio_beta, 2),
         "portfolio_volatility": round(portfolio_volatility, 4),
         "sharpe_ratio": round(sharpe_ratio, 2),
-        "max_drawdown": -0.0823,
-        "var_95": round(total_value * 0.02, 2),
+        "max_drawdown": -0.0823,  # TODO: Calculate from historical data
+        "var_95": round(total_value * 0.02, 2),  # TODO: Calculate properly
         "holdings": portfolio_holdings,
         "sector_allocation": calculate_sector_allocation(portfolio_holdings, total_value),
         "last_updated": datetime.utcnow().isoformat()
@@ -441,7 +582,15 @@ def verify_jwt_token(token: str) -> Optional[dict]:
 
 # Enhanced Portfolio Calculations
 def calculate_portfolio_metrics() -> dict:
-    """Calculate real-time portfolio metrics based on actual holdings"""
+    """Calculate portfolio metrics - MOCK MODE ONLY"""
+    if not USE_MOCK_DATA:
+        logger.error("calculate_portfolio_metrics() called in production mode - this should not happen")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error: Mock function called in production mode"
+        )
+    
+    # Mock data calculation for development/testing only
     total_value = 0
     weighted_beta = 0
     portfolio_holdings = []
@@ -676,21 +825,60 @@ def generate_hedge_suggestions(scenario_type: str, portfolio: dict) -> List[dict
     return hedges
 
 # Macro Regime Detection
-def detect_macro_regime() -> dict:
-    """Implement macro regime detection logic"""
-    # Simulate current macro indicators
-    indicators = {
-        "gdp_growth": 2.3,
-        "inflation": 3.2,
-        "unemployment": 3.7,
-        "interest_rate": 5.25,
-        "yield_curve": -0.05,  # Slightly inverted
-        "vix": 18.5,
-        "dollar_index": 104.2,
-        "credit_spreads": 1.2,
-        "pmi": 48.5,  # Below 50 indicates contraction
-        "consumer_confidence": 68.0
-    }
+async def detect_macro_regime() -> dict:
+    """Implement macro regime detection logic using database or environment variables"""
+    # Try to fetch macro indicators from database or environment
+    indicators = {}
+    
+    if USE_MOCK_DATA:
+        # Mock mode - use simulated data
+        indicators = {
+            "gdp_growth": 2.3,
+            "inflation": 3.2,
+            "unemployment": 3.7,
+            "interest_rate": 5.25,
+            "yield_curve": -0.05,  # Slightly inverted
+            "vix": 18.5,
+            "dollar_index": 104.2,
+            "credit_spreads": 1.2,
+            "pmi": 48.5,  # Below 50 indicates contraction
+            "consumer_confidence": 68.0
+        }
+    else:
+        # Production mode - try database first, then environment variables
+        if db_pool:
+            try:
+                async with db_pool.acquire() as conn:
+                    # Try to fetch from macro_indicators table
+                    query = """
+                        SELECT indicator_name, value, last_updated
+                        FROM macro_indicators
+                        WHERE is_current = true
+                    """
+                    rows = await conn.fetch(query)
+                    
+                    if rows:
+                        for row in rows:
+                            indicators[row["indicator_name"]] = float(row["value"])
+                    
+            except Exception as e:
+                logger.warning(f"Could not fetch macro indicators from database: {e}")
+        
+        # If no database data, try environment variables as fallback
+        if not indicators:
+            # Try to get from environment variables or use defaults
+            indicators = {
+                "gdp_growth": float(os.getenv("MACRO_GDP_GROWTH", "2.0")),
+                "inflation": float(os.getenv("MACRO_INFLATION", "2.5")),
+                "unemployment": float(os.getenv("MACRO_UNEMPLOYMENT", "4.0")),
+                "interest_rate": float(os.getenv("MACRO_INTEREST_RATE", "5.0")),
+                "yield_curve": float(os.getenv("MACRO_YIELD_CURVE", "0.5")),
+                "vix": float(os.getenv("MACRO_VIX", "16.0")),
+                "dollar_index": float(os.getenv("MACRO_DOLLAR_INDEX", "100.0")),
+                "credit_spreads": float(os.getenv("MACRO_CREDIT_SPREADS", "1.0")),
+                "pmi": float(os.getenv("MACRO_PMI", "50.0")),
+                "consumer_confidence": float(os.getenv("MACRO_CONSUMER_CONFIDENCE", "70.0"))
+            }
     
     # Detect regime based on indicators
     regime = "Unknown"
@@ -927,13 +1115,23 @@ def delete_alert(alert_id: str) -> bool:
 # Claude AI Integration
 async def analyze_with_claude(query: str, context: dict) -> dict:
     """Use Claude AI to analyze portfolio"""
-    if not ANTHROPIC_API_KEY:
-        # Provide mock AI response if no API key
+    if USE_MOCK_DATA:
+        # Mock mode - use mock AI response
         return generate_mock_ai_response(query, context)
     
+    if not ANTHROPIC_API_KEY:
+        # In production mode, fail if no API key
+        logger.error("Claude API key not configured")
+        raise HTTPException(
+            status_code=503,
+            detail="AI analysis service not configured. Please configure API key."
+        )
+    
     try:
-        portfolio = calculate_portfolio_metrics()
-        macro = detect_macro_regime()
+        # Get portfolio data from context or database
+        user_email = context.get("user_email", "michael@dawsos.com")
+        portfolio = await calculate_portfolio_metrics_from_db(user_email)
+        macro = await detect_macro_regime()
         
         # Prepare context for Claude
         system_prompt = """You are an expert portfolio manager and financial analyst. 
@@ -988,16 +1186,32 @@ async def analyze_with_claude(query: str, context: dict) -> dict:
                 }
             else:
                 logger.error(f"Claude API error: {response.status_code}")
-                return generate_mock_ai_response(query, context)
+                raise HTTPException(
+                    status_code=503,
+                    detail="AI service temporarily unavailable. Please try again later."
+                )
     
+    except HTTPException:
+        raise  # Re-raise HTTPException as-is
     except Exception as e:
         logger.error(f"Error calling Claude API: {e}")
-        return generate_mock_ai_response(query, context)
+        raise HTTPException(
+            status_code=503,
+            detail="AI service temporarily unavailable. Please try again later."
+        )
 
-def generate_mock_ai_response(query: str, context: dict) -> dict:
-    """Generate intelligent mock AI response when Claude is unavailable"""
-    portfolio = calculate_portfolio_metrics()
-    macro = detect_macro_regime()
+async def generate_mock_ai_response(query: str, context: dict) -> dict:
+    """Generate intelligent mock AI response - MOCK MODE ONLY"""
+    if not USE_MOCK_DATA:
+        logger.error("generate_mock_ai_response() called in production mode - this should not happen")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error: Mock function called in production mode"
+        )
+    
+    # Mock mode - use mock data for AI response
+    portfolio = calculate_portfolio_metrics()  # Use mock portfolio function
+    macro = await detect_macro_regime()  # Use mock macro function
     
     # Generate contextual response based on query keywords
     query_lower = query.lower()
@@ -1417,76 +1631,88 @@ async def health_check():
 
 @app.post("/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest):
-    """User login endpoint - now uses database"""
+    """User login endpoint - database only"""
     logger.info(f"Login attempt for: {request.email}")
     
-    # Check if database is available, fallback to mock data if not
-    if db_pool:
-        try:
-            async with db_pool.acquire() as conn:
-                # Query user from database
-                query = """
-                    SELECT id, email, password_hash, role 
-                    FROM users 
-                    WHERE email = $1 AND is_active = true
-                """
-                user_data = await conn.fetchrow(query, request.email)
-                
-                if not user_data:
-                    logger.warning(f"User not found in database: {request.email}")
-                    raise HTTPException(status_code=401, detail="Invalid credentials")
-                
-                # Verify password
-                if not verify_password(request.password, user_data["password_hash"]):
-                    logger.warning(f"Invalid password for: {request.email}")
-                    raise HTTPException(status_code=401, detail="Invalid credentials")
-                
-                # Create token with database user data
-                token = create_jwt_token(
-                    str(user_data["id"]), 
-                    user_data["email"], 
-                    user_data["role"]
-                )
-                
-                logger.info(f"Login successful from database for: {request.email}")
-                
-                return LoginResponse(
-                    access_token=token,
-                    expires_in=JWT_EXPIRATION_HOURS * 3600,
-                    user={
-                        "id": str(user_data["id"]),
-                        "email": user_data["email"],
-                        "role": user_data["role"]
-                    }
-                )
-        except Exception as e:
-            logger.error(f"Database error during login: {e}")
-            # Fallback to mock data if database fails
+    # Check if mock data mode is enabled
+    if USE_MOCK_DATA:
+        user_data = USERS_DB.get(request.email)
+        
+        if not user_data:
+            logger.warning(f"User not found in mock data: {request.email}")
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+        if not verify_password(request.password, user_data["password"]):
+            logger.warning(f"Invalid password for: {request.email}")
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+        token = create_jwt_token(user_data["id"], user_data["email"], user_data["role"])
+        
+        logger.info(f"Login successful (mock mode) for: {request.email}")
+        
+        return LoginResponse(
+            access_token=token,
+            expires_in=JWT_EXPIRATION_HOURS * 3600,
+            user={
+                "id": user_data["id"],
+                "email": user_data["email"],
+                "role": user_data["role"]
+            }
+        )
     
-    # Fallback to mock data if database not available
-    user_data = USERS_DB.get(request.email)
+    # Database authentication (production mode)
+    if not db_pool:
+        logger.error("Database connection not available")
+        raise HTTPException(
+            status_code=503, 
+            detail="Authentication service temporarily unavailable. Please try again later."
+        )
     
-    if not user_data:
-        logger.warning(f"User not found: {request.email}")
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    if not verify_password(request.password, user_data["password"]):
-        logger.warning(f"Invalid password for: {request.email}")
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    token = create_jwt_token(user_data["id"], user_data["email"], user_data["role"])
-    
-    logger.info(f"Login successful for: {request.email}")
-    
-    return LoginResponse(
-        access_token=token,
-        expires_in=JWT_EXPIRATION_HOURS * 3600,
-        user={
-            "id": user_data["id"],
-            "email": user_data["email"],
-            "role": user_data["role"]
-        }
-    )
+    try:
+        async with db_pool.acquire() as conn:
+            # Query user from database
+            query = """
+                SELECT id, email, password_hash, role 
+                FROM users 
+                WHERE email = $1 AND is_active = true
+            """
+            user_data = await conn.fetchrow(query, request.email)
+            
+            if not user_data:
+                logger.warning(f"User not found in database: {request.email}")
+                raise HTTPException(status_code=401, detail="Invalid credentials")
+            
+            # Verify password
+            if not verify_password(request.password, user_data["password_hash"]):
+                logger.warning(f"Invalid password for: {request.email}")
+                raise HTTPException(status_code=401, detail="Invalid credentials")
+            
+            # Create token with database user data
+            token = create_jwt_token(
+                str(user_data["id"]), 
+                user_data["email"], 
+                user_data["role"]
+            )
+            
+            logger.info(f"Login successful from database for: {request.email}")
+            
+            return LoginResponse(
+                access_token=token,
+                expires_in=JWT_EXPIRATION_HOURS * 3600,
+                user={
+                    "id": str(user_data["id"]),
+                    "email": user_data["email"],
+                    "role": user_data["role"]
+                }
+            )
+    except HTTPException:
+        raise  # Re-raise HTTPException as-is
+    except Exception as e:
+        logger.error(f"Database error during login: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Authentication service temporarily unavailable. Please try again later."
+        )
 
 @app.post("/auth/logout")
 async def logout(request: Request):
@@ -1522,12 +1748,13 @@ async def execute_pattern(request: ExecuteRequest):
     logger.info(f"Executing pattern: {pattern}")
     
     if pattern == "portfolio_overview":
-        # Use database if available, otherwise fallback to mock data
+        # Use database only - no fallback
         user_email = inputs.get("email", "michael@dawsos.com")
-        if db_pool:
-            result = await calculate_portfolio_metrics_from_db(user_email)
-        else:
+        
+        if USE_MOCK_DATA:
             result = calculate_portfolio_metrics()
+        else:
+            result = await calculate_portfolio_metrics_from_db(user_email)
         
         return {
             "result": result,
@@ -1536,20 +1763,27 @@ async def execute_pattern(request: ExecuteRequest):
     
     elif pattern == "portfolio_scenario_analysis":
         scenario = inputs.get("scenario", "market_crash")
-        return {
-            "result": calculate_scenario_impact(scenario),
-            "status": "success"
-        }
+        
+        if USE_MOCK_DATA:
+            return {
+                "result": calculate_scenario_impact(scenario),
+                "status": "success"
+            }
+        else:
+            raise HTTPException(
+                status_code=501,
+                detail="Scenario analysis not yet implemented for production mode"
+            )
     
     elif pattern == "macro_regime_detection":
         return {
-            "result": detect_macro_regime(),
+            "result": await detect_macro_regime(),
             "status": "success"
         }
     
     elif pattern == "macro_cycles_overview":
         # Get macro data and transform for UI
-        macro_data = detect_macro_regime()
+        macro_data = await detect_macro_regime()
         
         # Transform to match UI expectations
         result = {
@@ -1592,54 +1826,96 @@ async def execute_pattern(request: ExecuteRequest):
 @app.get("/api/portfolio")
 async def get_portfolio():
     """Get portfolio data with real-time calculations"""
-    return calculate_portfolio_metrics()
+    if USE_MOCK_DATA:
+        return calculate_portfolio_metrics()
+    
+    # Production mode - database only
+    user_email = "michael@dawsos.com"  # TODO: Get from JWT token
+    try:
+        return await calculate_portfolio_metrics_from_db(user_email)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching portfolio: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Portfolio service temporarily unavailable. Please try again later."
+        )
 
 @app.post("/api/scenario")
 async def analyze_scenario(scenario: str = "market_crash"):
     """Analyze scenario impact on portfolio"""
-    return calculate_scenario_impact(scenario)
+    if USE_MOCK_DATA:
+        return calculate_scenario_impact(scenario)
+    
+    # In production, this should use real portfolio data
+    # For now, return a service unavailable error
+    raise HTTPException(
+        status_code=501,
+        detail="Scenario analysis not yet implemented for production mode. Please set USE_MOCK_DATA=true for demo."
+    )
 
 @app.get("/api/macro")
 async def get_macro_regime():
     """Get current macro regime and analysis"""
-    return detect_macro_regime()
+    return await detect_macro_regime()
 
 @app.get("/api/alerts")
 async def get_alerts():
     """Get current alerts from database"""
-    user_email = "michael@dawsos.com"
+    user_email = "michael@dawsos.com"  # TODO: Get from JWT token
     
-    if db_pool:
+    if USE_MOCK_DATA:
+        return check_alerts()
+    
+    if not db_pool:
+        logger.error("Database connection not available for alerts")
+        raise HTTPException(
+            status_code=503,
+            detail="Alerts service temporarily unavailable. Please try again later."
+        )
+    
+    try:
         alerts = await get_user_alerts(user_email)
-        if alerts:
-            # Convert database rows to appropriate format
-            formatted_alerts = []
-            for row in alerts:
-                # Handle condition_json which can be a dict or string
-                condition_data = row["condition_json"]
-                if isinstance(condition_data, str):
-                    try:
-                        condition_data = json.loads(condition_data) if condition_data else {}
-                    except:
-                        condition_data = {}
-                elif not condition_data:
+        
+        if not alerts:
+            return []  # Return empty list instead of error
+        
+        # Convert database rows to appropriate format
+        formatted_alerts = []
+        for row in alerts:
+            # Handle condition_json which can be a dict or string
+            condition_data = row["condition_json"]
+            if isinstance(condition_data, str):
+                try:
+                    condition_data = json.loads(condition_data) if condition_data else {}
+                except:
                     condition_data = {}
-                    
-                formatted_alerts.append({
-                    "id": str(row["id"]),
-                    "type": condition_data.get("type", "price"),
-                    "condition": condition_data.get("condition", "above"),
-                    "symbol": condition_data.get("symbol"),
-                    "threshold": condition_data.get("threshold", 0),
-                    "message": condition_data.get("message", ""),
-                    "active": row["is_active"],
-                    "last_triggered": row["last_fired_at"].isoformat() if row["last_fired_at"] else None,
-                    "created_at": row["created_at"].isoformat() if row["created_at"] else None
-                })
-            return formatted_alerts
-    
-    # Fallback to mock data if database not available
-    return check_alerts()
+            elif not condition_data:
+                condition_data = {}
+                
+            formatted_alerts.append({
+                "id": str(row["id"]),
+                "type": condition_data.get("type", "price"),
+                "condition": condition_data.get("condition", "above"),
+                "symbol": condition_data.get("symbol"),
+                "threshold": condition_data.get("threshold", 0),
+                "message": condition_data.get("message", ""),
+                "active": row["is_active"],
+                "last_triggered": row["last_fired_at"].isoformat() if row["last_fired_at"] else None,
+                "created_at": row["created_at"].isoformat() if row["created_at"] else None
+            })
+        
+        return formatted_alerts
+        
+    except HTTPException:
+        raise  # Re-raise HTTPException as-is
+    except Exception as e:
+        logger.error(f"Error fetching alerts: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Alerts service temporarily unavailable. Please try again later."
+        )
 
 @app.post("/api/alerts")
 async def create_new_alert(request: Request):
@@ -1691,82 +1967,84 @@ async def get_holdings():
 @app.get("/api/metrics")
 async def get_metrics():
     """Get portfolio metrics"""
-    portfolio = calculate_portfolio_metrics()
-    return {
-        "total_value": portfolio["total_value"],
-        "returns": {
-            "1d": portfolio["returns_1d"],
-            "1w": portfolio["returns_1w"],
-            "1m": portfolio["returns_1m"],
-            "ytd": portfolio["returns_ytd"]
-        },
-        "risk_metrics": {
-            "beta": portfolio["portfolio_beta"],
-            "volatility": portfolio["portfolio_volatility"],
-            "sharpe_ratio": portfolio["sharpe_ratio"],
-            "var_95": portfolio["var_95"]
+    if USE_MOCK_DATA:
+        portfolio = calculate_portfolio_metrics()
+        return {
+            "total_value": portfolio["total_value"],
+            "returns": {
+                "1d": portfolio["returns_1d"],
+                "1w": portfolio["returns_1w"],
+                "1m": portfolio["returns_1m"],
+                "ytd": portfolio["returns_ytd"]
+            },
+            "risk_metrics": {
+                "beta": portfolio["portfolio_beta"],
+                "volatility": portfolio["portfolio_volatility"],
+                "sharpe_ratio": portfolio["sharpe_ratio"],
+                "var_95": portfolio["var_95"]
+            }
         }
-    }
+    
+    # Production mode - database only
+    user_email = "michael@dawsos.com"  # TODO: Get from JWT token
+    try:
+        portfolio = await calculate_portfolio_metrics_from_db(user_email)
+        return {
+            "total_value": portfolio["total_value"],
+            "returns": {
+                "1d": portfolio["returns_1d"],
+                "1w": portfolio["returns_1w"],
+                "1m": portfolio["returns_1m"],
+                "ytd": portfolio["returns_ytd"]
+            },
+            "risk_metrics": {
+                "beta": portfolio["portfolio_beta"],
+                "volatility": portfolio["portfolio_volatility"],
+                "sharpe_ratio": portfolio["sharpe_ratio"],
+                "var_95": portfolio["var_95"]
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching metrics: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Metrics service temporarily unavailable. Please try again later."
+        )
 
 @app.get("/api/transactions")
 async def get_transactions(page: int = 1, page_size: int = 20):
     """Get transaction history with pagination from database"""
-    user_email = "michael@dawsos.com"
+    user_email = "michael@dawsos.com"  # TODO: Get from JWT token
     
-    if db_pool:
-        transactions = await get_user_transactions(user_email)
-        if transactions:
-            # Convert database rows to appropriate format
-            formatted_transactions = []
-            for row in transactions:
-                formatted_transactions.append({
-                    "date": row["trade_date"].strftime("%Y-%m-%d") if row["trade_date"] else "",
-                    "type": row["type"].lower() if row["type"] else "buy",
-                    "symbol": row["symbol"],
-                    "shares": float(row["quantity"]),
-                    "price": float(row["price"]),
-                    "amount": float(row["amount"]),
-                    "realized_gain": 0  # Simplified for now
-                })
-            
-            # Calculate pagination
-            total_transactions = len(formatted_transactions)
-            total_pages = math.ceil(total_transactions / page_size)
-            start_idx = (page - 1) * page_size
-            end_idx = start_idx + page_size
-            
-            # Get paginated transactions
-            paginated_transactions = formatted_transactions[start_idx:end_idx]
-            
-            # Calculate summary statistics
-            total_invested = sum(t["amount"] for t in formatted_transactions if t["type"] == "buy")
-            total_sold = sum(t["amount"] for t in formatted_transactions if t["type"] == "sell")
-            total_dividends = sum(t["amount"] for t in formatted_transactions if t["type"] == "dividend")
-            
-            return {
-                "transactions": paginated_transactions,
-                "pagination": {
-                    "page": page,
-                    "page_size": page_size,
-                    "total_transactions": total_transactions,
-                    "total_pages": total_pages
-                },
-                "summary": {
-                    "total_invested": abs(total_invested),
-                    "total_sold": total_sold,
-                    "total_dividends": total_dividends,
-                    "total_realized_gains": 0,
-                    "net_cash_flow": total_invested + total_sold + total_dividends
-                }
-            }
-    
-    # Fallback to mock data if database not available
-    return get_portfolio_transactions(page, page_size)
+    # Use the unified get_portfolio_transactions function
+    try:
+        return await get_portfolio_transactions(user_email, page, page_size)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching transactions: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Transaction service temporarily unavailable. Please try again later."
+        )
 
 @app.get("/api/export/pdf")
 async def export_portfolio_pdf():
     """Export portfolio summary as PDF (simplified HTML version)"""
-    portfolio = calculate_portfolio_metrics()
+    if USE_MOCK_DATA:
+        portfolio = calculate_portfolio_metrics()
+    else:
+        user_email = "michael@dawsos.com"  # TODO: Get from JWT token
+        try:
+            portfolio = await calculate_portfolio_metrics_from_db(user_email)
+        except Exception as e:
+            logger.error(f"Error generating PDF export: {e}")
+            raise HTTPException(
+                status_code=503,
+                detail="Export service temporarily unavailable. Please try again later."
+            )
     
     # Generate simple HTML report
     html_content = f"""
@@ -1843,7 +2121,16 @@ async def export_portfolio_csv(export_type: str = "holdings"):
     
     if export_type == "transactions":
         # Export transactions
-        transactions = get_portfolio_transactions(1, 1000)["transactions"]  # Get all transactions
+        user_email = "michael@dawsos.com"  # TODO: Get from JWT token
+        try:
+            transaction_data = await get_portfolio_transactions(user_email, 1, 1000)
+            transactions = transaction_data["transactions"]  # Get all transactions
+        except Exception as e:
+            logger.error(f"Error fetching transactions for export: {e}")
+            raise HTTPException(
+                status_code=503,
+                detail="Export service temporarily unavailable. Please try again later."
+            )
         
         output = io.StringIO()
         writer = csv.writer(output)
@@ -1868,7 +2155,18 @@ async def export_portfolio_csv(export_type: str = "holdings"):
         
     else:
         # Export holdings (default)
-        portfolio = calculate_portfolio_metrics()
+        if USE_MOCK_DATA:
+            portfolio = calculate_portfolio_metrics()
+        else:
+            user_email = "michael@dawsos.com"  # TODO: Get from JWT token
+            try:
+                portfolio = await calculate_portfolio_metrics_from_db(user_email)
+            except Exception as e:
+                logger.error(f"Error fetching portfolio for export: {e}")
+                raise HTTPException(
+                    status_code=503,
+                    detail="Export service temporarily unavailable. Please try again later."
+                )
         
         output = io.StringIO()
         writer = csv.writer(output)
