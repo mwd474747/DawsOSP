@@ -1179,6 +1179,23 @@ class InternalDataFetcher:
         
         return min(100, unrest_score)
 
+def calculate_credit_impulse(current_credit_growth: float, previous_credit_growth: float = None) -> float:
+    """
+    Calculate credit impulse (change in credit growth rate)
+    Credit impulse = Current period credit growth - Previous period credit growth
+    """
+    if previous_credit_growth is None:
+        # If we don't have previous data, estimate based on current levels
+        # High credit growth suggests positive impulse, low suggests negative
+        if current_credit_growth > 7:
+            return 2.0  # Positive impulse
+        elif current_credit_growth < 3:
+            return -2.0  # Negative impulse
+        else:
+            return 0.0  # Neutral
+    
+    return current_credit_growth - previous_credit_growth
+
 # Dalio Cycles Framework
 class DalioCycleAnalyzer:
     """Analyzer for Ray Dalio's economic cycles"""
@@ -1236,6 +1253,11 @@ class DalioCycleAnalyzer:
         credit_growth = indicators.get("credit_growth", 5.0)
         interest_rate = indicators.get("interest_rate", 5.0)
         real_rate = indicators.get("real_interest_rate", 2.5)
+        productivity = indicators.get("productivity_growth", 1.5)
+        
+        # Calculate credit impulse (change in credit growth)
+        # In production, this would compare with previous period
+        credit_impulse = calculate_credit_impulse(credit_growth)
         
         # Decision tree for LTDC phase detection
         if debt_to_gdp < 60:
@@ -1254,7 +1276,10 @@ class DalioCycleAnalyzer:
             "metrics": {
                 "debt_to_gdp": debt_to_gdp,
                 "credit_growth": credit_growth,
-                "interest_burden": (debt_to_gdp * interest_rate) / 100
+                "credit_impulse": credit_impulse,  # NEW: Add credit impulse
+                "real_rates": real_rate,  # NEW: Add real rates
+                "productivity_growth": productivity,  # NEW: Add productivity
+                "interest_burden": (debt_to_gdp * max(real_rate, 0.1)) / 100  # Use real rate for burden
             }
         }
     
