@@ -1935,6 +1935,21 @@ async def detect_macro_regime() -> dict:
     stdc_result = dalio_analyzer.detect_stdc_phase(indicators)
     ltdc_result = dalio_analyzer.detect_ltdc_phase(indicators)
     
+    # Add missing fields to stdc_metrics
+    stdc_result["metrics"]["rate_cycle"] = calculate_rate_cycle(indicators)
+    stdc_result["metrics"]["duration"] = estimate_phase_duration(stdc_result["phase"])
+    # Copy credit_growth to stdc_metrics for UI compatibility
+    stdc_result["metrics"]["credit_growth"] = indicators.get("credit_growth", 3.5)
+    
+    # Add missing fields to ltdc_metrics (debt_metrics)
+    debt_to_gdp = ltdc_result["metrics"].get("debt_to_gdp", indicators.get("debt_to_gdp", 125.0))
+    interest_burden = ltdc_result["metrics"].get("interest_burden", 5.0)
+    credit_impulse = ltdc_result["metrics"].get("credit_impulse", calculate_credit_impulse(indicators.get("credit_growth", 3.5)))
+    credit_growth = ltdc_result["metrics"].get("credit_growth", indicators.get("credit_growth", 3.5))
+    
+    ltdc_result["metrics"]["debt_service_ratio"] = calculate_debt_service_ratio(debt_to_gdp, interest_burden)
+    ltdc_result["metrics"]["deleveraging_risk"] = categorize_deleveraging_risk(debt_to_gdp, credit_impulse, credit_growth)
+    
     # Empire phase detection with real data
     empire_result = empire_analyzer.detect_empire_phase(indicators)
     empire_result["real_data"] = {
@@ -2057,6 +2072,71 @@ async def detect_macro_regime() -> dict:
         "key_risks": identify_key_risks(indicators),
         "opportunities": identify_opportunities(combined_regime, indicators)
     }
+
+def calculate_rate_cycle(indicators: dict) -> str:
+    """Determine if interest rates are rising, falling, or stable"""
+    current_rate = indicators.get("interest_rate", 5.0)
+    
+    # Use historical average as baseline (can be enhanced with actual historical data)
+    historical_avg = 3.5  # Historical average interest rate
+    
+    # Also consider yield curve for trend direction
+    yield_curve = indicators.get("yield_curve", 0.5)
+    m2_growth = indicators.get("m2_growth", 5.0)
+    
+    # Simple trend detection based on current level and yield curve
+    if current_rate > historical_avg + 1.5:
+        if yield_curve < 0:
+            return "peaking"  # High rates but inverted curve suggests peak
+        return "rising"
+    elif current_rate < historical_avg - 1.0:
+        if m2_growth > 7:
+            return "bottoming"  # Low rates with high money growth suggests bottom
+        return "falling"
+    else:
+        # Check yield curve for direction signal
+        if yield_curve < -0.5:
+            return "falling"  # Inverted curve suggests rates will fall
+        elif yield_curve > 1.0:
+            return "rising"  # Steep curve suggests rates will rise
+        return "stable"
+
+def estimate_phase_duration(phase: str) -> int:
+    """Estimate how long we've been in current STDC phase (in months)"""
+    # Based on typical STDC cycle durations from Dalio's research
+    # These are estimates - in production would track actual phase transitions
+    phase_estimates = {
+        "EARLY_EXPANSION": 6,   # Typically 6-12 months into expansion
+        "MID_EXPANSION": 18,    # Typically 12-24 months
+        "LATE_EXPANSION": 12,   # Typically 6-18 months before peak
+        "EARLY_CONTRACTION": 3, # Typically 3-6 months into contraction
+        "RECESSION": 9,         # Typically 6-18 months
+    }
+    return phase_estimates.get(phase, 12)  # Default 12 months if unknown
+
+def calculate_debt_service_ratio(debt_to_gdp: float, interest_burden: float) -> float:
+    """Calculate debt service ratio as percentage of GDP"""
+    # Debt service ratio = (debt_to_gdp * effective_interest_rate) / 100
+    # Interest burden already represents debt * rate, so we adjust
+    return min(15.0, interest_burden)  # Cap at 15% for display purposes
+
+def categorize_deleveraging_risk(debt_to_gdp: float, credit_impulse: float, credit_growth: float) -> str:
+    """Categorize deleveraging risk based on debt levels and credit dynamics"""
+    # High risk: High debt + negative credit impulse
+    if debt_to_gdp > 100:
+        if credit_impulse < -2 or credit_growth < 0:
+            return "High"
+        elif credit_impulse < 0 or credit_growth < 2:
+            return "Medium"
+        else:
+            return "Low"  # Still growing credit despite high debt
+    elif debt_to_gdp > 80:
+        if credit_impulse < -3 or credit_growth < -2:
+            return "Medium"
+        else:
+            return "Low"
+    else:
+        return "Low"  # Low debt levels mean low deleveraging risk
 
 def identify_leading_indicators(indicators: dict, cycles: dict) -> dict:
     """Identify leading indicators suggesting cycle transitions"""
