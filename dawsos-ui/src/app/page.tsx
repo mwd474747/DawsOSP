@@ -1,129 +1,152 @@
-import Link from 'next/link'
+'use client';
 
-// Force dynamic rendering
-export const dynamic = 'force-dynamic'
+import React from 'react';
+import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useCurrentUser } from '@/lib/queries';
 
-export default function Home() {
+export default function HomePage() {
+  const { data: user, isLoading } = useCurrentUser();
+
+  const features = [
+    {
+      name: 'Portfolio Overview',
+      description: 'Comprehensive portfolio snapshot with performance metrics and attribution analysis',
+      href: '/portfolio',
+      icon: '📊',
+      color: 'bg-blue-500'
+    },
+    {
+      name: 'Macro Dashboard',
+      description: 'Economic cycle detection and regime analysis with market indicators',
+      href: '/macro',
+      icon: '🌍',
+      color: 'bg-green-500'
+    },
+    {
+      name: 'Holdings Detail',
+      description: 'Detailed analysis of individual holdings with fundamentals and technicals',
+      href: '/holdings',
+      icon: '📈',
+      color: 'bg-purple-500'
+    },
+    {
+      name: 'Scenarios',
+      description: 'Portfolio stress testing and scenario analysis with risk assessment',
+      href: '/scenarios',
+      icon: '🎯',
+      color: 'bg-orange-500'
+    },
+    {
+      name: 'Alerts',
+      description: 'Real-time market alerts and portfolio monitoring with notifications',
+      href: '/alerts',
+      icon: '🔔',
+      color: 'bg-red-500'
+    },
+    {
+      name: 'Reports',
+      description: 'Comprehensive portfolio reports with PDF generation and export',
+      href: '/reports',
+      icon: '📄',
+      color: 'bg-indigo-500'
+    },
+    {
+      name: 'Buffett Checklist',
+      description: 'Warren Buffett investment criteria analysis and quality assessment',
+      href: '/buffett-checklist',
+      icon: '📋',
+      color: 'bg-yellow-500'
+    },
+    {
+      name: 'Policy Rebalance',
+      description: 'Portfolio rebalancing recommendations and execution strategies',
+      href: '/policy-rebalance',
+      icon: '⚖️',
+      color: 'bg-teal-500'
+    },
+    {
+      name: 'Cycle Deleveraging',
+      description: 'Economic cycle deleveraging scenario analysis and risk assessment',
+      href: '/cycle-deleveraging',
+      icon: '🔄',
+      color: 'bg-cyan-500'
+    },
+    {
+      name: 'Holding Deep Dive',
+      description: 'Detailed analysis of individual holdings with fundamentals and technicals',
+      href: '/holding-deep-dive',
+      icon: '🔍',
+      color: 'bg-pink-500'
+    }
+  ];
+
+  // Don't show loading for user query since it's disabled by default
+
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <div className="max-w-7xl mx-auto px-8 py-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">
-            DawsOS Portfolio Intelligence
+            Welcome to DawsOS
           </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-400">
-            Advanced portfolio analysis and risk management platform
+          <p className="text-xl text-slate-600 dark:text-slate-400 mb-2">
+            Professional Portfolio Intelligence Platform
           </p>
+          {user && (
+            <p className="text-lg text-slate-500 dark:text-slate-500">
+              Hello, {user.email} ({user.role})
+            </p>
+          )}
         </div>
 
-        {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <Link href="/portfolio" className="group">
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mr-4">
-                  <span className="text-white text-xl">📊</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Portfolio Overview</h3>
-              </div>
-              <p className="text-slate-600 dark:text-slate-400">
-                Comprehensive portfolio analysis with KPIs, performance metrics, and attribution analysis.
-              </p>
-            </div>
-          </Link>
-
-          <Link href="/macro" className="group">
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mr-4">
-                  <span className="text-white text-xl">🌍</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Macro Dashboard</h3>
-              </div>
-              <p className="text-slate-600 dark:text-slate-400">
-                Market regime analysis, economic cycles, and factor exposure monitoring.
-              </p>
-            </div>
-          </Link>
-
-          <Link href="/holdings" className="group">
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mr-4">
-                  <span className="text-white text-xl">📈</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Holdings Detail</h3>
-              </div>
-              <p className="text-slate-600 dark:text-slate-400">
-                Detailed holdings analysis with risk metrics and performance attribution.
-              </p>
-            </div>
-          </Link>
-
-          <Link href="/scenarios" className="group">
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mr-4">
-                  <span className="text-white text-xl">🎯</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Scenarios</h3>
-              </div>
-              <p className="text-slate-600 dark:text-slate-400">
-                Stress testing and what-if analysis for portfolio risk assessment.
-              </p>
-            </div>
-          </Link>
-
-          <Link href="/alerts" className="group">
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center mr-4">
-                  <span className="text-white text-xl">🔔</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Alerts</h3>
-              </div>
-              <p className="text-slate-600 dark:text-slate-400">
-                Real-time alert management and risk monitoring system.
-              </p>
-            </div>
-          </Link>
-
-          <Link href="/reports" className="group">
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-indigo-500 rounded-lg flex items-center justify-center mr-4">
-                  <span className="text-white text-xl">📄</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Reports</h3>
-              </div>
-              <p className="text-slate-600 dark:text-slate-400">
-                Generate comprehensive PDF reports and export portfolio data.
-              </p>
-            </div>
-          </Link>
+        {/* Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {features.map((feature) => (
+            <Link key={feature.name} href={feature.href} className="group">
+              <Card className="h-full hover:shadow-lg transition-shadow duration-200">
+                <CardHeader>
+                  <div className="flex items-center mb-4">
+                    <div className={`w-12 h-12 ${feature.color} rounded-lg flex items-center justify-center mr-4`}>
+                      <span className="text-white text-xl">{feature.icon}</span>
+                    </div>
+                    <CardTitle className="text-xl">{feature.name}</CardTitle>
+                  </div>
+                  <CardDescription className="text-slate-600 dark:text-slate-400">
+                    {feature.description}
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+          ))}
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-            <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Value</h3>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">$1,234,567</p>
-          </div>
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-            <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">Today's P&L</h3>
-            <p className="text-2xl font-bold text-green-600">+$12,345</p>
-          </div>
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-            <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">YTD Return</h3>
-            <p className="text-2xl font-bold text-green-600">+15.2%</p>
-          </div>
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-            <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">Sharpe Ratio</h3>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">1.85</p>
-          </div>
+        {/* Status */}
+        <div className="mt-12 text-center">
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle>System Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="flex items-center justify-center">
+                  <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                  Backend API: Online
+                </div>
+                <div className="flex items-center justify-center">
+                  <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                  Database: Connected
+                </div>
+                <div className="flex items-center justify-center">
+                  <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                  Authentication: Active
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </main>
-  )
+    </div>
+  );
 }

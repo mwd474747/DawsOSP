@@ -310,54 +310,54 @@ class PatternOrchestrator:
                         logger.debug(f"Skipped {capability}: condition not met")
                         continue
 
-            # Resolve template arguments
-            try:
-                args = self._resolve_args(step.get("args", {}), state)
-            except Exception as e:
-                error_msg = f"Failed to resolve args for {capability}: {e}"
-                logger.error(error_msg)
-                trace.add_error(capability, error_msg)
-                raise ValueError(error_msg)
+                # Resolve template arguments
+                try:
+                    args = self._resolve_args(step.get("args", {}), state)
+                except Exception as e:
+                    error_msg = f"Failed to resolve args for {capability}: {e}"
+                    logger.error(error_msg)
+                    trace.add_error(capability, error_msg)
+                    raise ValueError(error_msg)
 
-            # Execute capability
-            try:
-                import time
-                start_time = time.time()
+                # Execute capability
+                try:
+                    import time
+                    start_time = time.time()
 
-                result = await self.agent_runtime.execute_capability(
-                    capability,
-                    ctx=ctx,
-                    state=state,
-                    **args,
-                )
+                    result = await self.agent_runtime.execute_capability(
+                        capability,
+                        ctx=ctx,
+                        state=state,
+                        **args,
+                    )
 
-                duration = time.time() - start_time
+                    duration = time.time() - start_time
 
-                # Record step duration metrics
-                if metrics:
-                    metrics.pattern_step_duration.labels(
-                        pattern_id=pattern_id,
-                        step_index=str(step_idx),
-                        capability=capability,
-                    ).observe(duration)
+                    # Record step duration metrics
+                    if metrics:
+                        metrics.pattern_step_duration.labels(
+                            pattern_id=pattern_id,
+                            step_index=str(step_idx),
+                            capability=capability,
+                        ).observe(duration)
 
-                # Store result in state
-                result_key = step.get("as", "last")
-                logger.info(f"📦 Storing result from {capability} in state['{result_key}']")
-                logger.info(f"Result type: {type(result)}, is None: {result is None}")
-                state[result_key] = result
-                logger.info(f"State after storing: keys={list(state.keys())}, '{result_key}' is None: {state.get(result_key) is None}")
+                    # Store result in state
+                    result_key = step.get("as", "last")
+                    logger.info(f"📦 Storing result from {capability} in state['{result_key}']")
+                    logger.info(f"Result type: {type(result)}, is None: {result is None}")
+                    state[result_key] = result
+                    logger.info(f"State after storing: keys={list(state.keys())}, '{result_key}' is None: {state.get(result_key) is None}")
 
-                trace.add_step(capability, result, args, duration)
-                logger.debug(
-                    f"Completed {capability} in {duration:.3f}s → {result_key}"
-                )
+                    trace.add_step(capability, result, args, duration)
+                    logger.debug(
+                        f"Completed {capability} in {duration:.3f}s → {result_key}"
+                    )
 
-            except Exception as e:
-                error_msg = f"Capability {capability} failed: {e}"
-                logger.error(error_msg, exc_info=True)
-                trace.add_error(capability, error_msg)
-                raise
+                except Exception as e:
+                    error_msg = f"Capability {capability} failed: {e}"
+                    logger.error(error_msg, exc_info=True)
+                    trace.add_error(capability, error_msg)
+                    raise
 
         except Exception as e:
             # Pattern failed - record error status
@@ -499,8 +499,29 @@ class PatternOrchestrator:
                 condition
             )
 
-            # Simple eval (TODO: Replace with safe evaluator in production)
-            result = eval(safe_condition, {"__builtins__": {}}, state)
+            # Safe evaluator - only allow basic comparisons and logical operators
+            allowed_operators = ['==', '!=', '<', '>', '<=', '>=', 'and', 'or', 'not']
+            allowed_chars = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_[]"\'()+-*/%<>=!&| ')
+            
+            # Check if condition contains only allowed characters and operators
+            if not all(c in allowed_chars for c in safe_condition):
+                logger.warning(f"Unsafe condition detected: {condition}")
+                return False
+                
+            if not any(op in safe_condition for op in allowed_operators):
+                logger.warning(f"No valid operators found in condition: {condition}")
+                return False
+
+            # Create safe evaluation context
+            safe_globals = {
+                "__builtins__": {},
+                "state": state,
+                "True": True,
+                "False": False,
+                "None": None,
+            }
+            
+            result = eval(safe_condition, safe_globals, {})
             return bool(result)
         except Exception as e:
             logger.warning(f"Failed to evaluate condition '{condition}': {e}")

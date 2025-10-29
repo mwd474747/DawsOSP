@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { QueryProvider } from '@/lib/query-provider'
+import { SimpleNavigation } from '@/components/simple-navigation'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -20,8 +21,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <QueryProvider>
-          <div className="min-h-screen bg-slate-50">
-            {children}
+          <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+            <SimpleNavigation />
+            <main>
+              {children}
+            </main>
           </div>
         </QueryProvider>
       </body>

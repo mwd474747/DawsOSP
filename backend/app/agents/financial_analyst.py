@@ -813,7 +813,6 @@ class FinancialAnalyst(BaseAgent):
         logger.info(f"risk.get_factor_exposure_history: portfolio_id={portfolio_id_uuid}, lookback={lookback_days}")
 
         # Get factor exposures from database for historical packs
-        # TODO: Implement historical query - for now return current only
         from backend.app.services.factor_analysis import FactorAnalysisService
         factor_service = FactorAnalysisService()
 
@@ -822,10 +821,41 @@ class FinancialAnalyst(BaseAgent):
             pack_id=ctx.pricing_pack_id
         )
 
+        # Get historical factor exposures
+        historical_data = []
+        if lookback_days > 0:
+            try:
+                # Query historical factor exposures from database
+                async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
+                    historical_rows = await conn.fetch(
+                        """
+                        SELECT 
+                            date,
+                            factor_exposures,
+                            created_at
+                        FROM factor_exposure_history 
+                        WHERE portfolio_id = $1 
+                          AND date >= CURRENT_DATE - INTERVAL '%s days'
+                        ORDER BY date DESC
+                        """,
+                        portfolio_id_uuid,
+                        lookback_days
+                    )
+                    
+                    for row in historical_rows:
+                        historical_data.append({
+                            "date": row["date"].isoformat() if row["date"] else None,
+                            "exposures": row["factor_exposures"] or {},
+                            "created_at": row["created_at"].isoformat() if row["created_at"] else None
+                        })
+            except Exception as e:
+                logger.warning(f"Failed to fetch historical factor exposures: {e}")
+                historical_data = []
+
         result = {
-            "history": [current],  # TODO: Add historical lookback
+            "history": [current] + historical_data,
             "lookback_days": lookback_days,
-            "note": "Historical factor exposure tracking - currently showing latest only"
+            "note": f"Historical factor exposure tracking - {len(historical_data)} historical records"
         }
 
         metadata = self._create_metadata(
@@ -1155,12 +1185,19 @@ class FinancialAnalyst(BaseAgent):
         # Get position weight
         position = await self.get_position_details(ctx, state, portfolio_id, security_id, pack_id)
 
-        # Calculate contribution (simplified)
+        # Calculate contribution with actual returns
         weight = Decimal(str(position["weight"]))
-        position_return = Decimal("0.15")  # TODO: Get actual return from compute_position_return
+        
+        # Get actual position return
+        position_returns = await self.compute_position_returns(ctx, state, portfolio_id, security_id, pack_id)
+        position_return = Decimal(str(position_returns.get("total_return", 0.0)))
+
+        # Get actual portfolio return
+        portfolio_returns = await self.compute_portfolio_returns(ctx, state, portfolio_id, pack_id)
+        portfolio_return = Decimal(str(portfolio_returns.get("total_return", 0.10)))
 
         total_contribution = weight * position_return
-        pct_of_portfolio_return = total_contribution / Decimal("0.10")  # TODO: Get actual portfolio return
+        pct_of_portfolio_return = total_contribution / portfolio_return if portfolio_return != 0 else Decimal("0")
 
         result = {
             "total_contribution": float(total_contribution),
@@ -1702,14 +1739,50 @@ class FinancialAnalyst(BaseAgent):
         """
         logger.info(f"get_comparable_positions: security={security_id}, sector={sector}")
 
-        # TODO: Implement sector-based security lookup
-        # For now, return placeholder structure
+        # Implement sector-based security lookup
+        comparables = []
+        try:
+            async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
+                # Query securities in the same sector
+                comparable_rows = await conn.fetch(
+                    """
+                    SELECT 
+                        s.id,
+                        s.symbol,
+                        s.name,
+                        s.asset_class,
+                        s.sector,
+                        s.market_cap,
+                        s.currency
+                    FROM securities s
+                    WHERE s.sector = $1 
+                      AND s.id != $2
+                      AND s.is_active = true
+                    ORDER BY s.market_cap DESC NULLS LAST
+                    LIMIT 10
+                    """,
+                    sector,
+                    security_id
+                )
+                
+                for row in comparable_rows:
+                    comparables.append({
+                        "security_id": str(row["id"]),
+                        "symbol": row["symbol"],
+                        "name": row["name"],
+                        "asset_class": row["asset_class"],
+                        "sector": row["sector"],
+                        "market_cap": float(row["market_cap"]) if row["market_cap"] else None,
+                        "currency": row["currency"]
+                    })
+        except Exception as e:
+            logger.warning(f"Failed to fetch comparable securities for sector {sector}: {e}")
 
         result = {
-            "comparables": [],  # TODO: Query securities by sector
-            "count": 0,
+            "comparables": comparables,
+            "count": len(comparables),
             "sector": sector,
-            "note": "Comparables - requires sector classification data"
+            "note": f"Found {len(comparables)} comparable securities in {sector} sector"
         }
 
         metadata = self._create_metadata(

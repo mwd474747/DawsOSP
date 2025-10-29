@@ -472,9 +472,40 @@ class RatingsAgent(BaseAgent):
             value = Decimal(str(pos.get("value", 0)))
             total_value += value
 
-            # TODO: Fetch fundamentals for each position
-            # For now, use stub data or skip if no fundamentals in position
+            # Fetch fundamentals for each position
             fundamentals = pos.get("fundamentals")
+            if not fundamentals:
+                # Try to fetch fundamentals from database
+                try:
+                    async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
+                        fund_row = await conn.fetchrow(
+                            """
+                            SELECT 
+                                pe_ratio,
+                                pb_ratio,
+                                debt_to_equity,
+                                roe,
+                                revenue_growth,
+                                profit_margin
+                            FROM security_fundamentals 
+                            WHERE security_id = $1 
+                              AND asof_date = $2
+                            """,
+                            pos["security_id"],
+                            ctx.asof_date
+                        )
+                        if fund_row:
+                            fundamentals = {
+                                "pe_ratio": float(fund_row["pe_ratio"]) if fund_row["pe_ratio"] else None,
+                                "pb_ratio": float(fund_row["pb_ratio"]) if fund_row["pb_ratio"] else None,
+                                "debt_to_equity": float(fund_row["debt_to_equity"]) if fund_row["debt_to_equity"] else None,
+                                "roe": float(fund_row["roe"]) if fund_row["roe"] else None,
+                                "revenue_growth": float(fund_row["revenue_growth"]) if fund_row["revenue_growth"] else None,
+                                "profit_margin": float(fund_row["profit_margin"]) if fund_row["profit_margin"] else None
+                            }
+                except Exception as e:
+                    logger.warning(f"Failed to fetch fundamentals for {pos['security_id']}: {e}")
+                    fundamentals = {}
             if not fundamentals:
                 logger.warning(f"No fundamentals for {symbol}, skipping rating")
                 rated_positions.append({

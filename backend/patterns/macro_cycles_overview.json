@@ -40,21 +40,21 @@
     {
       "capability": "cycles.compute_short_term",
       "args": {
-        "asof_date": "{{inputs.asof_date}}"
+        "asof_date": "{{ctx.asof_date}}"
       },
       "as": "stdc"
     },
     {
       "capability": "cycles.compute_long_term",
       "args": {
-        "asof_date": "{{inputs.asof_date}}"
+        "asof_date": "{{ctx.asof_date}}"
       },
       "as": "ltdc"
     },
     {
       "capability": "cycles.compute_empire",
       "args": {
-        "asof_date": "{{inputs.asof_date}}"
+        "asof_date": "{{ctx.asof_date}}"
       },
       "as": "empire"
     },

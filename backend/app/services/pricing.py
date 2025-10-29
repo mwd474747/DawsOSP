@@ -222,7 +222,7 @@ class PricingService:
             SELECT
                 security_id,
                 pricing_pack_id,
-                asof_date,
+                date as asof_date,
                 close,
                 open,
                 high,
@@ -291,7 +291,7 @@ class PricingService:
             SELECT
                 security_id,
                 pricing_pack_id,
-                asof_date,
+                date as asof_date,
                 close,
                 open,
                 high,
@@ -394,7 +394,7 @@ class PricingService:
             SELECT
                 security_id,
                 pricing_pack_id,
-                asof_date,
+                date as asof_date,
                 close,
                 open,
                 high,
@@ -472,10 +472,8 @@ class PricingService:
                 base_ccy,
                 quote_ccy,
                 pricing_pack_id,
-                asof_ts,
-                rate,
-                source,
-                policy
+                date,
+                rate
             FROM fx_rates
             WHERE base_ccy = $1 AND quote_ccy = $2 AND pricing_pack_id = $3
         """
@@ -491,10 +489,10 @@ class PricingService:
                 base_ccy=row["base_ccy"],
                 quote_ccy=row["quote_ccy"],
                 pricing_pack_id=row["pricing_pack_id"],
-                asof_ts=row["asof_ts"],
+                asof_ts=datetime.combine(row["date"], datetime.min.time()),  # Convert date to datetime
                 rate=row["rate"],
-                source=row["source"],
-                policy=row.get("policy"),
+                source="database",  # Column doesn't exist, use default
+                policy=None,  # Column doesn't exist
             )
 
         except Exception as e:
@@ -520,10 +518,8 @@ class PricingService:
                 base_ccy,
                 quote_ccy,
                 pricing_pack_id,
-                asof_ts,
-                rate,
-                source,
-                policy
+                date,
+                rate
             FROM fx_rates
             WHERE pricing_pack_id = $1
             ORDER BY base_ccy, quote_ccy
@@ -538,10 +534,10 @@ class PricingService:
                     base_ccy=row["base_ccy"],
                     quote_ccy=row["quote_ccy"],
                     pricing_pack_id=row["pricing_pack_id"],
-                    asof_ts=row["asof_ts"],
+                    asof_ts=datetime.combine(row["date"], datetime.min.time()),  # Convert date to datetime
                     rate=row["rate"],
-                    source=row["source"],
-                    policy=row.get("policy"),
+                    source="database",  # Column doesn't exist, use default
+                    policy=None,  # Column doesn't exist
                 ))
 
             return fx_rates

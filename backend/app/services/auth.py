@@ -483,9 +483,9 @@ class AuthService:
         # Get user from database
         user = await execute_query_one(
             """
-            SELECT id, email, role, permissions, is_active, password_hash, 
+            SELECT id, email, role, is_active, password_hash,
                    failed_login_attempts, locked_until
-            FROM users 
+            FROM users
             WHERE email = $1
             """,
             email
@@ -578,11 +578,14 @@ class AuthService:
 
         logger.info(f"User authenticated: {email} ({user['role']})")
 
+        # Get permissions from role
+        role_permissions = ROLES.get(user["role"], {}).get("permissions", [])
+
         return {
             "user_id": str(user["id"]),
             "email": user["email"],
             "role": user["role"],
-            "permissions": user["permissions"],
+            "permissions": role_permissions,
             "token": token,
             "expires_in": self.token_expiry_hours * 3600
         }

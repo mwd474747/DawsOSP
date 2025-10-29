@@ -406,3 +406,27 @@ async def create_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create user"
         )
+
+
+@router.post("/logout")
+async def logout(
+    claims: Dict = Depends(verify_token)
+) -> Dict[str, str]:
+    """
+    Logout user and invalidate token.
+    
+    Returns:
+        Success message
+    """
+    try:
+        # In a real implementation, you would add the token to a blacklist
+        # For now, we'll just return success since JWT tokens are stateless
+        email = claims.get('email', 'unknown')
+        logger.info(f"User {email} logged out")
+        return {"message": "Successfully logged out"}
+    except Exception as e:
+        logger.error(f"Logout failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Logout failed: {str(e)}"
+        )

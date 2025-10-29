@@ -24,6 +24,7 @@ Usage:
     runtime.register_agent(agent)
 """
 
+import json
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -275,9 +276,24 @@ def cache_capability(ttl: int = 300):
     """
     def decorator(func):
         async def wrapper(self, ctx, state, **kwargs):
-            # TODO: Implement Redis caching
-            # For now, just execute without caching
-            return await func(self, ctx, state, **kwargs)
+            # Implement Redis caching
+            cache_key = f"{self.__class__.__name__}:{func.__name__}:{hash(str(kwargs))}"
+            try:
+                # Try to get from cache first
+                cached_result = await self.redis.get(cache_key)
+                if cached_result:
+                    return json.loads(cached_result)
+            except Exception as e:
+                logger.warning(f"Cache read failed: {e}")
+            
+            # Execute function and cache result
+            result = await func(self, ctx, state, **kwargs)
+            try:
+                await self.redis.setex(cache_key, ttl, json.dumps(result, default=str))
+            except Exception as e:
+                logger.warning(f"Cache write failed: {e}")
+            
+            return result
         return wrapper
     return decorator
 

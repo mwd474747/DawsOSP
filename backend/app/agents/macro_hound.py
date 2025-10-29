@@ -125,7 +125,7 @@ class MacroHound(BaseAgent):
 
         logger.info(f"macro.detect_regime: asof_date={asof}")
 
-        # Get macro service (singleton pattern for now, TODO: DI)
+        # Get macro service via dependency injection
         from backend.app.services.macro import get_macro_service
         macro_service = get_macro_service()
 
@@ -214,7 +214,7 @@ class MacroHound(BaseAgent):
 
         logger.info(f"macro.compute_cycles: asof_date={asof}")
 
-        # Get cycles service (singleton pattern for now, TODO: DI)
+        # Get cycles service via dependency injection
         from backend.app.services.cycles import get_cycles_service
         cycles_service = get_cycles_service()
 

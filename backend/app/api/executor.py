@@ -32,6 +32,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Depends, status, Header
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -180,6 +181,14 @@ app = FastAPI(
     description="Pattern execution API with JWT authentication and freshness gate",
 )
 
+# Database initialization
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database pool on startup."""
+    from backend.app.db.connection import init_db_pool
+    await init_db_pool()
+    logger.info("✅ Database pool initialized")
+
 # Include auth routes
 from backend.app.api.routes.auth import router as auth_router
 app.include_router(auth_router)
@@ -238,6 +247,20 @@ class DBInitMiddleware(BaseHTTPMiddleware):
         return response
 
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",  # Next.js UI
+        "http://localhost:3001",  # Alternative UI port
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
+
 # Add middleware to app
 app.add_middleware(DBInitMiddleware)
 
@@ -259,6 +282,10 @@ async def startup_event():
     print("=" * 80)
 
     database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        logger.warning("DATABASE_URL not set, using default")
+        database_url = "postgresql://dawsos_app:dawsos_app_pass@localhost:5432/dawsos"
+    
     logger.info(f"Initializing database connection pool... URL={database_url}")
 
     try:
