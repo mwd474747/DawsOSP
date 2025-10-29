@@ -265,6 +265,161 @@ async def init_db():
     except Exception as e:
         logger.error(f"Database connection failed: {e}")
 
+# Database Helper Functions
+async def get_portfolio_data(user_email: str):
+    """Fetch portfolio data from database"""
+    if not db_pool:
+        return None
+    
+    try:
+        async with db_pool.acquire() as conn:
+            query = """
+                SELECT 
+                    p.id as portfolio_id,
+                    p.name as portfolio_name,
+                    h.symbol,
+                    h.quantity,
+                    h.cost_basis,
+                    h.current_price as price,
+                    h.market_value,
+                    s.name as security_name,
+                    s.security_type as sector
+                FROM portfolios p
+                JOIN users u ON p.user_id = u.id
+                JOIN holdings h ON h.portfolio_id = p.id
+                LEFT JOIN securities s ON h.symbol = s.symbol
+                WHERE u.email = $1 AND p.is_active = true
+            """
+            rows = await conn.fetch(query, user_email)
+            return rows
+    except Exception as e:
+        logger.error(f"Error fetching portfolio data: {e}")
+        return None
+
+async def get_user_transactions(user_email: str):
+    """Fetch transactions from database"""
+    if not db_pool:
+        return None
+    
+    try:
+        async with db_pool.acquire() as conn:
+            query = """
+                SELECT 
+                    t.transaction_type as type,
+                    t.quantity,
+                    t.price,
+                    t.amount,
+                    t.transaction_date as trade_date,
+                    t.symbol,
+                    s.name as security_name
+                FROM transactions t
+                JOIN portfolios p ON t.portfolio_id = p.id
+                JOIN users u ON p.user_id = u.id
+                LEFT JOIN securities s ON t.symbol = s.symbol
+                WHERE u.email = $1
+                ORDER BY t.transaction_date DESC
+            """
+            rows = await conn.fetch(query, user_email)
+            return rows
+    except Exception as e:
+        logger.error(f"Error fetching transactions: {e}")
+        return None
+
+async def get_user_alerts(user_email: str):
+    """Fetch alerts from database"""
+    if not db_pool:
+        return None
+    
+    try:
+        async with db_pool.acquire() as conn:
+            query = """
+                SELECT 
+                    alerts.id,
+                    alerts.condition_json,
+                    alerts.last_fired_at,
+                    alerts.is_active,
+                    alerts.created_at
+                FROM alerts
+                JOIN users u ON alerts.user_id = u.id
+                WHERE u.email = $1
+                ORDER BY alerts.created_at DESC
+            """
+            rows = await conn.fetch(query, user_email)
+            return rows
+    except Exception as e:
+        logger.error(f"Error fetching alerts: {e}")
+        return None
+
+async def calculate_portfolio_metrics_from_db(user_email: str) -> dict:
+    """Calculate portfolio metrics from database data"""
+    portfolio_data = await get_portfolio_data(user_email)
+    
+    if not portfolio_data:
+        # Fallback to mock data if database not available
+        return calculate_portfolio_metrics()
+    
+    total_value = 0
+    total_cost_basis = 0
+    portfolio_holdings = []
+    
+    for row in portfolio_data:
+        price = float(row["price"]) if row["price"] else 185.00  # Default price if missing
+        quantity = float(row["quantity"])
+        cost_basis = float(row["cost_basis"]) if row["cost_basis"] else 0
+        value = quantity * price
+        total_value += value
+        total_cost_basis += cost_basis
+        
+        portfolio_holdings.append({
+            "symbol": row["symbol"],
+            "quantity": quantity,
+            "price": price,
+            "value": value,
+            "cost_basis": cost_basis,
+            "security_name": row["security_name"],
+            "sector": row["sector"] or "Technology"  # Default sector
+        })
+    
+    # Calculate weights and metrics
+    for holding in portfolio_holdings:
+        holding["weight"] = round(holding["value"] / total_value, 4) if total_value > 0 else 0
+        holding["change"] = round(random.uniform(-0.03, 0.04), 4)  # Simulated daily change
+        holding["beta"] = 1.2  # Default beta
+    
+    # Calculate portfolio metrics
+    unrealized_pnl = total_value - total_cost_basis
+    returns_1d = random.uniform(-0.02, 0.03)
+    returns_1w = returns_1d * 5 + random.uniform(-0.01, 0.01)
+    returns_1m = returns_1d * 22 + random.uniform(-0.02, 0.02)
+    returns_ytd = (unrealized_pnl / total_cost_basis) if total_cost_basis > 0 else 0
+    
+    # Risk metrics
+    portfolio_beta = 1.2  # Simplified
+    portfolio_volatility = portfolio_beta * 0.15
+    risk_score = min(portfolio_beta / 2, 1.0)
+    sharpe_ratio = (returns_ytd - 0.04) / portfolio_volatility if portfolio_volatility > 0 else 0
+    
+    return {
+        "id": str(uuid4()),
+        "name": "Main Portfolio",
+        "total_value": round(total_value, 2),
+        "total_cost_basis": round(total_cost_basis, 2),
+        "unrealized_pnl": round(unrealized_pnl, 2),
+        "returns_1d": round(returns_1d, 4),
+        "returns_1w": round(returns_1w, 4),
+        "returns_1m": round(returns_1m, 4),
+        "returns_ytd": round(returns_ytd, 4),
+        "risk_score": round(risk_score, 2),
+        "portfolio_beta": round(portfolio_beta, 2),
+        "portfolio_volatility": round(portfolio_volatility, 4),
+        "sharpe_ratio": round(sharpe_ratio, 2),
+        "max_drawdown": -0.0823,
+        "var_95": round(total_value * 0.02, 2),
+        "holdings": portfolio_holdings,
+        "sector_allocation": calculate_sector_allocation(portfolio_holdings, total_value),
+        "last_updated": datetime.utcnow().isoformat()
+    }
+
 # Authentication
 def create_jwt_token(user_id: str, email: str, role: str) -> str:
     """Create JWT token"""
@@ -1262,9 +1417,53 @@ async def health_check():
 
 @app.post("/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest):
-    """User login endpoint"""
+    """User login endpoint - now uses database"""
     logger.info(f"Login attempt for: {request.email}")
     
+    # Check if database is available, fallback to mock data if not
+    if db_pool:
+        try:
+            async with db_pool.acquire() as conn:
+                # Query user from database
+                query = """
+                    SELECT id, email, password_hash, role 
+                    FROM users 
+                    WHERE email = $1 AND is_active = true
+                """
+                user_data = await conn.fetchrow(query, request.email)
+                
+                if not user_data:
+                    logger.warning(f"User not found in database: {request.email}")
+                    raise HTTPException(status_code=401, detail="Invalid credentials")
+                
+                # Verify password
+                if not verify_password(request.password, user_data["password_hash"]):
+                    logger.warning(f"Invalid password for: {request.email}")
+                    raise HTTPException(status_code=401, detail="Invalid credentials")
+                
+                # Create token with database user data
+                token = create_jwt_token(
+                    str(user_data["id"]), 
+                    user_data["email"], 
+                    user_data["role"]
+                )
+                
+                logger.info(f"Login successful from database for: {request.email}")
+                
+                return LoginResponse(
+                    access_token=token,
+                    expires_in=JWT_EXPIRATION_HOURS * 3600,
+                    user={
+                        "id": str(user_data["id"]),
+                        "email": user_data["email"],
+                        "role": user_data["role"]
+                    }
+                )
+        except Exception as e:
+            logger.error(f"Database error during login: {e}")
+            # Fallback to mock data if database fails
+    
+    # Fallback to mock data if database not available
     user_data = USERS_DB.get(request.email)
     
     if not user_data:
@@ -1323,8 +1522,15 @@ async def execute_pattern(request: ExecuteRequest):
     logger.info(f"Executing pattern: {pattern}")
     
     if pattern == "portfolio_overview":
+        # Use database if available, otherwise fallback to mock data
+        user_email = inputs.get("email", "michael@dawsos.com")
+        if db_pool:
+            result = await calculate_portfolio_metrics_from_db(user_email)
+        else:
+            result = calculate_portfolio_metrics()
+        
         return {
-            "result": calculate_portfolio_metrics(),
+            "result": result,
             "status": "success"
         }
     
@@ -1400,7 +1606,39 @@ async def get_macro_regime():
 
 @app.get("/api/alerts")
 async def get_alerts():
-    """Get current alerts"""
+    """Get current alerts from database"""
+    user_email = "michael@dawsos.com"
+    
+    if db_pool:
+        alerts = await get_user_alerts(user_email)
+        if alerts:
+            # Convert database rows to appropriate format
+            formatted_alerts = []
+            for row in alerts:
+                # Handle condition_json which can be a dict or string
+                condition_data = row["condition_json"]
+                if isinstance(condition_data, str):
+                    try:
+                        condition_data = json.loads(condition_data) if condition_data else {}
+                    except:
+                        condition_data = {}
+                elif not condition_data:
+                    condition_data = {}
+                    
+                formatted_alerts.append({
+                    "id": str(row["id"]),
+                    "type": condition_data.get("type", "price"),
+                    "condition": condition_data.get("condition", "above"),
+                    "symbol": condition_data.get("symbol"),
+                    "threshold": condition_data.get("threshold", 0),
+                    "message": condition_data.get("message", ""),
+                    "active": row["is_active"],
+                    "last_triggered": row["last_fired_at"].isoformat() if row["last_fired_at"] else None,
+                    "created_at": row["created_at"].isoformat() if row["created_at"] else None
+                })
+            return formatted_alerts
+    
+    # Fallback to mock data if database not available
     return check_alerts()
 
 @app.post("/api/alerts")
@@ -1439,8 +1677,15 @@ async def optimize(request: OptimizationRequest):
 
 @app.get("/api/holdings")
 async def get_holdings():
-    """Get detailed holdings information"""
-    portfolio = calculate_portfolio_metrics()
+    """Get detailed holdings information from database"""
+    # Default to michael@dawsos.com for now (in production, get from JWT)
+    user_email = "michael@dawsos.com"
+    
+    if db_pool:
+        portfolio = await calculate_portfolio_metrics_from_db(user_email)
+    else:
+        portfolio = calculate_portfolio_metrics()
+    
     return portfolio["holdings"]
 
 @app.get("/api/metrics")
@@ -1465,7 +1710,57 @@ async def get_metrics():
 
 @app.get("/api/transactions")
 async def get_transactions(page: int = 1, page_size: int = 20):
-    """Get transaction history with pagination"""
+    """Get transaction history with pagination from database"""
+    user_email = "michael@dawsos.com"
+    
+    if db_pool:
+        transactions = await get_user_transactions(user_email)
+        if transactions:
+            # Convert database rows to appropriate format
+            formatted_transactions = []
+            for row in transactions:
+                formatted_transactions.append({
+                    "date": row["trade_date"].strftime("%Y-%m-%d") if row["trade_date"] else "",
+                    "type": row["type"].lower() if row["type"] else "buy",
+                    "symbol": row["symbol"],
+                    "shares": float(row["quantity"]),
+                    "price": float(row["price"]),
+                    "amount": float(row["amount"]),
+                    "realized_gain": 0  # Simplified for now
+                })
+            
+            # Calculate pagination
+            total_transactions = len(formatted_transactions)
+            total_pages = math.ceil(total_transactions / page_size)
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            
+            # Get paginated transactions
+            paginated_transactions = formatted_transactions[start_idx:end_idx]
+            
+            # Calculate summary statistics
+            total_invested = sum(t["amount"] for t in formatted_transactions if t["type"] == "buy")
+            total_sold = sum(t["amount"] for t in formatted_transactions if t["type"] == "sell")
+            total_dividends = sum(t["amount"] for t in formatted_transactions if t["type"] == "dividend")
+            
+            return {
+                "transactions": paginated_transactions,
+                "pagination": {
+                    "page": page,
+                    "page_size": page_size,
+                    "total_transactions": total_transactions,
+                    "total_pages": total_pages
+                },
+                "summary": {
+                    "total_invested": abs(total_invested),
+                    "total_sold": total_sold,
+                    "total_dividends": total_dividends,
+                    "total_realized_gains": 0,
+                    "net_cash_flow": total_invested + total_sold + total_dividends
+                }
+            }
+    
+    # Fallback to mock data if database not available
     return get_portfolio_transactions(page, page_size)
 
 @app.get("/api/export/pdf")
