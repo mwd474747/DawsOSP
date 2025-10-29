@@ -766,29 +766,98 @@ class MacroAwareScenarioService:
         return actions
     
     def _get_historical_analogues(self, macro_state: Dict) -> List[str]:
-        """Find historical periods with similar macro configurations."""
+        """Find historical periods with similar macro configurations using all 4 Dalio cycles."""
         
         analogues = []
         
         regime = macro_state["regime"]
+        stdc = macro_state.get("stdc_phase", "UNKNOWN")
         ltdc = macro_state["ltdc_phase"]
+        empire = macro_state.get("empire_phase", "UNKNOWN")
+        internal = macro_state.get("internal_phase", "STABLE")
         
-        # Pattern matching for historical analogues
-        if regime == Regime.LATE_EXPANSION and ltdc == "BUBBLE":
-            analogues.append("2007 Q2-Q3: Subprime brewing, similar regime/LTDC alignment")
-            analogues.append("2000 Q1: Tech bubble peak, late cycle with high valuations")
-            analogues.append("1929 Q3: Roaring twenties end, LTDC bubble peak")
+        # Comprehensive historical database with market outcomes
+        historical_db = {
+            # Perfect storms (all cycles negative)
+            (Regime.DEEP_CONTRACTION, "RECESSION", "DELEVERAGING", "DECLINING"): [
+                "1929-1933: Great Depression | All 4 cycles negative | S&P -89%, 25% unemployment",
+                "2008-2009: Global Financial Crisis | STDC/LTDC double stress | S&P -57%, credit freeze",
+                "1973-1974: Oil crisis + stagflation | Empire challenged | S&P -48%, inflation 12%+"
+            ],
             
-        elif regime == Regime.DEEP_CONTRACTION and ltdc == "TOP":
-            analogues.append("2008 Q4: Financial crisis, deleveraging begins")
-            analogues.append("1931: Great Depression deepening")
+            # Bubble configurations
+            (Regime.LATE_EXPANSION, "EXPANSION", "BUBBLE", "DOMINANT"): [
+                "1929 Q2-Q3: Roaring Twenties peak | LTDC bubble, empire strong | Crash -89% followed",
+                "1999-2000: Dot-com bubble | Tech revolution, US hegemony | Nasdaq -78% crash",
+                "2007 Q1-Q2: Housing bubble | Credit excess pre-GFC | S&P -57% crash coming",
+                "1989 Japan: Asset bubble peak | Real estate + stocks | Nikkei -82%, Lost Decades"
+            ],
             
-        elif regime == Regime.EARLY_EXPANSION:
-            analogues.append("2009 Q2: Post-crisis recovery begins")
-            analogues.append("2020 Q3: Post-COVID recovery")
-            analogues.append("1933: New Deal recovery")
+            # Recovery sweet spots
+            (Regime.EARLY_EXPANSION, "RECOVERY", "STABLE", "DOMINANT"): [
+                "2009 Q2-Q4: Post-GFC recovery | QE driven | S&P +26% year, +400% decade",
+                "2020 Q3-Q4: Post-COVID rebound | Fiscal + monetary | +68% from lows",
+                "1933-1937: New Deal recovery | Post-Depression | +300% rally",
+                "1982-1984: Volcker recovery | Inflation defeated | New secular bull"
+            ],
+            
+            # Goldilocks periods
+            (Regime.MID_EXPANSION, "MID_CYCLE", "STABLE", "DOMINANT"): [
+                "1994-1996: Soft landing | Goldilocks economy | Steady 20%+ annual gains",
+                "2004-2005: Mid-cycle pause | Measured hikes | Continued growth",
+                "2016-2017: Global synchronized growth | All economies expanding | Low vol",
+                "1964-1965: Great Society | Strong growth, low inflation | S&P +13% annually"
+            ]
+        }
         
-        return analogues if analogues else ["No close historical matches found"]
+        # Find exact matches
+        current_key = (regime, stdc, ltdc, empire)
+        for pattern_key, pattern_analogues in historical_db.items():
+            if current_key == pattern_key:
+                analogues.extend(pattern_analogues[:3])  # Top 3 matches
+                break
+        
+        # If no exact match, find partial matches (3/4 cycles matching)
+        if not analogues:
+            matches = []
+            for pattern_key, pattern_analogues in historical_db.items():
+                score = 0
+                if regime == pattern_key[0]: score += 1
+                if stdc == pattern_key[1]: score += 1
+                if ltdc == pattern_key[2]: score += 1
+                if empire == pattern_key[3]: score += 1
+                
+                if score >= 3:
+                    matches.append((score, pattern_analogues[0]))
+            
+            # Sort by match quality
+            matches.sort(reverse=True)
+            for score, analogue in matches[:3]:
+                analogues.append(f"[{score}/4 match] {analogue}")
+        
+        # Add critical warnings for dangerous configurations
+        danger_configs = []
+        
+        if ltdc == "BUBBLE" and regime == Regime.LATE_EXPANSION:
+            danger_configs.append("⚠️ CRITICAL: Late-cycle bubble = Major crash risk (historical: -40% to -89%)")
+            
+        if ltdc == "DELEVERAGING" and stdc == "RECESSION":
+            danger_configs.append("⚠️ CRITICAL: Double-cycle contraction = Extended bear market (2-4 years typical)")
+            
+        if empire == "DECLINING" and internal == "HIGH_CONFLICT":
+            danger_configs.append("⚠️ CRITICAL: Empire decline + internal conflict = Extreme volatility & capital flight")
+            
+        if stdc == "RECESSION" and regime == Regime.DEEP_CONTRACTION:
+            danger_configs.append("⚠️ WARNING: Recession confirmed = Average -35% drawdown historically")
+        
+        # Prepend warnings
+        if danger_configs:
+            analogues = danger_configs + analogues
+        
+        return analogues if analogues else [
+            f"Current configuration ({regime.value}, STDC:{stdc}, LTDC:{ltdc}) has no strong historical precedent",
+            "Heightened uncertainty - consider defensive positioning"
+        ]
     
     async def analyze_scenario_impact(
         self, 
@@ -899,9 +968,7 @@ class MacroAwareScenarioService:
             "recommendations": self._generate_recommendations(
                 shock_type, regime, stdc_phase, ltdc_phase
             ),
-            "historical_analogues": self._find_historical_analogues(
-                regime, stdc_phase, ltdc_phase, macro_state.get("empire_phase", "UNKNOWN")
-            ),
+            "historical_analogues": self._get_historical_analogues(macro_state),
             "hedge_suggestions": self._generate_hedge_suggestions(
                 shock_type, regime, portfolio_value
             )
