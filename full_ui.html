@@ -403,6 +403,31 @@
                 opacity: 0;
             }
         }
+        
+        /* Macro Dashboard Enhancements */
+        #macro-tab .card {
+            transition: transform 0.3s ease;
+        }
+        
+        #macro-tab .card:hover {
+            transform: translateY(-2px);
+        }
+        
+        /* Progress bar animations */
+        #gini-bar, #polarization-bar, #civil-war-bar {
+            transition: width 1s ease-in-out;
+        }
+        
+        /* Leading indicators pulse effect */
+        #leading-indicators-section {
+            animation: pulse-border 2s infinite;
+        }
+        
+        @keyframes pulse-border {
+            0% { border-color: rgba(245, 158, 11, 0.3); }
+            50% { border-color: rgba(245, 158, 11, 0.6); }
+            100% { border-color: rgba(245, 158, 11, 0.3); }
+        }
     </style>
 </head>
 <body>
@@ -832,6 +857,133 @@
                                 <div style="margin-top: 1rem;">
                                     <canvas id="ltdc-cycle-chart" width="300" height="100"></canvas>
                                 </div>
+                            </div>
+                        </div>
+                        
+                        <!-- New Cycle Cards -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                            <!-- Empire Cycle Card (250 years) -->
+                            <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(139, 92, 246, 0.1)); border: 2px solid rgba(147, 51, 234, 0.3); border-radius: 15px; padding: 1.5rem;">
+                                <h3 style="color: #9333ea; font-size: 1.2rem; margin-bottom: 1rem;">
+                                    Empire Cycle (250 years)
+                                </h3>
+                                <div style="margin-bottom: 1rem;">
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: #333;" id="empire-phase">--</div>
+                                    <div style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">
+                                        Empire Score: <span id="empire-score" style="color: #333; font-weight: 600;">--</span>/100
+                                    </div>
+                                </div>
+                                
+                                <!-- 8 Empire Indicators Grid -->
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem;">
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">Education</span>
+                                        <span style="color: #333; font-weight: 600;" id="empire-education">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">Innovation</span>
+                                        <span style="color: #333; font-weight: 600;" id="empire-innovation">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">GDP Share</span>
+                                        <span style="color: #333; font-weight: 600;" id="empire-gdp-share">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">Trade Share</span>
+                                        <span style="color: #333; font-weight: 600;" id="empire-trade">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">Military</span>
+                                        <span style="color: #333; font-weight: 600;" id="empire-military">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-between;">
+                                        <span style="color: #666;">Financial Hub</span>
+                                        <span style="color: #333; font-weight: 600;" id="empire-financial">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">Reserve Currency</span>
+                                        <span style="color: #333; font-weight: 600;" id="empire-reserve">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">Competitiveness</span>
+                                        <span style="color: #333; font-weight: 600;" id="empire-competitive">--</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Empire Trend Arrow -->
+                                <div style="margin-top: 1rem; text-align: center;">
+                                    <span id="empire-trend" style="font-size: 1.1rem; font-weight: 600;">--</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Internal Order/Disorder Cycle Card -->
+                            <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(245, 158, 11, 0.1)); border: 2px solid rgba(239, 68, 68, 0.3); border-radius: 15px; padding: 1.5rem;">
+                                <h3 style="color: #ef4444; font-size: 1.2rem; margin-bottom: 1rem;">
+                                    Internal Order/Disorder Cycle
+                                </h3>
+                                <div style="margin-bottom: 1rem;">
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: #333;">
+                                        Stage <span id="internal-stage-num">--</span>: <span id="internal-stage-name">--</span>
+                                    </div>
+                                    <div style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">
+                                        Risk Level: <span id="internal-risk" style="color: #333; font-weight: 600;">--</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Critical Metrics with Progress Bars -->
+                                <div style="margin-bottom: 1rem;">
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                            <span style="color: #666; font-size: 0.85rem;">Wealth Gap (Gini)</span>
+                                            <span style="color: #333; font-weight: 600; font-size: 0.85rem;" id="internal-gini">--</span>
+                                        </div>
+                                        <div style="width: 100%; background: #e5e7eb; border-radius: 9999px; height: 8px;">
+                                            <div id="gini-bar" style="background: linear-gradient(to right, #10b981, #ef4444); height: 8px; border-radius: 9999px; width: 0%;"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                            <span style="color: #666; font-size: 0.85rem;">Political Polarization</span>
+                                            <span style="color: #333; font-weight: 600; font-size: 0.85rem;" id="internal-polarization">--%</span>
+                                        </div>
+                                        <div style="width: 100%; background: #e5e7eb; border-radius: 9999px; height: 8px;">
+                                            <div id="polarization-bar" style="background: linear-gradient(to right, #3b82f6, #ef4444); height: 8px; border-radius: 9999px; width: 0%;"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                            <span style="color: #666; font-size: 0.85rem;">Civil War Probability</span>
+                                            <span style="color: #333; font-weight: bold; font-size: 0.85rem;" id="civil-war-prob">--%</span>
+                                        </div>
+                                        <div style="width: 100%; background: #e5e7eb; border-radius: 9999px; height: 8px;">
+                                            <div id="civil-war-bar" style="background: linear-gradient(to right, #eab308, #dc2626); height: 8px; border-radius: 9999px; width: 0%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Additional Internal Metrics -->
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem;">
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">Fiscal Deficit</span>
+                                        <span style="color: #333; font-weight: 600;" id="internal-deficit">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: #666;">Social Unrest</span>
+                                        <span style="color: #333; font-weight: 600;" id="internal-unrest">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Leading Indicators Alert Section -->
+                        <div id="leading-indicators-section" style="display: none; background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.1)); border: 2px solid rgba(245, 158, 11, 0.3); border-radius: 15px; padding: 1.5rem; margin-bottom: 2rem;">
+                            <h3 style="color: #f59e0b; font-size: 1.2rem; margin-bottom: 1rem;">
+                                ⚠️ Leading Indicators & Early Warning Signals
+                            </h3>
+                            <div id="leading-indicators-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <!-- Will be populated dynamically -->
                             </div>
                         </div>
                         
@@ -1706,6 +1858,135 @@
                         document.getElementById('credit-impulse').textContent = `${macro.debt_metrics.credit_impulse}%`;
                         document.getElementById('real-rates').textContent = `${macro.debt_metrics.real_rates}%`;
                         document.getElementById('productivity').textContent = `${macro.debt_metrics.productivity_growth}%`;
+                    }
+                    
+                    // NEW: Update Empire Cycle display
+                    if (macro.empire_phase) {
+                        document.getElementById('empire-phase').textContent = formatPhase(macro.empire_phase);
+                        document.getElementById('empire-score').textContent = 
+                            macro.empire_score ? macro.empire_score.toFixed(1) : '--';
+                        
+                        // Update 8 empire indicators
+                        if (macro.empire_indicators) {
+                            const ind = macro.empire_indicators;
+                            document.getElementById('empire-education').textContent = 
+                                ind.education_score ? ind.education_score.toFixed(1) : '--';
+                            document.getElementById('empire-innovation').textContent = 
+                                ind.innovation_score ? ind.innovation_score.toFixed(1) : '--';
+                            document.getElementById('empire-gdp-share').textContent = 
+                                ind.economic_output_share ? (ind.economic_output_share.toFixed(1) + '%') : '--';
+                            document.getElementById('empire-trade').textContent = 
+                                ind.world_trade_share ? (ind.world_trade_share.toFixed(1) + '%') : '--';
+                            document.getElementById('empire-military').textContent = 
+                                ind.military_strength ? (ind.military_strength.toFixed(1) + '%') : '--';
+                            document.getElementById('empire-financial').textContent = 
+                                ind.financial_center_score ? ind.financial_center_score.toFixed(1) : '--';
+                            document.getElementById('empire-reserve').textContent = 
+                                ind.reserve_currency_share ? (ind.reserve_currency_share.toFixed(1) + '%') : '--';
+                            document.getElementById('empire-competitive').textContent = 
+                                ind.competitiveness_score ? ind.competitiveness_score.toFixed(1) : '--';
+                        }
+                        
+                        // Set trend arrow
+                        const trend = macro.empire_trend || 'stable';
+                        let trendSymbol = '→ Stable';
+                        let trendColor = '#9ca3af'; // gray
+                        if (trend.toLowerCase().includes('declin')) {
+                            trendSymbol = '↓ Declining';
+                            trendColor = '#ef4444'; // red
+                        } else if (trend.toLowerCase().includes('ascend') || trend.toLowerCase().includes('ris')) {
+                            trendSymbol = '↑ Rising';
+                            trendColor = '#10b981'; // green
+                        }
+                        document.getElementById('empire-trend').innerHTML = 
+                            `<span style="color: ${trendColor};">${trendSymbol}</span>`;
+                    }
+                    
+                    // NEW: Update Internal Cycle display
+                    if (macro.internal_stage !== undefined) {
+                        document.getElementById('internal-stage-num').textContent = macro.internal_stage || '--';
+                        document.getElementById('internal-stage-name').textContent = 
+                            macro.internal_stage_name || '--';
+                        
+                        // Set risk level with color
+                        const risk = macro.internal_risk || 'UNKNOWN';
+                        let riskColor = '#9ca3af'; // gray
+                        if (risk === 'EXTREME') riskColor = '#ef4444'; // red
+                        else if (risk === 'HIGH') riskColor = '#fb923c'; // orange
+                        else if (risk === 'MEDIUM-HIGH') riskColor = '#eab308'; // yellow
+                        else if (risk === 'MEDIUM') riskColor = '#facc15'; // light yellow
+                        else if (risk === 'LOW') riskColor = '#10b981'; // green
+                        
+                        const riskElement = document.getElementById('internal-risk');
+                        riskElement.style.color = riskColor;
+                        riskElement.style.fontWeight = 'bold';
+                        riskElement.textContent = risk;
+                        
+                        // Update wealth gap (Gini)
+                        const gini = macro.wealth_gap || 0;
+                        document.getElementById('internal-gini').textContent = gini.toFixed(3);
+                        document.getElementById('gini-bar').style.width = (gini * 100) + '%';
+                        
+                        // Update polarization
+                        const polarization = macro.political_polarization || 0;
+                        document.getElementById('internal-polarization').textContent = 
+                            polarization.toFixed(1) + '%';
+                        document.getElementById('polarization-bar').style.width = polarization + '%';
+                        
+                        // Update civil war probability with color coding
+                        const civilWarProb = macro.civil_war_probability || 0;
+                        const probElement = document.getElementById('civil-war-prob');
+                        probElement.textContent = civilWarProb.toFixed(1) + '%';
+                        if (civilWarProb > 60) {
+                            probElement.style.color = '#ef4444'; // red
+                        } else if (civilWarProb > 40) {
+                            probElement.style.color = '#fb923c'; // orange
+                        } else {
+                            probElement.style.color = '#eab308'; // yellow
+                        }
+                        document.getElementById('civil-war-bar').style.width = civilWarProb + '%';
+                        
+                        // Update additional metrics
+                        const deficit = macro.indicators?.fiscal_deficit || macro.fiscal_deficit || 0;
+                        document.getElementById('internal-deficit').textContent = 
+                            Math.abs(deficit).toFixed(1) + '% GDP';
+                        
+                        const unrest = macro.social_unrest || 0;
+                        document.getElementById('internal-unrest').textContent = 
+                            unrest.toFixed(0) + '/100';
+                    }
+                    
+                    // NEW: Display leading indicators
+                    if (macro.leading_indicators && macro.leading_indicators.length > 0) {
+                        const indicatorsList = document.getElementById('leading-indicators-list');
+                        indicatorsList.innerHTML = '';
+                        
+                        macro.leading_indicators.forEach(indicator => {
+                            const severityColor = 
+                                indicator.severity === 'HIGH' ? '#ef4444' :
+                                indicator.severity === 'MEDIUM' ? '#eab308' :
+                                '#3b82f6';
+                            
+                            const item = document.createElement('div');
+                            item.style.cssText = 'display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem; background: rgba(156, 163, 175, 0.1); border-radius: 8px;';
+                            item.innerHTML = `
+                                <span style="color: ${severityColor}; font-size: 1.25rem;">⚠</span>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: #333;">${indicator.signal}</div>
+                                    <div style="font-size: 0.85rem; color: #666;">
+                                        ${indicator.type} Cycle • ${indicator.timeframe}
+                                    </div>
+                                </div>
+                                <span style="color: ${severityColor}; font-weight: bold; font-size: 0.85rem;">
+                                    ${indicator.severity}
+                                </span>
+                            `;
+                            indicatorsList.appendChild(item);
+                        });
+                        
+                        document.getElementById('leading-indicators-section').style.display = 'block';
+                    } else {
+                        document.getElementById('leading-indicators-section').style.display = 'none';
                     }
                     
                     // Show deleveraging section if applicable
