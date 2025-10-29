@@ -789,6 +789,206 @@ class MacroAwareScenarioService:
             analogues.append("1933: New Deal recovery")
         
         return analogues if analogues else ["No close historical matches found"]
+    
+    async def analyze_scenario_impact(
+        self, 
+        shock_type: str,
+        portfolio_value: float,
+        portfolio_holdings: List[Dict] = None
+    ) -> Dict:
+        """
+        Analyze scenario impact on portfolio with macro-aware adjustments.
+        
+        This is the main entry point for API calls.
+        
+        Args:
+            shock_type: String identifier for the shock (e.g., "MARKET_CRASH")
+            portfolio_value: Total portfolio value in base currency
+            portfolio_holdings: List of holdings (optional)
+            
+        Returns:
+            Comprehensive scenario analysis with macro context
+        """
+        # Map string shock types to ShockType enum
+        shock_mapping = {
+            "MARKET_CRASH": ShockType.EQUITY_SELLOFF,
+            "INTEREST_RATE_HIKE": ShockType.RATES_UP,
+            "HIGH_INFLATION": ShockType.CPI_SURPRISE,
+            "TECH_CRASH": ShockType.EQUITY_SELLOFF,  # Tech-focused equity selloff
+            "ENERGY_CRISIS": ShockType.CPI_SURPRISE,  # Energy drives inflation
+            "CREDIT_CRUNCH": ShockType.CREDIT_SPREAD_WIDENING,
+            "GEOPOLITICAL_CONFLICT": ShockType.USD_UP,  # Flight to safety
+            "CURRENCY_CRISIS": ShockType.USD_DOWN,
+            "RECOVERY_RALLY": ShockType.EQUITY_RALLY
+        }
+        
+        # Get the ShockType enum value
+        mapped_shock = shock_mapping.get(shock_type, ShockType.EQUITY_SELLOFF)
+        
+        # Get current macro state
+        try:
+            macro_state = await self._get_macro_state()
+        except Exception as e:
+            logger.warning(f"Failed to get macro state: {e}, using defaults")
+            macro_state = {
+                "regime": Regime.MID_EXPANSION,
+                "stdc_phase": "MID_CYCLE",
+                "ltdc_phase": "STABLE",
+                "empire_phase": "DOMINANT",
+                "internal_phase": "STABLE"
+            }
+        
+        # Get base scenario from parent service
+        base_scenario = self.scenario_service._build_scenario(mapped_shock)
+        
+        # Apply regime adjustments
+        regime = macro_state.get("regime", Regime.MID_EXPANSION)
+        probability_multiplier = 1.0
+        severity_multiplier = 1.0
+        reasoning_parts = []
+        
+        # Check for regime-specific adjustments
+        if regime in REGIME_ADJUSTMENTS:
+            if mapped_shock in REGIME_ADJUSTMENTS[regime]:
+                adjustment = REGIME_ADJUSTMENTS[regime][mapped_shock]
+                probability_multiplier = adjustment.probability_multiplier
+                severity_multiplier = adjustment.severity_multiplier
+                reasoning_parts.append(adjustment.reasoning or "")
+        
+        # Apply cycle-based modifiers
+        stdc_phase = macro_state.get("stdc_phase", "MID_CYCLE")
+        ltdc_phase = macro_state.get("ltdc_phase", "STABLE")
+        
+        # LTDC modifiers
+        if ltdc_phase == "BUBBLE":
+            if mapped_shock in [ShockType.EQUITY_SELLOFF, ShockType.CREDIT_SPREAD_WIDENING]:
+                severity_multiplier *= 1.5
+                reasoning_parts.append("LTDC bubble phase amplifies downside risks")
+        elif ltdc_phase == "DELEVERAGING":
+            if mapped_shock == ShockType.EQUITY_RALLY:
+                probability_multiplier *= 0.5
+                reasoning_parts.append("Deleveraging phase limits upside potential")
+                
+        # Calculate base impact
+        base_impact = base_scenario.severity * severity_multiplier
+        
+        # Calculate portfolio impact
+        portfolio_impact = portfolio_value * (base_impact / 100)
+        
+        # Build comprehensive response
+        result = {
+            "scenario_name": f"{shock_type} Scenario",
+            "description": base_scenario.description,
+            "macro_context": {
+                "current_regime": str(regime),
+                "stdc_phase": stdc_phase,
+                "ltdc_phase": ltdc_phase,
+                "regime_influence": " ".join(reasoning_parts) if reasoning_parts else "Neutral regime impact"
+            },
+            "impact_analysis": {
+                "base_impact_percent": round(base_impact, 2),
+                "portfolio_impact_amount": round(portfolio_impact, 2),
+                "adjusted_probability": round(base_scenario.probability * probability_multiplier, 1),
+                "confidence_level": 75 if regime == Regime.MID_EXPANSION else 85
+            },
+            "risk_metrics": {
+                "var_95": round(portfolio_impact * 0.7, 2),
+                "cvar_95": round(portfolio_impact * 0.85, 2),
+                "max_drawdown": round(base_impact * 1.2, 2)
+            },
+            "recommendations": self._generate_recommendations(
+                shock_type, regime, stdc_phase, ltdc_phase
+            ),
+            "historical_analogues": self._find_historical_analogues(
+                regime, stdc_phase, ltdc_phase, macro_state.get("empire_phase", "UNKNOWN")
+            ),
+            "hedge_suggestions": self._generate_hedge_suggestions(
+                shock_type, regime, portfolio_value
+            )
+        }
+        
+        return result
+    
+    def _generate_recommendations(
+        self, shock_type: str, regime: Regime, stdc_phase: str, ltdc_phase: str
+    ) -> List[str]:
+        """Generate regime-aware recommendations."""
+        recommendations = []
+        
+        if shock_type == "MARKET_CRASH":
+            if regime == Regime.LATE_EXPANSION:
+                recommendations.extend([
+                    "Reduce equity exposure - late cycle crash risks elevated",
+                    "Increase allocation to defensive sectors (utilities, consumer staples)",
+                    "Consider put options or VIX calls for downside protection"
+                ])
+            elif regime == Regime.DEEP_CONTRACTION:
+                recommendations.extend([
+                    "Maintain dry powder for opportunistic buying",
+                    "Focus on quality names with strong balance sheets",
+                    "Consider dollar-cost averaging strategy"
+                ])
+        
+        elif shock_type == "RECOVERY_RALLY":
+            if regime == Regime.EARLY_EXPANSION:
+                recommendations.extend([
+                    "Increase equity exposure, particularly cyclicals",
+                    "Rotate into small-caps and emerging markets",
+                    "Consider leveraged positions with risk controls"
+                ])
+        
+        # Add LTDC-specific recommendations
+        if ltdc_phase == "BUBBLE":
+            recommendations.append("⚠️ LTDC bubble detected - prioritize capital preservation")
+        elif ltdc_phase == "DELEVERAGING":
+            recommendations.append("Focus on income generation and safe havens during deleveraging")
+            
+        return recommendations if recommendations else ["Monitor market conditions closely"]
+    
+    def _generate_hedge_suggestions(
+        self, shock_type: str, regime: Regime, portfolio_value: float
+    ) -> List[Dict]:
+        """Generate specific hedge suggestions based on scenario and regime."""
+        hedges = []
+        hedge_size = portfolio_value * 0.1  # 10% hedge budget
+        
+        if shock_type in ["MARKET_CRASH", "TECH_CRASH"]:
+            hedges.append({
+                "instrument": "SPY Put Options",
+                "size": round(hedge_size * 0.5, 2),
+                "rationale": "Direct downside protection for equity exposure"
+            })
+            hedges.append({
+                "instrument": "VIX Calls",
+                "size": round(hedge_size * 0.3, 2),
+                "rationale": "Volatility hedge benefits from market stress"
+            })
+            
+        elif shock_type == "INTEREST_RATE_HIKE":
+            hedges.append({
+                "instrument": "TLT Puts",
+                "size": round(hedge_size * 0.4, 2),
+                "rationale": "Profit from falling bond prices as rates rise"
+            })
+            hedges.append({
+                "instrument": "Floating Rate Notes",
+                "size": round(hedge_size * 0.6, 2),
+                "rationale": "Income increases with rising rates"
+            })
+            
+        elif shock_type == "HIGH_INFLATION":
+            hedges.append({
+                "instrument": "TIPS (Inflation-Protected Securities)",
+                "size": round(hedge_size * 0.5, 2),
+                "rationale": "Direct inflation protection"
+            })
+            hedges.append({
+                "instrument": "Commodity ETFs (DJP, DBA)",
+                "size": round(hedge_size * 0.5, 2),
+                "rationale": "Commodities typically outperform during inflation"
+            })
+            
+        return hedges
 
 
 # Singleton instance for easy access
