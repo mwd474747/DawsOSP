@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DawsOS Portfolio Intelligence</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p { color: #666; font-size: 1.1rem; }
+        
+        .auth-section {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 400px;
+            margin: 2rem auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .auth-section h2 { margin-bottom: 1.5rem; color: #333; }
+        
+        .form-group { margin-bottom: 1.5rem; }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .dashboard { display: none; }
+        .dashboard.active { display: block; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .stat-value.positive { color: #10b981; }
+        .stat-value.negative { color: #ef4444; }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s;
+        }
+        
+        .feature-card:hover::before { transform: scaleX(1); }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-card h3 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        
+        .feature-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .holdings-table {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+        
+        .holdings-table h3 {
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .table th {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 2px solid #e0e0e0;
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .table tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .scenario-section {
+            display: none;
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .scenario-section.active { display: block; }
+        
+        .scenario-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .scenario-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .scenario-card:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .logout-btn {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: white;
+            color: #764ba2;
+        }
+        
+        .error-message {
+            color: #ef4444;
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .success-message {
+            color: #10b981;
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin: 2rem 0;
+            background: white;
+            border-radius: 15px;
+            padding: 0.5rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            color: #666;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .alerts-container {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .alert-item {
+            padding: 1rem;
+            border-left: 4px solid #667eea;
+            background: #f8f9fa;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
+        
+        .ai-analysis {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .ai-input {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .ai-input input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+        
+        .ai-input button {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .ai-response {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            min-height: 100px;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .loading-pulse { animation: pulse 2s infinite; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>DawsOS Portfolio Intelligence</h1>
+            <p>Advanced AI-Powered Portfolio Management Platform</p>
+        </div>
+
+        <button class="logout-btn" id="logoutBtn" style="display: none;">Logout</button>
+
+        <!-- Login Section -->
+        <div class="auth-section" id="authSection">
+            <h2>Login to Your Account</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="email" value="michael@dawsos.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" placeholder="Enter password (admin123)" required>
+                </div>
+                <button type="submit" class="btn">Login</button>
+                <div class="error-message" id="errorMessage"></div>
+                <div class="success-message" id="successMessage"></div>
+            </form>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div class="dashboard" id="dashboard">
+            <!-- Tabs Navigation -->
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('overview')">Overview</button>
+                <button class="tab" onclick="showTab('holdings')">Holdings</button>
+                <button class="tab" onclick="showTab('scenarios')">Scenarios</button>
+                <button class="tab" onclick="showTab('alerts')">Alerts</button>
+                <button class="tab" onclick="showTab('ai')">AI Analysis</button>
+                <button class="tab" onclick="showTab('optimize')">Optimize</button>
+            </div>
+
+            <!-- Overview Tab -->
+            <div class="tab-content active" id="overview-tab">
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Portfolio Value</div>
+                        <div class="stat-value" id="totalValue">Loading...</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Unrealized P&L</div>
+                        <div class="stat-value" id="unrealizedPnl">Loading...</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Day Return</div>
+                        <div class="stat-value" id="dayReturn">Loading...</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">YTD Return</div>
+                        <div class="stat-value" id="ytdReturn">Loading...</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Portfolio Beta</div>
+                        <div class="stat-value" id="portfolioBeta">Loading...</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Sharpe Ratio</div>
+                        <div class="stat-value" id="sharpeRatio">Loading...</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Value at Risk (95%)</div>
+                        <div class="stat-value" id="var95">Loading...</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Max Drawdown</div>
+                        <div class="stat-value" id="maxDrawdown">Loading...</div>
+                    </div>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="feature-card" onclick="showTab('scenarios')">
+                        <div class="feature-icon" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">📊</div>
+                        <h3>Scenario Analysis</h3>
+                        <p>Test your portfolio against market scenarios and stress conditions to understand risk exposure.</p>
+                    </div>
+                    <div class="feature-card" onclick="showTab('ai')">
+                        <div class="feature-icon" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">🤖</div>
+                        <h3>AI Analysis</h3>
+                        <p>Get AI-powered insights and recommendations for your portfolio using Claude.</p>
+                    </div>
+                    <div class="feature-card" onclick="loadMacro()">
+                        <div class="feature-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">🌍</div>
+                        <h3>Macro Insights</h3>
+                        <p>Track economic indicators and market regimes to make informed investment decisions.</p>
+                    </div>
+                    <div class="feature-card" onclick="showTab('optimize')">
+                        <div class="feature-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white;">⚡</div>
+                        <h3>Portfolio Optimization</h3>
+                        <p>Get rebalancing recommendations based on mean-variance optimization.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Holdings Tab -->
+            <div class="tab-content" id="holdings-tab">
+                <div class="holdings-table">
+                    <h3>Portfolio Holdings</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Value</th>
+                                <th>Weight</th>
+                                <th>Daily Change</th>
+                                <th>Beta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holdingsBody">
+                            <tr><td colspan="7" class="loading">Loading holdings...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Scenarios Tab -->
+            <div class="tab-content" id="scenarios-tab">
+                <div class="scenario-section active">
+                    <h3>Scenario Analysis</h3>
+                    <p style="color: #666; margin-bottom: 1rem;">Select a scenario to see its impact on your portfolio</p>
+                    <div class="scenario-grid">
+                        <div class="scenario-card" onclick="runScenario('market_crash')">
+                            <h4>Market Crash (-20%)</h4>
+                            <p>Simulate a severe market downturn</p>
+                        </div>
+                        <div class="scenario-card" onclick="runScenario('interest_rate')">
+                            <h4>Interest Rate Hike (+2%)</h4>
+                            <p>Impact of rising interest rates</p>
+                        </div>
+                        <div class="scenario-card" onclick="runScenario('inflation')">
+                            <h4>High Inflation (6%+)</h4>
+                            <p>Effects of sustained inflation</p>
+                        </div>
+                    </div>
+                    <div id="scenarioResults" style="margin-top: 2rem;"></div>
+                </div>
+            </div>
+
+            <!-- Alerts Tab -->
+            <div class="tab-content" id="alerts-tab">
+                <div class="alerts-container">
+                    <h3>Smart Alerts</h3>
+                    <div id="alertsList"></div>
+                </div>
+            </div>
+
+            <!-- AI Analysis Tab -->
+            <div class="tab-content" id="ai-tab">
+                <div class="ai-analysis">
+                    <h3>AI Portfolio Analysis</h3>
+                    <div class="ai-input">
+                        <input type="text" id="aiQuery" placeholder="Ask a question about your portfolio...">
+                        <button onclick="runAIAnalysis()">Analyze</button>
+                    </div>
+                    <div class="ai-response" id="aiResponse">
+                        <p style="color: #666;">Ask a question to get AI-powered insights about your portfolio.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optimize Tab -->
+            <div class="tab-content" id="optimize-tab">
+                <div class="ai-analysis">
+                    <h3>Portfolio Optimization</h3>
+                    <p style="margin-bottom: 1.5rem; color: #666;">Select your risk tolerance to get rebalancing recommendations</p>
+                    <div style="margin-bottom: 2rem;">
+                        <label for="riskSlider" style="display: block; margin-bottom: 0.5rem; color: #666;">Risk Tolerance: <span id="riskValue">0.5</span></label>
+                        <input type="range" id="riskSlider" min="0" max="1" step="0.1" value="0.5" style="width: 100%;" onchange="document.getElementById('riskValue').textContent = this.value">
+                    </div>
+                    <button class="btn" onclick="runOptimization()">Generate Recommendations</button>
+                    <div id="optimizationResults" style="margin-top: 2rem;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = null;
+        const API_BASE = '';
+
+        // Check if already logged in
+        if (localStorage.getItem('auth_token')) {
+            authToken = localStorage.getItem('auth_token');
+            showDashboard();
+        }
+
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    authToken = data.access_token;
+                    localStorage.setItem('auth_token', authToken);
+                    document.getElementById('errorMessage').textContent = '';
+                    document.getElementById('successMessage').textContent = 'Login successful!';
+                    setTimeout(() => showDashboard(), 500);
+                } else {
+                    document.getElementById('errorMessage').textContent = 'Invalid credentials. Password: admin123';
+                }
+            } catch (error) {
+                document.getElementById('errorMessage').textContent = 'Connection error: ' + error.message;
+            }
+        });
+
+        // Logout handler
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('auth_token');
+            authToken = null;
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('logoutBtn').style.display = 'none';
+        });
+
+        // Show dashboard
+        async function showDashboard() {
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('dashboard').classList.add('active');
+            document.getElementById('logoutBtn').style.display = 'block';
+            await loadPortfolioData();
+            await loadAlerts();
+        }
+
+        // Tab navigation
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        // Load portfolio data
+        async function loadPortfolioData() {
+            try {
+                const response = await fetch(`${API_BASE}/execute`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        pattern: 'portfolio_overview',
+                        inputs: {}
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const portfolio = data.result;
+                    
+                    // Update stats
+                    document.getElementById('totalValue').textContent = `$${portfolio.total_value.toLocaleString()}`;
+                    document.getElementById('unrealizedPnl').textContent = `$${portfolio.unrealized_pnl.toLocaleString()}`;
+                    document.getElementById('unrealizedPnl').className = portfolio.unrealized_pnl >= 0 ? 'stat-value positive' : 'stat-value negative';
+                    document.getElementById('dayReturn').textContent = `${(portfolio.returns_1d * 100).toFixed(2)}%`;
+                    document.getElementById('dayReturn').className = portfolio.returns_1d >= 0 ? 'stat-value positive' : 'stat-value negative';
+                    document.getElementById('ytdReturn').textContent = `${(portfolio.returns_ytd * 100).toFixed(2)}%`;
+                    document.getElementById('ytdReturn').className = portfolio.returns_ytd >= 0 ? 'stat-value positive' : 'stat-value negative';
+                    document.getElementById('portfolioBeta').textContent = portfolio.portfolio_beta.toFixed(2);
+                    document.getElementById('sharpeRatio').textContent = portfolio.sharpe_ratio.toFixed(2);
+                    document.getElementById('var95').textContent = `$${portfolio.var_95.toLocaleString()}`;
+                    document.getElementById('maxDrawdown').textContent = `${(portfolio.max_drawdown * 100).toFixed(2)}%`;
+                    document.getElementById('maxDrawdown').className = 'stat-value negative';
+
+                    // Update holdings table
+                    if (portfolio.holdings) {
+                        const holdingsBody = document.getElementById('holdingsBody');
+                        holdingsBody.innerHTML = portfolio.holdings.map(h => `
+                            <tr>
+                                <td><strong>${h.symbol}</strong></td>
+                                <td>${h.quantity}</td>
+                                <td>$${h.price.toFixed(2)}</td>
+                                <td>$${h.value.toLocaleString()}</td>
+                                <td>${(h.weight * 100).toFixed(1)}%</td>
+                                <td class="${h.change >= 0 ? 'positive' : 'negative'}">
+                                    ${h.change >= 0 ? '+' : ''}${(h.change * 100).toFixed(2)}%
+                                </td>
+                                <td>${h.beta.toFixed(2)}</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading portfolio data:', error);
+            }
+        }
+
+        // Load alerts
+        async function loadAlerts() {
+            try {
+                const response = await fetch(`${API_BASE}/api/alerts`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const alertsList = document.getElementById('alertsList');
+                    alertsList.innerHTML = data.map(alert => `
+                        <div class="alert-item">
+                            <strong>${alert.type.toUpperCase()}</strong>: ${alert.message}
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading alerts:', error);
+            }
+        }
+
+        // Run scenario
+        async function runScenario(scenario) {
+            const resultsDiv = document.getElementById('scenarioResults');
+            resultsDiv.innerHTML = '<div class="loading loading-pulse">Running scenario analysis...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/execute`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        pattern: 'portfolio_scenario_analysis',
+                        inputs: { scenario }
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const result = data.result;
+                    
+                    resultsDiv.innerHTML = `
+                        <div style="background: rgba(102, 126, 234, 0.1); border-radius: 15px; padding: 1.5rem; margin-top: 2rem;">
+                            <h4 style="margin-bottom: 1rem;">Scenario Results: ${result.scenario_name}</h4>
+                            <p style="margin-bottom: 1rem;">${result.description}</p>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                                <div>
+                                    <div style="color: #666; font-size: 0.9rem;">Expected Impact</div>
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: ${result.portfolio_impact < 0 ? '#ef4444' : '#10b981'}">
+                                        ${result.portfolio_impact > 0 ? '+' : ''}${result.portfolio_impact}%
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="color: #666; font-size: 0.9rem;">Risk Level</div>
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: ${result.risk_level === 'High' ? '#ef4444' : '#f59e0b'}">
+                                        ${result.risk_level}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="color: #666; font-size: 0.9rem;">Confidence</div>
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: #667eea">
+                                        ${result.confidence}%
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 1.5rem;">
+                                <strong>Recommendations:</strong>
+                                <ul style="margin-top: 0.5rem; padding-left: 1.5rem; color: #666;">
+                                    ${result.recommendations.map(r => `<li>${r}</li>`).join('')}
+                                </ul>
+                            </div>
+                            ${result.affected_holdings ? `
+                            <div style="margin-top: 1.5rem;">
+                                <strong>Most Affected Holdings:</strong>
+                                <div style="margin-top: 0.5rem;">
+                                    ${result.affected_holdings.slice(0, 4).map(h => `
+                                        <span style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: white; border-radius: 8px;">
+                                            ${h.symbol}: ${h.impact > 0 ? '+' : ''}${h.impact}%
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = '<div class="error-message">Error running scenario. Please try again.</div>';
+            }
+        }
+
+        // Run AI Analysis
+        async function runAIAnalysis() {
+            const query = document.getElementById('aiQuery').value;
+            const responseDiv = document.getElementById('aiResponse');
+            
+            if (!query) return;
+            
+            responseDiv.innerHTML = '<div class="loading loading-pulse">Analyzing with AI...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/ai/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ query })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const analysis = data.analysis;
+                    
+                    responseDiv.innerHTML = `
+                        <h4>AI Analysis</h4>
+                        <div style="margin-top: 1rem;">
+                            <strong>Insights:</strong>
+                            <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                                ${analysis.insights.map(i => `<li>${i}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div style="margin-top: 1rem;">
+                            <strong>Recommendations:</strong>
+                            <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                                ${analysis.recommendations.map(r => `<li>${r}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div style="margin-top: 1rem;">
+                            <strong>Risk Assessment:</strong>
+                            <p>${analysis.risk_assessment}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = '<div class="error-message">Error with AI analysis. Please try again.</div>';
+            }
+        }
+
+        // Run Optimization
+        async function runOptimization() {
+            const riskTolerance = document.getElementById('riskSlider').value;
+            const resultsDiv = document.getElementById('optimizationResults');
+            
+            resultsDiv.innerHTML = '<div class="loading loading-pulse">Optimizing portfolio...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/optimize`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ risk_tolerance: parseFloat(riskTolerance) })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    resultsDiv.innerHTML = `
+                        <div style="background: #f8f9fa; border-radius: 15px; padding: 1.5rem;">
+                            <h4>Optimization Results</h4>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-top: 1rem;">
+                                <div>
+                                    <strong>Current Portfolio</strong>
+                                    <ul style="margin-top: 0.5rem; list-style: none;">
+                                        <li>Return: ${(data.current_portfolio.return * 100).toFixed(2)}%</li>
+                                        <li>Risk: ${(data.current_portfolio.risk * 100).toFixed(2)}%</li>
+                                        <li>Sharpe: ${data.current_portfolio.sharpe.toFixed(2)}</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <strong>Optimized Portfolio</strong>
+                                    <ul style="margin-top: 0.5rem; list-style: none;">
+                                        <li>Return: ${(data.optimized_portfolio.return * 100).toFixed(2)}%</li>
+                                        <li>Risk: ${(data.optimized_portfolio.risk * 100).toFixed(2)}%</li>
+                                        <li>Sharpe: ${data.optimized_portfolio.sharpe.toFixed(2)}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div style="margin-top: 1.5rem;">
+                                <strong>Recommended Trades:</strong>
+                                <div style="margin-top: 0.5rem;">
+                                    ${data.trades.map(t => `
+                                        <div style="padding: 0.5rem; background: white; margin: 0.5rem 0; border-radius: 8px;">
+                                            ${t.action} ${Math.abs(t.shares)} shares of ${t.symbol} ($${Math.abs(t.value).toFixed(2)})
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = '<div class="error-message">Error optimizing portfolio. Please try again.</div>';
+            }
+        }
+
+        // Load Macro Insights
+        async function loadMacro() {
+            showTab('overview');
+            const response = await fetch(`${API_BASE}/execute`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    pattern: 'macro_cycles_overview',
+                    inputs: {}
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const macro = data.result;
+                alert(`Macro Regime: ${macro.regime}\nRisk Level: ${macro.risk_level}\n\nIndicators:\n` +
+                    `- GDP Growth: ${macro.indicators.gdp_growth}%\n` +
+                    `- Inflation: ${macro.indicators.inflation}%\n` +
+                    `- Interest Rate: ${macro.indicators.interest_rate}%\n` +
+                    `- VIX: ${macro.indicators.vix}\n\n` +
+                    `Recommendations:\n${macro.recommendations.join('\n')}`);
+            }
+        }
+    </script>
+</body>
+</html>
