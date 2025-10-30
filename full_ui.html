@@ -7,17 +7,38 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
+        /* CSS Variables for consistent theming */
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #1e293b;
+            --border-primary: rgba(255, 255, 255, 0.1);
+            --border-subtle: rgba(255, 255, 255, 0.05);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --color-success: #10b981;
+            --color-error: #ef4444;
+            --color-warning: #f59e0b;
+            --color-primary: #3b82f6;
+            --color-primary-hover: #2563eb;
+            --color-primary-light: rgba(59, 130, 246, 0.1);
+            --color-primary-border: rgba(59, 130, 246, 0.3);
+            --shadow-sm: 0 2px 10px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
             font-family: 'Inter', 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, #334155 100%);
             min-height: 100vh;
-            color: #e2e8f0;
+            color: var(--text-primary);
         }
 
         /* Professional Monospace for numbers */
-        .stat-value, .table td, .metric-value {
+        .stat-value, .table td, .metric-value, .number {
             font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
         }
 
@@ -29,44 +50,44 @@
         }
         
         .header {
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(30, 41, 59, 0.8);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-primary);
             border-radius: 12px;
             padding: 2rem;
             margin-bottom: 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            box-shadow: var(--shadow-sm);
         }
         
         .header h1 {
             font-size: 2rem;
             font-weight: 700;
-            color: #f1f5f9;
+            color: var(--text-primary);
             margin-bottom: 0.25rem;
             letter-spacing: -0.02em;
         }
         
         .header p { 
-            color: #94a3b8; 
+            color: var(--text-secondary); 
             font-size: 0.95rem;
             font-weight: 400;
             letter-spacing: 0.01em;
         }
         
         .auth-section {
-            background: rgba(15, 23, 42, 0.9);
+            background: rgba(30, 41, 59, 0.9);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-primary);
             border-radius: 12px;
             padding: 2.5rem;
             max-width: 420px;
             margin: 2rem auto;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            box-shadow: var(--shadow-md);
         }
         
         .auth-section h2 { 
             margin-bottom: 1.5rem; 
-            color: #f1f5f9;
+            color: var(--text-primary);
             font-size: 1.5rem;
             font-weight: 600;
         }
@@ -87,24 +108,24 @@
             width: 100%;
             padding: 0.75rem;
             background: rgba(30, 41, 59, 0.5);
-            border: 1px solid rgba(148, 163, 184, 0.2);
+            border: 1px solid var(--border-primary);
             border-radius: 6px;
-            color: #f1f5f9;
+            color: var(--text-primary);
             font-size: 1rem;
             transition: all 0.3s;
         }
         
         .form-group input:focus {
             outline: none;
-            border-color: #3b82f6;
+            border-color: var(--color-primary);
             background: rgba(30, 41, 59, 0.8);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 3px var(--color-primary-light);
         }
         
         .btn {
             width: 100%;
             padding: 0.75rem 2rem;
-            background: #3b82f6;
+            background: var(--color-primary);
             color: white;
             border: none;
             border-radius: 6px;
@@ -117,8 +138,8 @@
         }
         
         .btn:hover {
-            background: #2563eb;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            background: var(--color-primary-hover);
+            box-shadow: 0 4px 12px var(--color-primary-border);
         }
         
         .dashboard { display: none; }
@@ -132,21 +153,21 @@
         }
         
         .stat-card {
-            background: rgba(15, 23, 42, 0.6);
+            background: var(--bg-card);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-primary);
             border-radius: 8px;
             padding: 1.25rem;
             transition: all 0.2s;
         }
         
         .stat-card:hover {
-            background: rgba(15, 23, 42, 0.8);
-            border-color: rgba(59, 130, 246, 0.3);
+            background: rgba(30, 41, 59, 0.8);
+            border-color: var(--color-primary-border);
         }
         
         .stat-label {
-            color: #94a3b8;
+            color: var(--text-secondary);
             font-size: 0.75rem;
             margin-bottom: 0.5rem;
             text-transform: uppercase;
@@ -157,12 +178,12 @@
         .stat-value {
             font-size: 1.75rem;
             font-weight: 600;
-            color: #f1f5f9;
+            color: var(--text-primary);
             font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
         }
         
-        .stat-value.positive { color: #22c55e; }
-        .stat-value.negative { color: #dc2626; }
+        .stat-value.positive { color: var(--color-success); }
+        .stat-value.negative { color: var(--color-error); }
         
         .feature-grid {
             display: grid;
@@ -172,9 +193,9 @@
         }
         
         .feature-card {
-            background: rgba(15, 23, 42, 0.6);
+            background: var(--bg-card);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-primary);
             border-radius: 8px;
             padding: 1.5rem;
             transition: all 0.2s;
@@ -190,7 +211,7 @@
             left: 0;
             width: 100%;
             height: 2px;
-            background: linear-gradient(90deg, #3b82f6, #1e40af);
+            background: var(--color-primary);
             transform: scaleX(0);
             transform-origin: left;
             transition: transform 0.3s;
@@ -199,8 +220,8 @@
         .feature-card:hover::before { transform: scaleX(1); }
         
         .feature-card:hover {
-            background: rgba(15, 23, 42, 0.8);
-            border-color: rgba(59, 130, 246, 0.3);
+            background: rgba(30, 41, 59, 0.8);
+            border-color: var(--color-primary-border);
         }
         
         .feature-icon {
@@ -212,27 +233,27 @@
             justify-content: center;
             font-size: 1.25rem;
             margin-bottom: 1rem;
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.2);
+            background: var(--color-primary-light);
+            border: 1px solid var(--color-primary-border);
         }
         
         .feature-card h3 {
             margin-bottom: 0.5rem;
-            color: #f1f5f9;
+            color: var(--text-primary);
             font-size: 1.125rem;
             font-weight: 600;
         }
         
         .feature-card p {
-            color: #94a3b8;
+            color: var(--text-secondary);
             line-height: 1.5;
             font-size: 0.875rem;
         }
         
         .holdings-table {
-            background: rgba(15, 23, 42, 0.6);
+            background: var(--bg-card);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-primary);
             border-radius: 8px;
             padding: 1.5rem;
             margin-top: 2rem;
@@ -240,7 +261,7 @@
         
         .holdings-table h3 {
             margin-bottom: 1.5rem;
-            color: #f1f5f9;
+            color: var(--text-primary);
             font-size: 1.125rem;
             font-weight: 600;
             text-transform: uppercase;
@@ -255,35 +276,36 @@
         .table th {
             text-align: left;
             padding: 0.75rem;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-            color: #94a3b8;
+            border-bottom: 1px solid var(--border-primary);
+            color: var(--text-secondary);
             font-weight: 600;
             font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            background: rgba(15, 23, 42, 0.5);
         }
         
         .table td {
             padding: 0.75rem;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-            color: #e2e8f0;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-primary);
             font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
             font-size: 0.875rem;
         }
         
         .table tbody tr:nth-child(odd) {
-            background: rgba(30, 41, 59, 0.3);
+            background: rgba(15, 23, 42, 0.3);
         }
         
         .table tbody tr:hover {
-            background: rgba(59, 130, 246, 0.1);
+            background: rgba(59, 130, 246, 0.05);
         }
         
         .scenario-section {
             display: none;
-            background: rgba(15, 23, 42, 0.6);
+            background: var(--bg-card);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-primary);
             border-radius: 8px;
             padding: 1.5rem;
             margin-top: 2rem;
@@ -300,7 +322,7 @@
         
         .scenario-card {
             background: rgba(30, 41, 59, 0.5);
-            border: 1px solid rgba(148, 163, 184, 0.2);
+            border: 1px solid var(--border-primary);
             border-radius: 8px;
             padding: 1.25rem;
             transition: all 0.2s;
@@ -309,7 +331,7 @@
         
         .scenario-card:hover {
             background: rgba(30, 41, 59, 0.8);
-            border-color: rgba(59, 130, 246, 0.3);
+            border-color: var(--color-primary-border);
         }
         
         .logout-btn {
@@ -319,7 +341,7 @@
             padding: 0.625rem 1.25rem;
             background: rgba(239, 68, 68, 0.1);
             border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #f87171;
+            color: var(--color-error);
             border-radius: 6px;
             cursor: pointer;
             font-weight: 500;
@@ -336,14 +358,14 @@
         }
         
         .error-message {
-            color: #f87171;
+            color: var(--color-error);
             margin-top: 1rem;
             text-align: center;
             font-size: 0.875rem;
         }
         
         .success-message {
-            color: #34d399;
+            color: var(--color-success);
             margin-top: 1rem;
             text-align: center;
             font-size: 0.875rem;
@@ -352,7 +374,7 @@
         .loading {
             text-align: center;
             padding: 2rem;
-            color: #94a3b8;
+            color: var(--text-secondary);
         }
         
         /* Glass Morphism Navigation Tabs - CRITICAL REQUIREMENT */
@@ -401,9 +423,9 @@
         .tab-content.active { display: block; }
         
         .alerts-container {
-            background: rgba(15, 23, 42, 0.6);
+            background: var(--bg-card);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-primary);
             border-radius: 8px;
             padding: 1.5rem;
             margin-top: 2rem;
@@ -411,11 +433,11 @@
         
         .alert-item {
             padding: 1rem;
-            border-left: 3px solid #3b82f6;
+            border-left: 3px solid var(--color-primary);
             background: rgba(30, 41, 59, 0.5);
             margin-bottom: 0.75rem;
             border-radius: 6px;
-            color: #e2e8f0;
+            color: var(--text-primary);
             font-size: 0.875rem;
         }
         
@@ -424,9 +446,9 @@
         }
         
         .ai-analysis {
-            background: rgba(15, 23, 42, 0.6);
+            background: var(--bg-card);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-primary);
             border-radius: 8px;
             padding: 1.5rem;
             margin-top: 2rem;
@@ -442,21 +464,21 @@
             flex: 1;
             padding: 0.625rem;
             background: rgba(30, 41, 59, 0.5);
-            border: 1px solid rgba(148, 163, 184, 0.2);
+            border: 1px solid var(--border-primary);
             border-radius: 6px;
-            color: #f1f5f9;
+            color: var(--text-primary);
             font-size: 0.875rem;
         }
         
         .ai-input input:focus {
             outline: none;
             background: rgba(30, 41, 59, 0.8);
-            border-color: #3b82f6;
+            border-color: var(--color-primary);
         }
         
         .ai-input button {
             padding: 0.625rem 1.5rem;
-            background: #3b82f6;
+            background: var(--color-primary);
             color: white;
             border: none;
             border-radius: 6px;
@@ -469,7 +491,7 @@
         }
         
         .ai-input button:hover {
-            background: #2563eb;
+            background: var(--color-primary-hover);
         }
         
         .ai-response {
@@ -477,7 +499,7 @@
             padding: 1.25rem;
             border-radius: 6px;
             min-height: 100px;
-            color: #e2e8f0;
+            color: var(--text-primary);
             font-size: 0.875rem;
         }
         
@@ -730,15 +752,15 @@
                 <div class="holdings-table">
                     <h3>Transaction History</h3>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <div id="transactionSummary" style="display: flex; gap: 2rem; color: #666;">
+                        <div id="transactionSummary" style="display: flex; gap: 2rem; color: var(--text-secondary);">
                             <span>Total Invested: <strong id="totalInvested">Loading...</strong></span>
                             <span>Total Dividends: <strong id="totalDividends">Loading...</strong></span>
                             <span>Realized Gains: <strong id="realizedGains">Loading...</strong></span>
                         </div>
                         <div id="paginationControls" style="display: flex; gap: 1rem; align-items: center;">
-                            <button onclick="prevPage()" id="prevBtn" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; border-radius: 8px; cursor: pointer;">Previous</button>
-                            <span id="pageInfo">Page 1 of 1</span>
-                            <button onclick="nextPage()" id="nextBtn" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; border-radius: 8px; cursor: pointer;">Next</button>
+                            <button onclick="prevPage()" id="prevBtn" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s;">Previous</button>
+                            <span id="pageInfo" style="color: var(--text-secondary);">Page 1 of 1</span>
+                            <button onclick="nextPage()" id="nextBtn" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s;">Next</button>
                         </div>
                     </div>
                     <table class="table">
@@ -1039,36 +1061,36 @@
 
             <!-- Macro Dashboard Tab -->
             <div class="tab-content" id="macro-tab">
-                <div style="background: white; border-radius: 20px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                    <h2 style="color: #333; margin-bottom: 1.5rem;">Macro Economic Dashboard - Dalio Framework</h2>
+                <div style="background: var(--bg-card); backdrop-filter: blur(10px); border: 1px solid var(--border-primary); border-radius: 12px; padding: 2rem; box-shadow: var(--shadow-sm);">
+                    <h2 style="color: var(--text-primary); margin-bottom: 1.5rem;">Macro Economic Dashboard - Dalio Framework</h2>
                     <button class="btn" onclick="loadMacroData()" style="width: auto; padding: 0.75rem 2rem; margin-bottom: 2rem;">
                         Refresh Macro Data
                     </button>
                     
                     <!-- Master Reasoning Panel -->
-                    <div id="master-reasoning-panel" style="display: none; margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(102, 126, 234, 0.1)); border: 2px solid rgba(147, 51, 234, 0.3); border-radius: 15px; padding: 1.5rem;">
-                        <h3 style="color: #9333ea; font-size: 1.2rem; margin-bottom: 1rem;">
-                            🧠 Dalio Framework Analysis Engine
+                    <div id="master-reasoning-panel" style="display: none; margin-bottom: 1.5rem; background: rgba(59, 130, 246, 0.05); border: 1px solid var(--color-primary-border); border-radius: 12px; padding: 1.5rem;">
+                        <h3 style="color: var(--color-primary); font-size: 1.2rem; margin-bottom: 1rem;">
+                            Dalio Framework Analysis Engine
                         </h3>
                         
                         <!-- Synthesis Reasoning -->
                         <div id="synthesis-section" style="display: flex; flex-direction: column; gap: 1rem;">
                             <div>
-                                <h4 style="font-size: 0.9rem; font-weight: 600; color: #666; margin-bottom: 0.5rem;">Combined Assessment:</h4>
+                                <h4 style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Combined Assessment:</h4>
                                 <div id="combined-assessment" style="display: flex; flex-direction: column; gap: 0.5rem;">
                                     <!-- Populated dynamically -->
                                 </div>
                             </div>
                             
                             <div>
-                                <h4 style="font-size: 0.9rem; font-weight: 600; color: #666; margin-bottom: 0.5rem;">Historical Parallels:</h4>
+                                <h4 style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Historical Parallels:</h4>
                                 <div id="historical-parallels" style="display: flex; flex-direction: column; gap: 0.5rem;">
                                     <!-- Populated dynamically -->
                                 </div>
                             </div>
                             
                             <div>
-                                <h4 style="font-size: 0.9rem; font-weight: 600; color: #666; margin-bottom: 0.5rem;">Dalio's Key Principles Applied:</h4>
+                                <h4 style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Dalio's Key Principles Applied:</h4>
                                 <div id="key-insights" style="display: flex; flex-direction: column; gap: 0.5rem;">
                                     <!-- Populated dynamically -->
                                 </div>
@@ -1076,32 +1098,32 @@
                         </div>
                         
                         <!-- Causal Chain Visualization -->
-                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.5); border-radius: 10px;">
-                            <h4 style="font-size: 0.9rem; font-weight: 600; color: #666; margin-bottom: 0.75rem;">Causal Chain:</h4>
+                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(30, 41, 59, 0.3); border-radius: 10px; border: 1px solid var(--border-primary);">
+                            <h4 style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.75rem;">Causal Chain:</h4>
                             <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
                                 <div style="text-align: center;">
-                                    <div style="font-weight: bold; color: #333;">DATA</div>
-                                    <div style="color: #666;">24 indicators</div>
+                                    <div style="font-weight: bold; color: var(--text-primary);">DATA</div>
+                                    <div style="color: var(--text-secondary);">24 indicators</div>
                                 </div>
-                                <div style="color: #667eea; font-size: 1rem;">→</div>
+                                <div style="color: var(--color-primary); font-size: 1rem;">→</div>
                                 <div style="text-align: center;">
-                                    <div style="font-weight: bold; color: #333;">CYCLES</div>
-                                    <div style="color: #666;">4 frameworks</div>
+                                    <div style="font-weight: bold; color: var(--text-primary);">CYCLES</div>
+                                    <div style="color: var(--text-secondary);">4 frameworks</div>
                                 </div>
-                                <div style="color: #667eea; font-size: 1rem;">→</div>
+                                <div style="color: var(--color-primary); font-size: 1rem;">→</div>
                                 <div style="text-align: center;">
-                                    <div style="font-weight: bold; color: #333;">PATTERNS</div>
-                                    <div style="color: #666;">Historical analysis</div>
+                                    <div style="font-weight: bold; color: var(--text-primary);">PATTERNS</div>
+                                    <div style="color: var(--text-secondary);">Historical analysis</div>
                                 </div>
-                                <div style="color: #667eea; font-size: 1rem;">→</div>
+                                <div style="color: var(--color-primary); font-size: 1rem;">→</div>
                                 <div style="text-align: center;">
-                                    <div style="font-weight: bold; color: #333;">REGIME</div>
-                                    <div style="color: #666;">Current state</div>
+                                    <div style="font-weight: bold; color: var(--text-primary);">REGIME</div>
+                                    <div style="color: var(--text-secondary);">Current state</div>
                                 </div>
-                                <div style="color: #667eea; font-size: 1rem;">→</div>
+                                <div style="color: var(--color-primary); font-size: 1rem;">→</div>
                                 <div style="text-align: center;">
-                                    <div style="font-weight: bold; color: #333;">ACTION</div>
-                                    <div style="color: #666;">Portfolio strategy</div>
+                                    <div style="font-weight: bold; color: var(--text-primary);">ACTION</div>
+                                    <div style="color: var(--text-secondary);">Portfolio strategy</div>
                                 </div>
                             </div>
                         </div>
@@ -1119,21 +1141,21 @@
                                     </button>
                                 </h3>
                                 <div style="margin-bottom: 1rem;">
-                                    <div style="font-size: 1.8rem; font-weight: bold; color: #333;" id="stdc-phase">--</div>
-                                    <div style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">Position in cycle</div>
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: var(--text-primary); font-family: 'SF Mono', Monaco, monospace;" id="stdc-phase">--</div>
+                                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">Position in cycle</div>
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">Credit Growth</span>
-                                        <span style="font-weight: 600;" id="stdc-credit">--</span>
+                                        <span style="color: var(--text-secondary);">Credit Growth</span>
+                                        <span style="font-weight: 600; color: var(--text-primary); font-family: 'SF Mono', Monaco, monospace;" id="stdc-credit">--</span>
                                     </div>
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">Interest Rate Cycle</span>
-                                        <span style="font-weight: 600;" id="stdc-rates">--</span>
+                                        <span style="color: var(--text-secondary);">Interest Rate Cycle</span>
+                                        <span style="font-weight: 600; color: var(--text-primary); font-family: 'SF Mono', Monaco, monospace;" id="stdc-rates">--</span>
                                     </div>
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">Phase Duration</span>
-                                        <span style="font-weight: 600;" id="stdc-duration">--</span>
+                                        <span style="color: var(--text-secondary);">Phase Duration</span>
+                                        <span style="font-weight: 600; color: var(--text-primary); font-family: 'SF Mono', Monaco, monospace;" id="stdc-duration">--</span>
                                     </div>
                                 </div>
                                 <!-- Visual cycle indicator -->
@@ -1188,21 +1210,21 @@
                                     </button>
                                 </h3>
                                 <div style="margin-bottom: 1rem;">
-                                    <div style="font-size: 1.8rem; font-weight: bold; color: #333;" id="ltdc-phase">--</div>
-                                    <div style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">Position in cycle</div>
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: var(--text-primary); font-family: 'SF Mono', Monaco, monospace;" id="ltdc-phase">--</div>
+                                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">Position in cycle</div>
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">Debt/GDP Ratio</span>
-                                        <span style="font-weight: 600;" id="ltdc-debt-gdp">--</span>
+                                        <span style="color: var(--text-secondary);">Debt/GDP Ratio</span>
+                                        <span style="font-weight: 600; color: var(--text-primary); font-family: 'SF Mono', Monaco, monospace;" id="ltdc-debt-gdp">--</span>
                                     </div>
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">Debt Service Ratio</span>
-                                        <span style="font-weight: 600;" id="ltdc-service">--</span>
+                                        <span style="color: var(--text-secondary);">Debt Service Ratio</span>
+                                        <span style="font-weight: 600; color: var(--text-primary); font-family: 'SF Mono', Monaco, monospace;" id="ltdc-service">--</span>
                                     </div>
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">Deleveraging Risk</span>
-                                        <span style="font-weight: 600;" id="ltdc-risk">--</span>
+                                        <span style="color: var(--text-secondary);">Deleveraging Risk</span>
+                                        <span style="font-weight: 600; color: var(--text-primary); font-family: 'SF Mono', Monaco, monospace;" id="ltdc-risk">--</span>
                                     </div>
                                 </div>
                                 <!-- Visual cycle indicator -->
@@ -1260,45 +1282,45 @@
                                     </button>
                                 </h3>
                                 <div style="margin-bottom: 1rem;">
-                                    <div style="font-size: 1.8rem; font-weight: bold; color: #333;" id="empire-phase">--</div>
-                                    <div style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">
-                                        Empire Score: <span id="empire-score" style="color: #333; font-weight: 600;">--</span>/100
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: var(--text-primary); font-family: 'SF Mono', Monaco, monospace;" id="empire-phase">--</div>
+                                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                        Empire Score: <span id="empire-score" style="color: var(--text-primary); font-weight: 600; font-family: 'SF Mono', Monaco, monospace;">--</span>/100
                                     </div>
                                 </div>
                                 
                                 <!-- 8 Empire Indicators Grid -->
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem;">
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">Education</span>
-                                        <span style="color: #333; font-weight: 600;" id="empire-education">--</span>
+                                        <span style="color: var(--text-secondary);">Education</span>
+                                        <span style="color: var(--text-primary); font-weight: 600; font-family: 'SF Mono', Monaco, monospace;" id="empire-education">--</span>
                                     </div>
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">Innovation</span>
-                                        <span style="color: #333; font-weight: 600;" id="empire-innovation">--</span>
+                                        <span style="color: var(--text-secondary);">Innovation</span>
+                                        <span style="color: var(--text-primary); font-weight: 600; font-family: 'SF Mono', Monaco, monospace;" id="empire-innovation">--</span>
                                     </div>
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">GDP Share</span>
-                                        <span style="color: #333; font-weight: 600;" id="empire-gdp-share">--</span>
+                                        <span style="color: var(--text-secondary);">GDP Share</span>
+                                        <span style="color: var(--text-primary); font-weight: 600; font-family: 'SF Mono', Monaco, monospace;" id="empire-gdp-share">--</span>
                                     </div>
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">Trade Share</span>
-                                        <span style="color: #333; font-weight: 600;" id="empire-trade">--</span>
+                                        <span style="color: var(--text-secondary);">Trade Share</span>
+                                        <span style="color: var(--text-primary); font-weight: 600; font-family: 'SF Mono', Monaco, monospace;" id="empire-trade">--</span>
                                     </div>
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">Military</span>
-                                        <span style="color: #333; font-weight: 600;" id="empire-military">--</span>
-                                    </div>
-                                    <div style="display: flex; justify-between;">
-                                        <span style="color: #666;">Financial Hub</span>
-                                        <span style="color: #333; font-weight: 600;" id="empire-financial">--</span>
+                                        <span style="color: var(--text-secondary);">Military</span>
+                                        <span style="color: var(--text-primary); font-weight: 600; font-family: 'SF Mono', Monaco, monospace;" id="empire-military">--</span>
                                     </div>
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">Reserve Currency</span>
-                                        <span style="color: #333; font-weight: 600;" id="empire-reserve">--</span>
+                                        <span style="color: var(--text-secondary);">Financial Hub</span>
+                                        <span style="color: var(--text-primary); font-weight: 600; font-family: 'SF Mono', Monaco, monospace;" id="empire-financial">--</span>
                                     </div>
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">Competitiveness</span>
-                                        <span style="color: #333; font-weight: 600;" id="empire-competitive">--</span>
+                                        <span style="color: var(--text-secondary);">Reserve Currency</span>
+                                        <span style="color: var(--text-primary); font-weight: 600; font-family: 'SF Mono', Monaco, monospace;" id="empire-reserve">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: var(--text-secondary);">Competitiveness</span>
+                                        <span style="color: var(--text-primary); font-weight: 600; font-family: 'SF Mono', Monaco, monospace;" id="empire-competitive">--</span>
                                     </div>
                                 </div>
                                 
