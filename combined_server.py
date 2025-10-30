@@ -396,11 +396,10 @@ async def lifespan(app: FastAPI):
         logger.info("Pattern orchestration system initialized")
         
         # Reset circuit breakers after successful initialization
-        if runtime and db_pool:
-            for agent_id in runtime.agents:
-                runtime.failure_counts[agent_id] = 0
-                if agent_id in runtime.circuit_breaker_until:
-                    del runtime.circuit_breaker_until[agent_id]
+        if runtime and db_pool and hasattr(runtime, 'circuit_breaker'):
+            # Clear circuit breaker state for all agents
+            runtime.circuit_breaker.failures.clear()
+            runtime.circuit_breaker.open_until.clear()
             logger.info("✅ Reset all agent circuit breakers")
         
     except Exception as e:
