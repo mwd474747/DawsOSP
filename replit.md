@@ -2,7 +2,12 @@
 
 ## Overview
 
-DawsOS is a comprehensive portfolio management and intelligence platform that combines real-time market data, economic analysis, and AI-powered insights. The system uses a microservices architecture with FastAPI backend, Next.js frontend, PostgreSQL database, and Redis caching.
+DawsOS is a comprehensive portfolio management and intelligence platform that combines real-time market data, economic analysis, and AI-powered insights. The system uses a pattern-orchestrated microservices architecture with FastAPI backend, PostgreSQL database, and Redis caching.
+
+**Core Architecture**: Pattern Orchestrator → Agent Runtime → Services
+- 12 JSON workflow patterns define business logic
+- 6 specialized agents execute capabilities (52 total capabilities)
+- All API endpoints route through pattern orchestrator for consistency
 
 **Core Purpose**: Provide institutional-grade portfolio analysis, risk management, macro regime detection, and optimization capabilities through an intuitive web interface.
 
@@ -16,6 +21,15 @@ DawsOS is a comprehensive portfolio management and intelligence platform that co
 - Portfolio optimization recommendations
 
 ## Recent Updates
+
+### October 31, 2025 - Pattern Orchestrator Integration & Technical Debt Resolution
+- **Authentication Fix**: Updated `get_current_user` to accept both FastAPI Request objects and bearer token strings
+- **Database Schema Fix**: Fixed all queries to use `valuation_date` instead of `asof_date` to match actual database schema
+- **Pricing Pack Integration**: Orchestrator now queries database for real pricing pack IDs instead of dummy values
+- **Code Quality**: Consolidated formatting logic, removed duplicate code patterns
+- **Pattern Orchestrator**: Full integration of 12 JSON workflow patterns with API endpoints
+- **Architecture Refactoring**: Complete transition to Pattern Orchestrator → Agent Runtime → Services architecture
+- **Error Handling**: Improved fallback logic for database unavailability
 
 ### October 31, 2025 - Professional UI Design Overhaul
 - **Complete UI Redesign**: Transformed from consumer-facing colorful design to professional investment platform interface
