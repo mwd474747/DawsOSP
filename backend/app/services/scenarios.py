@@ -262,30 +262,35 @@ class ScenarioService:
         Returns:
             List of position records with factor betas
         """
-        # TODO: Query position_factor_betas table (to be created)
-        # For now, use placeholder betas
+        # Query positions with their factor betas from database
         query = """
             SELECT
                 l.symbol,
                 l.quantity,
                 l.cost_basis_per_share,
                 l.currency,
-                l.quantity * l.cost_basis_per_share AS market_value
+                l.quantity * l.cost_basis_per_share AS market_value,
+                COALESCE(pfb.real_rate_beta, -5.0) AS beta_real_rates,
+                COALESCE(pfb.inflation_beta, -3.0) AS beta_inflation,
+                COALESCE(pfb.credit_beta, 0.5) AS beta_credit,
+                COALESCE(pfb.usd_beta, CASE WHEN l.currency != 'USD' THEN -0.5 ELSE 0.0 END) AS beta_usd,
+                COALESCE(pfb.equity_beta, 1.0) AS beta_equity
             FROM lots l
+            LEFT JOIN position_factor_betas pfb ON (
+                pfb.portfolio_id = l.portfolio_id
+                AND pfb.symbol = l.symbol
+                AND pfb.asof_date = (
+                    SELECT MAX(asof_date)
+                    FROM position_factor_betas
+                    WHERE portfolio_id = l.portfolio_id
+                      AND symbol = l.symbol
+                )
+            )
             WHERE l.portfolio_id = $1
               AND l.is_open = true
               AND l.quantity > 0
         """
         positions = await execute_query(query, portfolio_id)
-
-        # Add placeholder betas (TODO: compute from factor model)
-        for pos in positions:
-            # Placeholder: assume equity positions have typical betas
-            pos["beta_real_rates"] = -5.0  # Duration = 5 years
-            pos["beta_inflation"] = -3.0  # Negative inflation beta
-            pos["beta_credit"] = 0.5  # Slight credit exposure
-            pos["beta_usd"] = -0.5 if pos["currency"] != "USD" else 0.0
-            pos["beta_equity"] = 1.0  # Market beta
 
         return positions
 
