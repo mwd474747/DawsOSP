@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Dashboard</title>
+</head>
+<body>
+    <h3>Simulating Dashboard Login...</h3>
+    <script>
+        async function loginAndNavigate() {
+            try {
+                // Login
+                const loginResponse = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        email: 'michael@dawsos.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                const loginData = await loginResponse.json();
+                if (loginData.access_token) {
+                    // Store token
+                    localStorage.setItem('authToken', loginData.access_token);
+                    localStorage.setItem('userEmail', 'michael@dawsos.com');
+                    
+                    // Navigate to main dashboard
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                document.body.innerHTML = '<h3>Error logging in. Please check console.</h3>';
+            }
+        }
+        
+        // Auto-login after page loads
+        setTimeout(loginAndNavigate, 500);
+    </script>
+</body>
+</html>
