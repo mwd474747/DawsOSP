@@ -1600,6 +1600,7 @@
             document.getElementById('dashboard').classList.add('active');
             document.getElementById('logoutBtn').style.display = 'block';
             await loadPortfolioData();
+            await loadHoldings();  // Load holdings separately
             await loadAlerts();
         }
 
@@ -1610,40 +1611,37 @@
             event.target.classList.add('active');
             document.getElementById(`${tabName}-tab`).classList.add('active');
             
-            // Load transactions when transactions tab is selected
-            if (tabName === 'transactions' && authToken) {
-                loadTransactions();
-            }
-            
-            // Load macro data when scenarios tab is selected
-            if (tabName === 'scenarios') {
-                loadScenarioMacroData();
-            }
-            
-            // Load factor analysis when risk tab is selected
-            if (tabName === 'risk') {
-                loadFactorAnalysis();
+            // Load data for specific tabs when they are selected
+            if (authToken) {
+                if (tabName === 'transactions') {
+                    loadTransactions();
+                } else if (tabName === 'scenarios') {
+                    loadScenarioMacroData();
+                } else if (tabName === 'risk') {
+                    loadFactorAnalysis();
+                } else if (tabName === 'holdings') {
+                    loadHoldings();
+                } else if (tabName === 'alerts') {
+                    loadAlerts();
+                } else if (tabName === 'macro') {
+                    loadMacroData();
+                }
             }
         }
 
         // Load portfolio data
         async function loadPortfolioData() {
             try {
-                const response = await fetch(`${API_BASE}/execute`, {
-                    method: 'POST',
+                const response = await fetch(`${API_BASE}/api/portfolio`, {
+                    method: 'GET',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({
-                        pattern: 'portfolio_overview',
-                        inputs: {}
-                    })
+                    }
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    const portfolio = data.result;
+                    const portfolio = data.data || data;  // Handle both formats
                     
                     // Update stats
                     document.getElementById('totalValue').textContent = `$${portfolio.total_value.toLocaleString()}`;
@@ -1685,7 +1683,11 @@
         // Load alerts
         async function loadAlerts() {
             try {
-                const response = await fetch(`${API_BASE}/api/alerts`);
+                const response = await fetch(`${API_BASE}/api/alerts`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
                 if (response.ok) {
                     const data = await response.json();
                     const alertsList = document.getElementById('alertsList');
@@ -1924,8 +1926,13 @@
         // Load macro data for scenarios
         async function loadScenarioMacroData() {
             try {
-                const response = await fetch('/api/macro');
-                const data = await response.json();
+                const response = await fetch(`${API_BASE}/api/macro`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                const responseData = await response.json();
+                const data = responseData.data || responseData;  // Handle both formats
                 
                 if (document.getElementById('scenarioRegime')) {
                     document.getElementById('scenarioRegime').textContent = data.current_regime || 'Unknown';
@@ -1947,10 +1954,11 @@
             resultsDiv.style.display = 'none';
             
             try {
-                const response = await fetch(`/api/scenario?scenario=${scenarioType}`, {
+                const response = await fetch(`${API_BASE}/api/scenario?scenario=${scenarioType}`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
                     }
                 });
 
@@ -2040,11 +2048,52 @@
             }
         }
 
+        // Load Holdings data
+        async function loadHoldings() {
+            try {
+                const response = await fetch(`${API_BASE}/api/holdings`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const responseData = await response.json();
+                    const holdings = responseData.data || responseData;
+                    const holdingsBody = document.getElementById('holdingsBody');
+                    
+                    if (holdings && holdings.length > 0) {
+                        holdingsBody.innerHTML = holdings.map(h => `
+                            <tr>
+                                <td><strong>${h.symbol}</strong></td>
+                                <td>${h.quantity || h.shares || h.qty}</td>
+                                <td>$${(h.price || h.current_price || 0).toFixed(2)}</td>
+                                <td>$${((h.market_value || h.value || 0)).toLocaleString()}</td>
+                                <td>${((h.weight || 0) * 100).toFixed(1)}%</td>
+                                <td class="${h.daily_change >= 0 ? 'positive' : 'negative'}">${h.daily_change >= 0 ? '+' : ''}${((h.daily_change || 0) * 100).toFixed(2)}%</td>
+                                <td>${(h.beta || 0).toFixed(2)}</td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        holdingsBody.innerHTML = '<tr><td colspan="7" class="loading">No holdings found</td></tr>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading holdings:', error);
+                document.getElementById('holdingsBody').innerHTML = '<tr><td colspan="7" class="error-message">Error loading holdings</td></tr>';
+            }
+        }
+
         // Load Factor Analysis
         async function loadFactorAnalysis() {
             try {
-                const response = await fetch('/api/factor-analysis');
-                const data = await response.json();
+                const response = await fetch(`${API_BASE}/api/factor-analysis`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                const responseData = await response.json();
+                const data = responseData.data || responseData;
                 
                 // Update risk metrics
                 document.getElementById('portfolioAlpha').textContent = `${(data.alpha * 100).toFixed(2)}%`;
@@ -2673,21 +2722,16 @@
             const macroContent = document.getElementById('macroContent');
             
             try {
-                const response = await fetch(`${API_BASE}/execute`, {
-                    method: 'POST',
+                const response = await fetch(`${API_BASE}/api/macro`, {
+                    method: 'GET',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({
-                        pattern: 'macro_cycles_overview',
-                        inputs: {}
-                    })
+                    }
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    const macro = data.result;
+                    const macro = data.data || data;  // Handle both response formats
                     
                     // NEW: Store reasoning data globally if available
                     if (macro.reasoning) {
