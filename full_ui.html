@@ -8,10 +8,10 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, Roboto, sans-serif;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
             min-height: 100vh;
-            color: #333;
+            color: #1f2937;
         }
 
         .container { max-width: 1600px; margin: 0 auto; padding: 1rem; }
@@ -27,13 +27,19 @@
         
         .header h1 {
             font-size: 2.5rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-weight: 700;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
         }
         
-        .header p { color: #666; font-size: 1.1rem; }
+        .header p { 
+            color: #6b7280; 
+            font-size: 1.125rem;
+            font-weight: 400;
+        }
         
         .auth-section {
             background: white;
@@ -72,19 +78,21 @@
         .btn {
             width: 100%;
             padding: 1rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
             color: white;
             border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
+            border-radius: 12px;
+            font-size: 1.05rem;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: all 0.2s ease;
+            letter-spacing: 0.02em;
         }
         
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+            background: linear-gradient(135deg, #9f7aea 0%, #f472b6 100%);
         }
         
         .dashboard { display: none; }
@@ -313,7 +321,7 @@
         }
         
         .tab.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
             color: white;
         }
         
@@ -479,17 +487,18 @@
                     <div class="dropdown">
                         <button onclick="toggleDropdown()" style="
                             padding: 0.75rem 1.5rem;
-                            background: linear-gradient(135deg, #667eea, #764ba2);
+                            background: linear-gradient(135deg, #8b5cf6, #ec4899);
                             color: white;
                             border: none;
-                            border-radius: 10px;
+                            border-radius: 12px;
                             font-weight: 600;
                             cursor: pointer;
                             display: flex;
                             align-items: center;
                             gap: 0.5rem;
+                            transition: all 0.2s ease;
                         ">
-                            📥 Export
+                            Export
                             <span style="font-size: 0.8rem;">▼</span>
                         </button>
                         <div id="exportDropdown" style="
@@ -504,9 +513,9 @@
                             min-width: 200px;
                             z-index: 100;
                         ">
-                            <a onclick="exportData('pdf')" style="display: block; padding: 0.75rem 1rem; color: #333; cursor: pointer; border-bottom: 1px solid #f0f0f0; hover: background: #f8f9fa;">📄 Export as PDF</a>
-                            <a onclick="exportData('csv', 'holdings')" style="display: block; padding: 0.75rem 1rem; color: #333; cursor: pointer; border-bottom: 1px solid #f0f0f0;">📊 Export Holdings (CSV)</a>
-                            <a onclick="exportData('csv', 'transactions')" style="display: block; padding: 0.75rem 1rem; color: #333; cursor: pointer;">📈 Export Transactions (CSV)</a>
+                            <a onclick="exportData('pdf')" style="display: block; padding: 0.75rem 1rem; color: #333; cursor: pointer; border-bottom: 1px solid #f0f0f0; hover: background: #f8f9fa;">Export as PDF</a>
+                            <a onclick="exportData('csv', 'holdings')" style="display: block; padding: 0.75rem 1rem; color: #333; cursor: pointer; border-bottom: 1px solid #f0f0f0;">Export Holdings (CSV)</a>
+                            <a onclick="exportData('csv', 'transactions')" style="display: block; padding: 0.75rem 1rem; color: #333; cursor: pointer;">Export Transactions (CSV)</a>
                         </div>
                     </div>
                 </div>
@@ -548,22 +557,42 @@
 
                 <div class="feature-grid">
                     <div class="feature-card" onclick="showTab('scenarios')">
-                        <div class="feature-icon" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">📊</div>
+                        <div class="feature-icon" style="background: linear-gradient(135deg, #8b5cf6, #a855f7); color: white;">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 3v18h18" />
+                                <path d="m19 9-5 5-4-4-3 3" />
+                            </svg>
+                        </div>
                         <h3>Scenario Analysis</h3>
                         <p>Test your portfolio against market scenarios and stress conditions to understand risk exposure.</p>
                     </div>
                     <div class="feature-card" onclick="showTab('ai')">
-                        <div class="feature-icon" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">🤖</div>
+                        <div class="feature-icon" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                                <path d="M2 17l10 5 10-5" />
+                                <path d="M2 12l10 5 10-5" />
+                            </svg>
+                        </div>
                         <h3>AI Analysis</h3>
                         <p>Get AI-powered insights and recommendations for your portfolio using Claude.</p>
                     </div>
                     <div class="feature-card" onclick="loadMacro()">
-                        <div class="feature-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">🌍</div>
+                        <div class="feature-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 6v6l4 2" />
+                            </svg>
+                        </div>
                         <h3>Macro Insights</h3>
                         <p>Track economic indicators and market regimes to make informed investment decisions.</p>
                     </div>
                     <div class="feature-card" onclick="showTab('optimize')">
-                        <div class="feature-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white;">⚡</div>
+                        <div class="feature-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white;">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                            </svg>
+                        </div>
                         <h3>Portfolio Optimization</h3>
                         <p>Get rebalancing recommendations based on mean-variance optimization.</p>
                     </div>
@@ -604,9 +633,9 @@
                             <span>Realized Gains: <strong id="realizedGains">Loading...</strong></span>
                         </div>
                         <div id="paginationControls" style="display: flex; gap: 1rem; align-items: center;">
-                            <button onclick="prevPage()" id="prevBtn" style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">Previous</button>
+                            <button onclick="prevPage()" id="prevBtn" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; border-radius: 8px; cursor: pointer;">Previous</button>
                             <span id="pageInfo">Page 1 of 1</span>
-                            <button onclick="nextPage()" id="nextBtn" style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">Next</button>
+                            <button onclick="nextPage()" id="nextBtn" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; border-radius: 8px; cursor: pointer;">Next</button>
                         </div>
                     </div>
                     <table class="table">
@@ -658,28 +687,28 @@
                     
                     <!-- Scenario Selection Grid -->
                     <div class="scenario-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-                        <div class="scenario-card" onclick="runScenario('market_crash')" style="background: linear-gradient(135deg, #f44336, #d32f2f); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
-                            <h4 style="margin-bottom: 0.5rem;">📉 Market Crash</h4>
+                        <div class="scenario-card" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" onclick="runScenario('market_crash')">
+                            <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Market Crash</h4>
                             <p style="font-size: 0.9rem; opacity: 0.95;">-20% Equity Shock</p>
                         </div>
-                        <div class="scenario-card" onclick="runScenario('interest_rate')" style="background: linear-gradient(135deg, #ff9800, #f57c00); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
-                            <h4 style="margin-bottom: 0.5rem;">📊 Rate Hike</h4>
+                        <div class="scenario-card" style="background: linear-gradient(135deg, #f97316, #ea580c); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" onclick="runScenario('interest_rate')">
+                            <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Rate Hike</h4>
                             <p style="font-size: 0.9rem; opacity: 0.95;">+2% Interest Rates</p>
                         </div>
-                        <div class="scenario-card" onclick="runScenario('inflation')" style="background: linear-gradient(135deg, #ffc107, #f9a825); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
-                            <h4 style="margin-bottom: 0.5rem;">💸 High Inflation</h4>
+                        <div class="scenario-card" style="background: linear-gradient(135deg, #eab308, #ca8a04); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" onclick="runScenario('inflation')">
+                            <h4 style="margin-bottom: 0.5rem; font-weight: 600;">High Inflation</h4>
                             <p style="font-size: 0.9rem; opacity: 0.95;">6%+ CPI Shock</p>
                         </div>
-                        <div class="scenario-card" onclick="runScenario('tech_crash')" style="background: linear-gradient(135deg, #9c27b0, #7b1fa2); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
-                            <h4 style="margin-bottom: 0.5rem;">💻 Tech Crash</h4>
+                        <div class="scenario-card" style="background: linear-gradient(135deg, #a855f7, #9333ea); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" onclick="runScenario('tech_crash')">
+                            <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Tech Crash</h4>
                             <p style="font-size: 0.9rem; opacity: 0.95;">-30% Tech Sector</p>
                         </div>
-                        <div class="scenario-card" onclick="runScenario('recovery')" style="background: linear-gradient(135deg, #4caf50, #388e3c); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
-                            <h4 style="margin-bottom: 0.5rem;">📈 Recovery Rally</h4>
+                        <div class="scenario-card" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" onclick="runScenario('recovery')">
+                            <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Recovery Rally</h4>
                             <p style="font-size: 0.9rem; opacity: 0.95;">+15% Risk-On</p>
                         </div>
-                        <div class="scenario-card" onclick="runScenario('credit_crunch')" style="background: linear-gradient(135deg, #795548, #5d4037); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
-                            <h4 style="margin-bottom: 0.5rem;">🏦 Credit Crunch</h4>
+                        <div class="scenario-card" style="background: linear-gradient(135deg, #6b7280, #4b5563); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" onclick="runScenario('credit_crunch')">
+                            <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Credit Crunch</h4>
                             <p style="font-size: 0.9rem; opacity: 0.95;">Spreads Widen</p>
                         </div>
                     </div>
@@ -758,8 +787,8 @@
                     
                     <!-- Refresh Button -->
                     <div style="text-align: center; margin-top: 2rem;">
-                        <button onclick="loadFactorAnalysis()" style="padding: 0.75rem 2rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600;">
-                            🔄 Refresh Factor Analysis
+                        <button onclick="loadFactorAnalysis()" style="padding: 0.75rem 2rem; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">
+                            Refresh Factor Analysis
                         </button>
                     </div>
                 </div>
@@ -782,9 +811,9 @@
                             <div>
                                 <label style="display: block; margin-bottom: 0.5rem; color: #666;">Alert Type</label>
                                 <select id="alertType" onchange="updateAlertForm()" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
-                                    <option value="price">💹 Price Alert</option>
-                                    <option value="portfolio">📊 Portfolio Alert</option>
-                                    <option value="macro">🌍 Macro Alert</option>
+                                    <option value="price">Price Alert</option>
+                                    <option value="portfolio">Portfolio Alert</option>
+                                    <option value="macro">Macro Alert</option>
                                 </select>
                             </div>
                             
@@ -945,7 +974,7 @@
                         
                         <!-- Causal Chain Visualization -->
                         <div style="margin-top: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.5); border-radius: 10px;">
-                            <h4 style="font-size: 0.9rem; font-weight: 600; color: #666; margin-bottom: 0.75rem;">📊 Causal Chain:</h4>
+                            <h4 style="font-size: 0.9rem; font-weight: 600; color: #666; margin-bottom: 0.75rem;">Causal Chain:</h4>
                             <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
                                 <div style="text-align: center;">
                                     <div style="font-weight: bold; color: #333;">DATA</div>
@@ -982,8 +1011,8 @@
                             <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 15px; padding: 1.5rem;">
                                 <h3 style="color: #667eea; font-size: 1.2rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
                                     Short-Term Debt Cycle (5-8 years)
-                                    <button onclick="toggleReasoning('stdc')" style="font-size: 0.75rem; background: rgba(102, 126, 234, 0.2); color: white; border: 1px solid rgba(102, 126, 234, 0.5); padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer;">
-                                        📊 Show Reasoning
+                                    <button onclick="toggleReasoning('stdc')" style="font-size: 0.75rem; background: rgba(139, 92, 246, 0.2); color: white; border: 1px solid rgba(139, 92, 246, 0.5); padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer;">
+                                        Show Reasoning
                                     </button>
                                 </h3>
                                 <div style="margin-bottom: 1rem;">
@@ -1011,7 +1040,7 @@
                                 
                                 <!-- NEW: Reasoning Panel (hidden by default) -->
                                 <div id="stdc-reasoning" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(51, 51, 51, 0.3); border-radius: 10px;">
-                                    <h4 style="font-size: 1rem; font-weight: 600; color: #667eea; margin-bottom: 0.75rem;">📈 Analysis Breakdown</h4>
+                                    <h4 style="font-size: 1rem; font-weight: 600; color: #667eea; margin-bottom: 0.75rem;">Analysis Breakdown</h4>
                                     
                                     <!-- Raw Data Points -->
                                     <div style="margin-bottom: 0.75rem;">
@@ -1051,8 +1080,8 @@
                             <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 15px; padding: 1.5rem;">
                                 <h3 style="color: #667eea; font-size: 1.2rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
                                     Long-Term Debt Cycle (75-100 years)
-                                    <button onclick="toggleReasoning('ltdc')" style="font-size: 0.75rem; background: rgba(102, 126, 234, 0.2); color: white; border: 1px solid rgba(102, 126, 234, 0.5); padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer;">
-                                        📊 Show Reasoning
+                                    <button onclick="toggleReasoning('ltdc')" style="font-size: 0.75rem; background: rgba(139, 92, 246, 0.2); color: white; border: 1px solid rgba(139, 92, 246, 0.5); padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer;">
+                                        Show Reasoning
                                     </button>
                                 </h3>
                                 <div style="margin-bottom: 1rem;">
@@ -1080,7 +1109,7 @@
                                 
                                 <!-- LTDC Reasoning Panel (hidden by default) -->
                                 <div id="ltdc-reasoning" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(51, 51, 51, 0.3); border-radius: 10px;">
-                                    <h4 style="font-size: 1rem; font-weight: 600; color: #667eea; margin-bottom: 0.75rem;">📈 Analysis Breakdown</h4>
+                                    <h4 style="font-size: 1rem; font-weight: 600; color: #667eea; margin-bottom: 0.75rem;">Analysis Breakdown</h4>
                                     
                                     <!-- Raw Data Points -->
                                     <div style="margin-bottom: 0.75rem;">
@@ -1124,7 +1153,7 @@
                                 <h3 style="color: #9333ea; font-size: 1.2rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
                                     Empire Cycle (250 years)
                                     <button onclick="toggleReasoning('empire')" style="font-size: 0.75rem; background: rgba(147, 51, 234, 0.2); color: white; border: 1px solid rgba(147, 51, 234, 0.5); padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer;">
-                                        📊 Show Reasoning
+                                        Show Reasoning
                                     </button>
                                 </h3>
                                 <div style="margin-bottom: 1rem;">
@@ -1177,7 +1206,7 @@
                                 
                                 <!-- Empire Reasoning Panel (hidden by default) -->
                                 <div id="empire-reasoning" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(51, 51, 51, 0.3); border-radius: 10px;">
-                                    <h4 style="font-size: 1rem; font-weight: 600; color: #9333ea; margin-bottom: 0.75rem;">📈 Analysis Breakdown</h4>
+                                    <h4 style="font-size: 1rem; font-weight: 600; color: #9333ea; margin-bottom: 0.75rem;">Analysis Breakdown</h4>
                                     
                                     <!-- Raw Data Points -->
                                     <div style="margin-bottom: 0.75rem;">
@@ -1218,7 +1247,7 @@
                                 <h3 style="color: #ef4444; font-size: 1.2rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
                                     Internal Order/Disorder Cycle
                                     <button onclick="toggleReasoning('internal')" style="font-size: 0.75rem; background: rgba(239, 68, 68, 0.2); color: white; border: 1px solid rgba(239, 68, 68, 0.5); padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer;">
-                                        📊 Show Reasoning
+                                        Show Reasoning
                                     </button>
                                 </h3>
                                 <div style="margin-bottom: 1rem;">
@@ -1277,7 +1306,7 @@
                                 
                                 <!-- Internal Reasoning Panel (hidden by default) -->
                                 <div id="internal-reasoning" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(51, 51, 51, 0.3); border-radius: 10px;">
-                                    <h4 style="font-size: 1rem; font-weight: 600; color: #ef4444; margin-bottom: 0.75rem;">📈 Analysis Breakdown</h4>
+                                    <h4 style="font-size: 1rem; font-weight: 600; color: #ef4444; margin-bottom: 0.75rem;">Analysis Breakdown</h4>
                                     
                                     <!-- Raw Data Points -->
                                     <div style="margin-bottom: 0.75rem;">
@@ -1317,7 +1346,7 @@
                         <!-- Leading Indicators Alert Section -->
                         <div id="leading-indicators-section" style="display: none; background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.1)); border: 2px solid rgba(245, 158, 11, 0.3); border-radius: 15px; padding: 1.5rem; margin-bottom: 2rem;">
                             <h3 style="color: #f59e0b; font-size: 1.2rem; margin-bottom: 1rem;">
-                                ⚠️ Leading Indicators & Early Warning Signals
+                                Leading Indicators & Early Warning Signals
                             </h3>
                             <div id="leading-indicators-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
                                 <!-- Will be populated dynamically -->
@@ -1542,7 +1571,7 @@
                         `;
                     } else {
                         alertsList.innerHTML = data.map(alert => {
-                            const icon = alert.type === 'price' ? '💹' : alert.type === 'portfolio' ? '📊' : '🌍';
+                            const icon = '';
                             const bgColor = alert.active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(156, 163, 175, 0.1)';
                             const borderColor = alert.active ? '#10b981' : '#9ca3af';
                             
@@ -1966,31 +1995,31 @@
                     name: 'Real Rate', 
                     beta: data.beta.real_rate, 
                     attribution: data.factor_attribution.real_rate,
-                    icon: '📉'
+                    icon: ''
                 },
                 { 
                     name: 'Inflation', 
                     beta: data.beta.inflation, 
                     attribution: data.factor_attribution.inflation,
-                    icon: '💸'
+                    icon: ''
                 },
                 { 
                     name: 'Credit Spread', 
                     beta: data.beta.credit, 
                     attribution: data.factor_attribution.credit,
-                    icon: '🏦'
+                    icon: ''
                 },
                 { 
                     name: 'USD Strength', 
                     beta: data.beta.usd, 
                     attribution: data.factor_attribution.usd,
-                    icon: '💵'
+                    icon: ''
                 },
                 { 
                     name: 'Equity Risk Premium', 
                     beta: data.beta.equity_risk_premium, 
                     attribution: data.factor_attribution.equity_risk_premium,
-                    icon: '📈'
+                    icon: ''
                 }
             ];
             
@@ -2002,7 +2031,7 @@
                 
                 return `
                     <tr style="border-bottom: 1px solid #f0f0f0;">
-                        <td style="padding: 1rem;">${factor.icon} ${factor.name}</td>
+                        <td style="padding: 1rem;">${factor.name}</td>
                         <td style="padding: 1rem; text-align: right; font-weight: 600; color: ${factor.beta > 0 ? '#10b981' : '#ef4444'}">
                             ${factor.beta > 0 ? '+' : ''}${factor.beta.toFixed(3)}
                         </td>
@@ -2364,7 +2393,7 @@
             
             if (panel.style.display === 'none' || !panel.style.display) {
                 panel.style.display = 'block';
-                button.textContent = '📉 Hide Reasoning';
+                button.textContent = 'Hide Reasoning';
                 
                 // Populate reasoning if available
                 if (macroReasoning[cycle]) {
@@ -2372,7 +2401,7 @@
                 }
             } else {
                 panel.style.display = 'none';
-                button.textContent = '📊 Show Reasoning';
+                button.textContent = 'Show Reasoning';
             }
         }
         
@@ -2777,7 +2806,7 @@
                             <div style="background: linear-gradient(135deg, #f8f9fa, #ffffff); padding: 2rem; border-radius: 15px; border: 1px solid #e0e0e0;">
                                 ${macro.recommendations.map(rec => `
                                     <div style="padding: 1rem; margin-bottom: 1rem; background: white; border-radius: 10px; border-left: 4px solid #667eea;">
-                                        <span style="color: #667eea; margin-right: 0.75rem; font-size: 1.2rem;">📊</span>
+                                        <span style="color: #667eea; margin-right: 0.75rem; font-size: 1.2rem;"></span>
                                         <span style="color: #333; line-height: 1.6;">${rec}</span>
                                     </div>
                                 `).join('')}
@@ -2788,7 +2817,7 @@
                             <h3 style="color: #333; margin-bottom: 1.5rem; font-size: 1.5rem;">Market Outlook</h3>
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
                                 <div style="background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #e0e0e0;">
-                                    <h4 style="color: #667eea; margin-bottom: 1rem;">📈 Near-term (1-3 months)</h4>
+                                    <h4 style="color: #667eea; margin-bottom: 1rem;">Near-term (1-3 months)</h4>
                                     <p style="color: #666; line-height: 1.6;">
                                         ${macro.risk_level === 'High' ? 
                                             'Elevated volatility expected. Consider defensive positioning and increased cash allocations.' :
@@ -2798,7 +2827,7 @@
                                     </p>
                                 </div>
                                 <div style="background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #e0e0e0;">
-                                    <h4 style="color: #764ba2; margin-bottom: 1rem;">🎯 Medium-term (3-12 months)</h4>
+                                    <h4 style="color: #764ba2; margin-bottom: 1rem;">Medium-term (3-12 months)</h4>
                                     <p style="color: #666; line-height: 1.6;">
                                         ${macro.regime === 'Expansion' ? 
                                             'Economic expansion likely to continue. Favor cyclical sectors and risk assets.' :
