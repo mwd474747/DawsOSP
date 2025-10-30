@@ -465,6 +465,7 @@
                 <button class="tab" onclick="showTab('holdings')">Holdings</button>
                 <button class="tab" onclick="showTab('transactions')">Transactions</button>
                 <button class="tab" onclick="showTab('scenarios')">Scenarios</button>
+                <button class="tab" onclick="showTab('risk')">Risk Analysis</button>
                 <button class="tab" onclick="showTab('alerts')">Alerts</button>
                 <button class="tab" onclick="showTab('ai')">AI Analysis</button>
                 <button class="tab" onclick="showTab('optimize')">Optimize</button>
@@ -692,6 +693,74 @@
                     <!-- Results Section -->
                     <div id="scenarioResults" style="margin-top: 2rem; display: none;">
                         <!-- Results will be dynamically populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Analysis Tab -->
+            <div class="tab-content" id="risk-tab">
+                <div class="risk-analysis-section">
+                    <h3>Factor Risk Analysis</h3>
+                    <p style="color: #666; margin-bottom: 1.5rem;">Advanced portfolio factor exposure and risk decomposition</p>
+                    
+                    <!-- Factor Exposures Chart -->
+                    <div style="background: rgba(102, 126, 234, 0.05); border-radius: 15px; padding: 2rem; margin-bottom: 2rem;">
+                        <h4 style="margin-bottom: 1.5rem;">Factor Exposures (Beta)</h4>
+                        <div id="factorExposureChart" style="position: relative; height: 300px;">
+                            <!-- Chart will be rendered here -->
+                            <canvas id="factorChart" style="width: 100%; height: 100%;"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Risk Metrics Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                        <div class="metric-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                            <div style="color: #666; font-size: 0.9rem;">Portfolio Alpha</div>
+                            <div style="font-size: 2rem; font-weight: bold; color: #667eea;" id="portfolioAlpha">Loading...</div>
+                            <div style="color: #999; font-size: 0.85rem;">Excess return</div>
+                        </div>
+                        <div class="metric-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                            <div style="color: #666; font-size: 0.9rem;">R-Squared</div>
+                            <div style="font-size: 2rem; font-weight: bold; color: #667eea;" id="rSquared">Loading...</div>
+                            <div style="color: #999; font-size: 0.85rem;">Model fit</div>
+                        </div>
+                        <div class="metric-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                            <div style="color: #666; font-size: 0.9rem;">1-Day VaR (95%)</div>
+                            <div style="font-size: 2rem; font-weight: bold; color: #ef4444;" id="var1d">Loading...</div>
+                            <div style="color: #999; font-size: 0.85rem;">Downside risk</div>
+                        </div>
+                        <div class="metric-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                            <div style="color: #666; font-size: 0.9rem;">Residual Vol</div>
+                            <div style="font-size: 2rem; font-weight: bold; color: #f59e0b;" id="residualVol">Loading...</div>
+                            <div style="color: #999; font-size: 0.85rem;">Unexplained risk</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Factor Attribution Table -->
+                    <div style="background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                        <h4 style="margin-bottom: 1rem;">Factor Return Attribution</h4>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #e0e0e0;">
+                                    <th style="padding: 0.75rem; text-align: left; color: #666;">Factor</th>
+                                    <th style="padding: 0.75rem; text-align: right; color: #666;">Beta Exposure</th>
+                                    <th style="padding: 0.75rem; text-align: right; color: #666;">Return Contribution</th>
+                                    <th style="padding: 0.75rem; text-align: right; color: #666;">Risk Impact</th>
+                                </tr>
+                            </thead>
+                            <tbody id="factorAttributionBody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; padding: 2rem; color: #999;">Loading factor data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Refresh Button -->
+                    <div style="text-align: center; margin-top: 2rem;">
+                        <button onclick="loadFactorAnalysis()" style="padding: 0.75rem 2rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                            🔄 Refresh Factor Analysis
+                        </button>
                     </div>
                 </div>
             </div>
