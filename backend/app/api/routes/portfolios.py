@@ -22,12 +22,16 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Header, status
+from fastapi import APIRouter, Depends, HTTPException, Header, status, UploadFile
 from pydantic import BaseModel, Field
+from decimal import Decimal
+import pandas as pd
+import io
 
 from app.db.connection import get_db_connection_with_rls
 from app.middleware.auth_middleware import verify_token
 from app.services.auth import get_auth_service
+from app.services.trade_execution import TradeExecutionService
 
 logger = logging.getLogger("DawsOS.API.Portfolios")
 
