@@ -22,7 +22,6 @@ Critical Requirements:
 SLOs:
     - Pack build completes by 00:15 local time (10 min deadline)
     - Total nightly job duration < 30 minutes
-    - Reconciliation ±1bp accuracy (100% of portfolios)
 
 Scheduler: APScheduler (cron trigger at 00:05 daily)
 """
@@ -74,13 +73,12 @@ class NightlyJobScheduler:
     Orchestrates nightly jobs in sacred order.
 
     Sacred Order (NON-NEGOTIABLE):
-        1. build_pack → 2. reconcile_ledger → 3. compute_daily_metrics →
-        4. prewarm_factors → 5. prewarm_ratings → 6. mark_pack_fresh →
-        7. evaluate_alerts
+        1. build_pack → 2. compute_daily_metrics →
+        3. prewarm_factors → 4. prewarm_ratings → 5. mark_pack_fresh →
+        6. evaluate_alerts
 
     Critical Rules:
         - Jobs run sequentially (no parallelization)
-        - Reconciliation failure blocks all subsequent jobs
         - Pack build must complete by 00:15 (10 min deadline)
         - Mark fresh only after ALL pre-warm completes
     """
@@ -88,7 +86,6 @@ class NightlyJobScheduler:
     def __init__(
         self,
         pricing_policy: str = "WM4PM_CAD",
-        ledger_path: str = ".ledger/main.beancount",
         run_hour: int = 0,
         run_minute: int = 5,
     ):
@@ -97,12 +94,10 @@ class NightlyJobScheduler:
 
         Args:
             pricing_policy: Pricing policy (WM4PM_CAD, CLOSE, etc.)
-            ledger_path: Path to Beancount ledger file
             run_hour: Hour to run nightly job (default: 0 = midnight)
             run_minute: Minute to run nightly job (default: 5)
         """
         self.pricing_policy = pricing_policy
-        self.ledger_path = ledger_path
         self.run_hour = run_hour
         self.run_minute = run_minute
 
@@ -111,7 +106,6 @@ class NightlyJobScheduler:
 
         # Initialize job components
         self.pricing_pack_builder = PricingPackBuilder(use_stubs=False)
-        self.reconciliation_service = ReconciliationService()
         self.metrics_computer = MetricsComputer(use_db=True)
 
         # Track last run
@@ -154,12 +148,11 @@ class NightlyJobScheduler:
 
         Sacred Order (NON-NEGOTIABLE):
             1. build_pack
-            2. reconcile_ledger (BLOCKS if fails)
-            3. compute_daily_metrics
-            4. prewarm_factors
-            5. prewarm_ratings
-            6. mark_pack_fresh
-            7. evaluate_alerts
+            2. compute_daily_metrics
+            3. prewarm_factors
+            4. prewarm_ratings
+            5. mark_pack_fresh
+            6. evaluate_alerts
 
         Args:
             asof_date: Date for pricing pack (default: yesterday)
@@ -212,7 +205,7 @@ class NightlyJobScheduler:
             else:
                 logger.info(f"✅ Daily metrics computed")
 
-            # JOB 4: Pre-warm Factors
+            # JOB 3: Pre-warm Factors
             job4_result = await self._run_job(
                 job_name="prewarm_factors",
                 job_func=self._job_prewarm_factors,
@@ -225,7 +218,7 @@ class NightlyJobScheduler:
             else:
                 logger.info(f"✅ Factors pre-warmed")
 
-            # JOB 5: Pre-warm Ratings
+            # JOB 4: Pre-warm Ratings
             job5_result = await self._run_job(
                 job_name="prewarm_ratings",
                 job_func=self._job_prewarm_ratings,
@@ -238,7 +231,7 @@ class NightlyJobScheduler:
             else:
                 logger.info(f"✅ Ratings pre-warmed")
 
-            # JOB 6: Mark Pack Fresh (CRITICAL - enables executor)
+            # JOB 5: Mark Pack Fresh (CRITICAL - enables executor)
             job6_result = await self._run_job(
                 job_name="mark_pack_fresh",
                 job_func=self._job_mark_pack_fresh,
@@ -254,7 +247,7 @@ class NightlyJobScheduler:
 
             logger.info(f"✅ Pack marked as fresh (executor enabled)")
 
-            # JOB 7: Evaluate Alerts
+            # JOB 6: Evaluate Alerts
             job7_result = await self._run_job(
                 job_name="evaluate_alerts",
                 job_func=self._job_evaluate_alerts,
@@ -397,7 +390,7 @@ class NightlyJobScheduler:
 
     async def _job_prewarm_factors(self, pack_id: str, asof_date: date) -> Dict[str, Any]:
         """
-        JOB 4: Pre-warm macro factors and regime detection.
+        JOB 3: Pre-warm macro factors and regime detection.
 
         Macro computations:
         - Regime detection (5 regimes: Goldilocks, Reflationary, Stagflation, Deflation, Recovery)
@@ -454,7 +447,7 @@ class NightlyJobScheduler:
 
     async def _job_prewarm_ratings(self, pack_id: str, asof_date: date) -> Dict[str, Any]:
         """
-        JOB 5: Pre-warm Buffett quality ratings.
+        JOB 4: Pre-warm Buffett quality ratings.
 
         Ratings (0-10 scale):
         - Quality (margins, ROIC, FCF conversion)
@@ -480,7 +473,7 @@ class NightlyJobScheduler:
 
     async def _job_mark_pack_fresh(self, pack_id: str) -> Dict[str, Any]:
         """
-        JOB 6: Mark pricing pack as fresh.
+        JOB 5: Mark pricing pack as fresh.
 
         CRITICAL: This enables the executor freshness gate.
         Executor will reject requests until this job completes.
@@ -529,7 +522,7 @@ class NightlyJobScheduler:
 
     async def _job_evaluate_alerts(self, pack_id: str, asof_date: date) -> Dict[str, Any]:
         """
-        JOB 7: Evaluate alert conditions.
+        JOB 6: Evaluate alert conditions.
 
         Alert types:
         - Regime change (macro shift)
@@ -649,11 +642,6 @@ def _parse_args() -> argparse.Namespace:
         help="Pricing policy identifier (default: WM4PM_CAD).",
     )
     parser.add_argument(
-        "--ledger-path",
-        default=os.getenv("LEDGER_PATH", ".ledger/main.beancount"),
-        help="Path to Beancount ledger repository (default: .ledger/main.beancount).",
-    )
-    parser.add_argument(
         "--run-hour",
         type=int,
         default=int(os.getenv("SCHEDULER_RUN_HOUR", "0")),
@@ -671,7 +659,6 @@ def _parse_args() -> argparse.Namespace:
 async def _run_daemon(args: argparse.Namespace) -> None:
     scheduler = NightlyJobScheduler(
         pricing_policy=args.pricing_policy,
-        ledger_path=args.ledger_path,
         run_hour=args.run_hour,
         run_minute=args.run_minute,
     )
@@ -695,7 +682,6 @@ async def _run_once(args: argparse.Namespace) -> int:
 
     scheduler = NightlyJobScheduler(
         pricing_policy=args.pricing_policy,
-        ledger_path=args.ledger_path,
         run_hour=args.run_hour,
         run_minute=args.run_minute,
     )
