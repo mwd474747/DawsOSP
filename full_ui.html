@@ -1457,6 +1457,11 @@
             if (tabName === 'scenarios') {
                 loadScenarioMacroData();
             }
+            
+            // Load factor analysis when risk tab is selected
+            if (tabName === 'risk') {
+                loadFactorAnalysis();
+            }
         }
 
         // Load portfolio data
@@ -1871,6 +1876,157 @@
                 resultsDiv.innerHTML = `<div class="error-message">Error running scenario: ${error.message}. Please try again.</div>`;
                 resultsDiv.style.display = 'block';
             }
+        }
+
+        // Load Factor Analysis
+        async function loadFactorAnalysis() {
+            try {
+                const response = await fetch('/api/factor-analysis');
+                const data = await response.json();
+                
+                // Update risk metrics
+                document.getElementById('portfolioAlpha').textContent = `${(data.alpha * 100).toFixed(2)}%`;
+                document.getElementById('rSquared').textContent = `${(data.r_squared * 100).toFixed(1)}%`;
+                document.getElementById('var1d').textContent = `${(data.var_metrics.var_1d * 100).toFixed(2)}%`;
+                document.getElementById('residualVol').textContent = `${(data.residual_vol * 100).toFixed(2)}%`;
+                
+                // Create factor exposures chart
+                createFactorChart(data.beta);
+                
+                // Update factor attribution table
+                updateFactorAttributionTable(data);
+                
+            } catch (error) {
+                console.error('Error loading factor analysis:', error);
+                showNotification('Failed to load factor analysis data', 'error');
+            }
+        }
+        
+        // Create factor exposure chart
+        function createFactorChart(betas) {
+            const canvas = document.getElementById('factorChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear previous chart
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Prepare data
+            const factors = [
+                { name: 'Real Rate', value: betas.real_rate, color: '#667eea' },
+                { name: 'Inflation', value: betas.inflation, color: '#f59e0b' },
+                { name: 'Credit', value: betas.credit, color: '#10b981' },
+                { name: 'USD', value: betas.usd, color: '#ef4444' },
+                { name: 'Equity Risk', value: betas.equity_risk_premium, color: '#8b5cf6' }
+            ];
+            
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            const barWidth = 60;
+            const barSpacing = (canvas.width - factors.length * barWidth) / (factors.length + 1);
+            const maxValue = Math.max(...factors.map(f => Math.abs(f.value)));
+            const scale = (canvas.height - 100) / (maxValue * 2);
+            const centerY = canvas.height / 2;
+            
+            // Draw axis
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(canvas.width, centerY);
+            ctx.stroke();
+            
+            // Draw bars
+            factors.forEach((factor, index) => {
+                const x = barSpacing + index * (barWidth + barSpacing);
+                const barHeight = Math.abs(factor.value) * scale;
+                const y = factor.value >= 0 ? centerY - barHeight : centerY;
+                
+                // Draw bar
+                ctx.fillStyle = factor.color;
+                ctx.fillRect(x, y, barWidth, barHeight);
+                
+                // Draw label
+                ctx.fillStyle = '#333';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(factor.name, x + barWidth / 2, canvas.height - 10);
+                
+                // Draw value
+                ctx.fillText(factor.value.toFixed(2), x + barWidth / 2, y - 5);
+            });
+        }
+        
+        // Update factor attribution table
+        function updateFactorAttributionTable(data) {
+            const tbody = document.getElementById('factorAttributionBody');
+            const factors = [
+                { 
+                    name: 'Real Rate', 
+                    beta: data.beta.real_rate, 
+                    attribution: data.factor_attribution.real_rate,
+                    icon: '📉'
+                },
+                { 
+                    name: 'Inflation', 
+                    beta: data.beta.inflation, 
+                    attribution: data.factor_attribution.inflation,
+                    icon: '💸'
+                },
+                { 
+                    name: 'Credit Spread', 
+                    beta: data.beta.credit, 
+                    attribution: data.factor_attribution.credit,
+                    icon: '🏦'
+                },
+                { 
+                    name: 'USD Strength', 
+                    beta: data.beta.usd, 
+                    attribution: data.factor_attribution.usd,
+                    icon: '💵'
+                },
+                { 
+                    name: 'Equity Risk Premium', 
+                    beta: data.beta.equity_risk_premium, 
+                    attribution: data.factor_attribution.equity_risk_premium,
+                    icon: '📈'
+                }
+            ];
+            
+            tbody.innerHTML = factors.map(factor => {
+                const riskImpact = Math.abs(factor.beta) > 0.5 ? 'High' : 
+                                  Math.abs(factor.beta) > 0.2 ? 'Medium' : 'Low';
+                const impactColor = riskImpact === 'High' ? '#ef4444' : 
+                                   riskImpact === 'Medium' ? '#f59e0b' : '#10b981';
+                
+                return `
+                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                        <td style="padding: 1rem;">${factor.icon} ${factor.name}</td>
+                        <td style="padding: 1rem; text-align: right; font-weight: 600; color: ${factor.beta > 0 ? '#10b981' : '#ef4444'}">
+                            ${factor.beta > 0 ? '+' : ''}${factor.beta.toFixed(3)}
+                        </td>
+                        <td style="padding: 1rem; text-align: right;">
+                            ${(factor.attribution * 100).toFixed(2)}%
+                        </td>
+                        <td style="padding: 1rem; text-align: right;">
+                            <span style="color: ${impactColor}; font-weight: 600;">${riskImpact}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Add total row
+            tbody.innerHTML += `
+                <tr style="border-top: 2px solid #667eea; font-weight: bold;">
+                    <td style="padding: 1rem;">Total Explained</td>
+                    <td style="padding: 1rem; text-align: right;">—</td>
+                    <td style="padding: 1rem; text-align: right; color: #667eea;">
+                        ${(data.total_explained * 100).toFixed(2)}%
+                    </td>
+                    <td style="padding: 1rem; text-align: right;">—</td>
+                </tr>
+            `;
         }
 
         // Run AI Analysis
