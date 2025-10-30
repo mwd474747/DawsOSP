@@ -324,10 +324,10 @@ async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any]
         try:
             # Try to get the latest pricing pack from database
             query = """
-                SELECT id, asof_date 
+                SELECT id, date 
                 FROM pricing_packs 
-                WHERE asof_date <= CURRENT_DATE 
-                ORDER BY asof_date DESC 
+                WHERE date <= CURRENT_DATE 
+                ORDER BY date DESC 
                 LIMIT 1
             """
             result = await execute_query_safe(query)
@@ -965,7 +965,10 @@ async def get_portfolio(request: Request):
                     # Execute portfolio_overview pattern for real data
                     pattern_result = await execute_pattern_orchestrator(
                         "portfolio_overview",
-                        {"portfolio_id": portfolio_id},
+                        {
+                            "portfolio_id": portfolio_id,
+                            "lookback_days": 252  # Default to 1 year
+                        },
                         user_id=user.get("id")
                     )
                     
@@ -1128,7 +1131,10 @@ async def get_holdings(
                     # Execute portfolio_overview pattern to get holdings
                     pattern_result = await execute_pattern_orchestrator(
                         "portfolio_overview",
-                        {"portfolio_id": portfolio_id},
+                        {
+                            "portfolio_id": portfolio_id,
+                            "lookback_days": 252  # Default to 1 year
+                        },
                         user_id=user.get("id")
                     )
                     
