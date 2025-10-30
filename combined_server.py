@@ -391,9 +391,17 @@ async def lifespan(app: FastAPI):
         logger.info("Database initialized successfully")
         
         # Initialize agent runtime and pattern orchestrator after DB is ready
-        get_agent_runtime(reinit_services=True)
+        runtime = get_agent_runtime(reinit_services=True)
         get_pattern_orchestrator()
         logger.info("Pattern orchestration system initialized")
+        
+        # Reset circuit breakers after successful initialization
+        if runtime and db_pool:
+            for agent_id in runtime.agents:
+                runtime.failure_counts[agent_id] = 0
+                if agent_id in runtime.circuit_breaker_until:
+                    del runtime.circuit_breaker_until[agent_id]
+            logger.info("✅ Reset all agent circuit breakers")
         
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
@@ -491,6 +499,18 @@ async def init_db() -> None:
             await conn.fetchval("SELECT 1")
         
         logger.info("Database connected successfully")
+        
+        # CRITICAL FIX: Bridge pool to backend pattern
+        # This solves the "Database pool not initialized" errors in agents
+        try:
+            from backend.app.db.connection import PoolManager
+            pool_manager = PoolManager()
+            pool_manager._pool = db_pool  # Share the pool instance
+            logger.info("✅ Bridged database pool to backend pattern")
+        except ImportError as e:
+            logger.warning(f"Could not import PoolManager: {e}")
+        except Exception as e:
+            logger.warning(f"Could not bridge pool to backend: {e}")
         
     except asyncpg.PostgresError as e:
         logger.error(f"PostgreSQL error during initialization: {e}")

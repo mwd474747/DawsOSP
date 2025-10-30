@@ -176,10 +176,10 @@ async def init_db_pool(
 
 def get_db_pool() -> asyncpg.Pool:
     """
-    Get database connection pool from Redis coordinator.
+    Get database connection pool.
 
-    Each module instance gets its own AsyncPG pool, but configuration is
-    coordinated via Redis to ensure consistency.
+    First tries to get from PoolManager singleton (shared from combined_server),
+    then falls back to Redis coordinator for backward compatibility.
 
     Returns:
         AsyncPG connection pool
@@ -187,13 +187,17 @@ def get_db_pool() -> asyncpg.Pool:
     Raises:
         RuntimeError: If pool not initialized
     """
-    # Try to get pool synchronously first (fast path)
+    # FIXED: Check PoolManager singleton first (shared from combined_server.py)
+    pool_manager = PoolManager()
+    if pool_manager._pool is not None:
+        return pool_manager._pool
+    
+    # Fallback to Redis coordinator (for backward compatibility)
     pool = coordinator.get_pool_sync()
     if pool is not None:
         return pool
 
     # Pool not initialized yet - this is an error
-    # (Async creation must happen in async context via get_db_connection)
     raise RuntimeError(
         "Database pool not initialized. Call init_db_pool() in startup event."
     )
