@@ -31,6 +31,25 @@ from contextlib import asynccontextmanager
 
 logger = logging.getLogger("DawsOS.Database")
 
+# Module-level shared pool storage
+_shared_pool: Optional[asyncpg.Pool] = None
+
+# External pool registration (for combined_server.py to register its pool)
+_external_pool: Optional[asyncpg.Pool] = None
+
+def register_external_pool(pool: asyncpg.Pool) -> None:
+    """
+    Register an externally created database pool.
+    
+    This allows combined_server.py to explicitly register its pool,
+    solving the module instance separation issue.
+    
+    Args:
+        pool: AsyncPG connection pool to register
+    """
+    global _external_pool
+    _external_pool = pool
+    logger.info(f"✅ External database pool registered: {pool}")
 
 # ============================================================================
 # PoolManager Singleton
@@ -178,8 +197,12 @@ def get_db_pool() -> asyncpg.Pool:
     """
     Get database connection pool.
 
-    First tries to get from PoolManager singleton (shared from combined_server),
-    then falls back to Redis coordinator for backward compatibility.
+    Priority order:
+    1. External pool (registered via register_external_pool)
+    2. Direct import from combined_server (if available)
+    3. Module-level shared pool
+    4. PoolManager singleton
+    5. Redis coordinator
 
     Returns:
         AsyncPG connection pool
@@ -187,17 +210,44 @@ def get_db_pool() -> asyncpg.Pool:
     Raises:
         RuntimeError: If pool not initialized
     """
-    # FIXED: Check PoolManager singleton first (shared from combined_server.py)
+    global _shared_pool, _external_pool
+    
+    # PRIORITY 1: Check external registered pool (most reliable for combined_server)
+    if _external_pool is not None:
+        logger.debug("Using externally registered pool")
+        return _external_pool
+    
+    # PRIORITY 2: Try direct import from combined_server (fixes module boundary issue)
+    try:
+        import sys
+        # Check if combined_server is already imported
+        if 'combined_server' in sys.modules:
+            import combined_server
+            if hasattr(combined_server, 'db_pool') and combined_server.db_pool is not None:
+                logger.debug("Using pool directly from combined_server module")
+                return combined_server.db_pool
+    except Exception as e:
+        logger.debug(f"Could not access combined_server.db_pool: {e}")
+    
+    # PRIORITY 3: Check module-level shared pool
+    if _shared_pool is not None:
+        logger.debug("Using module-level shared pool")
+        return _shared_pool
+    
+    # PRIORITY 4: Check PoolManager singleton
     pool_manager = PoolManager()
-    if pool_manager._pool is not None:
+    if hasattr(pool_manager, '_pool') and pool_manager._pool is not None:
+        logger.debug("Using pool from PoolManager singleton")
         return pool_manager._pool
     
-    # Fallback to Redis coordinator (for backward compatibility)
+    # PRIORITY 5: Fallback to Redis coordinator (for backward compatibility)
     pool = coordinator.get_pool_sync()
     if pool is not None:
+        logger.debug("Using pool from Redis coordinator")
         return pool
 
     # Pool not initialized yet - this is an error
+    logger.error("No pool available from any source")
     raise RuntimeError(
         "Database pool not initialized. Call init_db_pool() in startup event."
     )

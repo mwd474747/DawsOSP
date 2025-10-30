@@ -499,17 +499,20 @@ async def init_db() -> None:
         
         logger.info("Database connected successfully")
         
-        # CRITICAL FIX: Bridge pool to backend pattern
+        # CRITICAL FIX: Register pool with backend connection module
         # This solves the "Database pool not initialized" errors in agents
         try:
-            from backend.app.db.connection import PoolManager
-            pool_manager = PoolManager()
-            pool_manager._pool = db_pool  # Share the pool instance
-            logger.info("✅ Bridged database pool to backend pattern")
+            from backend.app.db.connection import register_external_pool
+            
+            # Register the pool using the new explicit mechanism
+            register_external_pool(db_pool)
+            
+            logger.info(f"✅ Successfully registered database pool with backend connection module")
+            logger.info(f"Pool registered: {db_pool}")
         except ImportError as e:
-            logger.warning(f"Could not import PoolManager: {e}")
+            logger.warning(f"Could not import backend modules: {e}")
         except Exception as e:
-            logger.warning(f"Could not bridge pool to backend: {e}")
+            logger.warning(f"Could not register pool with backend: {e}")
         
     except asyncpg.PostgresError as e:
         logger.error(f"PostgreSQL error during initialization: {e}")
@@ -907,6 +910,82 @@ async def health_check():
             health_status["status"] = "degraded"
     
     return health_status
+
+@app.get("/api/test-pool-access")
+async def test_pool_access():
+    """Test endpoint to verify agents can access the database pool"""
+    results = {
+        "test": "database_pool_access",
+        "timestamp": datetime.utcnow().isoformat(),
+        "checks": {}
+    }
+    
+    # Check 1: Verify combined_server has a pool
+    results["checks"]["combined_server_pool"] = {
+        "status": "success" if db_pool else "failed",
+        "pool": str(db_pool) if db_pool else None
+    }
+    
+    # Check 2: Test if backend connection module can get the pool
+    try:
+        from backend.app.db.connection import get_db_pool
+        backend_pool = get_db_pool()
+        results["checks"]["backend_get_pool"] = {
+            "status": "success",
+            "pool": str(backend_pool),
+            "same_as_combined": backend_pool == db_pool
+        }
+    except Exception as e:
+        results["checks"]["backend_get_pool"] = {
+            "status": "failed",
+            "error": str(e)
+        }
+    
+    # Check 3: Test if an agent can access the pool
+    try:
+        from backend.app.agents.financial_analyst import FinancialAnalyst
+        
+        # Get the agent runtime (which should have db pool in services)
+        runtime = get_agent_runtime()
+        financial_analyst = runtime.get_agent("financial_analyst")
+        
+        if financial_analyst and financial_analyst.services.get("db"):
+            results["checks"]["agent_pool_access"] = {
+                "status": "success",
+                "agent": "financial_analyst",
+                "has_db_service": True,
+                "pool": str(financial_analyst.services.get("db"))
+            }
+        else:
+            results["checks"]["agent_pool_access"] = {
+                "status": "failed",
+                "error": "Agent does not have database service"
+            }
+            
+        # Check 4: Test actual database query from agent context
+        if backend_pool:
+            async with backend_pool.acquire() as conn:
+                test_result = await conn.fetchval("SELECT 1")
+                results["checks"]["database_query"] = {
+                    "status": "success",
+                    "query": "SELECT 1",
+                    "result": test_result
+                }
+                
+    except Exception as e:
+        results["checks"]["agent_test"] = {
+            "status": "failed",
+            "error": str(e)
+        }
+    
+    # Overall status
+    all_success = all(
+        check.get("status") == "success" 
+        for check in results["checks"].values()
+    )
+    results["overall_status"] = "✅ FIXED" if all_success else "❌ STILL BROKEN"
+    
+    return results
 
 @app.post("/api/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest):
