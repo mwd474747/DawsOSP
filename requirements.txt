@@ -41,3 +41,9 @@ python-jose[cryptography]
 asyncpg
 fastapi
 uvicorn[standard]
+beautifulsoup4
+httpx
+opentelemetry-api
+opentelemetry-sdk
+pyjwt
+prometheus-client
