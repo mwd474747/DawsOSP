@@ -3526,6 +3526,47 @@ async def get_transactions(page: int = 1, page_size: int = 20):
             detail="Transaction service temporarily unavailable. Please try again later."
         )
 
+@app.get("/api/factor-analysis")
+async def get_factor_analysis():
+    """Get portfolio factor analysis - exposure to market risk factors"""
+    try:
+        # Mock implementation for now - will connect to real factor analysis service
+        factor_data = {
+            "alpha": 0.002,
+            "beta": {
+                "real_rate": -0.15,
+                "inflation": 0.05,
+                "credit": 0.20,
+                "usd": -0.10,
+                "equity_risk_premium": 0.90
+            },
+            "r_squared": 0.85,
+            "residual_vol": 0.05,
+            "factor_attribution": {
+                "real_rate": -0.01,
+                "inflation": 0.005,
+                "credit": 0.02,
+                "usd": -0.008,
+                "equity_risk_premium": 0.12
+            },
+            "total_explained": 0.127,
+            "total_return": 0.15,
+            "var_metrics": {
+                "var_1d": -0.02,
+                "var_10d": -0.065,
+                "confidence": 0.95
+            }
+        }
+        
+        return factor_data
+        
+    except Exception as e:
+        logger.error(f"Error in factor analysis: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error computing factor analysis: {str(e)}"
+        )
+
 @app.get("/api/test-fred")
 async def test_fred():
     """Test FRED API integration"""
