@@ -1643,36 +1643,51 @@
                     const data = await response.json();
                     const portfolio = data.data || data;  // Handle both formats
                     
-                    // Update stats
-                    document.getElementById('totalValue').textContent = `$${portfolio.total_value.toLocaleString()}`;
-                    document.getElementById('unrealizedPnl').textContent = `$${portfolio.unrealized_pnl.toLocaleString()}`;
-                    document.getElementById('unrealizedPnl').className = portfolio.unrealized_pnl >= 0 ? 'stat-value positive' : 'stat-value negative';
-                    document.getElementById('dayReturn').textContent = `${(portfolio.returns_1d * 100).toFixed(2)}%`;
-                    document.getElementById('dayReturn').className = portfolio.returns_1d >= 0 ? 'stat-value positive' : 'stat-value negative';
-                    document.getElementById('ytdReturn').textContent = `${(portfolio.returns_ytd * 100).toFixed(2)}%`;
-                    document.getElementById('ytdReturn').className = portfolio.returns_ytd >= 0 ? 'stat-value positive' : 'stat-value negative';
-                    document.getElementById('portfolioBeta').textContent = portfolio.portfolio_beta.toFixed(2);
-                    document.getElementById('sharpeRatio').textContent = portfolio.sharpe_ratio.toFixed(2);
-                    document.getElementById('var95').textContent = `$${portfolio.var_95.toLocaleString()}`;
-                    document.getElementById('maxDrawdown').textContent = `${(portfolio.max_drawdown * 100).toFixed(2)}%`;
+                    // Update stats with fallback values for missing properties
+                    document.getElementById('totalValue').textContent = `$${(portfolio.total_value || 0).toLocaleString()}`;
+                    
+                    // Handle unrealized_pnl - fallback to 0 if not present
+                    const unrealizedPnl = portfolio.unrealized_pnl || 0;
+                    document.getElementById('unrealizedPnl').textContent = `$${unrealizedPnl.toLocaleString()}`;
+                    document.getElementById('unrealizedPnl').className = unrealizedPnl >= 0 ? 'stat-value positive' : 'stat-value negative';
+                    
+                    // Handle returns_1d - fallback to 0 if not present
+                    const returns1d = portfolio.returns_1d || 0;
+                    document.getElementById('dayReturn').textContent = `${(returns1d * 100).toFixed(2)}%`;
+                    document.getElementById('dayReturn').className = returns1d >= 0 ? 'stat-value positive' : 'stat-value negative';
+                    
+                    // Handle returns_ytd - fallback to 0 if not present
+                    const returnsYtd = portfolio.returns_ytd || 0;
+                    document.getElementById('ytdReturn').textContent = `${(returnsYtd * 100).toFixed(2)}%`;
+                    document.getElementById('ytdReturn').className = returnsYtd >= 0 ? 'stat-value positive' : 'stat-value negative';
+                    
+                    // These properties exist in the backend response
+                    document.getElementById('portfolioBeta').textContent = (portfolio.portfolio_beta || 0).toFixed(2);
+                    document.getElementById('sharpeRatio').textContent = (portfolio.sharpe_ratio || 0).toFixed(2);
+                    document.getElementById('var95').textContent = `$${(portfolio.var_95 || 0).toLocaleString()}`;
+                    document.getElementById('maxDrawdown').textContent = `${((portfolio.max_drawdown || 0) * 100).toFixed(2)}%`;
                     document.getElementById('maxDrawdown').className = 'stat-value negative';
 
-                    // Update holdings table
+                    // Update holdings table with fallback for missing change property
                     if (portfolio.holdings) {
                         const holdingsBody = document.getElementById('holdingsBody');
-                        holdingsBody.innerHTML = portfolio.holdings.map(h => `
+                        holdingsBody.innerHTML = portfolio.holdings.map(h => {
+                            // h.change doesn't exist in backend, use 0 as fallback
+                            const change = h.change || h.daily_change || 0;
+                            
+                            return `
                             <tr>
                                 <td><strong>${h.symbol}</strong></td>
                                 <td>${h.quantity}</td>
-                                <td>$${h.price.toFixed(2)}</td>
-                                <td>$${h.value.toLocaleString()}</td>
-                                <td>${(h.weight * 100).toFixed(1)}%</td>
-                                <td class="${h.change >= 0 ? 'positive' : 'negative'}">
-                                    ${h.change >= 0 ? '+' : ''}${(h.change * 100).toFixed(2)}%
+                                <td>$${(h.price || 0).toFixed(2)}</td>
+                                <td>$${(h.value || 0).toLocaleString()}</td>
+                                <td>${((h.weight || 0) * 100).toFixed(1)}%</td>
+                                <td class="${change >= 0 ? 'positive' : 'negative'}">
+                                    ${change >= 0 ? '+' : ''}${(change * 100).toFixed(2)}%
                                 </td>
-                                <td>${h.beta.toFixed(2)}</td>
+                                <td>${(h.beta || 0).toFixed(2)}</td>
                             </tr>
-                        `).join('');
+                        `}).join('');
                     }
                 }
             } catch (error) {
@@ -1680,7 +1695,7 @@
             }
         }
 
-        // Load alerts
+        // Load alerts with robust error handling and fallbacks
         async function loadAlerts() {
             try {
                 const response = await fetch(`${API_BASE}/api/alerts`, {
@@ -1689,12 +1704,15 @@
                     }
                 });
                 if (response.ok) {
-                    const data = await response.json();
+                    const responseData = await response.json();
+                    // Handle both direct array and data object response formats
+                    const data = Array.isArray(responseData) ? responseData : 
+                                (responseData.data || responseData.alerts || []);
                     const alertsList = document.getElementById('alertsList');
                     const alertCount = document.getElementById('alertCount');
                     
-                    // Update alert count
-                    const activeCount = data.filter(a => a.active).length;
+                    // Update alert count with safe filtering
+                    const activeCount = data.filter(a => a?.active).length;
                     alertCount.textContent = data.length > 0 ? `${activeCount}/${data.length}` : '0';
                     
                     if (data.length === 0) {
@@ -2048,7 +2066,7 @@
             }
         }
 
-        // Load Holdings data
+        // Load Holdings data with fallback for missing properties
         async function loadHoldings() {
             try {
                 const response = await fetch(`${API_BASE}/api/holdings`, {
@@ -2063,17 +2081,23 @@
                     const holdingsBody = document.getElementById('holdingsBody');
                     
                     if (holdings && holdings.length > 0) {
-                        holdingsBody.innerHTML = holdings.map(h => `
+                        holdingsBody.innerHTML = holdings.map(h => {
+                            // Handle missing daily_change property - fallback to 0
+                            const dailyChange = h.daily_change || h.change || 0;
+                            
+                            return `
                             <tr>
                                 <td><strong>${h.symbol}</strong></td>
-                                <td>${h.quantity || h.shares || h.qty}</td>
+                                <td>${h.quantity || h.shares || h.qty || 0}</td>
                                 <td>$${(h.price || h.current_price || 0).toFixed(2)}</td>
-                                <td>$${((h.market_value || h.value || 0)).toLocaleString()}</td>
+                                <td>$${(h.market_value || h.value || 0).toLocaleString()}</td>
                                 <td>${((h.weight || 0) * 100).toFixed(1)}%</td>
-                                <td class="${h.daily_change >= 0 ? 'positive' : 'negative'}">${h.daily_change >= 0 ? '+' : ''}${((h.daily_change || 0) * 100).toFixed(2)}%</td>
+                                <td class="${dailyChange >= 0 ? 'positive' : 'negative'}">
+                                    ${dailyChange >= 0 ? '+' : ''}${(dailyChange * 100).toFixed(2)}%
+                                </td>
                                 <td>${(h.beta || 0).toFixed(2)}</td>
                             </tr>
-                        `).join('');
+                        `}).join('');
                     } else {
                         holdingsBody.innerHTML = '<tr><td colspan="7" class="loading">No holdings found</td></tr>';
                     }
