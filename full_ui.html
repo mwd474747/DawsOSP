@@ -786,7 +786,7 @@
             <div class="tab-content" id="scenarios-tab">
                 <div class="scenario-section active">
                     <h3>Scenario Analysis</h3>
-                    <p style="color: #666; margin-bottom: 1rem;">Test your portfolio against market scenarios with macro-aware AI</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">Test your portfolio against market scenarios with macro-aware AI</p>
                     
                     <!-- Macro Context Bar -->
                     <div style="background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.2); color: #f1f5f9; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
@@ -855,7 +855,7 @@
             <div class="tab-content" id="risk-tab">
                 <div class="risk-analysis-section">
                     <h3>Factor Risk Analysis</h3>
-                    <p style="color: #666; margin-bottom: 1.5rem;">Advanced portfolio factor exposure and risk decomposition</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Advanced portfolio factor exposure and risk decomposition</p>
                     
                     <!-- Factor Exposures Chart -->
                     <div style="background: rgba(102, 126, 234, 0.05); border-radius: 15px; padding: 2rem; margin-bottom: 2rem;">
@@ -868,43 +868,43 @@
                     
                     <!-- Risk Metrics Grid -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-                        <div class="metric-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                            <div style="color: #666; font-size: 0.9rem;">Portfolio Alpha</div>
-                            <div style="font-size: 2rem; font-weight: bold; color: #667eea;" id="portfolioAlpha">Loading...</div>
-                            <div style="color: #999; font-size: 0.85rem;">Excess return</div>
+                        <div class="metric-card" style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-primary); box-shadow: var(--shadow-sm);">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Portfolio Alpha</div>
+                            <div style="font-size: 2rem; font-weight: bold; color: var(--color-primary); font-family: 'SF Mono', Monaco, monospace;" id="portfolioAlpha">Loading...</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Excess return</div>
                         </div>
-                        <div class="metric-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                            <div style="color: #666; font-size: 0.9rem;">R-Squared</div>
-                            <div style="font-size: 2rem; font-weight: bold; color: #667eea;" id="rSquared">Loading...</div>
-                            <div style="color: #999; font-size: 0.85rem;">Model fit</div>
+                        <div class="metric-card" style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-primary); box-shadow: var(--shadow-sm);">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">R-Squared</div>
+                            <div style="font-size: 2rem; font-weight: bold; color: var(--color-primary); font-family: 'SF Mono', Monaco, monospace;" id="rSquared">Loading...</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Model fit</div>
                         </div>
-                        <div class="metric-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                            <div style="color: #666; font-size: 0.9rem;">1-Day VaR (95%)</div>
-                            <div style="font-size: 2rem; font-weight: bold; color: #ef4444;" id="var1d">Loading...</div>
-                            <div style="color: #999; font-size: 0.85rem;">Downside risk</div>
+                        <div class="metric-card" style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-primary); box-shadow: var(--shadow-sm);">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">1-Day VaR (95%)</div>
+                            <div style="font-size: 2rem; font-weight: bold; color: var(--color-error); font-family: 'SF Mono', Monaco, monospace;" id="var1d">Loading...</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Downside risk</div>
                         </div>
-                        <div class="metric-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                            <div style="color: #666; font-size: 0.9rem;">Residual Vol</div>
-                            <div style="font-size: 2rem; font-weight: bold; color: #f59e0b;" id="residualVol">Loading...</div>
-                            <div style="color: #999; font-size: 0.85rem;">Unexplained risk</div>
+                        <div class="metric-card" style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-primary); box-shadow: var(--shadow-sm);">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Residual Vol</div>
+                            <div style="font-size: 2rem; font-weight: bold; color: var(--color-warning); font-family: 'SF Mono', Monaco, monospace;" id="residualVol">Loading...</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Unexplained risk</div>
                         </div>
                     </div>
                     
                     <!-- Factor Attribution Table -->
-                    <div style="background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                        <h4 style="margin-bottom: 1rem;">Factor Return Attribution</h4>
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow-sm);">
+                        <h4 style="margin-bottom: 1rem; color: var(--text-primary);">Factor Return Attribution</h4>
                         <table style="width: 100%; border-collapse: collapse;">
                             <thead>
-                                <tr style="border-bottom: 2px solid #e0e0e0;">
-                                    <th style="padding: 0.75rem; text-align: left; color: #666;">Factor</th>
-                                    <th style="padding: 0.75rem; text-align: right; color: #666;">Beta Exposure</th>
-                                    <th style="padding: 0.75rem; text-align: right; color: #666;">Return Contribution</th>
-                                    <th style="padding: 0.75rem; text-align: right; color: #666;">Risk Impact</th>
+                                <tr style="border-bottom: 1px solid var(--border-primary);">
+                                    <th style="padding: 0.75rem; text-align: left; color: var(--text-secondary); background: rgba(15, 23, 42, 0.5);">Factor</th>
+                                    <th style="padding: 0.75rem; text-align: right; color: var(--text-secondary); background: rgba(15, 23, 42, 0.5);">Beta Exposure</th>
+                                    <th style="padding: 0.75rem; text-align: right; color: var(--text-secondary); background: rgba(15, 23, 42, 0.5);">Return Contribution</th>
+                                    <th style="padding: 0.75rem; text-align: right; color: var(--text-secondary); background: rgba(15, 23, 42, 0.5);">Risk Impact</th>
                                 </tr>
                             </thead>
                             <tbody id="factorAttributionBody">
                                 <tr>
-                                    <td colspan="4" style="text-align: center; padding: 2rem; color: #999;">Loading factor data...</td>
+                                    <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">Loading factor data...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -912,7 +912,7 @@
                     
                     <!-- Refresh Button -->
                     <div style="text-align: center; margin-top: 2rem;">
-                        <button onclick="loadFactorAnalysis()" style="padding: 0.75rem 2rem; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">
+                        <button onclick="loadFactorAnalysis()" style="padding: 0.75rem 2rem; background: var(--color-primary); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">
                             Refresh Factor Analysis
                         </button>
                     </div>
@@ -923,8 +923,8 @@
             <div class="tab-content" id="alerts-tab">
                 <div class="alerts-container">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                        <h3>Alert Management <span id="alertCount" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.9rem; margin-left: 1rem;">0</span></h3>
-                        <button onclick="toggleCreateAlertForm()" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                        <h3>Alert Management <span id="alertCount" style="background: var(--color-primary); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.9rem; margin-left: 1rem;">0</span></h3>
+                        <button onclick="toggleCreateAlertForm()" style="padding: 0.75rem 1.5rem; background: var(--color-primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600;">
                             + New Alert
                         </button>
                     </div>
@@ -934,8 +934,8 @@
                         <h4 style="margin-bottom: 1.5rem;">Create New Alert</h4>
                         <div style="display: grid; gap: 1rem;">
                             <div>
-                                <label style="display: block; margin-bottom: 0.5rem; color: #666;">Alert Type</label>
-                                <select id="alertType" onchange="updateAlertForm()" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+                                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Alert Type</label>
+                                <select id="alertType" onchange="updateAlertForm()" style="width: 100%; padding: 0.75rem; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-primary); border-radius: 8px; color: var(--text-primary);">
                                     <option value="price">Price Alert</option>
                                     <option value="portfolio">Portfolio Alert</option>
                                     <option value="macro">Macro Alert</option>
@@ -947,8 +947,8 @@
                                 <!-- Price Alert Fields (default) -->
                                 <div id="priceFields">
                                     <div style="margin-bottom: 1rem;">
-                                        <label style="display: block; margin-bottom: 0.5rem; color: #666;">Symbol</label>
-                                        <select id="alertSymbol" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+                                        <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Symbol</label>
+                                        <select id="alertSymbol" style="width: 100%; padding: 0.75rem; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-primary); border-radius: 8px; color: var(--text-primary);">
                                             <option value="AAPL">AAPL - Apple</option>
                                             <option value="GOOGL">GOOGL - Google</option>
                                             <option value="MSFT">MSFT - Microsoft</option>
@@ -1736,7 +1736,7 @@
                                                 </span>
                                             </label>
                                             <button onclick="deleteAlert('${alert.id}')" style="background: #ef4444; color: white; border: none; padding: 0.5rem; border-radius: 5px; cursor: pointer;" title="Delete Alert">
-                                                🗑️
+                                                ✕️
                                             </button>
                                         </div>
                                     </div>
@@ -1990,7 +1990,7 @@
                         
                         ${data.recommendations && data.recommendations.length > 0 ? `
                         <div style="background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 10px; padding: 1rem; margin: 1rem 0;">
-                            <h5 style="color: #2e7d32; margin-bottom: 0.75rem;">📋 Recommended Actions</h5>
+                            <h5 style="color: var(--color-success); margin-bottom: 0.75rem;">Recommended Actions</h5>
                             ${data.recommendations.map(rec => `
                                 <div style="padding: 0.5rem 0; color: #333;">
                                     <span style="color: #4caf50; font-weight: bold; margin-right: 0.5rem;">✓</span> ${rec}
@@ -2001,7 +2001,7 @@
                         
                         ${data.hedge_suggestions && data.hedge_suggestions.length > 0 ? `
                         <div style="background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 10px; padding: 1rem; margin: 1rem 0;">
-                            <h5 style="color: #e65100; margin-bottom: 0.75rem;">🛡️ Hedge Suggestions</h5>
+                            <h5 style="color: var(--color-warning); margin-bottom: 0.75rem;">Hedge Suggestions</h5>
                             ${data.hedge_suggestions.map(hedge => `
                                 <div style="display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
                                     <span style="font-weight: 600;">${hedge.instrument}</span>
@@ -2013,7 +2013,7 @@
                         
                         ${data.historical_analogues && data.historical_analogues.length > 0 ? `
                         <div style="background: #f3e5f5; border-left: 4px solid #9c27b0; border-radius: 10px; padding: 1rem; margin: 1rem 0;">
-                            <h5 style="color: #6a1b9a; margin-bottom: 0.75rem;">📚 Historical Analogues</h5>
+                            <h5 style="color: var(--color-primary); margin-bottom: 0.75rem;">Historical Analogues</h5>
                             ${data.historical_analogues.map(analogue => `
                                 <div style="padding: 0.5rem 0; color: #333; border-bottom: 1px dashed rgba(0,0,0,0.1);">${analogue}</div>
                             `).join('')}
