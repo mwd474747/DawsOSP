@@ -20,7 +20,7 @@ import random
 from collections import defaultdict
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request, Depends, status
+from fastapi import FastAPI, HTTPException, Request, Depends, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -789,6 +789,71 @@ async def get_portfolio(request: Request):
             detail="Portfolio service error"
         )
 
+@app.get("/api/holdings")
+async def get_holdings(
+    request: Request,
+    page: int = Query(1, ge=1, le=1000),
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE)
+):
+    """Get holdings data with pagination"""
+    try:
+        # Check authentication
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        # Get holdings (same as portfolio endpoint but simplified)
+        if USE_MOCK_DATA:
+            holdings = get_mock_portfolio_holdings()
+            for h in holdings:
+                h["value"] = h["quantity"] * h["price"]
+        else:
+            portfolio_data = await get_portfolio_data(user["email"])
+            
+            if not portfolio_data:
+                # Return mock data if no database data
+                holdings = get_mock_portfolio_holdings()
+                for h in holdings:
+                    h["value"] = h["quantity"] * h["price"]
+            else:
+                holdings = []
+                for row in portfolio_data:
+                    holdings.append({
+                        "symbol": row["symbol"],
+                        "quantity": float(row["quantity"]),
+                        "price": float(row["price"]) if row["price"] else 0,
+                        "value": float(row["quantity"]) * float(row["price"]) if row["price"] else 0,
+                        "sector": row["sector"] or "Other",
+                        "cost_basis": float(row["cost_basis"]) if row["cost_basis"] else 0
+                    })
+        
+        # Apply pagination
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated_holdings = holdings[start:end]
+        
+        return {
+            "holdings": paginated_holdings,
+            "pagination": {
+                "page": page,
+                "page_size": page_size,
+                "total": len(holdings),
+                "total_pages": math.ceil(len(holdings) / page_size)
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Holdings endpoint error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Holdings service error"
+        )
+
 @app.get("/api/transactions")
 async def get_transactions(
     request: Request,
@@ -999,7 +1064,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             error="http_error",
             message=exc.detail,
             details={"status_code": exc.status_code}
-        ).dict()
+        ).model_dump()
     )
 
 @app.exception_handler(ValidationError)
@@ -1011,7 +1076,7 @@ async def validation_exception_handler(request: Request, exc: ValidationError):
             error="validation_error",
             message=str(exc),
             details={"validation_errors": str(exc)}
-        ).dict()
+        ).model_dump()
     )
 
 @app.exception_handler(Exception)
@@ -1025,27 +1090,10 @@ async def general_exception_handler(request: Request, exc: Exception):
             error="internal_error",
             message="An unexpected error occurred",
             details={"type": type(exc).__name__} if app.debug else None
-        ).dict()
+        ).model_dump()
     )
 
 # ============================================================================
-# Main Entry Point
-# ============================================================================
-
-if __name__ == "__main__":
-    # Configure uvicorn logging
-    log_config = uvicorn.config.LOGGING_CONFIG
-    log_config["formatters"]["access"]["fmt"] = "%(asctime)s - %(levelname)s - %(message)s"
-    log_config["formatters"]["default"]["fmt"] = "%(asctime)s - %(levelname)s - %(message)s"
-    
-    # Run server
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=5000,
-        log_config=log_config,
-        access_log=True
-    )# ============================================================================
 # FRED Data Client with Error Handling
 # ============================================================================
 
@@ -2145,3 +2193,22 @@ async def get_factor_analysis(request: Request):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Factor analysis error"
         )
+
+# ============================================================================
+# Main Entry Point
+# ============================================================================
+
+if __name__ == "__main__":
+    # Configure uvicorn logging
+    log_config = uvicorn.config.LOGGING_CONFIG
+    log_config["formatters"]["access"]["fmt"] = "%(asctime)s - %(levelname)s - %(message)s"
+    log_config["formatters"]["default"]["fmt"] = "%(asctime)s - %(levelname)s - %(message)s"
+    
+    # Run server
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=5000,
+        log_config=log_config,
+        access_log=True
+    )
