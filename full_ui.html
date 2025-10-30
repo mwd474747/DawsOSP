@@ -6,6 +6,7 @@
     <title>DawsOS Portfolio Intelligence</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
         
         /* CSS Variables for consistent theming */
         :root {
@@ -15,8 +16,8 @@
             --border-primary: rgba(255, 255, 255, 0.1);
             --border-subtle: rgba(255, 255, 255, 0.05);
             --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
+            --text-secondary: #a8b2c7;  /* Updated for better contrast */
+            --text-muted: #94a3b8;      /* Updated from #64748b */
             --color-success: #10b981;
             --color-error: #ef4444;
             --color-warning: #f59e0b;
@@ -31,15 +32,22 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: 'Inter', 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 15px;  /* Increased from 14px */
+            font-weight: 400;
+            line-height: 1.7;
             background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, #334155 100%);
             min-height: 100vh;
             color: var(--text-primary);
         }
 
-        /* Professional Monospace for numbers */
-        .stat-value, .table td, .metric-value, .number {
-            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+        /* Professional Monospace for numbers and financial data */
+        .stat-value, .table td, .metric-value, .number,
+        #totalValue, #unrealizedPnl, #dayReturn, #ytdReturn, 
+        #portfolioBeta, #sharpeRatio, #var95, #maxDrawdown,
+        #totalInvested, #totalDividends, #realizedGains {
+            font-family: 'JetBrains Mono', 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-weight: 500;
         }
 
         .container { 
@@ -61,7 +69,7 @@
         
         .header h1 {
             font-size: 2rem;
-            font-weight: 700;
+            font-weight: 600;  /* Changed from 700 */
             color: var(--text-primary);
             margin-bottom: 0.25rem;
             letter-spacing: -0.02em;
@@ -69,7 +77,7 @@
         
         .header p { 
             color: var(--text-secondary); 
-            font-size: 0.95rem;
+            font-size: 1rem;  /* Increased from 0.95rem */
             font-weight: 400;
             letter-spacing: 0.01em;
         }
@@ -124,13 +132,13 @@
         
         .btn {
             width: 100%;
-            padding: 0.75rem 2rem;
-            background: var(--color-primary);
+            padding: 0.75rem 1.5rem;  /* Standardized padding */
+            background: var(--color-primary);  /* Solid blue, no gradient */
             color: white;
             border: none;
-            border-radius: 6px;
-            font-size: 0.95rem;
-            font-weight: 600;
+            border-radius: 8px;  /* Changed from 6px to 8px for consistency */
+            font-size: 1rem;
+            font-weight: 500;  /* Changed from 600 to 500 */
             cursor: pointer;
             transition: all 0.2s ease;
             letter-spacing: 0.025em;
@@ -138,7 +146,7 @@
         }
         
         .btn:hover {
-            background: var(--color-primary-hover);
+            background: var(--color-primary-hover);  /* Solid darker blue on hover */
             box-shadow: 0 4px 12px var(--color-primary-border);
         }
         
@@ -395,11 +403,11 @@
         }
         
         .tab {
-            padding: 0.625rem 1.25rem;
+            padding: 0.75rem 1.5rem;  /* Standardized padding */
             background: transparent;
             border: 1px solid transparent;
             border-radius: 8px;
-            color: #94a3b8;
+            color: var(--text-secondary);
             cursor: pointer;
             font-weight: 500;
             font-size: 0.875rem;
@@ -410,13 +418,13 @@
         
         .tab:hover {
             background: rgba(255, 255, 255, 0.05);
-            color: #e2e8f0;
+            color: var(--text-primary);
         }
         
         .tab.active {
-            background: rgba(59, 130, 246, 0.2);
-            border-color: rgba(59, 130, 246, 0.3);
-            color: #93c5fd;
+            background: var(--color-primary);  /* Solid blue like other buttons */
+            border-color: transparent;
+            color: white;
         }
         
         .tab-content { display: none; }
@@ -606,13 +614,13 @@
                 <div style="display: flex; justify-content: flex-end; margin-bottom: 1.5rem; position: relative;">
                     <div class="dropdown">
                         <button onclick="toggleDropdown()" style="
-                            padding: 0.625rem 1.25rem;
-                            background: #1e293b;
-                            color: #e2e8f0;
-                            border: 1px solid rgba(148, 163, 184, 0.2);
-                            border-radius: 6px;
+                            padding: 0.75rem 1.5rem;
+                            background: var(--color-primary);
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
                             font-weight: 500;
-                            font-size: 0.875rem;
+                            font-size: 1rem;
                             cursor: pointer;
                             display: flex;
                             align-items: center;
@@ -758,9 +766,9 @@
                             <span>Realized Gains: <strong id="realizedGains">Loading...</strong></span>
                         </div>
                         <div id="paginationControls" style="display: flex; gap: 1rem; align-items: center;">
-                            <button onclick="prevPage()" id="prevBtn" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s;">Previous</button>
+                            <button onclick="prevPage()" id="prevBtn" style="padding: 0.75rem 1.5rem; background: var(--color-primary); color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; font-weight: 500; text-transform: uppercase;">Previous</button>
                             <span id="pageInfo" style="color: var(--text-secondary);">Page 1 of 1</span>
-                            <button onclick="nextPage()" id="nextBtn" style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s;">Next</button>
+                            <button onclick="nextPage()" id="nextBtn" style="padding: 0.75rem 1.5rem; background: var(--color-primary); color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; font-weight: 500; text-transform: uppercase;">Next</button>
                         </div>
                     </div>
                     <table class="table">
@@ -841,7 +849,7 @@
                     <!-- Loading Indicator -->
                     <div id="scenarioLoading" style="display: none; text-align: center; padding: 2rem;">
                         <div style="width: 40px; height: 40px; border: 3px solid var(--border-primary); border-top: 3px solid var(--color-primary); border-radius: 50%; margin: 0 auto; animation: spin 1s linear infinite;"></div>
-                        <p style="margin-top: 1rem; color: #666;">Analyzing scenario with macro adjustments...</p>
+                        <p style="margin-top: 1rem; color: var(--text-secondary);">Analyzing scenario with macro adjustments...</p>
                     </div>
                     
                     <!-- Results Section -->
@@ -912,7 +920,7 @@
                     
                     <!-- Refresh Button -->
                     <div style="text-align: center; margin-top: 2rem;">
-                        <button onclick="loadFactorAnalysis()" style="padding: 0.75rem 2rem; background: var(--color-primary); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">
+                        <button onclick="loadFactorAnalysis()" style="padding: 0.75rem 1.5rem; background: var(--color-primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s ease; text-transform: uppercase;">
                             Refresh Factor Analysis
                         </button>
                     </div>
@@ -924,7 +932,7 @@
                 <div class="alerts-container">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                         <h3>Alert Management <span id="alertCount" style="background: var(--color-primary); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.9rem; margin-left: 1rem;">0</span></h3>
-                        <button onclick="toggleCreateAlertForm()" style="padding: 0.75rem 1.5rem; background: var(--color-primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                        <button onclick="toggleCreateAlertForm()" style="padding: 0.75rem 1.5rem; background: var(--color-primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; text-transform: uppercase;">
                             + New Alert
                         </button>
                     </div>
@@ -1011,10 +1019,10 @@
                             </div>
                             
                             <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                                <button onclick="createAlert()" style="flex: 1; padding: 0.75rem; background: var(--color-success); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                <button onclick="createAlert()" style="flex: 1; padding: 0.75rem 1.5rem; background: var(--color-primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; text-transform: uppercase;">
                                     Create Alert
                                 </button>
-                                <button onclick="toggleCreateAlertForm()" style="flex: 1; padding: 0.75rem; background: rgba(30, 41, 59, 0.5); color: var(--text-secondary); border: 1px solid var(--border-primary); border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                <button onclick="toggleCreateAlertForm()" style="flex: 1; padding: 0.75rem 1.5rem; background: rgba(30, 41, 59, 0.5); color: var(--text-secondary); border: 1px solid var(--border-primary); border-radius: 8px; cursor: pointer; font-weight: 500; text-transform: uppercase;">
                                     Cancel
                                 </button>
                             </div>
@@ -1037,7 +1045,7 @@
                     <h3>AI Portfolio Analysis</h3>
                     <div class="ai-input">
                         <input type="text" id="aiQuery" placeholder="Ask a question about your portfolio...">
-                        <button onclick="runAIAnalysis()">Analyze</button>
+                        <button onclick="runAIAnalysis()" style="padding: 0.75rem 1.5rem; background: var(--color-primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; text-transform: uppercase;">Analyze</button>
                     </div>
                     <div class="ai-response" id="aiResponse">
                         <p style="color: var(--text-secondary);">Ask a question to get AI-powered insights about your portfolio.</p>
@@ -1049,9 +1057,9 @@
             <div class="tab-content" id="optimize-tab">
                 <div class="ai-analysis">
                     <h3>Portfolio Optimization</h3>
-                    <p style="margin-bottom: 1.5rem; color: #666;">Select your risk tolerance to get rebalancing recommendations</p>
+                    <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Select your risk tolerance to get rebalancing recommendations</p>
                     <div style="margin-bottom: 2rem;">
-                        <label for="riskSlider" style="display: block; margin-bottom: 0.5rem; color: #666;">Risk Tolerance: <span id="riskValue">0.5</span></label>
+                        <label for="riskSlider" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Risk Tolerance: <span id="riskValue">0.5</span></label>
                         <input type="range" id="riskSlider" min="0" max="1" step="0.1" value="0.5" style="width: 100%;" onchange="document.getElementById('riskValue').textContent = this.value">
                     </div>
                     <button class="btn" onclick="runOptimization()">Generate Recommendations</button>
@@ -1420,11 +1428,11 @@
                                 <!-- Additional Internal Metrics -->
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem;">
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">Fiscal Deficit</span>
+                                        <span style="color: var(--text-secondary);">Fiscal Deficit</span>
                                         <span style="color: #333; font-weight: 600;" id="internal-deficit">--</span>
                                     </div>
                                     <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #666;">Social Unrest</span>
+                                        <span style="color: var(--text-secondary);">Social Unrest</span>
                                         <span style="color: #333; font-weight: 600;" id="internal-unrest">--</span>
                                     </div>
                                 </div>
@@ -1512,19 +1520,19 @@
                             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
                                 <div>
                                     <div style="font-size: 1.2rem; color: #333;" id="lever-austerity">--</div>
-                                    <div style="font-size: 0.85rem; color: #666;">Austerity</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Austerity</div>
                                 </div>
                                 <div>
                                     <div style="font-size: 1.2rem; color: #333;" id="lever-defaults">--</div>
-                                    <div style="font-size: 0.85rem; color: #666;">Debt Restructuring</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Debt Restructuring</div>
                                 </div>
                                 <div>
                                     <div style="font-size: 1.2rem; color: #333;" id="lever-redistribution">--</div>
-                                    <div style="font-size: 0.85rem; color: #666;">Redistribution</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Redistribution</div>
                                 </div>
                                 <div>
                                     <div style="font-size: 1.2rem; color: #333;" id="lever-printing">--</div>
-                                    <div style="font-size: 0.85rem; color: #666;">Money Printing</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Money Printing</div>
                                 </div>
                             </div>
                         </div>
@@ -1689,7 +1697,7 @@
                     
                     if (data.length === 0) {
                         alertsList.innerHTML = `
-                            <div style="text-align: center; padding: 2rem; color: #999;">
+                            <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
                                 <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
                                 <p>No alerts configured yet. Click "New Alert" to create your first alert.</p>
                             </div>
@@ -1721,10 +1729,10 @@
                                                 ${alert.last_triggered ? `<span style="background: #fbbf24; color: #78350f; padding: 0.25rem 0.5rem; border-radius: 5px; font-size: 0.75rem;">Triggered</span>` : ''}
                                             </div>
                                             <div style="font-size: 1.1rem; margin-bottom: 0.5rem;">${alert.message}</div>
-                                            <div style="color: #666; font-size: 0.9rem;">
+                                            <div style="color: var(--text-secondary); font-size: 0.9rem;">
                                                 <strong>Condition:</strong> ${details}
                                             </div>
-                                            <div style="color: #999; font-size: 0.8rem; margin-top: 0.5rem;">
+                                            <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.5rem;">
                                                 Created: ${new Date(alert.created_at).toLocaleDateString()}
                                             </div>
                                         </div>
@@ -1959,29 +1967,29 @@
                                 Regime: ${data.macro_context?.current_regime || 'Unknown'}
                             </span>
                         </div>
-                        <p style="color: #666; margin-bottom: 1.5rem;">${data.description || ''}</p>
+                        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">${data.description || ''}</p>
                         
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
                             <div style="text-align: center;">
-                                <div style="color: #666; font-size: 0.9rem;">Portfolio Impact</div>
+                                <div style="color: var(--text-secondary); font-size: 0.9rem;">Portfolio Impact</div>
                                 <div style="font-size: 1.8rem; font-weight: bold; color: ${impactClass}">
                                     ${data.impact_analysis?.base_impact_percent || 0}%
                                 </div>
                             </div>
                             <div style="text-align: center;">
-                                <div style="color: #666; font-size: 0.9rem;">Dollar Impact</div>
+                                <div style="color: var(--text-secondary); font-size: 0.9rem;">Dollar Impact</div>
                                 <div style="font-size: 1.8rem; font-weight: bold; color: ${impactClass}">
                                     $${(data.impact_analysis?.portfolio_impact_amount || 0).toLocaleString()}
                                 </div>
                             </div>
                             <div style="text-align: center;">
-                                <div style="color: #666; font-size: 0.9rem;">Probability</div>
+                                <div style="color: var(--text-secondary); font-size: 0.9rem;">Probability</div>
                                 <div style="font-size: 1.8rem; font-weight: bold; color: #667eea">
                                     ${data.impact_analysis?.adjusted_probability || 0}%
                                 </div>
                             </div>
                             <div style="text-align: center;">
-                                <div style="color: #666; font-size: 0.9rem;">Confidence</div>
+                                <div style="color: var(--text-secondary); font-size: 0.9rem;">Confidence</div>
                                 <div style="font-size: 1.8rem; font-weight: bold; color: #667eea">
                                     ${data.impact_analysis?.confidence_level || 0}%
                                 </div>
@@ -1989,33 +1997,33 @@
                         </div>
                         
                         ${data.recommendations && data.recommendations.length > 0 ? `
-                        <div style="background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 10px; padding: 1rem; margin: 1rem 0;">
+                        <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--color-success); border-radius: 10px; padding: 1rem; margin: 1rem 0;">
                             <h5 style="color: var(--color-success); margin-bottom: 0.75rem;">Recommended Actions</h5>
                             ${data.recommendations.map(rec => `
-                                <div style="padding: 0.5rem 0; color: #333;">
-                                    <span style="color: #4caf50; font-weight: bold; margin-right: 0.5rem;">✓</span> ${rec}
+                                <div style="padding: 0.5rem 0; color: var(--text-primary);">
+                                    <span style="color: var(--color-success); font-weight: bold; margin-right: 0.5rem;">✓</span> ${rec}
                                 </div>
                             `).join('')}
                         </div>
                         ` : ''}
                         
                         ${data.hedge_suggestions && data.hedge_suggestions.length > 0 ? `
-                        <div style="background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 10px; padding: 1rem; margin: 1rem 0;">
+                        <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--color-warning); border-radius: 10px; padding: 1rem; margin: 1rem 0;">
                             <h5 style="color: var(--color-warning); margin-bottom: 0.75rem;">Hedge Suggestions</h5>
                             ${data.hedge_suggestions.map(hedge => `
-                                <div style="display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
-                                    <span style="font-weight: 600;">${hedge.instrument}</span>
-                                    <span style="color: #e65100; font-weight: bold;">$${hedge.size.toLocaleString()}</span>
+                                <div style="display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border-primary);">
+                                    <span style="font-weight: 600; color: var(--text-primary);">${hedge.instrument}</span>
+                                    <span style="color: var(--color-warning); font-weight: bold;">$${hedge.size.toLocaleString()}</span>
                                 </div>
                             `).join('')}
                         </div>
                         ` : ''}
                         
                         ${data.historical_analogues && data.historical_analogues.length > 0 ? `
-                        <div style="background: #f3e5f5; border-left: 4px solid #9c27b0; border-radius: 10px; padding: 1rem; margin: 1rem 0;">
+                        <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--color-primary); border-radius: 10px; padding: 1rem; margin: 1rem 0;">
                             <h5 style="color: var(--color-primary); margin-bottom: 0.75rem;">Historical Analogues</h5>
                             ${data.historical_analogues.map(analogue => `
-                                <div style="padding: 0.5rem 0; color: #333; border-bottom: 1px dashed rgba(0,0,0,0.1);">${analogue}</div>
+                                <div style="padding: 0.5rem 0; color: var(--text-primary); border-bottom: 1px dashed var(--border-primary);">${analogue}</div>
                             `).join('')}
                         </div>
                         ` : ''}
@@ -2066,9 +2074,9 @@
             
             // Prepare data
             const factors = [
-                { name: 'Real Rate', value: betas.real_rate, color: '#667eea' },
+                { name: 'Real Rate', value: betas.real_rate, color: '#10b981' },
                 { name: 'Inflation', value: betas.inflation, color: '#f59e0b' },
-                { name: 'Credit', value: betas.credit, color: '#10b981' },
+                { name: 'Credit', value: betas.credit, color: '#3b82f6' },
                 { name: 'USD', value: betas.usd, color: '#ef4444' },
                 { name: 'Equity Risk', value: betas.equity_risk_premium, color: '#8b5cf6' }
             ];
@@ -2084,7 +2092,7 @@
             const centerY = canvas.height / 2;
             
             // Draw axis
-            ctx.strokeStyle = '#e0e0e0';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';  // Fixed grid line color
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(0, centerY);
@@ -2102,8 +2110,8 @@
                 ctx.fillRect(x, y, barWidth, barHeight);
                 
                 // Draw label
-                ctx.fillStyle = '#333';
-                ctx.font = '12px sans-serif';
+                ctx.fillStyle = '#f1f5f9';  // Fixed chart text color (light)
+                ctx.font = '12px Inter, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText(factor.name, x + barWidth / 2, canvas.height - 10);
                 
@@ -2252,8 +2260,8 @@
                     const data = await response.json();
                     
                     resultsDiv.innerHTML = `
-                        <div style="background: #f8f9fa; border-radius: 15px; padding: 1.5rem;">
-                            <h4>Optimization Results</h4>
+                        <div style="background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 15px; padding: 1.5rem;">
+                            <h4 style="color: var(--text-primary);">Optimization Results</h4>
                             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-top: 1rem;">
                                 <div>
                                     <strong>Current Portfolio</strong>
@@ -2276,7 +2284,7 @@
                                 <strong>Recommended Trades:</strong>
                                 <div style="margin-top: 0.5rem;">
                                     ${data.trades.map(t => `
-                                        <div style="padding: 0.5rem; background: white; margin: 0.5rem 0; border-radius: 8px;">
+                                        <div style="padding: 0.5rem; background: rgba(30, 41, 59, 0.5); margin: 0.5rem 0; border-radius: 8px; border: 1px solid var(--border-primary); color: var(--text-primary);">
                                             ${t.action} ${Math.abs(t.shares)} shares of ${t.symbol} ($${Math.abs(t.value).toFixed(2)})
                                         </div>
                                     `).join('')}
@@ -2553,12 +2561,12 @@
                         
                         return `
                             <div style="display: flex; justify-content: space-between; padding: 0.25rem 0;">
-                                <span style="color: #999; font-size: 0.8rem;">${formatLabel(key)}:</span>
+                                <span style="color: var(--text-muted); font-size: 0.8rem;">${formatLabel(key)}:</span>
                                 <span style="color: #333; font-family: monospace; font-weight: 600; font-size: 0.8rem;">${formattedValue}</span>
                             </div>
                         `;
                     }).join('');
-                rawDataEl.innerHTML = rawDataHtml || '<span style="color: #999; font-size: 0.8rem;">No raw data available</span>';
+                rawDataEl.innerHTML = rawDataHtml || '<span style="color: var(--text-muted); font-size: 0.8rem;">No raw data available</span>';
             }
             
             // Display calculations as formatted text blocks
@@ -2587,7 +2595,7 @@
                         </div>
                     `;
                 }
-                calcEl.innerHTML = calculationsHtml || '<span style="color: #999; font-size: 0.8rem;">No calculations available</span>';
+                calcEl.innerHTML = calculationsHtml || '<span style="color: var(--text-muted); font-size: 0.8rem;">No calculations available</span>';
             }
             
             // Display logic chain as bullet points
@@ -2605,7 +2613,7 @@
                 } else {
                     logicHtml = `<span style="color: #333; font-size: 0.8rem;">${reasoning.logic_chain}</span>`;
                 }
-                logicEl.innerHTML = logicHtml || '<span style="color: #999; font-size: 0.8rem;">No logic chain available</span>';
+                logicEl.innerHTML = logicHtml || '<span style="color: var(--text-muted); font-size: 0.8rem;">No logic chain available</span>';
             }
             
             // Display conclusion as a summary
@@ -2617,7 +2625,7 @@
                     </div>
                 `;
             } else if (conclusionEl) {
-                conclusionEl.innerHTML = '<span style="color: #999; font-size: 0.8rem;">No conclusion available</span>';
+                conclusionEl.innerHTML = '<span style="color: var(--text-muted); font-size: 0.8rem;">No conclusion available</span>';
             }
         }
         
@@ -2834,7 +2842,7 @@
                                 <span style="color: ${severityColor}; font-size: 1.25rem;">⚠</span>
                                 <div style="flex: 1;">
                                     <div style="font-weight: 600; color: #333;">${indicator.signal}</div>
-                                    <div style="font-size: 0.85rem; color: #666;">
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">
                                         ${indicator.type} Cycle • ${indicator.timeframe}
                                     </div>
                                 </div>
