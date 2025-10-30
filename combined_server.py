@@ -2783,14 +2783,6 @@ async def scenarios_page():
 @app.get("/")
 async def root():
     """Root endpoint - serve HTML"""
-    # Try to read scenario dashboard if requested
-    if os.path.exists("scenario_dashboard.html"):
-        try:
-            with open("scenario_dashboard.html", "r") as f:
-                return HTMLResponse(content=f.read())
-        except:
-            pass
-    
     # Try to read full UI from file, fall back to embedded if not found
     try:
         with open("full_ui.html", "r") as f:

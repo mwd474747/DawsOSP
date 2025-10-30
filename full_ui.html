@@ -631,22 +631,68 @@
             <div class="tab-content" id="scenarios-tab">
                 <div class="scenario-section active">
                     <h3>Scenario Analysis</h3>
-                    <p style="color: #666; margin-bottom: 1rem;">Select a scenario to see its impact on your portfolio</p>
-                    <div class="scenario-grid">
-                        <div class="scenario-card" onclick="runScenario('market_crash')">
-                            <h4>Market Crash (-20%)</h4>
-                            <p>Simulate a severe market downturn</p>
-                        </div>
-                        <div class="scenario-card" onclick="runScenario('interest_rate')">
-                            <h4>Interest Rate Hike (+2%)</h4>
-                            <p>Impact of rising interest rates</p>
-                        </div>
-                        <div class="scenario-card" onclick="runScenario('inflation')">
-                            <h4>High Inflation (6%+)</h4>
-                            <p>Effects of sustained inflation</p>
+                    <p style="color: #666; margin-bottom: 1rem;">Test your portfolio against market scenarios with macro-aware AI</p>
+                    
+                    <!-- Macro Context Bar -->
+                    <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; text-align: center;">
+                            <div>
+                                <div style="font-size: 0.85rem; opacity: 0.9;">Current Regime</div>
+                                <div style="font-size: 1.2rem; font-weight: bold;" id="scenarioRegime">Loading...</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.85rem; opacity: 0.9;">STDC Phase</div>
+                                <div style="font-size: 1.2rem; font-weight: bold;" id="scenarioStdc">Loading...</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.85rem; opacity: 0.9;">LTDC Phase</div>
+                                <div style="font-size: 1.2rem; font-weight: bold;" id="scenarioLtdc">Loading...</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.85rem; opacity: 0.9;">Risk Level</div>
+                                <div style="font-size: 1.2rem; font-weight: bold;" id="scenarioRisk">Loading...</div>
+                            </div>
                         </div>
                     </div>
-                    <div id="scenarioResults" style="margin-top: 2rem;"></div>
+                    
+                    <!-- Scenario Selection Grid -->
+                    <div class="scenario-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                        <div class="scenario-card" onclick="runScenario('market_crash')" style="background: linear-gradient(135deg, #f44336, #d32f2f); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
+                            <h4 style="margin-bottom: 0.5rem;">📉 Market Crash</h4>
+                            <p style="font-size: 0.9rem; opacity: 0.95;">-20% Equity Shock</p>
+                        </div>
+                        <div class="scenario-card" onclick="runScenario('interest_rate')" style="background: linear-gradient(135deg, #ff9800, #f57c00); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
+                            <h4 style="margin-bottom: 0.5rem;">📊 Rate Hike</h4>
+                            <p style="font-size: 0.9rem; opacity: 0.95;">+2% Interest Rates</p>
+                        </div>
+                        <div class="scenario-card" onclick="runScenario('inflation')" style="background: linear-gradient(135deg, #ffc107, #f9a825); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
+                            <h4 style="margin-bottom: 0.5rem;">💸 High Inflation</h4>
+                            <p style="font-size: 0.9rem; opacity: 0.95;">6%+ CPI Shock</p>
+                        </div>
+                        <div class="scenario-card" onclick="runScenario('tech_crash')" style="background: linear-gradient(135deg, #9c27b0, #7b1fa2); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
+                            <h4 style="margin-bottom: 0.5rem;">💻 Tech Crash</h4>
+                            <p style="font-size: 0.9rem; opacity: 0.95;">-30% Tech Sector</p>
+                        </div>
+                        <div class="scenario-card" onclick="runScenario('recovery')" style="background: linear-gradient(135deg, #4caf50, #388e3c); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
+                            <h4 style="margin-bottom: 0.5rem;">📈 Recovery Rally</h4>
+                            <p style="font-size: 0.9rem; opacity: 0.95;">+15% Risk-On</p>
+                        </div>
+                        <div class="scenario-card" onclick="runScenario('credit_crunch')" style="background: linear-gradient(135deg, #795548, #5d4037); color: white; padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
+                            <h4 style="margin-bottom: 0.5rem;">🏦 Credit Crunch</h4>
+                            <p style="font-size: 0.9rem; opacity: 0.95;">Spreads Widen</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Loading Indicator -->
+                    <div id="scenarioLoading" style="display: none; text-align: center; padding: 2rem;">
+                        <div style="width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; margin: 0 auto; animation: spin 1s linear infinite;"></div>
+                        <p style="margin-top: 1rem; color: #666;">Analyzing scenario with macro adjustments...</p>
+                    </div>
+                    
+                    <!-- Results Section -->
+                    <div id="scenarioResults" style="margin-top: 2rem; display: none;">
+                        <!-- Results will be dynamically populated here -->
+                    </div>
                 </div>
             </div>
 
@@ -1337,6 +1383,11 @@
             if (tabName === 'transactions' && authToken) {
                 loadTransactions();
             }
+            
+            // Load macro data when scenarios tab is selected
+            if (tabName === 'scenarios') {
+                loadScenarioMacroData();
+            }
         }
 
         // Load portfolio data
@@ -1634,75 +1685,122 @@
             }, 3000);
         }
 
-        // Run scenario
-        async function runScenario(scenario) {
-            const resultsDiv = document.getElementById('scenarioResults');
-            resultsDiv.innerHTML = '<div class="loading loading-pulse">Running scenario analysis...</div>';
-            
+        // Load macro data for scenarios
+        async function loadScenarioMacroData() {
             try {
-                const response = await fetch(`${API_BASE}/execute`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({
-                        pattern: 'portfolio_scenario_analysis',
-                        inputs: { scenario }
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const result = data.result;
-                    
-                    resultsDiv.innerHTML = `
-                        <div style="background: rgba(102, 126, 234, 0.1); border-radius: 15px; padding: 1.5rem; margin-top: 2rem;">
-                            <h4 style="margin-bottom: 1rem;">Scenario Results: ${result.scenario_name}</h4>
-                            <p style="margin-bottom: 1rem;">${result.description}</p>
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                                <div>
-                                    <div style="color: #666; font-size: 0.9rem;">Expected Impact</div>
-                                    <div style="font-size: 1.5rem; font-weight: bold; color: ${result.portfolio_impact < 0 ? '#ef4444' : '#10b981'}">
-                                        ${result.portfolio_impact > 0 ? '+' : ''}${result.portfolio_impact}%
-                                    </div>
-                                </div>
-                                <div>
-                                    <div style="color: #666; font-size: 0.9rem;">Risk Level</div>
-                                    <div style="font-size: 1.5rem; font-weight: bold; color: ${result.risk_level === 'High' ? '#ef4444' : '#f59e0b'}">
-                                        ${result.risk_level}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div style="color: #666; font-size: 0.9rem;">Confidence</div>
-                                    <div style="font-size: 1.5rem; font-weight: bold; color: #667eea">
-                                        ${result.confidence}%
-                                    </div>
-                                </div>
-                            </div>
-                            <div style="margin-top: 1.5rem;">
-                                <strong>Recommendations:</strong>
-                                <ul style="margin-top: 0.5rem; padding-left: 1.5rem; color: #666;">
-                                    ${result.recommendations.map(r => `<li>${r}</li>`).join('')}
-                                </ul>
-                            </div>
-                            ${result.affected_holdings ? `
-                            <div style="margin-top: 1.5rem;">
-                                <strong>Most Affected Holdings:</strong>
-                                <div style="margin-top: 0.5rem;">
-                                    ${result.affected_holdings.slice(0, 4).map(h => `
-                                        <span style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: white; border-radius: 8px;">
-                                            ${h.symbol}: ${h.impact > 0 ? '+' : ''}${h.impact}%
-                                        </span>
-                                    `).join('')}
-                                </div>
-                            </div>
-                            ` : ''}
-                        </div>
-                    `;
+                const response = await fetch('/api/macro');
+                const data = await response.json();
+                
+                if (document.getElementById('scenarioRegime')) {
+                    document.getElementById('scenarioRegime').textContent = data.current_regime || 'Unknown';
+                    document.getElementById('scenarioStdc').textContent = data.stdc_phase || 'Unknown';
+                    document.getElementById('scenarioLtdc').textContent = data.ltdc_phase || 'Unknown';
+                    document.getElementById('scenarioRisk').textContent = data.risk_level || 'Unknown';
                 }
             } catch (error) {
-                resultsDiv.innerHTML = '<div class="error-message">Error running scenario. Please try again.</div>';
+                console.error('Error loading macro data:', error);
+            }
+        }
+
+        // Run scenario
+        async function runScenario(scenarioType) {
+            const loading = document.getElementById('scenarioLoading');
+            const resultsDiv = document.getElementById('scenarioResults');
+            
+            loading.style.display = 'block';
+            resultsDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch(`/api/scenario?scenario=${scenarioType}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                loading.style.display = 'none';
+                
+                const impactClass = data.impact_analysis?.base_impact_percent < 0 ? '#ef4444' : '#10b981';
+                
+                resultsDiv.innerHTML = `
+                    <div style="background: rgba(102, 126, 234, 0.1); border-radius: 15px; padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h4>${data.scenario_name || 'Scenario Analysis'}</h4>
+                            <span style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem;">
+                                Regime: ${data.macro_context?.current_regime || 'Unknown'}
+                            </span>
+                        </div>
+                        <p style="color: #666; margin-bottom: 1.5rem;">${data.description || ''}</p>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                            <div style="text-align: center;">
+                                <div style="color: #666; font-size: 0.9rem;">Portfolio Impact</div>
+                                <div style="font-size: 1.8rem; font-weight: bold; color: ${impactClass}">
+                                    ${data.impact_analysis?.base_impact_percent || 0}%
+                                </div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="color: #666; font-size: 0.9rem;">Dollar Impact</div>
+                                <div style="font-size: 1.8rem; font-weight: bold; color: ${impactClass}">
+                                    $${(data.impact_analysis?.portfolio_impact_amount || 0).toLocaleString()}
+                                </div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="color: #666; font-size: 0.9rem;">Probability</div>
+                                <div style="font-size: 1.8rem; font-weight: bold; color: #667eea">
+                                    ${data.impact_analysis?.adjusted_probability || 0}%
+                                </div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="color: #666; font-size: 0.9rem;">Confidence</div>
+                                <div style="font-size: 1.8rem; font-weight: bold; color: #667eea">
+                                    ${data.impact_analysis?.confidence_level || 0}%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${data.recommendations && data.recommendations.length > 0 ? `
+                        <div style="background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 10px; padding: 1rem; margin: 1rem 0;">
+                            <h5 style="color: #2e7d32; margin-bottom: 0.75rem;">📋 Recommended Actions</h5>
+                            ${data.recommendations.map(rec => `
+                                <div style="padding: 0.5rem 0; color: #333;">
+                                    <span style="color: #4caf50; font-weight: bold; margin-right: 0.5rem;">✓</span> ${rec}
+                                </div>
+                            `).join('')}
+                        </div>
+                        ` : ''}
+                        
+                        ${data.hedge_suggestions && data.hedge_suggestions.length > 0 ? `
+                        <div style="background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 10px; padding: 1rem; margin: 1rem 0;">
+                            <h5 style="color: #e65100; margin-bottom: 0.75rem;">🛡️ Hedge Suggestions</h5>
+                            ${data.hedge_suggestions.map(hedge => `
+                                <div style="display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                                    <span style="font-weight: 600;">${hedge.instrument}</span>
+                                    <span style="color: #e65100; font-weight: bold;">$${hedge.size.toLocaleString()}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ` : ''}
+                        
+                        ${data.historical_analogues && data.historical_analogues.length > 0 ? `
+                        <div style="background: #f3e5f5; border-left: 4px solid #9c27b0; border-radius: 10px; padding: 1rem; margin: 1rem 0;">
+                            <h5 style="color: #6a1b9a; margin-bottom: 0.75rem;">📚 Historical Analogues</h5>
+                            ${data.historical_analogues.map(analogue => `
+                                <div style="padding: 0.5rem 0; color: #333; border-bottom: 1px dashed rgba(0,0,0,0.1);">${analogue}</div>
+                            `).join('')}
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                resultsDiv.style.display = 'block';
+                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+            } catch (error) {
+                loading.style.display = 'none';
+                resultsDiv.innerHTML = `<div class="error-message">Error running scenario: ${error.message}. Please try again.</div>`;
+                resultsDiv.style.display = 'block';
             }
         }
 

@@ -17,6 +17,20 @@ DawsOS is a comprehensive portfolio management and intelligence platform that co
 
 ## Recent Updates
 
+### October 30, 2025 - Scenario Analysis Integration Complete
+- **Integrated Scenarios Tab**: Added fully functional scenario analysis as 4th tab in main navigation
+- **6 Scenario Types**: Market Crash, Rate Hike, High Inflation, Tech Crash, Recovery Rally, Credit Crunch
+- **Macro-Aware Adjustments**: Scenarios automatically adjust based on current economic regime
+  - 2.5x crash probability in Late Expansion phases
+  - 1.5x severity during LTDC Bubble conditions
+- **Real-Time Analysis**: API endpoints return comprehensive analysis with:
+  - 85% confidence levels
+  - Risk metrics (VaR, CVaR, Max Drawdown)
+  - Concrete hedge suggestions (SPY Puts, VIX Calls)
+  - Historical analogues for context
+- **Full UI Integration**: Scenario analysis seamlessly integrated with portfolio overview, holdings, transactions, alerts, and other features
+- **Live Data**: Connected to FRED, World Bank, and ECB APIs for real-time macro data
+
 ### October 29, 2025 - Macro Dashboard Enhancement
 - **New Navigation Item**: Added "Macro Dashboard" as the 8th tab in the navigation bar
 - **Dedicated Page**: Moved macro economic insights from modal popup to full-page dashboard
