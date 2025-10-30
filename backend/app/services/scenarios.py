@@ -255,6 +255,8 @@ class ScenarioService:
         """
         Get factor betas for all positions in portfolio.
 
+        Uses security metadata to estimate betas when factor model betas unavailable.
+
         Args:
             portfolio_id: Portfolio UUID
             pack_id: Pricing pack UUID
@@ -262,7 +264,7 @@ class ScenarioService:
         Returns:
             List of position records with factor betas
         """
-        # Query positions with their factor betas from database
+        # Query positions with security metadata for beta estimation
         query = """
             SELECT
                 l.symbol,
@@ -270,12 +272,53 @@ class ScenarioService:
                 l.cost_basis_per_share,
                 l.currency,
                 l.quantity * l.cost_basis_per_share AS market_value,
-                COALESCE(pfb.real_rate_beta, -5.0) AS beta_real_rates,
-                COALESCE(pfb.inflation_beta, -3.0) AS beta_inflation,
-                COALESCE(pfb.credit_beta, 0.5) AS beta_credit,
-                COALESCE(pfb.usd_beta, CASE WHEN l.currency != 'USD' THEN -0.5 ELSE 0.0 END) AS beta_usd,
-                COALESCE(pfb.equity_beta, 1.0) AS beta_equity
+                s.security_type,
+                s.sector,
+                -- Use computed factor betas if available, otherwise estimate from security type
+                COALESCE(
+                    pfb.real_rate_beta,
+                    CASE 
+                        WHEN s.security_type = 'BOND' THEN -8.0  -- Bonds sensitive to rates
+                        WHEN s.security_type = 'EQUITY' THEN -2.0  -- Growth stocks moderately sensitive
+                        ELSE -5.0
+                    END
+                ) AS beta_real_rates,
+                COALESCE(
+                    pfb.inflation_beta,
+                    CASE 
+                        WHEN s.security_type = 'BOND' THEN -6.0  -- Bonds hurt by inflation
+                        WHEN s.sector IN ('Energy', 'Materials') THEN 2.0  -- Commodities benefit
+                        ELSE -3.0
+                    END
+                ) AS beta_inflation,
+                COALESCE(
+                    pfb.credit_beta,
+                    CASE 
+                        WHEN s.security_type = 'BOND' THEN 5.0  -- Credit bonds sensitive to spreads
+                        WHEN s.sector = 'Financial' THEN 1.5
+                        ELSE 0.5
+                    END
+                ) AS beta_credit,
+                COALESCE(
+                    pfb.usd_beta,
+                    CASE 
+                        WHEN l.currency != 'USD' THEN -0.5
+                        WHEN s.sector IN ('Technology', 'Consumer') THEN -0.3  -- US exporters
+                        ELSE 0.0
+                    END
+                ) AS beta_usd,
+                COALESCE(
+                    pfb.equity_beta,
+                    CASE 
+                        WHEN s.security_type = 'EQUITY' AND s.sector = 'Technology' THEN 1.3
+                        WHEN s.security_type = 'EQUITY' AND s.sector = 'Financial' THEN 1.1
+                        WHEN s.security_type = 'EQUITY' THEN 1.0
+                        WHEN s.security_type = 'BOND' THEN 0.0
+                        ELSE 0.8
+                    END
+                ) AS beta_equity
             FROM lots l
+            LEFT JOIN securities s ON l.symbol = s.symbol
             LEFT JOIN position_factor_betas pfb ON (
                 pfb.portfolio_id = l.portfolio_id
                 AND pfb.symbol = l.symbol
