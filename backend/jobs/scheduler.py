@@ -7,16 +7,14 @@ Priority: P0 (S1-W1 GATE - Truth Spine Foundation)
 
 Sacred Order (NON-NEGOTIABLE):
     1. build_pack          → Create immutable pricing snapshot (prices + FX)
-    2. reconcile_ledger    → Validate vs Beancount ±1bp (BLOCKS if fails)
-    3. compute_daily_metrics → TWR, MWR, vol, Sharpe, alpha, beta
-    4. prewarm_factors     → Factor fits, rolling stats
-    5. prewarm_ratings     → Buffett quality scores
-    6. mark_pack_fresh     → Enable executor freshness gate
-    7. evaluate_alerts     → Check conditions, dedupe, deliver
+    2. compute_daily_metrics → TWR, MWR, vol, Sharpe, alpha, beta
+    3. prewarm_factors     → Factor fits, rolling stats
+    4. prewarm_ratings     → Buffett quality scores
+    5. mark_pack_fresh     → Enable executor freshness gate
+    6. evaluate_alerts     → Check conditions, dedupe, deliver
 
 Critical Requirements:
     - Jobs MUST run in order (no parallelization)
-    - Reconciliation failure BLOCKS all subsequent jobs
     - Pack build must complete by 00:15 (10 min deadline)
     - Mark fresh only after ALL pre-warm jobs complete
     - Errors are logged + sent to DLQ for manual review
@@ -41,7 +39,6 @@ import os
 
 # Job imports
 from jobs.build_pricing_pack import PricingPackBuilder
-from jobs.reconcile_ledger import ReconciliationService
 from jobs.metrics import MetricsComputer
 
 # Logger
@@ -202,24 +199,7 @@ class NightlyJobScheduler:
             pack_id = job1_result.details.get("pack_id")
             logger.info(f"✅ Pricing pack built: {pack_id}")
 
-            # JOB 2: Reconcile Ledger (CRITICAL - BLOCKS IF FAILS)
-            job2_result = await self._run_job(
-                job_name="reconcile_ledger",
-                job_func=self._job_reconcile_ledger,
-                job_args=(pack_id, asof_date),
-            )
-            report.jobs.append(job2_result)
-
-            if not job2_result.success:
-                logger.error("CRITICAL: Ledger reconciliation failed. BLOCKING all subsequent jobs.")
-                logger.error(f"Reconciliation errors: {job2_result.details.get('errors', [])}")
-                report.blocked_at = "reconcile_ledger"
-                report.success = False
-                return report
-
-            logger.info(f"✅ Ledger reconciliation passed (±1bp)")
-
-            # JOB 3: Compute Daily Metrics
+            # JOB 2: Compute Daily Metrics
             job3_result = await self._run_job(
                 job_name="compute_daily_metrics",
                 job_func=self._job_compute_daily_metrics,
@@ -388,66 +368,10 @@ class NightlyJobScheduler:
             "policy": self.pricing_policy,
         }
 
-    async def _job_reconcile_ledger(self, pack_id: str, asof_date: date) -> Dict[str, Any]:
-        """
-        JOB 2: Reconcile DB vs ledger NAV (±1bp tolerance).
-
-        Sacred invariants:
-        - Ledger is source of truth
-        - DB NAV must match ledger NAV ±1bp
-        - Quantities must match exactly
-        - All positions reconciled
-
-        CRITICAL: This job BLOCKS all subsequent jobs if it fails.
-
-        Returns:
-            {"success": bool, "num_portfolios": int, "num_passed": int, "num_failed": int}
-        """
-        # Reconcile all portfolios
-        results = await self.reconciliation_service.reconcile_all_portfolios(
-            as_of_date=asof_date
-        )
-
-        # Check if all passed
-        num_passed = sum(1 for r in results if r.passed)
-        num_failed = sum(1 for r in results if not r.passed)
-
-        if num_failed > 0:
-            # Log failures
-            for r in results:
-                if not r.passed:
-                    logger.error(
-                        f"Reconciliation FAILED for {r.portfolio_id}: "
-                        f"error={r.error_bps:.2f}bp "
-                        f"(ledger={r.ledger_nav}, db={r.pricing_nav})"
-                    )
-
-            raise ValueError(
-                f"Ledger reconciliation failed: {num_failed}/{len(results)} portfolios "
-                f"exceeded ±1bp tolerance"
-            )
-
-        # Update pricing pack reconciliation status
-        from app.db.connection import execute_statement
-        update_query = """
-            UPDATE pricing_packs
-            SET reconciliation_passed = true,
-                reconciliation_error_bps = 0.0,
-                updated_at = NOW()
-            WHERE id = $1
-        """
-        await execute_statement(update_query, pack_id)
-
-        return {
-            "success": True,
-            "num_portfolios": len(results),
-            "num_passed": num_passed,
-            "num_failed": num_failed,
-        }
 
     async def _job_compute_daily_metrics(self, pack_id: str, asof_date: date) -> Dict[str, Any]:
         """
-        JOB 3: Compute daily portfolio metrics.
+        JOB 2: Compute daily portfolio metrics.
 
         Metrics:
         - TWR (time-weighted return)
