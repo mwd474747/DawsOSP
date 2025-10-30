@@ -8,6 +8,28 @@ DawsOS is a comprehensive, AI-powered portfolio management and intelligence plat
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Updates
+
+### October 31, 2025 - Database Pool Bridge Implementation (COMPLETED)
+- **Critical Issue Resolved**: Fixed disconnected database access patterns causing agent failures
+  - combined_server.py creates its own asyncpg pool directly
+  - Backend agents expect get_db_pool() from RedisPoolCoordinator pattern  
+  - Previously: "Database pool not initialized" errors, circuit breakers opening
+- **Root Cause**: Evolution without coordination - different components developed independently
+- **Solution Implemented**: "Share the Pool" approach successfully bridges the gap
+  - ✅ Bridged combined_server pool to backend PoolManager singleton
+  - ✅ Modified get_db_pool() to check PoolManager first, then Redis fallback
+  - ✅ Circuit breakers properly reset after successful initialization
+- **Testing Results**:
+  - Database pool successfully shared between frontend and backend patterns
+  - All 6 agents registered with 52 total capabilities
+  - Pattern orchestrator executing with real data
+  - API endpoints returning portfolio data successfully
+- **Documentation Created**:
+  - REFACTORING_PLAN.md: Detailed implementation steps
+  - ARCHITECTURE_DECISIONS.md: ADRs explaining rationale and lessons learned
+- **Status**: System stabilized and fully functional
+
 ## System Architecture
 
 ### Core Architecture
