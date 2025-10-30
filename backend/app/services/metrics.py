@@ -88,17 +88,22 @@ class PerformanceCalculator:
         start_date = end_date - timedelta(days=lookback_days)
 
         # Get daily valuations from portfolio_daily_values hypertable
-        values = await self.db.fetch(
-            """
-            SELECT asof_date, total_value, cash_flows
-            FROM portfolio_daily_values
-            WHERE portfolio_id = $1 AND asof_date BETWEEN $2 AND $3
-            ORDER BY asof_date
-        """,
-            portfolio_id,
-            start_date,
-            end_date,
-        )
+        # Note: Table may not exist in dev environment, handle gracefully
+        try:
+            values = await self.db.fetch(
+                """
+                SELECT valuation_date as asof_date, total_value, cash_flows
+                FROM portfolio_daily_values
+                WHERE portfolio_id = $1 AND valuation_date BETWEEN $2 AND $3
+                ORDER BY valuation_date
+            """,
+                portfolio_id,
+                start_date,
+                end_date,
+            )
+        except Exception as e:
+            logger.warning(f"Could not query portfolio_daily_values: {e}. Using empty dataset.")
+            values = []
 
         if len(values) < 2:
             logger.warning(
@@ -324,17 +329,21 @@ class PerformanceCalculator:
         end_date = await self._get_pack_date(pack_id)
         start_date = end_date - timedelta(days=lookback_days)
 
-        values = await self.db.fetch(
-            """
-            SELECT asof_date, total_value
-            FROM portfolio_daily_values
-            WHERE portfolio_id = $1 AND asof_date BETWEEN $2 AND $3
-            ORDER BY asof_date
-        """,
-            portfolio_id,
-            start_date,
-            end_date,
-        )
+        try:
+            values = await self.db.fetch(
+                """
+                SELECT valuation_date as asof_date, total_value
+                FROM portfolio_daily_values
+                WHERE portfolio_id = $1 AND valuation_date BETWEEN $2 AND $3
+                ORDER BY valuation_date
+            """,
+                portfolio_id,
+                start_date,
+                end_date,
+            )
+        except Exception as e:
+            logger.warning(f"Could not query portfolio_daily_values: {e}. Using empty dataset.")
+            values = []
 
         if len(values) < 2:
             return {"max_dd": 0.0, "error": "Insufficient data"}
@@ -413,17 +422,21 @@ class PerformanceCalculator:
         end_date = await self._get_pack_date(pack_id)
         start_date = end_date - timedelta(days=max_window)
 
-        values = await self.db.fetch(
-            """
-            SELECT asof_date, total_value
-            FROM portfolio_daily_values
-            WHERE portfolio_id = $1 AND asof_date BETWEEN $2 AND $3
-            ORDER BY asof_date
-        """,
-            portfolio_id,
-            start_date,
-            end_date,
-        )
+        try:
+            values = await self.db.fetch(
+                """
+                SELECT valuation_date as asof_date, total_value
+                FROM portfolio_daily_values
+                WHERE portfolio_id = $1 AND valuation_date BETWEEN $2 AND $3
+                ORDER BY valuation_date
+            """,
+                portfolio_id,
+                start_date,
+                end_date,
+            )
+        except Exception as e:
+            logger.warning(f"Could not query portfolio_daily_values: {e}. Using empty dataset.")
+            values = []
 
         if len(values) < 2:
             return {f"vol_{w}d": 0.0 for w in windows}

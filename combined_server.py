@@ -303,20 +303,49 @@ def get_pattern_orchestrator() -> PatternOrchestrator:
     
     return _pattern_orchestrator
 
-async def execute_pattern(pattern_name: str, inputs: Dict[str, Any], user_id: str = None) -> Dict[str, Any]:
+async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any], user_id: str = None) -> Dict[str, Any]:
     """Execute a pattern through the orchestrator and return results."""
     try:
+        # Don't attempt orchestration if database is not available
+        if not db_pool:
+            logger.warning("Database not available for pattern orchestration")
+            return {
+                "success": False,
+                "error": "Database not available",
+                "data": {}
+            }
+            
         orchestrator = get_pattern_orchestrator()
         
-        # Create request context
+        # Get real pricing pack ID from database
+        pricing_pack_id = f"PP_{date.today().isoformat()}"  # Default fallback
+        ledger_commit_hash = hashlib.md5(f"{date.today()}".encode()).hexdigest()[:8]
+        
+        try:
+            # Try to get the latest pricing pack from database
+            query = """
+                SELECT id, asof_date 
+                FROM pricing_packs 
+                WHERE asof_date <= CURRENT_DATE 
+                ORDER BY asof_date DESC 
+                LIMIT 1
+            """
+            result = await execute_query_safe(query)
+            if result and len(result) > 0:
+                pricing_pack_id = result[0]["id"]
+                logger.debug(f"Using pricing pack: {pricing_pack_id}")
+        except Exception as e:
+            logger.warning(f"Could not fetch pricing pack, using default: {e}")
+        
+        # Create request context with required values
         ctx = RequestCtx(
             trace_id=str(uuid4()),
             request_id=str(uuid4()),
             user_id=user_id or "system",
             portfolio_id=inputs.get("portfolio_id"),
             asof_date=date.today(),
-            pricing_pack_id=None,  # Will be set by orchestrator
-            ledger_commit_hash=None  # Will be set by orchestrator
+            pricing_pack_id=pricing_pack_id,
+            ledger_commit_hash=ledger_commit_hash
         )
         
         # Run pattern
@@ -328,7 +357,9 @@ async def execute_pattern(pattern_name: str, inputs: Dict[str, Any], user_id: st
             "trace": result.get("trace"),
             "metadata": {
                 "pattern": pattern_name,
-                "execution_time": result.get("execution_time_ms", 0)
+                "execution_time": result.get("execution_time_ms", 0),
+                "pricing_pack_id": pricing_pack_id,
+                "ledger_commit_hash": ledger_commit_hash
             }
         }
     except Exception as e:
@@ -617,9 +648,27 @@ def verify_jwt_token(token: str) -> Optional[dict]:
         logger.error(f"Error verifying JWT token: {e}")
         return None
 
-async def get_current_user(request: Request) -> Optional[dict]:
-    """Get current user from JWT token in request"""
-    auth_header = request.headers.get("Authorization", "")
+async def get_current_user(request_or_token: Union[Request, str]) -> Optional[dict]:
+    """Get current user from JWT token in request or from token string
+    
+    Args:
+        request_or_token: Either a FastAPI Request object or a bearer token string
+    
+    Returns:
+        User dict with id, email, role or None if invalid
+    """
+    auth_header = ""
+    
+    # Handle both Request object and string token
+    if isinstance(request_or_token, str):
+        # Direct token string
+        auth_header = request_or_token if request_or_token.startswith("Bearer ") else f"Bearer {request_or_token}"
+    elif hasattr(request_or_token, 'headers'):
+        # FastAPI Request object
+        auth_header = request_or_token.headers.get("Authorization", "")
+    else:
+        logger.warning(f"Invalid input to get_current_user: {type(request_or_token)}")
+        return None
     
     if not auth_header.startswith("Bearer "):
         return None
@@ -914,9 +963,10 @@ async def get_portfolio(request: Request):
                 
                 if portfolio_id:
                     # Execute portfolio_overview pattern for real data
-                    pattern_result = await execute_pattern(
+                    pattern_result = await execute_pattern_orchestrator(
                         "portfolio_overview",
-                        {"portfolio_id": portfolio_id}
+                        {"portfolio_id": portfolio_id},
+                        user_id=user.get("id")
                     )
                     
                     if pattern_result.get("success") and pattern_result.get("data"):
@@ -1076,9 +1126,10 @@ async def get_holdings(
                 
                 if portfolio_id:
                     # Execute portfolio_overview pattern to get holdings
-                    pattern_result = await execute_pattern(
+                    pattern_result = await execute_pattern_orchestrator(
                         "portfolio_overview",
-                        {"portfolio_id": portfolio_id}
+                        {"portfolio_id": portfolio_id},
+                        user_id=user.get("id")
                     )
                     
                     if pattern_result.get("success") and pattern_result.get("data"):
@@ -2255,12 +2306,13 @@ async def run_scenario_analysis(
         if db_pool and portfolio_id:
             try:
                 # Execute portfolio_scenario_analysis pattern
-                pattern_result = await execute_pattern(
+                pattern_result = await execute_pattern_orchestrator(
                     "portfolio_scenario_analysis",
                     {
                         "portfolio_id": portfolio_id,
                         "scenario_id": scenario  # Use original scenario ID
-                    }
+                    },
+                    user_id=user.get("id") if user else None
                 )
                 
                 if pattern_result.get("success") and pattern_result.get("data"):
