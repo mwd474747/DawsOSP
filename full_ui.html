@@ -8,21 +8,20 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, Roboto, sans-serif;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
             background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
             min-height: 100vh;
-            color: #1f2937;
+            color: #333;
         }
 
         .container { max-width: 1600px; margin: 0 auto; padding: 1rem; }
         
         .header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+            background: #ffffff;
             border-radius: 20px;
             padding: 2rem;
             margin-bottom: 2rem;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
         
         .header h1 {
@@ -42,12 +41,12 @@
         }
         
         .auth-section {
-            background: white;
+            background: #ffffff;
             border-radius: 20px;
             padding: 2rem;
             max-width: 400px;
             margin: 2rem auto;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
         
         .auth-section h2 { margin-bottom: 1.5rem; color: #333; }
@@ -72,12 +71,12 @@
         
         .form-group input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #8b5cf6;
         }
         
         .btn {
             width: 100%;
-            padding: 1rem;
+            padding: 0.75rem 2rem;
             background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
             color: white;
             border: none;
@@ -106,17 +105,16 @@
         }
         
         .stat-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+            background: #ffffff;
             border-radius: 20px;
             padding: 1.5rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             transition: transform 0.3s, box-shadow 0.3s;
         }
         
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
         }
         
         .stat-label {
@@ -142,11 +140,10 @@
         }
         
         .feature-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+            background: #ffffff;
             border-radius: 20px;
             padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             transition: all 0.3s;
             cursor: pointer;
             position: relative;
@@ -170,7 +167,7 @@
         
         .feature-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
         }
         
         .feature-icon {
@@ -195,10 +192,10 @@
         }
         
         .holdings-table {
-            background: white;
+            background: #ffffff;
             border-radius: 20px;
             padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             margin-top: 2rem;
         }
         
@@ -231,11 +228,11 @@
         
         .scenario-section {
             display: none;
-            background: white;
+            background: #ffffff;
             border-radius: 20px;
             padding: 2rem;
             margin-top: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
         
         .scenario-section.active { display: block; }
@@ -303,10 +300,10 @@
             display: flex;
             gap: 1rem;
             margin: 2rem 0;
-            background: white;
-            border-radius: 15px;
+            background: #ffffff;
+            border-radius: 20px;
             padding: 0.5rem;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
         
         .tab {
@@ -329,11 +326,11 @@
         .tab-content.active { display: block; }
         
         .alerts-container {
-            background: white;
+            background: #ffffff;
             border-radius: 20px;
             padding: 2rem;
             margin-top: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
         
         .alert-item {
@@ -345,11 +342,11 @@
         }
         
         .ai-analysis {
-            background: white;
+            background: #ffffff;
             border-radius: 20px;
             padding: 2rem;
             margin-top: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
         
         .ai-input {
@@ -368,12 +365,13 @@
         
         .ai-input button {
             padding: 0.75rem 2rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
+            transition: all 0.2s ease;
         }
         
         .ai-response {
@@ -509,7 +507,7 @@
                             margin-top: 0.5rem;
                             background: white;
                             border-radius: 10px;
-                            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
                             min-width: 200px;
                             z-index: 100;
                         ">
@@ -936,7 +934,7 @@
 
             <!-- Macro Dashboard Tab -->
             <div class="tab-content" id="macro-tab">
-                <div style="background: white; border-radius: 20px; padding: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                <div style="background: white; border-radius: 20px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
                     <h2 style="color: #333; margin-bottom: 1.5rem;">Macro Economic Dashboard - Dalio Framework</h2>
                     <button class="btn" onclick="loadMacroData()" style="width: auto; padding: 0.75rem 2rem; margin-bottom: 2rem;">
                         Refresh Macro Data
