@@ -2,76 +2,7 @@
 
 ## Overview
 
-DawsOS is a comprehensive portfolio management and intelligence platform that combines real-time market data, economic analysis, and AI-powered insights. The system uses a pattern-orchestrated microservices architecture with FastAPI backend, PostgreSQL database, and Redis caching.
-
-**Core Architecture**: Pattern Orchestrator → Agent Runtime → Services
-- 12 JSON workflow patterns define business logic
-- 6 specialized agents execute capabilities (52 total capabilities)
-- All API endpoints route through pattern orchestrator for consistency
-
-**Core Purpose**: Provide institutional-grade portfolio analysis, risk management, macro regime detection, and optimization capabilities through an intuitive web interface.
-
-**Key Capabilities**:
-- Portfolio performance tracking and attribution analysis
-- Multi-currency support with FX attribution
-- Macro regime detection using economic indicators
-- AI-powered scenario analysis and stress testing
-- Real-time alerts and notifications
-- PDF report generation
-- Portfolio optimization recommendations
-
-## Recent Updates
-
-### October 31, 2025 - Pattern Orchestrator Integration & Technical Debt Resolution
-- **Authentication Fix**: Updated `get_current_user` to accept both FastAPI Request objects and bearer token strings
-- **Database Schema Fix**: Fixed all queries to use `valuation_date` instead of `asof_date` to match actual database schema
-- **Pricing Pack Integration**: Orchestrator now queries database for real pricing pack IDs instead of dummy values
-- **Code Quality**: Consolidated formatting logic, removed duplicate code patterns
-- **Pattern Orchestrator**: Full integration of 12 JSON workflow patterns with API endpoints
-- **Architecture Refactoring**: Complete transition to Pattern Orchestrator → Agent Runtime → Services architecture
-- **Error Handling**: Improved fallback logic for database unavailability
-
-### October 31, 2025 - Professional UI Design Overhaul
-- **Complete UI Redesign**: Transformed from consumer-facing colorful design to professional investment platform interface
-- **Dark Theme Implementation**: Applied sophisticated dark navy (#0f172a) background with slate gray (#1e293b) cards throughout
-- **Glass Morphism Navigation**: Implemented frosted glass effect navigation bar with backdrop blur for modern, professional look
-- **Design Consistency**: Fixed all design anti-patterns including:
-  - Standardized all card backgrounds and shadows
-  - Fixed contrasting colors on Macro Dashboard
-  - Removed all emoji icons for professional appearance
-  - Applied consistent button styles (conservative blue #3b82f6)
-  - Implemented monospace fonts for all financial data
-- **Risk Analysis Integration**: Added new Risk Analysis tab (5th in navigation) with:
-  - Factor exposure charts
-  - Portfolio alpha and R-squared metrics
-  - VaR calculations and risk attribution
-  - Professional dark-themed visualizations
-- **Typography Enhancement**: Using professional font stack (Inter, SF Pro Display) with proper hierarchy
-- **All Features Preserved**: Complete functionality maintained while achieving Bloomberg Terminal-inspired aesthetic
-
-### October 30, 2025 - Scenario Analysis Integration Complete
-- **Integrated Scenarios Tab**: Added fully functional scenario analysis as 4th tab in main navigation
-- **6 Scenario Types**: Market Crash, Rate Hike, High Inflation, Tech Crash, Recovery Rally, Credit Crunch
-- **Macro-Aware Adjustments**: Scenarios automatically adjust based on current economic regime
-  - 2.5x crash probability in Late Expansion phases
-  - 1.5x severity during LTDC Bubble conditions
-- **Real-Time Analysis**: API endpoints return comprehensive analysis with:
-  - 85% confidence levels
-  - Risk metrics (VaR, CVaR, Max Drawdown)
-  - Concrete hedge suggestions (SPY Puts, VIX Calls)
-  - Historical analogues for context
-- **Full UI Integration**: Scenario analysis seamlessly integrated with portfolio overview, holdings, transactions, alerts, and other features
-- **Live Data**: Connected to FRED, World Bank, and ECB APIs for real-time macro data
-
-### October 29, 2025 - Macro Dashboard Enhancement
-- **New Navigation Item**: Added "Macro Dashboard" as the 8th tab in the navigation bar
-- **Dedicated Page**: Moved macro economic insights from modal popup to full-page dashboard
-- **Enhanced Visualization**: 
-  - Grid layout for economic indicators with visual status indicators
-  - Market outlook sections for near-term and medium-term forecasts
-  - Color-coded risk levels and regime indicators
-- **Interactive Features**: "Refresh Macro Data" button for manual updates
-- **Database Integration**: Fully migrated from mock data to PostgreSQL with comprehensive seed data
+DawsOS is a comprehensive, AI-powered portfolio management and intelligence platform designed for institutional-grade analysis. It integrates real-time market data, economic analysis, and AI insights through a pattern-orchestrated microservices architecture. The platform's core purpose is to provide advanced portfolio analysis, risk management, macro regime detection, and optimization capabilities via an intuitive web interface. Key capabilities include performance tracking, multi-currency support, AI-powered scenario analysis, real-time alerts, PDF report generation, and optimization recommendations. The system is built on a FastAPI backend, PostgreSQL database, and Redis caching.
 
 ## User Preferences
 
@@ -79,270 +10,69 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
+### Core Architecture
+The system follows a Pattern Orchestrator → Agent Runtime → Services architecture. It utilizes 12 JSON workflow patterns to define business logic and 6 specialized agents that execute a total of 52 capabilities. All API endpoints are routed through a pattern orchestrator for consistency.
+
 ### Backend Architecture (FastAPI)
-
-**Framework**: FastAPI with async/await for high-performance API endpoints
-
-**API Layer**:
-- RESTful endpoints with OpenAPI/Swagger documentation
-- JWT-based authentication with role-based access control (RBAC)
-- CORS middleware configured for Next.js frontend
-- Health check endpoints for container monitoring
-
-**Service Layer**:
-- `AuthService`: User authentication and JWT token management
-- `AlertService`: Alert condition evaluation and notification triggering
-- `MacroService`: Economic regime detection and classification
-- `OptimizerService`: Portfolio optimization using Riskfolio-lib
-- `NotificationService`: Multi-channel notification delivery
-- `AlertDeliveryService`: Delivery tracking with retry logic and DLQ
-
-**Data Access Layer**:
-- Async PostgreSQL queries using asyncpg
-- Connection pooling for performance
-- Parameterized queries for SQL injection protection
-- Pricing pack queries for immutable historical data
-
-**Background Jobs**:
-- `build_pricing_pack.py`: Daily pricing data collection from Polygon API
-- `compute_macro.py`: Nightly macro regime detection using FRED data
-- `evaluate_alerts.py`: Alert condition evaluation and notification
-- `alert_retry_worker.py`: Failed notification retry with exponential backoff
-
-**Compliance System**:
-- `RightsRegistry`: Data source usage rights and export restrictions
-- `ExportBlocker`: Enforce export restrictions (e.g., NewsAPI view-only)
-- `AttributionManager`: Generate proper data source attributions
-- `WatermarkSystem`: Apply watermarks to exported data
+- **Framework**: FastAPI with async/await.
+- **API Layer**: RESTful endpoints, OpenAPI/Swagger, JWT-based authentication with RBAC, CORS middleware, health checks.
+- **Service Layer**: Dedicated services for authentication, alerts, macro analysis, optimization, and notifications.
+- **Data Access Layer**: Async PostgreSQL queries using `asyncpg`, connection pooling, parameterized queries, and pricing pack queries.
+- **Background Jobs**: Scheduled tasks for pricing data collection, macro regime detection, alert evaluation, and notification retries using APScheduler.
+- **Compliance System**: Manages data usage rights, export restrictions (`ExportBlocker`), attribution (`AttributionManager`), and watermarking.
 
 ### Frontend Architecture (Next.js)
-
-**Framework**: Next.js 15 with App Router and TypeScript
-
-**UI Components**:
-- React 18 with TypeScript for type safety
-- Radix UI primitives for accessible components
-- TailwindCSS with custom design system (Fibonacci spacing, golden ratio colors)
-- Recharts for data visualization
-
-**State Management**:
-- React Query (TanStack Query) for server state management
-- Automatic caching and background refetching
-- Optimistic updates for better UX
-- React Query DevTools for debugging
-
-**API Integration**:
-- Axios HTTP client with interceptors
-- Automatic JWT token injection
-- Error handling and retry logic
-- Type-safe API client with TypeScript interfaces
-
-**Design System**:
-- Fibonacci sequence spacing (2px, 3px, 5px, 8px, 13px, 21px, 34px, 55px, 89px, 144px)
-- Golden angle color distribution for visual harmony
-- Responsive breakpoints for mobile/tablet/desktop
-- Dark theme optimized for financial data
+- **Framework**: Next.js 15 with App Router and TypeScript.
+- **UI Components**: React 18, Radix UI primitives, TailwindCSS with a custom design system (Fibonacci spacing, golden ratio colors), Recharts for visualizations.
+- **State Management**: React Query (TanStack Query) for server state management, including caching, background refetching, and optimistic updates.
+- **API Integration**: Axios HTTP client with interceptors for JWT injection, error handling, and retry logic.
+- **Design System**: Professional dark theme with sophisticated dark navy and slate gray, glass morphism navigation, consistent button styles, and monospace fonts for financial data, inspired by Bloomberg Terminal aesthetics.
 
 ### Database Architecture (PostgreSQL)
-
-**Primary Database**: PostgreSQL 14+ with async connection pooling
-
-**Core Schema**:
-- `users`: User accounts with role-based permissions
-- `portfolios`: Portfolio definitions and metadata
-- `securities`: Security master (stocks, ETFs, bonds)
-- `transactions`: Transaction history (buys, sells, dividends)
-- `pricing_packs`: Immutable daily pricing snapshots
-- `portfolio_metrics`: Computed performance metrics
-- `alerts`: User-defined alert conditions
-- `macro_snapshots`: Daily macro regime classifications
-
-**Key Design Decisions**:
-
-1. **Immutable Pricing Packs**: Historical price data is never modified, only superseded with explicit chain tracking. This ensures audit trail and reproducibility.
-
-2. **Pricing Pack Architecture**: Daily pricing snapshots (PP_YYYY-MM-DD) contain all prices and FX rates. Benefits include O(1) lookup, cache efficiency, and historical accuracy.
-
-3. **Multi-Currency Support**: All positions stored in local currency, converted to base currency using pricing pack FX rates. Enables accurate currency attribution.
-
-4. **Supersede Chain**: When historical data needs correction, create new pack with `superseded_by` pointer. Never mutate existing packs.
-
-**Performance Optimizations**:
-- Indexes on portfolio_id, security_id, trade_date for fast queries
-- Connection pooling with asyncpg (10-20 connections)
-- Materialized views for complex aggregations (future enhancement)
+- **Primary Database**: PostgreSQL 14+ with async connection pooling.
+- **Core Schema**: Tables for users, portfolios, securities, transactions, immutable pricing packs, portfolio metrics, alerts, and macro snapshots.
+- **Key Design Decisions**:
+    1.  **Immutable Pricing Packs**: Historical price data is stored in daily snapshots, ensuring audit trails and reproducibility, with a supersede chain for corrections.
+    2.  **Multi-Currency Support**: Positions are stored in local currency and converted to base currency using pricing pack FX rates for accurate attribution.
+- **Performance Optimizations**: Indexes on key fields and connection pooling.
 
 ### Authentication & Authorization
-
-**Authentication**: JWT tokens with 24-hour expiration
-
-**Password Security**: Bcrypt hashing with salt
-
-**Authorization**: Role-based access control with 4 levels:
-- `ADMIN`: Full system access (user management, configuration)
-- `MANAGER`: Portfolio management and reporting
-- `USER`: Standard portfolio access
-- `VIEWER`: Read-only access
-
-**Super Admin Account**:
-- Email: michael@dawsos.com
-- Password: admin123
-- Role: ADMIN
-
-**Security Features**:
-- JWT middleware validation on protected routes
-- Input validation using Pydantic models
-- SQL injection protection via parameterized queries
-- HTTPS enforcement in production
+- **Authentication**: JWT tokens with 24-hour expiration.
+- **Password Security**: Bcrypt hashing with salt.
+- **Authorization**: Role-based access control (ADMIN, MANAGER, USER, VIEWER).
+- **Security Features**: JWT middleware validation, Pydantic model validation, SQL injection protection, HTTPS enforcement.
 
 ### Data Flow Architecture
-
-**Request Flow**:
-1. User action in Next.js UI
-2. API call via Axios with JWT token
-3. FastAPI middleware validates JWT
-4. Service layer executes business logic
-5. Data layer queries PostgreSQL
-6. Response serialized as JSON
-7. React Query updates UI state
-
-**Background Job Flow**:
-1. APScheduler triggers nightly jobs
-2. Fetch data from external APIs (Polygon, FRED)
-3. Compute metrics and analytics
-4. Store results in PostgreSQL
-5. Trigger alerts if conditions met
-6. Send notifications via channels
-
-**Alert Flow**:
-1. User creates alert condition in UI
-2. Nightly job evaluates all active alerts
-3. Check cooldown periods to prevent spam
-4. Send notifications via configured channels
-5. Failed deliveries pushed to DLQ
-6. Retry worker processes DLQ with exponential backoff
+- **Request Flow**: User action in UI → API call (Axios + JWT) → FastAPI (middleware, service layer) → PostgreSQL → JSON response → UI update (React Query).
+- **Background Job Flow**: APScheduler triggers jobs → Data fetching (external APIs) → Metrics computation → PostgreSQL storage → Alert triggering → Notifications.
+- **Alert Flow**: User creates alert → Nightly job evaluates conditions → Cooldown checks → Notifications (configured channels) → Failed deliveries to DLQ for retry.
 
 ## External Dependencies
 
 ### Third-Party APIs
-
-**Polygon.io** (Market Data):
-- Real-time stock quotes and historical prices
-- Options data and Greeks
-- FX rates (WM Reuters 4PM fixing)
-- API key required: `POLYGON_API_KEY`
-- Rate limits: 5 requests/minute (free tier)
-
-**FRED (Federal Reserve Economic Data)**:
-- Economic indicators (unemployment, GDP, inflation)
-- Macro regime detection factors
-- Public domain data with attribution
-- API key required: `FRED_API_KEY`
-
-**Financial Modeling Prep (FMP)**:
-- Fundamental data (balance sheets, income statements)
-- Company profiles and metadata
-- Historical financials
-- API key required: `FMP_API_KEY`
-- Attribution required for exports
-
-**NewsAPI**:
-- Market news and sentiment
-- View-only (no export per TOS)
-- API key required: `NEWS_API_KEY`
-
-**Anthropic Claude**:
-- AI-powered analysis and insights
-- Scenario generation
-- Natural language queries
-- API key required: `ANTHROPIC_API_KEY`
+-   **Polygon.io**: Real-time market data, historical prices, options, FX rates.
+-   **FRED (Federal Reserve Economic Data)**: Economic indicators, macro regime detection.
+-   **Financial Modeling Prep (FMP)**: Fundamental data, company profiles.
+-   **NewsAPI**: Market news and sentiment (view-only).
+-   **Anthropic Claude**: AI-powered analysis, scenario generation, natural language queries.
 
 ### Databases & Caching
-
-**PostgreSQL**:
-- Primary data store
-- Connection string: `DATABASE_URL`
-- Minimum version: 14+
-- Optional: TimescaleDB extension for time-series optimization
-
-**Redis**:
-- API response caching
-- Rate limiting state
-- Session storage
-- Connection: `REDIS_URL` or localhost:6379
+-   **PostgreSQL**: Primary data store.
+-   **Redis**: API response caching, rate limiting, session storage.
 
 ### Infrastructure Services
-
-**Docker & Docker Compose**:
-- Container orchestration for all services
-- Development and production deployments
-- Health checks and auto-restart
-
-**APScheduler**:
-- Background job scheduling
-- Nightly pricing pack builds (00:15)
-- Macro computation (00:20)
-- Metrics calculation (00:30)
-- Alert evaluation (00:35)
+-   **Docker & Docker Compose**: Containerization for development and production.
+-   **APScheduler**: Background job scheduling.
 
 ### Python Libraries
-
-**Core Framework**:
-- `fastapi`: Web framework
-- `uvicorn`: ASGI server
-- `pydantic`: Data validation
-- `asyncpg`: Async PostgreSQL driver
-
-**Data Processing**:
-- `pandas`: Data manipulation
-- `numpy`: Numerical computing
-- `scikit-learn`: Statistical models
-
-**Portfolio Optimization**:
-- `riskfolio-lib`: Mean-variance optimization
-- `scipy`: Optimization algorithms
-
-**Authentication**:
-- `passlib[bcrypt]`: Password hashing
-- `python-jose`: JWT token handling
-- `email-validator`: Email validation
-
-**API Clients**:
-- `httpx`: Async HTTP client
-- `aiohttp`: Alternative async HTTP
-- `requests`: Synchronous HTTP fallback
+-   **Core Framework**: `fastapi`, `uvicorn`, `pydantic`, `asyncpg`.
+-   **Data Processing**: `pandas`, `numpy`, `scikit-learn`.
+-   **Portfolio Optimization**: `riskfolio-lib`, `scipy`.
+-   **Authentication**: `passlib[bcrypt]`, `python-jose`, `email-validator`.
+-   **API Clients**: `httpx`, `aiohttp`, `requests`.
 
 ### Frontend Libraries
-
-**Core Framework**:
-- `next`: Next.js framework
-- `react`: UI library
-- `typescript`: Type safety
-
-**UI Components**:
-- `@radix-ui/*`: Accessible component primitives
-- `tailwindcss`: Utility-first CSS
-- `class-variance-authority`: Component variants
-
-**Data Fetching**:
-- `@tanstack/react-query`: Server state management
-- `axios`: HTTP client
-
-**Visualization**:
-- `recharts`: Chart library
-
-### Development Tools
-
-**Testing**:
-- `pytest`: Python test framework
-- `pytest-asyncio`: Async test support
-
-**Code Quality**:
-- `eslint`: JavaScript/TypeScript linting
-- `autoprefixer`: CSS vendor prefixes
-- `postcss`: CSS transformations
-
-**Monitoring** (Optional):
-- `prometheus-client`: Metrics collection
-- `opentelemetry-*`: Distributed tracing
-- `sentry-sdk`: Error tracking
+-   **Core Framework**: `next`, `react`, `typescript`.
+-   **UI Components**: `@radix-ui/*`, `tailwindcss`, `class-variance-authority`.
+-   **Data Fetching**: `@tanstack/react-query`, `axios`.
+-   **Visualization**: `recharts`.
