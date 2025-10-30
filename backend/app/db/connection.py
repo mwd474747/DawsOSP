@@ -47,9 +47,28 @@ def register_external_pool(pool: asyncpg.Pool) -> None:
     Args:
         pool: AsyncPG connection pool to register
     """
-    global _external_pool
+    global _external_pool, _shared_pool
     _external_pool = pool
-    logger.info(f"✅ External database pool registered: {pool}")
+    # ALSO set _shared_pool to ensure availability across module boundaries
+    _shared_pool = pool
+    
+    # Additionally, try to set the pool in PoolManager singleton
+    try:
+        pool_manager = PoolManager()
+        pool_manager._pool = pool
+        logger.info(f"✅ Pool registered in PoolManager singleton")
+    except Exception as e:
+        logger.warning(f"Could not register pool in PoolManager: {e}")
+    
+    # Also try to register with Redis coordinator if available
+    try:
+        if hasattr(coordinator, '_local_pool'):
+            coordinator._local_pool = pool
+            logger.info(f"✅ Pool registered in Redis coordinator")
+    except Exception as e:
+        logger.warning(f"Could not register pool in Redis coordinator: {e}")
+    
+    logger.info(f"✅ External database pool registered in ALL locations: {pool}")
 
 # ============================================================================
 # PoolManager Singleton
@@ -212,42 +231,72 @@ def get_db_pool() -> asyncpg.Pool:
     """
     global _shared_pool, _external_pool
     
+    # Add detailed logging to debug the issue
+    logger.info(f"get_db_pool() called - Starting pool search...")
+    logger.info(f"  _external_pool is {'set' if _external_pool is not None else 'None'}")
+    logger.info(f"  _shared_pool is {'set' if _shared_pool is not None else 'None'}")
+    
     # PRIORITY 1: Check external registered pool (most reliable for combined_server)
     if _external_pool is not None:
-        logger.debug("Using externally registered pool")
+        logger.info("✅ Using externally registered pool")
         return _external_pool
+    else:
+        logger.info("❌ External pool not registered")
     
     # PRIORITY 2: Try direct import from combined_server (fixes module boundary issue)
     try:
         import sys
+        logger.info(f"Checking sys.modules for combined_server...")
         # Check if combined_server is already imported
         if 'combined_server' in sys.modules:
+            logger.info("combined_server found in sys.modules")
             import combined_server
-            if hasattr(combined_server, 'db_pool') and combined_server.db_pool is not None:
-                logger.debug("Using pool directly from combined_server module")
-                return combined_server.db_pool
+            if hasattr(combined_server, 'db_pool'):
+                logger.info(f"combined_server.db_pool attribute exists: {combined_server.db_pool is not None}")
+                if combined_server.db_pool is not None:
+                    logger.info("✅ Using pool directly from combined_server module")
+                    return combined_server.db_pool
+            else:
+                logger.info("❌ combined_server doesn't have db_pool attribute")
+        else:
+            logger.info("❌ combined_server not in sys.modules")
     except Exception as e:
-        logger.debug(f"Could not access combined_server.db_pool: {e}")
+        logger.info(f"❌ Could not access combined_server.db_pool: {e}")
     
     # PRIORITY 3: Check module-level shared pool
     if _shared_pool is not None:
-        logger.debug("Using module-level shared pool")
+        logger.info("✅ Using module-level shared pool")
         return _shared_pool
+    else:
+        logger.info("❌ Module-level shared pool not set")
     
     # PRIORITY 4: Check PoolManager singleton
     pool_manager = PoolManager()
     if hasattr(pool_manager, '_pool') and pool_manager._pool is not None:
-        logger.debug("Using pool from PoolManager singleton")
+        logger.info("✅ Using pool from PoolManager singleton")
         return pool_manager._pool
+    else:
+        logger.info("❌ PoolManager singleton pool not initialized")
     
     # PRIORITY 5: Fallback to Redis coordinator (for backward compatibility)
-    pool = coordinator.get_pool_sync()
-    if pool is not None:
-        logger.debug("Using pool from Redis coordinator")
-        return pool
+    try:
+        pool = coordinator.get_pool_sync()
+        if pool is not None:
+            logger.info("✅ Using pool from Redis coordinator")
+            return pool
+        else:
+            logger.info("❌ Redis coordinator pool is None")
+    except Exception as e:
+        logger.info(f"❌ Redis coordinator failed: {e}")
 
     # Pool not initialized yet - this is an error
-    logger.error("No pool available from any source")
+    logger.error("❌ CRITICAL: No pool available from any source!")
+    logger.error("  Attempted sources:")
+    logger.error("    1. External pool (register_external_pool) - NOT FOUND")
+    logger.error("    2. Direct import from combined_server - NOT FOUND")
+    logger.error("    3. Module-level shared pool - NOT FOUND")
+    logger.error("    4. PoolManager singleton - NOT FOUND")
+    logger.error("    5. Redis coordinator - NOT FOUND")
     raise RuntimeError(
         "Database pool not initialized. Call init_db_pool() in startup event."
     )
