@@ -19,7 +19,7 @@
       "description": "Historical period in days (default 1 year)"
     }
   },
-  "outputs": ["perf_metrics", "currency_attr", "valued_positions"],
+  "outputs": ["perf_metrics", "currency_attr", "valued_positions", "sector_allocation", "historical_nav"],
   "display": {
     "panels": [
       {
@@ -29,9 +29,21 @@
         "refresh_ttl": 300
       },
       {
+        "id": "historical_nav",
+        "title": "Portfolio Value Over Time",
+        "type": "line_chart",
+        "refresh_ttl": 300
+      },
+      {
         "id": "currency_attribution",
         "title": "Currency Attribution",
         "type": "donut_chart",
+        "refresh_ttl": 300
+      },
+      {
+        "id": "sector_allocation",
+        "title": "Sector Allocation",
+        "type": "pie_chart",
         "refresh_ttl": 300
       },
       {
