@@ -714,7 +714,7 @@ class LedgerService:
         params = [commit_hash, f"Assets:Portfolio:{portfolio_id}:%"]
 
         if start_date:
-            query += " AND lt.transaction_date >= $3"
+            query += f" AND lt.transaction_date >= ${len(params) + 1}"
             params.append(start_date)
 
         if end_date:

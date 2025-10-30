@@ -112,12 +112,14 @@ class AlertDeliveryService:
             FROM alert_deliveries
             WHERE alert_id = $1
               AND content_hash = $2
-              AND delivered_at > NOW() - INTERVAL '%s hours'
+              AND delivered_at > NOW() - INTERVAL $3
             LIMIT 1
-        """ % lookback_hours
+        """
 
         try:
-            row = await self.execute_query_one(query, alert_id, content_hash)
+            # Use parameterized query to prevent SQL injection
+            interval_str = f"{lookback_hours} hours"
+            row = await self.execute_query_one(query, alert_id, content_hash, interval_str)
             if row:
                 logger.debug(
                     f"Duplicate delivery detected for alert {alert_id} "
