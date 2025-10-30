@@ -15,7 +15,7 @@ from typing import Optional, Dict, Any, List, Tuple
 from enum import Enum
 import json
 import hashlib
-from uuid import uuid4
+from uuid import uuid4, UUID
 import random
 from collections import defaultdict
 from pathlib import Path
@@ -344,7 +344,7 @@ async def execute_query_safe(
                 else:
                     return await conn.fetch(query, *args)
                     
-    except asyncpg.exceptions.TimeoutError:
+    except asyncio.TimeoutError:
         logger.error(f"Query timeout after {timeout}s: {query[:100]}...")
         return None
     except asyncpg.exceptions.PostgresError as e:
@@ -1865,7 +1865,7 @@ async def delete_alert(request: Request, alert_id: str):
         
         # Validate alert ID format
         try:
-            uuid4(alert_id)  # Validate UUID format
+            UUID(alert_id)  # Validate UUID format
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -2200,7 +2200,8 @@ async def get_factor_analysis(request: Request):
 
 if __name__ == "__main__":
     # Configure uvicorn logging
-    log_config = uvicorn.config.LOGGING_CONFIG
+    from uvicorn.config import LOGGING_CONFIG
+    log_config = LOGGING_CONFIG.copy()
     log_config["formatters"]["access"]["fmt"] = "%(asctime)s - %(levelname)s - %(message)s"
     log_config["formatters"]["default"]["fmt"] = "%(asctime)s - %(levelname)s - %(message)s"
     
