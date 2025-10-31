@@ -4644,6 +4644,779 @@
             }
             
             // ============================================
+            // ERROR HANDLING UTILITIES
+            // ============================================
+            
+            /**
+             * Error Classification and User-Friendly Messaging
+             * Maps technical errors to helpful user messages
+             */
+            const ErrorHandler = {
+                /**
+                 * Map error codes to user-friendly messages
+                 */
+                errorMessages: {
+                    400: "There was an issue with your request. Please check your input and try again.",
+                    401: "Your session has expired. Please log in again to continue.",
+                    403: "You don't have permission to access this resource.",
+                    404: "The requested data could not be found. It may have been moved or deleted.",
+                    408: "The request took too long. Please check your connection and try again.",
+                    429: "Too many requests. Please wait a moment and try again.",
+                    500: "We're experiencing a server issue. Please try again in a few moments.",
+                    502: "Unable to connect to the server. Please check your connection.",
+                    503: "The service is temporarily unavailable. Please try again later.",
+                    504: "The server took too long to respond. Please try again.",
+                    
+                    // Network errors
+                    'NETWORK_ERROR': "Unable to connect to the server. Please check your internet connection.",
+                    'TIMEOUT': "The request timed out. Please try again.",
+                    'UNKNOWN_ERROR': "An unexpected error occurred. Please try again.",
+                    
+                    // Application-specific errors
+                    'INVALID_PORTFOLIO': "The selected portfolio could not be found.",
+                    'INSUFFICIENT_DATA': "Not enough data available for this analysis.",
+                    'CALCULATION_ERROR': "Unable to complete the calculation. Please try again.",
+                    'AUTH_EXPIRED': "Your authentication has expired. Please log in again.",
+                    'RATE_LIMIT': "You've made too many requests. Please wait a moment.",
+                    'VALIDATION_ERROR': "Please check your input and try again.",
+                    'CONNECTION_LOST': "Connection to the server was lost. Attempting to reconnect..."
+                },
+                
+                /**
+                 * Classify error type for appropriate handling
+                 */
+                classifyError: (error) => {
+                    // Check if it's a network error
+                    if (!window.navigator.onLine) {
+                        return {
+                            type: 'network',
+                            severity: 'warning',
+                            message: ErrorHandler.errorMessages['NETWORK_ERROR'],
+                            canRetry: true
+                        };
+                    }
+                    
+                    // Check for response status codes
+                    if (error.response) {
+                        const status = error.response.status;
+                        const message = ErrorHandler.errorMessages[status] || 
+                                       error.response.data?.detail || 
+                                       error.response.data?.message || 
+                                       'An error occurred. Please try again.';
+                        
+                        return {
+                            type: status >= 500 ? 'server' : 'client',
+                            severity: status >= 500 ? 'error' : 'warning',
+                            status,
+                            message,
+                            canRetry: status >= 500 || status === 408 || status === 429,
+                            details: error.response.data
+                        };
+                    }
+                    
+                    // Check for request errors (no response received)
+                    if (error.request) {
+                        return {
+                            type: 'network',
+                            severity: 'error',
+                            message: ErrorHandler.errorMessages['NETWORK_ERROR'],
+                            canRetry: true
+                        };
+                    }
+                    
+                    // Check for timeout errors
+                    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+                        return {
+                            type: 'timeout',
+                            severity: 'warning',
+                            message: ErrorHandler.errorMessages['TIMEOUT'],
+                            canRetry: true
+                        };
+                    }
+                    
+                    // Default to unknown error
+                    return {
+                        type: 'unknown',
+                        severity: 'error',
+                        message: error.message || ErrorHandler.errorMessages['UNKNOWN_ERROR'],
+                        canRetry: true
+                    };
+                },
+                
+                /**
+                 * Get actionable suggestions based on error type
+                 */
+                getSuggestions: (errorInfo) => {
+                    const suggestions = [];
+                    
+                    switch (errorInfo.type) {
+                        case 'network':
+                            suggestions.push('Check your internet connection');
+                            suggestions.push('Try refreshing the page');
+                            suggestions.push('Check if you are behind a firewall or VPN');
+                            break;
+                        case 'server':
+                            suggestions.push('Wait a few moments and try again');
+                            suggestions.push('If the problem persists, contact support');
+                            break;
+                        case 'client':
+                            if (errorInfo.status === 401) {
+                                suggestions.push('Click here to log in again');
+                            } else if (errorInfo.status === 403) {
+                                suggestions.push('Contact your administrator for access');
+                            } else if (errorInfo.status === 429) {
+                                suggestions.push('Wait a few seconds before retrying');
+                            }
+                            break;
+                        case 'timeout':
+                            suggestions.push('Check your internet connection speed');
+                            suggestions.push('Try again with a smaller data range');
+                            break;
+                    }
+                    
+                    return suggestions;
+                },
+                
+                /**
+                 * Log error for debugging (in development mode)
+                 */
+                logError: (error, context = {}) => {
+                    if (console.group) {
+                        console.group('%c🔴 Error Details', 'color: #ef4444; font-weight: bold');
+                        console.error('Error:', error);
+                        console.log('Context:', context);
+                        console.log('Stack:', error.stack);
+                        console.log('Timestamp:', new Date().toISOString());
+                        console.groupEnd();
+                    } else {
+                        console.error('Error occurred:', error, context);
+                    }
+                }
+            };
+            
+            /**
+             * Form Validation Utilities
+             */
+            const FormValidator = {
+                /**
+                 * Validate email format
+                 */
+                validateEmail: (email) => {
+                    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!email) return { valid: false, message: 'Email is required' };
+                    if (!re.test(email)) return { valid: false, message: 'Please enter a valid email address' };
+                    return { valid: true };
+                },
+                
+                /**
+                 * Validate password strength
+                 */
+                validatePassword: (password) => {
+                    if (!password) return { valid: false, message: 'Password is required' };
+                    if (password.length < 8) return { valid: false, message: 'Password must be at least 8 characters' };
+                    return { valid: true };
+                },
+                
+                /**
+                 * Validate required field
+                 */
+                validateRequired: (value, fieldName) => {
+                    if (!value || value.toString().trim() === '') {
+                        return { valid: false, message: `${fieldName} is required` };
+                    }
+                    return { valid: true };
+                },
+                
+                /**
+                 * Validate number range
+                 */
+                validateRange: (value, min, max, fieldName) => {
+                    const num = parseFloat(value);
+                    if (isNaN(num)) return { valid: false, message: `${fieldName} must be a number` };
+                    if (num < min) return { valid: false, message: `${fieldName} must be at least ${min}` };
+                    if (num > max) return { valid: false, message: `${fieldName} must be at most ${max}` };
+                    return { valid: true };
+                }
+            };
+            
+            // ============================================
+            // ERROR BOUNDARY COMPONENT
+            // ============================================
+            
+            /**
+             * ErrorBoundary - Catches JavaScript errors in component tree
+             * Provides fallback UI and recovery options
+             */
+            class ErrorBoundary extends React.Component {
+                constructor(props) {
+                    super(props);
+                    this.state = {
+                        hasError: false,
+                        error: null,
+                        errorInfo: null,
+                        errorCount: 0
+                    };
+                }
+                
+                static getDerivedStateFromError(error) {
+                    // Update state to render error UI
+                    return { hasError: true };
+                }
+                
+                componentDidCatch(error, errorInfo) {
+                    // Log error details for debugging
+                    ErrorHandler.logError(error, { 
+                        componentStack: errorInfo.componentStack,
+                        props: this.props 
+                    });
+                    
+                    // Update state with error details
+                    this.setState(prevState => ({
+                        error,
+                        errorInfo,
+                        errorCount: prevState.errorCount + 1
+                    }));
+                    
+                    // Report to error tracking service (if configured)
+                    if (window.errorReporter) {
+                        window.errorReporter.report(error, errorInfo);
+                    }
+                }
+                
+                handleReset = () => {
+                    // Reset error boundary state
+                    this.setState({
+                        hasError: false,
+                        error: null,
+                        errorInfo: null
+                    });
+                    
+                    // Optionally reload the page if errors persist
+                    if (this.state.errorCount > 3) {
+                        window.location.reload();
+                    }
+                };
+                
+                render() {
+                    if (this.state.hasError) {
+                        // Render error fallback UI
+                        return e('div', { className: 'error-boundary-fallback' },
+                            e('div', { className: 'error-container' },
+                                e('div', { className: 'error-icon' }, '⚠️'),
+                                e('h2', { className: 'error-title' }, 'Something went wrong'),
+                                e('p', { className: 'error-description' }, 
+                                    'An unexpected error occurred. The application has logged this error and it will be reviewed.'
+                                ),
+                                
+                                // Show error details in development
+                                (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && 
+                                this.state.error && e('details', { className: 'error-details' },
+                                    e('summary', null, 'Error Details (Development Only)'),
+                                    e('pre', { className: 'error-stack' }, 
+                                        this.state.error.toString(),
+                                        '\n\n',
+                                        this.state.errorInfo?.componentStack
+                                    )
+                                ),
+                                
+                                e('div', { className: 'error-actions' },
+                                    e('button', { 
+                                        className: 'btn btn-primary',
+                                        onClick: this.handleReset
+                                    }, 'Try Again'),
+                                    e('button', { 
+                                        className: 'btn',
+                                        onClick: () => window.location.reload()
+                                    }, 'Reload Page')
+                                )
+                            )
+                        );
+                    }
+                    
+                    return this.props.children;
+                }
+            }
+            
+            // ============================================
+            // ERROR DISPLAY COMPONENTS
+            // ============================================
+            
+            /**
+             * ErrorMessage - Displays error messages with appropriate styling
+             */
+            function ErrorMessage({ error, onRetry, canDismiss = true }) {
+                const [dismissed, setDismissed] = useState(false);
+                
+                if (dismissed) return null;
+                
+                const errorInfo = ErrorHandler.classifyError(error);
+                const suggestions = ErrorHandler.getSuggestions(errorInfo);
+                
+                const getSeverityClass = () => {
+                    switch (errorInfo.severity) {
+                        case 'warning': return 'error-message-warning';
+                        case 'info': return 'error-message-info';
+                        default: return 'error-message-error';
+                    }
+                };
+                
+                const getIcon = () => {
+                    switch (errorInfo.severity) {
+                        case 'warning': return '⚠️';
+                        case 'info': return 'ℹ️';
+                        default: return '❌';
+                    }
+                };
+                
+                return e('div', { className: `error-message ${getSeverityClass()}` },
+                    e('div', { className: 'error-message-content' },
+                        e('div', { className: 'error-message-header' },
+                            e('span', { className: 'error-message-icon' }, getIcon()),
+                            e('span', { className: 'error-message-text' }, errorInfo.message),
+                            canDismiss && e('button', { 
+                                className: 'error-message-close',
+                                onClick: () => setDismissed(true),
+                                'aria-label': 'Dismiss'
+                            }, '×')
+                        ),
+                        
+                        suggestions.length > 0 && e('div', { className: 'error-message-suggestions' },
+                            e('div', { className: 'suggestions-title' }, 'Suggestions:'),
+                            e('ul', { className: 'suggestions-list' },
+                                suggestions.map((suggestion, index) => 
+                                    e('li', { key: index }, suggestion)
+                                )
+                            )
+                        ),
+                        
+                        errorInfo.canRetry && onRetry && e('div', { className: 'error-message-actions' },
+                            e('button', { 
+                                className: 'btn-retry',
+                                onClick: onRetry
+                            }, 'Try Again')
+                        )
+                    )
+                );
+            }
+            
+            /**
+             * LoadingSpinner - Consistent loading indicator
+             */
+            function LoadingSpinner({ size = 'medium', message }) {
+                const sizeClass = `spinner-${size}`;
+                
+                return e('div', { className: 'loading-container' },
+                    e('div', { className: `spinner ${sizeClass}` }),
+                    message && e('div', { className: 'loading-message' }, message)
+                );
+            }
+            
+            /**
+             * EmptyState - Display when no data is available
+             */
+            function EmptyState({ title, message, icon, action }) {
+                return e('div', { className: 'empty-state' },
+                    icon && e('div', { className: 'empty-state-icon' }, icon),
+                    e('h3', { className: 'empty-state-title' }, title || 'No data available'),
+                    e('p', { className: 'empty-state-message' }, 
+                        message || 'There is no data to display at this time.'
+                    ),
+                    action && e('div', { className: 'empty-state-action' }, action)
+                );
+            }
+            
+            /**
+             * FormField - Form field with validation error display
+             */
+            function FormField({ label, error, required, children }) {
+                const hasError = Boolean(error);
+                
+                return e('div', { className: `form-group ${hasError ? 'has-error' : ''}` },
+                    label && e('label', { className: 'form-label' },
+                        label,
+                        required && e('span', { className: 'required-marker' }, ' *')
+                    ),
+                    children,
+                    hasError && e('div', { className: 'form-error' }, error)
+                );
+            }
+            
+            /**
+             * NetworkStatusIndicator - Shows current network status
+             */
+            function NetworkStatusIndicator() {
+                const [isOnline, setIsOnline] = useState(window.navigator.onLine);
+                
+                useEffect(() => {
+                    const handleOnline = () => setIsOnline(true);
+                    const handleOffline = () => setIsOnline(false);
+                    
+                    window.addEventListener('online', handleOnline);
+                    window.addEventListener('offline', handleOffline);
+                    
+                    return () => {
+                        window.removeEventListener('online', handleOnline);
+                        window.removeEventListener('offline', handleOffline);
+                    };
+                }, []);
+                
+                if (isOnline) return null;
+                
+                return e('div', { className: 'network-status-indicator' },
+                    e('span', { className: 'network-status-icon' }, '🔌'),
+                    e('span', { className: 'network-status-text' }, 'No internet connection')
+                );
+            }
+            
+            /**
+             * RetryableError - Error component with exponential backoff retry
+             */
+            function RetryableError({ error, onRetry, maxRetries = 3 }) {
+                const [retryCount, setRetryCount] = useState(0);
+                const [isRetrying, setIsRetrying] = useState(false);
+                
+                const handleRetry = async () => {
+                    if (retryCount >= maxRetries) {
+                        return;
+                    }
+                    
+                    setIsRetrying(true);
+                    
+                    // Exponential backoff
+                    const delay = Math.pow(2, retryCount) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    
+                    setRetryCount(prev => prev + 1);
+                    setIsRetrying(false);
+                    
+                    if (onRetry) {
+                        onRetry();
+                    }
+                };
+                
+                const errorInfo = ErrorHandler.classifyError(error);
+                
+                return e('div', { className: 'retryable-error' },
+                    e('div', { className: 'error-content' },
+                        e('h3', null, 'Unable to load data'),
+                        e('p', null, errorInfo.message),
+                        retryCount > 0 && e('p', { className: 'retry-count' },
+                            `Retry attempt ${retryCount} of ${maxRetries}`
+                        ),
+                        
+                        e('div', { className: 'error-actions' },
+                            isRetrying ? 
+                                e(LoadingSpinner, { size: 'small', message: 'Retrying...' }) :
+                                retryCount < maxRetries && e('button', { 
+                                    className: 'btn btn-primary',
+                                    onClick: handleRetry,
+                                    disabled: isRetrying
+                                }, 'Retry'),
+                            
+                            retryCount >= maxRetries && e('div', { className: 'max-retries-reached' },
+                                e('p', null, 'Maximum retry attempts reached.'),
+                                e('button', { 
+                                    className: 'btn',
+                                    onClick: () => window.location.reload()
+                                }, 'Reload Page')
+                            )
+                        )
+                    )
+                );
+            }
+            
+            // Add styles for error handling components
+            const errorStyles = document.createElement('style');
+            errorStyles.textContent = `
+                /* Error Boundary Styles */
+                .error-boundary-fallback {
+                    min-height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 2rem;
+                    background: var(--bg-primary);
+                }
+                
+                .error-container {
+                    max-width: 600px;
+                    background: rgba(30, 41, 59, 0.8);
+                    backdrop-filter: blur(20px);
+                    border: 1px solid var(--border-primary);
+                    border-radius: 16px;
+                    padding: 3rem;
+                    text-align: center;
+                }
+                
+                .error-icon {
+                    font-size: 4rem;
+                    margin-bottom: 1rem;
+                }
+                
+                .error-title {
+                    font-size: 1.5rem;
+                    color: var(--text-primary);
+                    margin-bottom: 1rem;
+                }
+                
+                .error-description {
+                    color: var(--text-secondary);
+                    margin-bottom: 2rem;
+                    line-height: 1.6;
+                }
+                
+                .error-details {
+                    margin: 2rem 0;
+                    text-align: left;
+                    background: rgba(0, 0, 0, 0.2);
+                    border-radius: 8px;
+                    padding: 1rem;
+                }
+                
+                .error-details summary {
+                    cursor: pointer;
+                    color: var(--text-secondary);
+                    margin-bottom: 0.5rem;
+                }
+                
+                .error-stack {
+                    font-family: var(--font-mono);
+                    font-size: 0.75rem;
+                    color: var(--text-muted);
+                    overflow-x: auto;
+                    white-space: pre-wrap;
+                }
+                
+                .error-actions {
+                    display: flex;
+                    gap: 1rem;
+                    justify-content: center;
+                }
+                
+                /* Error Message Component Styles */
+                .error-message {
+                    margin: 1rem 0;
+                    padding: 1rem 1.5rem;
+                    border-radius: 8px;
+                    border: 1px solid;
+                    animation: slideDown 0.3s ease;
+                }
+                
+                .error-message-error {
+                    background: rgba(239, 68, 68, 0.1);
+                    border-color: rgba(239, 68, 68, 0.3);
+                    color: var(--color-error);
+                }
+                
+                .error-message-warning {
+                    background: rgba(245, 158, 11, 0.1);
+                    border-color: rgba(245, 158, 11, 0.3);
+                    color: var(--color-warning);
+                }
+                
+                .error-message-info {
+                    background: rgba(59, 130, 246, 0.1);
+                    border-color: rgba(59, 130, 246, 0.3);
+                    color: var(--color-info);
+                }
+                
+                .error-message-content {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.75rem;
+                }
+                
+                .error-message-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                }
+                
+                .error-message-icon {
+                    font-size: 1.25rem;
+                    flex-shrink: 0;
+                }
+                
+                .error-message-text {
+                    flex: 1;
+                }
+                
+                .error-message-close {
+                    background: transparent;
+                    border: none;
+                    color: currentColor;
+                    font-size: 1.5rem;
+                    line-height: 1;
+                    cursor: pointer;
+                    padding: 0;
+                    opacity: 0.7;
+                    transition: opacity 0.2s;
+                }
+                
+                .error-message-close:hover {
+                    opacity: 1;
+                }
+                
+                .error-message-suggestions {
+                    margin-top: 0.5rem;
+                    padding-top: 0.5rem;
+                    border-top: 1px solid rgba(255, 255, 255, 0.1);
+                }
+                
+                .suggestions-title {
+                    font-size: 0.875rem;
+                    font-weight: 600;
+                    margin-bottom: 0.25rem;
+                }
+                
+                .suggestions-list {
+                    margin: 0.25rem 0 0 1.5rem;
+                    font-size: 0.875rem;
+                    opacity: 0.9;
+                }
+                
+                .error-message-actions {
+                    margin-top: 0.5rem;
+                }
+                
+                .btn-retry {
+                    padding: 0.5rem 1rem;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    border-radius: 6px;
+                    color: currentColor;
+                    font-size: 0.875rem;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                
+                .btn-retry:hover {
+                    background: rgba(255, 255, 255, 0.15);
+                    border-color: rgba(255, 255, 255, 0.3);
+                }
+                
+                /* Form Validation Styles */
+                .form-group.has-error .form-input {
+                    border-color: var(--color-error);
+                    background: rgba(239, 68, 68, 0.05);
+                }
+                
+                .form-group.has-error .form-label {
+                    color: var(--color-error);
+                }
+                
+                .form-error {
+                    margin-top: 0.5rem;
+                    font-size: 0.875rem;
+                    color: var(--color-error);
+                }
+                
+                .required-marker {
+                    color: var(--color-error);
+                }
+                
+                /* Loading Spinner Styles */
+                .loading-container {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 2rem;
+                    gap: 1rem;
+                }
+                
+                .spinner-small {
+                    width: 20px;
+                    height: 20px;
+                }
+                
+                .spinner-medium {
+                    width: 40px;
+                    height: 40px;
+                }
+                
+                .spinner-large {
+                    width: 60px;
+                    height: 60px;
+                }
+                
+                .loading-message {
+                    color: var(--text-secondary);
+                    font-size: 0.875rem;
+                }
+                
+                /* Empty State Styles */
+                .empty-state {
+                    text-align: center;
+                    padding: 3rem 2rem;
+                    color: var(--text-secondary);
+                }
+                
+                .empty-state-icon {
+                    font-size: 3rem;
+                    margin-bottom: 1rem;
+                    opacity: 0.5;
+                }
+                
+                .empty-state-title {
+                    font-size: 1.25rem;
+                    color: var(--text-primary);
+                    margin-bottom: 0.5rem;
+                }
+                
+                .empty-state-message {
+                    margin-bottom: 1.5rem;
+                }
+                
+                .empty-state-action {
+                    display: inline-block;
+                }
+                
+                /* Network Status Indicator */
+                .network-status-indicator {
+                    position: fixed;
+                    top: 1rem;
+                    right: 1rem;
+                    background: rgba(239, 68, 68, 0.9);
+                    color: white;
+                    padding: 0.75rem 1rem;
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    z-index: 1000;
+                    animation: slideDown 0.3s ease;
+                }
+                
+                .network-status-icon {
+                    font-size: 1.25rem;
+                }
+                
+                /* Retryable Error Styles */
+                .retryable-error {
+                    padding: 2rem;
+                    text-align: center;
+                }
+                
+                .retry-count {
+                    color: var(--text-secondary);
+                    font-size: 0.875rem;
+                    margin: 0.5rem 0;
+                }
+                
+                .max-retries-reached {
+                    margin-top: 1rem;
+                }
+                
+                .max-retries-reached p {
+                    color: var(--color-warning);
+                    margin-bottom: 1rem;
+                }
+            `;
+            document.head.appendChild(errorStyles);
+            
+            // ============================================
             // Navigation Structure with All 52 Capabilities
             // ============================================
             
@@ -4694,15 +5467,66 @@
                 const [email, setEmail] = useState('michael@dawsos.com');
                 const [password, setPassword] = useState('admin123');
                 const [loading, setLoading] = useState(false);
-                const [error, setError] = useState('');
+                const [error, setError] = useState(null);
+                const [fieldErrors, setFieldErrors] = useState({});
+                const [touched, setTouched] = useState({});
+                
+                const validateField = (field, value) => {
+                    switch (field) {
+                        case 'email':
+                            return FormValidator.validateEmail(value);
+                        case 'password':
+                            return FormValidator.validatePassword(value);
+                        default:
+                            return { valid: true };
+                    }
+                };
+                
+                const handleFieldChange = (field, value) => {
+                    // Update value
+                    if (field === 'email') setEmail(value);
+                    if (field === 'password') setPassword(value);
+                    
+                    // Validate if touched
+                    if (touched[field]) {
+                        const validation = validateField(field, value);
+                        setFieldErrors(prev => ({
+                            ...prev,
+                            [field]: validation.valid ? null : validation.message
+                        }));
+                    }
+                };
+                
+                const handleFieldBlur = (field) => {
+                    setTouched(prev => ({ ...prev, [field]: true }));
+                    const value = field === 'email' ? email : password;
+                    const validation = validateField(field, value);
+                    setFieldErrors(prev => ({
+                        ...prev,
+                        [field]: validation.valid ? null : validation.message
+                    }));
+                };
                 
                 const handleSubmit = async (e) => {
                     e.preventDefault();
+                    
+                    // Validate all fields
+                    const emailValidation = FormValidator.validateEmail(email);
+                    const passwordValidation = FormValidator.validatePassword(password);
+                    
+                    if (!emailValidation.valid || !passwordValidation.valid) {
+                        setFieldErrors({
+                            email: emailValidation.valid ? null : emailValidation.message,
+                            password: passwordValidation.valid ? null : passwordValidation.message
+                        });
+                        setTouched({ email: true, password: true });
+                        return;
+                    }
+                    
                     setLoading(true);
-                    setError('');
+                    setError(null);
                     
                     try {
-                        // Use the enhanced apiClient.login method
                         const response = await apiClient.login(email, password);
                         
                         if (response.access_token) {
@@ -4710,46 +5534,66 @@
                         }
                     } catch (error) {
                         console.error('Login failed:', error);
-                        // Enhanced error handling provides better error messages
-                        const errorMessage = error.message || error.response?.data?.message || 'Login failed. Please try again.';
-                        setError(errorMessage);
+                        // Use ErrorHandler for better error classification
+                        const errorInfo = ErrorHandler.classifyError(error);
+                        setError(error);
                     } finally {
                         setLoading(false);
                     }
                 };
                 
                 return e('div', { className: 'login-container' },
+                    e(NetworkStatusIndicator, null),
                     e('div', { className: 'login-box' },
                         e('div', { className: 'login-header' },
                             e('h1', null, 'DawsOS'),
                             e('p', null, 'Portfolio Intelligence Platform')
                         ),
-                        error && e('div', { className: 'error-message' }, error),
+                        error && e(ErrorMessage, { 
+                            error, 
+                            onRetry: () => handleSubmit({ preventDefault: () => {} }),
+                            canDismiss: true 
+                        }),
                         e('form', { onSubmit: handleSubmit },
-                            e('div', { className: 'form-group' },
-                                e('label', { className: 'form-label' }, 'Email'),
+                            e(FormField, {
+                                label: 'Email',
+                                error: fieldErrors.email,
+                                required: true
+                            },
                                 e('input', {
                                     type: 'email',
-                                    className: 'form-input',
+                                    className: `form-input ${fieldErrors.email ? 'error' : ''}`,
                                     value: email,
-                                    onChange: (e) => setEmail(e.target.value),
-                                    required: true,
+                                    onChange: (e) => handleFieldChange('email', e.target.value),
+                                    onBlur: () => handleFieldBlur('email'),
+                                    placeholder: 'Enter your email',
                                     disabled: loading
                                 })
                             ),
-                            e('div', { className: 'form-group' },
-                                e('label', { className: 'form-label' }, 'Password'),
+                            e(FormField, {
+                                label: 'Password',
+                                error: fieldErrors.password,
+                                required: true
+                            },
                                 e('input', {
                                     type: 'password',
-                                    className: 'form-input',
+                                    className: `form-input ${fieldErrors.password ? 'error' : ''}`,
                                     value: password,
-                                    onChange: (e) => setPassword(e.target.value),
-                                    required: true,
+                                    onChange: (e) => handleFieldChange('password', e.target.value),
+                                    onBlur: () => handleFieldBlur('password'),
+                                    placeholder: 'Enter your password',
                                     disabled: loading
                                 })
                             ),
-                            e('button', { type: 'submit', className: 'btn', disabled: loading },
-                                loading ? 'Signing in...' : 'Sign In'
+                            e('button', { 
+                                type: 'submit', 
+                                className: 'btn', 
+                                disabled: loading || Object.values(fieldErrors).some(e => e)
+                            },
+                                loading ? e('span', null,
+                                    e('span', { className: 'spinner-small' }),
+                                    ' Signing in...'
+                                ) : 'Sign In'
                             )
                         )
                     )
@@ -4760,10 +5604,34 @@
             // Component: Portfolio Overview
             // ============================================
             
-            function PortfolioOverview({ data }) {
-                // Example of using the caching layer - data is now cached and will be served instantly 
-                // on subsequent renders, with automatic background refetch when stale
-                if (!data) return e('div', { className: 'loading' }, e('div', { className: 'spinner' }));
+            function PortfolioOverview({ data, isLoading, error, onRetry }) {
+                // Enhanced with proper loading and error states
+                if (isLoading) {
+                    return e(LoadingSpinner, { 
+                        size: 'medium', 
+                        message: 'Loading portfolio data...' 
+                    });
+                }
+                
+                if (error) {
+                    return e(RetryableError, { 
+                        error, 
+                        onRetry,
+                        maxRetries: 3
+                    });
+                }
+                
+                if (!data) {
+                    return e(EmptyState, {
+                        title: 'No Portfolio Data',
+                        message: 'Portfolio data is not available at this time.',
+                        icon: '📊',
+                        action: onRetry && e('button', { 
+                            className: 'btn btn-primary', 
+                            onClick: onRetry 
+                        }, 'Reload Data')
+                    });
+                }
                 
                 return e('div', { className: 'stats-grid' },
                     e('div', { className: 'stat-card' },
@@ -4795,15 +5663,30 @@
             // Component: Holdings Table
             // ============================================
             
-            function HoldingsTable({ holdings, showAll = false }) {
-                const displayHoldings = showAll ? holdings : holdings.slice(0, 5);
+            function HoldingsTable({ holdings, showAll = false, isLoading, error }) {
+                if (isLoading) {
+                    return e(LoadingSpinner, { 
+                        size: 'medium', 
+                        message: 'Loading holdings...' 
+                    });
+                }
+                
+                if (error) {
+                    return e(ErrorMessage, { 
+                        error, 
+                        canDismiss: false 
+                    });
+                }
                 
                 if (!holdings || holdings.length === 0) {
-                    return e('div', { className: 'empty-state' },
-                        e('div', { className: 'empty-state-title' }, 'No Holdings'),
-                        e('div', { className: 'empty-state-message' }, 'No holdings data available')
-                    );
+                    return e(EmptyState, {
+                        title: 'No Holdings',
+                        message: 'No holdings data available in your portfolio.',
+                        icon: '📈'
+                    });
                 }
+                
+                const displayHoldings = showAll ? holdings : holdings.slice(0, 5);
                 
                 return e('div', { className: 'card' },
                     e('div', { className: 'card-header' },
@@ -5704,8 +6587,13 @@
             function DashboardPage() {
                 const [loading, setLoading] = useState(true);
                 const [portfolioData, setPortfolioData] = useState(null);
+                const [portfolioLoading, setPortfolioLoading] = useState(false);
+                const [portfolioError, setPortfolioError] = useState(null);
                 const [holdings, setHoldings] = useState([]);
+                const [holdingsLoading, setHoldingsLoading] = useState(false);
+                const [holdingsError, setHoldingsError] = useState(null);
                 const [error, setError] = useState(null);
+                const [retryCount, setRetryCount] = useState(0);
                 
                 useEffect(() => {
                     loadData();
@@ -5715,34 +6603,60 @@
                     try {
                         setLoading(true);
                         setError(null);
+                        setPortfolioError(null);
+                        setHoldingsError(null);
                         
-                        // Using cachedApiClient for improved performance with automatic caching
-                        // Data will be cached and served instantly on subsequent loads
-                        // with automatic background refetch when stale
-                        const [portfolioRes, holdingsRes] = await Promise.all([
-                            cachedApiClient.getPortfolioOverview('64ff3be6-0ed1-4990-a32b-4ded17f0320c')
-                                .then(res => res.data || res)
-                                .catch(() => ({ 
-                                    total_value: 291290,
-                                    holdings_count: 9,
-                                    ytd_return: 14.5,
-                                    sharpe_ratio: 1.35
-                                })),
-                            cachedApiClient.getHoldings('64ff3be6-0ed1-4990-a32b-4ded17f0320c')
-                                .then(res => res.data || res)
-                                .catch(() => ({ 
-                                    holdings: getMockHoldings()
-                                }))
-                        ]);
+                        // Load portfolio data
+                        setPortfolioLoading(true);
+                        const portfolioRes = await cachedApiClient.getPortfolioOverview('64ff3be6-0ed1-4990-a32b-4ded17f0320c')
+                            .then(res => res.data || res)
+                            .catch(error => {
+                                const errorInfo = ErrorHandler.classifyError(error);
+                                setPortfolioError(error);
+                                ErrorHandler.logError(error, { context: 'Portfolio Overview' });
+                                
+                                // Return fallback data only for non-critical errors
+                                if (errorInfo.type !== 'network') {
+                                    return { 
+                                        total_value: 291290,
+                                        holdings_count: 9,
+                                        ytd_return: 14.5,
+                                        sharpe_ratio: 1.35
+                                    };
+                                }
+                                throw error;
+                            })
+                            .finally(() => setPortfolioLoading(false));
                         
-                        // Cache statistics can be viewed with:
-                        // console.log('Cache Stats:', CacheManager.getStats());
+                        // Load holdings data
+                        setHoldingsLoading(true);
+                        const holdingsRes = await cachedApiClient.getHoldings('64ff3be6-0ed1-4990-a32b-4ded17f0320c')
+                            .then(res => res.data || res)
+                            .catch(error => {
+                                const errorInfo = ErrorHandler.classifyError(error);
+                                setHoldingsError(error);
+                                ErrorHandler.logError(error, { context: 'Holdings' });
+                                
+                                // Return fallback data only for non-critical errors
+                                if (errorInfo.type !== 'network') {
+                                    return { holdings: getMockHoldings() };
+                                }
+                                throw error;
+                            })
+                            .finally(() => setHoldingsLoading(false));
                         
                         setPortfolioData(portfolioRes);
                         setHoldings(holdingsRes.holdings || holdingsRes.positions || []);
+                        setRetryCount(0);
                     } catch (error) {
-                        console.error('Error loading dashboard:', error);
-                        setError('Failed to load dashboard data');
+                        const errorInfo = ErrorHandler.classifyError(error);
+                        setError(error);
+                        setRetryCount(prev => prev + 1);
+                        
+                        // Auto-retry for network errors (up to 3 times)
+                        if (errorInfo.canRetry && retryCount < 3) {
+                            setTimeout(() => loadData(), Math.pow(2, retryCount) * 1000);
+                        }
                     } finally {
                         setLoading(false);
                     }
@@ -5760,17 +6674,57 @@
                     { symbol: 'HHC', name: 'Howard Hughes Corp', quantity: 400, market_value: 32590, weight: 11.19, return_pct: 28.9 }
                 ];
                 
-                if (loading) return e('div', { className: 'loading' }, e('div', { className: 'spinner' }));
-                if (error) return e('div', { className: 'error-message' }, error);
+                if (loading) {
+                    return e(LoadingSpinner, { 
+                        size: 'large', 
+                        message: 'Loading dashboard...' 
+                    });
+                }
+                
+                if (error && !portfolioData && !holdings.length) {
+                    return e(RetryableError, {
+                        error,
+                        onRetry: loadData,
+                        maxRetries: 3
+                    });
+                }
                 
                 return e('div', null,
+                    e(NetworkStatusIndicator, null),
+                    
                     e('div', { className: 'page-header' },
                         e('h1', { className: 'page-title' }, 'Portfolio Dashboard'),
                         e('p', { className: 'page-description' }, 
-                            'Real-time overview of your $291,290 portfolio with 9 holdings')
+                            portfolioData 
+                                ? `Real-time overview of your ${formatCurrency(portfolioData.total_value)} portfolio with ${portfolioData.holdings_count} holdings`
+                                : 'Loading portfolio overview...')
                     ),
-                    e(PortfolioOverview, { data: portfolioData }),
-                    e(HoldingsTable, { holdings: holdings })
+                    
+                    // Show partial error messages if some data loads successfully
+                    portfolioError && !error && e(ErrorMessage, {
+                        error: portfolioError,
+                        onRetry: loadData,
+                        canDismiss: true
+                    }),
+                    
+                    e(PortfolioOverview, { 
+                        data: portfolioData,
+                        isLoading: portfolioLoading,
+                        error: portfolioError && !portfolioData ? portfolioError : null,
+                        onRetry: loadData
+                    }),
+                    
+                    holdingsError && !error && e(ErrorMessage, {
+                        error: holdingsError,
+                        onRetry: loadData,
+                        canDismiss: true
+                    }),
+                    
+                    e(HoldingsTable, { 
+                        holdings: holdings,
+                        isLoading: holdingsLoading,
+                        error: holdingsError && !holdings.length ? holdingsError : null
+                    })
                 );
             }
             
@@ -8654,8 +9608,11 @@
                 );
             }
             
-            // Render the application
-            ReactDOM.render(e(App), document.getElementById('root'));
+            // Wrap the App with ErrorBoundary and render the application
+            ReactDOM.render(
+                e(ErrorBoundary, null, e(App)),
+                document.getElementById('root')
+            );
         }
     </script>
 </body>
