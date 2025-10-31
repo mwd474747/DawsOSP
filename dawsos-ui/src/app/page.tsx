@@ -1,132 +1,244 @@
-import Link from 'next/link';
+'use client'
 
-// Force dynamic rendering
-export const dynamic = 'force-dynamic'
+import { useState, useEffect } from 'react'
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { apiClient } from '@/lib/api-client'
+import Link from 'next/link'
 
-const stats = [
-  { label: 'Total Value', value: '$1,234,567', change: '+12.5%', trend: 'up' },
-  { label: "Today's P&L", value: '+$12,345', change: '+2.3%', trend: 'up' },
-  { label: 'YTD Return', value: '+15.2%', change: '+0.8%', trend: 'up' },
-  { label: 'Sharpe Ratio', value: '1.85', change: '+0.12', trend: 'up' },
-];
+export default function DashboardPage() {
+  const [portfolioData, setPortfolioData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-const cards = [
-  {
-    href: '/portfolio',
-    title: 'Portfolio Overview',
-    description: 'Comprehensive portfolio analysis with KPIs and performance metrics',
-    emoji: '📊'
-  },
-  {
-    href: '/macro',
-    title: 'Macro Dashboard',
-    description: 'Market regime analysis, economic cycles, and factor monitoring',
-    emoji: '🌍'
-  },
-  {
-    href: '/holdings',
-    title: 'Holdings Detail',
-    description: 'Detailed holdings analysis with risk metrics and attribution',
-    emoji: '📈'
-  },
-  {
-    href: '/scenarios',
-    title: 'Scenarios',
-    description: 'Stress testing and what-if analysis for portfolio assessment',
-    emoji: '🎯'
-  },
-  {
-    href: '/alerts',
-    title: 'Alerts',
-    description: 'Real-time alert management and risk monitoring system',
-    emoji: '🔔'
-  },
-  {
-    href: '/reports',
-    title: 'Reports',
-    description: 'Generate comprehensive PDF reports and export portfolio data',
-    emoji: '📄'
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
+
+  const fetchDashboardData = async () => {
+    try {
+      const [portfolio, macro, alerts] = await Promise.all([
+        fetch('/api/portfolio').then(res => res.json()),
+        fetch('/api/macro').then(res => res.json()),
+        fetch('/api/alerts').then(res => res.json()).catch(() => ({ active: 0 }))
+      ])
+      setPortfolioData({ portfolio, macro, alerts })
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error)
+    } finally {
+      setLoading(false)
+    }
   }
-];
 
-export default function Home() {
+  // Sample data for visualizations
+  const performanceData = Array.from({ length: 30 }, (_, i) => ({
+    day: `D${i + 1}`,
+    portfolio: 100 + Math.random() * 10 + i * 0.3,
+    benchmark: 100 + Math.random() * 8 + i * 0.25
+  }))
+
+  const allocationData = [
+    { name: 'US Equities', value: 45, color: '#3b82f6' },
+    { name: 'Int\'l Equities', value: 20, color: '#10b981' },
+    { name: 'Fixed Income', value: 25, color: '#f59e0b' },
+    { name: 'Alternatives', value: 7, color: '#8b5cf6' },
+    { name: 'Cash', value: 3, color: '#64748b' }
+  ]
+
+  const riskMetrics = [
+    { metric: 'Portfolio Beta', value: 0.85, status: 'normal' },
+    { metric: 'Sharpe Ratio', value: 1.85, status: 'good' },
+    { metric: 'Max Drawdown', value: -8.2, status: 'warning' },
+    { metric: 'VaR (95%)', value: -125430, status: 'normal' },
+    { metric: 'Sortino Ratio', value: 2.15, status: 'good' }
+  ]
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-blue-400">Loading dashboard...</div>
+      </div>
+    )
+  }
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-green-500/10 to-blue-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }} />
+    <div className="space-y-6">
+      {/* Header */}
+      <header className="glass-card-dark">
+        <h1 className="text-2xl font-bold text-blue-400">PORTFOLIO DASHBOARD</h1>
+        <p className="text-slate-400 mt-2">
+          Real-time portfolio analytics and performance monitoring
+        </p>
+      </header>
+
+      {/* Key Metrics Grid */}
+      <div className="grid grid-cols-5 gap-4">
+        <div className="data-cell">
+          <div className="data-label">Total Value</div>
+          <div className="data-value profit">$12.5M</div>
+          <div className="text-xs profit mt-1">+12.5%</div>
+        </div>
+        <div className="data-cell">
+          <div className="data-label">Today's P&L</div>
+          <div className="data-value profit">+$125.4K</div>
+          <div className="text-xs profit mt-1">+1.02%</div>
+        </div>
+        <div className="data-cell">
+          <div className="data-label">YTD Return</div>
+          <div className="data-value profit">+18.5%</div>
+          <div className="text-xs neutral mt-1">vs 15.2% benchmark</div>
+        </div>
+        <div className="data-cell">
+          <div className="data-label">Active Alerts</div>
+          <div className="data-value text-yellow-400">8</div>
+          <div className="text-xs text-yellow-400 mt-1">3 critical</div>
+        </div>
+        <div className="data-cell">
+          <div className="data-label">Risk Score</div>
+          <div className="data-value text-blue-400">6.5/10</div>
+          <div className="text-xs neutral mt-1">MODERATE</div>
+        </div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-8">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl lg:text-6xl font-bold mb-4">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-              DawsOS Portfolio
-            </span>
-            <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-              Intelligence
-            </span>
-          </h1>
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-            Advanced portfolio analysis and risk management platform with real-time insights
-          </p>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-2 gap-6">
+        {/* Performance Chart */}
+        <div className="glass-card-dark">
+          <div className="terminal-header">
+            <h2 className="terminal-title">30-Day Performance</h2>
+            <span className="badge badge-success">OUTPERFORMING</span>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={performanceData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis dataKey="day" stroke="#64748b" />
+              <YAxis stroke="#64748b" />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'rgba(15, 23, 42, 0.9)', 
+                  border: '1px solid rgba(255, 255, 255, 0.1)' 
+                }} 
+              />
+              <Line type="monotone" dataKey="portfolio" stroke="#10b981" strokeWidth={2} dot={false} name="Portfolio" />
+              <Line type="monotone" dataKey="benchmark" stroke="#64748b" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Benchmark" />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="glass-card-dark p-6 hover:scale-105 transition-transform duration-300"
-            >
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-sm text-slate-400">{stat.label}</p>
-                <span className={stat.trend === 'up' ? 'text-green-400' : 'text-red-400'}>
-                  {stat.trend === 'up' ? '↑' : '↓'}
-                </span>
-              </div>
-              <p className="text-3xl font-bold text-white mb-1">{stat.value}</p>
-              <div className="flex items-center gap-2">
-                <span className={`text-sm ${stat.trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                  {stat.change}
-                </span>
-                <span className="text-xs text-slate-500">24h</span>
-              </div>
-            </div>
-          ))}
+        {/* Asset Allocation */}
+        <div className="glass-card-dark">
+          <div className="terminal-header">
+            <h2 className="terminal-title">Asset Allocation</h2>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={allocationData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={(entry) => `${entry.name}: ${entry.value}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {allocationData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {cards.map((card) => (
-            <Link key={card.href} href={card.href}>
-              <div className="glass-card-dark p-6 h-full hover:shadow-glow hover:scale-105 transition-all duration-300 cursor-pointer">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="text-4xl">{card.emoji}</div>
-                  <span className="text-slate-500">→</span>
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-2">
-                  {card.title}
-                </h3>
-                <p className="text-slate-400">
-                  {card.description}
-                </p>
-              </div>
-            </Link>
-          ))}
+      {/* Risk Metrics Table */}
+      <div className="glass-card-dark">
+        <div className="terminal-header">
+          <h2 className="terminal-title">Risk Metrics Overview</h2>
         </div>
+        <table className="terminal-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Value</th>
+              <th>Status</th>
+              <th>30D Change</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {riskMetrics.map((item) => (
+              <tr key={item.metric}>
+                <td className="font-semibold">{item.metric}</td>
+                <td className={item.value < 0 ? 'loss' : 'profit'}>
+                  {typeof item.value === 'number' && item.value < 0 
+                    ? item.value < -1000 
+                      ? `$${(item.value / 1000).toFixed(1)}K`
+                      : `${item.value.toFixed(1)}%`
+                    : item.value}
+                </td>
+                <td>
+                  <span className={`badge ${
+                    item.status === 'good' ? 'badge-success' : 
+                    item.status === 'warning' ? 'badge-warning' : 
+                    'badge-info'
+                  }`}>
+                    {item.status.toUpperCase()}
+                  </span>
+                </td>
+                <td className="neutral">--</td>
+                <td>
+                  <Link href={item.metric.includes('VaR') ? '/risk' : '/optimizer'}>
+                    <button className="text-blue-400 hover:text-blue-300 text-xs uppercase">
+                      Analyze
+                    </button>
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-        <div className="mt-12 text-center">
-          <div className="inline-flex gap-4">
-            <button className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-semibold hover:shadow-glow transition-all duration-300 hover:scale-105">
-              ⚡ Quick Analysis
-            </button>
-            <button className="px-8 py-3 glass-card-dark text-white rounded-full font-semibold hover:shadow-glow transition-all duration-300 hover:scale-105">
-              💰 Market Overview
-            </button>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-4 gap-4">
+        <Link href="/macro-cycles">
+          <button className="btn-terminal w-full">View Macro Cycles</button>
+        </Link>
+        <Link href="/scenarios">
+          <button className="btn-terminal w-full">Run Scenarios</button>
+        </Link>
+        <Link href="/optimizer">
+          <button className="btn-terminal w-full">Optimize Portfolio</button>
+        </Link>
+        <Link href="/reports">
+          <button className="btn-terminal-success w-full">Generate Report</button>
+        </Link>
+      </div>
+
+      {/* Market Regime Indicator */}
+      <div className="glass-card-dark">
+        <div className="terminal-header">
+          <h2 className="terminal-title">Current Market Regime</h2>
+        </div>
+        <div className="grid grid-cols-4 gap-4">
+          <div className="p-4 border-l-4 border-yellow-500">
+            <div className="data-label">Economic Cycle</div>
+            <div className="data-value text-yellow-400">LATE CYCLE</div>
+          </div>
+          <div className="p-4 border-l-4 border-blue-500">
+            <div className="data-label">Credit Conditions</div>
+            <div className="data-value text-blue-400">TIGHTENING</div>
+          </div>
+          <div className="p-4 border-l-4 border-green-500">
+            <div className="data-label">Liquidity</div>
+            <div className="data-value profit">ADEQUATE</div>
+          </div>
+          <div className="p-4 border-l-4 border-red-500">
+            <div className="data-label">Volatility</div>
+            <div className="data-value loss">ELEVATED</div>
           </div>
         </div>
       </div>
-    </main>
-  );
+    </div>
+  )
 }
