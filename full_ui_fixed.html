@@ -3835,6 +3835,682 @@
             };
             
             // ============================================
+            // Caching Layer (React Query-Inspired)
+            // ============================================
+            
+            /**
+             * CacheManager - React Query-inspired caching system
+             * 
+             * Features:
+             * - Query key-based caching
+             * - Stale-while-revalidate pattern
+             * - Automatic garbage collection
+             * - Request deduplication
+             * - Cache invalidation on mutations
+             * - Background refetching
+             * 
+             * Inspired by React Query patterns from the TypeScript implementation
+             */
+            const CacheManager = (() => {
+                // Cache storage
+                const cache = new Map();
+                const querySubscribers = new Map();
+                const activeRequests = new Map();
+                const cacheTimers = new Map();
+                
+                // Default configuration (matching React Query defaults)
+                const defaultConfig = {
+                    staleTime: 5 * 60 * 1000,      // 5 minutes - how long data is fresh
+                    gcTime: 10 * 60 * 1000,         // 10 minutes - garbage collection time
+                    retryCount: 3,                   // Number of retry attempts
+                    retryDelay: 1000,                // Base retry delay
+                    refetchOnWindowFocus: true,     // Refetch when window gains focus
+                    refetchOnReconnect: true,        // Refetch on network reconnect
+                    backgroundRefetchInterval: null  // Background refetch interval (null = disabled)
+                };
+                
+                /**
+                 * Generate cache key from query key array or string
+                 * @param {Array|string} queryKey - Query key
+                 * @returns {string} Serialized cache key
+                 */
+                const getCacheKey = (queryKey) => {
+                    if (typeof queryKey === 'string') return queryKey;
+                    if (Array.isArray(queryKey)) return JSON.stringify(queryKey);
+                    return JSON.stringify([queryKey]);
+                };
+                
+                /**
+                 * Check if cached data is stale
+                 * @param {object} entry - Cache entry
+                 * @param {number} staleTime - Stale time in ms
+                 * @returns {boolean} Whether data is stale
+                 */
+                const isStale = (entry, staleTime = defaultConfig.staleTime) => {
+                    if (!entry) return true;
+                    const age = Date.now() - entry.timestamp;
+                    return age > staleTime;
+                };
+                
+                /**
+                 * Check if cache should be garbage collected
+                 * @param {object} entry - Cache entry
+                 * @param {number} gcTime - Garbage collection time in ms
+                 * @returns {boolean} Whether to garbage collect
+                 */
+                const shouldGarbageCollect = (entry, gcTime = defaultConfig.gcTime) => {
+                    if (!entry) return true;
+                    const age = Date.now() - entry.lastAccessed;
+                    return age > gcTime && entry.subscribers === 0;
+                };
+                
+                /**
+                 * Get cached data with stale-while-revalidate pattern
+                 * @param {Array|string} queryKey - Query key
+                 * @param {Function} queryFn - Function to fetch data
+                 * @param {object} options - Query options
+                 * @returns {Promise} Cached or fresh data
+                 */
+                const get = async (queryKey, queryFn, options = {}) => {
+                    const key = getCacheKey(queryKey);
+                    const config = { ...defaultConfig, ...options };
+                    
+                    // Check cache
+                    const cached = cache.get(key);
+                    
+                    // Update last accessed time
+                    if (cached) {
+                        cached.lastAccessed = Date.now();
+                    }
+                    
+                    // Return fresh cached data immediately
+                    if (cached && !isStale(cached, config.staleTime)) {
+                        return { 
+                            data: cached.data, 
+                            error: null, 
+                            isStale: false,
+                            isFetching: false,
+                            isFromCache: true
+                        };
+                    }
+                    
+                    // Check if there's already an active request (deduplication)
+                    if (activeRequests.has(key)) {
+                        const activePromise = activeRequests.get(key);
+                        return activePromise;
+                    }
+                    
+                    // Stale-while-revalidate: Return stale data immediately while fetching
+                    if (cached && isStale(cached, config.staleTime)) {
+                        // Start background refetch
+                        const refetchPromise = fetchWithRetry(queryFn, config)
+                            .then(data => {
+                                set(queryKey, data);
+                                notifySubscribers(key, { data, error: null, isStale: false });
+                                return { data, error: null, isStale: false, isFetching: false };
+                            })
+                            .catch(error => {
+                                // Keep stale data on error
+                                notifySubscribers(key, { data: cached.data, error, isStale: true });
+                                return { data: cached.data, error, isStale: true, isFetching: false };
+                            })
+                            .finally(() => {
+                                activeRequests.delete(key);
+                            });
+                        
+                        activeRequests.set(key, refetchPromise);
+                        
+                        // Return stale data immediately
+                        return { 
+                            data: cached.data, 
+                            error: null, 
+                            isStale: true, 
+                            isFetching: true,
+                            isFromCache: true
+                        };
+                    }
+                    
+                    // No cache or expired - fetch fresh data
+                    const fetchPromise = fetchWithRetry(queryFn, config)
+                        .then(data => {
+                            set(queryKey, data);
+                            notifySubscribers(key, { data, error: null, isStale: false });
+                            return { data, error: null, isStale: false, isFetching: false };
+                        })
+                        .catch(error => {
+                            notifySubscribers(key, { data: null, error, isStale: false });
+                            throw error;
+                        })
+                        .finally(() => {
+                            activeRequests.delete(key);
+                        });
+                    
+                    activeRequests.set(key, fetchPromise);
+                    return fetchPromise;
+                };
+                
+                /**
+                 * Fetch with retry logic
+                 * @param {Function} queryFn - Query function
+                 * @param {object} config - Configuration
+                 * @returns {Promise} Query result
+                 */
+                const fetchWithRetry = async (queryFn, config) => {
+                    let lastError;
+                    
+                    for (let attempt = 0; attempt <= config.retryCount; attempt++) {
+                        try {
+                            const result = await queryFn();
+                            return result;
+                        } catch (error) {
+                            lastError = error;
+                            
+                            // Don't retry on 4xx errors
+                            if (error.response?.status >= 400 && error.response?.status < 500) {
+                                throw error;
+                            }
+                            
+                            // Wait before retry with exponential backoff
+                            if (attempt < config.retryCount) {
+                                const delay = Math.min(
+                                    config.retryDelay * Math.pow(2, attempt),
+                                    30000
+                                );
+                                await new Promise(resolve => setTimeout(resolve, delay));
+                            }
+                        }
+                    }
+                    
+                    throw lastError;
+                };
+                
+                /**
+                 * Set data in cache
+                 * @param {Array|string} queryKey - Query key
+                 * @param {any} data - Data to cache
+                 * @param {object} options - Cache options
+                 */
+                const set = (queryKey, data, options = {}) => {
+                    const key = getCacheKey(queryKey);
+                    const config = { ...defaultConfig, ...options };
+                    
+                    // Clear existing garbage collection timer
+                    if (cacheTimers.has(key)) {
+                        clearTimeout(cacheTimers.get(key));
+                    }
+                    
+                    // Store in cache
+                    cache.set(key, {
+                        data,
+                        timestamp: Date.now(),
+                        lastAccessed: Date.now(),
+                        subscribers: querySubscribers.get(key)?.size || 0
+                    });
+                    
+                    // Schedule garbage collection
+                    const gcTimer = setTimeout(() => {
+                        const entry = cache.get(key);
+                        if (entry && shouldGarbageCollect(entry, config.gcTime)) {
+                            cache.delete(key);
+                            cacheTimers.delete(key);
+                        }
+                    }, config.gcTime);
+                    
+                    cacheTimers.set(key, gcTimer);
+                };
+                
+                /**
+                 * Invalidate cache entries
+                 * @param {Array|string|Function} queryKey - Query key or predicate
+                 */
+                const invalidate = (queryKey) => {
+                    if (typeof queryKey === 'function') {
+                        // Invalidate by predicate
+                        for (const [key, entry] of cache.entries()) {
+                            if (queryKey(key, entry.data)) {
+                                cache.delete(key);
+                                notifySubscribers(key, { invalidated: true });
+                            }
+                        }
+                    } else {
+                        // Invalidate by key
+                        const key = getCacheKey(queryKey);
+                        
+                        // Support partial matching for array keys
+                        if (Array.isArray(queryKey)) {
+                            const prefix = JSON.stringify(queryKey);
+                            for (const cacheKey of cache.keys()) {
+                                if (cacheKey.startsWith(prefix.slice(0, -1))) {
+                                    cache.delete(cacheKey);
+                                    notifySubscribers(cacheKey, { invalidated: true });
+                                }
+                            }
+                        } else {
+                            cache.delete(key);
+                            notifySubscribers(key, { invalidated: true });
+                        }
+                    }
+                };
+                
+                /**
+                 * Clear entire cache
+                 */
+                const clear = () => {
+                    cache.clear();
+                    activeRequests.clear();
+                    
+                    // Clear all timers
+                    for (const timer of cacheTimers.values()) {
+                        clearTimeout(timer);
+                    }
+                    cacheTimers.clear();
+                    
+                    // Notify all subscribers
+                    for (const key of querySubscribers.keys()) {
+                        notifySubscribers(key, { invalidated: true });
+                    }
+                };
+                
+                /**
+                 * Subscribe to cache updates
+                 * @param {Array|string} queryKey - Query key
+                 * @param {Function} callback - Callback function
+                 * @returns {Function} Unsubscribe function
+                 */
+                const subscribe = (queryKey, callback) => {
+                    const key = getCacheKey(queryKey);
+                    
+                    if (!querySubscribers.has(key)) {
+                        querySubscribers.set(key, new Set());
+                    }
+                    
+                    querySubscribers.get(key).add(callback);
+                    
+                    // Update subscriber count
+                    const entry = cache.get(key);
+                    if (entry) {
+                        entry.subscribers = querySubscribers.get(key).size;
+                    }
+                    
+                    // Return unsubscribe function
+                    return () => {
+                        const subscribers = querySubscribers.get(key);
+                        if (subscribers) {
+                            subscribers.delete(callback);
+                            if (subscribers.size === 0) {
+                                querySubscribers.delete(key);
+                            }
+                            
+                            // Update subscriber count
+                            const entry = cache.get(key);
+                            if (entry) {
+                                entry.subscribers = subscribers.size;
+                            }
+                        }
+                    };
+                };
+                
+                /**
+                 * Notify subscribers of cache updates
+                 * @param {string} key - Cache key
+                 * @param {object} update - Update data
+                 */
+                const notifySubscribers = (key, update) => {
+                    const subscribers = querySubscribers.get(key);
+                    if (subscribers) {
+                        subscribers.forEach(callback => {
+                            try {
+                                callback(update);
+                            } catch (error) {
+                                console.error('Error in cache subscriber:', error);
+                            }
+                        });
+                    }
+                };
+                
+                /**
+                 * Prefetch data into cache
+                 * @param {Array|string} queryKey - Query key
+                 * @param {Function} queryFn - Query function
+                 * @param {object} options - Options
+                 */
+                const prefetch = async (queryKey, queryFn, options = {}) => {
+                    const key = getCacheKey(queryKey);
+                    const cached = cache.get(key);
+                    
+                    // Only prefetch if not cached or stale
+                    if (!cached || isStale(cached, options.staleTime)) {
+                        try {
+                            const data = await queryFn();
+                            set(queryKey, data, options);
+                        } catch (error) {
+                            console.error('Prefetch error:', error);
+                        }
+                    }
+                };
+                
+                /**
+                 * Get cache statistics
+                 * @returns {object} Cache statistics
+                 */
+                const getStats = () => {
+                    const entries = Array.from(cache.entries());
+                    const now = Date.now();
+                    
+                    return {
+                        size: cache.size,
+                        activeRequests: activeRequests.size,
+                        subscribers: querySubscribers.size,
+                        entries: entries.map(([key, entry]) => ({
+                            key,
+                            age: now - entry.timestamp,
+                            lastAccessed: now - entry.lastAccessed,
+                            isStale: isStale(entry),
+                            subscribers: entry.subscribers
+                        }))
+                    };
+                };
+                
+                // Setup window focus refetching
+                if (typeof window !== 'undefined' && defaultConfig.refetchOnWindowFocus) {
+                    window.addEventListener('focus', () => {
+                        // Refetch all queries with subscribers
+                        for (const [key, subscribers] of querySubscribers.entries()) {
+                            if (subscribers.size > 0) {
+                                const cached = cache.get(key);
+                                if (cached && isStale(cached)) {
+                                    // Mark for refetch
+                                    cached.timestamp = 0;
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // Setup online/offline handling
+                if (typeof window !== 'undefined' && defaultConfig.refetchOnReconnect) {
+                    window.addEventListener('online', () => {
+                        // Trigger refetch for stale queries
+                        for (const [key, entry] of cache.entries()) {
+                            if (isStale(entry)) {
+                                notifySubscribers(key, { refetch: true });
+                            }
+                        }
+                    });
+                }
+                
+                return {
+                    get,
+                    set,
+                    invalidate,
+                    clear,
+                    subscribe,
+                    prefetch,
+                    getStats,
+                    isStale,
+                    config: defaultConfig
+                };
+            })();
+            
+            /**
+             * Query Key Generator - Helper for consistent query keys
+             * Follows React Query patterns from queries.ts
+             */
+            const queryKeys = {
+                portfolio: (id) => ['portfolio', id],
+                macro: () => ['macro'],
+                holdings: (id) => ['holdings', id],
+                scenarios: (id) => ['scenarios', id],
+                alerts: (id) => ['alerts', id],
+                reports: (id) => ['reports', id],
+                user: () => ['user'],
+                health: () => ['health'],
+                pattern: (pattern, params) => ['pattern', pattern, params]
+            };
+            
+            /**
+             * Enhanced API Client with Caching
+             * Wraps the existing apiClient with caching layer
+             */
+            const cachedApiClient = {
+                ...apiClient,
+                
+                /**
+                 * Execute pattern with caching
+                 * @param {string} pattern - Pattern name
+                 * @param {object} params - Pattern parameters
+                 * @param {object} options - Cache options
+                 */
+                executePattern: async (pattern, params = {}, options = {}) => {
+                    const queryKey = queryKeys.pattern(pattern, params);
+                    
+                    // Different cache times for different patterns
+                    const cacheConfig = {
+                        staleTime: pattern.includes('overview') ? 2 * 60 * 1000 : 5 * 60 * 1000,
+                        ...options
+                    };
+                    
+                    return CacheManager.get(
+                        queryKey,
+                        () => apiClient.executePattern(pattern, params),
+                        cacheConfig
+                    );
+                },
+                
+                /**
+                 * Get portfolio overview with caching
+                 * @param {string} portfolioId - Portfolio ID
+                 * @param {object} options - Cache options
+                 */
+                getPortfolioOverview: async (portfolioId, options = {}) => {
+                    const queryKey = queryKeys.portfolio(portfolioId);
+                    
+                    return CacheManager.get(
+                        queryKey,
+                        () => apiClient.executePattern('portfolio_overview', { 
+                            portfolio_id: portfolioId 
+                        }),
+                        { staleTime: 2 * 60 * 1000, ...options }
+                    );
+                },
+                
+                /**
+                 * Get macro dashboard with caching
+                 * @param {object} options - Cache options
+                 */
+                getMacroDashboard: async (options = {}) => {
+                    const queryKey = queryKeys.macro();
+                    
+                    return CacheManager.get(
+                        queryKey,
+                        () => apiClient.executePattern('macro_cycles_overview', {}),
+                        { staleTime: 10 * 60 * 1000, ...options }
+                    );
+                },
+                
+                /**
+                 * Get holdings with caching
+                 * @param {string} portfolioId - Portfolio ID
+                 * @param {object} options - Cache options
+                 */
+                getHoldings: async (portfolioId, options = {}) => {
+                    const queryKey = queryKeys.holdings(portfolioId);
+                    
+                    return CacheManager.get(
+                        queryKey,
+                        () => apiClient.getHoldings(portfolioId),
+                        { staleTime: 5 * 60 * 1000, ...options }
+                    );
+                },
+                
+                /**
+                 * Get alerts with caching
+                 * @param {string} portfolioId - Portfolio ID
+                 * @param {object} options - Cache options
+                 */
+                getAlerts: async (portfolioId, options = {}) => {
+                    const queryKey = queryKeys.alerts(portfolioId);
+                    
+                    return CacheManager.get(
+                        queryKey,
+                        () => apiClient.executePattern('macro_trend_monitor', {
+                            portfolio_id: portfolioId
+                        }),
+                        { staleTime: 1 * 60 * 1000, ...options }
+                    );
+                },
+                
+                /**
+                 * Invalidate portfolio-related caches
+                 * @param {string} portfolioId - Portfolio ID
+                 */
+                invalidatePortfolio: (portfolioId) => {
+                    CacheManager.invalidate(queryKeys.portfolio(portfolioId));
+                    CacheManager.invalidate(queryKeys.holdings(portfolioId));
+                    CacheManager.invalidate(queryKeys.scenarios(portfolioId));
+                    CacheManager.invalidate(queryKeys.alerts(portfolioId));
+                    CacheManager.invalidate(queryKeys.reports(portfolioId));
+                },
+                
+                /**
+                 * Invalidate all caches
+                 */
+                invalidateAll: () => {
+                    CacheManager.clear();
+                },
+                
+                /**
+                 * Prefetch portfolio data
+                 * @param {string} portfolioId - Portfolio ID
+                 */
+                prefetchPortfolio: async (portfolioId) => {
+                    await CacheManager.prefetch(
+                        queryKeys.portfolio(portfolioId),
+                        () => apiClient.executePattern('portfolio_overview', {
+                            portfolio_id: portfolioId
+                        }),
+                        { staleTime: 2 * 60 * 1000 }
+                    );
+                    
+                    await CacheManager.prefetch(
+                        queryKeys.holdings(portfolioId),
+                        () => apiClient.getHoldings(portfolioId),
+                        { staleTime: 5 * 60 * 1000 }
+                    );
+                }
+            };
+            
+            /**
+             * React Hook for cached queries (simplified version)
+             * Provides React Query-like interface for components
+             */
+            function useCachedQuery(queryKey, queryFn, options = {}) {
+                const [state, setState] = useState({
+                    data: null,
+                    error: null,
+                    isLoading: true,
+                    isStale: false,
+                    isFetching: false
+                });
+                
+                useEffect(() => {
+                    let mounted = true;
+                    
+                    // Subscribe to cache updates
+                    const unsubscribe = CacheManager.subscribe(queryKey, (update) => {
+                        if (mounted) {
+                            if (update.invalidated) {
+                                // Refetch on invalidation
+                                fetchData();
+                            } else {
+                                setState(prev => ({
+                                    ...prev,
+                                    data: update.data,
+                                    error: update.error,
+                                    isStale: update.isStale || false
+                                }));
+                            }
+                        }
+                    });
+                    
+                    // Fetch data
+                    const fetchData = async () => {
+                        setState(prev => ({ ...prev, isFetching: true }));
+                        
+                        try {
+                            const result = await CacheManager.get(queryKey, queryFn, options);
+                            
+                            if (mounted) {
+                                setState({
+                                    data: result.data,
+                                    error: result.error,
+                                    isLoading: false,
+                                    isStale: result.isStale,
+                                    isFetching: result.isFetching || false
+                                });
+                            }
+                        } catch (error) {
+                            if (mounted) {
+                                setState({
+                                    data: null,
+                                    error,
+                                    isLoading: false,
+                                    isStale: false,
+                                    isFetching: false
+                                });
+                            }
+                        }
+                    };
+                    
+                    fetchData();
+                    
+                    // Cleanup
+                    return () => {
+                        mounted = false;
+                        unsubscribe();
+                    };
+                }, [JSON.stringify(queryKey)]);
+                
+                return state;
+            }
+            
+            /**
+             * React Hook for mutations with cache invalidation
+             */
+            function useCachedMutation(mutationFn, options = {}) {
+                const [state, setState] = useState({
+                    isLoading: false,
+                    error: null,
+                    data: null
+                });
+                
+                const mutate = async (variables) => {
+                    setState({ isLoading: true, error: null, data: null });
+                    
+                    try {
+                        const result = await mutationFn(variables);
+                        
+                        // Invalidate related queries
+                        if (options.onSuccess) {
+                            options.onSuccess(result, variables);
+                        }
+                        
+                        setState({ isLoading: false, error: null, data: result });
+                        return result;
+                    } catch (error) {
+                        if (options.onError) {
+                            options.onError(error, variables);
+                        }
+                        
+                        setState({ isLoading: false, error, data: null });
+                        throw error;
+                    }
+                };
+                
+                return { mutate, ...state };
+            }
+            
+            // ============================================
             // Navigation Structure with All 52 Capabilities
             // ============================================
             
@@ -3952,6 +4628,8 @@
             // ============================================
             
             function PortfolioOverview({ data }) {
+                // Example of using the caching layer - data is now cached and will be served instantly 
+                // on subsequent renders, with automatic background refetch when stale
                 if (!data) return e('div', { className: 'loading' }, e('div', { className: 'spinner' }));
                 
                 return e('div', { className: 'stats-grid' },
@@ -4356,20 +5034,30 @@
                         setLoading(true);
                         setError(null);
                         
+                        // Using cachedApiClient for improved performance with automatic caching
+                        // Data will be cached and served instantly on subsequent loads
+                        // with automatic background refetch when stale
                         const [portfolioRes, holdingsRes] = await Promise.all([
-                            apiClient.getPortfolio().catch(() => ({ 
-                                total_value: 291290,
-                                holdings_count: 9,
-                                ytd_return: 14.5,
-                                sharpe_ratio: 1.35
-                            })),
-                            apiClient.getHoldings().catch(() => ({ 
-                                holdings: getMockHoldings()
-                            }))
+                            cachedApiClient.getPortfolioOverview('64ff3be6-0ed1-4990-a32b-4ded17f0320c')
+                                .then(res => res.data || res)
+                                .catch(() => ({ 
+                                    total_value: 291290,
+                                    holdings_count: 9,
+                                    ytd_return: 14.5,
+                                    sharpe_ratio: 1.35
+                                })),
+                            cachedApiClient.getHoldings('64ff3be6-0ed1-4990-a32b-4ded17f0320c')
+                                .then(res => res.data || res)
+                                .catch(() => ({ 
+                                    holdings: getMockHoldings()
+                                }))
                         ]);
                         
+                        // Cache statistics can be viewed with:
+                        // console.log('Cache Stats:', CacheManager.getStats());
+                        
                         setPortfolioData(portfolioRes);
-                        setHoldings(holdingsRes.holdings || []);
+                        setHoldings(holdingsRes.holdings || holdingsRes.positions || []);
                     } catch (error) {
                         console.error('Error loading dashboard:', error);
                         setError('Failed to load dashboard data');
