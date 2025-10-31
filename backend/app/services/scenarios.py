@@ -139,6 +139,46 @@ class HedgeRecommendation:
 # Scenario Library
 # ============================================================================
 
+# Dalio Deleveraging Scenarios (from dalio_debt_crisis_v1.json)
+DALIO_DELEVERAGING_SCENARIOS = {
+    "dalio_money_printing_deleveraging": Shock(
+        shock_type=ShockType.CPI_SURPRISE,
+        name="Money Printing Deleveraging (Inflationary)",
+        description="Central bank monetization: inflate away debt via currency debasement",
+        real_rates_bps=25.0,
+        inflation_bps=150.0,
+        credit_spread_bps=-50.0,
+        usd_pct=-0.12,
+        equity_pct=0.05,
+        probability=0.25,
+        severity="moderate",
+    ),
+    "dalio_austerity_deleveraging": Shock(
+        shock_type=ShockType.RATES_UP,
+        name="Austerity Deleveraging (Deflationary)",
+        description="Fiscal cuts + tax increases: deflationary spiral risk",
+        real_rates_bps=-75.0,
+        inflation_bps=-50.0,
+        credit_spread_bps=100.0,
+        usd_pct=0.08,
+        equity_pct=-0.20,
+        probability=0.15,
+        severity="high",
+    ),
+    "dalio_default_deleveraging": Shock(
+        shock_type=ShockType.CREDIT_SPREAD_WIDENING,
+        name="Default/Restructuring Deleveraging (Deep Deflation)",
+        description="Debt defaults, bankruptcies: deepest deleveraging form",
+        real_rates_bps=-150.0,
+        inflation_bps=-100.0,
+        credit_spread_bps=300.0,
+        usd_pct=0.15,
+        equity_pct=-0.40,
+        probability=0.05,
+        severity="extreme",
+    ),
+}
+
 SCENARIO_LIBRARY = {
     ShockType.RATES_UP: Shock(
         shock_type=ShockType.RATES_UP,
@@ -229,6 +269,8 @@ SCENARIO_LIBRARY = {
         probability=0.05,
         severity="low",
     ),
+    # Merge Dalio scenarios
+    **DALIO_DELEVERAGING_SCENARIOS,
 }
 
 

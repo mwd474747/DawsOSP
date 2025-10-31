@@ -542,6 +542,82 @@ class MacroHound(BaseAgent):
 
         return result
 
+    async def scenarios_deleveraging_money_printing(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: Optional[str] = None,
+        pack_id: Optional[str] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Run money printing deleveraging scenario.
+        
+        Simulates central bank monetization: inflation rises, currency weakens, 
+        commodities rally, real rates negative.
+        """
+        from app.services.scenarios import ShockType
+        
+        portfolio_id = portfolio_id or str(ctx.portfolio_id)
+        pack_id = pack_id or ctx.pricing_pack_id
+        
+        # Use macro.run_scenario with money printing shock
+        return await self.macro_run_scenario(
+            ctx=ctx,
+            state=state,
+            portfolio_id=portfolio_id,
+            scenario_id="dalio_money_printing_deleveraging",
+            pack_id=pack_id,
+        )
+    
+    async def scenarios_deleveraging_austerity(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: Optional[str] = None,
+        pack_id: Optional[str] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Run austerity deleveraging scenario.
+        
+        Simulates fiscal cuts: deflation risk, growth weak, spreads widen.
+        """
+        portfolio_id = portfolio_id or str(ctx.portfolio_id)
+        pack_id = pack_id or ctx.pricing_pack_id
+        
+        return await self.macro_run_scenario(
+            ctx=ctx,
+            state=state,
+            portfolio_id=portfolio_id,
+            scenario_id="dalio_austerity_deleveraging",
+            pack_id=pack_id,
+        )
+    
+    async def scenarios_deleveraging_default(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: Optional[str] = None,
+        pack_id: Optional[str] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Run default/restructuring deleveraging scenario.
+        
+        Simulates debt defaults: severe deflation, credit crisis, massive spreads.
+        """
+        portfolio_id = portfolio_id or str(ctx.portfolio_id)
+        pack_id = pack_id or ctx.pricing_pack_id
+        
+        return await self.macro_run_scenario(
+            ctx=ctx,
+            state=state,
+            portfolio_id=portfolio_id,
+            scenario_id="dalio_default_deleveraging",
+            pack_id=pack_id,
+        )
+
     async def macro_compute_dar(
         self,
         ctx: RequestCtx,

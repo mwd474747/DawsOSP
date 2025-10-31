@@ -23,7 +23,9 @@
   "steps": [
     {
       "capability": "cycles.compute_short_term",
-      "args": {},
+      "args": {
+        "asof_date": "{{inputs.asof_date}}"
+      },
       "as": "stdc",
       "fallback": {
         "phase_label": "Late Expansion",
@@ -39,7 +41,9 @@
     },
     {
       "capability": "cycles.compute_long_term",
-      "args": {},
+      "args": {
+        "asof_date": "{{inputs.asof_date}}"
+      },
       "as": "ltdc",
       "fallback": {
         "phase_label": "Late Cycle",
@@ -55,7 +59,9 @@
     },
     {
       "capability": "cycles.compute_empire",
-      "args": {},
+      "args": {
+        "asof_date": "{{inputs.asof_date}}"
+      },
       "as": "empire",
       "fallback": {
         "phase_label": "Relative Decline",

@@ -61,8 +61,7 @@
       "capability": "scenarios.deleveraging_money_printing",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
-        "pack_id": "{{ctx.pricing_pack_id}}",
-        "ltdc_phase": "{{state.ltdc.phase_label}}"
+        "pack_id": "{{ctx.pricing_pack_id}}"
       },
       "as": "money_printing"
     },
@@ -70,8 +69,7 @@
       "capability": "scenarios.deleveraging_austerity",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
-        "pack_id": "{{ctx.pricing_pack_id}}",
-        "ltdc_phase": "{{state.ltdc.phase_label}}"
+        "pack_id": "{{ctx.pricing_pack_id}}"
       },
       "as": "austerity"
     },
@@ -79,8 +77,7 @@
       "capability": "scenarios.deleveraging_default",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
-        "pack_id": "{{ctx.pricing_pack_id}}",
-        "ltdc_phase": "{{state.ltdc.phase_label}}"
+        "pack_id": "{{ctx.pricing_pack_id}}"
       },
       "as": "default"
     },
@@ -92,8 +89,7 @@
           "money_printing": "{{state.money_printing}}",
           "austerity": "{{state.austerity}}",
           "default": "{{state.default}}"
-        },
-        "ltdc_phase": "{{state.ltdc.phase_label}}"
+        }
       },
       "as": "hedge_suggestions"
     }
