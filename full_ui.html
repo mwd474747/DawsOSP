@@ -6415,7 +6415,8 @@
                     switch(cycleType) {
                         case 'short-term':
                             // Map to correct data key from API response (pattern returns 'stdc')
-                            const stdc = macroData.stdc || macroData.short_term_cycle;
+                            // Data might be nested in response.data
+                            const stdc = macroData.stdc || macroData.data?.stdc || macroData.short_term_cycle;
                             if (!stdc) {
                                 console.log('No short-term data found in macroData:', macroData);
                                 return null;
@@ -6442,7 +6443,8 @@
                             
                         case 'long-term':
                             // Map to correct data key from API response
-                            const ltdc = macroData.ltdc || macroData.long_term_cycle;
+                            // Data might be nested in response.data
+                            const ltdc = macroData.ltdc || macroData.data?.ltdc || macroData.long_term_cycle;
                             if (!ltdc) return null;
                             title = 'LONG-TERM DEBT CYCLE INDICATORS';
                             indicators = [
@@ -6466,7 +6468,8 @@
                             
                         case 'empire':
                             // Map to correct data key from API response
-                            const empire = macroData.empire || macroData.empire_cycle;
+                            // Data might be nested in response.data
+                            const empire = macroData.empire || macroData.data?.empire || macroData.empire_cycle;
                             if (!empire) return null;
                             title = 'EMPIRE CYCLE INDICATORS';
                             indicators = [
@@ -6492,7 +6495,8 @@
                             
                         case 'civil':
                             // Map to correct data key from API response
-                            const civil = macroData.civil || macroData.internal_order_cycle;
+                            // Data might be nested in response.data
+                            const civil = macroData.civil || macroData.data?.civil || macroData.internal_order_cycle;
                             if (!civil) return null;
                             title = 'CIVIL/INTERNAL ORDER INDICATORS';
                             const civilIndicators = civil.indicators || {};

@@ -353,7 +353,7 @@ async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any]
 
         return {
             "success": True,
-            "data": result.get("outputs", {}),
+            "data": result.get("data", {}),
             "trace": result.get("trace"),
             "metadata": {
                 "pattern": pattern_name,
