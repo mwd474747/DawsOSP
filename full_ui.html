@@ -1839,9 +1839,15 @@
                 },
                 
                 // Get transactions with enhanced error handling
-                getTransactions: async () => {
+                getTransactions: async (portfolioId = '64ff3be6-0ed1-4990-a32b-4ded17f0320c', page = 1, pageSize = 100) => {
                     try {
-                        const response = await axios.get(`${API_BASE}/api/transactions`);
+                        const response = await axios.get(`${API_BASE}/api/transactions`, {
+                            params: {
+                                portfolio_id: portfolioId,
+                                page: page,
+                                page_size: pageSize
+                            }
+                        });
                         return response.data;
                     } catch (error) {
                         return apiClient.handleApiCallError('Fetch transactions', error);

@@ -1538,7 +1538,7 @@ async def get_transactions(
                 "date": row["trade_date"].strftime("%Y-%m-%d") if row["trade_date"] else "",
                 "type": row["type"],
                 "symbol": row["symbol"],
-                "shares": float(row["quantity"]) if row["quantity"] else 0,
+                "quantity": float(row["quantity"]) if row["quantity"] else 0,
                 "price": float(row["price"]) if row["price"] else 0,
                 "amount": float(row["amount"]) if row["amount"] else 0,
                 "security_name": row["security_name"]
