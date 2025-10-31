@@ -3967,6 +3967,37 @@
                 return '24+ months';
             };
             
+            /**
+             * Mock holdings data for fallback when API calls fail
+             * @param {boolean} fullData - If true, returns complete data with all fields. If false, returns minimal data
+             * @returns {Array} Array of mock holdings
+             */
+            const getMockHoldings = (fullData = true) => {
+                const holdings = [
+                    { symbol: 'CNR', name: 'Canadian National Railway', quantity: 100, market_value: 12500, weight: 4.29, return_pct: 12.3 },
+                    { symbol: 'BAM', name: 'Brookfield Asset Mgmt', quantity: 250, market_value: 45000, weight: 15.45, return_pct: 18.7 },
+                    { symbol: 'BBUC', name: 'Brookfield Business', quantity: 500, market_value: 22000, weight: 7.55, return_pct: -3.2 },
+                    { symbol: 'BRK.B', name: 'Berkshire Hathaway B', quantity: 50, market_value: 85000, weight: 29.19, return_pct: 22.1 },
+                    { symbol: 'BTI', name: 'British American Tobacco', quantity: 300, market_value: 18500, weight: 6.35, return_pct: -8.4 },
+                    { symbol: 'EVO', name: 'Evolution AB', quantity: 150, market_value: 28700, weight: 9.85, return_pct: 35.2 },
+                    { symbol: 'NKE', name: 'Nike Inc', quantity: 200, market_value: 31200, weight: 10.71, return_pct: -12.1 },
+                    { symbol: 'PYPL', name: 'PayPal Holdings', quantity: 100, market_value: 15800, weight: 5.42, return_pct: -18.3 },
+                    { symbol: 'HHC', name: 'Howard Hughes Corp', quantity: 400, market_value: 32590, weight: 11.19, return_pct: 28.9 }
+                ];
+                
+                if (fullData) {
+                    return holdings;
+                } else {
+                    // Return subset with minimal fields for market/news contexts
+                    return holdings.slice(0, 5).map(h => ({
+                        symbol: h.symbol,
+                        name: h.name,
+                        quantity: h.quantity,
+                        market_value: h.market_value
+                    }));
+                }
+            };
+            
             // ============================================
             // Caching Layer (React Query-Inspired)
             // ============================================
@@ -6664,18 +6695,6 @@
                     }
                 };
                 
-                const getMockHoldings = () => [
-                    { symbol: 'CNR', name: 'Canadian National Railway', quantity: 100, market_value: 12500, weight: 4.29, return_pct: 12.3 },
-                    { symbol: 'BAM', name: 'Brookfield Asset Mgmt', quantity: 250, market_value: 45000, weight: 15.45, return_pct: 18.7 },
-                    { symbol: 'BBUC', name: 'Brookfield Business', quantity: 500, market_value: 22000, weight: 7.55, return_pct: -3.2 },
-                    { symbol: 'BRK.B', name: 'Berkshire Hathaway B', quantity: 50, market_value: 85000, weight: 29.19, return_pct: 22.1 },
-                    { symbol: 'BTI', name: 'British American Tobacco', quantity: 300, market_value: 18500, weight: 6.35, return_pct: -8.4 },
-                    { symbol: 'EVO', name: 'Evolution AB', quantity: 150, market_value: 28700, weight: 9.85, return_pct: 35.2 },
-                    { symbol: 'NKE', name: 'Nike Inc', quantity: 200, market_value: 31200, weight: 10.71, return_pct: -12.1 },
-                    { symbol: 'PYPL', name: 'PayPal Holdings', quantity: 100, market_value: 15800, weight: 5.42, return_pct: -18.3 },
-                    { symbol: 'HHC', name: 'Howard Hughes Corp', quantity: 400, market_value: 32590, weight: 11.19, return_pct: 28.9 }
-                ];
-                
                 if (loading) {
                     return e(LoadingSpinner, { 
                         size: 'large', 
@@ -6882,18 +6901,6 @@
                         .catch(() => setHoldings(getMockHoldings()))
                         .finally(() => setLoading(false));
                 }, []);
-                
-                const getMockHoldings = () => [
-                    { symbol: 'CNR', name: 'Canadian National Railway', quantity: 100, market_value: 12500, weight: 4.29, return_pct: 12.3 },
-                    { symbol: 'BAM', name: 'Brookfield Asset Mgmt', quantity: 250, market_value: 45000, weight: 15.45, return_pct: 18.7 },
-                    { symbol: 'BBUC', name: 'Brookfield Business', quantity: 500, market_value: 22000, weight: 7.55, return_pct: -3.2 },
-                    { symbol: 'BRK.B', name: 'Berkshire Hathaway B', quantity: 50, market_value: 85000, weight: 29.19, return_pct: 22.1 },
-                    { symbol: 'BTI', name: 'British American Tobacco', quantity: 300, market_value: 18500, weight: 6.35, return_pct: -8.4 },
-                    { symbol: 'EVO', name: 'Evolution AB', quantity: 150, market_value: 28700, weight: 9.85, return_pct: 35.2 },
-                    { symbol: 'NKE', name: 'Nike Inc', quantity: 200, market_value: 31200, weight: 10.71, return_pct: -12.1 },
-                    { symbol: 'PYPL', name: 'PayPal Holdings', quantity: 100, market_value: 15800, weight: 5.42, return_pct: -18.3 },
-                    { symbol: 'HHC', name: 'Howard Hughes Corp', quantity: 400, market_value: 32590, weight: 11.19, return_pct: 28.9 }
-                ];
                 
                 if (loading) return e('div', { className: 'loading' }, e('div', { className: 'spinner' }));
                 
@@ -9186,7 +9193,7 @@
                         console.error('Error loading market data:', err);
                         setError('Failed to load market data. Using sample data.');
                         setNewsData(getMockNewsData());
-                        setPortfolioSecurities(getMockHoldings());
+                        setPortfolioSecurities(getMockHoldings(false));
                     } finally {
                         setLoading(false);
                     }
@@ -9197,14 +9204,6 @@
                     await loadMarketData();
                     setRefreshing(false);
                 };
-                
-                const getMockHoldings = () => [
-                    { symbol: 'BAM', name: 'Brookfield Asset Mgmt', quantity: 250, market_value: 45000 },
-                    { symbol: 'BRK.B', name: 'Berkshire Hathaway B', quantity: 50, market_value: 85000 },
-                    { symbol: 'CNR', name: 'Canadian National Railway', quantity: 100, market_value: 12500 },
-                    { symbol: 'EVO', name: 'Evolution AB', quantity: 150, market_value: 28700 },
-                    { symbol: 'NKE', name: 'Nike Inc', quantity: 200, market_value: 31200 }
-                ];
                 
                 const getMockNewsData = () => ({
                     impact_analysis: {
