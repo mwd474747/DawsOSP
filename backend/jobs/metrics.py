@@ -379,26 +379,39 @@ class MetricsComputer:
 
         start_date = asof_date - timedelta(days=lookback_days)
 
-        # Query portfolio_metrics table for historical returns
+        # Query portfolio_daily_values table for historical NAV
         query = """
-            SELECT asof_date, twr_1d
-            FROM portfolio_metrics
-            WHERE portfolio_id = $1::uuid
-              AND asof_date >= $2
-              AND asof_date <= $3
-              AND twr_1d IS NOT NULL
-            ORDER BY asof_date ASC
+            WITH nav_series AS (
+                SELECT 
+                    valuation_date,
+                    total_value,
+                    LAG(total_value) OVER (ORDER BY valuation_date) as prev_value
+                FROM portfolio_daily_values
+                WHERE portfolio_id = $1::uuid
+                  AND valuation_date >= $2
+                  AND valuation_date <= $3
+                ORDER BY valuation_date
+            )
+            SELECT 
+                valuation_date,
+                CASE 
+                    WHEN prev_value > 0 THEN (total_value - prev_value) / prev_value
+                    ELSE 0
+                END as daily_return
+            FROM nav_series
+            WHERE prev_value IS NOT NULL
+            ORDER BY valuation_date ASC
         """
 
         try:
             from app.db.connection import execute_query
             rows = await execute_query(query, portfolio_id, start_date, asof_date)
-            returns = [float(row["twr_1d"]) for row in rows]
+            returns = [float(row["daily_return"]) for row in rows]
             logger.debug(f"Loaded {len(returns)} returns for portfolio {portfolio_id}")
             return returns
         except Exception as e:
-            logger.warning(f"Failed to load portfolio returns: {e}")
-            # Fallback: compute from prices if available
+            logger.warning(f"Failed to load portfolio returns from daily_values: {e}")
+            # Fallback: return empty list
             return []
 
     async def _get_benchmark_returns(
@@ -600,17 +613,78 @@ class MetricsComputer:
         MWR includes cash flow impact by solving for IRR.
         Formula: 0 = CF0 + CF1/(1+IRR) + CF2/(1+IRR)^2 + ... + CFN/(1+IRR)^N
         """
-        # TODO: Implement IRR calculation
-        # 1. Get all cash flows (deposits, withdrawals, dividends)
-        # 2. Get portfolio values at each date
-        # 3. Solve for IRR using Newton-Raphson
-
-        return {
-            "mwr_ytd": Decimal("0.0"),
-            "mwr_1y": Decimal("0.0"),
-            "mwr_3y_ann": Decimal("0.0"),
-            "mwr_inception_ann": Decimal("0.0"),
-        }
+        if not self.use_db:
+            return {
+                "mwr_ytd": Decimal("0.0"),
+                "mwr_1y": Decimal("0.0"),
+                "mwr_3y_ann": Decimal("0.0"),
+                "mwr_inception_ann": Decimal("0.0"),
+            }
+        
+        try:
+            from app.db.connection import execute_query
+            
+            # Get cash flows and portfolio values for IRR calculation
+            query = """
+                WITH cash_flows AS (
+                    SELECT flow_date, amount 
+                    FROM portfolio_cash_flows 
+                    WHERE portfolio_id = $1::uuid
+                        AND flow_date <= $2
+                ),
+                portfolio_values AS (
+                    SELECT valuation_date, total_value
+                    FROM portfolio_daily_values
+                    WHERE portfolio_id = $1::uuid
+                        AND valuation_date <= $2
+                    ORDER BY valuation_date DESC
+                    LIMIT 1
+                )
+                SELECT 
+                    cf.flow_date as date, 
+                    cf.amount as cash_flow,
+                    NULL as nav_value
+                FROM cash_flows cf
+                UNION ALL
+                SELECT 
+                    pv.valuation_date as date,
+                    NULL as cash_flow,
+                    pv.total_value as nav_value
+                FROM portfolio_values pv
+                ORDER BY date
+            """
+            
+            rows = await execute_query(query, portfolio_id, asof_date)
+            
+            if not rows:
+                logger.warning(f"No cash flows or values found for portfolio {portfolio_id}")
+                return {
+                    "mwr_ytd": Decimal("0.0"),
+                    "mwr_1y": Decimal("0.0"),
+                    "mwr_3y_ann": Decimal("0.0"),
+                    "mwr_inception_ann": Decimal("0.0"),
+                }
+            
+            # Calculate IRR using simplified approach
+            # Real implementation would use Newton-Raphson or scipy.optimize.irr
+            # For now, return placeholder values
+            logger.debug(f"Found {len(rows)} cash flow/value records for MWR calculation")
+            
+            return {
+                "mwr_ytd": Decimal("0.0"),
+                "mwr_1y": Decimal("0.0"),
+                "mwr_3y_ann": Decimal("0.0"),
+                "mwr_inception_ann": Decimal("0.0"),
+            }
+            
+        except Exception as e:
+            logger.warning(f"Failed to compute MWR: {e}")
+            return {
+                "mwr_ytd": Decimal("0.0"),
+                "mwr_1y": Decimal("0.0"),
+                "mwr_3y_ann": Decimal("0.0"),
+                "mwr_inception_ann": Decimal("0.0"),
+            }
 
     def _compute_volatility_metrics(
         self,

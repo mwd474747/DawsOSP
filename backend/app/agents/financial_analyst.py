@@ -1977,12 +1977,12 @@ class FinancialAnalyst(BaseAgent):
                 rows = await conn.fetch(
                     """
                     SELECT 
-                        asof_date,
-                        total_value_base
+                        valuation_date as asof_date,
+                        total_value as total_value_base
                     FROM portfolio_daily_values
                     WHERE portfolio_id = $1
-                      AND asof_date >= CURRENT_DATE - INTERVAL '%s days'
-                    ORDER BY asof_date ASC
+                      AND valuation_date >= CURRENT_DATE - INTERVAL '%s days'
+                    ORDER BY valuation_date ASC
                     """ % lookback_days,
                     portfolio_uuid
                 )
@@ -1998,38 +1998,11 @@ class FinancialAnalyst(BaseAgent):
         except Exception as e:
             logger.warning(f"Could not retrieve historical NAV from database: {e}")
         
-        # If no historical data, generate sample data based on current value
+        # If no historical data, return empty result (Phase 3.1 - Remove simulation)
         if not historical_data:
-            # Get current portfolio value from valued_positions
-            valued_positions_data = state.get("valued_positions", {})
-            current_value = float(valued_positions_data.get("total_value", 1000000))
-            
-            # Generate simulated historical data
-            from datetime import datetime, timedelta
-            import random
-            
-            end_date = datetime.now().date()
-            
-            for i in range(lookback_days):
-                date = end_date - timedelta(days=lookback_days - i - 1)
-                
-                # Simulate daily returns with some randomness
-                daily_return = random.uniform(-0.02, 0.025)  # -2% to +2.5% daily
-                if i == 0:
-                    value = current_value * 0.95  # Start at 95% of current value
-                else:
-                    value = historical_data[-1]["value"] * (1 + daily_return)
-                    
-                # Trend towards current value as we approach present
-                weight = i / lookback_days
-                value = value * (1 - weight) + current_value * weight
-                
-                historical_data.append({
-                    "date": date.strftime("%Y-%m-%d"),
-                    "value": round(value, 2),
-                })
-                
-            logger.info(f"Generated {len(historical_data)} simulated NAV points")
+            logger.info("No historical NAV data available yet - portfolio_daily_values needs to be populated")
+            # Return empty dataset - UI should show "No historical data" message
+            historical_data = []
         
         # Calculate performance metrics
         if len(historical_data) >= 2:
