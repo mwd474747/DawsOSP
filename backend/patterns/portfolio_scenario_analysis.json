@@ -63,7 +63,7 @@
     {
       "capability": "pricing.apply_pack",
       "args": {
-        "positions": "{{state.positions}}",
+        "positions": "{{positions.positions}}",
         "pack_id": "{{ctx.pricing_pack_id}}"
       },
       "as": "valued_base"
@@ -82,7 +82,7 @@
       "capability": "optimizer.suggest_hedges",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
-        "scenario_result": "{{state.scenario_result}}",
+        "scenario_result": "{{scenario_result}}",
         "max_cost_bps": 20
       },
       "as": "hedge_suggestions"
@@ -90,8 +90,8 @@
     {
       "capability": "charts.scenario_deltas",
       "args": {
-        "base": "{{state.valued_base}}",
-        "shocked": "{{state.scenario_result}}"
+        "base": "{{valued_base}}",
+        "shocked": "{{scenario_result}}"
       },
       "as": "charts"
     }

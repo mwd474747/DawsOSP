@@ -4441,7 +4441,8 @@
                     return CacheManager.get(
                         queryKey,
                         () => apiClient.executePattern('portfolio_overview', { 
-                            portfolio_id: portfolioId 
+                            portfolio_id: portfolioId,
+                            lookback_days: 252 
                         }),
                         { staleTime: 2 * 60 * 1000, ...options }
                     );
@@ -4520,7 +4521,8 @@
                     await CacheManager.prefetch(
                         queryKeys.portfolio(portfolioId),
                         () => apiClient.executePattern('portfolio_overview', {
-                            portfolio_id: portfolioId
+                            portfolio_id: portfolioId,
+                            lookback_days: 252
                         }),
                         { staleTime: 2 * 60 * 1000 }
                     );
@@ -9290,15 +9292,24 @@
                 });
                 
                 const fetchSecurityPrices = async (symbols) => {
-                    // Simulate fetching real-time prices
-                    const mockPrices = {
-                        'BAM': { price: 182.45, change: 2.35, changePercent: 1.31 },
-                        'BRK.B': { price: 1725.80, change: -12.20, changePercent: -0.70 },
-                        'CNR': { price: 125.60, change: 0.85, changePercent: 0.68 },
-                        'EVO': { price: 195.30, change: 4.50, changePercent: 2.36 },
-                        'NKE': { price: 156.75, change: -2.15, changePercent: -1.35 }
-                    };
-                    return mockPrices;
+                    try {
+                        // Fetch real-time prices from backend API
+                        const prices = {};
+                        for (const symbol of symbols) {
+                            const result = await apiClient.getQuote(symbol);
+                            if (result && result.price) {
+                                prices[symbol] = {
+                                    price: result.price,
+                                    change: result.change || 0,
+                                    changePercent: result.changePercent || 0
+                                };
+                            }
+                        }
+                        return prices;
+                    } catch (error) {
+                        console.error('Error fetching security prices:', error);
+                        return {};
+                    }
                 };
                 
                 const formatSentiment = (sentiment) => {

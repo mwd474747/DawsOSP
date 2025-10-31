@@ -58,9 +58,9 @@
     {
       "capability": "risk.overlay_cycle_phases",
       "args": {
-        "factor_exposures": "{{state.factor_exposures}}",
-        "stdc": "{{state.stdc}}",
-        "ltdc": "{{state.ltdc}}"
+        "factor_exposures": "{{factor_exposures}}",
+        "stdc": "{{stdc}}",
+        "ltdc": "{{ltdc}}"
       },
       "as": "cycle_risk_map"
     },
