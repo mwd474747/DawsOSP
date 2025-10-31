@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UI Navigation Test</title>
+    <script src="https://unpkg.com/axios@1.6.2/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Testing DawsOS UI Navigation</h1>
+    <div id="status">Starting tests...</div>
+    <div id="results"></div>
+
+    <script>
+        async function testUINavigation() {
+            const statusEl = document.getElementById('status');
+            const resultsEl = document.getElementById('results');
+            let results = [];
+
+            // Step 1: Login
+            statusEl.textContent = 'Logging in...';
+            try {
+                const loginResponse = await axios.post('http://localhost:5000/api/auth/login', {
+                    email: 'michael@dawsos.com',
+                    password: 'admin123'
+                });
+                
+                if (loginResponse.status === 200) {
+                    const token = loginResponse.data.access_token;
+                    localStorage.setItem('auth_token', token);
+                    localStorage.setItem('user', JSON.stringify(loginResponse.data.user));
+                    
+                    results.push('✅ Login successful');
+                    statusEl.textContent = 'Login successful, redirecting to dashboard...';
+                    
+                    // Redirect to main UI
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                    
+                } else {
+                    results.push('❌ Login failed');
+                    statusEl.textContent = 'Login failed';
+                }
+            } catch (error) {
+                results.push(`❌ Login error: ${error.message}`);
+                statusEl.textContent = `Error: ${error.message}`;
+            }
+
+            // Display results
+            resultsEl.innerHTML = '<h2>Results:</h2>' + results.map(r => `<p>${r}</p>`).join('');
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', testUINavigation);
+    </script>
+</body>
+</html>
