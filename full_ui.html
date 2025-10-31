@@ -6925,7 +6925,20 @@
                 
                 useEffect(() => {
                     apiClient.getTransactions()
-                        .then(res => setTransactions(res.transactions || []))
+                        .then(res => {
+                            // Handle SuccessResponse wrapper - data is nested in res.data
+                            const txnData = res.data ? res.data.transactions : res.transactions;
+                            // Map field names from API to UI expectations
+                            const mappedTxns = (txnData || []).map(tx => ({
+                                date: tx.date,
+                                type: tx.type,
+                                symbol: tx.symbol,
+                                quantity: tx.shares || tx.quantity || 0,
+                                price: tx.price || 0,
+                                amount: tx.amount || 0
+                            }));
+                            setTransactions(mappedTxns);
+                        })
                         .catch(() => setTransactions(getMockTransactions()))
                         .finally(() => setLoading(false));
                 }, []);
