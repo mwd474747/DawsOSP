@@ -23,9 +23,7 @@
   "steps": [
     {
       "capability": "cycles.compute_short_term",
-      "args": {
-        "asof_date": "{{inputs.asof_date}}"
-      },
+      "args": {},
       "as": "stdc",
       "fallback": {
         "phase_label": "Late Expansion",
@@ -41,9 +39,7 @@
     },
     {
       "capability": "cycles.compute_long_term",
-      "args": {
-        "asof_date": "{{inputs.asof_date}}"
-      },
+      "args": {},
       "as": "ltdc",
       "fallback": {
         "phase_label": "Late Cycle",
@@ -59,9 +55,7 @@
     },
     {
       "capability": "cycles.compute_empire",
-      "args": {
-        "asof_date": "{{inputs.asof_date}}"
-      },
+      "args": {},
       "as": "empire",
       "fallback": {
         "phase_label": "Relative Decline",
@@ -74,21 +68,33 @@
         "education_rank": 15,
         "trade_balance": -0.032
       }
+    },
+    {
+      "capability": "cycles.compute_civil",
+      "args": {},
+      "as": "civil",
+      "fallback": {
+        "cycle_type": "civil",
+        "phase_label": "Rising Tension",
+        "phase_number": 3,
+        "composite_score": 0.42,
+        "confidence": 0.81,
+        "description": "Increasing wealth inequality, declining social cohesion",
+        "indicators": {
+          "gini_coefficient": 0.415,
+          "wealth_top_1pct": 0.324,
+          "polarization_index": 0.78,
+          "institutional_trust": 0.38,
+          "social_mobility": 0.41
+        },
+        "risk_factors": {
+          "wealth_inequality": "HIGH",
+          "political_polarization": "HIGH",
+          "trust_deficit": "HIGH"
+        }
+      }
     }
   ],
-  "post_processing": {
-    "add_civil_cycle": {
-      "phase_label": "Rising Tension",
-      "score": 0.42,
-      "confidence": 0.81,
-      "description": "Increasing wealth inequality, declining social cohesion",
-      "gini_coefficient": 0.415,
-      "wealth_top_1pct": 0.324,
-      "polarization_index": 0.78,
-      "institutional_trust": 0.38,
-      "social_mobility": 0.41
-    }
-  },
   "rights_required": ["macro_data_read"],
   "export_allowed": {
     "pdf": true,
