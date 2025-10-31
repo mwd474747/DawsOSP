@@ -351,9 +351,12 @@ async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any]
         # Run pattern
         result = await orchestrator.run_pattern(pattern_name, ctx, inputs)
         
+        # The pattern orchestrator returns data in result["data"], not result["outputs"]
+        outputs = result.get("data", {})
+        
         return {
             "success": True,
-            "data": result.get("outputs", {}),
+            "data": outputs,
             "trace": result.get("trace"),
             "metadata": {
                 "pattern": pattern_name,

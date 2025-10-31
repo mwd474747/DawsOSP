@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Attribution API</title>
+    <script src="https://unpkg.com/axios@1.6.2/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Test Attribution API</h1>
+    <button id="login">Login</button>
+    <button id="testAttribution" disabled>Test Attribution</button>
+    <pre id="result"></pre>
+    
+    <script>
+        const resultEl = document.getElementById('result');
+        const loginBtn = document.getElementById('login');
+        const testBtn = document.getElementById('testAttribution');
+        
+        loginBtn.addEventListener('click', async () => {
+            try {
+                const response = await axios.post('/api/auth/login', {
+                    email: 'michael@dawsos.com',
+                    password: 'test123'
+                });
+                
+                if (response.data.access_token) {
+                    localStorage.setItem('access_token', response.data.access_token);
+                    localStorage.setItem('user', JSON.stringify(response.data.user));
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
+                    resultEl.textContent = 'Login successful!';
+                    testBtn.disabled = false;
+                }
+            } catch (error) {
+                resultEl.textContent = 'Login error: ' + (error.response?.data?.detail || error.message);
+            }
+        });
+        
+        testBtn.addEventListener('click', async () => {
+            try {
+                resultEl.textContent = 'Testing portfolio_overview pattern...';
+                
+                const response = await axios.post('/api/patterns/execute', {
+                    pattern: 'portfolio_overview',
+                    inputs: {
+                        portfolio_id: '64ff3be6-0ed1-4990-a32b-4ded17f0320c',
+                        lookback_days: 252
+                    }
+                });
+                
+                resultEl.textContent = JSON.stringify(response.data, null, 2);
+                
+                // Specifically extract and highlight currency_attr
+                if (response.data?.data?.currency_attr) {
+                    resultEl.textContent += '\n\n=== CURRENCY ATTRIBUTION ===\n' + 
+                        JSON.stringify(response.data.data.currency_attr, null, 2);
+                }
+            } catch (error) {
+                resultEl.textContent = 'Pattern execution error: ' + 
+                    (error.response?.data?.detail || error.message) + '\n\n' +
+                    JSON.stringify(error.response?.data, null, 2);
+            }
+        });
+        
+        // Check if already logged in
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            testBtn.disabled = false;
+            resultEl.textContent = 'Already logged in. Click Test Attribution to proceed.';
+        }
+    </script>
+</body>
+</html>
