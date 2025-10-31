@@ -358,6 +358,7 @@ class MacroHound(BaseAgent):
         scenario_id: Optional[str] = None,
         scenario_params: Optional[Dict[str, Any]] = None,
         pack_id: Optional[str] = None,
+        custom_shocks: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Run stress test scenario.
@@ -372,6 +373,7 @@ class MacroHound(BaseAgent):
             scenario_id: Scenario ID (e.g., "rates_up", "equity_selloff", "2008_financial_crisis")
             scenario_params: Custom scenario parameters (shocks to apply)
             pack_id: Pricing pack ID (optional, uses ctx.pricing_pack_id if not provided)
+            custom_shocks: Custom shocks to apply (rates_bps, usd_vs_cad_pct, cpi_surprise_pct)
 
         Returns:
             Dict with scenario results

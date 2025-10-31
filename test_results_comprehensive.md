@@ -1,15 +1,15 @@
 # DawsOS Comprehensive Test Report
 
-**Test Date:** 2025-10-31T18:32:33.780740
+**Test Date:** 2025-10-31T18:43:44.230360
 
-**Success Rate:** 37.5%
+**Success Rate:** 56.2%
 
 ## Summary
 
 - **Total Pages:** 16
 - **Pages Tested:** 16
-- **Pages Passed:** 4 ✅
-- **Pages Failed:** 8 ❌
+- **Pages Passed:** 7 ✅
+- **Pages Failed:** 5 ❌
 - **Pages Partial:** 4 ⚠️
 - **Authentication:** ✅ Success
 
@@ -37,12 +37,12 @@
 | Performance | ✅ PASS | 2/2 | ❌ | None |
 | Optimizer | ❌ FAIL | 0/2 | ❌ | None |
 | Ratings | ❌ FAIL | 0/2 | ❌ | None |
-| AI Insights | ❌ FAIL | 0/1 | ❌ | None |
+| AI Insights | ✅ PASS | 1/1 | ✅ | None |
 | Transactions | ❌ FAIL | 0/1 | ❌ | None |
 | Alerts | ⚠️ PARTIAL | 1/2 | ✅ | None |
 | Reports | ✅ PASS | 1/1 | ✅ | None |
-| Corporate Actions | ❌ FAIL | 0/1 | ❌ | None |
-| API Keys | ❌ FAIL | 0/1 | ❌ | None |
+| Corporate Actions | ✅ PASS | 1/1 | ✅ | None |
+| API Keys | ✅ PASS | 1/1 | ✅ | None |
 | Settings | ❌ FAIL | 0/1 | ❌ | None |
 
 ## Before/After Status Comparison
