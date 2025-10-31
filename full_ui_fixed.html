@@ -2534,40 +2534,303 @@
             }
             
             function OptimizerPage() {
+                const [loading, setLoading] = useState(true);
+                const [error, setError] = useState(null);
+                const [optimizationData, setOptimizationData] = useState(null);
+                const [refreshing, setRefreshing] = useState(false);
+                
+                useEffect(() => {
+                    fetchOptimizationRecommendations();
+                }, []);
+                
+                const fetchOptimizationRecommendations = async () => {
+                    try {
+                        setRefreshing(true);
+                        setError(null);
+                        
+                        // Call the policy_rebalance pattern
+                        const result = await apiClient.executePattern('policy_rebalance', {
+                            portfolio_id: '64ff3be6-0ed1-4990-a32b-4ded17f0320c',
+                            policies: [
+                                { type: 'min_quality_score', value: 7.0 },
+                                { type: 'max_single_position', value: 25.0 },
+                                { type: 'max_sector', value: 35.0 }
+                            ],
+                            constraints: {
+                                max_te_pct: 2.0,
+                                max_turnover_pct: 10.0,
+                                min_lot_value: 500
+                            }
+                        });
+                        
+                        console.log('Policy rebalance result:', result);
+                        
+                        if (result.success && result.data) {
+                            setOptimizationData(processOptimizationData(result.data));
+                        } else {
+                            console.warn('Using fallback data:', result.error);
+                            setOptimizationData(getFallbackOptimizationData());
+                            setError(result.error || 'Failed to load optimization recommendations');
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch optimization recommendations:', error);
+                        setError('Failed to load optimization recommendations');
+                        setOptimizationData(getFallbackOptimizationData());
+                    } finally {
+                        setLoading(false);
+                        setRefreshing(false);
+                    }
+                };
+                
+                const processOptimizationData = (data) => {
+                    // Extract data from the pattern response
+                    const rebalanceSummary = data.rebalance_summary || {};
+                    const proposedTrades = data.proposed_trades || [];
+                    const impactAnalysis = data.impact_analysis || {};
+                    const rebalanceResult = data.rebalance_result || {};
+                    
+                    return {
+                        summary: {
+                            totalTrades: rebalanceResult.trade_count || rebalanceSummary.trade_count || 0,
+                            totalTurnover: rebalanceResult.total_turnover || rebalanceSummary.total_turnover || 0,
+                            turnoverPct: rebalanceResult.turnover_pct || rebalanceSummary.turnover_pct || 0,
+                            estimatedCosts: rebalanceResult.estimated_costs || rebalanceSummary.estimated_costs || 0,
+                            costBps: rebalanceResult.cost_bps || rebalanceSummary.cost_bps || 0,
+                            teImpact: impactAnalysis.te_delta || 0
+                        },
+                        trades: Array.isArray(proposedTrades) ? proposedTrades : 
+                                (rebalanceResult.trades || []),
+                        impact: {
+                            currentValue: impactAnalysis.current_value || 291290,
+                            postValue: impactAnalysis.post_rebalance_value || 291290,
+                            valueDelta: impactAnalysis.value_delta || 0,
+                            currentDivSafety: impactAnalysis.current_div_safety || 0,
+                            postDivSafety: impactAnalysis.post_div_safety || 0,
+                            divSafetyDelta: impactAnalysis.div_safety_delta || 0,
+                            currentMoat: impactAnalysis.current_moat || 0,
+                            postMoat: impactAnalysis.post_moat || 0,
+                            moatDelta: impactAnalysis.moat_delta || 0,
+                            currentConcentration: impactAnalysis.current_concentration || 0,
+                            postConcentration: impactAnalysis.post_concentration || 0,
+                            concentrationDelta: impactAnalysis.concentration_delta || 0
+                        }
+                    };
+                };
+                
+                const getFallbackOptimizationData = () => {
+                    return {
+                        summary: {
+                            totalTrades: 3,
+                            totalTurnover: 25000,
+                            turnoverPct: 8.6,
+                            estimatedCosts: 125,
+                            costBps: 4.3,
+                            teImpact: 0.2
+                        },
+                        trades: [
+                            {
+                                symbol: 'MSFT',
+                                action: 'BUY',
+                                quantity: 50,
+                                price: 380,
+                                value: 19000,
+                                reason: 'Underweight technology sector, high quality moat',
+                                estimated_cost: 38
+                            },
+                            {
+                                symbol: 'BRK.B',
+                                action: 'SELL',
+                                quantity: 30,
+                                price: 360,
+                                value: -10800,
+                                reason: 'Over-concentrated position (29% of portfolio)',
+                                estimated_cost: 22
+                            },
+                            {
+                                symbol: 'JNJ',
+                                action: 'BUY',
+                                quantity: 40,
+                                price: 155,
+                                value: 6200,
+                                reason: 'Strong dividend safety, defensive characteristics',
+                                estimated_cost: 12
+                            }
+                        ],
+                        impact: {
+                            currentValue: 291290,
+                            postValue: 291290,
+                            valueDelta: 0,
+                            currentDivSafety: 7.2,
+                            postDivSafety: 7.8,
+                            divSafetyDelta: 0.6,
+                            currentMoat: 8.1,
+                            postMoat: 8.3,
+                            moatDelta: 0.2,
+                            currentConcentration: 65,
+                            postConcentration: 58,
+                            concentrationDelta: -7
+                        }
+                    };
+                };
+                
+                const getActionStyle = (action) => {
+                    switch (action?.toUpperCase()) {
+                        case 'BUY':
+                            return { color: 'var(--color-success)' };
+                        case 'SELL':
+                        case 'REDUCE':
+                            return { color: 'var(--color-error)' };
+                        case 'HOLD':
+                            return { color: 'var(--color-warning)' };
+                        default:
+                            return {};
+                    }
+                };
+                
+                if (loading) {
+                    return e('div', null,
+                        e('div', { className: 'page-header' },
+                            e('h1', { className: 'page-title' }, 'Portfolio Optimizer'),
+                            e('p', { className: 'page-description' }, 'Loading optimization recommendations...')
+                        ),
+                        e('div', { className: 'loading' }, e('div', { className: 'spinner' }))
+                    );
+                }
+                
                 return e('div', null,
                     e('div', { className: 'page-header' },
                         e('h1', { className: 'page-title' }, 'Portfolio Optimizer'),
-                        e('p', { className: 'page-description' }, 'AI-powered optimization suggestions')
+                        e('p', { className: 'page-description' }, 'AI-powered optimization with policy-based rebalancing')
                     ),
+                    
+                    error && e('div', { className: 'error-banner' }, error),
+                    
+                    // Summary Statistics
+                    optimizationData && optimizationData.summary && e('div', { className: 'stats-grid' },
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Total Trades'),
+                            e('div', { className: 'stat-value' }, optimizationData.summary.totalTrades || 0)
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Turnover'),
+                            e('div', { className: 'stat-value' }, 
+                                formatCurrency(optimizationData.summary.totalTurnover || 0))
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Turnover %'),
+                            e('div', { className: 'stat-value' }, 
+                                formatPercentage((optimizationData.summary.turnoverPct || 0) / 100))
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Est. Costs'),
+                            e('div', { className: 'stat-value' }, 
+                                formatCurrency(optimizationData.summary.estimatedCosts || 0))
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Cost (bps)'),
+                            e('div', { className: 'stat-value' }, 
+                                formatNumber(optimizationData.summary.costBps || 0))
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'TE Impact'),
+                            e('div', { className: 'stat-value' }, 
+                                formatPercentage((optimizationData.summary.teImpact || 0) / 100))
+                        )
+                    ),
+                    
+                    // Proposed Trades
                     e('div', { className: 'card' },
                         e('div', { className: 'card-header' },
-                            e('h3', { className: 'card-title' }, 'Optimization Recommendations')
+                            e('h3', { className: 'card-title' }, 'Proposed Trades'),
+                            e('button', {
+                                className: 'btn btn-sm',
+                                onClick: fetchOptimizationRecommendations,
+                                disabled: refreshing
+                            }, refreshing ? 'Refreshing...' : 'Refresh')
+                        ),
+                        e('div', { className: 'table-container' },
+                            optimizationData && optimizationData.trades && optimizationData.trades.length > 0 ?
+                                e('table', { className: 'table' },
+                                    e('thead', null,
+                                        e('tr', null,
+                                            e('th', null, 'Action'),
+                                            e('th', null, 'Symbol'),
+                                            e('th', null, 'Quantity'),
+                                            e('th', null, 'Price'),
+                                            e('th', null, 'Value'),
+                                            e('th', null, 'Reason'),
+                                            e('th', null, 'Est. Cost')
+                                        )
+                                    ),
+                                    e('tbody', null,
+                                        optimizationData.trades.map((trade, index) =>
+                                            e('tr', { key: index },
+                                                e('td', { style: getActionStyle(trade.action) }, 
+                                                    trade.action || 'N/A'),
+                                                e('td', { className: 'symbol' }, trade.symbol || 'N/A'),
+                                                e('td', null, formatNumber(trade.quantity || 0)),
+                                                e('td', null, formatCurrency(trade.price || 0)),
+                                                e('td', { 
+                                                    className: trade.value >= 0 ? 'positive' : 'negative' 
+                                                }, formatCurrency(Math.abs(trade.value || 0))),
+                                                e('td', null, trade.reason || 'Optimization target'),
+                                                e('td', null, formatCurrency(trade.estimated_cost || 0))
+                                            )
+                                        )
+                                    )
+                                ) :
+                                e('div', { className: 'empty-state' }, 
+                                    'No trades recommended - portfolio is optimally balanced')
+                        )
+                    ),
+                    
+                    // Impact Analysis
+                    optimizationData && optimizationData.impact && e('div', { className: 'card' },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'Impact Analysis')
                         ),
                         e('div', { className: 'table-container' },
                             e('table', { className: 'table' },
                                 e('thead', null,
                                     e('tr', null,
-                                        e('th', null, 'Action'),
-                                        e('th', null, 'Symbol'),
+                                        e('th', null, 'Metric'),
                                         e('th', null, 'Current'),
-                                        e('th', null, 'Target'),
+                                        e('th', null, 'Post-Rebalance'),
                                         e('th', null, 'Change')
                                     )
                                 ),
                                 e('tbody', null,
                                     e('tr', null,
-                                        e('td', { style: { color: 'var(--color-success)' } }, 'BUY'),
-                                        e('td', { className: 'symbol' }, 'MSFT'),
-                                        e('td', null, '0.0%'),
-                                        e('td', null, '5.0%'),
-                                        e('td', { className: 'positive' }, '+5.0%')
+                                        e('td', null, 'Portfolio Value'),
+                                        e('td', null, formatCurrency(optimizationData.impact.currentValue)),
+                                        e('td', null, formatCurrency(optimizationData.impact.postValue)),
+                                        e('td', { 
+                                            className: optimizationData.impact.valueDelta >= 0 ? 'positive' : 'negative' 
+                                        }, formatCurrency(optimizationData.impact.valueDelta))
                                     ),
                                     e('tr', null,
-                                        e('td', { style: { color: 'var(--color-error)' } }, 'REDUCE'),
-                                        e('td', { className: 'symbol' }, 'BRK.B'),
-                                        e('td', null, '29.2%'),
-                                        e('td', null, '20.0%'),
-                                        e('td', { className: 'negative' }, '-9.2%')
+                                        e('td', null, 'Avg Dividend Safety'),
+                                        e('td', null, formatNumber(optimizationData.impact.currentDivSafety)),
+                                        e('td', null, formatNumber(optimizationData.impact.postDivSafety)),
+                                        e('td', { 
+                                            className: optimizationData.impact.divSafetyDelta >= 0 ? 'positive' : 'negative' 
+                                        }, formatNumber(optimizationData.impact.divSafetyDelta, true))
+                                    ),
+                                    e('tr', null,
+                                        e('td', null, 'Avg Moat Strength'),
+                                        e('td', null, formatNumber(optimizationData.impact.currentMoat)),
+                                        e('td', null, formatNumber(optimizationData.impact.postMoat)),
+                                        e('td', { 
+                                            className: optimizationData.impact.moatDelta >= 0 ? 'positive' : 'negative' 
+                                        }, formatNumber(optimizationData.impact.moatDelta, true))
+                                    ),
+                                    e('tr', null,
+                                        e('td', null, 'Concentration (Top 10)'),
+                                        e('td', null, formatPercentage(optimizationData.impact.currentConcentration / 100)),
+                                        e('td', null, formatPercentage(optimizationData.impact.postConcentration / 100)),
+                                        e('td', { 
+                                            className: optimizationData.impact.concentrationDelta <= 0 ? 'positive' : 'negative' 
+                                        }, formatPercentage(optimizationData.impact.concentrationDelta / 100))
                                     )
                                 )
                             )

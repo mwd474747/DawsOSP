@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Optimizer Page</title>
+    <script src="https://unpkg.com/axios@1.6.2/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Testing Optimizer Page</h1>
+    <div id="status"></div>
+    <div id="results"></div>
+    
+    <script>
+        const API_BASE = '';
+        const statusDiv = document.getElementById('status');
+        const resultsDiv = document.getElementById('results');
+        
+        async function testOptimizer() {
+            try {
+                // 1. Login
+                statusDiv.innerHTML = 'Logging in...';
+                const loginResponse = await axios.post(`${API_BASE}/api/login`, {
+                    email: 'michael@dawsos.com',
+                    password: 'test123'
+                });
+                
+                const token = loginResponse.data.access_token;
+                statusDiv.innerHTML = 'Login successful! Testing policy_rebalance pattern...';
+                
+                // 2. Test policy_rebalance pattern directly
+                const patternResponse = await axios.post(
+                    `${API_BASE}/api/patterns/execute`,
+                    {
+                        pattern: 'policy_rebalance',
+                        params: {
+                            portfolio_id: '64ff3be6-0ed1-4990-a32b-4ded17f0320c',
+                            policies: [
+                                { type: 'min_quality_score', value: 7.0 },
+                                { type: 'max_single_position', value: 25.0 },
+                                { type: 'max_sector', value: 35.0 }
+                            ],
+                            constraints: {
+                                max_te_pct: 2.0,
+                                max_turnover_pct: 10.0,
+                                min_lot_value: 500
+                            }
+                        }
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                );
+                
+                statusDiv.innerHTML = 'Pattern executed successfully!';
+                
+                // Display results
+                const data = patternResponse.data;
+                let html = '<h2>Policy Rebalance Results:</h2>';
+                
+                if (data.success) {
+                    html += '<h3>Pattern Response:</h3>';
+                    html += '<pre>' + JSON.stringify(data.data, null, 2) + '</pre>';
+                    
+                    // Extract key data
+                    const result = data.data;
+                    if (result) {
+                        html += '<h3>Summary:</h3>';
+                        if (result.rebalance_summary) {
+                            html += '<p>Total Trades: ' + (result.rebalance_summary.trade_count || 0) + '</p>';
+                            html += '<p>Turnover: ' + (result.rebalance_summary.total_turnover || 0) + '</p>';
+                        }
+                        if (result.rebalance_result) {
+                            html += '<p>Trade Count: ' + (result.rebalance_result.trade_count || 0) + '</p>';
+                            html += '<p>Total Turnover: ' + (result.rebalance_result.total_turnover || 0) + '</p>';
+                        }
+                        
+                        html += '<h3>Proposed Trades:</h3>';
+                        const trades = result.proposed_trades || result.rebalance_result?.trades || [];
+                        if (trades.length > 0) {
+                            html += '<table border="1"><tr><th>Symbol</th><th>Action</th><th>Quantity</th><th>Value</th><th>Reason</th></tr>';
+                            trades.forEach(trade => {
+                                html += '<tr>';
+                                html += '<td>' + (trade.symbol || 'N/A') + '</td>';
+                                html += '<td>' + (trade.action || 'N/A') + '</td>';
+                                html += '<td>' + (trade.quantity || 0) + '</td>';
+                                html += '<td>' + (trade.value || 0) + '</td>';
+                                html += '<td>' + (trade.reason || 'N/A') + '</td>';
+                                html += '</tr>';
+                            });
+                            html += '</table>';
+                        } else {
+                            html += '<p>No trades recommended</p>';
+                        }
+                    }
+                } else {
+                    html += '<h3>Error:</h3>';
+                    html += '<pre>' + JSON.stringify(data.error, null, 2) + '</pre>';
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                statusDiv.innerHTML = 'Error: ' + error.message;
+                resultsDiv.innerHTML = '<pre>' + JSON.stringify(error.response?.data || error, null, 2) + '</pre>';
+            }
+        }
+        
+        // Run test on page load
+        testOptimizer();
+    </script>
+</body>
+</html>
