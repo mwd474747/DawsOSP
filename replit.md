@@ -16,6 +16,13 @@ Preferred communication style: Simple, everyday language.
 - **Technical Debt**: Eliminated all simulated NAV generation and stub patterns - metrics now fail explicitly on missing data
 - **Manual Process**: Metrics updated via `compute_metrics_simple.py` (automated scheduling deferred)
 
+### Completed: Macro Dashboard Data Scaling Fix
+- **Issue**: Frontend displayed incorrectly scaled economic indicators (324% instead of 3.24%)
+- **Root Cause**: Database stores human-readable names ("Manufacturing PMI") while code expected snake_case ("manufacturing_pmi"), plus frontend's formatPercentage multiplies by 100
+- **Solution**: Created comprehensive indicator name mapping and converted all percentage values to decimal form (0.0324 for 3.24%)
+- **Result**: All economic indicators now display with correct scales across all 4 Dalio cycles
+- **Indicators Fixed**: Inflation, GDP growth, unemployment, interest rates, credit growth, debt ratios, all properly scaled
+
 ## System Architecture
 
 ### Core Architecture

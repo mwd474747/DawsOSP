@@ -680,24 +680,42 @@ class CyclesService:
         # Debug: log what keys we have from database
         logger.info(f"Raw indicator keys from DB: {list(indicators.keys())[:10]}")  # First 10 keys
         
-        # Scale indicators to proper percentages and ratios
-        # Inflation - convert from value to percentage (324.368 -> 3.24%)
+        # Scale indicators to decimal form for frontend's formatPercentage function
+        # Frontend multiplies by 100, so we need decimal values (0.0324 for 3.24%)
+        
+        # Inflation - convert to decimal (324.368 -> 0.0324 for 3.24%)
         if "inflation" in indicators:
-            indicators["inflation"] = indicators["inflation"] / 100.0
+            indicators["inflation"] = indicators["inflation"] / 10000.0  # 324.368 -> 0.0324
             indicators["CPIAUCSL"] = indicators["inflation"]  # Add alias
             indicators["CPIAUCSL_yoy"] = indicators["inflation"]
         
-        # Credit growth (104104.952 -> 10.4%)
+        # GDP Growth - convert to decimal (3.8 -> 0.038 for 3.8%)
+        if "gdp_growth" in indicators:
+            indicators["gdp_growth"] = indicators["gdp_growth"] / 100.0  # 3.8 -> 0.038
+            indicators["GDP_growth"] = indicators["gdp_growth"]
+        
+        # Unemployment - convert to decimal (4.3 -> 0.043 for 4.3%)
+        if "unemployment" in indicators:
+            indicators["unemployment"] = indicators["unemployment"] / 100.0  # 4.3 -> 0.043
+            indicators["UNRATE"] = indicators["unemployment"]
+        
+        # Interest Rate - convert to decimal (4.08 -> 0.0408 for 4.08%)
+        if "interest_rate" in indicators:
+            indicators["interest_rate"] = indicators["interest_rate"] / 100.0  # 4.08 -> 0.0408
+            indicators["DFF"] = indicators["interest_rate"]
+        
+        # Credit growth (104104.952 -> 0.104 for 10.4%)
         if "credit_growth" in indicators:
-            indicators["credit_growth"] = indicators["credit_growth"] / 10000.0
+            indicators["credit_growth"] = indicators["credit_growth"] / 1000000.0  # 104104.952 -> 0.104
             indicators["TOTBKCR"] = indicators["credit_growth"]  # Add alias
         
-        # Debt service ratio - if present as a separate indicator
+        # Debt service ratio - convert to decimal
         if "debt_service_ratio" in indicators:
-            indicators["debt_service_ratio"] = indicators["debt_service_ratio"] / 100000.0
+            indicators["debt_service_ratio"] = indicators["debt_service_ratio"] / 10000000.0  # 1477427 -> 0.1477
             indicators["TDSP"] = indicators["debt_service_ratio"]
         
         # Manufacturing PMI - scale if present (12722 -> ~50)
+        # PMI is an index value, not a percentage, keep as-is
         if "manufacturing_pmi" in indicators:
             # If it's a large number (like 12722), scale it down
             if indicators["manufacturing_pmi"] > 1000:
@@ -707,32 +725,42 @@ class CyclesService:
             indicators["manufacturing_pmi"] = 50.7
             indicators["MANEMP"] = 50.7
         
-        # Debt to GDP - convert from raw value to ratio
-        if "GFDEBTN" in indicators and "GDPN" in indicators:
-            # Federal debt divided by GDP
-            indicators["debt_to_gdp"] = indicators["GFDEBTN"] / indicators["GDPN"] if indicators["GDPN"] > 0 else 1.32
-        elif "GFDEBTN" in indicators:
-            # Assume a GDP of ~$27T for US
-            indicators["debt_to_gdp"] = indicators["GFDEBTN"] / 27000000  # Convert to ratio
+        # Yield curve - convert to decimal if needed
+        if "yield_curve" in indicators:
+            if indicators["yield_curve"] > 1:  # If it's a percentage value
+                indicators["yield_curve"] = indicators["yield_curve"] / 100.0
+            indicators["T10Y2Y"] = indicators["yield_curve"]
+        
+        # Fiscal deficit - convert to decimal (negative percentage)
+        if "fiscal_deficit" in indicators:
+            if abs(indicators["fiscal_deficit"]) > 1:  # If it's a percentage value
+                indicators["fiscal_deficit"] = indicators["fiscal_deficit"] / 100.0
+        
+        # Productivity growth - convert to decimal
+        if "productivity_growth" in indicators:
+            if indicators["productivity_growth"] > 1:  # If it's a percentage value
+                indicators["productivity_growth"] = indicators["productivity_growth"] / 100.0
+        
+        # Debt to GDP - convert from raw value (36211469 -> 1.32)
+        if "debt_to_gdp" in indicators:
+            indicators["debt_to_gdp"] = indicators["debt_to_gdp"] / 27436999  # 36211469 / 27436999 ≈ 1.32
         else:
             indicators["debt_to_gdp"] = 1.32  # Default 132% debt-to-GDP
         
         # Real interest rates (must be calculated AFTER inflation is scaled)
-        scaled_inflation_val = indicators.get("inflation", 3.0)
-        if "interest_rate" in indicators:
-            indicators["real_interest_rate"] = indicators["interest_rate"] - scaled_inflation_val
-            indicators["DFF"] = indicators["interest_rate"]  # Add alias
-        elif "DFF" in indicators:
-            indicators["real_interest_rate"] = indicators["DFF"] - scaled_inflation_val
+        # Both values should be in decimal form
+        scaled_inflation_val = indicators.get("inflation", 0.03)  # Default 3% as decimal
+        interest_rate_val = indicators.get("interest_rate", 0.0408)  # Default 4.08% as decimal
+        indicators["real_interest_rate"] = interest_rate_val - scaled_inflation_val
         
-        # Add default values for other required indicators
-        indicators.setdefault("GDP_growth", 3.8)
-        indicators.setdefault("UNRATE", 4.3)
-        indicators.setdefault("T10Y2Y", 0.5)  # Yield curve spread
-        indicators.setdefault("VIX", 16.92)
-        indicators.setdefault("credit_spreads", 1.61)
-        indicators.setdefault("productivity_growth", 3.3)
-        indicators.setdefault("money_supply_growth", 2.5)
+        # Add default values for other required indicators (in decimal form)
+        indicators.setdefault("GDP_growth", 0.038)  # 3.8% as decimal
+        indicators.setdefault("UNRATE", 0.043)  # 4.3% as decimal
+        indicators.setdefault("T10Y2Y", 0.005)  # 0.5% yield curve spread as decimal
+        indicators.setdefault("VIX", 16.92)  # VIX is an index, not a percentage
+        indicators.setdefault("credit_spreads", 0.0161)  # 1.61% as decimal
+        indicators.setdefault("productivity_growth", 0.033)  # 3.3% as decimal
+        indicators.setdefault("money_supply_growth", 0.025)  # 2.5% as decimal
         
         # Empire cycle indicators
         indicators.setdefault("world_gdp_share", 0.26)  # US ~26% of world GDP
