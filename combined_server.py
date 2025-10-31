@@ -166,13 +166,14 @@ class LoginResponse(BaseModel):
 class ExecuteRequest(BaseModel):
     pattern: str = Field(..., min_length=1, max_length=100)
     inputs: Dict[str, Any] = Field(default_factory=dict)
+    params: Dict[str, Any] = Field(default_factory=dict)  # Alternative field name
     require_fresh: bool = False
     
-    @field_validator('inputs')
+    @field_validator('inputs', 'params')
     @classmethod
     def validate_inputs(cls, v):
         # Limit input size to prevent abuse
-        if len(json.dumps(v)) > 10000:
+        if v and len(json.dumps(v)) > 10000:
             raise ValueError('Input data too large')
         return v
 
@@ -351,12 +352,9 @@ async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any]
         # Run pattern
         result = await orchestrator.run_pattern(pattern_name, ctx, inputs)
         
-        # The pattern orchestrator returns data in result["data"], not result["outputs"]
-        outputs = result.get("data", {})
-        
         return {
             "success": True,
-            "data": outputs,
+            "data": result.get("outputs", {}),
             "trace": result.get("trace"),
             "metadata": {
                 "pattern": pattern_name,
@@ -1046,9 +1044,16 @@ async def execute_pattern(request: ExecuteRequest):
         user_id = "user-001"  # In production, extract from JWT token
         
         # Execute the pattern
+        # Handle both 'inputs' and 'params' fields for backwards compatibility
+        pattern_inputs = {}
+        if hasattr(request, 'inputs') and request.inputs:
+            pattern_inputs = request.inputs
+        elif hasattr(request, 'params') and request.params:
+            pattern_inputs = request.params
+        
         result = await execute_pattern_orchestrator(
             pattern_name=request.pattern,
-            inputs=request.inputs if hasattr(request, 'inputs') else request.params if hasattr(request, 'params') else {},
+            inputs=pattern_inputs,
             user_id=user_id
         )
         
@@ -2449,88 +2454,6 @@ async def get_alerts(request: Request):
             detail="Alert service error"
         )
 
-@app.patch("/api/alerts/{alert_id}", response_model=SuccessResponse)
-async def update_alert(request: Request, alert_id: str, alert_config: AlertConfig):
-    """Update an alert with proper validation"""
-    try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
-        
-        # Validate alert ID format
-        try:
-            UUID(alert_id)  # Validate UUID format
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid alert ID format"
-            )
-        
-        if USE_MOCK_DATA:
-            # Return updated mock alert
-            updated_alert = {
-                "id": alert_id,
-                "user_id": user["id"],
-                "type": alert_config.type,
-                "symbol": alert_config.symbol,
-                "threshold": alert_config.threshold,
-                "condition": alert_config.condition,
-                "notification_channel": alert_config.notification_channel,
-                "active": True,
-                "updated_at": datetime.utcnow().isoformat()
-            }
-            return SuccessResponse(data=updated_alert)
-        
-        # Update in database
-        query = """
-            UPDATE alerts 
-            SET condition_json = $2, updated_at = NOW()
-            WHERE id = $1 AND user_id = (SELECT id FROM users WHERE email = $3)
-            RETURNING id, condition_json, is_active, updated_at
-        """
-        
-        alert_data = {
-            "type": alert_config.type,
-            "symbol": alert_config.symbol,
-            "threshold": alert_config.threshold,
-            "condition": alert_config.condition,
-            "notification_channel": alert_config.notification_channel
-        }
-        
-        result = await execute_query_safe(
-            query, 
-            alert_id, 
-            json.dumps(alert_data), 
-            user["email"],
-            fetch_one=True
-        )
-        
-        if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Alert not found or not authorized"
-            )
-        
-        return SuccessResponse(data={
-            "id": str(result["id"]),
-            "active": result["is_active"],
-            "updated_at": result["updated_at"].isoformat() if result["updated_at"] else None,
-            **alert_data
-        })
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Update alert error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Alert service error"
-        )
-
 @app.delete("/api/alerts/{alert_id}", response_model=SuccessResponse)
 async def delete_alert(request: Request, alert_id: str):
     """Delete an alert with proper validation"""
@@ -2917,338 +2840,6 @@ async def ai_analysis(request: Request, ai_request: AIAnalysisRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="AI analysis service error"
-        )
-
-@app.post("/api/ai/chat", response_model=SuccessResponse)
-async def ai_chat(request: Request):
-    """AI chat endpoint using Claude agent capabilities"""
-    try:
-        # Get request body
-        body = await request.json()
-        message = body.get("message", "")
-        message_type = body.get("type", None)  # Can be 'portfolio', 'financial', 'scenario', or None for auto-detect
-        
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
-        
-        # Get portfolio data for context
-        portfolio_data = None
-        try:
-            portfolio_result = await execute_query_safe("""
-                SELECT 
-                    p.id,
-                    p.name,
-                    COALESCE(pm.total_value, 0) as total_value,
-                    COALESCE(pm.total_return, 0) as total_return,
-                    COUNT(DISTINCT pp.ticker) as position_count
-                FROM portfolios p
-                LEFT JOIN portfolio_metrics pm ON p.id = pm.portfolio_id
-                LEFT JOIN portfolio_positions pp ON p.id = pp.portfolio_id
-                WHERE p.id = $1
-                GROUP BY p.id, p.name, pm.total_value, pm.total_return
-            """, "64ff3be6-0ed1-4990-a32b-4ded17f0320c")
-            
-            if portfolio_result:
-                portfolio_data = {
-                    "total_value": float(portfolio_result[0].get("total_value", 0)),
-                    "total_return": float(portfolio_result[0].get("total_return", 0)),
-                    "position_count": portfolio_result[0].get("position_count", 0)
-                }
-                
-                # Get top positions
-                positions_result = await execute_query_safe("""
-                    SELECT 
-                        ticker as symbol,
-                        quantity,
-                        cost_basis,
-                        current_price,
-                        (quantity * current_price) as value
-                    FROM portfolio_positions
-                    WHERE portfolio_id = $1
-                    ORDER BY (quantity * current_price) DESC
-                    LIMIT 5
-                """, "64ff3be6-0ed1-4990-a32b-4ded17f0320c")
-                
-                if positions_result:
-                    portfolio_data["positions"] = [
-                        {
-                            "symbol": p["symbol"],
-                            "quantity": float(p.get("quantity", 0)),
-                            "value": float(p.get("value", 0))
-                        }
-                        for p in positions_result
-                    ]
-        except Exception as e:
-            logger.warning(f"Could not fetch portfolio data: {e}")
-        
-        # If no real data, use mock portfolio data
-        if not portfolio_data:
-            portfolio_data = {
-                "total_value": 1025000.50,
-                "total_return": 0.125,
-                "position_count": 37,
-                "positions": [
-                    {"symbol": "BRK.B", "quantity": 850, "value": 298000},
-                    {"symbol": "AAPL", "quantity": 500, "value": 95000},
-                    {"symbol": "MSFT", "quantity": 250, "value": 92500},
-                    {"symbol": "JPM", "quantity": 400, "value": 72000},
-                    {"symbol": "V", "quantity": 200, "value": 52000}
-                ]
-            }
-        
-        # Determine the type of question if not specified
-        if not message_type:
-            lower_msg = message.lower()
-            if any(word in lower_msg for word in ["portfolio", "holding", "position", "allocation", "rebalance", "diversif"]):
-                message_type = "portfolio"
-            elif any(word in lower_msg for word in ["what if", "scenario", "happen if", "impact", "crash", "recession"]):
-                message_type = "scenario"
-            else:
-                message_type = "financial"
-        
-        # Use Claude agent if available and API key is configured
-        if PATTERN_ORCHESTRATION_AVAILABLE and ANTHROPIC_API_KEY:
-            try:
-                runtime = get_agent_runtime()
-                claude_agent = None
-                for agent_id, agent in runtime.agents.items():
-                    if "claude" in agent_id.lower():
-                        claude_agent = agent
-                        break
-                
-                if claude_agent:
-                    # Create request context
-                    ctx = RequestCtx(
-                        trace_id=str(uuid4()),
-                        request_id=str(uuid4()),
-                        user_id=user["sub"],
-                        portfolio_id="64ff3be6-0ed1-4990-a32b-4ded17f0320c",
-                        asof_date=date.today(),
-                        pricing_pack_id=f"PP_{date.today().isoformat()}",
-                        ledger_commit_hash=hashlib.md5(f"{date.today()}".encode()).hexdigest()[:8]
-                    )
-                    
-                    state = {}
-                    
-                    # Call appropriate Claude capability based on message type
-                    if message_type == "portfolio":
-                        result = await claude_agent.claude_portfolio_advice(
-                            ctx, state, message, portfolio_data
-                        )
-                        response_text = result.get("advice", "I can help you analyze your portfolio.")
-                    elif message_type == "scenario":
-                        result = await claude_agent.claude_scenario_analysis(
-                            ctx, state, message, portfolio_data
-                        )
-                        response_text = result.get("analysis", "Let me analyze that scenario for you.")
-                    else:  # financial or general
-                        result = await claude_agent.claude_financial_qa(
-                            ctx, state, message, {"portfolio": portfolio_data}
-                        )
-                        response_text = result.get("answer", "I can help answer your financial questions.")
-                    
-                    return SuccessResponse(data={
-                        "response": response_text,
-                        "type": message_type,
-                        "timestamp": datetime.utcnow().isoformat()
-                    })
-                    
-            except Exception as e:
-                logger.error(f"Claude agent error: {e}")
-                # Fall through to mock response
-        
-        # Fallback mock responses based on message type
-        mock_responses = {
-            "portfolio": [
-                f"Based on your portfolio with a total value of ${portfolio_data['total_value']:,.2f}, I notice your top holding is {portfolio_data['positions'][0]['symbol']} at ${portfolio_data['positions'][0]['value']:,.2f}. Consider diversifying to reduce concentration risk.",
-                f"Your portfolio shows {portfolio_data['position_count']} positions. The current allocation appears concentrated in your top 5 holdings. A more balanced approach might reduce volatility.",
-                f"With a {portfolio_data['total_return']*100:.1f}% return, your portfolio is performing well. However, reviewing your sector allocation could help identify potential rebalancing opportunities."
-            ],
-            "scenario": [
-                "In a market downturn scenario of -20%, your portfolio would likely see significant impact on equity positions. Consider hedging strategies or increasing cash allocation.",
-                "If interest rates rise by 1%, growth stocks in your portfolio may face pressure. Value stocks and dividend aristocrats could provide stability.",
-                "During an inflation spike scenario, real assets and commodities typically outperform. Your current allocation may benefit from inflation-protected securities."
-            ],
-            "financial": [
-                "Market diversification is key to managing risk. The general rule is to not have more than 5-10% in any single position.",
-                "Dollar-cost averaging can help reduce the impact of market volatility over time. Consider regular investment intervals.",
-                "Tax-loss harvesting can help offset capital gains. Review positions with unrealized losses near year-end."
-            ]
-        }
-        
-        # Select appropriate mock response
-        responses = mock_responses.get(message_type, mock_responses["financial"])
-        response_text = random.choice(responses)
-        
-        return SuccessResponse(data={
-            "response": response_text,
-            "type": message_type,
-            "timestamp": datetime.utcnow().isoformat()
-        })
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"AI chat error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="AI chat service error"
-        )
-
-@app.post("/api/reports/generate")
-async def generate_report(
-    request: Request,
-    report_type: str = Query(..., description="Type of report (quarterly, ytd)"),
-    portfolio_id: str = Query(default="64ff3be6-0ed1-4990-a32b-4ded17f0320c")
-):
-    """Generate PDF portfolio report"""
-    try:
-        # Extract user info from token if available
-        user_id = None
-        try:
-            token = request.headers.get("Authorization", "").replace("Bearer ", "")
-            if token:
-                payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-                user_id = payload.get("sub")
-        except:
-            pass
-        
-        # Execute the export_portfolio_report pattern
-        if PATTERN_ORCHESTRATION_AVAILABLE and db_pool:
-            try:
-                # Get report service
-                from app.services.reports import ReportService
-                report_service = ReportService(environment="staging")
-                
-                # First gather portfolio data using pattern orchestrator
-                overview_result = await execute_pattern_orchestrator(
-                    "portfolio_overview",
-                    {"portfolio_id": portfolio_id},
-                    user_id
-                )
-                
-                # Prepare report data based on type
-                report_data = {
-                    "portfolio_id": portfolio_id,
-                    "report_type": report_type.upper(),
-                    "generated_date": datetime.utcnow().isoformat(),
-                    "portfolio": overview_result.get("data", {}),
-                    "_metadata": {"source": "DawsOS"}
-                }
-                
-                # Add specific content based on report type
-                if report_type == "quarterly":
-                    report_data["period"] = "Q4 2024"
-                    report_data["start_date"] = "2024-10-01"
-                    report_data["end_date"] = "2024-12-31"
-                    report_data["title"] = "Quarterly Performance Report - Q4 2024"
-                else:  # ytd
-                    report_data["period"] = "Year to Date 2024"
-                    report_data["start_date"] = "2024-01-01"
-                    report_data["end_date"] = "2024-12-31"
-                    report_data["title"] = "Year-to-Date Performance Report 2024"
-                
-                # Generate PDF using report service
-                pdf_bytes = await report_service.render_pdf(
-                    report_data=report_data,
-                    template_name="portfolio_report",
-                    user_id=user_id,
-                    portfolio_id=portfolio_id
-                )
-                
-                # Create download response
-                return Response(
-                    content=pdf_bytes,
-                    media_type="application/pdf",
-                    headers={
-                        "Content-Disposition": f"attachment; filename={report_type}_report_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
-                    }
-                )
-                
-            except Exception as e:
-                logger.error(f"Report generation with orchestrator failed: {e}")
-                # Fall through to mock report
-        
-        # Generate mock PDF report if orchestration not available
-        from reportlab.lib import colors
-        from reportlab.lib.pagesizes import letter
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import inch
-        from io import BytesIO
-        
-        # Create PDF buffer
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=letter)
-        elements = []
-        styles = getSampleStyleSheet()
-        
-        # Title
-        title = f"{'Quarterly' if report_type == 'quarterly' else 'Year-to-Date'} Portfolio Report"
-        elements.append(Paragraph(title, styles['Title']))
-        elements.append(Spacer(1, 0.5*inch))
-        
-        # Summary info
-        summary_data = [
-            ['Portfolio Value', '$291,290.00'],
-            ['Total Return', '+14.5%'],
-            ['Period', 'Q4 2024' if report_type == 'quarterly' else 'YTD 2024'],
-            ['Sharpe Ratio', '1.35'],
-            ['Max Drawdown', '-12.3%']
-        ]
-        
-        summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
-        summary_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ]))
-        elements.append(summary_table)
-        elements.append(Spacer(1, 0.5*inch))
-        
-        # Holdings table
-        elements.append(Paragraph("Top Holdings", styles['Heading2']))
-        holdings_data = [
-            ['Symbol', 'Shares', 'Value', 'Weight'],
-            ['BAM', '850', '$55,250', '19.0%'],
-            ['CNR', '150', '$20,700', '7.1%'],
-            ['BRK.B', '50', '$18,500', '6.4%'],
-            ['CSU', '10', '$17,520', '6.0%'],
-            ['HHC', '200', '$16,300', '5.6%']
-        ]
-        
-        holdings_table = Table(holdings_data, colWidths=[1.5*inch, 1.5*inch, 1.5*inch, 1.5*inch])
-        holdings_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ]))
-        elements.append(holdings_table)
-        
-        # Build PDF
-        doc.build(elements)
-        pdf_content = buffer.getvalue()
-        buffer.close()
-        
-        return Response(
-            content=pdf_content,
-            media_type="application/pdf",
-            headers={
-                "Content-Disposition": f"attachment; filename={report_type}_report_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
-            }
-        )
-        
-    except Exception as e:
-        logger.error(f"Report generation error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate report: {str(e)}"
         )
 
 @app.get("/api/factor-analysis", response_model=SuccessResponse)
