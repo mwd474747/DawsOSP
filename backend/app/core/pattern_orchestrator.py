@@ -378,9 +378,24 @@ class PatternOrchestrator:
 
         # Extract outputs
         outputs = {}
-        for output_key in spec.get("outputs", []):
+        # Handle outputs as either dict (keys) or list (backward compatibility)
+        outputs_spec = spec.get("outputs", {})
+        if isinstance(outputs_spec, dict):
+            output_keys = list(outputs_spec.keys())
+        else:
+            output_keys = outputs_spec
+        
+        # Debug logging for macro pattern issue
+        if pattern_id == "macro_cycles_overview":
+            logger.info(f"DEBUG: outputs_spec type: {type(outputs_spec)}, value: {outputs_spec}")
+            logger.info(f"DEBUG: output_keys: {output_keys}")
+            logger.info(f"DEBUG: state keys: {list(state.keys())}")
+            
+        for output_key in output_keys:
             if output_key in state:
                 outputs[output_key] = state[output_key]
+                if pattern_id == "macro_cycles_overview":
+                    logger.info(f"DEBUG: Added {output_key} to outputs")
             else:
                 logger.warning(
                     f"Output {output_key} not found in state for pattern {pattern_id}"
