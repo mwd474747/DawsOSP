@@ -1051,6 +1051,24 @@ async def execute_pattern(request: ExecuteRequest):
         elif hasattr(request, 'params') and request.params:
             pattern_inputs = request.params
         
+        # Provide default values for common missing parameters
+        # portfolio_overview pattern needs lookback_days
+        if request.pattern == "portfolio_overview" and "lookback_days" not in pattern_inputs:
+            pattern_inputs["lookback_days"] = 252  # Default to 1 year
+        
+        # Ensure portfolio_id is provided if missing (only for patterns that need it)
+        portfolio_patterns = ["portfolio_overview", "portfolio_scenario_analysis", "portfolio_cycle_risk"]
+        if request.pattern in portfolio_patterns and "portfolio_id" not in pattern_inputs:
+            # Try to get a valid portfolio from the database
+            if db_pool:
+                try:
+                    async with db_pool.acquire() as conn:
+                        result = await conn.fetchrow("SELECT id FROM portfolios LIMIT 1")
+                        if result:
+                            pattern_inputs["portfolio_id"] = str(result["id"])
+                except:
+                    pass  # If DB query fails, let the pattern handle the missing portfolio_id
+        
         result = await execute_pattern_orchestrator(
             pattern_name=request.pattern,
             inputs=pattern_inputs,
