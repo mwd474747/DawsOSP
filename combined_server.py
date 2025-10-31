@@ -1348,21 +1348,45 @@ async def get_holdings(
                     
                     if pattern_result.get("success") and pattern_result.get("data"):
                         data = pattern_result["data"]
-                        valued_positions = data.get("valued_positions", [])
                         
-                        # Format holdings for UI
+                        # Try to get valued_positions first, then positions
+                        valued_positions_data = data.get("valued_positions", {})
+                        
+                        # Check if valued_positions has a 'positions' key (it's the result of pricing.apply_pack)
+                        if isinstance(valued_positions_data, dict) and "positions" in valued_positions_data:
+                            valued_positions = valued_positions_data.get("positions", [])
+                        else:
+                            # Fallback to positions if valued_positions not properly structured
+                            positions_data = data.get("positions", {})
+                            valued_positions = positions_data.get("positions", []) if isinstance(positions_data, dict) else []
+                        
+                        # Format holdings for UI with proper field mapping
                         holdings = []
+                        total_value = 0
                         for pos in valued_positions:
+                            # Calculate market value if not present
+                            market_value = pos.get("market_value") or (pos.get("quantity", 0) * pos.get("price", 0))
+                            total_value += market_value
+                            
                             holdings.append({
                                 "symbol": pos.get("symbol"),
-                                "quantity": pos.get("quantity", 0),
-                                "price": pos.get("price", 0),
-                                "value": pos.get("market_value", 0),
+                                "name": pos.get("name", pos.get("symbol")),  # Use symbol as fallback for name
+                                "quantity": float(pos.get("quantity", 0)),
+                                "price": float(pos.get("price", 0)),
+                                "market_value": float(market_value),
+                                "value": float(market_value),  # Duplicate for UI compatibility
                                 "sector": pos.get("sector", "Other"),
-                                "cost_basis": pos.get("cost_basis", 0),
-                                "unrealized_pnl": pos.get("unrealized_pnl", 0),
-                                "unrealized_pnl_pct": pos.get("unrealized_pnl_pct", 0)
+                                "cost_basis": float(pos.get("cost_basis", 0)),
+                                "unrealized_pnl": float(pos.get("unrealized_pnl", 0)),
+                                "unrealized_pnl_pct": float(pos.get("unrealized_pnl_pct", 0)),
+                                "weight": 0,  # Will calculate after total
+                                "return_pct": float(pos.get("unrealized_pnl_pct", 0))  # Use unrealized P&L as return
                             })
+                        
+                        # Calculate weights
+                        if total_value > 0:
+                            for holding in holdings:
+                                holding["weight"] = (holding["market_value"] / total_value) * 100
                         
                         # Apply pagination
                         start = (page - 1) * page_size
