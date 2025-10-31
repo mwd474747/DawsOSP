@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DawsOS Portfolio Intelligence Platform</title>
+    
+    <!-- React UMD builds from unpkg -->
+    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/recharts@2.5.0/dist/Recharts.min.js"></script>
+    <script src="https://unpkg.com/axios@1.6.2/dist/axios.min.js"></script>
+    
+    <!-- Professional Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Bloomberg Terminal-Style Dark Theme */
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --border-primary: rgba(255, 255, 255, 0.08);
+            --border-secondary: rgba(255, 255, 255, 0.04);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --color-success: #10b981;
+            --color-error: #ef4444;
+            --color-warning: #f59e0b;
+            --color-info: #3b82f6;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+            --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-sans);
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #0f1929 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Professional Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+        
+        .mono {
+            font-family: var(--font-mono);
+            font-weight: 500;
+        }
+        
+        /* Login Container */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .login-box {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-primary);
+            border-radius: 16px;
+            padding: 3rem 2.5rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        
+        .login-header h1 {
+            font-size: 2rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .login-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-info);
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .btn {
+            padding: 0.875rem 2rem;
+            background: var(--color-info);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-primary);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--text-primary);
+        }
+        
+        /* Dashboard Layout */
+        .dashboard {
+            min-height: 100vh;
+            background: var(--bg-primary);
+        }
+        
+        /* Glass Morphism Navigation */
+        .nav-header {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-primary);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .nav-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .nav-brand h1 {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.25rem;
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 12px;
+        }
+        
+        .nav-tab {
+            padding: 0.625rem 1.25rem;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .nav-tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+        
+        .nav-tab.active {
+            background: var(--color-info);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .user-info {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .btn-logout {
+            padding: 0.5rem 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: var(--color-error);
+        }
+        
+        /* Main Content Area */
+        .main-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.2s;
+        }
+        
+        .stat-card:hover {
+            background: rgba(30, 41, 59, 0.6);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .stat-change {
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        
+        .positive {
+            color: var(--color-success);
+        }
+        
+        .negative {
+            color: var(--color-error);
+        }
+        
+        .neutral {
+            color: var(--text-secondary);
+        }
+        
+        /* Card Component */
+        .card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-secondary);
+        }
+        
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .table thead tr {
+            border-bottom: 2px solid var(--border-primary);
+        }
+        
+        .table th {
+            padding: 0.75rem;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+        }
+        
+        .table tbody tr {
+            border-bottom: 1px solid var(--border-secondary);
+            transition: background 0.15s;
+        }
+        
+        .table tbody tr:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+        
+        .table td {
+            padding: 0.75rem;
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+        
+        .table td.symbol {
+            font-weight: 600;
+            color: var(--color-info);
+        }
+        
+        /* Chart Container */
+        .chart-container {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Grid Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        /* Loading States */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-primary);
+            border-top-color: var(--color-info);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Error States */
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            color: var(--color-error);
+            margin: 1rem 0;
+        }
+        
+        /* Success States */
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            color: var(--color-success);
+            margin: 1rem 0;
+        }
+        
+        /* Pagination */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .pagination-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .pagination-btn:hover:not(:disabled) {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--color-info);
+            color: var(--color-info);
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pagination-info {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .nav-tabs {
+                overflow-x: auto;
+                width: 100%;
+            }
+            
+            .stats-grid,
+            .grid-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+            
+            .table {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script>
+        // React Components using createElement (no JSX, no Babel needed)
+        const { useState, useEffect, useCallback, useMemo } = React;
+        const e = React.createElement;
+        
+        // API Configuration
+        const API_BASE = '';
+        
+        // Color Palette
+        const COLORS = {
+            success: '#10b981',
+            error: '#ef4444',
+            warning: '#f59e0b',
+            info: '#3b82f6',
+            purple: '#8b5cf6',
+            pink: '#ec4899'
+        };
+        
+        // Format helpers
+        const formatCurrency = (value) => {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(value || 0);
+        };
+        
+        const formatPercentage = (value) => {
+            const formatted = ((value || 0) * 100).toFixed(2);
+            return `${value >= 0 ? '+' : ''}${formatted}%`;
+        };
+        
+        const formatDate = (dateString) => {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        };
+        
+        // Login Component
+        const LoginForm = ({ onLogin }) => {
+            const [email, setEmail] = useState('michael@dawsos.com');
+            const [password, setPassword] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+            
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setError('');
+                
+                try {
+                    const response = await axios.post(`${API_BASE}/api/auth/login`, {
+                        email,
+                        password
+                    });
+                    
+                    const { access_token, user } = response.data;
+                    localStorage.setItem('authToken', access_token);
+                    localStorage.setItem('user', JSON.stringify(user));
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+                    onLogin(access_token, user);
+                } catch (err) {
+                    setError(err.response?.data?.message || 'Login failed. Please try again.');
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            return (
+                <div className="login-container">
+                    <div className="login-box">
+                        <div className="login-header">
+                            <h1>DawsOS</h1>
+                            <p>Portfolio Intelligence Platform</p>
+                        </div>
+                        <form onSubmit={handleSubmit}>
+                            <div className="form-group">
+                                <label className="form-label">Email Address</label>
+                                <input
+                                    type="email"
+                                    className="form-input"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Password</label>
+                                <input
+                                    type="password"
+                                    className="form-input"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Enter password"
+                                    required
+                                />
+                            </div>
+                            {error && <div className="error-message">{error}</div>}
+                            <button type="submit" className="btn" disabled={loading}>
+                                {loading ? 'LOGGING IN...' : 'LOGIN'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+        
+        // Portfolio Overview Component
+        const PortfolioOverview = ({ data }) => {
+            if (!data) return <div className="loading">Loading portfolio data...</div>;
+            
+            const formatCurrency = (value) => {
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(value);
+            };
+            
+            const formatPercentage = (value) => {
+                const formatted = (value * 100).toFixed(2);
+                return `${value >= 0 ? '+' : ''}${formatted}%`;
+            };
+            
+            return (
+                <div className="stats-grid">
+                    <div className="stat-card">
+                        <div className="stat-label">Total Value</div>
+                        <div className="stat-value">{formatCurrency(data.total_value)}</div>
+                        <div className={`stat-change ${data.total_change >= 0 ? 'positive' : 'negative'}`}>
+                            {formatPercentage(data.total_change_pct)} Today
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-label">Unrealized P&L</div>
+                        <div className={`stat-value ${data.unrealized_pnl >= 0 ? 'positive' : 'negative'}`}>
+                            {formatCurrency(data.unrealized_pnl)}
+                        </div>
+                        <div className={`stat-change ${data.unrealized_pnl_pct >= 0 ? 'positive' : 'negative'}`}>
+                            {formatPercentage(data.unrealized_pnl_pct)}
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-label">Daily Return</div>
+                        <div className={`stat-value ${data.day_return >= 0 ? 'positive' : 'negative'}`}>
+                            {formatCurrency(data.day_return)}
+                        </div>
+                        <div className={`stat-change ${data.day_return_pct >= 0 ? 'positive' : 'negative'}`}>
+                            {formatPercentage(data.day_return_pct)}
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-label">YTD Return</div>
+                        <div className={`stat-value ${data.ytd_return >= 0 ? 'positive' : 'negative'}`}>
+                            {formatCurrency(data.ytd_return)}
+                        </div>
+                        <div className={`stat-change ${data.ytd_return_pct >= 0 ? 'positive' : 'negative'}`}>
+                            {formatPercentage(data.ytd_return_pct)}
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-label">Sharpe Ratio</div>
+                        <div className="stat-value mono">{data.sharpe_ratio?.toFixed(2) || '0.00'}</div>
+                        <div className="stat-change neutral">Risk-Adjusted Return</div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-label">Portfolio Beta</div>
+                        <div className="stat-value mono">{data.portfolio_beta?.toFixed(2) || '1.00'}</div>
+                        <div className="stat-change neutral">Market Sensitivity</div>
+                    </div>
+                </div>
+            );
+        };
+        
+        // Holdings Table Component
+        const HoldingsTable = ({ holdings }) => {
+            if (!holdings || holdings.length === 0) {
+                return <div className="card">
+                    <div className="card-header">
+                        <h3 className="card-title">Holdings</h3>
+                    </div>
+                    <div className="loading">No holdings data available</div>
+                </div>;
+            }
+            
+            const formatCurrency = (value) => {
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 2
+                }).format(value);
+            };
+            
+            const formatPercentage = (value) => {
+                const formatted = (value * 100).toFixed(2);
+                return `${value >= 0 ? '+' : ''}${formatted}%`;
+            };
+            
+            return (
+                <div className="card">
+                    <div className="card-header">
+                        <h3 className="card-title">Portfolio Holdings</h3>
+                    </div>
+                    <div className="table-container">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Market Value</th>
+                                    <th>Cost Basis</th>
+                                    <th>Unrealized P&L</th>
+                                    <th>% of Portfolio</th>
+                                    <th>Daily Change</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {holdings.map(holding => {
+                                    const unrealizedPnl = holding.market_value - holding.cost_basis;
+                                    const unrealizedPnlPct = holding.cost_basis > 0 ? unrealizedPnl / holding.cost_basis : 0;
+                                    
+                                    return (
+                                        <tr key={holding.symbol}>
+                                            <td className="symbol">{holding.symbol}</td>
+                                            <td>{holding.quantity}</td>
+                                            <td>{formatCurrency(holding.price)}</td>
+                                            <td>{formatCurrency(holding.market_value)}</td>
+                                            <td>{formatCurrency(holding.cost_basis)}</td>
+                                            <td className={unrealizedPnl >= 0 ? 'positive' : 'negative'}>
+                                                {formatCurrency(unrealizedPnl)}
+                                            </td>
+                                            <td>{((holding.weight || 0) * 100).toFixed(2)}%</td>
+                                            <td className={holding.daily_change >= 0 ? 'positive' : 'negative'}>
+                                                {formatPercentage(holding.daily_change || 0)}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+        
+        // Transactions Component
+        const TransactionsHistory = ({ transactions }) => {
+            const [currentPage, setCurrentPage] = useState(1);
+            const itemsPerPage = 10;
+            
+            if (!transactions || transactions.length === 0) {
+                return <div className="card">
+                    <div className="card-header">
+                        <h3 className="card-title">Transaction History</h3>
+                    </div>
+                    <div className="loading">No transactions available</div>
+                </div>;
+            }
+            
+            const totalPages = Math.ceil(transactions.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const currentTransactions = transactions.slice(startIndex, endIndex);
+            
+            const formatDate = (dateString) => {
+                return new Date(dateString).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            };
+            
+            const formatCurrency = (value) => {
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 2
+                }).format(value);
+            };
+            
+            return (
+                <div className="card">
+                    <div className="card-header">
+                        <h3 className="card-title">Transaction History</h3>
+                    </div>
+                    <div className="table-container">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Symbol</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Amount</th>
+                                    <th>Realized Gain</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {currentTransactions.map((tx, index) => (
+                                    <tr key={index}>
+                                        <td>{formatDate(tx.date || tx.trade_date)}</td>
+                                        <td style={{ textTransform: 'uppercase' }}>{tx.type}</td>
+                                        <td className="symbol">{tx.symbol}</td>
+                                        <td>{tx.quantity || tx.shares}</td>
+                                        <td>{formatCurrency(tx.price)}</td>
+                                        <td className={tx.amount >= 0 ? 'positive' : 'negative'}>
+                                            {formatCurrency(Math.abs(tx.amount))}
+                                        </td>
+                                        <td className={tx.realized_gain >= 0 ? 'positive' : 'negative'}>
+                                            {tx.realized_gain ? formatCurrency(tx.realized_gain) : '--'}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="pagination">
+                        <button 
+                            className="pagination-btn" 
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                        >
+                            Previous
+                        </button>
+                        <span className="pagination-info">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <button 
+                            className="pagination-btn" 
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+        
+        // Performance Chart Component
+        const PerformanceChart = ({ data }) => {
+            if (!data || data.length === 0) {
+                return <div className="chart-container">
+                    <h3 className="card-title">Portfolio Performance</h3>
+                    <div className="loading">No performance data available</div>
+                </div>;
+            }
+            
+            // Check if Recharts is available
+            if (!window.Recharts || !ResponsiveContainer) {
+                // Fallback simple chart display
+                const maxValue = Math.max(...data.map(d => d.value));
+                const minValue = Math.min(...data.map(d => d.value));
+                const range = maxValue - minValue;
+                
+                return (
+                    <div className="chart-container">
+                        <h3 className="card-title">Portfolio Performance</h3>
+                        <div style={{ padding: '1rem', color: '#94a3b8' }}>
+                            <div>Latest Value: ${data[data.length - 1]?.value?.toLocaleString()}</div>
+                            <div>High: ${maxValue.toLocaleString()}</div>
+                            <div>Low: ${minValue.toLocaleString()}</div>
+                        </div>
+                    </div>
+                );
+            }
+            
+            return (
+                <div className="chart-container">
+                    <h3 className="card-title">Portfolio Performance</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <AreaChart data={data}>
+                            <defs>
+                                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor={COLORS.info} stopOpacity={0.8}/>
+                                    <stop offset="95%" stopColor={COLORS.info} stopOpacity={0}/>
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                            <XAxis dataKey="date" stroke="#94a3b8" />
+                            <YAxis stroke="#94a3b8" />
+                            <Tooltip 
+                                contentStyle={{ 
+                                    backgroundColor: '#1e293b', 
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '8px'
+                                }}
+                            />
+                            <Area 
+                                type="monotone" 
+                                dataKey="value" 
+                                stroke={COLORS.info} 
+                                fillOpacity={1} 
+                                fill="url(#colorValue)" 
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+            );
+        };
+        
+        // Allocation Chart Component
+        const AllocationChart = ({ allocations }) => {
+            if (!allocations || allocations.length === 0) {
+                return <div className="chart-container">
+                    <h3 className="card-title">Sector Allocation</h3>
+                    <div className="loading">No allocation data available</div>
+                </div>;
+            }
+            
+            const chartColors = [COLORS.info, COLORS.success, COLORS.warning, COLORS.error, COLORS.purple, COLORS.pink];
+            
+            // Check if Recharts is available
+            if (!window.Recharts || !ResponsiveContainer) {
+                // Fallback allocation display
+                return (
+                    <div className="chart-container">
+                        <h3 className="card-title">Sector Allocation</h3>
+                        <div style={{ padding: '1rem' }}>
+                            {allocations.map((item, index) => (
+                                <div key={index} style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between',
+                                    marginBottom: '0.5rem',
+                                    color: '#94a3b8'
+                                }}>
+                                    <span style={{ color: chartColors[index % chartColors.length] }}>
+                                        {item.name}
+                                    </span>
+                                    <span className="mono">{item.value.toFixed(1)}%</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+            
+            return (
+                <div className="chart-container">
+                    <h3 className="card-title">Sector Allocation</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                            <Pie
+                                data={allocations}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={(entry) => `${entry.name}: ${entry.value.toFixed(1)}%`}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="value"
+                            >
+                                {allocations.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
+                                ))}
+                            </Pie>
+                            <Tooltip 
+                                contentStyle={{ 
+                                    backgroundColor: '#1e293b', 
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '8px'
+                                }}
+                            />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+            );
+        };
+        
+        // Macro Indicators Component
+        const MacroIndicators = ({ data }) => {
+            if (!data) {
+                return <div className="card">
+                    <div className="card-header">
+                        <h3 className="card-title">Macro Economic Indicators</h3>
+                    </div>
+                    <div className="loading">Loading macro data...</div>
+                </div>;
+            }
+            
+            const indicators = [
+                { name: 'VIX', value: data.vix, label: 'Volatility Index', threshold: 30 },
+                { name: 'Interest Rate', value: data.interest_rate, label: '10Y Treasury', suffix: '%' },
+                { name: 'Inflation', value: data.inflation, label: 'CPI YoY', suffix: '%' },
+                { name: 'GDP Growth', value: data.gdp_growth, label: 'Real GDP', suffix: '%' },
+                { name: 'Unemployment', value: data.unemployment, label: 'Unemployment Rate', suffix: '%' },
+                { name: 'Dollar Index', value: data.dxy, label: 'DXY', threshold: 100 }
+            ];
+            
+            return (
+                <div className="card">
+                    <div className="card-header">
+                        <h3 className="card-title">Macro Economic Dashboard</h3>
+                    </div>
+                    <div className="grid-3">
+                        {indicators.map(indicator => {
+                            const isHigh = indicator.threshold && indicator.value > indicator.threshold;
+                            const colorClass = isHigh ? 'negative' : 'neutral';
+                            
+                            return (
+                                <div key={indicator.name} className="stat-card">
+                                    <div className="stat-label">{indicator.label}</div>
+                                    <div className={`stat-value mono ${colorClass}`}>
+                                        {indicator.value?.toFixed(2) || '--'}{indicator.suffix || ''}
+                                    </div>
+                                    <div className="stat-change neutral">{indicator.name}</div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+        
+        // Main Dashboard Component
+        const Dashboard = ({ token, user, onLogout }) => {
+            const [activeTab, setActiveTab] = useState('overview');
+            const [portfolioData, setPortfolioData] = useState(null);
+            const [holdings, setHoldings] = useState([]);
+            const [transactions, setTransactions] = useState([]);
+            const [macroData, setMacroData] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState('');
+            
+            // Fetch all data
+            useEffect(() => {
+                const fetchData = async () => {
+                    setLoading(true);
+                    try {
+                        const [portfolioRes, holdingsRes, transactionsRes, macroRes] = await Promise.all([
+                            axios.get(`${API_BASE}/api/portfolio`),
+                            axios.get(`${API_BASE}/api/holdings`),
+                            axios.get(`${API_BASE}/api/transactions`),
+                            axios.get(`${API_BASE}/api/macro`)
+                        ]);
+                        
+                        setPortfolioData(portfolioRes.data.data || portfolioRes.data);
+                        setHoldings(holdingsRes.data.data || holdingsRes.data);
+                        setTransactions(transactionsRes.data.data || transactionsRes.data);
+                        setMacroData(macroRes.data.data || macroRes.data);
+                    } catch (err) {
+                        setError('Failed to fetch portfolio data');
+                        console.error(err);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                
+                fetchData();
+                
+                // Refresh data every 30 seconds
+                const interval = setInterval(fetchData, 30000);
+                return () => clearInterval(interval);
+            }, []);
+            
+            // Generate mock performance data for chart
+            const performanceData = useMemo(() => {
+                const data = [];
+                const today = new Date();
+                for (let i = 30; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    data.push({
+                        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                        value: portfolioData?.total_value ? portfolioData.total_value * (1 + (Math.random() - 0.5) * 0.02) : 100000
+                    });
+                }
+                return data;
+            }, [portfolioData]);
+            
+            // Calculate sector allocations
+            const sectorAllocations = useMemo(() => {
+                if (!holdings || holdings.length === 0) return [];
+                
+                const sectors = {};
+                const totalValue = holdings.reduce((sum, h) => sum + h.market_value, 0);
+                
+                holdings.forEach(holding => {
+                    const sector = holding.sector || 'Other';
+                    sectors[sector] = (sectors[sector] || 0) + holding.market_value;
+                });
+                
+                return Object.entries(sectors).map(([name, value]) => ({
+                    name,
+                    value: (value / totalValue) * 100
+                }));
+            }, [holdings]);
+            
+            const renderTabContent = () => {
+                switch(activeTab) {
+                    case 'overview':
+                        return (
+                            <>
+                                <PortfolioOverview data={portfolioData} />
+                                <div className="grid-2">
+                                    <PerformanceChart data={performanceData} />
+                                    <AllocationChart allocations={sectorAllocations} />
+                                </div>
+                                <HoldingsTable holdings={holdings} />
+                            </>
+                        );
+                    case 'holdings':
+                        return <HoldingsTable holdings={holdings} />;
+                    case 'transactions':
+                        return <TransactionsHistory transactions={transactions} />;
+                    case 'macro':
+                        return <MacroIndicators data={macroData} />;
+                    default:
+                        return <div className="loading">Select a tab to view content</div>;
+                }
+            };
+            
+            if (loading) {
+                return (
+                    <div className="dashboard">
+                        <div className="loading">
+                            <div className="spinner"></div>
+                        </div>
+                    </div>
+                );
+            }
+            
+            return (
+                <div className="dashboard">
+                    <nav className="nav-header">
+                        <div className="nav-content">
+                            <div className="nav-brand">
+                                <h1>DawsOS</h1>
+                            </div>
+                            <div className="nav-tabs">
+                                <button 
+                                    className={`nav-tab ${activeTab === 'overview' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('overview')}
+                                >
+                                    Overview
+                                </button>
+                                <button 
+                                    className={`nav-tab ${activeTab === 'holdings' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('holdings')}
+                                >
+                                    Holdings
+                                </button>
+                                <button 
+                                    className={`nav-tab ${activeTab === 'transactions' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('transactions')}
+                                >
+                                    Transactions
+                                </button>
+                                <button 
+                                    className={`nav-tab ${activeTab === 'macro' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('macro')}
+                                >
+                                    Macro
+                                </button>
+                            </div>
+                            <div className="nav-actions">
+                                <span className="user-info">{user?.email}</span>
+                                <button className="btn-logout" onClick={onLogout}>
+                                    LOGOUT
+                                </button>
+                            </div>
+                        </div>
+                    </nav>
+                    <div className="main-content">
+                        {error && <div className="error-message">{error}</div>}
+                        {renderTabContent()}
+                    </div>
+                </div>
+            );
+        };
+        
+        // Main App Component
+        const App = () => {
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
+            const [token, setToken] = useState(null);
+            const [user, setUser] = useState(null);
+            
+            // Check for existing auth on mount
+            useEffect(() => {
+                const storedToken = localStorage.getItem('authToken');
+                const storedUser = localStorage.getItem('user');
+                
+                if (storedToken && storedUser) {
+                    setToken(storedToken);
+                    setUser(JSON.parse(storedUser));
+                    setIsAuthenticated(true);
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+                }
+            }, []);
+            
+            const handleLogin = (token, user) => {
+                setToken(token);
+                setUser(user);
+                setIsAuthenticated(true);
+            };
+            
+            const handleLogout = () => {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('user');
+                delete axios.defaults.headers.common['Authorization'];
+                setToken(null);
+                setUser(null);
+                setIsAuthenticated(false);
+            };
+            
+            return isAuthenticated ? (
+                <Dashboard token={token} user={user} onLogout={handleLogout} />
+            ) : (
+                <LoginForm onLogin={handleLogin} />
+            );
+        };
+        
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
