@@ -47,15 +47,15 @@ try:
     # Try importing from backend context
     import sys
     import os
-    
+
     # Add backend directory to Python path to fix imports
     backend_dir = os.path.join(os.path.dirname(__file__), 'backend')
     if backend_dir not in sys.path:
         sys.path.insert(0, backend_dir)
-    
+
     # Set environment variables to disable observability if not available
     os.environ['ENABLE_OBSERVABILITY'] = 'false'
-    
+
     # Now import the modules
     from app.core.agent_runtime import AgentRuntime
     from app.core.pattern_orchestrator import PatternOrchestrator
@@ -64,7 +64,7 @@ try:
     from app.services.scenarios import get_scenario_service, ShockType
     from app.agents.financial_analyst import FinancialAnalyst
     from app.agents.macro_hound import MacroHound
-    
+
     PATTERN_ORCHESTRATION_AVAILABLE = True
     logger.info("Pattern orchestration modules loaded successfully")
 except ImportError as e:
@@ -149,7 +149,7 @@ class AlertCondition(str, Enum):
 class LoginRequest(BaseModel):
     email: str = Field(..., min_length=3, max_length=255)
     password: str = Field(..., min_length=6, max_length=100)
-    
+
     @field_validator('email')
     @classmethod
     def validate_email(cls, v):
@@ -168,7 +168,7 @@ class ExecuteRequest(BaseModel):
     inputs: Dict[str, Any] = Field(default_factory=dict)
     params: Dict[str, Any] = Field(default_factory=dict)  # Alternative field name
     require_fresh: bool = False
-    
+
     @field_validator('inputs', 'params')
     @classmethod
     def validate_inputs(cls, v):
@@ -183,7 +183,7 @@ class AlertConfig(BaseModel):
     threshold: float = Field(..., ge=0)
     condition: AlertCondition
     notification_channel: str = Field(default="email", min_length=1, max_length=50)
-    
+
     @field_validator('symbol')
     @classmethod
     def validate_symbol(cls, v, info):
@@ -240,12 +240,12 @@ class ValidationError(Exception):
 def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
     """Get or create singleton agent runtime."""
     global _agent_runtime, db_pool
-    
+
     services = {
         "db": db_pool,
         "redis": None,  # TODO: Wire real Redis when needed
     }
-    
+
     # If runtime exists and reinit_services=True, update the services dict
     if _agent_runtime is not None and reinit_services:
         logger.info("Updating agent runtime with database pool")
@@ -254,45 +254,45 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
         for agent_id, agent in _agent_runtime.agents.items():
             agent.services = services
         return _agent_runtime
-    
+
     if _agent_runtime is None:
         # Create runtime
         _agent_runtime = AgentRuntime(services)
-        
+
         # Register Financial Analyst
         financial_analyst = FinancialAnalyst("financial_analyst", services)
         _agent_runtime.register_agent(financial_analyst)
-        
+
         # Register Macro Hound
         macro_hound = MacroHound("macro_hound", services)
         _agent_runtime.register_agent(macro_hound)
-        
+
         # Register other agents as needed
         from backend.app.agents.data_harvester import DataHarvester
         from backend.app.agents.claude_agent import ClaudeAgent
         from backend.app.agents.ratings_agent import RatingsAgent
         from backend.app.agents.optimizer_agent import OptimizerAgent
-        
+
         data_harvester = DataHarvester("data_harvester", services)
         _agent_runtime.register_agent(data_harvester)
-        
+
         claude_agent = ClaudeAgent("claude_agent", services)
         _agent_runtime.register_agent(claude_agent)
-        
+
         ratings_agent = RatingsAgent("ratings_agent", services)
         _agent_runtime.register_agent(ratings_agent)
-        
+
         optimizer_agent = OptimizerAgent("optimizer_agent", services)
         _agent_runtime.register_agent(optimizer_agent)
-        
+
         logger.info(f"Agent runtime initialized with {len(_agent_runtime.agents)} agents")
-    
+
     return _agent_runtime
 
 def get_pattern_orchestrator() -> PatternOrchestrator:
     """Get or create singleton pattern orchestrator."""
     global _pattern_orchestrator, db_pool
-    
+
     if _pattern_orchestrator is None:
         runtime = get_agent_runtime()
         _pattern_orchestrator = PatternOrchestrator(
@@ -301,7 +301,7 @@ def get_pattern_orchestrator() -> PatternOrchestrator:
             redis=None  # TODO: Add Redis when available
         )
         logger.info("Pattern orchestrator initialized")
-    
+
     return _pattern_orchestrator
 
 async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any], user_id: str = None) -> Dict[str, Any]:
@@ -315,13 +315,13 @@ async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any]
                 "error": "Database not available",
                 "data": {}
             }
-            
+
         orchestrator = get_pattern_orchestrator()
-        
+
         # Get real pricing pack ID from database
         pricing_pack_id = f"PP_{date.today().isoformat()}"  # Default fallback
         ledger_commit_hash = hashlib.md5(f"{date.today()}".encode()).hexdigest()[:8]
-        
+
         try:
             # Try to get the latest pricing pack from database
             query = """
@@ -337,7 +337,7 @@ async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any]
                 logger.debug(f"Using pricing pack: {pricing_pack_id}")
         except Exception as e:
             logger.warning(f"Could not fetch pricing pack, using default: {e}")
-        
+
         # Create request context with required values
         ctx = RequestCtx(
             trace_id=str(uuid4()),
@@ -348,10 +348,10 @@ async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any]
             pricing_pack_id=pricing_pack_id,
             ledger_commit_hash=ledger_commit_hash
         )
-        
+
         # Run pattern
         result = await orchestrator.run_pattern(pattern_name, ctx, inputs)
-        
+
         return {
             "success": True,
             "data": result.get("outputs", {}),
@@ -382,41 +382,41 @@ async def lifespan(app: FastAPI):
     Manage application lifecycle - replaces deprecated @app.on_event decorators
     """
     global db_pool
-    
+
     # Startup
     logger.info("Starting DawsOS Enhanced Server...")
-    
+
     # Initialize database
     try:
         await init_db()
         logger.info("Database initialized successfully")
-        
+
         # Initialize agent runtime and pattern orchestrator after DB is ready
         runtime = get_agent_runtime(reinit_services=True)
         get_pattern_orchestrator()
         logger.info("Pattern orchestration system initialized")
-        
+
         # Reset circuit breakers after successful initialization
         if runtime and db_pool and hasattr(runtime, 'circuit_breaker'):
             # Clear circuit breaker state for all agents
             runtime.circuit_breaker.failures.clear()
             runtime.circuit_breaker.open_until.clear()
             logger.info("✅ Reset all agent circuit breakers")
-        
+
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         if not USE_MOCK_DATA:
             logger.warning("Database unavailable and mock mode disabled - some features may not work")
-    
+
     # Initialize other services
     logger.info(f"Server mode: {'ORCHESTRATED' if db_pool else 'FALLBACK'}")
     logger.info("Enhanced server started successfully")
-    
+
     yield  # Server is running
-    
+
     # Shutdown
     logger.info("Shutting down DawsOS Enhanced Server...")
-    
+
     # Clean up database connections
     if db_pool:
         try:
@@ -424,7 +424,7 @@ async def lifespan(app: FastAPI):
             logger.info("Database connections closed")
         except Exception as e:
             logger.error(f"Error closing database connections: {e}")
-    
+
     logger.info("Enhanced server shutdown complete")
 
 # ============================================================================
@@ -480,11 +480,11 @@ USERS_DB = {
 async def init_db() -> None:
     """Initialize database connection pool with error handling"""
     global db_pool
-    
+
     if not DATABASE_URL:
         logger.warning("DATABASE_URL not configured")
         return
-    
+
     try:
         db_pool = await asyncpg.create_pool(
             DATABASE_URL,
@@ -493,28 +493,28 @@ async def init_db() -> None:
             timeout=DB_TIMEOUT,
             command_timeout=10
         )
-        
+
         # Test connection
         async with db_pool.acquire() as conn:
             await conn.fetchval("SELECT 1")
-        
+
         logger.info("Database connected successfully")
-        
+
         # CRITICAL FIX: Register pool with backend connection module
         # This solves the "Database pool not initialized" errors in agents
         try:
             from backend.app.db.connection import register_external_pool
-            
+
             # Register the pool using the new explicit mechanism
             register_external_pool(db_pool)
-            
+
             logger.info(f"✅ Successfully registered database pool with backend connection module")
             logger.info(f"Pool registered: {db_pool}")
         except ImportError as e:
             logger.warning(f"Could not import backend modules: {e}")
         except Exception as e:
             logger.warning(f"Could not register pool with backend: {e}")
-        
+
     except asyncpg.PostgresError as e:
         logger.error(f"PostgreSQL error during initialization: {e}")
         raise DatabaseConnectionError(f"Failed to connect to database: {e}")
@@ -530,31 +530,31 @@ async def execute_query_safe(
 ) -> Optional[Any]:
     """
     Execute a database query safely with proper error handling
-    
+
     Args:
         query: SQL query with $1, $2 placeholders (prevents SQL injection)
         *args: Query parameters
         fetch_one: If True, return single row, else return all rows
         timeout: Query timeout in seconds
-    
+
     Returns:
         Query result or None on error
     """
     if not db_pool:
         logger.warning("Database pool not initialized")
         return None
-    
+
     try:
         async with db_pool.acquire() as conn:
             # Set query timeout
             async with conn.transaction():
                 await conn.execute(f"SET LOCAL statement_timeout = {int(timeout * 1000)}")
-                
+
                 if fetch_one:
                     return await conn.fetchrow(query, *args)
                 else:
                     return await conn.fetch(query, *args)
-                    
+
     except asyncio.TimeoutError:
         logger.error(f"Query timeout after {timeout}s: {query[:100]}...")
         return None
@@ -584,7 +584,7 @@ async def get_portfolio_data(user_email: str) -> Optional[List[asyncpg.Record]]:
         LEFT JOIN securities s ON h.symbol = s.symbol
         WHERE u.email = $1 AND p.is_active = true
     """
-    
+
     return await execute_query_safe(query, user_email)
 
 async def get_user_transactions(user_email: str) -> Optional[List[asyncpg.Record]]:
@@ -606,19 +606,19 @@ async def get_user_transactions(user_email: str) -> Optional[List[asyncpg.Record
         ORDER BY t.transaction_date DESC
         LIMIT 1000
     """
-    
+
     return await execute_query_safe(query, user_email)
 
 async def store_macro_indicators(indicators: Dict[str, Any]) -> bool:
     """Store macro indicators in database with proper error handling"""
     if not db_pool or not indicators:
         return False
-    
+
     # Create mapping of indicator IDs to human-readable names
     indicator_names = {
         'gdp_growth': 'GDP Growth Rate',
-        'unemployment_rate': 'Unemployment Rate', 
         'inflation_rate': 'Inflation Rate',
+        'unemployment_rate': 'Unemployment Rate', 
         'interest_rate': 'Interest Rate',
         'consumer_confidence': 'Consumer Confidence Index',
         'manufacturing_pmi': 'Manufacturing PMI',
@@ -653,13 +653,13 @@ async def store_macro_indicators(indicators: Dict[str, Any]) -> bool:
         'debt_ceiling_distance': 'Debt Ceiling Distance',
         'monetary_base': 'Monetary Base'
     }
-    
+
     try:
         async with db_pool.acquire() as conn:
             async with conn.transaction():
                 # Clear existing indicators
                 await conn.execute("DELETE FROM macro_indicators WHERE date = CURRENT_DATE")
-                
+
                 # Insert new indicators
                 for indicator_id, value in indicators.items():
                     if isinstance(value, (int, float)):
@@ -668,17 +668,17 @@ async def store_macro_indicators(indicators: Dict[str, Any]) -> bool:
                             indicator_id,
                             indicator_id.replace('_', ' ').title()
                         )
-                        
+
                         await conn.execute("""
                             INSERT INTO macro_indicators (indicator_id, indicator_name, value, date)
                             VALUES ($1, $2, $3, CURRENT_DATE)
                             ON CONFLICT (indicator_id, date) DO UPDATE
                             SET value = $3, indicator_name = $2, updated_at = NOW()
                         """, indicator_id, indicator_name, float(value))
-                
+
                 logger.info(f"Stored {len(indicators)} macro indicators")
                 return True
-                
+
     except Exception as e:
         logger.error(f"Error storing indicators in database: {e}")
         return False
@@ -719,15 +719,15 @@ def verify_jwt_token(token: str) -> Optional[dict]:
 
 async def get_current_user(request_or_token: Union[Request, str]) -> Optional[dict]:
     """Get current user from JWT token in request or from token string
-    
+
     Args:
         request_or_token: Either a FastAPI Request object or a bearer token string
-    
+
     Returns:
         User dict with id, email, role or None if invalid
     """
     auth_header = ""
-    
+
     # Handle both Request object and string token
     if isinstance(request_or_token, str):
         # Direct token string
@@ -738,20 +738,20 @@ async def get_current_user(request_or_token: Union[Request, str]) -> Optional[di
     else:
         logger.warning(f"Invalid input to get_current_user: {type(request_or_token)}")
         return None
-    
+
     if not auth_header.startswith("Bearer "):
         return None
-    
+
     token = auth_header.replace("Bearer ", "")
     payload = verify_jwt_token(token)
-    
+
     if payload:
         return {
             "id": payload.get("sub"),
             "email": payload.get("email"),
             "role": payload.get("role")
         }
-    
+
     return None
 
 # ============================================================================
@@ -762,23 +762,23 @@ def calculate_sector_allocation(holdings: List[dict], total_value: float) -> Dic
     """Calculate sector allocation with proper validation"""
     if not holdings or total_value <= 0:
         return {}
-    
+
     sector_values = defaultdict(float)
-    
+
     for holding in holdings:
         sector = holding.get("sector", "Other")
         value = holding.get("value", 0)
-        
+
         if value > 0:
             sector_values[sector] += value
-    
+
     # Convert to percentages
     sector_allocation = {}
     for sector, value in sector_values.items():
         percentage = round((value / total_value) * 100, 2)
         if percentage > 0:
             sector_allocation[sector] = percentage
-    
+
     return sector_allocation
 
 async def calculate_portfolio_risk_metrics(holdings: List[dict], portfolio_id: str = None) -> Dict[str, float]:
@@ -792,7 +792,7 @@ async def calculate_portfolio_risk_metrics(holdings: List[dict], portfolio_id: s
             "var_95": 0,
             "risk_score": 0
         }
-    
+
     total_value = sum(h.get("value", 0) for h in holdings)
     if total_value <= 0:
         return {
@@ -803,35 +803,35 @@ async def calculate_portfolio_risk_metrics(holdings: List[dict], portfolio_id: s
             "var_95": 0,
             "risk_score": 0
         }
-    
+
     # Try to use real MetricsService if available
     if db_pool and portfolio_id:
         try:
             # Use the performance calculator to get real metrics
             calc = PerformanceCalculator(db_pool)
-            
+
             # Get TWR and related metrics for past year (252 trading days)
             metrics = await calc.compute_twr(portfolio_id, pack_id=None, lookback_days=252)
-            
+
             # Get max drawdown
             dd = await calc.compute_max_drawdown(portfolio_id, lookback_days=252)
-            
+
             # Get VaR
             var_result = await calc.compute_var(portfolio_id, confidence=0.95, lookback_days=252)
-            
+
             # Calculate weighted beta for positions
             weighted_beta = 0
             for holding in holdings:
                 weight = holding.get("value", 0) / total_value
                 beta = holding.get("beta", 1.0)
                 weighted_beta += weight * beta
-            
+
             # Use real volatility from metrics or estimate from beta
             portfolio_volatility = metrics.get("vol", weighted_beta * 0.15)
-            
+
             # Simple risk score based on volatility and drawdown
             risk_score = min(max((portfolio_volatility + abs(dd.get("max_drawdown", 0))) / 2, 0), MAX_RISK_SCORE)
-            
+
             return {
                 "portfolio_beta": round(weighted_beta, 2),
                 "portfolio_volatility": round(portfolio_volatility, 4),
@@ -842,23 +842,23 @@ async def calculate_portfolio_risk_metrics(holdings: List[dict], portfolio_id: s
             }
         except Exception as e:
             logger.warning(f"Could not calculate real metrics, using estimates: {e}")
-    
+
     # Fallback to estimated metrics if real calculation fails
     weighted_beta = 0
     for holding in holdings:
         weight = holding.get("value", 0) / total_value
         beta = holding.get("beta", 1.0)
         weighted_beta += weight * beta
-    
+
     portfolio_volatility = weighted_beta * 0.15  # Assume market vol of 15%
     risk_score = min(max(weighted_beta / 2, 0), MAX_RISK_SCORE)
-    
+
     # Use more realistic estimates based on beta
     # Higher beta = lower Sharpe, higher drawdown
     estimated_sharpe = max(MIN_SHARPE_RATIO, min(MAX_SHARPE_RATIO, 1.5 - (weighted_beta - 1.0) * 0.5))
     estimated_drawdown = -1 * min(0.5, weighted_beta * 0.08)  # More beta = deeper drawdowns
     var_95 = total_value * (0.01 + weighted_beta * 0.01)  # 1-3% VaR based on beta
-    
+
     return {
         "portfolio_beta": round(weighted_beta, 2),
         "portfolio_volatility": round(portfolio_volatility, 4),
@@ -889,7 +889,7 @@ def get_mock_transactions() -> List[dict]:
     """Get mock transaction history for testing"""
     transactions = []
     base_date = datetime.now() - timedelta(days=365)
-    
+
     for i in range(20):
         date = base_date + timedelta(days=i * 15)
         transactions.append({
@@ -901,7 +901,7 @@ def get_mock_transactions() -> List[dict]:
             "amount": round(random.uniform(-10000, 10000), 2),
             "realized_gain": round(random.uniform(0, 500), 2)
         })
-    
+
     return sorted(transactions, key=lambda x: x["date"], reverse=True)
 
 # ============================================================================
@@ -918,7 +918,7 @@ async def root():
             return HTMLResponse(content=ui_file.read_text())
     except Exception as e:
         logger.error(f"Error reading UI file: {e}")
-    
+
     # Return minimal UI
     return HTMLResponse(content="""
     <!DOCTYPE html>
@@ -945,7 +945,7 @@ async def health_check():
         "database": "connected" if db_pool else "disconnected",
         "mode": "mock" if USE_MOCK_DATA else "production"
     }
-    
+
     # Check database connectivity
     if db_pool:
         try:
@@ -955,7 +955,7 @@ async def health_check():
         except Exception as e:
             health_status["database"] = f"error: {str(e)}"
             health_status["status"] = "degraded"
-    
+
     return health_status
 
 @app.get("/api/test-pool-access")
@@ -966,13 +966,13 @@ async def test_pool_access():
         "timestamp": datetime.utcnow().isoformat(),
         "checks": {}
     }
-    
+
     # Check 1: Verify combined_server has a pool
     results["checks"]["combined_server_pool"] = {
         "status": "success" if db_pool else "failed",
         "pool": str(db_pool) if db_pool else None
     }
-    
+
     # Check 2: Test if backend connection module can get the pool
     try:
         from backend.app.db.connection import get_db_pool
@@ -987,15 +987,15 @@ async def test_pool_access():
             "status": "failed",
             "error": str(e)
         }
-    
+
     # Check 3: Test if an agent can access the pool
     try:
         from backend.app.agents.financial_analyst import FinancialAnalyst
-        
+
         # Get the agent runtime (which should have db pool in services)
         runtime = get_agent_runtime()
         financial_analyst = runtime.get_agent("financial_analyst")
-        
+
         if financial_analyst and financial_analyst.services.get("db"):
             results["checks"]["agent_pool_access"] = {
                 "status": "success",
@@ -1008,7 +1008,7 @@ async def test_pool_access():
                 "status": "failed",
                 "error": "Agent does not have database service"
             }
-            
+
         # Check 4: Test actual database query from agent context
         if backend_pool:
             async with backend_pool.acquire() as conn:
@@ -1018,20 +1018,20 @@ async def test_pool_access():
                     "query": "SELECT 1",
                     "result": test_result
                 }
-                
+
     except Exception as e:
         results["checks"]["agent_test"] = {
             "status": "failed",
             "error": str(e)
         }
-    
+
     # Overall status
     all_success = all(
         check.get("status") == "success" 
         for check in results["checks"].values()
     )
     results["overall_status"] = "✅ FIXED" if all_success else "❌ STILL BROKEN"
-    
+
     return results
 
 @app.post("/api/patterns/execute", response_model=SuccessResponse)
@@ -1042,7 +1042,7 @@ async def execute_pattern(request: ExecuteRequest):
     try:
         # Get user from token (optional - for now we'll use a default)
         user_id = "user-001"  # In production, extract from JWT token
-        
+
         # Execute the pattern
         # Handle both 'inputs' and 'params' fields for backwards compatibility
         pattern_inputs = {}
@@ -1050,12 +1050,12 @@ async def execute_pattern(request: ExecuteRequest):
             pattern_inputs = request.inputs
         elif hasattr(request, 'params') and request.params:
             pattern_inputs = request.params
-        
+
         # Provide default values for common missing parameters
         # portfolio_overview pattern needs lookback_days
         if request.pattern == "portfolio_overview" and "lookback_days" not in pattern_inputs:
             pattern_inputs["lookback_days"] = 252  # Default to 1 year
-        
+
         # Ensure portfolio_id is provided if missing (only for patterns that need it)
         portfolio_patterns = ["portfolio_overview", "portfolio_scenario_analysis", "portfolio_cycle_risk"]
         if request.pattern in portfolio_patterns and "portfolio_id" not in pattern_inputs:
@@ -1068,13 +1068,13 @@ async def execute_pattern(request: ExecuteRequest):
                             pattern_inputs["portfolio_id"] = str(result["id"])
                 except:
                     pass  # If DB query fails, let the pattern handle the missing portfolio_id
-        
+
         result = await execute_pattern_orchestrator(
             pattern_name=request.pattern,
             inputs=pattern_inputs,
             user_id=user_id
         )
-        
+
         if result["success"]:
             return SuccessResponse(data=result["data"])
         else:
@@ -1095,23 +1095,23 @@ async def login(request: LoginRequest):
     try:
         # Validate user exists
         user = USERS_DB.get(request.email)
-        
+
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"
             )
-        
+
         # Verify password
         if not verify_password(request.password, user["password"]):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"
             )
-        
+
         # Create JWT token
         token = create_jwt_token(user["id"], user["email"], user["role"])
-        
+
         return LoginResponse(
             access_token=token,
             token_type="bearer",
@@ -1122,7 +1122,7 @@ async def login(request: LoginRequest):
                 "role": user["role"]
             }
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1144,7 +1144,7 @@ async def get_portfolio_metrics(portfolio_id: str):
             inputs={"portfolio_id": portfolio_id},
             user_id="user-001"
         )
-        
+
         if result["success"]:
             return result["data"]
         else:
@@ -1177,7 +1177,7 @@ async def get_portfolio(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Try to use pattern orchestrator for real data
         if db_pool:
             try:
@@ -1194,7 +1194,7 @@ async def get_portfolio(request: Request):
                     result = await execute_query_safe(query, user["email"])
                     if result and len(result) > 0:
                         portfolio_id = str(result[0]["id"])
-                
+
                 if portfolio_id:
                     # Execute portfolio_overview pattern for real data
                     pattern_result = await execute_pattern_orchestrator(
@@ -1205,17 +1205,17 @@ async def get_portfolio(request: Request):
                         },
                         user_id=user.get("id")
                     )
-                    
+
                     if pattern_result.get("success") and pattern_result.get("data"):
                         data = pattern_result["data"]
-                        
+
                         # Transform pattern result to expected API format
                         holdings = data.get("valued_positions", [])
                         perf_metrics = data.get("perf_metrics", {})
-                        
+
                         # Calculate total value from holdings
                         total_value = sum(h.get("market_value", 0) for h in holdings)
-                        
+
                         # Format holdings for UI
                         formatted_holdings = []
                         for h in holdings:
@@ -1229,10 +1229,10 @@ async def get_portfolio(request: Request):
                                 "beta": h.get("beta", 1.0),
                                 "change": h.get("daily_change_pct", 0)
                             })
-                        
+
                         # Calculate sector allocation
                         sector_allocation = calculate_sector_allocation(formatted_holdings, total_value)
-                        
+
                         return SuccessResponse(data={
                             "id": portfolio_id,
                             "name": "Main Portfolio",
@@ -1249,25 +1249,25 @@ async def get_portfolio(request: Request):
                         })
             except Exception as e:
                 logger.warning(f"Pattern orchestrator failed, falling back: {e}")
-        
+
         # Fallback to database query or mock data
         portfolio_data = await get_portfolio_data(user["email"])
-        
+
         if not portfolio_data:
             # Last resort: use mock data to avoid breaking UI
             holdings = get_mock_portfolio_holdings()
             total_value = sum(h["quantity"] * h["price"] for h in holdings)
-            
+
             for holding in holdings:
                 holding["value"] = holding["quantity"] * holding["price"]
                 holding["weight"] = holding["value"] / total_value if total_value > 0 else 0
                 holding["change"] = round(random.uniform(-0.03, 0.04), 4)
-            
+
             # Get portfolio ID for metrics calculation
             portfolio_id = str(uuid4())
             risk_metrics = await calculate_portfolio_risk_metrics(holdings, portfolio_id)
             sector_allocation = calculate_sector_allocation(holdings, total_value)
-            
+
             return SuccessResponse(data={
                 "id": portfolio_id,
                 "name": "Demo Portfolio",
@@ -1277,16 +1277,16 @@ async def get_portfolio(request: Request):
                 **risk_metrics,
                 "last_updated": datetime.utcnow().isoformat()
             })
-        
+
         # Process portfolio data
         holdings = []
         total_value = 0
         portfolio_id = None
-        
+
         for row in portfolio_data:
             if not portfolio_id:
                 portfolio_id = str(row.get("portfolio_id", uuid4()))
-            
+
             holding = {
                 "symbol": row["symbol"],
                 "quantity": float(row["quantity"]),
@@ -1298,17 +1298,17 @@ async def get_portfolio(request: Request):
             }
             holding["value"] = holding["quantity"] * holding["price"]
             total_value += holding["value"]
-            
+
             if holding["value"] > 0:
                 holdings.append(holding)
-        
+
         # Calculate weights
         for holding in holdings:
             holding["weight"] = round(holding["value"] / total_value, 4) if total_value > 0 else 0
-        
+
         risk_metrics = await calculate_portfolio_risk_metrics(holdings, portfolio_id)
         sector_allocation = calculate_sector_allocation(holdings, total_value)
-        
+
         return SuccessResponse(data={
             "id": portfolio_id,
             "name": portfolio_data[0]["portfolio_name"] if portfolio_data else "Main Portfolio",
@@ -1318,7 +1318,7 @@ async def get_portfolio(request: Request):
             **risk_metrics,
             "last_updated": datetime.utcnow().isoformat()
         })
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1343,7 +1343,7 @@ async def get_holdings(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Try to use pattern orchestrator for real data
         if db_pool:
             try:
@@ -1360,7 +1360,7 @@ async def get_holdings(
                     result = await execute_query_safe(query, user["email"])
                     if result and len(result) > 0:
                         portfolio_id = str(result[0]["id"])
-                
+
                 if portfolio_id:
                     # Execute portfolio_overview pattern to get holdings
                     pattern_result = await execute_pattern_orchestrator(
@@ -1371,13 +1371,13 @@ async def get_holdings(
                         },
                         user_id=user.get("id")
                     )
-                    
+
                     if pattern_result.get("success") and pattern_result.get("data"):
                         data = pattern_result["data"]
-                        
+
                         # Try to get valued_positions first, then positions
                         valued_positions_data = data.get("valued_positions", {})
-                        
+
                         # Check if valued_positions has a 'positions' key (it's the result of pricing.apply_pack)
                         if isinstance(valued_positions_data, dict) and "positions" in valued_positions_data:
                             valued_positions = valued_positions_data.get("positions", [])
@@ -1385,7 +1385,7 @@ async def get_holdings(
                             # Fallback to positions if valued_positions not properly structured
                             positions_data = data.get("positions", {})
                             valued_positions = positions_data.get("positions", []) if isinstance(positions_data, dict) else []
-                        
+
                         # Format holdings for UI with proper field mapping
                         holdings = []
                         total_value = 0
@@ -1393,7 +1393,7 @@ async def get_holdings(
                             # Calculate market value if not present
                             market_value = pos.get("market_value") or (pos.get("quantity", 0) * pos.get("price", 0))
                             total_value += market_value
-                            
+
                             holdings.append({
                                 "symbol": pos.get("symbol"),
                                 "name": pos.get("name", pos.get("symbol")),  # Use symbol as fallback for name
@@ -1408,17 +1408,17 @@ async def get_holdings(
                                 "weight": 0,  # Will calculate after total
                                 "return_pct": float(pos.get("unrealized_pnl_pct", 0))  # Use unrealized P&L as return
                             })
-                        
+
                         # Calculate weights
                         if total_value > 0:
                             for holding in holdings:
                                 holding["weight"] = (holding["market_value"] / total_value) * 100
-                        
+
                         # Apply pagination
                         start = (page - 1) * page_size
                         end = start + page_size
                         paginated_holdings = holdings[start:end]
-                        
+
                         return {
                             "holdings": paginated_holdings,
                             "pagination": {
@@ -1430,10 +1430,10 @@ async def get_holdings(
                         }
             except Exception as e:
                 logger.warning(f"Pattern orchestrator failed for holdings, using fallback: {e}")
-        
+
         # Fallback to database or mock data
         portfolio_data = await get_portfolio_data(user["email"])
-        
+
         if not portfolio_data:
             # Return mock data if no database data
             holdings = get_mock_portfolio_holdings()
@@ -1450,12 +1450,12 @@ async def get_holdings(
                     "sector": row["sector"] or "Other",
                     "cost_basis": float(row["cost_basis"]) if row["cost_basis"] else 0
                 })
-        
+
         # Apply pagination
         start = (page - 1) * page_size
         end = start + page_size
         paginated_holdings = holdings[start:end]
-        
+
         return {
             "holdings": paginated_holdings,
             "pagination": {
@@ -1465,7 +1465,7 @@ async def get_holdings(
                 "total_pages": math.ceil(len(holdings) / page_size)
             }
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1478,17 +1478,12 @@ async def get_holdings(
 @app.get("/api/transactions")
 async def get_transactions(
     request: Request,
-    page: int = 1,
-    page_size: int = DEFAULT_PAGE_SIZE
+    portfolio_id: str = Query(..., description="Portfolio ID"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(100, ge=1, le=1000, description="Items per page")
 ):
-    """Get transaction history with pagination"""
+    """Get transaction history from database"""
     try:
-        # Validate pagination parameters
-        if page < 1:
-            page = 1
-        if page_size < 1 or page_size > MAX_PAGE_SIZE:
-            page_size = DEFAULT_PAGE_SIZE
-        
         # Get current user
         user = await get_current_user(request)
         if not user:
@@ -1496,78 +1491,66 @@ async def get_transactions(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
-        # Use mock data if enabled
-        if USE_MOCK_DATA:
-            transactions = get_mock_transactions()
-            total_count = len(transactions)
-            
-            # Pagination
-            start_idx = (page - 1) * page_size
-            end_idx = start_idx + page_size
-            paginated = transactions[start_idx:end_idx]
-            
-            return SuccessResponse(data={
-                "transactions": paginated,
-                "pagination": {
-                    "page": page,
-                    "page_size": page_size,
-                    "total_count": total_count,
-                    "total_pages": math.ceil(total_count / page_size)
-                }
-            })
-        
-        # Get data from database
-        all_transactions = await get_user_transactions(user["email"])
-        
-        if not all_transactions:
-            return SuccessResponse(data={
-                "transactions": [],
-                "pagination": {
-                    "page": page,
-                    "page_size": page_size,
-                    "total_count": 0,
-                    "total_pages": 0
-                }
-            })
-        
-        # Format transactions
+
+        # Validate portfolio_id
+        if not portfolio_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="portfolio_id is required"
+            )
+
+        # Query real transactions from database
+        offset = (page - 1) * page_size
+        query = """
+            SELECT 
+                t.id,
+                t.transaction_date as date,
+                t.transaction_type as type,
+                t.symbol,
+                t.quantity as shares,
+                t.price,
+                t.amount,
+                COALESCE(t.realized_gain, 0) as realized_gain,
+                s.name as security_name
+            FROM transactions t
+            LEFT JOIN securities s ON t.symbol = s.symbol
+            WHERE t.portfolio_id = $1
+            ORDER BY t.transaction_date DESC
+            LIMIT $2 OFFSET $3
+        """
+        transactions = await execute_query_safe(query, portfolio_id, page_size, offset)
+
+        if not transactions:
+            logger.warning(f"No transactions found for portfolio {portfolio_id}")
+            return SuccessResponse(data=[])
+
+        # Format transactions for UI
         formatted_transactions = []
-        for row in all_transactions:
+        for txn in transactions:
             formatted_transactions.append({
-                "date": row["trade_date"].strftime("%Y-%m-%d") if row["trade_date"] else "",
-                "type": row["type"],
-                "symbol": row["symbol"],
-                "quantity": float(row["quantity"]) if row["quantity"] else 0,
-                "price": float(row["price"]) if row["price"] else 0,
-                "amount": float(row["amount"]) if row["amount"] else 0,
-                "security_name": row["security_name"]
+                "id": str(txn["id"]),
+                "date": str(txn["date"]),
+                "type": txn["type"],
+                "symbol": txn["symbol"],
+                "shares": float(txn["shares"]) if txn["shares"] else 0,
+                "price": float(txn["price"]) if txn["price"] else 0,
+                "amount": float(txn["amount"]) if txn["amount"] else 0,
+                "realized_gain": float(txn["realized_gain"]) if txn["realized_gain"] else 0,
+                "security_name": txn["security_name"]
             })
-        
-        # Pagination
-        total_count = len(formatted_transactions)
-        start_idx = (page - 1) * page_size
-        end_idx = start_idx + page_size
-        paginated = formatted_transactions[start_idx:end_idx]
-        
-        return SuccessResponse(data={
-            "transactions": paginated,
-            "pagination": {
-                "page": page,
-                "page_size": page_size,
-                "total_count": total_count,
-                "total_pages": math.ceil(total_count / page_size)
-            }
-        })
-        
+
+        logger.info(f"Returning {len(formatted_transactions)} transactions for portfolio {portfolio_id}")
+        return SuccessResponse(data=formatted_transactions)
+
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Transactions endpoint error: {e}")
+        logger.error(f"Error getting transactions: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Transaction service error"
+            detail=f"Failed to get transactions: {str(e)}"
         )
+
 
 @app.post("/api/alerts", response_model=SuccessResponse)
 async def create_alert(request: Request, alert_config: AlertConfig):
@@ -1580,10 +1563,10 @@ async def create_alert(request: Request, alert_config: AlertConfig):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Create alert ID
         alert_id = str(uuid4())
-        
+
         # Store alert (in production, this would go to database)
         alert_data = {
             "id": alert_id,
@@ -1596,14 +1579,14 @@ async def create_alert(request: Request, alert_config: AlertConfig):
             "active": True,
             "created_at": datetime.utcnow().isoformat()
         }
-        
+
         # In production, store in database
         if not USE_MOCK_DATA and db_pool:
             query = """
                 INSERT INTO alerts (id, user_id, condition_json, is_active, created_at)
                 VALUES ($1, $2, $3, $4, $5)
             """
-            
+
             success = await execute_query_safe(
                 query,
                 alert_id,
@@ -1612,15 +1595,15 @@ async def create_alert(request: Request, alert_config: AlertConfig):
                 True,
                 datetime.utcnow()
             )
-            
+
             if not success:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to create alert"
                 )
-        
+
         return SuccessResponse(data=alert_data)
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1641,7 +1624,7 @@ async def execute_pattern(request: Request, execute_req: ExecuteRequest):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Validate pattern exists
         valid_patterns = ["portfolio_overview", "macro_analysis", "risk_assessment", "optimization"]
         if execute_req.pattern not in valid_patterns:
@@ -1649,7 +1632,7 @@ async def execute_pattern(request: Request, execute_req: ExecuteRequest):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid pattern. Valid patterns: {', '.join(valid_patterns)}"
             )
-        
+
         # Execute pattern (simplified for example)
         result = {
             "pattern": execute_req.pattern,
@@ -1660,9 +1643,9 @@ async def execute_pattern(request: Request, execute_req: ExecuteRequest):
                 "data": execute_req.inputs
             }
         }
-        
+
         return SuccessResponse(data=result)
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1704,7 +1687,7 @@ async def validation_exception_handler(request: Request, exc: ValidationError):
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle unexpected exceptions"""
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
-    
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content=ErrorResponse(
@@ -1720,12 +1703,12 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 class FREDClient:
     """FRED API Client with proper error handling and caching"""
-    
+
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or FRED_API_KEY
         self.base_url = "https://api.stlouisfed.org/fred"
         self.session: Optional[httpx.AsyncClient] = None
-        
+
         # Series mapping with validation
         self.series_mapping = {
             "gdp_growth": "A191RL1Q225SBEA",
@@ -1753,17 +1736,17 @@ class FREDClient:
             "retail_sales": "RSXFS",
             "industrial_production": "INDPRO"
         }
-        
+
     async def __aenter__(self):
         """Async context manager entry"""
         self.session = httpx.AsyncClient(timeout=30.0)
         return self
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit"""
         if self.session:
             await self.session.aclose()
-    
+
     async def fetch_indicator(
         self, 
         indicator_name: str, 
@@ -1772,26 +1755,26 @@ class FREDClient:
     ) -> Optional[float]:
         """
         Fetch a single indicator from FRED with error handling
-        
+
         Args:
             indicator_name: Name of the indicator
             series_id: Optional FRED series ID override
             limit: Number of observations to fetch
-            
+
         Returns:
             Latest value or None on error
         """
         if not self.api_key:
             logger.warning("FRED API key not configured")
             return None
-        
+
         # Get series ID
         if not series_id:
             series_id = self.series_mapping.get(indicator_name)
             if not series_id:
                 logger.warning(f"Unknown indicator: {indicator_name}")
                 return None
-        
+
         # Build request URL
         url = f"{self.base_url}/series/observations"
         params = {
@@ -1801,24 +1784,24 @@ class FREDClient:
             "sort_order": "desc",
             "limit": limit
         }
-        
+
         try:
             # Create session if needed
             if not self.session:
                 self.session = httpx.AsyncClient(timeout=30.0)
-            
+
             # Make request
             response = await self.session.get(url, params=params)
             response.raise_for_status()
-            
+
             # Parse response
             data = response.json()
             observations = data.get("observations", [])
-            
+
             if not observations:
                 logger.warning(f"No data returned for {indicator_name} ({series_id})")
                 return None
-            
+
             # Get latest non-null value
             for obs in observations:
                 value = obs.get("value", ".")
@@ -1827,9 +1810,9 @@ class FREDClient:
                         return float(value)
                     except (ValueError, TypeError):
                         logger.warning(f"Invalid value for {indicator_name}: {value}")
-            
+
             return None
-            
+
         except httpx.TimeoutException:
             logger.error(f"Timeout fetching {indicator_name} from FRED")
             return None
@@ -1839,67 +1822,67 @@ class FREDClient:
         except Exception as e:
             logger.error(f"Error fetching {indicator_name} from FRED: {e}")
             return None
-    
+
     async def fetch_all_indicators(self) -> Dict[str, float]:
         """
         Fetch all indicators in parallel with error handling
-        
+
         Returns:
             Dictionary of indicator values
         """
         indicators = {}
-        
+
         if not self.api_key:
             logger.warning("FRED API key not configured - returning empty indicators")
             return indicators
-        
+
         try:
             async with self:
                 # Fetch all indicators in parallel
                 tasks = []
                 for name, series_id in self.series_mapping.items():
                     tasks.append(self.fetch_indicator(name, series_id))
-                
+
                 # Wait for all tasks
                 results = await asyncio.gather(*tasks, return_exceptions=True)
-                
+
                 # Process results
                 for (name, _), result in zip(self.series_mapping.items(), results):
                     if isinstance(result, Exception):
                         logger.warning(f"Failed to fetch {name}: {result}")
                     elif result is not None:
                         indicators[name] = result
-                
+
                 # Calculate derived indicators
                 indicators.update(self.calculate_derived_indicators(indicators))
-                
+
                 logger.info(f"Successfully fetched {len(indicators)} indicators from FRED")
-                
+
         except Exception as e:
             logger.error(f"Error fetching indicators from FRED: {e}")
-        
+
         return indicators
-    
+
     def calculate_derived_indicators(self, indicators: Dict[str, float]) -> Dict[str, float]:
         """Calculate derived indicators from raw data"""
         derived = {}
-        
+
         # Real interest rate
         if "interest_rate" in indicators and "inflation" in indicators:
             derived["real_interest_rate"] = indicators["interest_rate"] - indicators["inflation"]
-        
+
         # Credit impulse (simplified)
         if "credit_growth" in indicators:
             derived["credit_impulse"] = self.calculate_credit_impulse(indicators["credit_growth"])
-        
+
         # Debt service ratio (simplified)
         if "debt_to_gdp" in indicators and "interest_rate" in indicators:
             derived["debt_service_ratio"] = (
                 indicators["debt_to_gdp"] * indicators["interest_rate"] / 100
             )
-        
+
         return derived
-    
+
     def calculate_credit_impulse(self, current_credit_growth: float) -> float:
         """Calculate credit impulse (change in credit growth rate)"""
         # Simplified calculation - in production, compare with previous period
@@ -1917,22 +1900,22 @@ class FREDClient:
 async def get_cached_fred_data() -> Dict[str, float]:
     """Get FRED data from cache or fetch fresh if expired"""
     global fred_cache, fred_cache_timestamp
-    
+
     # Check if cache is valid
     if fred_cache_timestamp and (time.time() - fred_cache_timestamp) < FRED_CACHE_DURATION:
         logger.info("Using cached FRED data")
         return fred_cache
-    
+
     # Fetch fresh data
     async with FREDClient() as client:
         fresh_data = await client.fetch_all_indicators()
-    
+
     if fresh_data:
         fred_cache = fresh_data
         fred_cache_timestamp = time.time()
         logger.info("FRED cache updated with fresh data")
-    
-    return fresh_data
+
+    return fred_cache
 
 # ============================================================================
 # Macro and Empire Cycle Analyzers
@@ -1940,7 +1923,7 @@ async def get_cached_fred_data() -> Dict[str, float]:
 
 class DalioCycleAnalyzer:
     """Analyzer for Ray Dalio's economic cycles with error handling"""
-    
+
     def __init__(self):
         # Short-term debt cycle phases
         self.stdc_phases = {
@@ -1949,7 +1932,7 @@ class DalioCycleAnalyzer:
             "EARLY_CONTRACTION": {"growth": "slowing", "inflation": "high", "policy": "tight"},
             "RECESSION": {"growth": "negative", "inflation": "falling", "policy": "easing"}
         }
-        
+
         # Long-term debt cycle phases
         self.ltdc_phases = {
             "EARLY": {"debt_to_income": "low", "debt_growth": "healthy", "interest_burden": "low"},
@@ -1958,7 +1941,7 @@ class DalioCycleAnalyzer:
             "DEPRESSION": {"debt_to_income": "deleveraging", "debt_growth": "negative", "interest_burden": "crushing"},
             "NORMALIZATION": {"debt_to_income": "stabilizing", "debt_growth": "resuming", "interest_burden": "manageable"}
         }
-    
+
     def detect_stdc_phase(self, indicators: Dict[str, float]) -> Dict[str, Any]:
         """Detect current phase in short-term debt cycle"""
         try:
@@ -1966,7 +1949,7 @@ class DalioCycleAnalyzer:
             inflation = indicators.get("inflation", 2.5)
             interest_rate = indicators.get("interest_rate", 5.0)
             unemployment = indicators.get("unemployment", 4.0)
-            
+
             # Decision tree for STDC phase detection
             if gdp_growth > 2.5 and inflation < 2.5 and unemployment > 4:
                 phase = "EARLY_EXPANSION"
@@ -1978,7 +1961,7 @@ class DalioCycleAnalyzer:
                 phase = "RECESSION"
             else:
                 phase = "MID_EXPANSION"
-            
+
             return {
                 "phase": phase,
                 "confidence": 0.75,  # Placeholder confidence
@@ -1989,7 +1972,7 @@ class DalioCycleAnalyzer:
                     "interest_rate": interest_rate
                 }
             }
-            
+
         except Exception as e:
             logger.error(f"Error detecting STDC phase: {e}")
             return {
@@ -1997,7 +1980,7 @@ class DalioCycleAnalyzer:
                 "confidence": 0,
                 "error": str(e)
             }
-    
+
     def detect_ltdc_phase(self, indicators: Dict[str, float]) -> Dict[str, Any]:
         """Detect current phase in long-term debt cycle"""
         try:
@@ -2006,7 +1989,7 @@ class DalioCycleAnalyzer:
             real_rate = indicators.get("real_interest_rate", 2.5)
             productivity = indicators.get("productivity_growth", 1.5)
             credit_impulse = indicators.get("credit_impulse", 0.0)
-            
+
             # Decision tree for LTDC phase detection
             if debt_to_gdp < 60:
                 phase = "EARLY"
@@ -2018,7 +2001,7 @@ class DalioCycleAnalyzer:
                 phase = "DEPRESSION"
             else:
                 phase = "NORMALIZATION"
-            
+
             return {
                 "phase": phase,
                 "confidence": 0.70,  # Placeholder confidence
@@ -2031,7 +2014,7 @@ class DalioCycleAnalyzer:
                     "interest_burden": (debt_to_gdp * max(real_rate, 0.1)) / 100
                 }
             }
-            
+
         except Exception as e:
             logger.error(f"Error detecting LTDC phase: {e}")
             return {
@@ -2039,25 +2022,25 @@ class DalioCycleAnalyzer:
                 "confidence": 0,
                 "error": str(e)
             }
-    
+
     def get_deleveraging_score(self, indicators: Dict[str, float]) -> float:
         """Calculate deleveraging pressure score (0-100)"""
         try:
             debt_to_gdp = indicators.get("debt_to_gdp", 100.0)
             fiscal_deficit = abs(indicators.get("fiscal_deficit", -5.0))
             interest_rate = indicators.get("interest_rate", 5.0)
-            
+
             # Higher debt + deficit + rates = more deleveraging pressure
             score = min(100, (debt_to_gdp / 2) + (fiscal_deficit * 5) + (interest_rate * 3))
             return round(score, 2)
-            
+
         except Exception as e:
             logger.error(f"Error calculating deleveraging score: {e}")
             return 0.0
 
 class EmpireCycleAnalyzer:
     """Analyzer for Empire Cycles with error handling"""
-    
+
     def __init__(self):
         self.empire_phases = {
             "RISE": {"education": "high", "innovation": "increasing", "debt": "low"},
@@ -2066,7 +2049,7 @@ class EmpireCycleAnalyzer:
             "DECLINE_LATE": {"internal_conflict": "high", "currency": "weakening", "productivity": "falling"},
             "COLLAPSE": {"civil_disorder": "extreme", "currency_crisis": True, "power_transition": True}
         }
-    
+
     def detect_empire_phase(self, indicators: Dict[str, float]) -> Dict[str, Any]:
         """Detect current phase in empire cycle"""
         try:
@@ -2081,10 +2064,10 @@ class EmpireCycleAnalyzer:
                 "financial_center": indicators.get("financial_center_score", 85.0),
                 "reserve_currency": indicators.get("reserve_currency_share", 59.0)
             }
-            
+
             # Calculate average score
             avg_score = sum(empire_indicators.values()) / len(empire_indicators)
-            
+
             # Determine phase
             if avg_score > 75:
                 phase = "PEAK"
@@ -2101,14 +2084,14 @@ class EmpireCycleAnalyzer:
             else:
                 phase = "COLLAPSE"
                 trend = "transitioning"
-            
+
             return {
                 "phase": phase,
                 "score": round(avg_score, 2),
                 "trend": trend,
                 "indicators": empire_indicators
             }
-            
+
         except Exception as e:
             logger.error(f"Error detecting empire phase: {e}")
             return {
@@ -2117,29 +2100,29 @@ class EmpireCycleAnalyzer:
                 "trend": "unknown",
                 "error": str(e)
             }
-    
+
     def estimate_education_score(self, indicators: Dict[str, float]) -> float:
         """Estimate education score from economic indicators"""
         try:
             unemployment = indicators.get("unemployment", 4.0)
             productivity = indicators.get("productivity_growth", 1.5)
-            
+
             score = (10 - unemployment) * 10 + productivity * 10
             return max(0, min(100, score))
-            
+
         except Exception as e:
             logger.error(f"Error estimating education score: {e}")
             return 50.0
-    
+
     def estimate_innovation_score(self, indicators: Dict[str, float]) -> float:
         """Estimate innovation score from economic indicators"""
         try:
             productivity = indicators.get("productivity_growth", 1.5)
             interest_rate = indicators.get("interest_rate", 5.0)
-            
+
             score = productivity * 30 + (10 - interest_rate) * 5
             return max(0, min(100, score))
-            
+
         except Exception as e:
             logger.error(f"Error estimating innovation score: {e}")
             return 50.0
@@ -2153,7 +2136,7 @@ async def get_enhanced_macro_data() -> Dict[str, Any]:
     try:
         # Get base indicators from FRED
         indicators = await get_cached_fred_data()
-        
+
         if not indicators:
             logger.warning("No FRED data available, using defaults")
             indicators = {
@@ -2163,7 +2146,7 @@ async def get_enhanced_macro_data() -> Dict[str, Any]:
                 "interest_rate": 5.0,
                 "debt_to_gdp": 100.0
             }
-        
+
         # Enhance with MacroDataAgent if available
         try:
             enhanced = await enhance_macro_data(indicators)
@@ -2171,12 +2154,12 @@ async def get_enhanced_macro_data() -> Dict[str, Any]:
             logger.info(f"Enhanced macro data with {len(enhanced)} additional indicators")
         except Exception as e:
             logger.warning(f"Could not enhance macro data: {e}")
-        
+
         # Store in database if available
         await store_macro_indicators(indicators)
-        
+
         return indicators
-        
+
     except Exception as e:
         logger.error(f"Error getting enhanced macro data: {e}")
         return {}
@@ -2192,12 +2175,12 @@ def optimize_portfolio(
 ) -> Dict[str, Any]:
     """
     Optimize portfolio allocation based on risk tolerance
-    
+
     Args:
         holdings: List of current holdings
         risk_tolerance: Risk tolerance (0=conservative, 1=aggressive)
         target_return: Optional target return
-        
+
     Returns:
         Optimization recommendations
     """
@@ -2207,7 +2190,7 @@ def optimize_portfolio(
                 "status": "error",
                 "message": "No holdings to optimize"
             }
-        
+
         # Calculate current metrics
         total_value = sum(h.get("value", 0) for h in holdings)
         if total_value <= 0:
@@ -2215,14 +2198,14 @@ def optimize_portfolio(
                 "status": "error",
                 "message": "Portfolio has no value"
             }
-        
+
         # Generate recommendations based on risk tolerance
         recommendations = []
-        
+
         for holding in holdings:
             weight = holding.get("value", 0) / total_value
             beta = holding.get("beta", 1.0)
-            
+
             # Check concentration risk
             if weight > MAX_PORTFOLIO_CONCENTRATION:
                 recommendations.append({
@@ -2231,7 +2214,7 @@ def optimize_portfolio(
                     "reason": f"Concentration risk: {weight:.1%} of portfolio",
                     "target_weight": MAX_PORTFOLIO_CONCENTRATION
                 })
-            
+
             # Check beta alignment with risk tolerance
             if risk_tolerance < 0.3 and beta > 1.5:
                 recommendations.append({
@@ -2247,14 +2230,14 @@ def optimize_portfolio(
                     "reason": f"Low beta ({beta:.2f}) for aggressive portfolio",
                     "target_weight": min(weight * 1.5, MAX_PORTFOLIO_CONCENTRATION)
                 })
-        
+
         # Check diversification
         if len(holdings) < MIN_POSITIONS_FOR_DIVERSIFICATION:
             recommendations.append({
                 "action": "DIVERSIFY",
                 "reason": f"Only {len(holdings)} positions - consider adding more for diversification"
             })
-        
+
         return {
             "status": "success",
             "current_risk_score": calculate_portfolio_risk_metrics(holdings)["risk_score"],
@@ -2262,14 +2245,15 @@ def optimize_portfolio(
             "recommendations": recommendations[:10],  # Limit to top 10 recommendations
             "estimated_trades": len([r for r in recommendations if "symbol" in r])
         }
-        
+
     except Exception as e:
         logger.error(f"Error optimizing portfolio: {e}")
         return {
             "status": "error",
             "message": "Optimization service error",
             "error": str(e)
-        }# ============================================================================
+        }
+# ============================================================================
 # Additional API Endpoints with Enhanced Error Handling
 # ============================================================================
 
@@ -2284,10 +2268,10 @@ async def get_macro_indicators(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Get enhanced macro data
         indicators = await get_enhanced_macro_data()
-        
+
         if not indicators:
             # Return default values if no data available
             indicators = {
@@ -2300,16 +2284,16 @@ async def get_macro_indicators(request: Request):
                 "credit_spreads": 2.0,
                 "vix": 18.0
             }
-        
+
         # Analyze cycles
         dalio_analyzer = DalioCycleAnalyzer()
         empire_analyzer = EmpireCycleAnalyzer()
-        
+
         stdc_phase = dalio_analyzer.detect_stdc_phase(indicators)
         ltdc_phase = dalio_analyzer.detect_ltdc_phase(indicators)
         empire_phase = empire_analyzer.detect_empire_phase(indicators)
         deleveraging_score = dalio_analyzer.get_deleveraging_score(indicators)
-        
+
         return SuccessResponse(data={
             "indicators": indicators,
             "cycles": {
@@ -2321,7 +2305,7 @@ async def get_macro_indicators(request: Request):
             "timestamp": datetime.utcnow().isoformat(),
             "data_source": "FRED" if FRED_API_KEY else "mock"
         })
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -2345,7 +2329,7 @@ async def optimize_portfolio_endpoint(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Get current portfolio
         if USE_MOCK_DATA:
             holdings = get_mock_portfolio_holdings()
@@ -2358,7 +2342,7 @@ async def optimize_portfolio_endpoint(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="No portfolio found"
                 )
-            
+
             holdings = []
             for row in portfolio_data:
                 holdings.append({
@@ -2369,16 +2353,16 @@ async def optimize_portfolio_endpoint(
                     "sector": row["sector"] or "Other",
                     "beta": 1.0  # Default beta
                 })
-        
+
         # Run optimization
         result = optimize_portfolio(
             holdings,
             optimization_request.risk_tolerance,
             optimization_request.target_return
         )
-        
+
         return SuccessResponse(data=result)
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -2399,7 +2383,7 @@ async def get_alerts(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Use mock data if enabled
         if USE_MOCK_DATA:
             # Return mock alerts
@@ -2425,7 +2409,7 @@ async def get_alerts(request: Request):
                 }
             ]
             return SuccessResponse(data={"alerts": mock_alerts})
-        
+
         # Get from database
         query = """
             SELECT 
@@ -2439,12 +2423,12 @@ async def get_alerts(request: Request):
             ORDER BY created_at DESC
             LIMIT 50
         """
-        
+
         alerts = await execute_query_safe(query, user["email"])
-        
+
         if not alerts:
             return SuccessResponse(data={"alerts": []})
-        
+
         # Format alerts
         formatted_alerts = []
         for row in alerts:
@@ -2460,9 +2444,9 @@ async def get_alerts(request: Request):
             except json.JSONDecodeError:
                 logger.warning(f"Invalid JSON in alert {row['id']}")
                 continue
-        
+
         return SuccessResponse(data={"alerts": formatted_alerts})
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -2483,7 +2467,7 @@ async def delete_alert(request: Request, alert_id: str):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Validate alert ID format
         try:
             UUID(alert_id)  # Validate UUID format
@@ -2492,27 +2476,27 @@ async def delete_alert(request: Request, alert_id: str):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid alert ID format"
             )
-        
+
         if USE_MOCK_DATA:
             return SuccessResponse(data={"deleted": True})
-        
+
         # Delete from database
         query = """
             DELETE FROM alerts
             WHERE id = $1 AND user_id = (SELECT id FROM users WHERE email = $2)
             RETURNING id
         """
-        
+
         result = await execute_query_safe(query, alert_id, user["email"], fetch_one=True)
-        
+
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Alert not found or not authorized"
             )
-        
+
         return SuccessResponse(data={"deleted": True})
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -2536,7 +2520,7 @@ async def run_scenario_analysis(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Map frontend scenarios to ShockType enum values
         scenario_mapping = {
             "rates_up": ShockType.RATES_UP,
@@ -2545,13 +2529,13 @@ async def run_scenario_analysis(
             "recession": ShockType.EQUITY_SELLOFF,
             "market_crash": ShockType.EQUITY_SELLOFF  # Using EQUITY_SELLOFF for market crash
         }
-        
+
         if scenario not in scenario_mapping:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid scenario. Valid options: {', '.join(scenario_mapping.keys())}"
             )
-        
+
         # Get portfolio ID
         portfolio_id = None
         if user["email"]:
@@ -2565,7 +2549,7 @@ async def run_scenario_analysis(
             result = await execute_query_safe(query, user["email"])
             if result and len(result) > 0:
                 portfolio_id = str(result[0]["id"])
-        
+
         # Try to use pattern orchestrator for real scenario analysis
         if db_pool and portfolio_id:
             try:
@@ -2578,19 +2562,19 @@ async def run_scenario_analysis(
                     },
                     user_id=user.get("id") if user else None
                 )
-                
+
                 if pattern_result.get("success") and pattern_result.get("data"):
                     data = pattern_result["data"]
                     scenario_result = data.get("scenario_result", {})
-                    
+
                     # Transform pattern result to expected API format
                     position_deltas = scenario_result.get("position_deltas", [])
-                    
+
                     # Calculate total portfolio impact
                     total_current = sum(p.get("base_value", 0) for p in position_deltas)
                     total_shocked = sum(p.get("shocked_value", 0) for p in position_deltas)
                     total_impact = total_shocked - total_current
-                    
+
                     # Format position impacts
                     position_impacts = []
                     for pos in position_deltas:
@@ -2604,17 +2588,17 @@ async def run_scenario_analysis(
                             "impact_value": round(delta_value, 2),
                             "new_value": round(pos.get("shocked_value", 0), 2)
                         })
-                    
+
                     # Sort by impact
                     position_impacts.sort(key=lambda x: x["impact_value"])
-                    
+
                     # Get hedge suggestions from pattern result
                     hedge_suggestions = data.get("hedge_suggestions", {})
                     recommendations = []
                     if hedge_suggestions:
                         for hedge in hedge_suggestions.get("suggestions", []):
                             recommendations.append(hedge.get("description", ""))
-                    
+
                     # Add default recommendations if none from pattern
                     if not recommendations:
                         recommendations = [
@@ -2622,7 +2606,7 @@ async def run_scenario_analysis(
                             "Review sector allocations for better diversification",
                             "Monitor economic indicators for early warning signs"
                         ]
-                    
+
                     return SuccessResponse(data={
                         "scenario": scenario,
                         "portfolio_impact": {
@@ -2638,19 +2622,19 @@ async def run_scenario_analysis(
                     })
             except Exception as e:
                 logger.warning(f"Pattern orchestrator scenario analysis failed, using fallback: {e}")
-        
+
         # Fallback to direct ScenarioService or simplified calculation
         if db_pool:
             try:
                 service = get_scenario_service()
                 shock_type = scenario_mapping[scenario]
-                
+
                 result = await service.apply_scenario(
                     portfolio_id=portfolio_id or str(uuid4()),
                     shock_type=shock_type,
                     pack_id=None
                 )
-                
+
                 # Format the ScenarioResult to match API response
                 position_impacts = []
                 for pos in result.positions:
@@ -2664,9 +2648,9 @@ async def run_scenario_analysis(
                         "impact_value": round(delta_pl, 2),
                         "new_value": round(float(pos.post_shock_value), 2)
                     })
-                
+
                 position_impacts.sort(key=lambda x: x["impact_value"])
-                
+
                 return SuccessResponse(data={
                     "scenario": scenario,
                     "portfolio_impact": {
@@ -2686,10 +2670,10 @@ async def run_scenario_analysis(
                 })
             except Exception as e:
                 logger.warning(f"ScenarioService failed, using simple calculation: {e}")
-        
+
         # Last resort fallback to simple sector-based impacts
         portfolio_data = await get_portfolio_data(user["email"]) if not USE_MOCK_DATA else None
-        
+
         if not portfolio_data:
             holdings = get_mock_portfolio_holdings()
             for h in holdings:
@@ -2703,9 +2687,9 @@ async def run_scenario_analysis(
                     "value": value,
                     "sector": row["sector"] or "Other"
                 })
-        
+
         total_value = sum(h["value"] for h in holdings)
-        
+
         # Simple impact calculation by sector
         scenario_impacts = {
             "rates_up": {"Technology": -0.08, "Financial": 0.03, "Consumer": -0.05, "Automotive": -0.10, "Other": -0.03},
@@ -2714,17 +2698,17 @@ async def run_scenario_analysis(
             "recession": {"Technology": -0.15, "Financial": -0.12, "Consumer": -0.18, "Automotive": -0.20, "Other": -0.10},
             "market_crash": {"Technology": -0.25, "Financial": -0.20, "Consumer": -0.22, "Automotive": -0.30, "Other": -0.15}
         }
-        
+
         impacts = scenario_impacts[scenario]
         total_impact = 0
         position_impacts = []
-        
+
         for holding in holdings:
             sector = holding.get("sector", "Other")
             impact_pct = impacts.get(sector, -0.05)
             impact_value = holding["value"] * impact_pct
             total_impact += impact_value
-            
+
             position_impacts.append({
                 "symbol": holding.get("symbol", "Unknown"),
                 "sector": sector,
@@ -2733,9 +2717,9 @@ async def run_scenario_analysis(
                 "impact_value": round(impact_value, 2),
                 "new_value": round(holding["value"] + impact_value, 2)
             })
-        
+
         position_impacts.sort(key=lambda x: x["impact_value"])
-        
+
         return SuccessResponse(data={
             "scenario": scenario,
             "portfolio_impact": {
@@ -2753,7 +2737,7 @@ async def run_scenario_analysis(
                 "Monitor economic indicators for early warning signs"
             ]
         })
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -2774,7 +2758,7 @@ async def get_reports(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Available report types
         reports = [
             {
@@ -2806,9 +2790,9 @@ async def get_reports(request: Request):
                 "last_generated": (datetime.utcnow() - timedelta(days=30)).isoformat()
             }
         ]
-        
+
         return SuccessResponse(data={"reports": reports})
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -2829,7 +2813,7 @@ async def ai_analysis(request: Request, ai_request: AIAnalysisRequest):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Check if AI API is configured
         if not ANTHROPIC_API_KEY:
             # Return mock response
@@ -2840,7 +2824,7 @@ async def ai_analysis(request: Request, ai_request: AIAnalysisRequest):
                 "sources": [],
                 "timestamp": datetime.utcnow().isoformat()
             })
-        
+
         # In production, would call Claude API here
         # For now, return a structured response
         return SuccessResponse(data={
@@ -2850,7 +2834,7 @@ async def ai_analysis(request: Request, ai_request: AIAnalysisRequest):
             "sources": ["Portfolio data", "Market indicators", "Historical patterns"],
             "timestamp": datetime.utcnow().isoformat()
         })
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -2871,7 +2855,7 @@ async def get_factor_analysis(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Mock factor analysis (in production, would calculate from historical data)
         factor_analysis = {
             "factors": {
@@ -2909,9 +2893,9 @@ async def get_factor_analysis(request: Request):
             "information_ratio": 0.50,
             "analysis_date": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=factor_analysis)
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -2935,7 +2919,7 @@ async def get_portfolio_holdings(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Try pattern orchestrator first
         if PATTERN_ORCHESTRATION_AVAILABLE and _pattern_orchestrator:
             try:
@@ -2944,20 +2928,20 @@ async def get_portfolio_holdings(request: Request):
                     asof_date=datetime.now().date(),
                     request_id=str(uuid4())
                 )
-                
+
                 result = await _pattern_orchestrator.execute_pattern(
                     ctx=ctx,
                     pattern_id="portfolio_overview",
                     inputs={"portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c"}
                 )
-                
+
                 if result and result.outputs:
                     holdings_data = result.outputs.get("holdings_summary", {})
                     if holdings_data:
                         return SuccessResponse(data=holdings_data)
             except Exception as e:
                 logger.warning(f"Pattern execution failed for portfolio holdings: {e}")
-        
+
         # Fallback to mock data
         holdings = {
             "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
@@ -2973,9 +2957,9 @@ async def get_portfolio_holdings(request: Request):
             "total_pnl": 9325.00,
             "total_pnl_pct": 8.69
         }
-        
+
         return SuccessResponse(data=holdings)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -2995,7 +2979,7 @@ async def get_portfolio_positions(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Similar to holdings but with more position details
         positions = {
             "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
@@ -3036,9 +3020,9 @@ async def get_portfolio_positions(request: Request):
                 "day_change_pct": 1.08
             }
         }
-        
+
         return SuccessResponse(data=positions)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3058,7 +3042,7 @@ async def get_portfolio_summary(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         summary = {
             "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
             "total_value": 116625.00,
@@ -3085,9 +3069,9 @@ async def get_portfolio_summary(request: Request):
                 "ETF": 0.08
             }
         }
-        
+
         return SuccessResponse(data=summary)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3111,7 +3095,7 @@ async def get_risk_metrics(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Try pattern orchestrator first for risk metrics
         if PATTERN_ORCHESTRATION_AVAILABLE and _pattern_orchestrator:
             try:
@@ -3120,20 +3104,20 @@ async def get_risk_metrics(request: Request):
                     asof_date=datetime.now().date(),
                     request_id=str(uuid4())
                 )
-                
+
                 result = await _pattern_orchestrator.execute_pattern(
                     ctx=ctx,
                     pattern_id="portfolio_cycle_risk",
                     inputs={"portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c"}
                 )
-                
+
                 if result and result.outputs:
                     risk_data = result.outputs.get("risk_summary", {})
                     if risk_data:
                         return SuccessResponse(data=risk_data)
             except Exception as e:
                 logger.warning(f"Pattern execution failed for risk metrics: {e}")
-        
+
         # Fallback to mock data
         risk_metrics = {
             "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
@@ -3164,9 +3148,9 @@ async def get_risk_metrics(request: Request):
                 "quality": 0.35
             }
         }
-        
+
         return SuccessResponse(data=risk_metrics)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3186,7 +3170,7 @@ async def get_value_at_risk(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         var_data = {
             "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
             "portfolio_value": 116625.00,
@@ -3220,9 +3204,9 @@ async def get_value_at_risk(request: Request):
             "time_horizons": [1, 5, 10, 20],
             "last_updated": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=var_data)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3246,7 +3230,7 @@ async def get_macro_cycles(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Try pattern orchestrator for cycle data
         if PATTERN_ORCHESTRATION_AVAILABLE and _pattern_orchestrator:
             try:
@@ -3255,20 +3239,20 @@ async def get_macro_cycles(request: Request):
                     asof_date=datetime.now().date(),
                     request_id=str(uuid4())
                 )
-                
+
                 result = await _pattern_orchestrator.execute_pattern(
                     ctx=ctx,
                     pattern_id="macro_cycles_overview",
                     inputs={}
                 )
-                
+
                 if result and result.outputs:
                     cycles_data = result.outputs
                     if cycles_data:
                         return SuccessResponse(data=cycles_data)
             except Exception as e:
                 logger.warning(f"Pattern execution failed for macro cycles: {e}")
-        
+
         # Fallback to mock data
         cycles_data = {
             "stdc": {
@@ -3321,9 +3305,9 @@ async def get_macro_cycles(request: Request):
             "regime_confidence": 0.78,
             "last_updated": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=cycles_data)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3343,7 +3327,7 @@ async def get_macro_indicators(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         indicators = {
             "gdp": {
                 "value": 2.8,
@@ -3393,9 +3377,9 @@ async def get_macro_indicators(request: Request):
             },
             "last_updated": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=indicators)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3419,7 +3403,7 @@ async def get_quote(symbol: str, request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Mock quote data
         quote = {
             "symbol": symbol.upper(),
@@ -3445,9 +3429,9 @@ async def get_quote(symbol: str, request: Request):
             "exchange": "NASDAQ",
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=quote)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3467,7 +3451,7 @@ async def get_market_overview(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         overview = {
             "indices": {
                 "SP500": {
@@ -3541,9 +3525,9 @@ async def get_market_overview(request: Request):
             ],
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=overview)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3567,7 +3551,7 @@ async def get_settings(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         settings = {
             "user_id": user.get("user_id"),
             "preferences": {
@@ -3608,9 +3592,9 @@ async def get_settings(request: Request):
                 "stop_loss_default": 0.05
             }
         }
-        
+
         return SuccessResponse(data=settings)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3630,9 +3614,9 @@ async def update_settings(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         body = await request.json()
-        
+
         # Here you would normally validate and save the settings
         # For now, just echo back the updated settings
         updated_settings = {
@@ -3644,12 +3628,12 @@ async def update_settings(request: Request):
             "risk": body.get("risk", {}),
             "updated_at": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data={
             "message": "Settings updated successfully",
             "settings": updated_settings
         })
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3669,7 +3653,7 @@ async def get_api_keys(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Return masked API key info
         api_keys = {
             "configured_providers": [
@@ -3710,9 +3694,9 @@ async def get_api_keys(request: Request):
                 }
             ]
         }
-        
+
         return SuccessResponse(data=api_keys)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3739,7 +3723,7 @@ async def get_optimizer_proposals(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # If pattern orchestration is available, use the optimizer agent
         if PATTERN_ORCHESTRATION_AVAILABLE and _pattern_orchestrator:
             try:
@@ -3750,7 +3734,7 @@ async def get_optimizer_proposals(
                     portfolio_id=UUID(portfolio_id) if portfolio_id else None,
                     asof_date=date.today(),
                 )
-                
+
                 # Use optimizer agent to get proposals
                 result = await runtime.execute_capability(
                     agent_id="optimizer_agent",
@@ -3762,12 +3746,12 @@ async def get_optimizer_proposals(
                         "target_return": 0.08
                     }
                 )
-                
+
                 if result:
                     return SuccessResponse(data=result)
             except Exception as e:
                 logger.error(f"Error executing optimizer pattern: {e}")
-        
+
         # Fallback mock data
         proposals = {
             "portfolio_id": portfolio_id or "mock-portfolio",
@@ -3814,9 +3798,9 @@ async def get_optimizer_proposals(
             },
             "generated_at": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=proposals)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3839,7 +3823,7 @@ async def get_optimizer_analysis(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Mock optimization analysis
         analysis = {
             "portfolio_id": portfolio_id or "mock-portfolio",
@@ -3880,9 +3864,9 @@ async def get_optimizer_analysis(
                 "max_drawdown_optimized": -0.142
             }
         }
-        
+
         return SuccessResponse(data=analysis)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3909,7 +3893,7 @@ async def get_ratings_overview(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Mock ratings overview
         overview = {
             "portfolio_id": portfolio_id or "mock-portfolio",
@@ -3937,9 +3921,9 @@ async def get_ratings_overview(
             ],
             "last_updated": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=overview)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3963,7 +3947,7 @@ async def get_buffett_checklist(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # If pattern orchestration is available, try to use it
         if PATTERN_ORCHESTRATION_AVAILABLE and _pattern_orchestrator:
             try:
@@ -3975,12 +3959,12 @@ async def get_buffett_checklist(
                     },
                     RequestCtx(user_id=user.get("user_id"))
                 )
-                
+
                 if result and result.get("status") == "success":
                     return SuccessResponse(data=result.get("data", {}))
             except Exception as e:
                 logger.error(f"Error executing buffett checklist pattern: {e}")
-        
+
         # Fallback mock data
         checklist = {
             "symbol": symbol or "AAPL",
@@ -4063,9 +4047,9 @@ async def get_buffett_checklist(
             "recommendation": "Strong business with durable competitive advantages. Consider accumulating on dips.",
             "analysis_date": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=checklist)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -4092,7 +4076,7 @@ async def ai_chat(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # If Claude agent is available, use it
         if PATTERN_ORCHESTRATION_AVAILABLE and _agent_runtime:
             try:
@@ -4101,7 +4085,7 @@ async def ai_chat(
                     user_id=user.get("user_id"),
                     asof_date=date.today(),
                 )
-                
+
                 # Use claude agent
                 result = await runtime.execute_capability(
                     agent_id="claude_agent",
@@ -4112,7 +4096,7 @@ async def ai_chat(
                         "context": ai_request.context
                     }
                 )
-                
+
                 if result:
                     return SuccessResponse(data={
                         "response": result.get("analysis", result.get("response", "Analysis completed")),
@@ -4122,7 +4106,7 @@ async def ai_chat(
                     })
             except Exception as e:
                 logger.error(f"Error using Claude agent: {e}")
-        
+
         # Fallback mock response
         response = {
             "response": f"Based on your query '{ai_request.query[:50]}...', here's my analysis:\n\n" +
@@ -4141,9 +4125,9 @@ async def ai_chat(
             ],
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=response)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -4167,7 +4151,7 @@ async def get_ai_insights(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Mock AI insights
         insights = {
             "portfolio_id": portfolio_id or "mock-portfolio",
@@ -4226,9 +4210,9 @@ async def get_ai_insights(
             ],
             "generated_at": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=insights)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -4256,7 +4240,7 @@ async def get_corporate_actions(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Mock corporate actions data
         actions = {
             "portfolio_id": portfolio_id or "mock-portfolio",
@@ -4323,9 +4307,9 @@ async def get_corporate_actions(
             },
             "last_updated": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=actions)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -4355,17 +4339,17 @@ async def update_api_keys(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         body = await request.json()
         provider = body.get("provider")
         api_key = body.get("api_key")
-        
+
         if not provider or not api_key:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Provider and API key are required"
             )
-        
+
         # Validate provider
         valid_providers = ["polygon", "fred", "anthropic", "openai", "alphavantage", "iex", "finnhub"]
         if provider not in valid_providers:
@@ -4373,7 +4357,7 @@ async def update_api_keys(request: Request):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid provider. Must be one of: {', '.join(valid_providers)}"
             )
-        
+
         # Here you would normally save the API key securely
         # For now, just return success
         response = {
@@ -4383,9 +4367,9 @@ async def update_api_keys(request: Request):
             "key_masked": "****" + api_key[-4:] if len(api_key) > 4 else "****",
             "updated_at": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=response)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -4410,7 +4394,7 @@ async def get_scenarios(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Try to execute pattern for scenarios
         if PATTERN_ORCHESTRATION_AVAILABLE and db_pool:
             try:
@@ -4423,7 +4407,7 @@ async def get_scenarios(request: Request):
                     return SuccessResponse(data=result.get("data", {}))
             except Exception as e:
                 logger.warning(f"Pattern execution failed for scenarios: {e}")
-        
+
         # Return comprehensive mock scenarios
         scenarios = {
             "available_scenarios": [
@@ -4508,9 +4492,9 @@ async def get_scenarios(request: Request):
                 "geopolitical_shock": {"impact": -15.7, "var_95": -20000}
             }
         }
-        
+
         return SuccessResponse(data=scenarios)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -4531,7 +4515,7 @@ async def get_risk_concentration(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Return concentration risk metrics
         concentration_risk = {
             "position_concentration": {
@@ -4580,9 +4564,9 @@ async def get_risk_concentration(request: Request):
             "risk_score": 7.5,  # Out of 10
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=concentration_risk)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -4606,18 +4590,18 @@ async def get_market_quotes(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Parse symbols or use default watchlist
         if symbols:
             symbol_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
         else:
             # Default watchlist when no symbols provided
             symbol_list = ["SPY", "AAPL", "GOOGL", "MSFT", "AMZN", "META", "NVDA", "TSLA", "BRK.B"]
-        
+
         if not symbol_list:
             # Fallback to default if parsing resulted in empty list
             symbol_list = ["SPY", "AAPL", "GOOGL", "MSFT"]
-        
+
         # Mock quote data for each symbol
         quotes = {}
         base_prices = {
@@ -4625,12 +4609,12 @@ async def get_market_quotes(
             "BRK.B": 365.00, "SPY": 450.00, "NVDA": 495.00,
             "TSLA": 245.00, "META": 355.00, "AMZN": 155.00
         }
-        
+
         for symbol in symbol_list:
             base_price = base_prices.get(symbol, 100.00)
             change_pct = random.uniform(-3, 3)
             change = base_price * change_pct / 100
-            
+
             quotes[symbol] = {
                 "symbol": symbol,
                 "price": round(base_price + change, 2),
@@ -4645,13 +4629,13 @@ async def get_market_quotes(
                 "week_52_low": round(base_price * 0.70, 2),
                 "timestamp": datetime.utcnow().isoformat()
             }
-        
+
         return SuccessResponse(data={
             "quotes": quotes,
             "count": len(quotes),
             "timestamp": datetime.utcnow().isoformat()
         })
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -4672,14 +4656,14 @@ async def get_efficient_frontier(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Generate efficient frontier points
         frontier_points = []
         for i in range(20):
             risk = 5 + i * 1.5  # Risk from 5% to 33.5%
             # Expected return increases with risk but with diminishing returns
             expected_return = 2 + (risk * 0.5) - (risk * risk * 0.008)
-            
+
             frontier_points.append({
                 "risk": round(risk, 2),
                 "return": round(expected_return, 2),
@@ -4690,7 +4674,7 @@ async def get_efficient_frontier(request: Request):
                     "alternatives": round(min(risk / 3, 5), 1)
                 }
             })
-        
+
         efficient_frontier = {
             "frontier_points": frontier_points,
             "current_portfolio": {
@@ -4724,9 +4708,9 @@ async def get_efficient_frontier(request: Request):
             },
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=efficient_frontier)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -4747,7 +4731,7 @@ async def get_optimizer_recommendations(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         recommendations = {
             "optimization_score": 72,  # Out of 100
             "potential_improvement": {
@@ -4845,9 +4829,9 @@ async def get_optimizer_recommendations(request: Request):
             ],
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=recommendations)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -4868,7 +4852,7 @@ async def get_all_ratings(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Return detailed ratings for all holdings
         all_ratings = {
             "portfolio_ratings": {
@@ -4997,9 +4981,9 @@ async def get_all_ratings(request: Request):
             },
             "last_updated": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=all_ratings)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -5020,7 +5004,7 @@ async def get_holdings_ratings(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Return detailed ratings specifically for holdings
         holdings_ratings = {
             "holdings": [
@@ -5198,9 +5182,9 @@ async def get_holdings_ratings(request: Request):
             },
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data=holdings_ratings)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -5225,7 +5209,7 @@ async def get_portfolio_transactions(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Generate portfolio-specific transaction data
         all_transactions = [
             {
@@ -5309,12 +5293,12 @@ async def get_portfolio_transactions(
                 "status": "settled"
             }
         ]
-        
+
         # Add more historical transactions
         for i in range(25, 100, 5):
             transaction_type = random.choice(["buy", "sell", "dividend"])
             symbol = random.choice(["AAPL", "GOOGL", "MSFT", "BRK.B", "SPY", "NVDA", "TSLA"])
-            
+
             if transaction_type == "dividend":
                 shares = random.randint(10, 200)
                 price = round(random.uniform(0.20, 2.00), 2)
@@ -5323,7 +5307,7 @@ async def get_portfolio_transactions(
                 shares = random.randint(5, 50)
                 price = round(random.uniform(100, 500), 2)
                 amount = round(shares * price * (1 if transaction_type == "buy" else -1), 2)
-            
+
             all_transactions.append({
                 "id": str(uuid4()),
                 "date": (datetime.utcnow() - timedelta(days=i)).strftime("%Y-%m-%d"),
@@ -5340,13 +5324,13 @@ async def get_portfolio_transactions(
                 },
                 "status": "settled"
             })
-        
+
         # Pagination
         total_count = len(all_transactions)
         start_idx = (page - 1) * page_size
         end_idx = start_idx + page_size
         paginated = all_transactions[start_idx:end_idx]
-        
+
         # Calculate summary statistics
         summary = {
             "total_transactions": total_count,
@@ -5357,7 +5341,7 @@ async def get_portfolio_transactions(
             "net_invested": sum(t["amount"] for t in all_transactions if t["type"] in ["buy", "sell"]),
             "dividend_income": sum(t["amount"] for t in all_transactions if t["type"] == "dividend")
         }
-        
+
         return SuccessResponse(data={
             "transactions": paginated,
             "summary": summary,
@@ -5368,7 +5352,7 @@ async def get_portfolio_transactions(
                 "total_pages": math.ceil(total_count / page_size)
             }
         })
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -5389,7 +5373,7 @@ async def get_active_alerts(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Mock active alerts
         active_alerts = [
             {
@@ -5467,7 +5451,7 @@ async def get_active_alerts(request: Request):
                 "notification_channels": ["email", "app"]
             }
         ]
-        
+
         # Calculate summary statistics
         summary = {
             "total_active": len(active_alerts),
@@ -5485,13 +5469,13 @@ async def get_active_alerts(request: Request):
             "close_to_trigger": sum(1 for a in active_alerts if a.get("distance_percent", 100) < 10),
             "last_scan": datetime.utcnow().isoformat()
         }
-        
+
         return SuccessResponse(data={
             "active_alerts": active_alerts,
             "summary": summary,
             "timestamp": datetime.utcnow().isoformat()
         })
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -5512,7 +5496,7 @@ async def get_user_profile(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-        
+
         # Return user profile data
         profile = {
             "user_id": user.get("id", "user-001"),
@@ -5588,9 +5572,9 @@ async def get_user_profile(request: Request):
                 ]
             }
         }
-        
+
         return SuccessResponse(data=profile)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -5608,11 +5592,11 @@ async def get_user_profile(request: Request):
 async def catch_all_spa_routes(full_path: str):
     """
     Catch-all route for SPA client-side routing
-    
+
     This route MUST be defined after all other routes.
     It returns the main HTML file for any path that doesn't match an API route,
     allowing the client-side JavaScript router to handle navigation.
-    
+
     This enables routes like:
     - /dashboard
     - /holdings
@@ -5630,7 +5614,7 @@ async def catch_all_spa_routes(full_path: str):
     - /corporate-actions
     - /api-keys
     - /settings
-    
+
     API routes (/api/*, /health) are handled by earlier route definitions
     and will not reach this catch-all.
     """
@@ -5638,7 +5622,7 @@ async def catch_all_spa_routes(full_path: str):
         # Skip API routes and health endpoint (shouldn't reach here anyway)
         if full_path.startswith("api/") or full_path == "health":
             raise HTTPException(status_code=404, detail="Not found")
-        
+
         # Try to read UI from file
         ui_file = Path("full_ui.html")
         if ui_file.exists():
@@ -5648,7 +5632,7 @@ async def catch_all_spa_routes(full_path: str):
         raise
     except Exception as e:
         logger.error(f"Error serving SPA for path /{full_path}: {e}")
-    
+
     # Return minimal fallback UI if file not found
     logger.warning(f"full_ui.html not found, serving minimal UI for /{full_path}")
     return HTMLResponse(content="""
@@ -5677,7 +5661,7 @@ if __name__ == "__main__":
     log_config = LOGGING_CONFIG.copy()
     log_config["formatters"]["access"]["fmt"] = "%(asctime)s - %(levelname)s - %(message)s"
     log_config["formatters"]["default"]["fmt"] = "%(asctime)s - %(levelname)s - %(message)s"
-    
+
     # Run server
     uvicorn.run(
         app,
