@@ -2307,6 +2307,1534 @@
             };
             
             // ============================================
+            // Business Logic Functions (Advanced Calculations)
+            // ============================================
+            
+            // ----- SCENARIO SIMULATION LOGIC -----
+            
+            /**
+             * Calculate comprehensive scenario impact on portfolio
+             * @param {object} scenario - Scenario object with probability, impact, factors
+             * @param {number} portfolioValue - Current portfolio value
+             * @param {Array} holdings - Portfolio holdings array
+             * @returns {object} Comprehensive impact assessment
+             */
+            const calculateScenarioImpact = (scenario, portfolioValue, holdings = []) => {
+                if (!scenario || !portfolioValue) {
+                    return {
+                        expectedLoss: 0,
+                        worstCaseLoss: 0,
+                        probabilityAdjustedLoss: 0,
+                        impactLevel: 'Unknown',
+                        affectedHoldings: [],
+                        hedgeEffectiveness: 0
+                    };
+                }
+                
+                const probability = scenario.probability || 0;
+                const impact = scenario.portfolio_impact || scenario.impact || 0;
+                const duration = scenario.duration_months || 12;
+                
+                // Base calculations
+                const expectedLoss = portfolioValue * probability * Math.abs(impact);
+                const worstCaseLoss = portfolioValue * Math.abs(impact);
+                const monthlyImpact = Math.abs(impact) / duration;
+                
+                // Probability-adjusted loss with confidence factor
+                const confidence = scenario.confidence || 0.75;
+                const probabilityAdjustedLoss = expectedLoss * confidence;
+                
+                // Determine impact level based on severity
+                let impactLevel = 'Low';
+                if (Math.abs(impact) > 0.20) impactLevel = 'Severe';
+                else if (Math.abs(impact) > 0.10) impactLevel = 'High';
+                else if (Math.abs(impact) > 0.05) impactLevel = 'Moderate';
+                
+                // Calculate affected holdings based on scenario factors
+                const affectedHoldings = holdings.map(holding => {
+                    const sectorImpact = scenario.factors?.includes(holding.sector) ? 1.5 : 1.0;
+                    const holdingImpact = impact * sectorImpact;
+                    return {
+                        symbol: holding.symbol,
+                        currentValue: holding.value,
+                        expectedLoss: holding.value * holdingImpact,
+                        impactPercentage: holdingImpact * 100
+                    };
+                }).filter(h => Math.abs(h.impactPercentage) > 1);
+                
+                // Calculate hedge effectiveness
+                const hedgeEffectiveness = scenario.hedge_effectiveness || 
+                    (Math.abs(impact) > 0.15 ? 0.7 : 0.5);
+                
+                return {
+                    expectedLoss,
+                    worstCaseLoss,
+                    probabilityAdjustedLoss,
+                    monthlyImpact,
+                    impactLevel,
+                    affectedHoldings,
+                    hedgeEffectiveness,
+                    timeToRecover: duration * (1 + Math.abs(impact))
+                };
+            };
+            
+            /**
+             * Generate hedge recommendations based on scenario analysis
+             * @param {Array} scenarios - Array of scenario objects
+             * @param {number} portfolioValue - Portfolio value
+             * @param {object} riskProfile - Risk profile configuration
+             * @returns {Array} Hedge recommendations
+             */
+            const generateHedgeRecommendations = (scenarios, portfolioValue, riskProfile = {}) => {
+                const recommendations = [];
+                const riskTolerance = riskProfile.tolerance || 'moderate';
+                const hedgeBudget = portfolioValue * (riskProfile.hedgeAllocation || 0.02);
+                
+                scenarios.forEach(scenario => {
+                    const impact = calculateScenarioImpact(scenario, portfolioValue);
+                    
+                    if (impact.impactLevel === 'Severe' || impact.impactLevel === 'High') {
+                        // PUT Options for market crash scenarios
+                        if (scenario.id === 'market_crash' || scenario.regime === 'crisis') {
+                            recommendations.push({
+                                type: 'PUT Options',
+                                underlying: 'SPY',
+                                strike: 'ATM -5%',
+                                expiry: '3 months',
+                                allocation: hedgeBudget * 0.4,
+                                protection: `${Math.abs(scenario.impact * 100).toFixed(1)}% downside`,
+                                effectiveness: 85,
+                                cost: hedgeBudget * 0.4,
+                                rationale: 'Direct market hedge against crash scenario'
+                            });
+                        }
+                        
+                        // VIX Calls for volatility spikes
+                        if (scenario.factors?.includes('volatility')) {
+                            recommendations.push({
+                                type: 'VIX Calls',
+                                underlying: 'VIX',
+                                strike: '25',
+                                expiry: '2 months',
+                                allocation: hedgeBudget * 0.2,
+                                protection: 'Volatility spike protection',
+                                effectiveness: 72,
+                                cost: hedgeBudget * 0.2,
+                                rationale: 'Hedge against volatility expansion'
+                            });
+                        }
+                        
+                        // Gold/Commodities for inflation scenarios
+                        if (scenario.id === 'inflation_surge' || scenario.factors?.includes('inflation')) {
+                            recommendations.push({
+                                type: 'Gold ETF',
+                                underlying: 'GLD',
+                                allocation: portfolioValue * 0.05,
+                                protection: 'Inflation/Crisis hedge',
+                                effectiveness: 68,
+                                cost: portfolioValue * 0.05,
+                                rationale: 'Traditional inflation hedge and safe haven'
+                            });
+                        }
+                        
+                        // Currency hedges for international exposure
+                        if (scenario.factors?.includes('currency')) {
+                            recommendations.push({
+                                type: 'Currency Hedge',
+                                underlying: 'EUR/USD Forward',
+                                size: portfolioValue * 0.25,
+                                protection: 'FX exposure',
+                                effectiveness: 90,
+                                cost: hedgeBudget * 0.1,
+                                rationale: 'Mitigate foreign exchange risk'
+                            });
+                        }
+                    }
+                });
+                
+                // Sort by effectiveness and limit based on budget
+                return recommendations
+                    .sort((a, b) => b.effectiveness - a.effectiveness)
+                    .slice(0, riskTolerance === 'conservative' ? 5 : 3);
+            };
+            
+            /**
+             * Perform portfolio stress testing across multiple scenarios
+             * @param {object} portfolio - Portfolio object with holdings
+             * @param {Array} scenarios - Array of stress scenarios
+             * @param {object} config - Testing configuration
+             * @returns {object} Stress test results
+             */
+            const performPortfolioStressTesting = (portfolio, scenarios, config = {}) => {
+                const baseValue = portfolio.value || 1000000;
+                const holdings = portfolio.holdings || [];
+                const iterations = config.iterations || 1000;
+                const confidenceLevel = config.confidenceLevel || 0.95;
+                
+                // Run Monte Carlo simulation
+                const simulationResults = [];
+                for (let i = 0; i < iterations; i++) {
+                    let portfolioValueAfterStress = baseValue;
+                    
+                    scenarios.forEach(scenario => {
+                        // Apply random probability weighting
+                        const randomProb = Math.random();
+                        if (randomProb < scenario.probability) {
+                            // Apply impact with some randomness
+                            const impactVariation = (Math.random() - 0.5) * 0.2;
+                            const adjustedImpact = scenario.impact * (1 + impactVariation);
+                            portfolioValueAfterStress *= (1 + adjustedImpact);
+                        }
+                    });
+                    
+                    simulationResults.push(portfolioValueAfterStress);
+                }
+                
+                // Calculate statistics
+                simulationResults.sort((a, b) => a - b);
+                const varIndex = Math.floor((1 - confidenceLevel) * iterations);
+                const valueAtRisk = baseValue - simulationResults[varIndex];
+                const conditionalVaR = baseValue - simulationResults.slice(0, varIndex).reduce((a, b) => a + b, 0) / varIndex;
+                
+                const worstCase = Math.min(...simulationResults);
+                const bestCase = Math.max(...simulationResults);
+                const expected = simulationResults.reduce((a, b) => a + b, 0) / iterations;
+                
+                // Stress test individual holdings
+                const holdingStressResults = holdings.map(holding => {
+                    const sectorScenarios = scenarios.filter(s => 
+                        s.factors?.includes(holding.sector) || s.factors?.includes('market-wide')
+                    );
+                    
+                    let holdingWorstCase = holding.value;
+                    sectorScenarios.forEach(scenario => {
+                        holdingWorstCase *= (1 + scenario.impact);
+                    });
+                    
+                    return {
+                        symbol: holding.symbol,
+                        currentValue: holding.value,
+                        stressedValue: holdingWorstCase,
+                        loss: holding.value - holdingWorstCase,
+                        lossPercentage: ((holding.value - holdingWorstCase) / holding.value) * 100
+                    };
+                });
+                
+                return {
+                    baseValue,
+                    expectedValue: expected,
+                    valueAtRisk,
+                    conditionalVaR,
+                    worstCase,
+                    bestCase,
+                    probabilityOfLoss: simulationResults.filter(v => v < baseValue).length / iterations,
+                    maxDrawdown: ((baseValue - worstCase) / baseValue) * 100,
+                    holdingStressResults,
+                    confidence: confidenceLevel,
+                    iterations
+                };
+            };
+            
+            // ----- MACRO CYCLE ANALYSIS LOGIC -----
+            
+            /**
+             * Analyze short-term debt cycle indicators
+             * @param {object} macroData - Macro economic data
+             * @param {number} lookbackMonths - Months to analyze
+             * @returns {object} Short-term cycle analysis
+             */
+            const analyzeShortTermDebtCycle = (macroData, lookbackMonths = 96) => {
+                const currentPhase = macroData?.regime?.current_phase || 'EXPANSION';
+                const creditGrowth = macroData?.metrics?.credit_growth || 0;
+                const gdpGrowth = macroData?.metrics?.gdp_growth || 0;
+                const debtServiceRatio = macroData?.metrics?.debt_service_ratio || 0;
+                
+                // Calculate cycle position (0-1, where 0.5 is mid-cycle)
+                let cyclePosition = 0.5;
+                if (currentPhase === 'EXPANSION') cyclePosition = 0.25;
+                else if (currentPhase === 'PEAK') cyclePosition = 0.5;
+                else if (currentPhase === 'CONTRACTION') cyclePosition = 0.75;
+                else if (currentPhase === 'TROUGH') cyclePosition = 1.0;
+                
+                // Calculate momentum
+                const creditMomentum = creditGrowth - (macroData?.metrics?.credit_growth_ma || creditGrowth);
+                const gdpMomentum = gdpGrowth - (macroData?.metrics?.gdp_growth_ma || gdpGrowth);
+                
+                // Determine cycle health
+                let cycleHealth = 'Healthy';
+                if (debtServiceRatio > 20 && creditGrowth < 0) cycleHealth = 'Stressed';
+                else if (debtServiceRatio > 15 || creditGrowth > 15) cycleHealth = 'Overheating';
+                else if (creditGrowth < 2 && gdpGrowth < 2) cycleHealth = 'Weakening';
+                
+                // Estimate time to next phase
+                const averagePhaseDuration = 18; // months
+                const currentPhaseDuration = macroData?.regime?.phase_duration || 12;
+                const timeToNextPhase = Math.max(0, averagePhaseDuration - currentPhaseDuration);
+                
+                // Calculate recession probability
+                let recessionProbability = 0.1;
+                if (currentPhase === 'PEAK') recessionProbability = 0.4;
+                if (currentPhase === 'CONTRACTION') recessionProbability = 0.6;
+                if (creditGrowth < 0 && gdpGrowth < 1) recessionProbability += 0.2;
+                if (debtServiceRatio > 20) recessionProbability += 0.1;
+                
+                return {
+                    currentPhase,
+                    cyclePosition,
+                    cycleHealth,
+                    creditGrowth,
+                    gdpGrowth,
+                    debtServiceRatio,
+                    creditMomentum,
+                    gdpMomentum,
+                    timeToNextPhase,
+                    recessionProbability: Math.min(recessionProbability, 0.9),
+                    expansionStrength: currentPhase === 'EXPANSION' ? (creditGrowth + gdpGrowth) / 2 : 0,
+                    contractionSeverity: currentPhase === 'CONTRACTION' ? Math.abs(creditGrowth + gdpGrowth) / 2 : 0
+                };
+            };
+            
+            /**
+             * Analyze long-term debt cycle and deleveraging risk
+             * @param {object} macroData - Macro economic data
+             * @returns {object} Long-term cycle analysis
+             */
+            const analyzeLongTermDebtCycle = (macroData) => {
+                const debtToGDP = macroData?.metrics?.debt_to_gdp || 100;
+                const wealthGap = macroData?.metrics?.wealth_gap_top_1pct || 20;
+                const realRates = macroData?.metrics?.real_interest_rate || 0;
+                const productivity = macroData?.metrics?.productivity_growth || 2;
+                
+                // Calculate cycle position (early, mid, late)
+                let cyclePhase = 'Mid-Cycle';
+                let cyclePosition = 0.5;
+                
+                if (debtToGDP < 150) {
+                    cyclePhase = 'Early-Cycle';
+                    cyclePosition = debtToGDP / 300;
+                } else if (debtToGDP < 250) {
+                    cyclePhase = 'Mid-Cycle';
+                    cyclePosition = 0.5 + (debtToGDP - 150) / 200;
+                } else {
+                    cyclePhase = 'Late-Cycle';
+                    cyclePosition = 0.75 + Math.min((debtToGDP - 250) / 100, 0.25);
+                }
+                
+                // Calculate deleveraging risk
+                let deleveragingRisk = 'Low';
+                let deleveragingProbability = 0.1;
+                
+                if (debtToGDP > 300) {
+                    deleveragingRisk = 'High';
+                    deleveragingProbability = 0.7;
+                } else if (debtToGDP > 250 && wealthGap > 30) {
+                    deleveragingRisk = 'High';
+                    deleveragingProbability = 0.6;
+                } else if (debtToGDP > 200) {
+                    deleveragingRisk = 'Medium';
+                    deleveragingProbability = 0.3;
+                }
+                
+                // Calculate sustainability metrics
+                const debtSustainability = productivity > realRates;
+                const socialStability = wealthGap < 35;
+                const monetaryCapacity = realRates > -2;
+                
+                // Estimate years to deleveraging
+                const debtGrowthRate = macroData?.metrics?.debt_growth_rate || 5;
+                const gdpGrowthRate = macroData?.metrics?.gdp_growth || 2;
+                const excessDebtGrowth = debtGrowthRate - gdpGrowthRate;
+                
+                let yearsToDeleveraging = 999;
+                if (excessDebtGrowth > 0 && debtToGDP > 200) {
+                    yearsToDeleveraging = Math.max(1, (350 - debtToGDP) / excessDebtGrowth);
+                }
+                
+                return {
+                    cyclePhase,
+                    cyclePosition,
+                    debtToGDP,
+                    wealthGap,
+                    realRates,
+                    productivity,
+                    deleveragingRisk,
+                    deleveragingProbability,
+                    debtSustainability,
+                    socialStability,
+                    monetaryCapacity,
+                    yearsToDeleveraging,
+                    overallRisk: deleveragingProbability > 0.5 ? 'High' : deleveragingProbability > 0.3 ? 'Medium' : 'Low'
+                };
+            };
+            
+            /**
+             * Calculate empire cycle power index and trajectory
+             * @param {object} empireData - Empire metrics data
+             * @returns {object} Empire cycle analysis
+             */
+            const calculateEmpireCyclePower = (empireData) => {
+                // Component weights for power calculation
+                const weights = {
+                    economic: 0.25,
+                    military: 0.20,
+                    technological: 0.20,
+                    financial: 0.15,
+                    educational: 0.10,
+                    cultural: 0.10
+                };
+                
+                // Extract or default component scores (0-100)
+                const components = {
+                    economic: empireData?.economic_strength || 50,
+                    military: empireData?.military_power || 50,
+                    technological: empireData?.tech_leadership || 50,
+                    financial: empireData?.reserve_currency_status || 50,
+                    educational: empireData?.education_quality || 50,
+                    cultural: empireData?.cultural_influence || 50
+                };
+                
+                // Calculate overall power index
+                const powerIndex = Object.keys(components).reduce((total, key) => {
+                    return total + components[key] * weights[key];
+                }, 0);
+                
+                // Determine cycle phase
+                let phase = 'Mature';
+                let trajectory = 'Stable';
+                
+                if (powerIndex > 70) {
+                    phase = 'Peak';
+                    trajectory = components.economic > 60 ? 'Rising' : 'Plateauing';
+                } else if (powerIndex > 50) {
+                    phase = 'Mature';
+                    trajectory = components.technological > components.economic ? 'Transitioning' : 'Stable';
+                } else if (powerIndex > 30) {
+                    phase = 'Declining';
+                    trajectory = 'Weakening';
+                } else {
+                    phase = 'Late-Stage';
+                    trajectory = 'Declining';
+                }
+                
+                // Calculate momentum (rate of change)
+                const previousPowerIndex = empireData?.previous_power_index || powerIndex;
+                const momentum = powerIndex - previousPowerIndex;
+                
+                // Identify key risks and opportunities
+                const risks = [];
+                const opportunities = [];
+                
+                if (components.economic < 40) risks.push('Economic weakness');
+                if (components.financial < 40) risks.push('Currency debasement risk');
+                if (components.military < 40) risks.push('Security vulnerabilities');
+                if (components.educational < 40) risks.push('Human capital decline');
+                
+                if (components.technological > 60) opportunities.push('Tech leadership advantage');
+                if (components.financial > 60) opportunities.push('Reserve currency benefits');
+                if (momentum > 5) opportunities.push('Positive momentum');
+                
+                return {
+                    powerIndex,
+                    phase,
+                    trajectory,
+                    momentum,
+                    components,
+                    risks,
+                    opportunities,
+                    relativePower: powerIndex / 100, // Normalized to 0-1
+                    sustainabilityScore: (components.educational + components.technological) / 2
+                };
+            };
+            
+            /**
+             * Analyze DaR (Drawdown at Risk) threshold and crisis probability
+             * @param {object} darData - DaR metrics data
+             * @returns {object} DaR analysis results
+             */
+            const analyzeDarThreshold = (darData) => {
+                const currentDar = darData?.current || 1.5;
+                const threshold = darData?.threshold || 2.0;
+                const historicalAvg = darData?.historical_average || 1.2;
+                const thirtyDayChange = darData?.thirty_day_change || 0;
+                
+                // Calculate distance to crisis
+                const distanceToCrisis = threshold - currentDar;
+                const percentToThreshold = (currentDar / threshold) * 100;
+                
+                // Calculate crisis probability based on DaR level and trajectory
+                let crisisProbability = 0;
+                if (currentDar >= threshold) {
+                    crisisProbability = 0.8;
+                } else if (currentDar >= threshold * 0.9) {
+                    crisisProbability = 0.6;
+                } else if (currentDar >= threshold * 0.8) {
+                    crisisProbability = 0.4;
+                } else if (currentDar >= threshold * 0.7) {
+                    crisisProbability = 0.2;
+                } else {
+                    crisisProbability = 0.1;
+                }
+                
+                // Adjust for momentum
+                if (thirtyDayChange > 0.1) crisisProbability += 0.1;
+                if (thirtyDayChange > 0.2) crisisProbability += 0.1;
+                
+                // Determine risk level
+                let riskLevel = 'Low';
+                if (percentToThreshold >= 90) riskLevel = 'Critical';
+                else if (percentToThreshold >= 75) riskLevel = 'High';
+                else if (percentToThreshold >= 60) riskLevel = 'Medium';
+                
+                // Calculate time to threshold at current rate
+                let monthsToThreshold = 999;
+                if (thirtyDayChange > 0) {
+                    monthsToThreshold = Math.max(0, distanceToCrisis / thirtyDayChange);
+                }
+                
+                // Generate action recommendations
+                const recommendations = [];
+                if (riskLevel === 'Critical') {
+                    recommendations.push('Immediate risk reduction required');
+                    recommendations.push('Consider significant de-risking');
+                } else if (riskLevel === 'High') {
+                    recommendations.push('Reduce portfolio leverage');
+                    recommendations.push('Increase hedging positions');
+                } else if (riskLevel === 'Medium') {
+                    recommendations.push('Monitor closely');
+                    recommendations.push('Prepare contingency plans');
+                }
+                
+                return {
+                    currentDar,
+                    threshold,
+                    distanceToCrisis,
+                    percentToThreshold,
+                    crisisProbability: Math.min(crisisProbability, 0.95),
+                    riskLevel,
+                    thirtyDayChange,
+                    monthsToThreshold,
+                    trend: thirtyDayChange > 0 ? 'Worsening' : 'Improving',
+                    deviationFromHistorical: currentDar - historicalAvg,
+                    recommendations
+                };
+            };
+            
+            // ----- OPTIMIZATION LOGIC -----
+            
+            /**
+             * Generate trade proposals based on portfolio optimization
+             * @param {object} portfolio - Current portfolio
+             * @param {object} targetAllocation - Target allocation
+             * @param {object} constraints - Trading constraints
+             * @returns {Array} Trade proposals
+             */
+            const generateTradeProposals = (portfolio, targetAllocation, constraints = {}) => {
+                const proposals = [];
+                const currentHoldings = portfolio.holdings || [];
+                const totalValue = portfolio.value || 0;
+                const maxTrades = constraints.maxTrades || 10;
+                const minTradeSize = constraints.minTradeSize || 1000;
+                const maxPositionSize = constraints.maxPositionSize || 0.15;
+                
+                // Calculate current allocations
+                const currentAllocations = {};
+                currentHoldings.forEach(holding => {
+                    const allocation = holding.value / totalValue;
+                    currentAllocations[holding.symbol] = allocation;
+                });
+                
+                // Identify required trades
+                Object.keys(targetAllocation).forEach(symbol => {
+                    const current = currentAllocations[symbol] || 0;
+                    const target = targetAllocation[symbol];
+                    const difference = target - current;
+                    const dollarDifference = difference * totalValue;
+                    
+                    if (Math.abs(dollarDifference) > minTradeSize) {
+                        const holding = currentHoldings.find(h => h.symbol === symbol) || {};
+                        const price = holding.price || 100;
+                        const shares = Math.round(dollarDifference / price);
+                        
+                        proposals.push({
+                            id: proposals.length + 1,
+                            action: dollarDifference > 0 ? 'BUY' : 'SELL',
+                            symbol,
+                            shares: Math.abs(shares),
+                            price,
+                            value: Math.abs(dollarDifference),
+                            currentAllocation: current * 100,
+                            targetAllocation: target * 100,
+                            impact: (difference * 100).toFixed(2) + '%',
+                            reason: generateTradeReason(current, target, symbol),
+                            confidence: calculateTradeConfidence(difference, symbol),
+                            priority: Math.abs(difference) // Higher difference = higher priority
+                        });
+                    }
+                });
+                
+                // Sort by priority and limit to maxTrades
+                return proposals
+                    .sort((a, b) => b.priority - a.priority)
+                    .slice(0, maxTrades)
+                    .map((trade, index) => ({ ...trade, id: index + 1 }));
+            };
+            
+            /**
+             * Helper function to generate trade reason
+             */
+            const generateTradeReason = (current, target, symbol) => {
+                const diff = target - current;
+                if (diff > 0.05) return `Increase ${symbol} exposure to target`;
+                if (diff < -0.05) return `Reduce ${symbol} concentration`;
+                if (diff > 0) return `Rebalance ${symbol} to target weight`;
+                return `Trim ${symbol} position`;
+            };
+            
+            /**
+             * Helper function to calculate trade confidence
+             */
+            const calculateTradeConfidence = (difference, symbol) => {
+                const baseConfidence = 70;
+                const differenceBonus = Math.min(Math.abs(difference) * 100, 20);
+                const volatilityPenalty = Math.random() * 10; // Placeholder for actual volatility
+                return Math.min(95, Math.max(50, baseConfidence + differenceBonus - volatilityPenalty));
+            };
+            
+            /**
+             * Analyze trade impact on portfolio metrics
+             * @param {Array} trades - Proposed trades
+             * @param {object} portfolio - Current portfolio
+             * @param {object} marketData - Market data for calculations
+             * @returns {object} Impact analysis results
+             */
+            const analyzeTradeImpact = (trades, portfolio, marketData = {}) => {
+                const currentMetrics = portfolio.metrics || {};
+                const currentReturn = currentMetrics.expectedReturn || 8;
+                const currentVolatility = currentMetrics.volatility || 15;
+                const currentSharpe = currentMetrics.sharpe || 0.85;
+                const currentBeta = currentMetrics.beta || 1.0;
+                
+                // Simulate post-trade metrics
+                let portfolioAfterTrades = { ...portfolio };
+                let totalBuyValue = 0;
+                let totalSellValue = 0;
+                
+                trades.forEach(trade => {
+                    if (trade.action === 'BUY') {
+                        totalBuyValue += trade.value || (trade.shares * trade.price);
+                    } else {
+                        totalSellValue += trade.value || (trade.shares * trade.price);
+                    }
+                });
+                
+                // Calculate expected changes (simplified model)
+                const netChange = totalBuyValue - totalSellValue;
+                const rebalancingEffect = Math.abs(netChange) / portfolio.value;
+                
+                // Estimate new metrics
+                const returnImprovement = rebalancingEffect * 0.15; // 15% improvement per 1% rebalanced
+                const volatilityReduction = rebalancingEffect * 0.2; // 20% reduction per 1% rebalanced
+                const betaChange = netChange > 0 ? 0.05 : -0.05; // Directional beta change
+                
+                const optimizedReturn = currentReturn * (1 + returnImprovement);
+                const optimizedVolatility = currentVolatility * (1 - volatilityReduction);
+                const optimizedSharpe = calculateSharpeRatio(optimizedReturn / 100, 0.02, optimizedVolatility / 100);
+                const optimizedBeta = currentBeta + betaChange;
+                
+                // Calculate improvement metrics
+                const metrics = [
+                    {
+                        metric: 'Expected Return',
+                        current: currentReturn,
+                        optimized: optimizedReturn,
+                        change: ((optimizedReturn - currentReturn) / currentReturn) * 100,
+                        improvement: optimizedReturn > currentReturn
+                    },
+                    {
+                        metric: 'Volatility',
+                        current: currentVolatility,
+                        optimized: optimizedVolatility,
+                        change: ((optimizedVolatility - currentVolatility) / currentVolatility) * 100,
+                        improvement: optimizedVolatility < currentVolatility
+                    },
+                    {
+                        metric: 'Sharpe Ratio',
+                        current: currentSharpe,
+                        optimized: optimizedSharpe,
+                        change: optimizedSharpe - currentSharpe,
+                        improvement: optimizedSharpe > currentSharpe
+                    },
+                    {
+                        metric: 'Beta',
+                        current: currentBeta,
+                        optimized: optimizedBeta,
+                        change: optimizedBeta - currentBeta,
+                        improvement: Math.abs(optimizedBeta - 1) < Math.abs(currentBeta - 1)
+                    }
+                ];
+                
+                // Calculate overall improvement score
+                const improvementScore = metrics.reduce((score, m) => 
+                    score + (m.improvement ? 1 : 0), 0) / metrics.length;
+                
+                return {
+                    metrics,
+                    totalBuyValue,
+                    totalSellValue,
+                    netChange,
+                    rebalancingPercentage: rebalancingEffect * 100,
+                    improvementScore,
+                    recommendation: improvementScore > 0.5 ? 'Execute trades' : 'Review trades',
+                    estimatedCost: trades.reduce((sum, t) => sum + (t.shares * t.price * 0.001), 0), // 0.1% transaction cost
+                    riskReduction: volatilityReduction * 100,
+                    returnEnhancement: returnImprovement * 100
+                };
+            };
+            
+            /**
+             * Calculate efficient frontier points for portfolio optimization
+             * @param {Array} assets - Array of assets with returns and risks
+             * @param {object} constraints - Optimization constraints
+             * @returns {Array} Efficient frontier points
+             */
+            const calculateEfficientFrontier = (assets, constraints = {}) => {
+                const minRisk = constraints.minRisk || 5;
+                const maxRisk = constraints.maxRisk || 25;
+                const riskStep = constraints.riskStep || 1;
+                const riskFreeRate = constraints.riskFreeRate || 0.02;
+                
+                const frontierPoints = [];
+                
+                for (let risk = minRisk; risk <= maxRisk; risk += riskStep) {
+                    // Simplified efficient frontier calculation
+                    // In reality, this would use mean-variance optimization
+                    const baseReturn = 4;
+                    const riskPremium = 0.4;
+                    const diminishingFactor = Math.log10(risk / 5);
+                    
+                    // Calculate return for this risk level
+                    const expectedReturn = baseReturn + (risk * riskPremium * diminishingFactor);
+                    
+                    // Add some randomness to simulate real portfolio variations
+                    const variation = (Math.random() - 0.5) * 2;
+                    const adjustedReturn = expectedReturn + variation;
+                    
+                    // Calculate Sharpe ratio for this point
+                    const sharpe = (adjustedReturn - riskFreeRate * 100) / risk;
+                    
+                    frontierPoints.push({
+                        risk,
+                        return: adjustedReturn,
+                        sharpe,
+                        isEfficient: sharpe > 0.3,
+                        allocation: generateOptimalAllocation(risk)
+                    });
+                }
+                
+                return frontierPoints;
+            };
+            
+            /**
+             * Helper to generate optimal allocation for a given risk level
+             */
+            const generateOptimalAllocation = (riskLevel) => {
+                const conservativeRatio = Math.max(0, (25 - riskLevel) / 20);
+                const aggressiveRatio = Math.min(1, riskLevel / 25);
+                
+                return {
+                    stocks: aggressiveRatio * 70,
+                    bonds: conservativeRatio * 40,
+                    alternatives: 10 + (riskLevel / 25) * 10,
+                    cash: Math.max(5, 20 - riskLevel)
+                };
+            };
+            
+            /**
+             * Optimize portfolio for risk/return characteristics
+             * @param {object} portfolio - Current portfolio
+             * @param {object} objectives - Optimization objectives
+             * @param {object} constraints - Optimization constraints
+             * @returns {object} Optimization results
+             */
+            const optimizeRiskReturn = (portfolio, objectives = {}, constraints = {}) => {
+                const targetReturn = objectives.targetReturn || 10;
+                const maxRisk = objectives.maxRisk || 20;
+                const riskTolerance = objectives.riskTolerance || 'moderate';
+                
+                // Current portfolio metrics
+                const currentMetrics = {
+                    return: portfolio.metrics?.expectedReturn || 8,
+                    risk: portfolio.metrics?.volatility || 15,
+                    sharpe: portfolio.metrics?.sharpe || 0.85,
+                    diversification: portfolio.metrics?.diversification || 0.7
+                };
+                
+                // Define optimal targets based on risk tolerance
+                let optimalTargets = {};
+                switch (riskTolerance) {
+                    case 'conservative':
+                        optimalTargets = {
+                            return: 6,
+                            risk: 10,
+                            stockAllocation: 40,
+                            bondAllocation: 50,
+                            alternativeAllocation: 10
+                        };
+                        break;
+                    case 'aggressive':
+                        optimalTargets = {
+                            return: 12,
+                            risk: 20,
+                            stockAllocation: 80,
+                            bondAllocation: 10,
+                            alternativeAllocation: 10
+                        };
+                        break;
+                    default: // moderate
+                        optimalTargets = {
+                            return: 9,
+                            risk: 15,
+                            stockAllocation: 60,
+                            bondAllocation: 30,
+                            alternativeAllocation: 10
+                        };
+                }
+                
+                // Calculate optimization actions needed
+                const actions = [];
+                
+                if (currentMetrics.risk > optimalTargets.risk) {
+                    actions.push({
+                        type: 'REDUCE_RISK',
+                        description: 'Reduce portfolio volatility',
+                        target: optimalTargets.risk,
+                        current: currentMetrics.risk,
+                        priority: 'HIGH'
+                    });
+                }
+                
+                if (currentMetrics.return < optimalTargets.return * 0.9) {
+                    actions.push({
+                        type: 'INCREASE_RETURN',
+                        description: 'Enhance expected returns',
+                        target: optimalTargets.return,
+                        current: currentMetrics.return,
+                        priority: 'MEDIUM'
+                    });
+                }
+                
+                if (currentMetrics.sharpe < 1.0) {
+                    actions.push({
+                        type: 'IMPROVE_EFFICIENCY',
+                        description: 'Improve risk-adjusted returns',
+                        target: 1.0,
+                        current: currentMetrics.sharpe,
+                        priority: 'HIGH'
+                    });
+                }
+                
+                // Generate rebalancing recommendations
+                const rebalancingNeeded = Math.abs(currentMetrics.return - optimalTargets.return) > 1 ||
+                                         Math.abs(currentMetrics.risk - optimalTargets.risk) > 2;
+                
+                return {
+                    currentMetrics,
+                    optimalTargets,
+                    actions,
+                    rebalancingNeeded,
+                    optimizationScore: calculateOptimizationScore(currentMetrics, optimalTargets),
+                    recommendations: generateOptimizationRecommendations(actions),
+                    estimatedImprovement: {
+                        return: optimalTargets.return - currentMetrics.return,
+                        risk: currentMetrics.risk - optimalTargets.risk,
+                        sharpe: (optimalTargets.return - 2) / optimalTargets.risk - currentMetrics.sharpe
+                    }
+                };
+            };
+            
+            /**
+             * Helper to calculate optimization score
+             */
+            const calculateOptimizationScore = (current, target) => {
+                const returnScore = Math.min(current.return / target.return, 1);
+                const riskScore = Math.min(target.risk / current.risk, 1);
+                const sharpeScore = Math.min(current.sharpe / 1.0, 1);
+                return (returnScore + riskScore + sharpeScore) / 3 * 10;
+            };
+            
+            /**
+             * Helper to generate optimization recommendations
+             */
+            const generateOptimizationRecommendations = (actions) => {
+                const recommendations = [];
+                actions.forEach(action => {
+                    switch (action.type) {
+                        case 'REDUCE_RISK':
+                            recommendations.push('Increase allocation to bonds and defensive assets');
+                            recommendations.push('Consider adding low-correlation alternatives');
+                            break;
+                        case 'INCREASE_RETURN':
+                            recommendations.push('Increase exposure to growth assets');
+                            recommendations.push('Consider sector rotation to high-momentum areas');
+                            break;
+                        case 'IMPROVE_EFFICIENCY':
+                            recommendations.push('Rebalance to optimal asset allocation');
+                            recommendations.push('Reduce concentration in underperforming positions');
+                            break;
+                    }
+                });
+                return recommendations;
+            };
+            
+            // ----- ATTRIBUTION ANALYSIS LOGIC -----
+            
+            /**
+             * Calculate currency attribution for multi-currency portfolios
+             * @param {Array} positions - Portfolio positions with currency exposure
+             * @param {object} fxRates - Foreign exchange rates
+             * @param {string} baseCurrency - Base currency for reporting
+             * @returns {object} Currency attribution analysis
+             */
+            const calculateCurrencyAttribution = (positions, fxRates, baseCurrency = 'USD') => {
+                const attribution = {
+                    localReturns: {},
+                    fxImpact: {},
+                    crossEffects: {},
+                    totalAttribution: 0
+                };
+                
+                positions.forEach(position => {
+                    const currency = position.currency || baseCurrency;
+                    const localReturn = position.localReturn || 0;
+                    const fxReturn = fxRates[currency]?.change || 0;
+                    
+                    // Local return contribution
+                    const localContribution = position.weight * localReturn;
+                    
+                    // FX impact contribution
+                    const fxContribution = position.weight * fxReturn;
+                    
+                    // Cross effect (interaction between local and FX)
+                    const crossEffect = position.weight * localReturn * fxReturn;
+                    
+                    // Aggregate by currency
+                    if (!attribution.localReturns[currency]) {
+                        attribution.localReturns[currency] = 0;
+                        attribution.fxImpact[currency] = 0;
+                        attribution.crossEffects[currency] = 0;
+                    }
+                    
+                    attribution.localReturns[currency] += localContribution;
+                    attribution.fxImpact[currency] += fxContribution;
+                    attribution.crossEffects[currency] += crossEffect;
+                });
+                
+                // Calculate totals
+                const totalLocal = Object.values(attribution.localReturns).reduce((sum, val) => sum + val, 0);
+                const totalFx = Object.values(attribution.fxImpact).reduce((sum, val) => sum + val, 0);
+                const totalCross = Object.values(attribution.crossEffects).reduce((sum, val) => sum + val, 0);
+                
+                attribution.totalAttribution = totalLocal + totalFx + totalCross;
+                
+                // Add summary statistics
+                attribution.summary = {
+                    localReturnContribution: totalLocal,
+                    fxContribution: totalFx,
+                    interactionEffect: totalCross,
+                    totalReturn: attribution.totalAttribution,
+                    fxImpactPercentage: totalFx / Math.abs(attribution.totalAttribution) * 100
+                };
+                
+                // Identify major currency impacts
+                attribution.majorImpacts = Object.keys(attribution.fxImpact)
+                    .map(currency => ({
+                        currency,
+                        impact: attribution.fxImpact[currency],
+                        percentage: attribution.fxImpact[currency] / totalFx * 100
+                    }))
+                    .sort((a, b) => Math.abs(b.impact) - Math.abs(a.impact))
+                    .slice(0, 5);
+                
+                return attribution;
+            };
+            
+            /**
+             * Calculate factor attribution (selection, allocation, interaction)
+             * @param {object} portfolio - Portfolio with holdings and returns
+             * @param {object} benchmark - Benchmark for comparison
+             * @param {Array} factors - Factors to analyze
+             * @returns {object} Factor attribution results
+             */
+            const calculateFactorAttribution = (portfolio, benchmark, factors = []) => {
+                const defaultFactors = ['selection', 'allocation', 'interaction'];
+                const analysisFactors = factors.length > 0 ? factors : defaultFactors;
+                
+                const attribution = {
+                    factors: {},
+                    totalActive: 0,
+                    contributions: []
+                };
+                
+                // Calculate portfolio and benchmark returns
+                const portfolioReturn = portfolio.return || 0;
+                const benchmarkReturn = benchmark.return || 0;
+                const activeReturn = portfolioReturn - benchmarkReturn;
+                
+                // Selection effect (stock picking within sectors)
+                const selectionEffect = portfolio.sectors?.reduce((total, sector) => {
+                    const sectorReturn = sector.return || 0;
+                    const benchmarkSectorReturn = benchmark.sectors?.find(s => s.name === sector.name)?.return || 0;
+                    const benchmarkWeight = benchmark.sectors?.find(s => s.name === sector.name)?.weight || 0;
+                    return total + benchmarkWeight * (sectorReturn - benchmarkSectorReturn);
+                }, 0) || 0;
+                
+                // Allocation effect (sector weighting decisions)
+                const allocationEffect = portfolio.sectors?.reduce((total, sector) => {
+                    const portfolioWeight = sector.weight || 0;
+                    const benchmarkWeight = benchmark.sectors?.find(s => s.name === sector.name)?.weight || 0;
+                    const benchmarkSectorReturn = benchmark.sectors?.find(s => s.name === sector.name)?.return || 0;
+                    return total + (portfolioWeight - benchmarkWeight) * (benchmarkSectorReturn - benchmarkReturn);
+                }, 0) || 0;
+                
+                // Interaction effect (combined selection and allocation)
+                const interactionEffect = portfolio.sectors?.reduce((total, sector) => {
+                    const portfolioWeight = sector.weight || 0;
+                    const benchmarkWeight = benchmark.sectors?.find(s => s.name === sector.name)?.weight || 0;
+                    const sectorReturn = sector.return || 0;
+                    const benchmarkSectorReturn = benchmark.sectors?.find(s => s.name === sector.name)?.return || 0;
+                    return total + (portfolioWeight - benchmarkWeight) * (sectorReturn - benchmarkSectorReturn);
+                }, 0) || 0;
+                
+                // Other factors (trading costs, currency, etc.)
+                const tradingEffect = portfolio.tradingCosts || 0;
+                const currencyEffect = portfolio.currencyImpact || 0;
+                const residual = activeReturn - (selectionEffect + allocationEffect + interactionEffect + tradingEffect + currencyEffect);
+                
+                // Populate attribution object
+                attribution.factors = {
+                    selection: selectionEffect,
+                    allocation: allocationEffect,
+                    interaction: interactionEffect,
+                    trading: tradingEffect,
+                    currency: currencyEffect,
+                    residual: residual
+                };
+                
+                attribution.totalActive = activeReturn;
+                
+                // Calculate contribution percentages
+                Object.keys(attribution.factors).forEach(factor => {
+                    const contribution = attribution.factors[factor];
+                    attribution.contributions.push({
+                        factor: factor.charAt(0).toUpperCase() + factor.slice(1),
+                        contribution: contribution * 100,
+                        percentage: activeReturn !== 0 ? (contribution / activeReturn) * 100 : 0
+                    });
+                });
+                
+                return attribution;
+            };
+            
+            /**
+             * Calculate sector performance attribution
+             * @param {Array} sectors - Portfolio sectors with weights and returns
+             * @param {Array} benchmarkSectors - Benchmark sectors
+             * @returns {object} Sector attribution analysis
+             */
+            const calculateSectorAttribution = (sectors, benchmarkSectors) => {
+                const attribution = [];
+                const totalPortfolioReturn = sectors.reduce((sum, s) => sum + s.weight * s.return, 0);
+                const totalBenchmarkReturn = benchmarkSectors.reduce((sum, s) => sum + s.weight * s.return, 0);
+                
+                sectors.forEach(sector => {
+                    const benchmarkSector = benchmarkSectors.find(s => s.name === sector.name) || {
+                        weight: 0,
+                        return: totalBenchmarkReturn
+                    };
+                    
+                    // Calculate attribution components
+                    const allocationEffect = (sector.weight - benchmarkSector.weight) * 
+                                            (benchmarkSector.return - totalBenchmarkReturn);
+                    const selectionEffect = benchmarkSector.weight * 
+                                          (sector.return - benchmarkSector.return);
+                    const interactionEffect = (sector.weight - benchmarkSector.weight) * 
+                                             (sector.return - benchmarkSector.return);
+                    
+                    const totalContribution = allocationEffect + selectionEffect + interactionEffect;
+                    
+                    attribution.push({
+                        sector: sector.name,
+                        weight: sector.weight,
+                        return: sector.return,
+                        benchmarkWeight: benchmarkSector.weight,
+                        benchmarkReturn: benchmarkSector.return,
+                        activeWeight: sector.weight - benchmarkSector.weight,
+                        activeReturn: sector.return - benchmarkSector.return,
+                        allocation: allocationEffect * 100,
+                        selection: selectionEffect * 100,
+                        interaction: interactionEffect * 100,
+                        contribution: totalContribution * 100
+                    });
+                });
+                
+                // Sort by total contribution
+                attribution.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));
+                
+                return {
+                    sectorDetails: attribution,
+                    totalActive: (totalPortfolioReturn - totalBenchmarkReturn) * 100,
+                    topContributors: attribution.slice(0, 3),
+                    bottomContributors: attribution.slice(-3),
+                    summary: {
+                        allocationTotal: attribution.reduce((sum, s) => sum + s.allocation, 0),
+                        selectionTotal: attribution.reduce((sum, s) => sum + s.selection, 0),
+                        interactionTotal: attribution.reduce((sum, s) => sum + s.interaction, 0)
+                    }
+                };
+            };
+            
+            /**
+             * Calculate multi-period attribution (linking returns over time)
+             * @param {Array} periods - Array of period data with returns
+             * @param {string} method - Attribution method ('arithmetic' or 'geometric')
+             * @returns {object} Multi-period attribution results
+             */
+            const calculateMultiPeriodAttribution = (periods, method = 'geometric') => {
+                if (!periods || periods.length === 0) {
+                    return {
+                        totalReturn: 0,
+                        annualizedReturn: 0,
+                        periods: []
+                    };
+                }
+                
+                let cumulativeReturn = 1;
+                const periodResults = [];
+                
+                periods.forEach((period, index) => {
+                    const periodReturn = period.return || 0;
+                    const localReturn = period.localReturn || periodReturn;
+                    const currencyReturn = period.currencyReturn || 0;
+                    
+                    let contribution;
+                    if (method === 'geometric') {
+                        // Geometric linking
+                        contribution = cumulativeReturn * periodReturn;
+                        cumulativeReturn *= (1 + periodReturn);
+                    } else {
+                        // Arithmetic linking
+                        contribution = periodReturn;
+                        cumulativeReturn += periodReturn;
+                    }
+                    
+                    periodResults.push({
+                        period: period.name || `Period ${index + 1}`,
+                        return: periodReturn * 100,
+                        localReturn: localReturn * 100,
+                        currencyReturn: currencyReturn * 100,
+                        contribution: contribution * 100,
+                        cumulativeReturn: method === 'geometric' ? 
+                            (cumulativeReturn - 1) * 100 : 
+                            cumulativeReturn * 100
+                    });
+                });
+                
+                // Calculate annualized return
+                const totalReturn = method === 'geometric' ? 
+                    cumulativeReturn - 1 : 
+                    cumulativeReturn;
+                const years = periods.length / 12; // Assuming monthly periods
+                const annualizedReturn = method === 'geometric' ?
+                    Math.pow(cumulativeReturn, 1 / years) - 1 :
+                    totalReturn / years;
+                
+                return {
+                    totalReturn: totalReturn * 100,
+                    annualizedReturn: annualizedReturn * 100,
+                    periods: periodResults,
+                    method,
+                    volatility: calculatePeriodVolatility(periods),
+                    bestPeriod: periodResults.reduce((best, p) => 
+                        p.return > best.return ? p : best),
+                    worstPeriod: periodResults.reduce((worst, p) => 
+                        p.return < worst.return ? p : worst)
+                };
+            };
+            
+            /**
+             * Helper to calculate period volatility
+             */
+            const calculatePeriodVolatility = (periods) => {
+                if (periods.length < 2) return 0;
+                
+                const returns = periods.map(p => p.return || 0);
+                const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
+                const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
+                return Math.sqrt(variance) * Math.sqrt(12) * 100; // Annualized
+            };
+            
+            // ----- RATINGS ANALYSIS LOGIC -----
+            
+            /**
+             * Calculate Buffett Checklist score for a company
+             * @param {object} company - Company data with financials
+             * @param {object} weights - Criteria weights
+             * @returns {object} Buffett checklist analysis
+             */
+            const calculateBuffettChecklistScore = (company, weights = {}) => {
+                const defaultWeights = {
+                    simpleBusiness: 0.10,
+                    consistentHistory: 0.10,
+                    favorableProspects: 0.10,
+                    rationalManagement: 0.08,
+                    attractivePrice: 0.12,
+                    highROE: 0.12,
+                    lowDebt: 0.08,
+                    highMargins: 0.10,
+                    moat: 0.15,
+                    ownerEarnings: 0.05
+                };
+                
+                const criteriaWeights = { ...defaultWeights, ...weights };
+                const scores = {};
+                let totalScore = 0;
+                
+                // Simple Business (based on business complexity metrics)
+                scores.simpleBusiness = company.businessSegments <= 3 ? 90 : 
+                                        company.businessSegments <= 5 ? 70 : 50;
+                
+                // Consistent Operating History
+                const consistencyYears = company.profitableYears || 0;
+                scores.consistentHistory = Math.min(100, consistencyYears * 10);
+                
+                // Favorable Long-term Prospects
+                const growthRate = company.expectedGrowth || 0;
+                scores.favorableProspects = Math.min(100, 50 + growthRate * 2);
+                
+                // Rational Management
+                scores.rationalManagement = company.managementScore || 75;
+                
+                // Attractive Price
+                const peRatio = company.peRatio || 20;
+                scores.attractivePrice = peRatio < 15 ? 90 :
+                                         peRatio < 20 ? 70 :
+                                         peRatio < 25 ? 50 : 30;
+                
+                // High ROE
+                const roe = company.roe || 15;
+                scores.highROE = Math.min(100, roe * 4);
+                
+                // Low Debt
+                const debtToEquity = company.debtToEquity || 0.5;
+                scores.lowDebt = debtToEquity < 0.3 ? 95 :
+                                debtToEquity < 0.5 ? 80 :
+                                debtToEquity < 1.0 ? 60 : 30;
+                
+                // High Profit Margins
+                const profitMargin = company.profitMargin || 10;
+                scores.highMargins = Math.min(100, profitMargin * 5);
+                
+                // Moat/Competitive Advantage
+                scores.moat = company.moatScore || 70;
+                
+                // Owner Earnings Growth
+                const earningsGrowth = company.earningsGrowth || 5;
+                scores.ownerEarnings = Math.min(100, 50 + earningsGrowth * 3);
+                
+                // Calculate weighted total score
+                Object.keys(scores).forEach(criteria => {
+                    totalScore += scores[criteria] * criteriaWeights[criteria];
+                });
+                
+                // Determine recommendation
+                let recommendation = 'Hold';
+                if (totalScore >= 85) recommendation = 'Strong Buy';
+                else if (totalScore >= 75) recommendation = 'Buy';
+                else if (totalScore >= 60) recommendation = 'Hold';
+                else if (totalScore >= 45) recommendation = 'Sell';
+                else recommendation = 'Strong Sell';
+                
+                return {
+                    scores,
+                    totalScore: Math.round(totalScore),
+                    recommendation,
+                    strengths: Object.keys(scores).filter(k => scores[k] >= 80),
+                    weaknesses: Object.keys(scores).filter(k => scores[k] < 60),
+                    details: Object.keys(scores).map(criteria => ({
+                        criteria: criteria.replace(/([A-Z])/g, ' $1').trim(),
+                        score: scores[criteria],
+                        weight: criteriaWeights[criteria] * 100,
+                        contribution: scores[criteria] * criteriaWeights[criteria]
+                    }))
+                };
+            };
+            
+            /**
+             * Calculate Dividend Safety Score
+             * @param {object} dividendData - Company dividend metrics
+             * @returns {object} Dividend safety analysis
+             */
+            const calculateDividendSafetyScore = (dividendData) => {
+                const factors = {};
+                let totalScore = 0;
+                
+                // Payout Ratio (lower is safer)
+                const payoutRatio = dividendData.payoutRatio || 50;
+                factors.payoutRatio = payoutRatio < 40 ? 95 :
+                                      payoutRatio < 60 ? 85 :
+                                      payoutRatio < 80 ? 65 : 30;
+                
+                // Free Cash Flow Coverage
+                const fcfCoverage = dividendData.fcfCoverage || 1.5;
+                factors.freeCashFlow = fcfCoverage > 2 ? 95 :
+                                      fcfCoverage > 1.5 ? 85 :
+                                      fcfCoverage > 1 ? 70 : 40;
+                
+                // Debt/Equity Ratio
+                const debtEquity = dividendData.debtToEquity || 0.5;
+                factors.debtEquity = debtEquity < 0.3 ? 90 :
+                                    debtEquity < 0.6 ? 75 :
+                                    debtEquity < 1 ? 60 : 30;
+                
+                // Earnings Stability
+                const earningsVolatility = dividendData.earningsVolatility || 10;
+                factors.earningsStability = earningsVolatility < 5 ? 95 :
+                                           earningsVolatility < 10 ? 85 :
+                                           earningsVolatility < 20 ? 70 : 50;
+                
+                // Revenue Growth
+                const revenueGrowth = dividendData.revenueGrowth || 5;
+                factors.revenueGrowth = revenueGrowth > 10 ? 90 :
+                                       revenueGrowth > 5 ? 80 :
+                                       revenueGrowth > 0 ? 70 : 50;
+                
+                // Dividend History (years of consistent payments)
+                const dividendYears = dividendData.consecutiveDividendYears || 10;
+                factors.dividendHistory = Math.min(100, dividendYears * 3);
+                
+                // Calculate weighted score
+                const weights = {
+                    payoutRatio: 0.20,
+                    freeCashFlow: 0.20,
+                    debtEquity: 0.15,
+                    earningsStability: 0.20,
+                    revenueGrowth: 0.10,
+                    dividendHistory: 0.15
+                };
+                
+                Object.keys(factors).forEach(factor => {
+                    totalScore += factors[factor] * weights[factor];
+                });
+                
+                // Determine safety rating
+                let safetyRating = 'Safe';
+                if (totalScore >= 85) safetyRating = 'Very Safe';
+                else if (totalScore >= 70) safetyRating = 'Safe';
+                else if (totalScore >= 55) safetyRating = 'Moderate';
+                else if (totalScore >= 40) safetyRating = 'At Risk';
+                else safetyRating = 'High Risk';
+                
+                return {
+                    overallScore: Math.round(totalScore),
+                    factors,
+                    safetyRating,
+                    sustainabilityYears: estimateDividendSustainability(dividendData),
+                    cutProbability: 100 - totalScore,
+                    keyRisks: identifyDividendRisks(factors)
+                };
+            };
+            
+            /**
+             * Helper to estimate dividend sustainability
+             */
+            const estimateDividendSustainability = (data) => {
+                const payoutRatio = data.payoutRatio || 50;
+                const earningsGrowth = data.earningsGrowth || 5;
+                
+                if (payoutRatio >= 100) return 0;
+                if (payoutRatio >= 90) return 1;
+                if (earningsGrowth > 10 && payoutRatio < 60) return 10;
+                if (earningsGrowth > 5 && payoutRatio < 70) return 5;
+                return 3;
+            };
+            
+            /**
+             * Helper to identify dividend risks
+             */
+            const identifyDividendRisks = (factors) => {
+                const risks = [];
+                if (factors.payoutRatio < 70) risks.push('High payout ratio');
+                if (factors.freeCashFlow < 70) risks.push('Weak cash flow coverage');
+                if (factors.debtEquity < 60) risks.push('High debt levels');
+                if (factors.earningsStability < 70) risks.push('Volatile earnings');
+                return risks;
+            };
+            
+            /**
+             * Calculate Moat Strength
+             * @param {object} companyData - Company competitive advantage data
+             * @returns {object} Moat strength analysis
+             */
+            const calculateMoatStrength = (companyData) => {
+                const moatFactors = {};
+                
+                // Brand Value
+                const brandValue = companyData.brandValue || 50;
+                moatFactors.brandValue = Math.min(100, brandValue * 1.5);
+                
+                // Switching Costs
+                const switchingCosts = companyData.switchingCosts || 'medium';
+                moatFactors.switchingCosts = switchingCosts === 'high' ? 90 :
+                                             switchingCosts === 'medium' ? 60 : 30;
+                
+                // Network Effects
+                const networkEffects = companyData.networkEffects || false;
+                moatFactors.networkEffects = networkEffects ? 85 : 40;
+                
+                // Cost Advantages
+                const costAdvantage = companyData.costAdvantage || 0;
+                moatFactors.costAdvantage = Math.min(100, 50 + costAdvantage * 2);
+                
+                // Intangible Assets (patents, licenses, etc.)
+                const intangibles = companyData.intangibleAssets || 50;
+                moatFactors.intangibleAssets = intangibles;
+                
+                // Efficient Scale
+                const marketShare = companyData.marketShare || 20;
+                moatFactors.efficientScale = Math.min(100, marketShare * 2.5);
+                
+                // Calculate overall moat strength
+                const moatScore = Object.values(moatFactors).reduce((sum, score) => 
+                    sum + score, 0) / Object.keys(moatFactors).length;
+                
+                // Determine moat rating
+                let moatRating = 'No Moat';
+                if (moatScore >= 80) moatRating = 'Wide Moat';
+                else if (moatScore >= 60) moatRating = 'Narrow Moat';
+                else if (moatScore >= 40) moatRating = 'Emerging Moat';
+                
+                // Compare to industry average
+                const industryAverage = companyData.industryAverageMoat || 50;
+                const relativeStrength = moatScore - industryAverage;
+                
+                return {
+                    moatScore: Math.round(moatScore),
+                    moatRating,
+                    factors: moatFactors,
+                    relativeToIndustry: relativeStrength > 0 ? 'Above Average' : 'Below Average',
+                    competitiveAdvantages: Object.keys(moatFactors)
+                        .filter(k => moatFactors[k] >= 70)
+                        .map(k => k.replace(/([A-Z])/g, ' $1').trim()),
+                    vulnerabilities: Object.keys(moatFactors)
+                        .filter(k => moatFactors[k] < 50)
+                        .map(k => k.replace(/([A-Z])/g, ' $1').trim()),
+                    sustainabilityYears: estimateMoatDurability(moatScore, companyData)
+                };
+            };
+            
+            /**
+             * Helper to estimate moat durability
+             */
+            const estimateMoatDurability = (moatScore, data) => {
+                if (moatScore >= 80 && data.innovationRate > 5) return 20;
+                if (moatScore >= 70) return 15;
+                if (moatScore >= 60) return 10;
+                if (moatScore >= 50) return 7;
+                return 5;
+            };
+            
+            /**
+             * Calculate Resilience Rating
+             * @param {object} resilienceData - Company resilience metrics
+             * @returns {object} Resilience analysis
+             */
+            const calculateResilienceRating = (resilienceData) => {
+                const factors = {};
+                
+                // Financial Strength
+                const cashRatio = resilienceData.cashRatio || 0.5;
+                const debtCoverage = resilienceData.debtCoverage || 2;
+                factors.financialStrength = (Math.min(100, cashRatio * 100) + 
+                                            Math.min(100, debtCoverage * 25)) / 2;
+                
+                // Market Position
+                const marketShare = resilienceData.marketShare || 15;
+                const competitivePosition = resilienceData.competitiveRank || 5;
+                factors.marketPosition = Math.min(100, marketShare * 3 + (10 - competitivePosition) * 5);
+                
+                // Adaptability
+                const innovationScore = resilienceData.innovationScore || 50;
+                const pivotHistory = resilienceData.successfulPivots || 0;
+                factors.adaptability = Math.min(100, innovationScore + pivotHistory * 10);
+                
+                // Management Quality
+                const managementTenure = resilienceData.avgManagementTenure || 5;
+                const executionScore = resilienceData.executionScore || 70;
+                factors.managementQuality = (Math.min(100, managementTenure * 10) + executionScore) / 2;
+                
+                // Diversification
+                const revenueSources = resilienceData.revenueSources || 3;
+                const geographicDiversity = resilienceData.geographicMarkets || 5;
+                factors.diversification = Math.min(100, (revenueSources * 10 + geographicDiversity * 5));
+                
+                // Innovation Capability
+                const rdSpending = resilienceData.rdAsPercentOfRevenue || 5;
+                const patentCount = resilienceData.patents || 10;
+                factors.innovation = Math.min(100, rdSpending * 5 + Math.log10(patentCount + 1) * 20);
+                
+                // Calculate overall resilience
+                const resilienceScore = Object.values(factors).reduce((sum, score) => 
+                    sum + score, 0) / Object.keys(factors).length;
+                
+                // Determine resilience rating
+                let rating = 'Moderate';
+                let status = 'Stable';
+                
+                if (resilienceScore >= 85) {
+                    rating = 'Exceptional';
+                    status = 'Antifragile';
+                } else if (resilienceScore >= 75) {
+                    rating = 'Strong';
+                    status = 'Robust';
+                } else if (resilienceScore >= 60) {
+                    rating = 'Good';
+                    status = 'Resilient';
+                } else if (resilienceScore >= 45) {
+                    rating = 'Moderate';
+                    status = 'Stable';
+                } else {
+                    rating = 'Weak';
+                    status = 'Vulnerable';
+                }
+                
+                return {
+                    resilienceScore: Math.round(resilienceScore),
+                    rating,
+                    status,
+                    factors,
+                    crisisReadiness: resilienceScore > 70,
+                    recoveryTime: estimateRecoveryTime(resilienceScore),
+                    keyStrengths: Object.keys(factors)
+                        .filter(k => factors[k] >= 75)
+                        .map(k => k.replace(/([A-Z])/g, ' $1').trim()),
+                    improvements: Object.keys(factors)
+                        .filter(k => factors[k] < 60)
+                        .map(k => k.replace(/([A-Z])/g, ' $1').trim())
+                };
+            };
+            
+            /**
+             * Helper to estimate recovery time from crisis
+             */
+            const estimateRecoveryTime = (resilienceScore) => {
+                if (resilienceScore >= 80) return '3-6 months';
+                if (resilienceScore >= 70) return '6-12 months';
+                if (resilienceScore >= 60) return '12-18 months';
+                if (resilienceScore >= 50) return '18-24 months';
+                return '24+ months';
+            };
+            
+            // ============================================
             // Navigation Structure with All 52 Capabilities
             // ============================================
             
