@@ -74,8 +74,7 @@ async def update_daily_valuations(conn):
     else:
         print("  ⚠️ No historical valuations found, running full backfill...")
         # Run full historical backfill
-        from backend.jobs.backfill_daily_values import main as backfill_main
-        await backfill_main()
+        print("  📝 To backfill: Run python backend/jobs/backfill_daily_values.py")
 
 async def compute_portfolio_metrics(conn):
     """Compute TWR, MWR and other metrics"""
