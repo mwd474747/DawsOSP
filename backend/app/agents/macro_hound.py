@@ -30,6 +30,7 @@ from app.agents.base_agent import BaseAgent, AgentMetadata
 from app.core.types import RequestCtx
 from app.services.macro import MacroService, Regime
 from app.services.cycles import CyclesService, CycleType
+from app.services.macro_aware_scenarios import MacroAwareScenarioService
 
 logger = logging.getLogger("DawsOS.MacroHound")
 
@@ -69,6 +70,8 @@ class MacroHound(BaseAgent):
             "scenarios.deleveraging_austerity",
             "scenarios.deleveraging_default",
             "scenarios.deleveraging_money_printing",
+            "scenarios.macro_aware_apply",  # NEW: Macro-aware scenario application
+            "scenarios.macro_aware_rank",  # NEW: Regime-weighted scenario ranking
         ]
 
     async def macro_detect_regime(
@@ -946,77 +949,41 @@ class MacroHound(BaseAgent):
         logger.info(f"cycles.compute_civil: asof={asof}")
         
         try:
-            # Get macro service for social/economic indicators
-            from app.services.macro import get_macro_service
-            macro_service = get_macro_service()
+            # Use the real CyclesService to detect civil phase
+            cycles_service = CyclesService()
+            phase = await cycles_service.detect_civil_phase(as_of_date=asof)
             
-            # Fetch relevant indicators for civil cycle assessment
-            # In production, these would come from real data sources
-            indicators_raw = await macro_service.get_current_indicators(asof_date=asof)
+            # Generate description based on phase
+            descriptions = {
+                "Harmony": "Strong social cohesion, low inequality, high trust",
+                "Rising Tensions": "Rising inequality, declining trust in institutions",
+                "Polarization": "Deep political divisions, social unrest emerging",
+                "Crisis": "Institutional breakdown, high conflict risk",
+                "Conflict/Revolution": "Active internal conflict, potential for revolution or civil war",
+                "Reconstruction": "Rebuilding institutions and social trust after conflict"
+            }
             
-            # Extract or compute civil cycle indicators
-            # These would typically come from FRED, World Bank, or similar sources
-            gini_coefficient = indicators_raw.get("GINI", 0.415)  # US Gini coefficient
-            wealth_top_1pct = indicators_raw.get("WEALTH_TOP1", 0.324)  # Top 1% wealth share
+            description = descriptions.get(phase.phase, "Unknown phase state")
             
-            # Compute polarization and trust metrics (simplified)
-            # In production, these would use real survey data
-            polarization_index = 0.78  # Scale 0-1, higher = more polarized
-            institutional_trust = 0.38  # Scale 0-1, higher = more trust
-            social_mobility = 0.41  # Scale 0-1, higher = more mobility
-            
-            # Determine civil cycle phase based on metrics
-            # Phase determination logic based on Dalio framework
-            composite_score = (
-                (gini_coefficient * 0.25) +
-                (wealth_top_1pct * 0.25) +
-                (polarization_index * 0.20) +
-                ((1 - institutional_trust) * 0.20) +
-                ((1 - social_mobility) * 0.10)
-            )
-            
-            # Map composite score to phases
-            if composite_score < 0.30:
-                phase_label = "Social Cohesion"
-                phase_number = 1
-                description = "Strong social cohesion, low inequality, high trust"
-            elif composite_score < 0.45:
-                phase_label = "Early Tensions"
-                phase_number = 2
-                description = "Rising inequality, declining trust in institutions"
-            elif composite_score < 0.60:
-                phase_label = "Rising Conflict"
-                phase_number = 3
-                description = "High inequality, polarization increasing, social unrest emerging"
-            elif composite_score < 0.75:
-                phase_label = "Internal Disorder"
-                phase_number = 4
-                description = "Severe polarization, institutional breakdown risk"
-            else:
-                phase_label = "Civil Crisis"
-                phase_number = 5
-                description = "Extreme internal conflict, potential for revolution or civil war"
+            # Determine risk factors based on indicators
+            gini = phase.indicators.get("gini_coefficient", 0.418)
+            polarization = phase.indicators.get("polarization_index", 0.78)
+            trust = phase.indicators.get("institutional_trust", 0.38)
             
             # Build result
             result = {
                 "cycle_type": "civil",
-                "phase_label": phase_label,
-                "phase_number": phase_number,
-                "composite_score": float(composite_score),
-                "confidence": 0.81,  # Confidence in the assessment
+                "phase_label": phase.phase,
+                "phase_number": phase.phase_number,
+                "composite_score": float(phase.composite_score),
+                "confidence": float(phase.composite_score),  # Use composite score as confidence
                 "description": description,
-                "date": asof.isoformat() if asof else None,
-                "indicators": {
-                    "gini_coefficient": float(gini_coefficient),
-                    "wealth_top_1pct": float(wealth_top_1pct),
-                    "polarization_index": float(polarization_index),
-                    "institutional_trust": float(institutional_trust),
-                    "social_mobility": float(social_mobility),
-                },
+                "date": phase.date.isoformat() if phase.date else None,
+                "indicators": phase.indicators,
                 "risk_factors": {
-                    "wealth_inequality": "HIGH" if gini_coefficient > 0.40 else "MEDIUM" if gini_coefficient > 0.35 else "LOW",
-                    "political_polarization": "HIGH" if polarization_index > 0.70 else "MEDIUM" if polarization_index > 0.50 else "LOW",
-                    "trust_deficit": "HIGH" if institutional_trust < 0.40 else "MEDIUM" if institutional_trust < 0.60 else "LOW",
+                    "wealth_inequality": "HIGH" if gini > 0.40 else "MEDIUM" if gini > 0.35 else "LOW",
+                    "political_polarization": "HIGH" if polarization > 0.70 else "MEDIUM" if polarization > 0.50 else "LOW",
+                    "trust_deficit": "HIGH" if trust < 0.40 else "MEDIUM" if trust < 0.60 else "LOW",
                 },
             }
             
@@ -1025,18 +992,23 @@ class MacroHound(BaseAgent):
             # Return fallback values on error
             result = {
                 "cycle_type": "civil",
-                "phase_label": "Rising Tension",
-                "phase_number": 3,
+                "phase_label": "Crisis",
+                "phase_number": 4,
                 "composite_score": 0.42,
                 "confidence": 0.50,
-                "description": "Increasing wealth inequality, declining social cohesion",
+                "description": "Institutional breakdown, high conflict risk",
                 "date": asof.isoformat() if asof else None,
                 "indicators": {
-                    "gini_coefficient": 0.415,
-                    "wealth_top_1pct": 0.324,
-                    "polarization_index": 0.78,
+                    "gini_coefficient": 0.418,
                     "institutional_trust": 0.38,
-                    "social_mobility": 0.41,
+                    "polarization_index": 0.78,
+                    "social_unrest_score": 0.30,
+                    "fiscal_deficit_gdp": -6.20,
+                },
+                "risk_factors": {
+                    "wealth_inequality": "HIGH",
+                    "political_polarization": "HIGH",
+                    "trust_deficit": "HIGH",
                 },
                 "error": f"Civil cycle computation error: {str(e)}",
             }
@@ -1225,6 +1197,82 @@ class MacroHound(BaseAgent):
             ttl=0
         )
 
+        return self._attach_metadata(result, metadata)
+
+    async def scenarios_macro_aware_apply(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: str,
+        scenario_name: str,
+        pack_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Apply a scenario with macro-aware adjustments based on current regime and cycles.
+        
+        Capability: scenarios.macro_aware_apply
+        """
+        logger.info(f"scenarios.macro_aware_apply: portfolio={portfolio_id}, scenario={scenario_name}")
+        
+        # Initialize the macro-aware scenario service
+        macro_aware_service = MacroAwareScenarioService()
+        
+        # Apply the scenario with macro adjustments
+        result = await macro_aware_service.apply_macro_aware_scenario(
+            portfolio_id=UUID(portfolio_id),
+            scenario_name=scenario_name,
+            pack_id=pack_id
+        )
+        
+        metadata = self._create_metadata(
+            source=f"macro_aware_scenarios:{scenario_name}:{pack_id}",
+            asof=ctx.asof_date,
+            ttl=3600  # Cache for 1 hour
+        )
+        
+        return self._attach_metadata(result, metadata)
+
+    async def scenarios_macro_aware_rank(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: str,
+        pack_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Get all scenarios ranked by regime-adjusted probability.
+        
+        Capability: scenarios.macro_aware_rank
+        """
+        logger.info(f"scenarios.macro_aware_rank: portfolio={portfolio_id}")
+        
+        # Initialize the macro-aware scenario service
+        macro_aware_service = MacroAwareScenarioService()
+        
+        # Get regime-weighted scenarios
+        ranked_scenarios = await macro_aware_service.get_regime_weighted_scenarios(
+            portfolio_id=UUID(portfolio_id),
+            pack_id=pack_id
+        )
+        
+        # Format results for UI consumption
+        result = {
+            "portfolio_id": portfolio_id,
+            "pack_id": pack_id,
+            "macro_state": ranked_scenarios.get("macro_state", {}),
+            "scenarios": ranked_scenarios.get("scenarios", []),
+            "most_probable": ranked_scenarios.get("scenarios", [])[:3] if ranked_scenarios.get("scenarios") else [],
+            "hedging_priorities": [
+                s["name"] for s in ranked_scenarios.get("scenarios", [])[:5]
+            ],
+        }
+        
+        metadata = self._create_metadata(
+            source=f"macro_aware_scenarios:ranking:{pack_id}",
+            asof=ctx.asof_date,
+            ttl=3600  # Cache for 1 hour
+        )
+        
         return self._attach_metadata(result, metadata)
 
 

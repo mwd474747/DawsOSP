@@ -68,18 +68,25 @@ The DawsOS Macro Dashboard has achieved **100% data coverage** across all four R
 **Current Phase**: DECLINE_EARLY  
 **Empire Score**: 71.4
 
-### 4️⃣ **Internal Order/Disorder Cycle**
-**Coverage: 5/5 (100%)**
+### 4️⃣ **Internal Order/Disorder Cycle (Civil Cycle)**
+**Coverage: 5/5 (100%)** ✨ **FULLY IMPLEMENTED**
 
 | Indicator | Value | Status | Data Source |
 |-----------|-------|--------|-------------|
 | Wealth Gap (Gini) | 0.418 | ✅ Live | World Bank API |
-| Political Polarization | 46.8/100 | ✅ Calculated | Multiple factors |
+| Political Polarization | 78/100 | ✅ Live | CivilOrderDetector |
+| Institutional Trust | 38/100 | ✅ Live | CivilOrderDetector |
 | Social Unrest Score | 30/100 | ✅ Calculated | Economic stress factors |
 | Fiscal Deficit | -6.20% GDP | ✅ Live | FRED API (FYFSGDA188S) |
-| Civil War Risk | 80% | ✅ Calculated | Dalio framework |
 
-**Current Stage**: CRISIS
+**Current Stage**: CRISIS (Phase 4/6)
+**Implementation**: CivilOrderDetector class with 6 phases:
+1. Harmony - Strong social cohesion, low inequality
+2. Rising Tensions - Rising inequality, declining trust
+3. Polarization - Deep political divisions
+4. **Crisis (Current)** - Institutional breakdown risk
+5. Conflict/Revolution - Active internal conflict
+6. Reconstruction - Rebuilding institutions
 
 ---
 
@@ -120,11 +127,14 @@ The DawsOS Macro Dashboard has achieved **100% data coverage** across all four R
 
 ## ✨ **Key Achievements**
 
-### Recently Fixed Issues
+### Recently Fixed Issues & Improvements
 1. ✅ **Fiscal Deficit** - Now properly fetching from FRED series FYFSGDA188S (-6.20% GDP)
 2. ✅ **Social Unrest** - Calculation implemented using unemployment, inflation, wealth gap factors (30/100)
 3. ✅ **All Empire Indicators** - Field mapping corrected between backend and UI
 4. ✅ **Debt Dynamics** - Credit impulse, real rates, and productivity all functional
+5. ✅ **Civil Cycle Implementation** - Replaced hardcoded values with real CivilOrderDetector (Oct 31, 2025)
+6. ✅ **Date Conversion Bug Fix** - Fixed circuit breaker issues in cycles.py (Oct 31, 2025)
+7. ✅ **MacroAwareScenarioService Integration** - Added macro-aware scenario capabilities (Oct 31, 2025)
 
 ### Data Quality Improvements
 - **Before**: Missing fiscal deficit, social unrest, and several empire indicators

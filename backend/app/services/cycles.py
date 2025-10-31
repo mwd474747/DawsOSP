@@ -419,6 +419,182 @@ class EmpireDetector:
 
 
 # ============================================================================
+# Civil Order Detector
+# ============================================================================
+
+
+class CivilOrderDetector:
+    """
+    Civil/Internal Order Cycle detector.
+    
+    Tracks internal social and political stability through 6 stages:
+    1. Harmony - Strong social cohesion, low inequality
+    2. Rising Tensions - Increasing inequality, declining trust
+    3. Polarization - Deep political divisions, social unrest
+    4. Crisis - Institutional breakdown, conflict risk
+    5. Conflict/Revolution - Active internal conflict
+    6. Reconstruction - Rebuilding institutions and trust
+    """
+
+    # Civil order phases
+    CIVIL_PHASES = {
+        1: "Harmony",
+        2: "Rising Tensions", 
+        3: "Polarization",
+        4: "Crisis",
+        5: "Conflict/Revolution",
+        6: "Reconstruction"
+    }
+
+    # Phase detection thresholds
+    PHASE_THRESHOLDS = {
+        "Harmony": {
+            "gini_coefficient": (0.0, 0.30),  # Low inequality
+            "institutional_trust": (0.7, 1.0),  # High trust
+            "polarization_index": (0.0, 0.3),  # Low polarization
+        },
+        "Rising Tensions": {
+            "gini_coefficient": (0.30, 0.38),  # Moderate inequality
+            "institutional_trust": (0.5, 0.7),  # Moderate trust
+            "polarization_index": (0.3, 0.45),  # Rising polarization
+        },
+        "Polarization": {
+            "gini_coefficient": (0.38, 0.42),  # High inequality
+            "institutional_trust": (0.35, 0.5),  # Declining trust
+            "polarization_index": (0.45, 0.65),  # High polarization
+        },
+        "Crisis": {
+            "gini_coefficient": (0.42, 0.48),  # Very high inequality
+            "institutional_trust": (0.2, 0.35),  # Very low trust
+            "polarization_index": (0.65, 0.80),  # Very high polarization
+        },
+        "Conflict/Revolution": {
+            "gini_coefficient": (0.48, 1.0),  # Extreme inequality
+            "institutional_trust": (0.0, 0.2),  # Collapsed trust
+            "polarization_index": (0.80, 1.0),  # Extreme polarization
+        },
+        "Reconstruction": {
+            # Special phase - detected by improving metrics after conflict
+            "gini_coefficient": (-0.05, 0.0),  # Improving (delta)
+            "institutional_trust": (0.05, 0.2),  # Improving (delta)
+            "polarization_index": (-0.1, 0.0),  # Improving (delta)
+        }
+    }
+
+    def compute_composite_score(self, indicators: Dict[str, float]) -> Tuple[str, float]:
+        """
+        Compute civil order phase and confidence score.
+        
+        Args:
+            indicators: Dict with gini_coefficient, institutional_trust, polarization_index
+            
+        Returns:
+            Tuple of (phase_name, confidence_score)
+        """
+        # Extract key indicators with defaults
+        gini = indicators.get("GINI", indicators.get("gini_coefficient", 0.418))
+        trust = indicators.get("institutional_trust", 0.38)
+        polarization = indicators.get("polarization_index", 0.78)
+        
+        # Normalize indicators to 0-1 scale if needed
+        if gini > 1.0:  # Likely in percentage form
+            gini = gini / 100.0
+            
+        # Score each phase based on how well indicators match
+        phase_scores = {}
+        
+        for phase_name in ["Harmony", "Rising Tensions", "Polarization", "Crisis", "Conflict/Revolution"]:
+            thresholds = self.PHASE_THRESHOLDS[phase_name]
+            score = 0.0
+            count = 0
+            
+            # Check Gini coefficient
+            if "gini_coefficient" in thresholds:
+                min_val, max_val = thresholds["gini_coefficient"]
+                if min_val <= gini <= max_val:
+                    score += 1.0
+                elif gini < min_val:
+                    score += max(0, 1.0 - (min_val - gini) * 5)
+                else:
+                    score += max(0, 1.0 - (gini - max_val) * 5)
+                count += 1
+                
+            # Check institutional trust
+            if "institutional_trust" in thresholds:
+                min_val, max_val = thresholds["institutional_trust"]
+                if min_val <= trust <= max_val:
+                    score += 1.0
+                elif trust < min_val:
+                    score += max(0, 1.0 - (min_val - trust) * 5)
+                else:
+                    score += max(0, 1.0 - (trust - max_val) * 5)
+                count += 1
+                
+            # Check polarization index
+            if "polarization_index" in thresholds:
+                min_val, max_val = thresholds["polarization_index"]
+                if min_val <= polarization <= max_val:
+                    score += 1.0
+                elif polarization < min_val:
+                    score += max(0, 1.0 - (min_val - polarization) * 5)
+                else:
+                    score += max(0, 1.0 - (polarization - max_val) * 5)
+                count += 1
+                
+            phase_scores[phase_name] = score / count if count > 0 else 0.0
+            
+        # Check for reconstruction phase (requires historical comparison)
+        # For now, use Crisis as default if indicators suggest improvement
+        if gini < 0.40 and trust > 0.3 and polarization < 0.7:
+            if phase_scores.get("Crisis", 0) > 0.5:
+                phase_scores["Reconstruction"] = 0.6  # Transition phase
+                
+        # Find best matching phase
+        best_phase = max(phase_scores, key=phase_scores.get)
+        confidence = phase_scores[best_phase]
+        
+        return best_phase, confidence
+
+    def detect_phase(self, indicators: Dict[str, float], as_of_date: date) -> CyclePhase:
+        """
+        Detect current civil order phase.
+        
+        Args:
+            indicators: Current macro/social indicators
+            as_of_date: Date for phase classification
+            
+        Returns:
+            CyclePhase
+        """
+        phase_name, confidence = self.compute_composite_score(indicators)
+        
+        # Get phase number
+        phase_number = 4  # Default to Crisis
+        for num, name in self.CIVIL_PHASES.items():
+            if name == phase_name:
+                phase_number = num
+                break
+                
+        # Create detailed indicators dict
+        civil_indicators = {
+            "gini_coefficient": float(indicators.get("GINI", indicators.get("gini_coefficient", 0.418))),
+            "institutional_trust": float(indicators.get("institutional_trust", 0.38)),
+            "polarization_index": float(indicators.get("polarization_index", 0.78)),
+            "social_unrest_score": float(indicators.get("social_unrest_score", 0.30)),
+            "fiscal_deficit_gdp": float(indicators.get("FYFSGDA188S", indicators.get("fiscal_deficit", -6.20))),
+        }
+        
+        return CyclePhase(
+            cycle_type=CycleType.EMPIRE,  # Use EMPIRE for now as CIVIL not defined
+            phase=phase_name,
+            phase_number=phase_number,
+            composite_score=confidence,
+            date=as_of_date,
+            indicators=civil_indicators
+        )
+
+
+# ============================================================================
 # Cycles Service
 # ============================================================================
 
@@ -434,6 +610,7 @@ class CyclesService:
         self.stdc_detector = STDCDetector()
         self.ltdc_detector = LTDCDetector()
         self.empire_detector = EmpireDetector()
+        self.civil_detector = CivilOrderDetector()
 
     async def get_latest_indicators(self) -> Dict[str, float]:
         """
@@ -475,6 +652,10 @@ class CyclesService:
         """
         if as_of_date is None:
             as_of_date = date.today()
+        elif isinstance(as_of_date, str):
+            # Convert string to date if needed
+            from datetime import datetime
+            as_of_date = datetime.fromisoformat(as_of_date).date()
 
         indicators = await self.get_latest_indicators()
         phase = self.stdc_detector.detect_phase(indicators, as_of_date)
@@ -488,6 +669,10 @@ class CyclesService:
         """Detect current LTDC phase."""
         if as_of_date is None:
             as_of_date = date.today()
+        elif isinstance(as_of_date, str):
+            # Convert string to date if needed
+            from datetime import datetime
+            as_of_date = datetime.fromisoformat(as_of_date).date()
 
         indicators = await self.get_latest_indicators()
         phase = self.ltdc_detector.detect_phase(indicators, as_of_date)
@@ -500,9 +685,46 @@ class CyclesService:
         """Detect current Empire phase."""
         if as_of_date is None:
             as_of_date = date.today()
+        elif isinstance(as_of_date, str):
+            # Convert string to date if needed
+            from datetime import datetime
+            as_of_date = datetime.fromisoformat(as_of_date).date()
 
         indicators = await self.get_latest_indicators()
         phase = self.empire_detector.detect_phase(indicators, as_of_date)
+
+        await self._store_phase(phase)
+
+        return phase
+
+    async def detect_civil_phase(self, as_of_date: Optional[date] = None) -> CyclePhase:
+        """
+        Detect current Civil/Internal Order phase.
+        
+        Args:
+            as_of_date: Date for phase classification (default: today)
+            
+        Returns:
+            CyclePhase
+        """
+        if as_of_date is None:
+            as_of_date = date.today()
+        elif isinstance(as_of_date, str):
+            # Convert string to date if needed
+            from datetime import datetime
+            as_of_date = datetime.fromisoformat(as_of_date).date()
+
+        indicators = await self.get_latest_indicators()
+        
+        # Add default values for civil-specific indicators if not present
+        if "institutional_trust" not in indicators:
+            indicators["institutional_trust"] = 0.38
+        if "polarization_index" not in indicators:
+            indicators["polarization_index"] = 0.78
+        if "social_unrest_score" not in indicators:
+            indicators["social_unrest_score"] = 0.30
+            
+        phase = self.civil_detector.detect_phase(indicators, as_of_date)
 
         await self._store_phase(phase)
 
