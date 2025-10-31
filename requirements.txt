@@ -50,3 +50,8 @@ prometheus-client
 scikit-learn
 weasyprint
 reportlab
+pytest
+pytest-asyncio
+pytest-html
+selenium
+webdriver-manager

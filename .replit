@@ -4,7 +4,7 @@ expertMode = true
 
 [nix]
 channel = "stable-25_05"
-packages = ["cargo", "fontconfig", "freetype", "ghostscript", "glib", "glibcLocales", "harfbuzz", "libiconv", "libxcrypt", "pango", "postgresql", "rustc"]
+packages = ["cargo", "fontconfig", "freetype", "geckodriver", "ghostscript", "glib", "glibcLocales", "harfbuzz", "libiconv", "libxcrypt", "pango", "postgresql", "rustc", "chromium"]
 
 [workflows]
 runButton = "Project"
@@ -49,6 +49,10 @@ externalPort = 6000
 [[ports]]
 localPort = 38857
 externalPort = 3000
+
+[[ports]]
+localPort = 39293
+externalPort = 8080
 
 [[ports]]
 localPort = 39703
