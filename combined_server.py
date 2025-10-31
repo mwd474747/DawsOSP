@@ -2904,6 +2904,73 @@ async def get_factor_analysis(request: Request):
         )
 
 # ============================================================================
+# SPA Catch-All Route (Must be last!)
+# ============================================================================
+
+@app.get("/{full_path:path}", response_class=HTMLResponse)
+async def catch_all_spa_routes(full_path: str):
+    """
+    Catch-all route for SPA client-side routing
+    
+    This route MUST be defined after all other routes.
+    It returns the main HTML file for any path that doesn't match an API route,
+    allowing the client-side JavaScript router to handle navigation.
+    
+    This enables routes like:
+    - /dashboard
+    - /holdings
+    - /performance
+    - /macro-cycles
+    - /scenarios
+    - /risk
+    - /optimizer
+    - /ratings
+    - /ai-insights
+    - /market-data
+    - /transactions
+    - /alerts
+    - /reports
+    - /corporate-actions
+    - /api-keys
+    - /settings
+    
+    API routes (/api/*, /health) are handled by earlier route definitions
+    and will not reach this catch-all.
+    """
+    try:
+        # Skip API routes and health endpoint (shouldn't reach here anyway)
+        if full_path.startswith("api/") or full_path == "health":
+            raise HTTPException(status_code=404, detail="Not found")
+        
+        # Try to read UI from file
+        ui_file = Path("full_ui.html")
+        if ui_file.exists():
+            logger.debug(f"Serving SPA for path: /{full_path}")
+            return HTMLResponse(content=ui_file.read_text())
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error serving SPA for path /{full_path}: {e}")
+    
+    # Return minimal fallback UI if file not found
+    logger.warning(f"full_ui.html not found, serving minimal UI for /{full_path}")
+    return HTMLResponse(content="""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>DawsOS Portfolio Intelligence</title>
+    </head>
+    <body>
+        <h1>DawsOS Portfolio Intelligence Platform</h1>
+        <p>Version 6.0.0 - Refactored</p>
+        <p>UI file not found. Please ensure full_ui.html exists.</p>
+    </body>
+    </html>
+    """)
+
+# ============================================================================
 # Main Entry Point
 # ============================================================================
 
