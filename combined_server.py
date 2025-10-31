@@ -84,7 +84,6 @@ except ImportError as e:
 # ============================================================================
 
 # Environment Configuration
-USE_MOCK_DATA = os.getenv("USE_MOCK_DATA", "false").lower() == "true"
 DATABASE_URL = os.environ.get("DATABASE_URL")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 
@@ -405,8 +404,7 @@ async def lifespan(app: FastAPI):
 
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
-        if not USE_MOCK_DATA:
-            logger.warning("Database unavailable and mock mode disabled - some features may not work")
+        logger.warning("Database unavailable - some features may not work")
 
     # Initialize other services
     logger.info(f"Server mode: {'ORCHESTRATED' if db_pool else 'FALLBACK'}")
@@ -869,42 +867,6 @@ async def calculate_portfolio_risk_metrics(holdings: List[dict], portfolio_id: s
     }
 
 # ============================================================================
-# Mock Data Helpers (Only when USE_MOCK_DATA is True)
-# ============================================================================
-
-def get_mock_portfolio_holdings() -> List[dict]:
-    """Get mock portfolio holdings for testing"""
-    return [
-        {"symbol": "AAPL", "quantity": 100, "price": 185.00, "sector": "Technology", "beta": 1.25, "dividend_yield": 0.5},
-        {"symbol": "GOOGL", "quantity": 50, "price": 140.00, "sector": "Technology", "beta": 1.06, "dividend_yield": 0.0},
-        {"symbol": "MSFT", "quantity": 75, "price": 380.00, "sector": "Technology", "beta": 0.93, "dividend_yield": 0.88},
-        {"symbol": "AMZN", "quantity": 40, "price": 150.00, "sector": "Consumer", "beta": 1.23, "dividend_yield": 0.0},
-        {"symbol": "NVDA", "quantity": 30, "price": 500.00, "sector": "Technology", "beta": 1.68, "dividend_yield": 0.03},
-        {"symbol": "TSLA", "quantity": 25, "price": 220.00, "sector": "Automotive", "beta": 2.03, "dividend_yield": 0.0},
-        {"symbol": "META", "quantity": 35, "price": 343.00, "sector": "Technology", "beta": 1.29, "dividend_yield": 0.0},
-        {"symbol": "BRK.B", "quantity": 80, "price": 350.00, "sector": "Financial", "beta": 0.87, "dividend_yield": 0.0}
-    ]
-
-def get_mock_transactions() -> List[dict]:
-    """Get mock transaction history for testing"""
-    transactions = []
-    base_date = datetime.now() - timedelta(days=365)
-
-    for i in range(20):
-        date = base_date + timedelta(days=i * 15)
-        transactions.append({
-            "date": date.strftime("%Y-%m-%d"),
-            "type": random.choice(["buy", "sell", "dividend"]),
-            "symbol": random.choice(["AAPL", "GOOGL", "MSFT", "NVDA"]),
-            "shares": random.randint(10, 50),
-            "price": round(random.uniform(100, 500), 2),
-            "amount": round(random.uniform(-10000, 10000), 2),
-            "realized_gain": round(random.uniform(0, 500), 2)
-        })
-
-    return sorted(transactions, key=lambda x: x["date"], reverse=True)
-
-# ============================================================================
 # API Endpoints with Improved Error Handling
 # ============================================================================
 
@@ -943,7 +905,7 @@ async def health_check():
         "version": "6.0.0",
         "timestamp": datetime.utcnow().isoformat(),
         "database": "connected" if db_pool else "disconnected",
-        "mode": "mock" if USE_MOCK_DATA else "production"
+        "mode": "production"
     }
 
     # Check database connectivity
@@ -1250,33 +1212,16 @@ async def get_portfolio(request: Request):
             except Exception as e:
                 logger.warning(f"Pattern orchestrator failed, falling back: {e}")
 
-        # Fallback to database query or mock data
+        # Fallback to database query
         portfolio_data = await get_portfolio_data(user["email"])
 
         if not portfolio_data:
-            # Last resort: use mock data to avoid breaking UI
-            holdings = get_mock_portfolio_holdings()
-            total_value = sum(h["quantity"] * h["price"] for h in holdings)
-
-            for holding in holdings:
-                holding["value"] = holding["quantity"] * holding["price"]
-                holding["weight"] = holding["value"] / total_value if total_value > 0 else 0
-                holding["change"] = round(random.uniform(-0.03, 0.04), 4)
-
-            # Get portfolio ID for metrics calculation
-            portfolio_id = str(uuid4())
-            risk_metrics = await calculate_portfolio_risk_metrics(holdings, portfolio_id)
-            sector_allocation = calculate_sector_allocation(holdings, total_value)
-
-            return SuccessResponse(data={
-                "id": portfolio_id,
-                "name": "Demo Portfolio",
-                "total_value": round(total_value, 2),
-                "holdings": holdings,
-                "sector_allocation": sector_allocation,
-                **risk_metrics,
-                "last_updated": datetime.utcnow().isoformat()
-            })
+            # Return empty portfolio if no data found
+            return ErrorResponse(
+                error="no_portfolio_data",
+                message="No portfolio data available. Please add holdings to get started.",
+                details={"holdings": [], "total_value": 0}
+            )
 
         # Process portfolio data
         holdings = []
@@ -1431,14 +1376,16 @@ async def get_holdings(
             except Exception as e:
                 logger.warning(f"Pattern orchestrator failed for holdings, using fallback: {e}")
 
-        # Fallback to database or mock data
+        # Fallback to database
         portfolio_data = await get_portfolio_data(user["email"])
 
         if not portfolio_data:
-            # Return mock data if no database data
-            holdings = get_mock_portfolio_holdings()
-            for h in holdings:
-                h["value"] = h["quantity"] * h["price"]
+            # Return error if no database data
+            return ErrorResponse(
+                error="no_holdings_data",
+                message="No holdings found. Please add holdings to your portfolio.",
+                details={"holdings": []}
+            )
         else:
             holdings = []
             for row in portfolio_data:
@@ -1594,8 +1541,8 @@ async def create_alert(request: Request, alert_config: AlertConfig):
             "created_at": datetime.utcnow().isoformat()
         }
 
-        # In production, store in database
-        if not USE_MOCK_DATA and db_pool:
+        # Store in database
+        if db_pool:
             query = """
                 INSERT INTO alerts (id, user_id, condition_json, is_active, created_at)
                 VALUES ($1, $2, $3, $4, $5)
@@ -2345,28 +2292,23 @@ async def optimize_portfolio_endpoint(
             )
 
         # Get current portfolio
-        if USE_MOCK_DATA:
-            holdings = get_mock_portfolio_holdings()
-            for h in holdings:
-                h["value"] = h["quantity"] * h["price"]
-        else:
-            portfolio_data = await get_portfolio_data(user["email"])
-            if not portfolio_data:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="No portfolio found"
-                )
+        portfolio_data = await get_portfolio_data(user["email"])
+        if not portfolio_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No portfolio found"
+            )
 
-            holdings = []
-            for row in portfolio_data:
-                holdings.append({
-                    "symbol": row["symbol"],
-                    "quantity": float(row["quantity"]),
-                    "price": float(row["price"]) if row["price"] else 0,
-                    "value": float(row["quantity"]) * float(row["price"]) if row["price"] else 0,
-                    "sector": row["sector"] or "Other",
-                    "beta": 1.0  # Default beta
-                })
+        holdings = []
+        for row in portfolio_data:
+            holdings.append({
+                "symbol": row["symbol"],
+                "quantity": float(row["quantity"]),
+                "price": float(row["price"]) if row["price"] else 0,
+                "value": float(row["quantity"]) * float(row["price"]) if row["price"] else 0,
+                "sector": row["sector"] or "Other",
+                "beta": 1.0  # Default beta
+            })
 
         # Run optimization
         result = optimize_portfolio(
@@ -2397,32 +2339,6 @@ async def get_alerts(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required"
             )
-
-        # Use mock data if enabled
-        if USE_MOCK_DATA:
-            # Return mock alerts
-            mock_alerts = [
-                {
-                    "id": str(uuid4()),
-                    "type": "price",
-                    "symbol": "AAPL",
-                    "threshold": 180.00,
-                    "condition": "below",
-                    "message": "Apple stock below $180",
-                    "active": True,
-                    "created_at": datetime.utcnow().isoformat()
-                },
-                {
-                    "id": str(uuid4()),
-                    "type": "portfolio",
-                    "threshold": 100000,
-                    "condition": "below",
-                    "message": "Portfolio value below $100k",
-                    "active": True,
-                    "created_at": datetime.utcnow().isoformat()
-                }
-            ]
-            return SuccessResponse(data={"alerts": mock_alerts})
 
         # Get from database
         query = """
@@ -2491,8 +2407,6 @@ async def delete_alert(request: Request, alert_id: str):
                 detail="Invalid alert ID format"
             )
 
-        if USE_MOCK_DATA:
-            return SuccessResponse(data={"deleted": True})
 
         # Delete from database
         query = """
@@ -2686,12 +2600,15 @@ async def run_scenario_analysis(
                 logger.warning(f"ScenarioService failed, using simple calculation: {e}")
 
         # Last resort fallback to simple sector-based impacts
-        portfolio_data = await get_portfolio_data(user["email"]) if not USE_MOCK_DATA else None
+        portfolio_data = await get_portfolio_data(user["email"])
 
         if not portfolio_data:
-            holdings = get_mock_portfolio_holdings()
-            for h in holdings:
-                h["value"] = h["quantity"] * h["price"]
+            # Return error when no portfolio data is available
+            return ErrorResponse(
+                error="no_portfolio_data",
+                message="No portfolio data available for scenario analysis.",
+                details={"scenario": scenario}
+            )
         else:
             holdings = []
             for row in portfolio_data:
