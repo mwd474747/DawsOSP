@@ -621,20 +621,61 @@ class CyclesService:
         """
         query = """
             SELECT
-                indicator_id,
+                indicator_name,
                 value
             FROM macro_indicators
-            WHERE (indicator_id, date) IN (
-                SELECT indicator_id, MAX(date)
+            WHERE (indicator_name, date) IN (
+                SELECT indicator_name, MAX(date)
                 FROM macro_indicators
-                GROUP BY indicator_id
+                GROUP BY indicator_name
             )
         """
         rows = await execute_query(query)
 
+        # Map database names to code keys
+        name_mapping = {
+            "GDP Growth Rate": "gdp_growth",
+            "Inflation": "inflation",
+            "Unemployment": "unemployment",
+            "Interest Rate": "interest_rate",
+            "Credit Growth": "credit_growth",
+            "Debt To Gdp": "debt_to_gdp",
+            "Fiscal Deficit": "fiscal_deficit",
+            "Trade Balance": "trade_balance",
+            "Productivity Growth": "productivity_growth",
+            "Yield Curve (10Y-2Y)": "yield_curve",
+            "Credit Spreads": "credit_spreads",
+            "VIX (Volatility Index)": "vix",
+            "Manufacturing PMI": "manufacturing_pmi",
+            "Gini Coefficient": "gini_coefficient",
+            "Real Interest Rate": "real_interest_rate",
+            "Corporate Profits Growth": "corporate_profits",
+            "Housing Starts": "housing_starts",
+            "Consumer Confidence Index": "consumer_confidence",
+            "M2 Money Supply": "m2_money_supply",
+            "Oil Prices": "oil_prices",
+            "US Dollar Index": "dollar_index",
+            "Initial Jobless Claims": "jobless_claims",
+            "Retail Sales Growth": "retail_sales",
+            "Industrial Production": "industrial_production",
+            "Credit Impulse": "credit_impulse",
+            "Debt Service Ratio": "debt_service_ratio",
+            "World Gdp Share": "world_gdp_share",
+            "World Trade Share": "world_trade_share",
+            "Military Dominance": "military_dominance",
+            "Education Score": "education_score",
+            "Top 1% Wealth Share": "top_1_percent_wealth",
+            "Political Polarization": "political_polarization",
+            "Institutional Trust Index": "institutional_trust",
+            "Data Quality Score": "data_quality_score",
+        }
+
         indicators = {}
         for row in rows:
-            indicators[row["indicator_id"]] = float(row["value"])
+            db_name = row["indicator_name"]
+            if db_name in name_mapping:
+                code_key = name_mapping[db_name]
+                indicators[code_key] = float(row["value"])
         
         # Debug: log what keys we have from database
         logger.info(f"Raw indicator keys from DB: {list(indicators.keys())[:10]}")  # First 10 keys
