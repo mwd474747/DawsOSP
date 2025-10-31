@@ -2449,6 +2449,88 @@ async def get_alerts(request: Request):
             detail="Alert service error"
         )
 
+@app.patch("/api/alerts/{alert_id}", response_model=SuccessResponse)
+async def update_alert(request: Request, alert_id: str, alert_config: AlertConfig):
+    """Update an alert with proper validation"""
+    try:
+        # Check authentication
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        # Validate alert ID format
+        try:
+            UUID(alert_id)  # Validate UUID format
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid alert ID format"
+            )
+        
+        if USE_MOCK_DATA:
+            # Return updated mock alert
+            updated_alert = {
+                "id": alert_id,
+                "user_id": user["id"],
+                "type": alert_config.type,
+                "symbol": alert_config.symbol,
+                "threshold": alert_config.threshold,
+                "condition": alert_config.condition,
+                "notification_channel": alert_config.notification_channel,
+                "active": True,
+                "updated_at": datetime.utcnow().isoformat()
+            }
+            return SuccessResponse(data=updated_alert)
+        
+        # Update in database
+        query = """
+            UPDATE alerts 
+            SET condition_json = $2, updated_at = NOW()
+            WHERE id = $1 AND user_id = (SELECT id FROM users WHERE email = $3)
+            RETURNING id, condition_json, is_active, updated_at
+        """
+        
+        alert_data = {
+            "type": alert_config.type,
+            "symbol": alert_config.symbol,
+            "threshold": alert_config.threshold,
+            "condition": alert_config.condition,
+            "notification_channel": alert_config.notification_channel
+        }
+        
+        result = await execute_query_safe(
+            query, 
+            alert_id, 
+            json.dumps(alert_data), 
+            user["email"],
+            fetch_one=True
+        )
+        
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Alert not found or not authorized"
+            )
+        
+        return SuccessResponse(data={
+            "id": str(result["id"]),
+            "active": result["is_active"],
+            "updated_at": result["updated_at"].isoformat() if result["updated_at"] else None,
+            **alert_data
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Update alert error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Alert service error"
+        )
+
 @app.delete("/api/alerts/{alert_id}", response_model=SuccessResponse)
 async def delete_alert(request: Request, alert_id: str):
     """Delete an alert with proper validation"""

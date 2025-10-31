@@ -868,6 +868,247 @@
             font-size: 0.95rem;
         }
         
+        /* Alert Components */
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--color-success);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--color-error);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .alerts-list {
+            padding: 1rem 0;
+        }
+        
+        .alert-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .alert-item:hover {
+            background: rgba(30, 41, 59, 0.6);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .alert-item-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .alert-icon {
+            font-size: 1.5rem;
+        }
+        
+        .alert-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .alert-type {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .alert-message {
+            font-size: 1rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        .alert-meta {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+        
+        .alert-status {
+            color: var(--text-secondary);
+        }
+        
+        .alert-date {
+            color: var(--text-muted);
+        }
+        
+        .alert-item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-icon {
+            background: transparent;
+            border: 1px solid var(--border-primary);
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--color-info);
+            transform: scale(1.05);
+        }
+        
+        .btn-icon.btn-danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--color-error);
+        }
+        
+        .btn-primary {
+            background: var(--color-info);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .modal-close {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-primary);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+        
+        .card-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        
         /* Chat Interface */
         .chat-container {
             display: flex;
@@ -3708,18 +3949,374 @@
             }
             
             function AlertsPage() {
+                const [loading, setLoading] = useState(true);
+                const [alerts, setAlerts] = useState([]);
+                const [showModal, setShowModal] = useState(false);
+                const [editingAlert, setEditingAlert] = useState(null);
+                const [error, setError] = useState(null);
+                const [success, setSuccess] = useState(null);
+                const [formData, setFormData] = useState({
+                    type: 'price',
+                    symbol: '',
+                    threshold: '',
+                    condition: 'below',
+                    notification_channel: 'email'
+                });
+                
+                useEffect(() => {
+                    loadAlerts();
+                }, []);
+                
+                const loadAlerts = async () => {
+                    try {
+                        setLoading(true);
+                        setError(null);
+                        const token = localStorage.getItem('access_token');
+                        const response = await fetch('/api/alerts', {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch alerts');
+                        }
+                        
+                        const result = await response.json();
+                        setAlerts(result.data?.alerts || []);
+                    } catch (err) {
+                        console.error('Error loading alerts:', err);
+                        setError('Failed to load alerts');
+                        // Use mock data as fallback
+                        setAlerts([
+                            {
+                                id: '1',
+                                type: 'price',
+                                symbol: 'AAPL',
+                                threshold: 150,
+                                condition: 'below',
+                                message: 'Apple stock below $150',
+                                active: true,
+                                created_at: new Date().toISOString()
+                            },
+                            {
+                                id: '2',
+                                type: 'portfolio',
+                                threshold: -10,
+                                condition: 'below',
+                                message: 'Portfolio down more than 10%',
+                                active: true,
+                                created_at: new Date().toISOString()
+                            }
+                        ]);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                
+                const handleCreateOrUpdate = async () => {
+                    try {
+                        setError(null);
+                        const token = localStorage.getItem('access_token');
+                        
+                        const url = editingAlert 
+                            ? `/api/alerts/${editingAlert.id}`
+                            : '/api/alerts';
+                        
+                        const method = editingAlert ? 'PATCH' : 'POST';
+                        
+                        const response = await fetch(url, {
+                            method: method,
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                type: formData.type,
+                                symbol: formData.type === 'price' ? formData.symbol : null,
+                                threshold: parseFloat(formData.threshold),
+                                condition: formData.condition,
+                                notification_channel: formData.notification_channel
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(editingAlert ? 'Failed to update alert' : 'Failed to create alert');
+                        }
+                        
+                        setSuccess(editingAlert ? 'Alert updated successfully!' : 'Alert created successfully!');
+                        setShowModal(false);
+                        setEditingAlert(null);
+                        resetForm();
+                        await loadAlerts();
+                    } catch (err) {
+                        console.error('Error saving alert:', err);
+                        setError(editingAlert ? 'Failed to update alert' : 'Failed to create alert');
+                    }
+                };
+                
+                const handleDelete = async (alertId) => {
+                    if (!confirm('Are you sure you want to delete this alert?')) return;
+                    
+                    try {
+                        setError(null);
+                        const token = localStorage.getItem('access_token');
+                        
+                        const response = await fetch(`/api/alerts/${alertId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Failed to delete alert');
+                        }
+                        
+                        setSuccess('Alert deleted successfully!');
+                        await loadAlerts();
+                    } catch (err) {
+                        console.error('Error deleting alert:', err);
+                        setError('Failed to delete alert');
+                    }
+                };
+                
+                const handleEdit = (alert) => {
+                    setEditingAlert(alert);
+                    setFormData({
+                        type: alert.type || 'price',
+                        symbol: alert.symbol || '',
+                        threshold: alert.threshold?.toString() || '',
+                        condition: alert.condition || 'below',
+                        notification_channel: alert.notification_channel || 'email'
+                    });
+                    setShowModal(true);
+                };
+                
+                const resetForm = () => {
+                    setFormData({
+                        type: 'price',
+                        symbol: '',
+                        threshold: '',
+                        condition: 'below',
+                        notification_channel: 'email'
+                    });
+                };
+                
+                const openCreateModal = () => {
+                    setEditingAlert(null);
+                    resetForm();
+                    setShowModal(true);
+                };
+                
+                const getAlertIcon = (type) => {
+                    switch (type) {
+                        case 'price': return '💰';
+                        case 'portfolio': return '📊';
+                        case 'risk': return '⚠️';
+                        case 'news': return '📰';
+                        default: return '🔔';
+                    }
+                };
+                
+                const getAlertTypeLabel = (type) => {
+                    switch (type) {
+                        case 'price': return 'Price Alert';
+                        case 'portfolio': return 'Portfolio Alert';
+                        case 'risk': return 'Risk Alert';
+                        case 'news': return 'News Alert';
+                        default: return 'Alert';
+                    }
+                };
+                
+                const formatAlertMessage = (alert) => {
+                    if (alert.message) return alert.message;
+                    
+                    switch (alert.type) {
+                        case 'price':
+                            return `${alert.symbol} ${alert.condition} $${alert.threshold}`;
+                        case 'portfolio':
+                            return `Portfolio value ${alert.condition} ${alert.threshold}%`;
+                        case 'risk':
+                            return `Risk level ${alert.condition} ${alert.threshold}`;
+                        case 'news':
+                            return `News sentiment ${alert.condition} ${alert.threshold}`;
+                        default:
+                            return 'Custom alert';
+                    }
+                };
+                
+                // Clear messages after 5 seconds
+                useEffect(() => {
+                    if (error || success) {
+                        const timer = setTimeout(() => {
+                            setError(null);
+                            setSuccess(null);
+                        }, 5000);
+                        return () => clearTimeout(timer);
+                    }
+                }, [error, success]);
+                
+                if (loading) return e('div', { className: 'loading' }, e('div', { className: 'spinner' }));
+                
                 return e('div', null,
                     e('div', { className: 'page-header' },
-                        e('h1', { className: 'page-title' }, 'Alerts'),
-                        e('p', { className: 'page-description' }, 'Configure portfolio alerts')
+                        e('h1', { className: 'page-title' }, 'Alert Management'),
+                        e('p', { className: 'page-description' }, 'Configure and manage portfolio alerts'),
+                        e('button', { 
+                            className: 'btn btn-primary',
+                            onClick: openCreateModal,
+                            style: { float: 'right', marginTop: '-3rem' }
+                        }, '+ Create Alert')
                     ),
+                    
+                    // Success/Error Messages
+                    success && e('div', { className: 'alert-success' }, success),
+                    error && e('div', { className: 'alert-error' }, error),
+                    
+                    // Alert List
                     e('div', { className: 'card' },
                         e('div', { className: 'card-header' },
-                            e('h3', { className: 'card-title' }, 'Active Alerts')
+                            e('h3', { className: 'card-title' }, `Active Alerts (${alerts.length})`),
+                            e('p', { className: 'card-subtitle' }, 'Monitor price changes, portfolio performance, and risk levels')
                         ),
-                        e('div', { className: 'empty-state' },
-                            e('div', { className: 'empty-state-title' }, 'No Active Alerts'),
-                            e('div', { className: 'empty-state-message' }, 'Configure alerts for price changes and portfolio events')
+                        
+                        alerts.length === 0 ? (
+                            e('div', { className: 'empty-state' },
+                                e('div', { className: 'empty-state-title' }, 'No Active Alerts'),
+                                e('div', { className: 'empty-state-message' }, 
+                                    'Create alerts to monitor price changes, portfolio events, and risk thresholds'),
+                                e('button', { 
+                                    className: 'btn btn-primary',
+                                    onClick: openCreateModal
+                                }, 'Create Your First Alert')
+                            )
+                        ) : (
+                            e('div', { className: 'alerts-list' },
+                                alerts.map(alert =>
+                                    e('div', { key: alert.id, className: 'alert-item' },
+                                        e('div', { className: 'alert-item-left' },
+                                            e('span', { className: 'alert-icon' }, getAlertIcon(alert.type)),
+                                            e('div', { className: 'alert-details' },
+                                                e('div', { className: 'alert-type' }, getAlertTypeLabel(alert.type)),
+                                                e('div', { className: 'alert-message' }, formatAlertMessage(alert)),
+                                                e('div', { className: 'alert-meta' },
+                                                    e('span', { className: 'alert-status' }, 
+                                                        alert.active ? '🟢 Active' : '🔴 Inactive'),
+                                                    ' | ',
+                                                    e('span', { className: 'alert-date' }, 
+                                                        'Created: ' + new Date(alert.created_at).toLocaleDateString())
+                                                )
+                                            )
+                                        ),
+                                        e('div', { className: 'alert-item-actions' },
+                                            e('button', { 
+                                                className: 'btn-icon',
+                                                onClick: () => handleEdit(alert),
+                                                title: 'Edit Alert'
+                                            }, '✏️'),
+                                            e('button', { 
+                                                className: 'btn-icon btn-danger',
+                                                onClick: () => handleDelete(alert.id),
+                                                title: 'Delete Alert'
+                                            }, '🗑️')
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    
+                    // Create/Edit Modal
+                    showModal && e('div', { className: 'modal-overlay', onClick: () => setShowModal(false) },
+                        e('div', { className: 'modal-content', onClick: (e) => e.stopPropagation() },
+                            e('div', { className: 'modal-header' },
+                                e('h2', { className: 'modal-title' }, 
+                                    editingAlert ? 'Edit Alert' : 'Create New Alert'),
+                                e('button', { 
+                                    className: 'modal-close',
+                                    onClick: () => setShowModal(false)
+                                }, '×')
+                            ),
+                            e('div', { className: 'modal-body' },
+                                e('div', { className: 'form-group' },
+                                    e('label', { className: 'form-label' }, 'Alert Type'),
+                                    e('select', {
+                                        className: 'form-input',
+                                        value: formData.type,
+                                        onChange: (e) => setFormData({...formData, type: e.target.value})
+                                    },
+                                        e('option', { value: 'price' }, 'Price Alert'),
+                                        e('option', { value: 'portfolio' }, 'Portfolio Performance'),
+                                        e('option', { value: 'risk' }, 'Risk Level'),
+                                        e('option', { value: 'news' }, 'News Sentiment')
+                                    )
+                                ),
+                                
+                                formData.type === 'price' && e('div', { className: 'form-group' },
+                                    e('label', { className: 'form-label' }, 'Symbol'),
+                                    e('input', {
+                                        type: 'text',
+                                        className: 'form-input',
+                                        value: formData.symbol,
+                                        onChange: (e) => setFormData({...formData, symbol: e.target.value.toUpperCase()}),
+                                        placeholder: 'e.g., AAPL, GOOGL'
+                                    })
+                                ),
+                                
+                                e('div', { className: 'form-group' },
+                                    e('label', { className: 'form-label' }, 'Condition'),
+                                    e('select', {
+                                        className: 'form-input',
+                                        value: formData.condition,
+                                        onChange: (e) => setFormData({...formData, condition: e.target.value})
+                                    },
+                                        e('option', { value: 'above' }, 'Above'),
+                                        e('option', { value: 'below' }, 'Below'),
+                                        e('option', { value: 'change' }, 'Change By')
+                                    )
+                                ),
+                                
+                                e('div', { className: 'form-group' },
+                                    e('label', { className: 'form-label' }, 
+                                        formData.type === 'price' ? 'Price Threshold ($)' :
+                                        formData.type === 'portfolio' ? 'Performance Threshold (%)' :
+                                        formData.type === 'risk' ? 'Risk Score' :
+                                        'Sentiment Score'),
+                                    e('input', {
+                                        type: 'number',
+                                        className: 'form-input',
+                                        value: formData.threshold,
+                                        onChange: (e) => setFormData({...formData, threshold: e.target.value}),
+                                        placeholder: formData.type === 'price' ? '150.00' : '10',
+                                        step: formData.type === 'price' ? '0.01' : '1'
+                                    })
+                                ),
+                                
+                                e('div', { className: 'form-group' },
+                                    e('label', { className: 'form-label' }, 'Notification Channel'),
+                                    e('select', {
+                                        className: 'form-input',
+                                        value: formData.notification_channel,
+                                        onChange: (e) => setFormData({...formData, notification_channel: e.target.value})
+                                    },
+                                        e('option', { value: 'email' }, 'Email'),
+                                        e('option', { value: 'in-app' }, 'In-App Notification'),
+                                        e('option', { value: 'both' }, 'Both')
+                                    )
+                                )
+                            ),
+                            e('div', { className: 'modal-footer' },
+                                e('button', { 
+                                    className: 'btn btn-secondary',
+                                    onClick: () => setShowModal(false)
+                                }, 'Cancel'),
+                                e('button', { 
+                                    className: 'btn btn-primary',
+                                    onClick: handleCreateOrUpdate,
+                                    disabled: !formData.threshold || (formData.type === 'price' && !formData.symbol)
+                                }, editingAlert ? 'Update Alert' : 'Create Alert')
+                            )
                         )
                     )
                 );
