@@ -913,7 +913,7 @@ async def root():
     """Root endpoint - serve HTML"""
     try:
         # Try to read UI from file
-        ui_file = Path("full_ui.html")
+        ui_file = Path("full_ui_fixed.html")
         if ui_file.exists():
             return HTMLResponse(content=ui_file.read_text())
     except Exception as e:
