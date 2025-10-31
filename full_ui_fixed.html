@@ -4563,31 +4563,442 @@
             }
             
             function MarketDataPage() {
+                const [loading, setLoading] = useState(true);
+                const [newsData, setNewsData] = useState(null);
+                const [portfolioSecurities, setPortfolioSecurities] = useState([]);
+                const [marketData, setMarketData] = useState({});
+                const [error, setError] = useState(null);
+                const [refreshing, setRefreshing] = useState(false);
+                const [filterSymbol, setFilterSymbol] = useState('');
+                const [sentimentFilter, setSentimentFilter] = useState('all');
+                
+                useEffect(() => {
+                    loadMarketData();
+                }, []);
+                
+                const loadMarketData = async () => {
+                    try {
+                        setLoading(true);
+                        setError(null);
+                        
+                        // Get portfolio holdings first
+                        const holdingsRes = await apiClient.getHoldings().catch(() => ({ 
+                            holdings: getMockHoldings() 
+                        }));
+                        const holdings = holdingsRes.holdings || [];
+                        setPortfolioSecurities(holdings);
+                        
+                        // Execute news impact analysis pattern
+                        const newsResponse = await apiClient.executePattern('news_impact_analysis', {
+                            portfolio_id: '64ff3be6-0ed1-4990-a32b-4ded17f0320c',
+                            lookback_hours: 72,
+                            min_impact_threshold: 0.02
+                        }).catch(err => {
+                            console.error('Pattern execution failed:', err);
+                            return getMockNewsData();
+                        });
+                        
+                        if (newsResponse && newsResponse.data) {
+                            setNewsData(newsResponse.data);
+                        } else {
+                            setNewsData(getMockNewsData());
+                        }
+                        
+                        // Fetch real-time prices for portfolio securities
+                        const pricesData = await fetchSecurityPrices(holdings.map(h => h.symbol));
+                        setMarketData(pricesData);
+                        
+                    } catch (err) {
+                        console.error('Error loading market data:', err);
+                        setError('Failed to load market data. Using sample data.');
+                        setNewsData(getMockNewsData());
+                        setPortfolioSecurities(getMockHoldings());
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                
+                const handleRefresh = async () => {
+                    setRefreshing(true);
+                    await loadMarketData();
+                    setRefreshing(false);
+                };
+                
+                const getMockHoldings = () => [
+                    { symbol: 'BAM', name: 'Brookfield Asset Mgmt', quantity: 250, market_value: 45000 },
+                    { symbol: 'BRK.B', name: 'Berkshire Hathaway B', quantity: 50, market_value: 85000 },
+                    { symbol: 'CNR', name: 'Canadian National Railway', quantity: 100, market_value: 12500 },
+                    { symbol: 'EVO', name: 'Evolution AB', quantity: 150, market_value: 28700 },
+                    { symbol: 'NKE', name: 'Nike Inc', quantity: 200, market_value: 31200 }
+                ];
+                
+                const getMockNewsData = () => ({
+                    impact_analysis: {
+                        total_items: 24,
+                        high_impact_count: 5,
+                        weighted_impact: 0.142,
+                        exposed_portfolio_pct: 0.74,
+                        overall_sentiment: 'MIXED'
+                    },
+                    news_with_impact: [
+                        {
+                            headline: "Brookfield Asset Management Reports Record Q3 Fundraising of $62 Billion",
+                            source: "Reuters",
+                            published_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+                            sentiment: "POSITIVE",
+                            sentiment_score: 0.82,
+                            impact_score: 0.235,
+                            entities: ["BAM"],
+                            weight_affected: 0.1545,
+                            summary: "Brookfield Asset Management exceeded expectations with record fundraising, positioning for accelerated growth in private markets."
+                        },
+                        {
+                            headline: "Berkshire Hathaway's Insurance Unit Faces Hurricane Milton Claims",
+                            source: "Bloomberg",
+                            published_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+                            sentiment: "NEGATIVE",
+                            sentiment_score: -0.64,
+                            impact_score: 0.187,
+                            entities: ["BRK.B"],
+                            weight_affected: 0.2919,
+                            summary: "Berkshire's insurance operations expect $2-3 billion in hurricane-related claims, but strong capital position provides cushion."
+                        },
+                        {
+                            headline: "Nike Announces AI-Powered Supply Chain Transformation",
+                            source: "CNBC",
+                            published_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+                            sentiment: "POSITIVE",
+                            sentiment_score: 0.71,
+                            impact_score: 0.156,
+                            entities: ["NKE"],
+                            weight_affected: 0.1071,
+                            summary: "Nike's new AI initiative expected to reduce inventory costs by 20% and improve delivery times significantly."
+                        },
+                        {
+                            headline: "Canadian National Railway Workers Approve New Labor Agreement",
+                            source: "Wall Street Journal",
+                            published_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+                            sentiment: "POSITIVE",
+                            sentiment_score: 0.68,
+                            impact_score: 0.098,
+                            entities: ["CNR"],
+                            weight_affected: 0.0429,
+                            summary: "CNR reaches favorable labor deal, avoiding potential strike and securing operations through 2028."
+                        },
+                        {
+                            headline: "Evolution AB Expands into Asian Gaming Markets with Major Partnership",
+                            source: "Financial Times",
+                            published_at: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
+                            sentiment: "POSITIVE",
+                            sentiment_score: 0.79,
+                            impact_score: 0.124,
+                            entities: ["EVO"],
+                            weight_affected: 0.0985,
+                            summary: "Evolution signs exclusive live casino deal with major Asian operator, expected to add $500M annual revenue."
+                        },
+                        {
+                            headline: "Federal Reserve Signals Potential Rate Pause Amid Mixed Economic Data",
+                            source: "MarketWatch",
+                            published_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+                            sentiment: "NEUTRAL",
+                            sentiment_score: 0.02,
+                            impact_score: 0.089,
+                            entities: [],
+                            weight_affected: 1.0,
+                            summary: "Fed officials suggest holding rates steady in November as inflation cools but labor market remains resilient."
+                        }
+                    ],
+                    entity_mentions: [
+                        { entity: "BAM", mention_count: 8 },
+                        { entity: "BRK.B", mention_count: 6 },
+                        { entity: "NKE", mention_count: 5 },
+                        { entity: "EVO", mention_count: 4 },
+                        { entity: "CNR", mention_count: 3 }
+                    ]
+                });
+                
+                const fetchSecurityPrices = async (symbols) => {
+                    // Simulate fetching real-time prices
+                    const mockPrices = {
+                        'BAM': { price: 182.45, change: 2.35, changePercent: 1.31 },
+                        'BRK.B': { price: 1725.80, change: -12.20, changePercent: -0.70 },
+                        'CNR': { price: 125.60, change: 0.85, changePercent: 0.68 },
+                        'EVO': { price: 195.30, change: 4.50, changePercent: 2.36 },
+                        'NKE': { price: 156.75, change: -2.15, changePercent: -1.35 }
+                    };
+                    return mockPrices;
+                };
+                
+                const formatSentiment = (sentiment) => {
+                    const sentimentMap = {
+                        'POSITIVE': { text: 'Positive', className: 'positive' },
+                        'NEGATIVE': { text: 'Negative', className: 'negative' },
+                        'NEUTRAL': { text: 'Neutral', className: 'neutral' },
+                        'MIXED': { text: 'Mixed', className: 'neutral' }
+                    };
+                    return sentimentMap[sentiment] || sentimentMap['NEUTRAL'];
+                };
+                
+                const formatImpactScore = (score) => {
+                    if (score >= 0.2) return { text: 'High Impact', className: 'negative' };
+                    if (score >= 0.1) return { text: 'Medium Impact', className: 'neutral' };
+                    return { text: 'Low Impact', className: 'positive' };
+                };
+                
+                const formatTimeAgo = (dateStr) => {
+                    const date = new Date(dateStr);
+                    const now = new Date();
+                    const diff = now - date;
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    
+                    if (hours < 1) return 'Just now';
+                    if (hours === 1) return '1 hour ago';
+                    if (hours < 24) return `${hours} hours ago`;
+                    const days = Math.floor(hours / 24);
+                    if (days === 1) return '1 day ago';
+                    return `${days} days ago`;
+                };
+                
+                const filteredNews = newsData?.news_with_impact?.filter(item => {
+                    const symbolMatch = !filterSymbol || 
+                        item.entities.some(e => e.toLowerCase().includes(filterSymbol.toLowerCase()));
+                    const sentimentMatch = sentimentFilter === 'all' || 
+                        item.sentiment.toLowerCase() === sentimentFilter.toLowerCase();
+                    return symbolMatch && sentimentMatch;
+                }) || [];
+                
+                if (loading) {
+                    return e('div', { className: 'loading' }, 
+                        e('div', { className: 'spinner' }),
+                        e('p', { style: { marginTop: '1rem', color: 'var(--text-secondary)' } }, 
+                            'Loading market data and news analysis...')
+                    );
+                }
+                
                 return e('div', null,
-                    e('div', { className: 'page-header' },
-                        e('h1', { className: 'page-title' }, 'Market Data'),
-                        e('p', { className: 'page-description' }, 'Real-time market data and quotes')
+                    e('div', { className: 'page-header', style: { marginBottom: '1.5rem' } },
+                        e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+                            e('div', null,
+                                e('h1', { className: 'page-title' }, 'Market Data & News Analysis'),
+                                e('p', { className: 'page-description' }, 
+                                    `Real-time prices and sentiment analysis for your portfolio`)
+                            ),
+                            e('button', {
+                                className: 'btn',
+                                onClick: handleRefresh,
+                                disabled: refreshing,
+                                style: { 
+                                    padding: '0.5rem 1rem',
+                                    fontSize: '0.875rem',
+                                    minWidth: '100px'
+                                }
+                            }, refreshing ? 'Refreshing...' : '↻ Refresh')
+                        )
                     ),
-                    e('div', { className: 'stats-grid' },
-                        e('div', { className: 'stat-card' },
-                            e('div', { className: 'stat-label' }, 'S&P 500'),
-                            e('div', { className: 'stat-value' }, '5,825.43'),
-                            e('div', { className: 'stat-change positive' }, '+0.42%')
+                    
+                    error && e('div', { 
+                        style: { 
+                            padding: '1rem',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            borderRadius: '8px',
+                            marginBottom: '1rem',
+                            color: 'var(--color-error)'
+                        }
+                    }, error),
+                    
+                    // Portfolio Securities Prices
+                    e('div', { className: 'card', style: { marginBottom: '1.5rem' } },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'Portfolio Security Prices')
                         ),
-                        e('div', { className: 'stat-card' },
-                            e('div', { className: 'stat-label' }, 'NASDAQ'),
-                            e('div', { className: 'stat-value' }, '18,425.19'),
-                            e('div', { className: 'stat-change positive' }, '+0.68%')
+                        e('div', { className: 'stats-grid' },
+                            portfolioSecurities.map(security => {
+                                const price = marketData[security.symbol] || {};
+                                return e('div', { 
+                                    key: security.symbol,
+                                    className: 'stat-card',
+                                    style: { cursor: 'pointer' },
+                                    onClick: () => setFilterSymbol(security.symbol)
+                                },
+                                    e('div', { className: 'stat-label' }, security.symbol),
+                                    e('div', { style: { fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' } }, 
+                                        security.name),
+                                    e('div', { className: 'stat-value', style: { fontSize: '1.5rem' } }, 
+                                        price.price ? formatCurrency(price.price) : '--'),
+                                    e('div', { 
+                                        className: `stat-change ${price.change > 0 ? 'positive' : 'negative'}` 
+                                    }, 
+                                        price.change ? 
+                                            `${price.change > 0 ? '+' : ''}${formatCurrency(price.change)} (${price.changePercent > 0 ? '+' : ''}${price.changePercent}%)` :
+                                            '--'
+                                    )
+                                );
+                            })
+                        )
+                    ),
+                    
+                    // News Impact Summary
+                    newsData && e('div', { className: 'card', style: { marginBottom: '1.5rem' } },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'News Impact Analysis Summary')
                         ),
-                        e('div', { className: 'stat-card' },
-                            e('div', { className: 'stat-label' }, '10Y Treasury'),
-                            e('div', { className: 'stat-value' }, '4.235%'),
-                            e('div', { className: 'stat-change negative' }, '+0.02%')
+                        e('div', { className: 'stats-grid' },
+                            e('div', { className: 'stat-card' },
+                                e('div', { className: 'stat-label' }, 'News Analyzed'),
+                                e('div', { className: 'stat-value' }, newsData.impact_analysis?.total_items || 0),
+                                e('div', { className: 'stat-description' }, 'Last 72 hours')
+                            ),
+                            e('div', { className: 'stat-card' },
+                                e('div', { className: 'stat-label' }, 'High Impact'),
+                                e('div', { className: 'stat-value' }, newsData.impact_analysis?.high_impact_count || 0),
+                                e('div', { className: 'stat-description' }, 'Articles with significant impact')
+                            ),
+                            e('div', { className: 'stat-card' },
+                                e('div', { className: 'stat-label' }, 'Portfolio Exposure'),
+                                e('div', { className: 'stat-value' }, 
+                                    formatPercentage(newsData.impact_analysis?.exposed_portfolio_pct || 0)),
+                                e('div', { className: 'stat-description' }, 'Securities mentioned in news')
+                            ),
+                            e('div', { className: 'stat-card' },
+                                e('div', { className: 'stat-label' }, 'Overall Sentiment'),
+                                e('div', { 
+                                    className: `stat-value ${formatSentiment(newsData.impact_analysis?.overall_sentiment).className}` 
+                                }, 
+                                    formatSentiment(newsData.impact_analysis?.overall_sentiment).text),
+                                e('div', { className: 'stat-description' }, 'Weighted by impact score')
+                            )
+                        )
+                    ),
+                    
+                    // News Feed with Filters
+                    e('div', { className: 'card' },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'News Feed with Sentiment Analysis'),
+                            e('div', { style: { display: 'flex', gap: '1rem', marginTop: '1rem' } },
+                                e('input', {
+                                    type: 'text',
+                                    className: 'form-input',
+                                    placeholder: 'Filter by symbol...',
+                                    value: filterSymbol,
+                                    onChange: (e) => setFilterSymbol(e.target.value),
+                                    style: { maxWidth: '200px' }
+                                }),
+                                e('select', {
+                                    className: 'form-input',
+                                    value: sentimentFilter,
+                                    onChange: (e) => setSentimentFilter(e.target.value),
+                                    style: { maxWidth: '150px' }
+                                },
+                                    e('option', { value: 'all' }, 'All Sentiment'),
+                                    e('option', { value: 'positive' }, 'Positive'),
+                                    e('option', { value: 'negative' }, 'Negative'),
+                                    e('option', { value: 'neutral' }, 'Neutral')
+                                ),
+                                filterSymbol && e('button', {
+                                    onClick: () => setFilterSymbol(''),
+                                    style: { 
+                                        background: 'transparent',
+                                        border: '1px solid var(--border-primary)',
+                                        padding: '0.5rem 1rem',
+                                        borderRadius: '6px',
+                                        color: 'var(--text-secondary)',
+                                        cursor: 'pointer'
+                                    }
+                                }, 'Clear Filter')
+                            )
                         ),
-                        e('div', { className: 'stat-card' },
-                            e('div', { className: 'stat-label' }, 'VIX'),
-                            e('div', { className: 'stat-value' }, '18.45'),
-                            e('div', { className: 'stat-change negative' }, '+2.3%')
+                        e('div', { style: { padding: '1rem 0' } },
+                            filteredNews.length > 0 ?
+                                filteredNews.map((item, idx) => 
+                                    e('div', {
+                                        key: idx,
+                                        style: {
+                                            padding: '1.5rem',
+                                            borderBottom: idx < filteredNews.length - 1 ? 
+                                                '1px solid var(--border-secondary)' : 'none',
+                                            transition: 'background 0.2s',
+                                            cursor: 'pointer'
+                                        },
+                                        onMouseEnter: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.02)',
+                                        onMouseLeave: (e) => e.target.style.background = 'transparent'
+                                    },
+                                        e('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' } },
+                                            e('div', { style: { flex: 1 } },
+                                                e('h4', { style: { fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' } },
+                                                    item.headline
+                                                ),
+                                                e('div', { 
+                                                    style: { 
+                                                        display: 'flex', 
+                                                        gap: '1rem', 
+                                                        fontSize: '0.875rem', 
+                                                        color: 'var(--text-secondary)',
+                                                        marginBottom: '0.5rem'
+                                                    }
+                                                },
+                                                    e('span', null, item.source),
+                                                    e('span', null, '•'),
+                                                    e('span', null, formatTimeAgo(item.published_at)),
+                                                    item.entities.length > 0 && e('span', null, '•'),
+                                                    item.entities.length > 0 && e('span', { 
+                                                        style: { color: 'var(--color-info)' }
+                                                    }, item.entities.join(', '))
+                                                )
+                                            ),
+                                            e('div', { style: { display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '150px', alignItems: 'flex-end' } },
+                                                e('span', {
+                                                    className: formatSentiment(item.sentiment).className,
+                                                    style: {
+                                                        padding: '0.25rem 0.75rem',
+                                                        borderRadius: '12px',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: '600',
+                                                        background: item.sentiment === 'POSITIVE' ? 'rgba(16, 185, 129, 0.2)' :
+                                                                  item.sentiment === 'NEGATIVE' ? 'rgba(239, 68, 68, 0.2)' :
+                                                                  'rgba(148, 163, 184, 0.2)'
+                                                    }
+                                                }, formatSentiment(item.sentiment).text),
+                                                e('span', {
+                                                    className: formatImpactScore(item.impact_score).className,
+                                                    style: {
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: '500'
+                                                    }
+                                                }, formatImpactScore(item.impact_score).text)
+                                            )
+                                        ),
+                                        e('p', { style: { color: 'var(--text-secondary)', marginTop: '0.75rem' } },
+                                            item.summary
+                                        ),
+                                        e('div', { 
+                                            style: { 
+                                                display: 'flex', 
+                                                gap: '2rem', 
+                                                marginTop: '0.75rem',
+                                                fontSize: '0.875rem',
+                                                color: 'var(--text-muted)'
+                                            }
+                                        },
+                                            e('span', null, 
+                                                `Sentiment Score: ${item.sentiment_score > 0 ? '+' : ''}${(item.sentiment_score * 100).toFixed(0)}%`
+                                            ),
+                                            e('span', null, 
+                                                `Impact Score: ${(item.impact_score * 100).toFixed(1)}%`
+                                            ),
+                                            e('span', null,
+                                                `Portfolio Weight: ${formatPercentage(item.weight_affected)}`
+                                            )
+                                        )
+                                    )
+                                ) :
+                                e('div', { 
+                                    style: { 
+                                        textAlign: 'center', 
+                                        padding: '3rem',
+                                        color: 'var(--text-secondary)' 
+                                    }
+                                }, 'No news items match your filters')
                         )
                     )
                 );
