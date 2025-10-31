@@ -164,7 +164,7 @@ class LoginResponse(BaseModel):
     user: dict
 
 class ExecuteRequest(BaseModel):
-    pattern: str = Field(..., min_length=1, max_length=100)
+    pattern: str = Field(default="portfolio_overview", min_length=1, max_length=100)  # Made optional with default
     inputs: Dict[str, Any] = Field(default_factory=dict)
     params: Dict[str, Any] = Field(default_factory=dict)  # Alternative field name
     require_fresh: bool = False
@@ -4577,7 +4577,7 @@ async def get_risk_concentration(request: Request):
 @app.get("/api/market/quotes", response_model=SuccessResponse)
 async def get_market_quotes(
     request: Request,
-    symbols: str = Query(..., description="Comma-separated list of symbols")
+    symbols: str = Query(default=None, description="Comma-separated list of symbols")
 ):
     """Get multiple market quotes at once"""
     try:
@@ -4589,13 +4589,16 @@ async def get_market_quotes(
                 detail="Authentication required"
             )
         
-        # Parse symbols
-        symbol_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
+        # Parse symbols or use default watchlist
+        if symbols:
+            symbol_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
+        else:
+            # Default watchlist when no symbols provided
+            symbol_list = ["SPY", "AAPL", "GOOGL", "MSFT", "AMZN", "META", "NVDA", "TSLA", "BRK.B"]
+        
         if not symbol_list:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No symbols provided"
-            )
+            # Fallback to default if parsing resulted in empty list
+            symbol_list = ["SPY", "AAPL", "GOOGL", "MSFT"]
         
         # Mock quote data for each symbol
         quotes = {}
