@@ -125,7 +125,7 @@ class CurrencyAttributor:
             SELECT
                 l.security_id,
                 s.symbol,
-                s.currency as local_ccy,
+                l.currency as local_ccy,
                 l.qty_open,
                 p_start.close as price_start_local,
                 p_end.close as price_end_local,
@@ -137,10 +137,10 @@ class CurrencyAttributor:
                 AND p_start.pricing_pack_id = $3
             JOIN prices p_end ON l.security_id = p_end.security_id
                 AND p_end.pricing_pack_id = $2
-            LEFT JOIN fx_rates fx_start ON s.currency = fx_start.base_ccy
+            LEFT JOIN fx_rates fx_start ON l.currency = fx_start.base_ccy
                 AND fx_start.quote_ccy = $4
                 AND fx_start.pricing_pack_id = $3
-            LEFT JOIN fx_rates fx_end ON s.currency = fx_end.base_ccy
+            LEFT JOIN fx_rates fx_end ON l.currency = fx_end.base_ccy
                 AND fx_end.quote_ccy = $4
                 AND fx_end.pricing_pack_id = $2
             WHERE l.portfolio_id = $1
@@ -340,16 +340,16 @@ class CurrencyAttributor:
         holdings = await self.db.fetch(
             """
             SELECT
-                s.currency,
+                l.currency,
                 SUM(l.qty_open * p.close * COALESCE(fx.rate, 1.0)) as value_base
             FROM lots l
             JOIN securities s ON l.security_id = s.id
             JOIN prices p ON l.security_id = p.security_id AND p.pricing_pack_id = $2
-            LEFT JOIN fx_rates fx ON s.currency = fx.base_ccy
+            LEFT JOIN fx_rates fx ON l.currency = fx.base_ccy
                 AND fx.quote_ccy = $3
                 AND fx.pricing_pack_id = $2
             WHERE l.portfolio_id = $1 AND l.qty_open > 0
-            GROUP BY s.currency
+            GROUP BY l.currency
         """,
             portfolio_id,
             pack_id,
@@ -412,7 +412,7 @@ class CurrencyAttributor:
             SELECT l.qty_open, p.close, COALESCE(fx.rate, 1.0) as fx_rate
             FROM lots l
             JOIN prices p ON l.security_id = p.security_id AND p.pricing_pack_id = $2
-            LEFT JOIN fx_rates fx ON p.currency = fx.base_ccy
+            LEFT JOIN fx_rates fx ON l.currency = fx.base_ccy
                 AND fx.quote_ccy = $3
                 AND fx.pricing_pack_id = $2
             WHERE l.portfolio_id = $1 AND l.qty_open > 0
