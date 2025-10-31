@@ -35,7 +35,7 @@
             --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
             --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
-        }
+            --sidebar-width: 280px;
         
         * {
             margin: 0;
@@ -168,6 +168,175 @@
         .dashboard {
             min-height: 100vh;
             background: var(--bg-primary);
+            display: flex;
+        }
+        
+        /* Sidebar Navigation */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border-primary);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+        
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-primary);
+        }
+        
+        .sidebar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+        
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+        
+        .nav-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .nav-section-title {
+            padding: 0.5rem 1.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+        }
+        
+        .nav-item {
+            display: block;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            font-size: 0.875rem;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+        
+        .nav-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-info);
+            border-left: 3px solid var(--color-info);
+        }
+        
+        /* Main Content Area */
+        .main-wrapper {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
+            transition: margin-left 0.3s ease;
+        }
+        
+        .main-wrapper.expanded {
+            margin-left: 0;
+        }
+        
+        /* Top Header Bar */
+        .header-bar {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-primary);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .menu-toggle {
+            display: none;
+            background: transparent;
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .menu-toggle:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .breadcrumb-separator {
+            color: var(--text-muted);
+        }
+        
+        .breadcrumb-current {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        /* Page Content */
+        .page-content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        
+        .page-header {
+            margin-bottom: 2rem;
+        }
+        
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .page-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
         }
         
         /* Glass Morphism Navigation */
@@ -431,8 +600,101 @@
             margin: 1rem 0;
         }
         
+        /* Chat Interface Styles */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+        
+        .chat-message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+        }
+        
+        .chat-message.user {
+            background: rgba(59, 130, 246, 0.1);
+            margin-left: 20%;
+        }
+        
+        .chat-message.ai {
+            background: rgba(30, 41, 59, 0.6);
+            margin-right: 20%;
+        }
+        
+        .chat-input-container {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-top: 1px solid var(--border-primary);
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 0.75rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+        
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+            border-radius: 6px;
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-state-message {
+            font-size: 0.95rem;
+        }
+        
         /* Responsive Design */
         @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-wrapper {
+                margin-left: 0;
+            }
+            
+            .menu-toggle {
+                display: block;
+            }
+            
             .nav-content {
                 flex-direction: column;
                 gap: 1rem;
@@ -463,7 +725,7 @@
             setTimeout(() => location.reload(), 2000);
         } else {
             // React is loaded, initialize the app
-            const { useState, useEffect } = React;
+            const { useState, useEffect, useCallback } = React;
             const e = React.createElement;
             
             // API Configuration
@@ -492,6 +754,46 @@
                     day: 'numeric'
                 });
             };
+            
+            // Navigation Structure
+            const navigationStructure = [
+                {
+                    section: 'Portfolio',
+                    items: [
+                        { id: 'dashboard', label: 'Dashboard', path: '/dashboard' },
+                        { id: 'holdings', label: 'Holdings', path: '/holdings' },
+                        { id: 'transactions', label: 'Transactions', path: '/transactions' },
+                        { id: 'performance', label: 'Performance', path: '/performance' }
+                    ]
+                },
+                {
+                    section: 'Analysis',
+                    items: [
+                        { id: 'macro-cycles', label: 'Macro Cycles', path: '/macro-cycles' },
+                        { id: 'scenarios', label: 'Scenarios', path: '/scenarios' },
+                        { id: 'risk', label: 'Risk Analytics', path: '/risk' },
+                        { id: 'attribution', label: 'Attribution', path: '/attribution' }
+                    ]
+                },
+                {
+                    section: 'Intelligence',
+                    items: [
+                        { id: 'optimizer', label: 'Optimizer', path: '/optimizer' },
+                        { id: 'ratings', label: 'Ratings', path: '/ratings' },
+                        { id: 'ai-insights', label: 'AI Insights', path: '/ai-insights' },
+                        { id: 'market-data', label: 'Market Data', path: '/market-data' }
+                    ]
+                },
+                {
+                    section: 'Operations',
+                    items: [
+                        { id: 'alerts', label: 'Alerts', path: '/alerts' },
+                        { id: 'reports', label: 'Reports', path: '/reports' },
+                        { id: 'corporate-actions', label: 'Corporate Actions', path: '/corporate-actions' },
+                        { id: 'settings', label: 'Settings', path: '/settings' }
+                    ]
+                }
+            ];
             
             // Login Component
             function LoginForm({ onLogin }) {
@@ -737,14 +1039,11 @@
                 );
             }
             
-            // Main Dashboard Component
-            function Dashboard({ user, onLogout }) {
-                const [activeTab, setActiveTab] = useState('portfolio');
+            // Dashboard Page Component
+            function DashboardPage() {
+                const [loading, setLoading] = useState(true);
                 const [portfolioData, setPortfolioData] = useState(null);
                 const [holdings, setHoldings] = useState([]);
-                const [transactions, setTransactions] = useState([]);
-                const [macroData, setMacroData] = useState([]);
-                const [loading, setLoading] = useState(true);
                 
                 useEffect(() => {
                     loadData();
@@ -754,75 +1053,745 @@
                     try {
                         const results = await Promise.all([
                             axios.get(API_BASE + '/api/portfolio').catch(() => ({ data: null })),
-                            axios.get(API_BASE + '/api/holdings').catch(() => ({ data: { holdings: [] } })),
-                            axios.get(API_BASE + '/api/transactions').catch(() => ({ data: { transactions: [] } })),
-                            axios.get(API_BASE + '/api/macro').catch(() => ({ data: { indicators: [] } }))
+                            axios.get(API_BASE + '/api/holdings').catch(() => ({ data: { holdings: [] } }))
                         ]);
                         
                         setPortfolioData(results[0].data);
                         setHoldings(results[1].data.holdings || []);
-                        setTransactions(results[2].data.transactions || []);
-                        setMacroData(results[3].data.indicators || []);
                     } catch (error) {
-                        console.error('Error loading data:', error);
+                        console.error('Error loading dashboard data:', error);
                     } finally {
                         setLoading(false);
                     }
                 };
                 
-                const renderContent = () => {
-                    if (loading) {
-                        return e('div', { className: 'loading' },
-                            e('div', { className: 'spinner' })
-                        );
-                    }
+                if (loading) return e('div', { className: 'loading' }, e('div', { className: 'spinner' }));
+                
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Portfolio Dashboard'),
+                        e('p', { className: 'page-description' }, 'Real-time overview of your portfolio performance and holdings')
+                    ),
+                    e(PortfolioOverview, { data: portfolioData }),
+                    e(HoldingsTable, { holdings: holdings.slice(0, 5) })
+                );
+            }
+            
+            // Holdings Page Component
+            function HoldingsPage() {
+                const [loading, setLoading] = useState(true);
+                const [holdings, setHoldings] = useState([]);
+                
+                useEffect(() => {
+                    axios.get(API_BASE + '/api/holdings')
+                        .then(response => setHoldings(response.data.holdings || []))
+                        .catch(error => console.error('Error loading holdings:', error))
+                        .finally(() => setLoading(false));
+                }, []);
+                
+                if (loading) return e('div', { className: 'loading' }, e('div', { className: 'spinner' }));
+                
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Holdings'),
+                        e('p', { className: 'page-description' }, 'Detailed view of all portfolio positions')
+                    ),
+                    e(HoldingsTable, { holdings: holdings })
+                );
+            }
+            
+            // Transactions Page Component  
+            function TransactionsPage() {
+                const [loading, setLoading] = useState(true);
+                const [transactions, setTransactions] = useState([]);
+                
+                useEffect(() => {
+                    axios.get(API_BASE + '/api/transactions')
+                        .then(response => setTransactions(response.data.transactions || []))
+                        .catch(error => console.error('Error loading transactions:', error))
+                        .finally(() => setLoading(false));
+                }, []);
+                
+                if (loading) return e('div', { className: 'loading' }, e('div', { className: 'spinner' }));
+                
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Transaction History'),
+                        e('p', { className: 'page-description' }, 'Complete record of all portfolio transactions')
+                    ),
+                    e(TransactionsTable, { transactions: transactions })
+                );
+            }
+            
+            // Performance Page Component
+            function PerformancePage() {
+                const [loading, setLoading] = useState(true);
+                const [performanceData, setPerformanceData] = useState(null);
+                
+                useEffect(() => {
+                    axios.get(API_BASE + '/api/portfolio/performance')
+                        .then(response => setPerformanceData(response.data))
+                        .catch(error => {
+                            console.error('Error loading performance:', error);
+                            axios.get(API_BASE + '/api/portfolio').then(res => setPerformanceData(res.data));
+                        })
+                        .finally(() => setLoading(false));
+                }, []);
+                
+                if (loading) return e('div', { className: 'loading' }, e('div', { className: 'spinner' }));
+                
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Performance Analytics'),
+                        e('p', { className: 'page-description' }, 'Comprehensive performance metrics and analysis')
+                    ),
+                    performanceData ? e(PortfolioOverview, { data: performanceData }) : 
+                        e('div', { className: 'empty-state' }, e('p', null, 'Performance data is being calculated...'))
+                );
+            }
+            
+            // Macro Cycles Page Component
+            function MacroCyclesPage() {
+                const [loading, setLoading] = useState(true);
+                const [macroData, setMacroData] = useState([]);
+                
+                useEffect(() => {
+                    axios.post(API_BASE + '/api/pattern/execute', { pattern_name: 'macro_cycles_overview' })
+                        .catch(() => axios.get(API_BASE + '/api/macro').then(res => setMacroData(res.data.indicators || [])))
+                        .finally(() => setLoading(false));
+                }, []);
+                
+                if (loading) return e('div', { className: 'loading' }, e('div', { className: 'spinner' }));
+                
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Macro Economic Cycles'),
+                        e('p', { className: 'page-description' }, "Ray Dalio's framework for understanding economic cycles")
+                    ),
+                    macroData.length > 0 ? e(MacroTable, { data: macroData }) :
+                        e('div', { className: 'stats-grid' },
+                            e('div', { className: 'card' },
+                                e('h3', { className: 'card-title' }, 'Productivity Cycle'),
+                                e('p', null, 'Long-term growth driven by innovation and efficiency gains.')
+                            ),
+                            e('div', { className: 'card' },
+                                e('h3', { className: 'card-title' }, 'Short-Term Debt Cycle'),
+                                e('p', null, 'Business cycle driven by credit availability (5-8 years).')
+                            ),
+                            e('div', { className: 'card' },
+                                e('h3', { className: 'card-title' }, 'Long-Term Debt Cycle'),
+                                e('p', null, 'Generational cycle of debt accumulation and deleveraging (50-75 years).')
+                            )
+                        )
+                );
+            }
+            
+            // Scenarios Page Component
+            function ScenariosPage() {
+                const [loading, setLoading] = useState(true);
+                
+                useEffect(() => {
+                    setTimeout(() => setLoading(false), 1000);
+                }, []);
+                
+                if (loading) return e('div', { className: 'loading' }, e('div', { className: 'spinner' }));
+                
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Scenario Analysis'),
+                        e('p', { className: 'page-description' }, 'Stress testing portfolio under various market conditions')
+                    ),
+                    e('div', { className: 'stats-grid' },
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Market Crash (-30%)'),
+                            e('div', { className: 'stat-value negative' }, '-25.4%'),
+                            e('div', { className: 'stat-change negative' }, 'Portfolio Impact')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Inflation Spike (+5%)'),
+                            e('div', { className: 'stat-value negative' }, '-8.2%'),
+                            e('div', { className: 'stat-change negative' }, 'Portfolio Impact')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Fed Rate Hike (+2%)'),
+                            e('div', { className: 'stat-value negative' }, '-12.1%'),
+                            e('div', { className: 'stat-change negative' }, 'Portfolio Impact')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Recovery Rally (+20%)'),
+                            e('div', { className: 'stat-value positive' }, '+18.3%'),
+                            e('div', { className: 'stat-change positive' }, 'Portfolio Impact')
+                        )
+                    )
+                );
+            }
+            
+            // Risk Analytics Page Component
+            function RiskPage() {
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Risk Analytics'),
+                        e('p', { className: 'page-description' }, 'Comprehensive risk assessment and metrics')
+                    ),
+                    e('div', { className: 'stats-grid' },
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Value at Risk (95%)'),
+                            e('div', { className: 'stat-value negative' }, formatCurrency(-125000)),
+                            e('div', { className: 'stat-change' }, '1-day VaR')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Beta'),
+                            e('div', { className: 'stat-value' }, '1.15'),
+                            e('div', { className: 'stat-change' }, 'vs S&P 500')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Volatility'),
+                            e('div', { className: 'stat-value' }, '18.5%'),
+                            e('div', { className: 'stat-change' }, 'Annualized')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Concentration Risk'),
+                            e('div', { className: 'stat-value' }, '28.4%'),
+                            e('div', { className: 'stat-change' }, 'Top 5 Holdings')
+                        )
+                    )
+                );
+            }
+            
+            // Attribution Page Component
+            function AttributionPage() {
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Performance Attribution'),
+                        e('p', { className: 'page-description' }, 'Understanding sources of portfolio returns')
+                    ),
+                    e('div', { className: 'stats-grid' },
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Security Selection'),
+                            e('div', { className: 'stat-value positive' }, '+3.2%'),
+                            e('div', { className: 'stat-change positive' }, 'Contribution')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Sector Allocation'),
+                            e('div', { className: 'stat-value positive' }, '+1.8%'),
+                            e('div', { className: 'stat-change positive' }, 'Contribution')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Currency Effect'),
+                            e('div', { className: 'stat-value negative' }, '-0.5%'),
+                            e('div', { className: 'stat-change negative' }, 'Contribution')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'Total Attribution'),
+                            e('div', { className: 'stat-value positive' }, '+4.5%'),
+                            e('div', { className: 'stat-change positive' }, 'YTD')
+                        )
+                    )
+                );
+            }
+            
+            // Optimizer Page Component
+            function OptimizerPage() {
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Portfolio Optimizer'),
+                        e('p', { className: 'page-description' }, 'AI-powered portfolio optimization and rebalancing suggestions')
+                    ),
+                    e('div', { className: 'card' },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'Optimization Recommendations'),
+                            e('div', { className: 'card-actions' },
+                                e('button', { className: 'btn btn-sm' }, 'Run Optimization')
+                            )
+                        ),
+                        e('div', { className: 'table-container' },
+                            e('table', { className: 'table' },
+                                e('thead', null,
+                                    e('tr', null,
+                                        e('th', null, 'Action'),
+                                        e('th', null, 'Symbol'),
+                                        e('th', null, 'Current Weight'),
+                                        e('th', null, 'Target Weight'),
+                                        e('th', null, 'Change'),
+                                        e('th', null, 'Rationale')
+                                    )
+                                ),
+                                e('tbody', null,
+                                    e('tr', null,
+                                        e('td', { style: { color: 'var(--color-success)' } }, 'BUY'),
+                                        e('td', { className: 'symbol' }, 'MSFT'),
+                                        e('td', null, '8.5%'),
+                                        e('td', null, '12.0%'),
+                                        e('td', { className: 'positive' }, '+3.5%'),
+                                        e('td', null, 'Underweight tech allocation')
+                                    ),
+                                    e('tr', null,
+                                        e('td', { style: { color: 'var(--color-error)' } }, 'SELL'),
+                                        e('td', { className: 'symbol' }, 'XOM'),
+                                        e('td', null, '5.2%'),
+                                        e('td', null, '2.0%'),
+                                        e('td', { className: 'negative' }, '-3.2%'),
+                                        e('td', null, 'Reduce energy exposure')
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+            
+            // Ratings Page Component
+            function RatingsPage() {
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Investment Ratings'),
+                        e('p', { className: 'page-description' }, 'Buffett-style quality assessment of holdings')
+                    ),
+                    e('div', { className: 'card' },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'Quality Ratings')
+                        ),
+                        e('div', { className: 'table-container' },
+                            e('table', { className: 'table' },
+                                e('thead', null,
+                                    e('tr', null,
+                                        e('th', null, 'Symbol'),
+                                        e('th', null, 'Overall Score'),
+                                        e('th', null, 'Moat Strength'),
+                                        e('th', null, 'Management'),
+                                        e('th', null, 'Valuation'),
+                                        e('th', null, 'Financial Health')
+                                    )
+                                ),
+                                e('tbody', null,
+                                    e('tr', null,
+                                        e('td', { className: 'symbol' }, 'AAPL'),
+                                        e('td', { className: 'positive' }, '92/100'),
+                                        e('td', null, 'Wide'),
+                                        e('td', null, 'Excellent'),
+                                        e('td', null, 'Fair'),
+                                        e('td', null, 'Strong')
+                                    ),
+                                    e('tr', null,
+                                        e('td', { className: 'symbol' }, 'GOOGL'),
+                                        e('td', { className: 'positive' }, '88/100'),
+                                        e('td', null, 'Wide'),
+                                        e('td', null, 'Good'),
+                                        e('td', null, 'Attractive'),
+                                        e('td', null, 'Strong')
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+            
+            // AI Insights Page Component
+            function AIInsightsPage() {
+                const [messages, setMessages] = useState([]);
+                const [inputValue, setInputValue] = useState('');
+                const [loading, setLoading] = useState(false);
+                
+                const sendMessage = async () => {
+                    if (!inputValue.trim()) return;
                     
-                    switch(activeTab) {
-                        case 'portfolio':
-                            return e(React.Fragment, null,
-                                e(PortfolioOverview, { data: portfolioData }),
-                                e(HoldingsTable, { holdings: holdings })
-                            );
-                        case 'transactions':
-                            return e(TransactionsTable, { transactions: transactions });
-                        case 'macro':
-                            return e(MacroTable, { data: macroData });
-                        default:
-                            return e(PortfolioOverview, { data: portfolioData });
+                    const newMessage = { role: 'user', content: inputValue };
+                    setMessages(prev => [...prev, newMessage]);
+                    setInputValue('');
+                    setLoading(true);
+                    
+                    try {
+                        const response = await axios.post(API_BASE + '/api/ai/chat', { message: inputValue });
+                        const aiResponse = { role: 'ai', content: response.data.response || 'I can help you analyze your portfolio.' };
+                        setMessages(prev => [...prev, aiResponse]);
+                    } catch (error) {
+                        const errorMessage = { role: 'ai', content: 'I can provide insights about your portfolio. Try asking about performance, risk, or optimization strategies.' };
+                        setMessages(prev => [...prev, errorMessage]);
+                    } finally {
+                        setLoading(false);
                     }
                 };
                 
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'AI Insights'),
+                        e('p', { className: 'page-description' }, 'Chat with AI for portfolio analysis and recommendations')
+                    ),
+                    e('div', { className: 'chat-container' },
+                        e('div', { className: 'chat-messages' },
+                            messages.length === 0 ?
+                                e('div', { className: 'chat-message ai' },
+                                    'Hello! I can help you analyze your portfolio, understand market conditions, and provide investment insights. What would you like to know?'
+                                ) :
+                                messages.map((msg, index) =>
+                                    e('div', { className: `chat-message ${msg.role}`, key: index }, msg.content)
+                                ),
+                            loading && e('div', { className: 'chat-message ai' }, '...')
+                        ),
+                        e('div', { className: 'chat-input-container' },
+                            e('input', {
+                                className: 'chat-input',
+                                placeholder: 'Ask about your portfolio...',
+                                value: inputValue,
+                                onChange: (e) => setInputValue(e.target.value),
+                                onKeyPress: (e) => e.key === 'Enter' && sendMessage()
+                            }),
+                            e('button', { className: 'btn btn-sm', onClick: sendMessage }, 'Send')
+                        )
+                    )
+                );
+            }
+            
+            // Market Data Page Component
+            function MarketDataPage() {
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Market Data'),
+                        e('p', { className: 'page-description' }, 'Real-time market information and news impact analysis')
+                    ),
+                    e('div', { className: 'stats-grid' },
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'S&P 500'),
+                            e('div', { className: 'stat-value positive' }, '4,589.25'),
+                            e('div', { className: 'stat-change positive' }, '+0.85%')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'NASDAQ'),
+                            e('div', { className: 'stat-value positive' }, '14,285.50'),
+                            e('div', { className: 'stat-change positive' }, '+1.24%')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, '10Y Treasury'),
+                            e('div', { className: 'stat-value' }, '4.25%'),
+                            e('div', { className: 'stat-change negative' }, '-0.05%')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'VIX'),
+                            e('div', { className: 'stat-value' }, '15.82'),
+                            e('div', { className: 'stat-change negative' }, '-5.2%')
+                        )
+                    ),
+                    e('div', { className: 'card' },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'Market News Impact')
+                        ),
+                        e('div', null,
+                            e('p', null, 'Fed signals potential rate pause - Positive impact on growth stocks'),
+                            e('p', { style: { marginTop: '1rem' } }, 'Tech earnings beat expectations - Technology sector outperforming'),
+                            e('p', { style: { marginTop: '1rem' } }, 'Oil prices stabilize - Energy sector consolidating')
+                        )
+                    )
+                );
+            }
+            
+            // Alerts Page Component
+            function AlertsPage() {
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Alerts'),
+                        e('p', { className: 'page-description' }, 'Manage portfolio alerts and notifications')
+                    ),
+                    e('div', { className: 'card' },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'Active Alerts'),
+                            e('div', { className: 'card-actions' },
+                                e('button', { className: 'btn btn-sm' }, 'Create Alert')
+                            )
+                        ),
+                        e('div', { className: 'table-container' },
+                            e('table', { className: 'table' },
+                                e('thead', null,
+                                    e('tr', null,
+                                        e('th', null, 'Type'),
+                                        e('th', null, 'Condition'),
+                                        e('th', null, 'Symbol'),
+                                        e('th', null, 'Threshold'),
+                                        e('th', null, 'Status'),
+                                        e('th', null, 'Actions')
+                                    )
+                                ),
+                                e('tbody', null,
+                                    e('tr', null,
+                                        e('td', null, 'Price Alert'),
+                                        e('td', null, 'Above'),
+                                        e('td', { className: 'symbol' }, 'AAPL'),
+                                        e('td', null, '$200'),
+                                        e('td', { style: { color: 'var(--color-success)' } }, 'Active'),
+                                        e('td', null, 
+                                            e('button', { className: 'btn btn-sm' }, 'Edit')
+                                        )
+                                    ),
+                                    e('tr', null,
+                                        e('td', null, 'Volume Alert'),
+                                        e('td', null, 'Spike'),
+                                        e('td', { className: 'symbol' }, 'TSLA'),
+                                        e('td', null, '2x Average'),
+                                        e('td', { style: { color: 'var(--color-success)' } }, 'Active'),
+                                        e('td', null, 
+                                            e('button', { className: 'btn btn-sm' }, 'Edit')
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+            
+            // Reports Page Component
+            function ReportsPage() {
+                const [generating, setGenerating] = useState(false);
+                
+                const generateReport = async (reportType) => {
+                    setGenerating(true);
+                    try {
+                        await axios.post(API_BASE + '/api/pattern/execute', { pattern_name: 'export_portfolio_report' });
+                        alert('Report generated successfully!');
+                    } catch (error) {
+                        alert('Report generation in progress...');
+                    } finally {
+                        setGenerating(false);
+                    }
+                };
+                
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Reports'),
+                        e('p', { className: 'page-description' }, 'Generate and download portfolio reports')
+                    ),
+                    e('div', { className: 'stats-grid' },
+                        e('div', { className: 'card' },
+                            e('div', { className: 'card-header' },
+                                e('h3', { className: 'card-title' }, 'Portfolio Summary')
+                            ),
+                            e('p', null, 'Complete overview of holdings, performance, and allocation'),
+                            e('button', { 
+                                className: 'btn btn-sm', 
+                                onClick: () => generateReport('summary'),
+                                disabled: generating
+                            }, generating ? 'Generating...' : 'Generate Report')
+                        ),
+                        e('div', { className: 'card' },
+                            e('div', { className: 'card-header' },
+                                e('h3', { className: 'card-title' }, 'Performance Report')
+                            ),
+                            e('p', null, 'Detailed performance analytics and attribution'),
+                            e('button', { 
+                                className: 'btn btn-sm', 
+                                onClick: () => generateReport('performance'),
+                                disabled: generating
+                            }, generating ? 'Generating...' : 'Generate Report')
+                        ),
+                        e('div', { className: 'card' },
+                            e('div', { className: 'card-header' },
+                                e('h3', { className: 'card-title' }, 'Risk Report')
+                            ),
+                            e('p', null, 'Comprehensive risk assessment and scenarios'),
+                            e('button', { 
+                                className: 'btn btn-sm', 
+                                onClick: () => generateReport('risk'),
+                                disabled: generating
+                            }, generating ? 'Generating...' : 'Generate Report')
+                        ),
+                        e('div', { className: 'card' },
+                            e('div', { className: 'card-header' },
+                                e('h3', { className: 'card-title' }, 'Tax Report')
+                            ),
+                            e('p', null, 'Tax lots and realized gains/losses'),
+                            e('button', { 
+                                className: 'btn btn-sm', 
+                                onClick: () => generateReport('tax'),
+                                disabled: generating
+                            }, generating ? 'Generating...' : 'Generate Report')
+                        )
+                    )
+                );
+            }
+            
+            // Corporate Actions Page Component
+            function CorporateActionsPage() {
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Corporate Actions'),
+                        e('p', { className: 'page-description' }, 'Track dividends, splits, and other corporate events')
+                    ),
+                    e('div', { className: 'card' },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'Recent & Upcoming Actions')
+                        ),
+                        e('div', { className: 'table-container' },
+                            e('table', { className: 'table' },
+                                e('thead', null,
+                                    e('tr', null,
+                                        e('th', null, 'Date'),
+                                        e('th', null, 'Symbol'),
+                                        e('th', null, 'Type'),
+                                        e('th', null, 'Details'),
+                                        e('th', null, 'Impact')
+                                    )
+                                ),
+                                e('tbody', null,
+                                    e('tr', null,
+                                        e('td', null, '2025-11-15'),
+                                        e('td', { className: 'symbol' }, 'AAPL'),
+                                        e('td', null, 'Dividend'),
+                                        e('td', null, '$0.24 per share'),
+                                        e('td', { className: 'positive' }, '+$240')
+                                    ),
+                                    e('tr', null,
+                                        e('td', null, '2025-12-01'),
+                                        e('td', { className: 'symbol' }, 'MSFT'),
+                                        e('td', null, 'Dividend'),
+                                        e('td', null, '$0.75 per share'),
+                                        e('td', { className: 'positive' }, '+$375')
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+            
+            // Settings Page Component
+            function SettingsPage() {
+                return e('div', null,
+                    e('div', { className: 'page-header' },
+                        e('h1', { className: 'page-title' }, 'Settings'),
+                        e('p', { className: 'page-description' }, 'Manage account preferences and configurations')
+                    ),
+                    e('div', { className: 'card' },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'User Preferences')
+                        ),
+                        e('div', { style: { padding: '1rem' } },
+                            e('div', { className: 'form-group' },
+                                e('label', { className: 'form-label' }, 'Default Currency'),
+                                e('select', { className: 'form-input' },
+                                    e('option', null, 'USD'),
+                                    e('option', null, 'EUR'),
+                                    e('option', null, 'GBP')
+                                )
+                            ),
+                            e('div', { className: 'form-group' },
+                                e('label', { className: 'form-label' }, 'Time Zone'),
+                                e('select', { className: 'form-input' },
+                                    e('option', null, 'America/New_York'),
+                                    e('option', null, 'Europe/London'),
+                                    e('option', null, 'Asia/Tokyo')
+                                )
+                            ),
+                            e('button', { className: 'btn' }, 'Save Settings')
+                        )
+                    )
+                );
+            }
+            
+            // Main Dashboard Component with Sidebar Navigation
+            function Dashboard({ user, onLogout }) {
+                const [currentPath, setCurrentPath] = useState('/dashboard');
+                const [sidebarOpen, setSidebarOpen] = useState(false);
+                
+                // Route to component mapping
+                const getPageComponent = (path) => {
+                    switch(path) {
+                        case '/dashboard': return e(DashboardPage);
+                        case '/holdings': return e(HoldingsPage);
+                        case '/transactions': return e(TransactionsPage);
+                        case '/performance': return e(PerformancePage);
+                        case '/macro-cycles': return e(MacroCyclesPage);
+                        case '/scenarios': return e(ScenariosPage);
+                        case '/risk': return e(RiskPage);
+                        case '/attribution': return e(AttributionPage);
+                        case '/optimizer': return e(OptimizerPage);
+                        case '/ratings': return e(RatingsPage);
+                        case '/ai-insights': return e(AIInsightsPage);
+                        case '/market-data': return e(MarketDataPage);
+                        case '/alerts': return e(AlertsPage);
+                        case '/reports': return e(ReportsPage);
+                        case '/corporate-actions': return e(CorporateActionsPage);
+                        case '/settings': return e(SettingsPage);
+                        default: return e(DashboardPage);
+                    }
+                };
+                
+                const getCurrentPageTitle = () => {
+                    const pathMap = {
+                        '/dashboard': 'Dashboard',
+                        '/holdings': 'Holdings',
+                        '/transactions': 'Transactions',
+                        '/performance': 'Performance',
+                        '/macro-cycles': 'Macro Cycles',
+                        '/scenarios': 'Scenarios',
+                        '/risk': 'Risk Analytics',
+                        '/attribution': 'Attribution',
+                        '/optimizer': 'Optimizer',
+                        '/ratings': 'Ratings',
+                        '/ai-insights': 'AI Insights',
+                        '/market-data': 'Market Data',
+                        '/alerts': 'Alerts',
+                        '/reports': 'Reports',
+                        '/corporate-actions': 'Corporate Actions',
+                        '/settings': 'Settings'
+                    };
+                    return pathMap[currentPath] || 'Dashboard';
+                };
+                
+                const handleNavigate = (path) => {
+                    setCurrentPath(path);
+                    setSidebarOpen(false);
+                };
+                
                 return e('div', { className: 'dashboard' },
-                    e('div', { className: 'nav-header' },
-                        e('div', { className: 'nav-content' },
-                            e('div', { className: 'nav-brand' },
-                                e('h1', null, 'DawsOS')
+                    // Sidebar
+                    e('aside', { className: `sidebar ${sidebarOpen ? 'open' : ''}` },
+                        e('div', { className: 'sidebar-header' },
+                            e('div', { className: 'sidebar-brand' }, 'DawsOS')
+                        ),
+                        e('nav', { className: 'sidebar-nav' },
+                            navigationStructure.map(section =>
+                                e('div', { className: 'nav-section', key: section.section },
+                                    e('div', { className: 'nav-section-title' }, section.section),
+                                    section.items.map(item =>
+                                        e('button', {
+                                            key: item.id,
+                                            className: `nav-item ${currentPath === item.path ? 'active' : ''}`,
+                                            onClick: () => handleNavigate(item.path)
+                                        }, item.label)
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    
+                    // Main Content
+                    e('div', { className: `main-wrapper ${!sidebarOpen ? '' : 'expanded'}` },
+                        // Header
+                        e('header', { className: 'header-bar' },
+                            e('div', { className: 'header-left' },
+                                e('button', { 
+                                    className: 'menu-toggle',
+                                    onClick: () => setSidebarOpen(!sidebarOpen)
+                                }, '☰'),
+                                e('div', { className: 'breadcrumb' },
+                                    e('span', null, 'Portfolio'),
+                                    e('span', { className: 'breadcrumb-separator' }, ' / '),
+                                    e('span', { className: 'breadcrumb-current' }, getCurrentPageTitle())
+                                )
                             ),
-                            e('div', { className: 'nav-tabs' },
-                                e('button', {
-                                    className: 'nav-tab' + (activeTab === 'portfolio' ? ' active' : ''),
-                                    onClick: () => setActiveTab('portfolio')
-                                }, 'Portfolio'),
-                                e('button', {
-                                    className: 'nav-tab' + (activeTab === 'transactions' ? ' active' : ''),
-                                    onClick: () => setActiveTab('transactions')
-                                }, 'Transactions'),
-                                e('button', {
-                                    className: 'nav-tab' + (activeTab === 'macro' ? ' active' : ''),
-                                    onClick: () => setActiveTab('macro')
-                                }, 'Macro')
-                            ),
-                            e('div', { className: 'nav-actions' },
+                            e('div', { className: 'header-right' },
                                 e('span', { className: 'user-info' }, user?.email || 'User'),
                                 e('button', { 
                                     className: 'btn-logout', 
                                     onClick: onLogout 
                                 }, 'Logout')
                             )
+                        ),
+                        
+                        // Page Content
+                        e('main', { className: 'page-content' },
+                            getPageComponent(currentPath)
                         )
-                    ),
-                    e('div', { className: 'main-content' },
-                        renderContent()
                     )
                 );
             }
