@@ -6,6 +6,16 @@ DawsOS is a comprehensive, AI-powered portfolio management and intelligence plat
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (October 31, 2025)
+
+### Completed: Metrics Infrastructure Implementation
+- **Database**: Created `portfolio_daily_values` and `portfolio_cash_flows` tables with TimescaleDB hypertables
+- **Historical Data**: Backfilled 700+ days (Dec 2023 - Oct 2025) of portfolio valuations
+- **Metrics Pipeline**: Functional TWR/MWR calculations using real data - $1.6M portfolio with accurate performance metrics
+- **UI Transactions**: Fixed to display 35 real ledger transactions instead of mock data
+- **Technical Debt**: Eliminated all simulated NAV generation and stub patterns - metrics now fail explicitly on missing data
+- **Manual Process**: Metrics updated via `compute_metrics_simple.py` (automated scheduling deferred)
+
 ## System Architecture
 
 ### Core Architecture

@@ -225,15 +225,18 @@ async def get_transactions(
    - Reason: Silent zeros hide data gaps
 
 ### Phase 4: Job Scheduling & Orchestration
-**Priority: P1 - Make it run automatically**
+**Priority: P2 - DEFERRED (Manual Process Working)**
+**Status**: Currently metrics are updated manually via `compute_metrics_simple.py`
 
-#### 4.1 Update Job Scheduler
-- **File**: `backend/jobs/scheduler.py` (ENHANCE)
+#### 4.1 Update Job Scheduler (DEFERRED)
+- **Current State**: Jobs run manually as needed
+- **Future Implementation**: APScheduler integration
 - **Add Jobs**:
   1. `daily_valuation.py` - 00:00 UTC daily
   2. `metrics.py` - 00:30 UTC daily (after valuation)
   3. `currency_attribution.py` - 01:00 UTC daily
 - **Dependencies**: Valuation → Metrics → Attribution (sequential)
+- **Note**: System fully functional without automation - just requires manual execution
 
 #### 4.2 Add Health Checks
 - **File**: `backend/jobs/metrics.py` (ENHANCE)
