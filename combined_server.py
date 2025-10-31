@@ -613,6 +613,46 @@ async def store_macro_indicators(indicators: Dict[str, Any]) -> bool:
     if not db_pool or not indicators:
         return False
     
+    # Create mapping of indicator IDs to human-readable names
+    indicator_names = {
+        'gdp_growth': 'GDP Growth Rate',
+        'unemployment_rate': 'Unemployment Rate', 
+        'inflation_rate': 'Inflation Rate',
+        'interest_rate': 'Interest Rate',
+        'consumer_confidence': 'Consumer Confidence Index',
+        'manufacturing_pmi': 'Manufacturing PMI',
+        'services_pmi': 'Services PMI',
+        'retail_sales': 'Retail Sales Growth',
+        'housing_starts': 'Housing Starts',
+        'business_inventories': 'Business Inventories',
+        'industrial_production': 'Industrial Production',
+        'treasury_yield_10y': '10-Year Treasury Yield',
+        'treasury_yield_2y': '2-Year Treasury Yield',
+        'yield_curve': 'Yield Curve (10Y-2Y)',
+        'vix': 'VIX (Volatility Index)',
+        'dollar_index': 'US Dollar Index',
+        'gold_price': 'Gold Price',
+        'oil_price': 'Oil Price (WTI)',
+        'bitcoin_price': 'Bitcoin Price',
+        'sp500_pe': 'S&P 500 P/E Ratio',
+        'm2_money_supply': 'M2 Money Supply',
+        'fed_funds_rate': 'Federal Funds Rate',
+        'corporate_profits': 'Corporate Profits Growth',
+        'jobless_claims': 'Initial Jobless Claims',
+        'consumer_spending': 'Consumer Spending Growth',
+        # Additional indicators from macro_data_agent
+        'empire_gdp_share': 'US GDP Share of World',
+        'empire_trade_share': 'US Trade Share of World',
+        'empire_military_share': 'US Military Spending Share',
+        'empire_education': 'Education Index',
+        'gini_coefficient': 'Gini Coefficient',
+        'top_1_percent_wealth': 'Top 1% Wealth Share',
+        'polarization_index': 'Political Polarization Index',
+        'institutional_trust': 'Institutional Trust Index',
+        'debt_ceiling_distance': 'Debt Ceiling Distance',
+        'monetary_base': 'Monetary Base'
+    }
+    
     try:
         async with db_pool.acquire() as conn:
             async with conn.transaction():
@@ -620,14 +660,20 @@ async def store_macro_indicators(indicators: Dict[str, Any]) -> bool:
                 await conn.execute("DELETE FROM macro_indicators WHERE date = CURRENT_DATE")
                 
                 # Insert new indicators
-                for name, value in indicators.items():
+                for indicator_id, value in indicators.items():
                     if isinstance(value, (int, float)):
+                        # Get human-readable name or use the ID with proper formatting
+                        indicator_name = indicator_names.get(
+                            indicator_id,
+                            indicator_id.replace('_', ' ').title()
+                        )
+                        
                         await conn.execute("""
-                            INSERT INTO macro_indicators (indicator_id, value, date)
-                            VALUES ($1, $2, CURRENT_DATE)
+                            INSERT INTO macro_indicators (indicator_id, indicator_name, value, date)
+                            VALUES ($1, $2, $3, CURRENT_DATE)
                             ON CONFLICT (indicator_id, date) DO UPDATE
-                            SET value = $2, updated_at = NOW()
-                        """, name, float(value))
+                            SET value = $3, indicator_name = $2, updated_at = NOW()
+                        """, indicator_id, indicator_name, float(value))
                 
                 logger.info(f"Stored {len(indicators)} macro indicators")
                 return True

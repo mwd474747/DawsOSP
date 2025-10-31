@@ -429,4 +429,4 @@ class CurrencyAttributor:
             for pos in positions
         )
 
-        return total
+        return Decimal(total) if total else Decimal(0)
