@@ -47,3 +47,4 @@ opentelemetry-api
 opentelemetry-sdk
 pyjwt
 prometheus-client
+scikit-learn
