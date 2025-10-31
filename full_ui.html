@@ -6414,7 +6414,9 @@
                     
                     switch(cycleType) {
                         case 'short-term':
-                            if (!macroData.stdc) return null;
+                            // Map to correct data key from API response
+                            const stdc = macroData.stdc || macroData.short_term_cycle;
+                            if (!stdc) return null;
                             title = 'SHORT-TERM DEBT CYCLE INDICATORS';
                             indicators = [
                                 { label: 'GDP Growth', value: '3.80%', trend: 'up', source: 'FRED API' },
@@ -6425,8 +6427,8 @@
                                 { label: 'Dollar Index', value: '121.34', trend: 'up', source: 'FRED API' }
                             ];
                             // Override with actual data if available
-                            if (macroData.stdc.indicators) {
-                                indicators = Object.entries(macroData.stdc.indicators).map(([key, val]) => ({
+                            if (stdc.indicators) {
+                                indicators = Object.entries(stdc.indicators).map(([key, val]) => ({
                                     label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
                                     value: typeof val === 'number' ? (val > 10 ? formatNumber(val, 2) : formatPercentage(val)) : val,
                                     trend: 'stable',
@@ -6436,19 +6438,21 @@
                             break;
                             
                         case 'long-term':
-                            if (!macroData.ltdc) return null;
+                            // Map to correct data key from API response
+                            const ltdc = macroData.ltdc || macroData.long_term_cycle;
+                            if (!ltdc) return null;
                             title = 'LONG-TERM DEBT CYCLE INDICATORS';
                             indicators = [
-                                { label: 'Total Debt/GDP', value: formatPercentage(macroData.ltdc.debt_to_gdp || 1.188), trend: 'up', source: 'FRED API' },
+                                { label: 'Total Debt/GDP', value: formatPercentage(ltdc.debt_to_gdp || 1.188), trend: 'up', source: 'FRED API' },
                                 { label: 'Credit Growth', value: '1.21%', trend: 'down', source: 'FRED API' },
                                 { label: 'Credit Impulse', value: '-2.00%', trend: 'down', source: 'Calculated' },
-                                { label: 'Real Interest Rates', value: formatPercentage(macroData.ltdc.real_rates_trend || 0.011), trend: 'stable', source: 'Calculated' },
+                                { label: 'Real Interest Rates', value: formatPercentage(ltdc.real_rates_trend || 0.011), trend: 'stable', source: 'Calculated' },
                                 { label: 'Productivity Growth', value: '6.26%', trend: 'up', source: 'FRED API' },
-                                { label: 'Interest Burden', value: formatPercentage(macroData.ltdc.debt_service_ratio || 0.013), trend: 'up', source: 'Calculated' }
+                                { label: 'Interest Burden', value: formatPercentage(ltdc.debt_service_ratio || 0.013), trend: 'up', source: 'Calculated' }
                             ];
                             // Override with actual data if available
-                            if (macroData.ltdc.indicators) {
-                                indicators = Object.entries(macroData.ltdc.indicators).map(([key, val]) => ({
+                            if (ltdc.indicators) {
+                                indicators = Object.entries(ltdc.indicators).map(([key, val]) => ({
                                     label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
                                     value: typeof val === 'number' ? (val > 10 ? formatNumber(val, 2) : formatPercentage(val)) : val,
                                     trend: 'stable',
@@ -6458,21 +6462,23 @@
                             break;
                             
                         case 'empire':
-                            if (!macroData.empire) return null;
+                            // Map to correct data key from API response
+                            const empire = macroData.empire || macroData.empire_cycle;
+                            if (!empire) return null;
                             title = 'EMPIRE CYCLE INDICATORS';
                             indicators = [
-                                { label: 'Education Score', value: macroData.empire.education_rank ? `Rank #${macroData.empire.education_rank}` : '100', trend: 'down', source: 'World Rankings' },
-                                { label: 'Innovation Score', value: formatNumber(macroData.empire.innovation_rate * 100 || 100, 0), trend: 'stable', source: 'Global Index' },
+                                { label: 'Education Score', value: empire.education_rank ? `Rank #${empire.education_rank}` : '100', trend: 'down', source: 'World Rankings' },
+                                { label: 'Innovation Score', value: formatNumber(empire.innovation_rate * 100 || 100, 0), trend: 'stable', source: 'Global Index' },
                                 { label: 'Competitiveness', value: '155.3', trend: 'down', source: 'WEF' },
-                                { label: 'Global GDP Share', value: formatPercentage(macroData.empire.global_trade_share || 0.2393), trend: 'down', source: 'World Bank' },
-                                { label: 'Trade Share', value: formatPercentage(macroData.empire.trade_balance || 0.1092), trend: 'down', source: 'World Bank' },
-                                { label: 'Military Strength', value: formatNumber(macroData.empire.military_power * 100 || 38.0, 0), trend: 'stable', source: 'SIPRI' },
+                                { label: 'Global GDP Share', value: formatPercentage(empire.global_trade_share || 0.2393), trend: 'down', source: 'World Bank' },
+                                { label: 'Trade Share', value: formatPercentage(empire.trade_balance || 0.1092), trend: 'down', source: 'World Bank' },
+                                { label: 'Military Strength', value: formatNumber(empire.military_power * 100 || 38.0, 0), trend: 'stable', source: 'SIPRI' },
                                 { label: 'Financial Hub Score', value: '85.0', trend: 'stable', source: 'GFCI' },
-                                { label: 'Reserve Currency', value: formatPercentage(macroData.empire.reserve_currency_share || 0.5841), trend: 'down', source: 'IMF COFER' }
+                                { label: 'Reserve Currency', value: formatPercentage(empire.reserve_currency_share || 0.5841), trend: 'down', source: 'IMF COFER' }
                             ];
                             // Override with actual data if available
-                            if (macroData.empire.indicators) {
-                                indicators = Object.entries(macroData.empire.indicators).map(([key, val]) => ({
+                            if (empire.indicators) {
+                                indicators = Object.entries(empire.indicators).map(([key, val]) => ({
                                     label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
                                     value: typeof val === 'number' ? (val > 10 ? formatNumber(val, 2) : formatPercentage(val)) : val,
                                     trend: 'stable',
@@ -6482,9 +6488,11 @@
                             break;
                             
                         case 'civil':
-                            if (!macroData.civil) return null;
+                            // Map to correct data key from API response
+                            const civil = macroData.civil || macroData.internal_order_cycle;
+                            if (!civil) return null;
                             title = 'CIVIL/INTERNAL ORDER INDICATORS';
-                            const civilIndicators = macroData.civil.indicators || {};
+                            const civilIndicators = civil.indicators || {};
                             indicators = [
                                 { label: 'Wealth Gap (Gini)', value: formatNumber(civilIndicators.gini_coefficient || 0.418, 3), trend: 'up', source: 'World Bank' },
                                 { label: 'Political Polarization', value: `${Math.round((civilIndicators.polarization_index || 0.78) * 100)}/100`, trend: 'up', source: 'CivilOrderDetector' },
@@ -6493,8 +6501,8 @@
                                 { label: 'Fiscal Deficit', value: '-6.20% GDP', trend: 'up', source: 'FRED API' }
                             ];
                             // Override with actual extended indicators if available
-                            if (macroData.civil.extended_indicators) {
-                                indicators = Object.entries(macroData.civil.extended_indicators).map(([key, val]) => ({
+                            if (civil.extended_indicators) {
+                                indicators = Object.entries(civil.extended_indicators).map(([key, val]) => ({
                                     label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
                                     value: typeof val === 'number' ? (val > 10 ? formatNumber(val, 2) : formatPercentage(val)) : val,
                                     trend: 'stable',
