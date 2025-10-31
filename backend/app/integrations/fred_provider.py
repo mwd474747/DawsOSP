@@ -119,6 +119,46 @@ class FREDProvider(BaseProvider):
         super().__init__(config)
         self.api_key = api_key
 
+    async def call(self, request) -> Any:
+        """
+        Generic call method required by BaseProvider.
+        
+        Routes to appropriate FRED endpoint based on request.
+        """
+        import httpx
+        import time
+        
+        start_time = time.time()
+        
+        async with httpx.AsyncClient(timeout=request.timeout if hasattr(request, 'timeout') else 10.0) as client:
+            response = await client.get(
+                request.endpoint,
+                params=request.params if hasattr(request, 'params') else {}
+            )
+            response.raise_for_status()
+            
+            latency_ms = (time.time() - start_time) * 1000
+            
+            from app.integrations.base_provider import ProviderResponse
+            return ProviderResponse(
+                data=response.json(),
+                provider=self.name,
+                endpoint=request.endpoint,
+                status_code=response.status_code,
+                latency_ms=latency_ms,
+                cached=False,
+                stale=False
+            )
+    
+    async def _request(self, method: str, url: str, params: dict = None) -> dict:
+        """Internal helper for making HTTP requests."""
+        import httpx
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.request(method, url, params=params)
+            response.raise_for_status()
+            return response.json()
+
     @rate_limit(requests_per_minute=60)
     async def get_series(
         self,
