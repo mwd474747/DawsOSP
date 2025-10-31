@@ -7090,7 +7090,8 @@
                                 console.log(`Executing scenario: ${scenario.id}`);
                                 const result = await apiClient.executePattern('portfolio_scenario_analysis', {
                                     portfolio_id: '64ff3be6-0ed1-4990-a32b-4ded17f0320c',
-                                    scenario_id: scenario.id
+                                    scenario_id: scenario.id,
+                                    custom_shocks: {}  // Provide empty object instead of null to prevent template path resolution errors
                                 });
                                 
                                 if (result.success && result.data) {

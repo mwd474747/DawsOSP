@@ -68,7 +68,6 @@
       "capability": "macro.compute_dar",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
-        "pack_id": "{{ctx.pricing_pack_id}}",
         "cycle_adjusted": true
       },
       "as": "dar"

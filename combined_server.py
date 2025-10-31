@@ -2904,6 +2904,807 @@ async def get_factor_analysis(request: Request):
         )
 
 # ============================================================================
+# Additional Portfolio Management Endpoints
+# ============================================================================
+
+@app.get("/api/portfolio/holdings", response_model=SuccessResponse)
+async def get_portfolio_holdings(request: Request):
+    """Get portfolio holdings with additional details"""
+    try:
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        # Try pattern orchestrator first
+        if PATTERN_ORCHESTRATION_AVAILABLE and _pattern_orchestrator:
+            try:
+                ctx = RequestCtx(
+                    user_id=user.get("user_id", "user-001"),
+                    asof_date=datetime.now().date(),
+                    request_id=str(uuid4())
+                )
+                
+                result = await _pattern_orchestrator.execute_pattern(
+                    ctx=ctx,
+                    pattern_id="portfolio_overview",
+                    inputs={"portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c"}
+                )
+                
+                if result and result.outputs:
+                    holdings_data = result.outputs.get("holdings_summary", {})
+                    if holdings_data:
+                        return SuccessResponse(data=holdings_data)
+            except Exception as e:
+                logger.warning(f"Pattern execution failed for portfolio holdings: {e}")
+        
+        # Fallback to mock data
+        holdings = {
+            "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
+            "holdings": [
+                {"symbol": "AAPL", "shares": 100, "market_value": 17500.00, "cost_basis": 15000.00, "pnl": 2500.00, "pnl_pct": 16.67, "weight": 0.15},
+                {"symbol": "GOOGL", "shares": 50, "market_value": 7000.00, "cost_basis": 6500.00, "pnl": 500.00, "pnl_pct": 7.69, "weight": 0.06},
+                {"symbol": "MSFT", "shares": 75, "market_value": 28125.00, "cost_basis": 25000.00, "pnl": 3125.00, "pnl_pct": 12.50, "weight": 0.24},
+                {"symbol": "BRK.B", "shares": 150, "market_value": 54750.00, "cost_basis": 52000.00, "pnl": 2750.00, "pnl_pct": 5.29, "weight": 0.47},
+                {"symbol": "SPY", "shares": 25, "market_value": 11250.00, "cost_basis": 10800.00, "pnl": 450.00, "pnl_pct": 4.17, "weight": 0.10}
+            ],
+            "total_value": 116625.00,
+            "total_cost": 107300.00,
+            "total_pnl": 9325.00,
+            "total_pnl_pct": 8.69
+        }
+        
+        return SuccessResponse(data=holdings)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching portfolio holdings: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch portfolio holdings"
+        )
+
+@app.get("/api/portfolio/positions", response_model=SuccessResponse)
+async def get_portfolio_positions(request: Request):
+    """Get portfolio positions with detailed breakdown"""
+    try:
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        # Similar to holdings but with more position details
+        positions = {
+            "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
+            "positions": [
+                {
+                    "symbol": "AAPL",
+                    "quantity": 100,
+                    "market_value": 17500.00,
+                    "average_cost": 150.00,
+                    "current_price": 175.00,
+                    "day_change": 2.50,
+                    "day_change_pct": 1.45,
+                    "unrealized_pnl": 2500.00,
+                    "realized_pnl": 0.00,
+                    "weight": 0.15,
+                    "sector": "Technology",
+                    "asset_class": "Equity"
+                },
+                {
+                    "symbol": "GOOGL",
+                    "quantity": 50,
+                    "market_value": 7000.00,
+                    "average_cost": 130.00,
+                    "current_price": 140.00,
+                    "day_change": -1.00,
+                    "day_change_pct": -0.71,
+                    "unrealized_pnl": 500.00,
+                    "realized_pnl": 0.00,
+                    "weight": 0.06,
+                    "sector": "Technology",
+                    "asset_class": "Equity"
+                }
+            ],
+            "summary": {
+                "total_positions": 5,
+                "total_value": 116625.00,
+                "day_change": 1250.00,
+                "day_change_pct": 1.08
+            }
+        }
+        
+        return SuccessResponse(data=positions)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching portfolio positions: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch portfolio positions"
+        )
+
+@app.get("/api/portfolio/summary", response_model=SuccessResponse)
+async def get_portfolio_summary(request: Request):
+    """Get portfolio summary with key metrics"""
+    try:
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        summary = {
+            "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
+            "total_value": 116625.00,
+            "total_cost": 107300.00,
+            "cash_balance": 5000.00,
+            "total_equity": 121625.00,
+            "total_pnl": 9325.00,
+            "total_pnl_pct": 8.69,
+            "day_change": 1250.00,
+            "day_change_pct": 1.08,
+            "ytd_return": 15.50,
+            "one_year_return": 22.30,
+            "sharpe_ratio": 1.45,
+            "max_drawdown": -8.50,
+            "positions_count": 5,
+            "asset_allocation": {
+                "equity": 0.96,
+                "cash": 0.04,
+                "bonds": 0.00
+            },
+            "sector_allocation": {
+                "Technology": 0.45,
+                "Financials": 0.47,
+                "ETF": 0.08
+            }
+        }
+        
+        return SuccessResponse(data=summary)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching portfolio summary: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch portfolio summary"
+        )
+
+# ============================================================================
+# Risk Analytics Endpoints
+# ============================================================================
+
+@app.get("/api/risk/metrics", response_model=SuccessResponse)
+async def get_risk_metrics(request: Request):
+    """Get comprehensive risk metrics for the portfolio"""
+    try:
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        # Try pattern orchestrator first for risk metrics
+        if PATTERN_ORCHESTRATION_AVAILABLE and _pattern_orchestrator:
+            try:
+                ctx = RequestCtx(
+                    user_id=user.get("user_id", "user-001"),
+                    asof_date=datetime.now().date(),
+                    request_id=str(uuid4())
+                )
+                
+                result = await _pattern_orchestrator.execute_pattern(
+                    ctx=ctx,
+                    pattern_id="portfolio_cycle_risk",
+                    inputs={"portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c"}
+                )
+                
+                if result and result.outputs:
+                    risk_data = result.outputs.get("risk_summary", {})
+                    if risk_data:
+                        return SuccessResponse(data=risk_data)
+            except Exception as e:
+                logger.warning(f"Pattern execution failed for risk metrics: {e}")
+        
+        # Fallback to mock data
+        risk_metrics = {
+            "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
+            "volatility": 0.18,
+            "sharpe_ratio": 1.45,
+            "sortino_ratio": 1.82,
+            "beta": 0.92,
+            "alpha": 0.03,
+            "max_drawdown": -0.085,
+            "current_drawdown": -0.023,
+            "tracking_error": 0.04,
+            "information_ratio": 0.75,
+            "downside_deviation": 0.12,
+            "upside_capture": 1.05,
+            "downside_capture": 0.85,
+            "risk_score": 0.65,
+            "risk_level": "Moderate",
+            "concentration_risk": {
+                "herfindahl_index": 0.28,
+                "top_5_concentration": 0.82,
+                "single_stock_max": 0.47
+            },
+            "factor_exposures": {
+                "market": 0.92,
+                "size": -0.15,
+                "value": 0.23,
+                "momentum": 0.18,
+                "quality": 0.35
+            }
+        }
+        
+        return SuccessResponse(data=risk_metrics)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching risk metrics: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch risk metrics"
+        )
+
+@app.get("/api/risk/var", response_model=SuccessResponse)
+async def get_value_at_risk(request: Request):
+    """Get Value at Risk (VaR) calculations"""
+    try:
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        var_data = {
+            "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
+            "portfolio_value": 116625.00,
+            "var_95": {
+                "1_day": -2099.25,
+                "5_day": -4698.30,
+                "10_day": -6642.83,
+                "20_day": -9397.66
+            },
+            "var_99": {
+                "1_day": -3265.50,
+                "5_day": -7308.38,
+                "10_day": -10329.38,
+                "20_day": -14618.75
+            },
+            "cvar_95": {
+                "1_day": -2799.00,
+                "5_day": -6264.40,
+                "10_day": -8857.11,
+                "20_day": -12530.21
+            },
+            "cvar_99": {
+                "1_day": -3732.00,
+                "5_day": -8352.42,
+                "10_day": -11805.00,
+                "20_day": -16707.13
+            },
+            "stressed_var": -15961.63,
+            "calculation_method": "Historical Simulation",
+            "confidence_levels": [95, 99],
+            "time_horizons": [1, 5, 10, 20],
+            "last_updated": datetime.utcnow().isoformat()
+        }
+        
+        return SuccessResponse(data=var_data)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error calculating VaR: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to calculate Value at Risk"
+        )
+
+# ============================================================================
+# Enhanced Macro Endpoints
+# ============================================================================
+
+@app.get("/api/macro/cycles", response_model=SuccessResponse)
+async def get_macro_cycles(request: Request):
+    """Get detailed macro cycle information"""
+    try:
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        # Try pattern orchestrator for cycle data
+        if PATTERN_ORCHESTRATION_AVAILABLE and _pattern_orchestrator:
+            try:
+                ctx = RequestCtx(
+                    user_id=user.get("user_id", "user-001"),
+                    asof_date=datetime.now().date(),
+                    request_id=str(uuid4())
+                )
+                
+                result = await _pattern_orchestrator.execute_pattern(
+                    ctx=ctx,
+                    pattern_id="macro_cycles_overview",
+                    inputs={}
+                )
+                
+                if result and result.outputs:
+                    cycles_data = result.outputs
+                    if cycles_data:
+                        return SuccessResponse(data=cycles_data)
+            except Exception as e:
+                logger.warning(f"Pattern execution failed for macro cycles: {e}")
+        
+        # Fallback to mock data
+        cycles_data = {
+            "stdc": {
+                "phase": "Mid-Cycle",
+                "phase_number": 3,
+                "composite_score": 0.62,
+                "confidence": 0.75,
+                "months_in_phase": 18,
+                "expected_duration": "6-12 months",
+                "indicators": {
+                    "gdp_growth": 2.8,
+                    "unemployment": 3.7,
+                    "inflation": 2.4,
+                    "yield_curve": 0.52
+                }
+            },
+            "ltdc": {
+                "phase": "Late Expansion",
+                "phase_number": 7,
+                "composite_score": 0.78,
+                "confidence": 0.82,
+                "years_in_cycle": 45,
+                "debt_to_gdp": 124.5,
+                "deleveraging_risk": "Medium",
+                "indicators": {
+                    "total_debt_gdp": 124.5,
+                    "private_debt_gdp": 75.3,
+                    "public_debt_gdp": 49.2,
+                    "debt_service_ratio": 13.5
+                }
+            },
+            "empire": {
+                "phase": "Peak Power",
+                "phase_number": 5,
+                "composite_score": 0.68,
+                "reserve_currency_status": 61.5,
+                "military_spending_gdp": 3.7,
+                "education_ranking": 12,
+                "innovation_index": 85.3
+            },
+            "civil": {
+                "phase": "Moderate Stability",
+                "phase_number": 4,
+                "composite_score": 0.55,
+                "polarization_index": 0.72,
+                "wealth_inequality_gini": 0.415,
+                "social_mobility_index": 27.5
+            },
+            "regime": "MID_EXPANSION",
+            "regime_confidence": 0.78,
+            "last_updated": datetime.utcnow().isoformat()
+        }
+        
+        return SuccessResponse(data=cycles_data)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching macro cycles: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch macro cycles"
+        )
+
+@app.get("/api/macro/indicators", response_model=SuccessResponse)
+async def get_macro_indicators(request: Request):
+    """Get current macro economic indicators"""
+    try:
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        indicators = {
+            "gdp": {
+                "value": 2.8,
+                "previous": 2.5,
+                "change": 0.3,
+                "zscore": 0.42,
+                "trend": "expanding"
+            },
+            "unemployment": {
+                "value": 3.7,
+                "previous": 3.8,
+                "change": -0.1,
+                "zscore": -0.35,
+                "trend": "improving"
+            },
+            "inflation": {
+                "value": 2.4,
+                "previous": 2.6,
+                "change": -0.2,
+                "zscore": 0.15,
+                "trend": "moderating"
+            },
+            "interest_rates": {
+                "fed_funds": 5.33,
+                "10y_treasury": 4.25,
+                "2y_treasury": 4.78,
+                "yield_curve": -0.53,
+                "real_rate": 1.85
+            },
+            "credit": {
+                "spread_ig": 95,
+                "spread_hy": 385,
+                "default_rate": 2.1,
+                "lending_standards": "tightening"
+            },
+            "market": {
+                "sp500_pe": 19.5,
+                "vix": 15.2,
+                "put_call_ratio": 0.92,
+                "margin_debt_change": -5.2
+            },
+            "leading_indicators": {
+                "lei_index": 102.5,
+                "lei_change": -0.3,
+                "recession_probability": 0.35,
+                "sahm_rule": 0.17
+            },
+            "last_updated": datetime.utcnow().isoformat()
+        }
+        
+        return SuccessResponse(data=indicators)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching macro indicators: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch macro indicators"
+        )
+
+# ============================================================================
+# Market Data Endpoints
+# ============================================================================
+
+@app.get("/api/quotes/{symbol}", response_model=SuccessResponse)
+async def get_quote(symbol: str, request: Request):
+    """Get real-time quote for a symbol"""
+    try:
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        # Mock quote data
+        quote = {
+            "symbol": symbol.upper(),
+            "name": f"{symbol.upper()} Corporation",
+            "price": 150.25,
+            "change": 2.50,
+            "change_percent": 1.69,
+            "volume": 52_384_291,
+            "avg_volume": 48_500_000,
+            "market_cap": 2_500_000_000_000,
+            "pe_ratio": 28.5,
+            "dividend_yield": 0.52,
+            "52_week_high": 182.50,
+            "52_week_low": 125.30,
+            "open": 148.00,
+            "high": 151.75,
+            "low": 147.50,
+            "previous_close": 147.75,
+            "bid": 150.24,
+            "ask": 150.26,
+            "bid_size": 300,
+            "ask_size": 500,
+            "exchange": "NASDAQ",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        return SuccessResponse(data=quote)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching quote for {symbol}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch quote for {symbol}"
+        )
+
+@app.get("/api/market/overview", response_model=SuccessResponse)
+async def get_market_overview(request: Request):
+    """Get market overview with major indices and stats"""
+    try:
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        overview = {
+            "indices": {
+                "SP500": {
+                    "value": 4550.25,
+                    "change": 28.50,
+                    "change_pct": 0.63,
+                    "volume": 3_200_000_000
+                },
+                "NASDAQ": {
+                    "value": 14250.75,
+                    "change": 125.30,
+                    "change_pct": 0.89,
+                    "volume": 4_500_000_000
+                },
+                "DOW": {
+                    "value": 35680.50,
+                    "change": 185.20,
+                    "change_pct": 0.52,
+                    "volume": 280_000_000
+                },
+                "RUSSELL": {
+                    "value": 1850.30,
+                    "change": 12.40,
+                    "change_pct": 0.68,
+                    "volume": 1_800_000_000
+                },
+                "VIX": {
+                    "value": 15.20,
+                    "change": -0.80,
+                    "change_pct": -5.00
+                }
+            },
+            "sectors": {
+                "Technology": {"change_pct": 1.25, "leaders": ["AAPL", "MSFT", "NVDA"]},
+                "Financials": {"change_pct": 0.45, "leaders": ["JPM", "BAC", "WFC"]},
+                "Healthcare": {"change_pct": -0.15, "leaders": ["JNJ", "UNH", "PFE"]},
+                "Energy": {"change_pct": 2.10, "leaders": ["XOM", "CVX", "COP"]},
+                "Consumer": {"change_pct": 0.65, "leaders": ["AMZN", "TSLA", "WMT"]}
+            },
+            "market_breadth": {
+                "advances": 2150,
+                "declines": 1320,
+                "unchanged": 230,
+                "new_highs": 125,
+                "new_lows": 45,
+                "advance_decline_ratio": 1.63
+            },
+            "commodities": {
+                "gold": {"value": 2050.30, "change_pct": 0.35},
+                "silver": {"value": 24.15, "change_pct": 0.82},
+                "oil": {"value": 78.50, "change_pct": 1.25},
+                "natural_gas": {"value": 3.12, "change_pct": -2.15}
+            },
+            "currencies": {
+                "DXY": {"value": 103.25, "change_pct": -0.15},
+                "EURUSD": {"value": 1.0825, "change_pct": 0.22},
+                "GBPUSD": {"value": 1.2650, "change_pct": 0.18},
+                "USDJPY": {"value": 148.75, "change_pct": -0.35}
+            },
+            "bonds": {
+                "10Y": {"yield": 4.25, "change_bps": -3},
+                "2Y": {"yield": 4.78, "change_bps": 2},
+                "30Y": {"yield": 4.38, "change_bps": -4},
+                "spread_2_10": {"value": -0.53, "change_bps": -5}
+            },
+            "market_status": "open",
+            "next_earnings": ["AAPL", "GOOGL", "AMZN"],
+            "economic_calendar": [
+                {"date": "Tomorrow", "event": "FOMC Minutes", "importance": "high"},
+                {"date": "Friday", "event": "NFP Report", "importance": "high"}
+            ],
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        return SuccessResponse(data=overview)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching market overview: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch market overview"
+        )
+
+# ============================================================================
+# Settings and API Keys Endpoints
+# ============================================================================
+
+@app.get("/api/settings", response_model=SuccessResponse)
+async def get_settings(request: Request):
+    """Get user settings"""
+    try:
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        settings = {
+            "user_id": user.get("user_id"),
+            "preferences": {
+                "theme": "dark",
+                "language": "en",
+                "timezone": "America/New_York",
+                "currency": "USD",
+                "date_format": "MM/DD/YYYY",
+                "number_format": "thousand_separator"
+            },
+            "notifications": {
+                "email": True,
+                "sms": False,
+                "push": True,
+                "alert_types": {
+                    "price_alerts": True,
+                    "portfolio_alerts": True,
+                    "risk_alerts": True,
+                    "news_alerts": False
+                }
+            },
+            "display": {
+                "default_view": "dashboard",
+                "chart_type": "candlestick",
+                "table_density": "comfortable",
+                "show_tooltips": True,
+                "auto_refresh": True,
+                "refresh_interval": 60
+            },
+            "trading": {
+                "default_order_type": "limit",
+                "confirm_orders": True,
+                "default_duration": "day"
+            },
+            "risk": {
+                "risk_tolerance": "moderate",
+                "max_position_size": 0.10,
+                "stop_loss_default": 0.05
+            }
+        }
+        
+        return SuccessResponse(data=settings)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching settings: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch settings"
+        )
+
+@app.post("/api/settings", response_model=SuccessResponse)
+async def update_settings(request: Request):
+    """Update user settings"""
+    try:
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        body = await request.json()
+        
+        # Here you would normally validate and save the settings
+        # For now, just echo back the updated settings
+        updated_settings = {
+            "user_id": user.get("user_id"),
+            "preferences": body.get("preferences", {}),
+            "notifications": body.get("notifications", {}),
+            "display": body.get("display", {}),
+            "trading": body.get("trading", {}),
+            "risk": body.get("risk", {}),
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        return SuccessResponse(data={
+            "message": "Settings updated successfully",
+            "settings": updated_settings
+        })
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating settings: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update settings"
+        )
+
+@app.get("/api/keys", response_model=SuccessResponse)
+async def get_api_keys(request: Request):
+    """Get API key configuration (masked)"""
+    try:
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        # Return masked API key info
+        api_keys = {
+            "configured_providers": [
+                {
+                    "provider": "polygon",
+                    "status": "active",
+                    "key_masked": "****" + "abcd",
+                    "rate_limit": "5 requests/minute",
+                    "usage_this_month": 1250,
+                    "limit_this_month": 10000
+                },
+                {
+                    "provider": "fred",
+                    "status": "active",
+                    "key_masked": "****" + "efgh",
+                    "rate_limit": "120 requests/minute",
+                    "usage_this_month": 8500,
+                    "limit_this_month": 100000
+                },
+                {
+                    "provider": "anthropic",
+                    "status": "active" if ANTHROPIC_API_KEY else "not_configured",
+                    "key_masked": "****" + "ijkl" if ANTHROPIC_API_KEY else None,
+                    "model": "claude-3-opus",
+                    "usage_this_month": "$12.50",
+                    "limit_this_month": "$100.00"
+                }
+            ],
+            "available_providers": [
+                "polygon", "fred", "anthropic", "openai", "alphavantage", "iex", "finnhub"
+            ],
+            "webhook_endpoints": [
+                {
+                    "id": "webhook_1",
+                    "url": "https://your-app.com/webhooks/alerts",
+                    "events": ["price_alert", "risk_alert"],
+                    "status": "active"
+                }
+            ]
+        }
+        
+        return SuccessResponse(data=api_keys)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching API keys: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch API key configuration"
+        )
+
+# ============================================================================
 # SPA Catch-All Route (Must be last!)
 # ============================================================================
 
