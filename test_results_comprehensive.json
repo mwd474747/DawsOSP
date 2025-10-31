@@ -1,13 +1,13 @@
 {
   "summary": {
-    "test_date": "2025-10-31T18:43:44.230360",
-    "duration": "2025-10-31T18:43:51.585373",
+    "test_date": "2025-10-31T18:53:08.114929",
+    "duration": "2025-10-31T18:53:15.930853",
     "total_pages": 16,
     "pages_tested": 16,
-    "pages_passed": 7,
-    "pages_failed": 5,
-    "pages_partial": 4,
-    "success_rate": "56.2%",
+    "pages_passed": 13,
+    "pages_failed": 0,
+    "pages_partial": 3,
+    "success_rate": "90.6%",
     "authentication": true
   },
   "improvements": [
@@ -52,38 +52,38 @@
       ]
     },
     "Scenarios": {
-      "status": "\u274c FAIL",
+      "status": "\u26a0\ufe0f PARTIAL",
       "load_time_ms": 0,
-      "api_success": [],
+      "api_success": [
+        "/scenarios"
+      ],
       "api_failure": [
-        "/scenarios",
         "/patterns/execute"
       ],
-      "data_loaded": false,
+      "data_loaded": true,
       "console_errors": [],
       "notes": [
         "Selenium not available - UI tests skipped",
-        "API /scenarios: Status 404: {\"error\":\"http_error\",\"message\":\"Not found\",\"details\":{\"status_code\":404},\"timestamp\":\"2",
+        "API /scenarios: Data returned",
         "API /patterns/execute: Status 500: {\"error\":\"http_error\",\"message\":\"Pattern execution failed: 500: Failed to resolve args f"
       ]
     },
     "Risk Analytics": {
-      "status": "\u26a0\ufe0f PARTIAL",
+      "status": "\u2705 PASS",
       "load_time_ms": 0,
       "api_success": [
         "/risk/metrics",
-        "/risk/var"
-      ],
-      "api_failure": [
+        "/risk/var",
         "/risk/concentration"
       ],
+      "api_failure": [],
       "data_loaded": true,
       "console_errors": [],
       "notes": [
         "Selenium not available - UI tests skipped",
         "API /risk/metrics: Data returned",
         "API /risk/var: Data returned",
-        "API /risk/concentration: Status 404: {\"error\":\"http_error\",\"message\":\"Not found\",\"details\":{\"status_code\":404},\"timestamp\":\"2"
+        "API /risk/concentration: Data returned"
       ]
     },
     "Macro Cycles": {
@@ -115,7 +115,7 @@
       "console_errors": [],
       "notes": [
         "Selenium not available - UI tests skipped",
-        "API /market/quotes: Status 404: {\"error\":\"http_error\",\"message\":\"Not found\",\"details\":{\"status_code\":404},\"timestamp\":\"2",
+        "API /market/quotes: Status 422: {\"detail\":[{\"type\":\"missing\",\"loc\":[\"query\",\"symbols\"],\"msg\":\"Field required\",\"input\":nu",
         "API /market/overview: Data returned"
       ]
     },
@@ -136,35 +136,35 @@
       ]
     },
     "Optimizer": {
-      "status": "\u274c FAIL",
+      "status": "\u2705 PASS",
       "load_time_ms": 0,
-      "api_success": [],
-      "api_failure": [
+      "api_success": [
         "/optimizer/efficient-frontier",
         "/optimizer/recommendations"
       ],
-      "data_loaded": false,
+      "api_failure": [],
+      "data_loaded": true,
       "console_errors": [],
       "notes": [
         "Selenium not available - UI tests skipped",
-        "API /optimizer/efficient-frontier: Status 404: {\"error\":\"http_error\",\"message\":\"Not found\",\"details\":{\"status_code\":404},\"timestamp\":\"2",
-        "API /optimizer/recommendations: Status 404: {\"error\":\"http_error\",\"message\":\"Not found\",\"details\":{\"status_code\":404},\"timestamp\":\"2"
+        "API /optimizer/efficient-frontier: Data returned",
+        "API /optimizer/recommendations: Data returned"
       ]
     },
     "Ratings": {
-      "status": "\u274c FAIL",
+      "status": "\u2705 PASS",
       "load_time_ms": 0,
-      "api_success": [],
-      "api_failure": [
+      "api_success": [
         "/ratings",
         "/ratings/holdings"
       ],
-      "data_loaded": false,
+      "api_failure": [],
+      "data_loaded": true,
       "console_errors": [],
       "notes": [
         "Selenium not available - UI tests skipped",
-        "API /ratings: Status 404: {\"error\":\"http_error\",\"message\":\"Not found\",\"details\":{\"status_code\":404},\"timestamp\":\"2",
-        "API /ratings/holdings: Status 404: {\"error\":\"http_error\",\"message\":\"Not found\",\"details\":{\"status_code\":404},\"timestamp\":\"2"
+        "API /ratings: Data returned",
+        "API /ratings/holdings: Data returned"
       ]
     },
     "AI Insights": {
@@ -182,34 +182,33 @@
       ]
     },
     "Transactions": {
-      "status": "\u274c FAIL",
+      "status": "\u2705 PASS",
       "load_time_ms": 0,
-      "api_success": [],
-      "api_failure": [
+      "api_success": [
         "/portfolio/transactions"
       ],
-      "data_loaded": false,
+      "api_failure": [],
+      "data_loaded": true,
       "console_errors": [],
       "notes": [
         "Selenium not available - UI tests skipped",
-        "API /portfolio/transactions: Status 404: {\"error\":\"http_error\",\"message\":\"Not found\",\"details\":{\"status_code\":404},\"timestamp\":\"2"
+        "API /portfolio/transactions: Data returned"
       ]
     },
     "Alerts": {
-      "status": "\u26a0\ufe0f PARTIAL",
+      "status": "\u2705 PASS",
       "load_time_ms": 0,
       "api_success": [
-        "/alerts"
-      ],
-      "api_failure": [
+        "/alerts",
         "/alerts/active"
       ],
+      "api_failure": [],
       "data_loaded": true,
       "console_errors": [],
       "notes": [
         "Selenium not available - UI tests skipped",
         "API /alerts: Data returned",
-        "API /alerts/active: Status 404: {\"error\":\"http_error\",\"message\":\"Not found\",\"details\":{\"status_code\":404},\"timestamp\":\"2"
+        "API /alerts/active: Data returned"
       ]
     },
     "Reports": {
@@ -255,17 +254,17 @@
       ]
     },
     "Settings": {
-      "status": "\u274c FAIL",
+      "status": "\u2705 PASS",
       "load_time_ms": 0,
-      "api_success": [],
-      "api_failure": [
+      "api_success": [
         "/user/profile"
       ],
-      "data_loaded": false,
+      "api_failure": [],
+      "data_loaded": true,
       "console_errors": [],
       "notes": [
         "Selenium not available - UI tests skipped",
-        "API /user/profile: Status 404: {\"error\":\"http_error\",\"message\":\"Not found\",\"details\":{\"status_code\":404},\"timestamp\":\"2"
+        "API /user/profile: Data returned"
       ]
     }
   }
