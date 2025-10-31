@@ -37,6 +37,63 @@ Transactions → ??? → portfolio_metrics (directly)
 
 ## Implementation Plan (Proper Fix)
 
+### Phase 0: UI Transaction Integration (Week 0)
+**Priority: P0 - Critical UI Bug**
+
+#### Problem Identified
+The diagnosis revealed that:
+- UI calls `/api/transactions` which returns **mock/stub data**
+- Real transactions exist in database via `/v1/trades` endpoint
+- **Gap**: UI is not connected to the real transaction API
+
+#### 0.1 Fix Transaction Endpoint
+- **File**: `combined_server.py`
+- **Current Issue**: `/api/transactions` endpoint returns hardcoded mock data (Line ~1772)
+- **Action**: Redirect to real trades endpoint or integrate with `/v1/trades`
+
+**Option 1: Update `/api/transactions` to call real data**
+```python
+@app.get("/api/transactions")
+async def get_transactions(
+    portfolio_id: str = Query(...),
+    claims: dict = Depends(verify_token)
+):
+    """Get transaction history from database"""
+    from backend.app.api.routes.trades import list_trades
+    from uuid import UUID
+    
+    return await list_trades(
+        portfolio_id=UUID(portfolio_id),
+        claims=claims
+    )
+```
+
+**Option 2: Update UI to call `/v1/trades` directly**
+- **File**: `full_ui.html`
+- **Line**: ~2500 (transaction fetch logic)
+- **Change**: Update fetch URL from `/api/transactions` to `/v1/trades?portfolio_id=${portfolioId}`
+- **Format**: Ensure response format matches UI expectations
+
+#### 0.2 Verify Transaction Display
+- [ ] Test UI displays real transactions from seed data
+- [ ] Verify transaction types (BUY, SELL, DIVIDEND) render correctly
+- [ ] Confirm dates, quantities, prices display accurately
+- [ ] Validate transaction history matches database `transactions` table
+- [ ] Remove any mock data fallbacks
+
+#### 0.3 Update Transaction Schema Mapping
+- **Issue**: UI expects specific transaction object structure
+- **Required Fields**: date, type, symbol, quantity, price, amount, realized_gain
+- **Action**: Ensure `/v1/trades` response matches UI expectations or add transformation layer
+
+#### Success Criteria
+- [ ] UI Transaction tab shows real database transactions
+- [ ] No mock/stub data returned by `/api/transactions`
+- [ ] Transaction list matches seed data from `seed_portfolio_data.sql`
+- [ ] All transaction types display correctly
+
+---
+
 ### Phase 1: Database Schema Creation
 **Priority: P0 - Blocking all metrics**
 
@@ -233,6 +290,12 @@ Transactions → ??? → portfolio_metrics (directly)
 
 ## Rollout Plan
 
+### Week 0: UI Transaction Fix (NEW - CRITICAL)
+- [ ] Day 1: Update `/api/transactions` endpoint or UI fetch calls (Phase 0.1)
+- [ ] Day 2: Test transaction display with seed data (Phase 0.2)
+- [ ] Day 3: Verify all transaction types render correctly (Phase 0.3)
+- [ ] **Deliverable**: UI displays real transactions from database
+
 ### Week 1: Schema & Pipeline
 - [ ] Day 1-2: Create database tables (Phase 1)
 - [ ] Day 3-4: Implement `daily_valuation.py` (Phase 2.1)
@@ -303,15 +366,16 @@ Transactions → ??? → portfolio_metrics (directly)
 6. `tests/integration/test_metrics_pipeline.py`
 7. `tests/golden/metrics/portfolio_returns.json`
 
-### Modified Files (8)
-1. `backend/jobs/metrics.py` (refactor to use daily_values)
-2. `backend/jobs/scheduler.py` (add new jobs)
-3. `backend/app/agents/financial_analyst.py` (remove simulation)
-4. `backend/app/services/metrics.py` (use metrics_queries)
-5. `backend/app/db/metrics_queries.py` (add daily_values queries)
-6. `backend/patterns/portfolio_overview.json` (remove fallbacks)
-7. `backend/db/schema/continuous_aggregates.sql` (add new aggregates)
-8. `combined_server.py` (initialize new tables on startup)
+### Modified Files (9)
+1. **`combined_server.py`** (Phase 0: Fix `/api/transactions` endpoint OR Phase 1: initialize new tables)
+2. **`full_ui.html`** (Phase 0: Update transaction fetch URL if using Option 2)
+3. `backend/jobs/metrics.py` (refactor to use daily_values)
+4. `backend/jobs/scheduler.py` (add new jobs)
+5. `backend/app/agents/financial_analyst.py` (remove simulation)
+6. `backend/app/services/metrics.py` (use metrics_queries)
+7. `backend/app/db/metrics_queries.py` (add daily_values queries)
+8. `backend/patterns/portfolio_overview.json` (remove fallbacks)
+9. `backend/db/schema/continuous_aggregates.sql` (add new aggregates)
 
 ### Deleted Code (~500 lines)
 - All simulation/stub methods
@@ -320,13 +384,17 @@ Transactions → ??? → portfolio_metrics (directly)
 
 ## Notes
 
+- **Phase 0 is Critical**: Must fix UI transaction display before building metrics pipeline
 - **TimescaleDB Required**: Hypertables for efficient time-series storage
 - **PostgreSQL Version**: Requires 12+ for generated columns
 - **Python Version**: 3.9+ for asyncpg compatibility
 - **Migration**: Zero downtime (tables created, jobs enabled after backfill)
+- **Transaction Data**: Already exists in database from seed data and trade execution
+- **UI-Backend Gap**: Transactions exist but UI shows mock data (Phase 0 fixes this)
 
 ---
 
-**Plan Version**: 1.0  
+**Plan Version**: 1.1  
 **Created**: 2025-10-31  
+**Updated**: 2025-10-31 (Added Phase 0 for UI Transaction Integration)  
 **Status**: Ready for Implementation
