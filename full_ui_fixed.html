@@ -608,6 +608,139 @@
             letter-spacing: 0.05em;
         }
         
+        .badge-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--color-success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--color-warning);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        
+        .badge-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--color-error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .badge-info {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--color-info);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Macro Cycles Page Styles */
+        .macro-cycles-container {
+            width: 100%;
+        }
+        
+        /* Tab Navigation */
+        .cycle-tabs {
+            margin-bottom: 1.5rem;
+        }
+        
+        .tabs-container {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.25rem;
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            width: fit-content;
+        }
+        
+        .tab-button {
+            padding: 0.75rem 1.25rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .tab-button:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+        
+        .tab-button.active {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--color-info);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Cycle Description */
+        .cycle-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        
+        /* Metric Row */
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .metric-row:last-child {
+            border-bottom: none;
+        }
+        
+        .metric-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .metric-value {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .metric-value.positive {
+            color: var(--color-success);
+        }
+        
+        .metric-value.negative {
+            color: var(--color-error);
+        }
+        
+        .metric-value.warning {
+            color: var(--color-warning);
+        }
+        
+        /* Regime Indicators */
+        .regime-indicators {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .regime-tag {
+            display: inline-block;
+            padding: 0.375rem 0.75rem;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
         /* Button Styles */
         .btn-primary {
             background: var(--color-info);
@@ -4717,51 +4850,68 @@
             function MacroCyclesPage() {
                 const [loading, setLoading] = useState(true);
                 const [error, setError] = useState(null);
-                const [cyclesData, setCyclesData] = useState(null);
-                const chartRef = useRef(null);
-                const chartInstance = useRef(null);
+                const [macroData, setMacroData] = useState(null);
+                const [activeTab, setActiveTab] = useState('short-term');
+                const [refreshInterval, setRefreshInterval] = useState(null);
                 
+                // Chart references for each cycle
+                const chartRefs = {
+                    shortTerm: useRef(null),
+                    longTerm: useRef(null),
+                    empire: useRef(null),
+                    dar: useRef(null),
+                    overview: useRef(null)
+                };
+                const chartInstances = useRef({});
+                
+                // Load data on mount and set up auto-refresh
                 useEffect(() => {
-                    loadCyclesData();
+                    fetchMacroData();
+                    // Auto-refresh every 60 seconds
+                    const interval = setInterval(fetchMacroData, 60000);
+                    setRefreshInterval(interval);
+                    
                     return () => {
-                        if (chartInstance.current) {
-                            chartInstance.current.destroy();
-                        }
+                        clearInterval(interval);
+                        // Clean up all chart instances
+                        Object.values(chartInstances.current).forEach(chart => {
+                            if (chart) chart.destroy();
+                        });
                     };
                 }, []);
                 
+                // Re-render charts when data or tab changes
                 useEffect(() => {
-                    if (cyclesData && chartRef.current) {
-                        renderCycleChart();
+                    if (macroData && !loading) {
+                        renderActiveChart();
                     }
-                }, [cyclesData]);
+                }, [macroData, activeTab, loading]);
                 
-                const loadCyclesData = async () => {
+                const fetchMacroData = async () => {
                     try {
                         setLoading(true);
                         setError(null);
                         
-                        // Try to execute the macro_cycles_overview pattern
-                        const result = await apiClient.executePattern('macro_cycles_overview', {
+                        // Use cached API client for pattern execution
+                        const response = await cachedApiClient.executePattern('macro_cycles_overview', {
                             asof_date: new Date().toISOString().split('T')[0]
                         });
                         
-                        if (result.success && result.data) {
-                            setCyclesData(result.data);
-                        } else {
-                            // Fallback to mock data if pattern fails
-                            setCyclesData(getMockCyclesData());
-                        }
+                        // Process response data
+                        const result = response.result || response.data || response;
+                        setMacroData(result);
+                        
                     } catch (error) {
-                        console.error('Error loading cycles data:', error);
-                        // Use comprehensive mock data as fallback
-                        setCyclesData(getMockCyclesData());
+                        console.error('Pattern execution failed for macro_cycles_overview:', error);
+                        // Use comprehensive fallback data
+                        setMacroData(getComprehensiveMockData());
                     } finally {
                         setLoading(false);
                     }
                 };
                 
-                const getMockCyclesData = () => ({
+                const getComprehensiveMockData = () => ({
+                    // Short-term debt cycle (5-8 years)
                     stdc: {
                         phase_label: 'Late Expansion',
                         score: 0.72,
@@ -4773,17 +4923,20 @@
                         unemployment_gap: -0.012,
                         next_phase_probability: { contraction: 0.65, continuation: 0.35 }
                     },
+                    // Long-term debt cycle (75-100 years)
                     ltdc: {
                         phase_label: 'Late Cycle',
                         score: 0.68,
                         confidence: 0.78,
                         description: 'High debt levels, declining productivity growth',
                         phase_duration_years: 3.5,
-                        debt_to_gdp: 1.32,
+                        debt_to_gdp: 2.80,
                         debt_service_ratio: 0.145,
                         real_rates_trend: -0.021,
-                        deleveraging_risk: 'MEDIUM'
+                        deleveraging_risk: 'HIGH',
+                        wealth_gap_top_1pct: 0.35
                     },
+                    // Empire cycle (250-500 years)
                     empire: {
                         phase_label: 'Relative Decline',
                         score: 0.51,
@@ -4793,38 +4946,441 @@
                         military_power: 0.89,
                         innovation_rate: 0.76,
                         education_rank: 15,
-                        trade_balance: -0.032
+                        trade_balance: -0.032,
+                        global_trade_share: 0.243
                     },
+                    // Civil/Internal Order cycle (4th cycle)
                     civil: {
+                        cycle_type: 'civil',
                         phase_label: 'Rising Tension',
-                        score: 0.42,
+                        phase_number: 3,
+                        composite_score: 0.42,
                         confidence: 0.81,
                         description: 'Increasing wealth inequality, declining social cohesion',
-                        gini_coefficient: 0.415,
-                        wealth_top_1pct: 0.324,
-                        polarization_index: 0.78,
-                        institutional_trust: 0.38,
-                        social_mobility: 0.41
-                    }
+                        indicators: {
+                            gini_coefficient: 0.415,
+                            wealth_top_1pct: 0.324,
+                            polarization_index: 0.78,
+                            institutional_trust: 0.38,
+                            social_mobility: 0.41
+                        },
+                        risk_factors: {
+                            wealth_inequality: 'HIGH',
+                            political_polarization: 'HIGH',
+                            trust_deficit: 'HIGH'
+                        }
+                    },
+                    // DAR (Debt-Asset Ratio) analysis
+                    dar: {
+                        current: 1.85,
+                        thirty_day_change: 0.12,
+                        distance_to_crisis: 0.15,
+                        threshold: 2.0
+                    },
+                    // Regime detection
+                    regime_detection: {
+                        inflation: 'DECLINING',
+                        growth: 'SLOWING',
+                        credit: 'TIGHTENING',
+                        liquidity: 'MODERATE',
+                        classification: 'LATE CYCLE SLOWDOWN',
+                        description: 'Characterized by slowing growth, tightening credit conditions, and elevated debt levels. Risk of recession in next 12-18 months.'
+                    },
+                    // Historical data for charts
+                    short_term_history: generateShortTermHistory(),
+                    long_term_history: generateLongTermHistory(),
+                    empire_history: generateEmpireHistory(),
+                    dar_history: generateDarHistory()
                 });
                 
-                const renderCycleChart = () => {
-                    if (chartInstance.current) {
-                        chartInstance.current.destroy();
+                // Generate historical data for short-term debt cycle
+                function generateShortTermHistory() {
+                    return Array.from({ length: 96 }, (_, i) => ({
+                        month: `${2016 + Math.floor(i/12)}-${String((i % 12) + 1).padStart(2, '0')}`,
+                        debt: 100 + 20 * Math.sin(i * 0.13) + Math.random() * 10,
+                        gdp: 100 + 15 * Math.sin(i * 0.13 + 1) + Math.random() * 5,
+                        credit: 100 + 25 * Math.sin(i * 0.13 - 0.5) + Math.random() * 8
+                    }));
+                }
+                
+                // Generate historical data for long-term debt cycle
+                function generateLongTermHistory() {
+                    return Array.from({ length: 100 }, (_, i) => ({
+                        year: 1924 + i,
+                        debtToGDP: 30 + 40 * Math.sin(i * 0.063) + i * 0.3,
+                        productivity: 100 + i * 0.5 + Math.random() * 10,
+                        inequality: 20 + 30 * Math.sin(i * 0.063 + 2) + i * 0.2
+                    }));
+                }
+                
+                // Generate historical data for empire cycle
+                function generateEmpireHistory() {
+                    return Array.from({ length: 500 }, (_, i) => ({
+                        year: 1524 + i,
+                        power: 50 + 40 * Math.exp(-((i - 250) ** 2) / 20000),
+                        education: 30 + 35 * Math.exp(-((i - 220) ** 2) / 18000),
+                        military: 40 + 45 * Math.exp(-((i - 270) ** 2) / 22000),
+                        trade: 35 + 40 * Math.exp(-((i - 240) ** 2) / 19000)
+                    }));
+                }
+                
+                // Generate DAR history
+                function generateDarHistory() {
+                    return Array.from({ length: 30 }, (_, i) => ({
+                        year: 1994 + i,
+                        dar: 1.2 + 0.8 * Math.sin(i * 0.3) + Math.random() * 0.2,
+                        threshold: 2.0
+                    }));
+                }
+                
+                const renderActiveChart = () => {
+                    // Clean up existing chart for active tab
+                    if (chartInstances.current[activeTab]) {
+                        chartInstances.current[activeTab].destroy();
                     }
                     
-                    const ctx = chartRef.current.getContext('2d');
-                    chartInstance.current = new Chart(ctx, {
+                    switch(activeTab) {
+                        case 'short-term':
+                            renderShortTermChart();
+                            break;
+                        case 'long-term':
+                            renderLongTermChart();
+                            break;
+                        case 'empire':
+                            renderEmpireChart();
+                            break;
+                        case 'dar':
+                            renderDarChart();
+                            break;
+                        case 'overview':
+                            renderOverviewChart();
+                            break;
+                    }
+                };
+                
+                const renderShortTermChart = () => {
+                    if (!chartRefs.shortTerm.current) return;
+                    
+                    const ctx = chartRefs.shortTerm.current.getContext('2d');
+                    const data = macroData?.short_term_history || generateShortTermHistory();
+                    
+                    chartInstances.current['short-term'] = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.map(d => d.month),
+                            datasets: [
+                                {
+                                    label: 'Debt Level',
+                                    data: data.map(d => d.debt),
+                                    borderColor: '#ef4444',
+                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                    borderWidth: 2,
+                                    tension: 0.4
+                                },
+                                {
+                                    label: 'GDP Growth',
+                                    data: data.map(d => d.gdp),
+                                    borderColor: '#10b981',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                    borderWidth: 2,
+                                    tension: 0.4
+                                },
+                                {
+                                    label: 'Credit Growth',
+                                    data: data.map(d => d.credit),
+                                    borderColor: '#3b82f6',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    borderWidth: 2,
+                                    tension: 0.4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Short-Term Debt Cycle (5-8 Years)',
+                                    color: '#f1f5f9',
+                                    font: { size: 16, weight: 'bold' }
+                                },
+                                legend: {
+                                    display: true,
+                                    labels: { color: '#94a3b8' }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#64748b', maxRotation: 45 }
+                                },
+                                y: {
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#64748b' }
+                                }
+                            }
+                        }
+                    });
+                };
+                
+                const renderLongTermChart = () => {
+                    if (!chartRefs.longTerm.current) return;
+                    
+                    const ctx = chartRefs.longTerm.current.getContext('2d');
+                    const data = macroData?.long_term_history || generateLongTermHistory();
+                    
+                    chartInstances.current['long-term'] = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.map(d => d.year),
+                            datasets: [
+                                {
+                                    label: 'Debt/GDP %',
+                                    data: data.map(d => d.debtToGDP),
+                                    borderColor: '#ef4444',
+                                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                                    borderWidth: 2,
+                                    fill: true,
+                                    tension: 0.4
+                                },
+                                {
+                                    label: 'Productivity',
+                                    data: data.map(d => d.productivity),
+                                    borderColor: '#10b981',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                                    borderWidth: 2,
+                                    fill: true,
+                                    tension: 0.4
+                                },
+                                {
+                                    label: 'Inequality',
+                                    data: data.map(d => d.inequality),
+                                    borderColor: '#f59e0b',
+                                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                                    borderWidth: 2,
+                                    fill: true,
+                                    tension: 0.4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Long-Term Debt Cycle (75-100 Years)',
+                                    color: '#f1f5f9',
+                                    font: { size: 16, weight: 'bold' }
+                                },
+                                legend: {
+                                    display: true,
+                                    labels: { color: '#94a3b8' }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#64748b' }
+                                },
+                                y: {
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#64748b' }
+                                }
+                            }
+                        }
+                    });
+                };
+                
+                const renderEmpireChart = () => {
+                    if (!chartRefs.empire.current) return;
+                    
+                    const ctx = chartRefs.empire.current.getContext('2d');
+                    const data = macroData?.empire_history || generateEmpireHistory();
+                    
+                    chartInstances.current['empire'] = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.map(d => d.year),
+                            datasets: [
+                                {
+                                    label: 'Global Power',
+                                    data: data.map(d => d.power),
+                                    borderColor: '#3b82f6',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                                    borderWidth: 2,
+                                    fill: true,
+                                    tension: 0.4
+                                },
+                                {
+                                    label: 'Education',
+                                    data: data.map(d => d.education),
+                                    borderColor: '#10b981',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                                    borderWidth: 2,
+                                    fill: true,
+                                    tension: 0.4
+                                },
+                                {
+                                    label: 'Military',
+                                    data: data.map(d => d.military),
+                                    borderColor: '#ef4444',
+                                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                                    borderWidth: 2,
+                                    fill: true,
+                                    tension: 0.4
+                                },
+                                {
+                                    label: 'Trade Share',
+                                    data: data.map(d => d.trade),
+                                    borderColor: '#f59e0b',
+                                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                                    borderWidth: 2,
+                                    fill: true,
+                                    tension: 0.4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Empire Cycle Analysis (250-500 Years)',
+                                    color: '#f1f5f9',
+                                    font: { size: 16, weight: 'bold' }
+                                },
+                                legend: {
+                                    display: true,
+                                    labels: { color: '#94a3b8' }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#64748b' }
+                                },
+                                y: {
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#64748b' }
+                                }
+                            }
+                        }
+                    });
+                };
+                
+                const renderDarChart = () => {
+                    if (!chartRefs.dar.current) return;
+                    
+                    const ctx = chartRefs.dar.current.getContext('2d');
+                    const data = macroData?.dar_history || generateDarHistory();
+                    
+                    chartInstances.current['dar'] = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.map(d => d.year),
+                            datasets: [
+                                {
+                                    label: 'DAR Ratio',
+                                    data: data.map(d => d.dar),
+                                    borderColor: '#3b82f6',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    borderWidth: 2,
+                                    tension: 0.4
+                                },
+                                {
+                                    label: 'Critical Threshold',
+                                    data: data.map(d => d.threshold),
+                                    borderColor: '#ef4444',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    fill: false
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Debt-Asset Ratio (DAR) Analysis',
+                                    color: '#f1f5f9',
+                                    font: { size: 16, weight: 'bold' }
+                                },
+                                legend: {
+                                    display: true,
+                                    labels: { color: '#94a3b8' }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#64748b' }
+                                },
+                                y: {
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                    ticks: { color: '#64748b' }
+                                }
+                            }
+                        }
+                    });
+                };
+                
+                const renderOverviewChart = () => {
+                    if (!chartRefs.overview.current) return;
+                    
+                    const ctx = chartRefs.overview.current.getContext('2d');
+                    
+                    chartInstances.current['overview'] = new Chart(ctx, {
                         type: 'radar',
                         data: {
                             labels: ['Short-Term Debt', 'Long-Term Debt', 'Empire', 'Civil Order'],
                             datasets: [{
                                 label: 'Current State',
                                 data: [
-                                    cyclesData.stdc.score * 100,
-                                    cyclesData.ltdc.score * 100,
-                                    cyclesData.empire.score * 100,
-                                    cyclesData.civil.score * 100
+                                    (macroData?.stdc?.score || 0.72) * 100,
+                                    (macroData?.ltdc?.score || 0.68) * 100,
+                                    (macroData?.empire?.score || 0.51) * 100,
+                                    (macroData?.civil?.composite_score || macroData?.civil?.score || 0.42) * 100
                                 ],
                                 backgroundColor: 'rgba(59, 130, 246, 0.2)',
                                 borderColor: 'rgba(59, 130, 246, 1)',
@@ -4838,11 +5394,20 @@
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Ray Dalio 4-Cycle Framework Overview',
+                                    color: '#f1f5f9',
+                                    font: { size: 16, weight: 'bold' }
+                                },
+                                legend: { display: false }
+                            },
                             scales: {
                                 r: {
                                     angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
                                     grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                                    pointLabels: { color: '#94a3b8' },
+                                    pointLabels: { color: '#94a3b8', font: { size: 12 } },
                                     ticks: { 
                                         color: '#64748b',
                                         backdropColor: 'transparent'
@@ -4850,165 +5415,282 @@
                                     suggestedMin: 0,
                                     suggestedMax: 100
                                 }
-                            },
-                            plugins: {
-                                legend: { display: false }
                             }
                         }
                     });
                 };
                 
+                // Get phase badge color
+                const getPhaseBadgeClass = (phase) => {
+                    const phaseLower = (phase || '').toLowerCase();
+                    if (phaseLower.includes('expansion') || phaseLower.includes('rise')) {
+                        return 'badge-success';
+                    } else if (phaseLower.includes('peak') || phaseLower.includes('late')) {
+                        return 'badge-warning';
+                    } else if (phaseLower.includes('contraction') || phaseLower.includes('decline')) {
+                        return 'badge-error';
+                    }
+                    return 'badge-info';
+                };
+                
                 if (loading) return e('div', { className: 'loading' }, e('div', { className: 'spinner' }));
                 if (error) return e('div', { className: 'error-message' }, error);
                 
-                return e('div', null,
+                return e('div', { className: 'macro-cycles-container' },
+                    // Page Header
                     e('div', { className: 'page-header' },
-                        e('h1', { className: 'page-title' }, 'Macro Economic Cycles'),
+                        e('h1', { className: 'page-title' }, 'MACRO CYCLES ANALYSIS'),
                         e('p', { className: 'page-description' }, 
-                            "Ray Dalio's complete framework: Short-Term Debt, Long-Term Debt, Empire, and Civil Order cycles")
+                            'Comprehensive debt cycle and empire analysis based on Ray Dalio\'s framework')
                     ),
                     
-                    // Cycle Overview Chart
-                    cyclesData && e('div', { className: 'card' },
-                        e('div', { className: 'card-header' },
-                            e('h3', { className: 'card-title' }, 'Cycle Overview')
-                        ),
-                        e('div', { className: 'chart-container' },
-                            e('canvas', { ref: chartRef })
+                    // Cycle Navigation Tabs
+                    e('div', { className: 'cycle-tabs' },
+                        e('div', { className: 'tabs-container' },
+                            ['overview', 'short-term', 'long-term', 'empire', 'dar'].map(tab =>
+                                e('button', {
+                                    key: tab,
+                                    className: `tab-button ${activeTab === tab ? 'active' : ''}`,
+                                    onClick: () => setActiveTab(tab)
+                                },
+                                    tab.replace('-', ' ').toUpperCase(),
+                                    tab === 'dar' ? ' ANALYSIS' : ' CYCLE'
+                                )
+                            )
                         )
                     ),
                     
-                    // Individual Cycle Cards
-                    e('div', { className: 'stats-grid' },
-                        // Short-Term Debt Cycle
-                        cyclesData?.stdc && e('div', { className: 'cycle-card short-term' },
-                            e('div', { className: 'cycle-header' },
-                                e('div', { className: 'cycle-title' }, 'Short-Term Debt Cycle'),
-                                e('div', { className: `cycle-phase ${cyclesData.stdc.phase_label.toLowerCase().includes('expansion') ? 'expansion' : 'contraction'}` }, 
-                                    cyclesData.stdc.phase_label)
+                    // Chart Container
+                    e('div', { className: 'card' },
+                        e('div', { className: 'chart-container', style: { height: '400px', padding: '1rem' } },
+                            activeTab === 'short-term' && e('canvas', { ref: chartRefs.shortTerm }),
+                            activeTab === 'long-term' && e('canvas', { ref: chartRefs.longTerm }),
+                            activeTab === 'empire' && e('canvas', { ref: chartRefs.empire }),
+                            activeTab === 'dar' && e('canvas', { ref: chartRefs.dar }),
+                            activeTab === 'overview' && e('canvas', { ref: chartRefs.overview })
+                        )
+                    ),
+                    
+                    // Metrics Grid based on active tab
+                    activeTab === 'short-term' && macroData?.stdc && e('div', { className: 'stats-grid' },
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'CURRENT PHASE'),
+                            e('div', { className: 'stat-value' }, macroData.stdc.phase_label),
+                            e('span', { className: `badge ${getPhaseBadgeClass(macroData.stdc.phase_label)}` },
+                                `${(macroData.stdc.confidence * 100).toFixed(0)}% confidence`)
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'CREDIT GROWTH'),
+                            e('div', { className: `stat-value ${macroData.stdc.credit_growth >= 0 ? 'positive' : 'negative'}` },
+                                formatPercentage(macroData.stdc.credit_growth)),
+                            e('div', { className: 'stat-description' }, 'Year-over-year change')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'PHASE DURATION'),
+                            e('div', { className: 'stat-value' },
+                                `${macroData.stdc.phase_duration_months} months`),
+                            e('div', { className: 'stat-description' }, 'Current phase length')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'RECESSION PROBABILITY'),
+                            e('div', { className: `stat-value ${macroData.stdc.next_phase_probability?.contraction > 0.5 ? 'negative' : 'neutral'}` },
+                                formatPercentage(macroData.stdc.next_phase_probability?.contraction || 0)),
+                            e('div', { className: 'stat-description' }, 'Next 12-18 months')
+                        )
+                    ),
+                    
+                    activeTab === 'long-term' && macroData?.ltdc && e('div', { className: 'stats-grid' },
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'DEBT TO GDP'),
+                            e('div', { className: 'stat-value negative' },
+                                formatPercentage(macroData.ltdc.debt_to_gdp)),
+                            e('div', { className: 'stat-description' }, 'Total debt burden')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'WEALTH GAP (TOP 1%)'),
+                            e('div', { className: 'stat-value' },
+                                formatPercentage(macroData.ltdc.wealth_gap_top_1pct || 0.35)),
+                            e('div', { className: 'stat-description' }, 'Income inequality measure')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'DELEVERAGING RISK'),
+                            e('div', { className: `stat-value ${macroData.ltdc.deleveraging_risk === 'HIGH' ? 'negative' : 'neutral'}` },
+                                macroData.ltdc.deleveraging_risk),
+                            e('span', { className: `badge ${macroData.ltdc.deleveraging_risk === 'HIGH' ? 'badge-error' : 'badge-warning'}` },
+                                macroData.ltdc.phase_label)
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'DEBT SERVICE RATIO'),
+                            e('div', { className: 'stat-value' },
+                                formatPercentage(macroData.ltdc.debt_service_ratio)),
+                            e('div', { className: 'stat-description' }, 'Interest payment burden')
+                        )
+                    ),
+                    
+                    activeTab === 'empire' && macroData?.empire && e('div', { className: 'stats-grid' },
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'RESERVE CURRENCY'),
+                            e('div', { className: 'stat-value' },
+                                `USD ${formatPercentage(macroData.empire.reserve_currency_share)}`),
+                            e('div', { className: 'stat-description' }, 'Global reserve share')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'GLOBAL TRADE SHARE'),
+                            e('div', { className: 'stat-value' },
+                                formatPercentage(macroData.empire.global_trade_share || 0.243)),
+                            e('div', { className: 'stat-description' }, 'Share of world trade')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'EDUCATION RANK'),
+                            e('div', { className: 'stat-value negative' },
+                                `#${macroData.empire.education_rank}`),
+                            e('div', { className: 'stat-description' }, 'Global education standing')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'INTERNAL CONFLICT'),
+                            e('div', { className: 'stat-value negative' }, 'ELEVATED'),
+                            e('span', { className: 'badge badge-warning' },
+                                macroData.empire.phase_label)
+                        )
+                    ),
+                    
+                    activeTab === 'dar' && macroData?.dar && e('div', { className: 'stats-grid' },
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'CURRENT DAR'),
+                            e('div', { className: 'stat-value' },
+                                formatNumber(macroData.dar.current, 2)),
+                            e('div', { className: 'stat-description' }, 'Debt-Asset Ratio')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, '30-DAY CHANGE'),
+                            e('div', { className: `stat-value ${macroData.dar.thirty_day_change > 0 ? 'negative' : 'positive'}` },
+                                `${macroData.dar.thirty_day_change > 0 ? '+' : ''}${formatNumber(macroData.dar.thirty_day_change, 2)}`),
+                            e('div', { className: 'stat-description' }, 'Recent trend')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'DISTANCE TO CRISIS'),
+                            e('div', { className: 'stat-value warning' },
+                                formatNumber(macroData.dar.distance_to_crisis, 2)),
+                            e('div', { className: 'stat-description' }, 'Buffer to threshold')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-label' }, 'CRITICAL THRESHOLD'),
+                            e('div', { className: 'stat-value' },
+                                formatNumber(macroData.dar.threshold, 1)),
+                            e('span', { className: 'badge badge-info' }, 'MONITORING')
+                        )
+                    ),
+                    
+                    activeTab === 'overview' && e('div', null,
+                        // All 4 Cycles Summary
+                        e('div', { className: 'stats-grid' },
+                            // Short-Term Debt Cycle Card
+                            macroData?.stdc && e('div', { className: 'cycle-card short-term' },
+                                e('div', { className: 'cycle-header' },
+                                    e('div', { className: 'cycle-title' }, 'Short-Term Debt Cycle (5-8 Years)'),
+                                    e('span', { className: `badge ${getPhaseBadgeClass(macroData.stdc.phase_label)}` }, 
+                                        macroData.stdc.phase_label)
+                                ),
+                                e('p', { className: 'cycle-description' }, macroData.stdc.description),
+                                e('div', { className: 'cycle-metrics' },
+                                    e('div', { className: 'metric-row' },
+                                        e('span', { className: 'metric-label' }, 'Credit Growth:'),
+                                        e('span', { className: `metric-value ${macroData.stdc.credit_growth >= 0 ? 'positive' : 'negative'}` },
+                                            formatPercentage(macroData.stdc.credit_growth))
+                                    ),
+                                    e('div', { className: 'metric-row' },
+                                        e('span', { className: 'metric-label' }, 'Phase Duration:'),
+                                        e('span', { className: 'metric-value' },
+                                            `${macroData.stdc.phase_duration_months} months`)
+                                    )
+                                )
                             ),
-                            e('p', { style: { color: 'var(--text-secondary)', marginBottom: '1rem' } }, 
-                                cyclesData.stdc.description),
-                            e('div', { className: 'cycle-metrics' },
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Credit Growth'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        formatPercentage(cyclesData.stdc.credit_growth))
+                            
+                            // Long-Term Debt Cycle Card
+                            macroData?.ltdc && e('div', { className: 'cycle-card long-term' },
+                                e('div', { className: 'cycle-header' },
+                                    e('div', { className: 'cycle-title' }, 'Long-Term Debt Cycle (75-100 Years)'),
+                                    e('span', { className: `badge ${getPhaseBadgeClass(macroData.ltdc.phase_label)}` }, 
+                                        macroData.ltdc.phase_label)
                                 ),
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Policy Rate Z-Score'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        formatNumber(cyclesData.stdc.policy_rate_zscore))
+                                e('p', { className: 'cycle-description' }, macroData.ltdc.description),
+                                e('div', { className: 'cycle-metrics' },
+                                    e('div', { className: 'metric-row' },
+                                        e('span', { className: 'metric-label' }, 'Debt/GDP:'),
+                                        e('span', { className: 'metric-value negative' },
+                                            formatPercentage(macroData.ltdc.debt_to_gdp))
+                                    ),
+                                    e('div', { className: 'metric-row' },
+                                        e('span', { className: 'metric-label' }, 'Deleveraging Risk:'),
+                                        e('span', { className: `metric-value ${macroData.ltdc.deleveraging_risk === 'HIGH' ? 'negative' : 'warning'}` },
+                                            macroData.ltdc.deleveraging_risk)
+                                    )
+                                )
+                            ),
+                            
+                            // Empire Cycle Card
+                            macroData?.empire && e('div', { className: 'cycle-card empire' },
+                                e('div', { className: 'cycle-header' },
+                                    e('div', { className: 'cycle-title' }, 'Empire Cycle (250-500 Years)'),
+                                    e('span', { className: `badge ${getPhaseBadgeClass(macroData.empire.phase_label)}` }, 
+                                        macroData.empire.phase_label)
                                 ),
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Unemployment Gap'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        formatPercentage(cyclesData.stdc.unemployment_gap))
+                                e('p', { className: 'cycle-description' }, macroData.empire.description),
+                                e('div', { className: 'cycle-metrics' },
+                                    e('div', { className: 'metric-row' },
+                                        e('span', { className: 'metric-label' }, 'Reserve Currency:'),
+                                        e('span', { className: 'metric-value' },
+                                            formatPercentage(macroData.empire.reserve_currency_share))
+                                    ),
+                                    e('div', { className: 'metric-row' },
+                                        e('span', { className: 'metric-label' }, 'Education Rank:'),
+                                        e('span', { className: 'metric-value warning' },
+                                            `#${macroData.empire.education_rank}`)
+                                    )
+                                )
+                            ),
+                            
+                            // Civil Order Cycle Card (4th Cycle)
+                            macroData?.civil && e('div', { className: 'cycle-card civil' },
+                                e('div', { className: 'cycle-header' },
+                                    e('div', { className: 'cycle-title' }, 'Civil/Internal Order Cycle'),
+                                    e('span', { className: `badge ${getPhaseBadgeClass(macroData.civil.phase_label)}` }, 
+                                        macroData.civil.phase_label)
                                 ),
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Phase Duration'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        `${cyclesData.stdc.phase_duration_months} months`)
+                                e('p', { className: 'cycle-description' }, macroData.civil.description),
+                                e('div', { className: 'cycle-metrics' },
+                                    e('div', { className: 'metric-row' },
+                                        e('span', { className: 'metric-label' }, 'Wealth Top 1%:'),
+                                        e('span', { className: 'metric-value warning' },
+                                            formatPercentage(macroData.civil.indicators?.wealth_top_1pct || 0.324))
+                                    ),
+                                    e('div', { className: 'metric-row' },
+                                        e('span', { className: 'metric-label' }, 'Trust Level:'),
+                                        e('span', { className: 'metric-value negative' },
+                                            formatPercentage(macroData.civil.indicators?.institutional_trust || 0.38))
+                                    )
                                 )
                             )
                         ),
                         
-                        // Long-Term Debt Cycle
-                        cyclesData?.ltdc && e('div', { className: 'cycle-card long-term' },
-                            e('div', { className: 'cycle-header' },
-                                e('div', { className: 'cycle-title' }, 'Long-Term Debt Cycle'),
-                                e('div', { className: `cycle-phase ${cyclesData.ltdc.phase_label.toLowerCase().includes('early') ? 'expansion' : 'contraction'}` }, 
-                                    cyclesData.ltdc.phase_label)
+                        // Regime Detection Summary
+                        macroData?.regime_detection && e('div', { className: 'card', style: { marginTop: '1.5rem' } },
+                            e('div', { className: 'card-header' },
+                                e('h3', { className: 'card-title' }, 'Regime Detection'),
+                                e('span', { className: 'badge badge-warning' }, 
+                                    macroData.regime_detection.classification)
                             ),
-                            e('p', { style: { color: 'var(--text-secondary)', marginBottom: '1rem' } }, 
-                                cyclesData.ltdc.description),
-                            e('div', { className: 'cycle-metrics' },
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Debt-to-GDP'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        formatPercentage(cyclesData.ltdc.debt_to_gdp))
-                                ),
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Debt Service Ratio'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        formatPercentage(cyclesData.ltdc.debt_service_ratio))
-                                ),
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Real Rates Trend'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        formatPercentage(cyclesData.ltdc.real_rates_trend))
-                                ),
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Deleveraging Risk'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        cyclesData.ltdc.deleveraging_risk || 'MEDIUM')
-                                )
-                            )
-                        ),
-                        
-                        // Empire Cycle
-                        cyclesData?.empire && e('div', { className: 'cycle-card empire' },
-                            e('div', { className: 'cycle-header' },
-                                e('div', { className: 'cycle-title' }, 'Empire Cycle'),
-                                e('div', { className: `cycle-phase ${cyclesData.empire.phase_label.toLowerCase().includes('rise') ? 'expansion' : 'contraction'}` }, 
-                                    cyclesData.empire.phase_label)
-                            ),
-                            e('p', { style: { color: 'var(--text-secondary)', marginBottom: '1rem' } }, 
-                                cyclesData.empire.description),
-                            e('div', { className: 'cycle-metrics' },
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Reserve Currency'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        formatPercentage(cyclesData.empire.reserve_currency_share))
-                                ),
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Military Power'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        formatPercentage(cyclesData.empire.military_power))
-                                ),
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Innovation Rate'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        formatPercentage(cyclesData.empire.innovation_rate))
-                                ),
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Trade Balance'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        formatPercentage(cyclesData.empire.trade_balance))
-                                )
-                            )
-                        ),
-                        
-                        // Civil/Internal Order Cycle
-                        cyclesData?.civil && e('div', { className: 'cycle-card civil' },
-                            e('div', { className: 'cycle-header' },
-                                e('div', { className: 'cycle-title' }, 'Civil Order Cycle'),
-                                e('div', { className: `cycle-phase transition` }, 
-                                    cyclesData.civil.phase_label)
-                            ),
-                            e('p', { style: { color: 'var(--text-secondary)', marginBottom: '1rem' } }, 
-                                cyclesData.civil.description),
-                            e('div', { className: 'cycle-metrics' },
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Gini Coefficient'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        formatNumber(cyclesData.civil.gini_coefficient, 3))
-                                ),
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Wealth Top 1%'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        formatPercentage(cyclesData.civil.wealth_top_1pct))
-                                ),
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Polarization'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        formatNumber(cyclesData.civil.polarization_index, 2))
-                                ),
-                                e('div', { className: 'cycle-metric' },
-                                    e('div', { className: 'cycle-metric-label' }, 'Trust Level'),
-                                    e('div', { className: 'cycle-metric-value' }, 
-                                        formatPercentage(cyclesData.civil.institutional_trust))
-                                )
+                            e('p', { style: { color: 'var(--text-secondary)', marginTop: '1rem' } },
+                                macroData.regime_detection.description),
+                            e('div', { className: 'regime-indicators' },
+                                e('span', { className: 'regime-tag' }, 
+                                    `Inflation: ${macroData.regime_detection.inflation}`),
+                                e('span', { className: 'regime-tag' }, 
+                                    `Growth: ${macroData.regime_detection.growth}`),
+                                e('span', { className: 'regime-tag' }, 
+                                    `Credit: ${macroData.regime_detection.credit}`),
+                                e('span', { className: 'regime-tag' }, 
+                                    `Liquidity: ${macroData.regime_detection.liquidity}`)
                             )
                         )
                     )
