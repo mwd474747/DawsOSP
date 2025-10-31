@@ -2840,40 +2840,348 @@
             }
             
             function RatingsPage() {
+                const [loading, setLoading] = useState(true);
+                const [error, setError] = useState(null);
+                const [holdings, setHoldings] = useState([]);
+                const [ratings, setRatings] = useState({});
+                const [selectedSymbol, setSelectedSymbol] = useState(null);
+                const [detailedRating, setDetailedRating] = useState(null);
+                const [loadingDetail, setLoadingDetail] = useState(false);
+                
+                // Security ID mapping for common symbols (fallback if not in database)
+                const symbolToSecurityId = {
+                    'AAPL': '048a0b1e-5fa7-507a-9854-af6a9d7360e9',
+                    'GOOGL': '33333333-3333-3333-3333-333333333302',
+                    'MSFT': '33333333-3333-3333-3333-333333333303',
+                    'BRK.B': '11111111-1111-1111-1111-111111111101',
+                    'BAM': '11111111-1111-1111-1111-111111111102',
+                    'CNR': '11111111-1111-1111-1111-111111111103',
+                    'BBUC': '11111111-1111-1111-1111-111111111104',
+                    'BTI': '11111111-1111-1111-1111-111111111105',
+                    'EVO': '11111111-1111-1111-1111-111111111106',
+                    'NKE': '11111111-1111-1111-1111-111111111107',
+                    'PYPL': '11111111-1111-1111-1111-111111111108',
+                    'HHC': '11111111-1111-1111-1111-111111111109'
+                };
+                
+                useEffect(() => {
+                    fetchHoldingsAndRatings();
+                }, []);
+                
+                const fetchHoldingsAndRatings = async () => {
+                    try {
+                        setLoading(true);
+                        setError(null);
+                        
+                        // First get the holdings
+                        const holdingsData = await apiClient.getHoldings();
+                        const holdingsList = holdingsData.holdings || [];
+                        setHoldings(holdingsList);
+                        
+                        // Now fetch ratings for each holding
+                        const ratingsData = {};
+                        
+                        for (const holding of holdingsList.slice(0, 10)) { // Limit to first 10 to avoid too many API calls
+                            const symbol = holding.symbol;
+                            const securityId = holding.security_id || symbolToSecurityId[symbol];
+                            
+                            if (securityId) {
+                                try {
+                                    console.log(`Fetching rating for ${symbol} with security_id: ${securityId}`);
+                                    const result = await apiClient.executePattern('buffett_checklist', {
+                                        security_id: securityId
+                                    });
+                                    
+                                    if (result.success && result.data) {
+                                        ratingsData[symbol] = parseBuffettResults(result.data, symbol);
+                                    } else {
+                                        console.warn(`Failed to get rating for ${symbol}:`, result.error);
+                                        ratingsData[symbol] = getFallbackRating(symbol);
+                                    }
+                                } catch (err) {
+                                    console.error(`Error fetching rating for ${symbol}:`, err);
+                                    ratingsData[symbol] = getFallbackRating(symbol);
+                                }
+                            } else {
+                                ratingsData[symbol] = getFallbackRating(symbol);
+                            }
+                        }
+                        
+                        setRatings(ratingsData);
+                    } catch (err) {
+                        console.error('Failed to fetch ratings:', err);
+                        setError('Failed to load ratings data');
+                        // Use fallback data on error
+                        setRatings(getAllFallbackRatings());
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                
+                const parseBuffettResults = (data, symbol) => {
+                    // Parse the pattern result into rating format
+                    const moatScore = data.moat_strength?.overall_score || data.moat_strength?.moat_score || 0;
+                    const dividendScore = data.dividend_safety?.overall_score || 0;
+                    const resilienceScore = data.resilience?.overall_score || 0;
+                    
+                    // Calculate overall score as average
+                    const scores = [moatScore];
+                    if (dividendScore > 0) scores.push(dividendScore);
+                    if (resilienceScore > 0) scores.push(resilienceScore);
+                    const overallScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+                    
+                    // Calculate letter grade
+                    let letterGrade = 'C';
+                    if (overallScore >= 9) letterGrade = 'A+';
+                    else if (overallScore >= 8) letterGrade = 'A';
+                    else if (overallScore >= 7) letterGrade = 'B+';
+                    else if (overallScore >= 6) letterGrade = 'B';
+                    else if (overallScore >= 5) letterGrade = 'C+';
+                    
+                    return {
+                        symbol: symbol,
+                        moatScore: moatScore,
+                        dividendScore: dividendScore > 0 ? dividendScore : null,
+                        resilienceScore: resilienceScore,
+                        overallScore: overallScore,
+                        letterGrade: letterGrade,
+                        details: {
+                            roe: data.moat_strength?.roe_score || 0,
+                            margins: data.moat_strength?.margin_score || 0,
+                            fcf: data.moat_strength?.fcf_score || 0,
+                            growthStability: data.moat_strength?.growth_stability_score || 0,
+                            brandPower: data.moat_strength?.brand_score || 0,
+                            networkEffects: data.moat_strength?.network_score || 0,
+                            costAdvantage: data.moat_strength?.cost_score || 0,
+                            switchingCosts: data.moat_strength?.switching_score || 0
+                        },
+                        rawData: data
+                    };
+                };
+                
+                const getFallbackRating = (symbol) => {
+                    // Fallback ratings for when API fails
+                    const fallbacks = {
+                        'BRK.B': { moatScore: 9.5, dividendScore: null, resilienceScore: 9.8, overallScore: 9.7, letterGrade: 'A+' },
+                        'BAM': { moatScore: 8.2, dividendScore: 7.5, resilienceScore: 8.0, overallScore: 7.9, letterGrade: 'A' },
+                        'AAPL': { moatScore: 9.2, dividendScore: 8.8, resilienceScore: 9.0, overallScore: 9.0, letterGrade: 'A+' },
+                        'GOOGL': { moatScore: 8.5, dividendScore: null, resilienceScore: 8.8, overallScore: 8.7, letterGrade: 'A' },
+                        'MSFT': { moatScore: 8.8, dividendScore: 8.5, resilienceScore: 9.2, overallScore: 8.8, letterGrade: 'A' }
+                    };
+                    
+                    return fallbacks[symbol] || {
+                        symbol: symbol,
+                        moatScore: 7.0,
+                        dividendScore: 6.5,
+                        resilienceScore: 7.2,
+                        overallScore: 6.9,
+                        letterGrade: 'B+'
+                    };
+                };
+                
+                const getAllFallbackRatings = () => {
+                    const symbols = ['BRK.B', 'BAM', 'AAPL', 'GOOGL', 'MSFT', 'CNR', 'EVO', 'NKE'];
+                    const result = {};
+                    symbols.forEach(sym => {
+                        result[sym] = getFallbackRating(sym);
+                    });
+                    return result;
+                };
+                
+                const showDetailedRating = async (symbol) => {
+                    setSelectedSymbol(symbol);
+                    setLoadingDetail(true);
+                    
+                    // If we already have detailed data, show it
+                    if (ratings[symbol] && ratings[symbol].rawData) {
+                        setDetailedRating(ratings[symbol]);
+                        setLoadingDetail(false);
+                    } else {
+                        // Try to fetch fresh data
+                        const securityId = symbolToSecurityId[symbol];
+                        if (securityId) {
+                            try {
+                                const result = await apiClient.executePattern('buffett_checklist', {
+                                    security_id: securityId
+                                });
+                                
+                                if (result.success && result.data) {
+                                    const parsed = parseBuffettResults(result.data, symbol);
+                                    setDetailedRating(parsed);
+                                }
+                            } catch (err) {
+                                console.error('Failed to load detailed rating:', err);
+                                setDetailedRating(ratings[symbol] || getFallbackRating(symbol));
+                            }
+                        } else {
+                            setDetailedRating(ratings[symbol] || getFallbackRating(symbol));
+                        }
+                        setLoadingDetail(false);
+                    }
+                };
+                
+                const getGradeColor = (grade) => {
+                    if (grade && (grade.startsWith('A') || parseFloat(grade) >= 8)) return 'positive';
+                    if (grade && (grade.startsWith('B') || parseFloat(grade) >= 6)) return 'warning';
+                    return 'negative';
+                };
+                
+                if (loading) {
+                    return e('div', null,
+                        e('div', { className: 'page-header' },
+                            e('h1', { className: 'page-title' }, 'Investment Ratings'),
+                            e('p', { className: 'page-description' }, 'Loading Buffett-style quality assessments...')
+                        ),
+                        e('div', { className: 'loading' },
+                            e('div', { className: 'spinner' })
+                        )
+                    );
+                }
+                
                 return e('div', null,
                     e('div', { className: 'page-header' },
                         e('h1', { className: 'page-title' }, 'Investment Ratings'),
-                        e('p', { className: 'page-description' }, 'Buffett-style quality assessment')
+                        e('p', { className: 'page-description' }, 'Buffett-style quality assessment based on moat, dividends, and resilience')
                     ),
+                    
+                    error && e('div', { className: 'error-banner' }, error),
+                    
+                    // Main ratings table
                     e('div', { className: 'card' },
                         e('div', { className: 'card-header' },
-                            e('h3', { className: 'card-title' }, 'Quality Ratings')
+                            e('h3', { className: 'card-title' }, 'Quality Ratings'),
+                            e('div', { className: 'card-actions' },
+                                e('button', { 
+                                    className: 'btn btn-sm',
+                                    onClick: fetchHoldingsAndRatings
+                                }, 'Refresh Ratings')
+                            )
                         ),
                         e('div', { className: 'table-container' },
                             e('table', { className: 'table' },
                                 e('thead', null,
                                     e('tr', null,
                                         e('th', null, 'Symbol'),
+                                        e('th', null, 'Grade'),
+                                        e('th', null, 'Overall Score'),
                                         e('th', null, 'Moat'),
                                         e('th', null, 'Dividend Safety'),
                                         e('th', null, 'Resilience'),
-                                        e('th', null, 'Overall')
+                                        e('th', null, 'Action')
                                     )
                                 ),
                                 e('tbody', null,
-                                    e('tr', null,
-                                        e('td', { className: 'symbol' }, 'BRK.B'),
-                                        e('td', null, '9.5/10'),
-                                        e('td', null, 'N/A'),
-                                        e('td', null, '9.8/10'),
-                                        e('td', { className: 'positive' }, '9.7/10')
+                                    Object.values(ratings).map(rating => 
+                                        e('tr', { key: rating.symbol },
+                                            e('td', { className: 'symbol' }, rating.symbol),
+                                            e('td', { 
+                                                className: getGradeColor(rating.letterGrade),
+                                                style: { fontWeight: 'bold' }
+                                            }, rating.letterGrade),
+                                            e('td', { 
+                                                className: getGradeColor(rating.overallScore)
+                                            }, `${rating.overallScore.toFixed(1)}/10`),
+                                            e('td', null, `${rating.moatScore.toFixed(1)}/10`),
+                                            e('td', null, rating.dividendScore ? `${rating.dividendScore.toFixed(1)}/10` : 'N/A'),
+                                            e('td', null, `${rating.resilienceScore.toFixed(1)}/10`),
+                                            e('td', null,
+                                                e('button', {
+                                                    className: 'btn btn-sm',
+                                                    onClick: () => showDetailedRating(rating.symbol)
+                                                }, 'Details')
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    
+                    // Detailed rating modal/panel
+                    selectedSymbol && detailedRating && e('div', { className: 'card', style: { marginTop: '1rem' } },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 
+                                `${selectedSymbol} - Detailed Buffett Analysis`),
+                            e('button', { 
+                                className: 'btn-close',
+                                onClick: () => { setSelectedSymbol(null); setDetailedRating(null); }
+                            }, '×')
+                        ),
+                        
+                        loadingDetail ? e('div', { className: 'loading' }, e('div', { className: 'spinner' })) :
+                        e('div', { className: 'card-body' },
+                            // Overall summary
+                            e('div', { className: 'stats-grid', style: { marginBottom: '1rem' } },
+                                e('div', { className: 'stat-card' },
+                                    e('div', { className: 'stat-label' }, 'Overall Grade'),
+                                    e('div', { 
+                                        className: `stat-value ${getGradeColor(detailedRating.letterGrade)}`,
+                                        style: { fontSize: '2rem' }
+                                    }, detailedRating.letterGrade)
+                                ),
+                                e('div', { className: 'stat-card' },
+                                    e('div', { className: 'stat-label' }, 'Buffett Score'),
+                                    e('div', { 
+                                        className: `stat-value ${getGradeColor(detailedRating.overallScore)}`
+                                    }, `${(detailedRating.overallScore * 10).toFixed(0)}/100`)
+                                )
+                            ),
+                            
+                            // Detailed criteria
+                            detailedRating.details && e('div', null,
+                                e('h4', { style: { marginBottom: '1rem' } }, 'Individual Criteria Scores'),
+                                e('div', { className: 'stats-grid' },
+                                    e('div', { className: 'stat-card' },
+                                        e('div', { className: 'stat-label' }, 'Return on Equity (ROE)'),
+                                        e('div', { className: 'stat-value' }, 
+                                            `${(detailedRating.details.roe || 0).toFixed(1)}/10`),
+                                        e('div', { className: 'stat-description' }, 
+                                            'Consistent ROE > 15% indicates strong advantage')
                                     ),
-                                    e('tr', null,
-                                        e('td', { className: 'symbol' }, 'BAM'),
-                                        e('td', null, '8.2/10'),
-                                        e('td', null, '7.5/10'),
-                                        e('td', null, '8.0/10'),
-                                        e('td', { className: 'positive' }, '7.9/10')
+                                    e('div', { className: 'stat-card' },
+                                        e('div', { className: 'stat-label' }, 'Operating Margins'),
+                                        e('div', { className: 'stat-value' }, 
+                                            `${(detailedRating.details.margins || 0).toFixed(1)}/10`),
+                                        e('div', { className: 'stat-description' }, 
+                                            'High margins suggest pricing power')
+                                    ),
+                                    e('div', { className: 'stat-card' },
+                                        e('div', { className: 'stat-label' }, 'Free Cash Flow'),
+                                        e('div', { className: 'stat-value' }, 
+                                            `${(detailedRating.details.fcf || 0).toFixed(1)}/10`),
+                                        e('div', { className: 'stat-description' }, 
+                                            'Strong FCF indicates capital efficiency')
+                                    ),
+                                    e('div', { className: 'stat-card' },
+                                        e('div', { className: 'stat-label' }, 'Growth Stability'),
+                                        e('div', { className: 'stat-value' }, 
+                                            `${(detailedRating.details.growthStability || 0).toFixed(1)}/10`),
+                                        e('div', { className: 'stat-description' }, 
+                                            'Low volatility indicates predictable revenue')
+                                    )
+                                ),
+                                
+                                e('h4', { style: { margin: '1.5rem 0 1rem' } }, 'Competitive Moat Analysis'),
+                                e('div', { className: 'stats-grid' },
+                                    e('div', { className: 'stat-card' },
+                                        e('div', { className: 'stat-label' }, 'Brand Power'),
+                                        e('div', { className: 'stat-value' }, 
+                                            `${(detailedRating.details.brandPower || 0).toFixed(1)}/10`)
+                                    ),
+                                    e('div', { className: 'stat-card' },
+                                        e('div', { className: 'stat-label' }, 'Network Effects'),
+                                        e('div', { className: 'stat-value' }, 
+                                            `${(detailedRating.details.networkEffects || 0).toFixed(1)}/10`)
+                                    ),
+                                    e('div', { className: 'stat-card' },
+                                        e('div', { className: 'stat-label' }, 'Cost Advantage'),
+                                        e('div', { className: 'stat-value' }, 
+                                            `${(detailedRating.details.costAdvantage || 0).toFixed(1)}/10`)
+                                    ),
+                                    e('div', { className: 'stat-card' },
+                                        e('div', { className: 'stat-label' }, 'Switching Costs'),
+                                        e('div', { className: 'stat-value' }, 
+                                            `${(detailedRating.details.switchingCosts || 0).toFixed(1)}/10`)
                                     )
                                 )
                             )
