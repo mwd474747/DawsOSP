@@ -4411,11 +4411,11 @@
                 /**
                  * Execute pattern with caching
                  * @param {string} pattern - Pattern name
-                 * @param {object} params - Pattern parameters
+                 * @param {object} inputs - Pattern inputs (must be named 'inputs' for backend compatibility)
                  * @param {object} options - Cache options
                  */
-                executePattern: async (pattern, params = {}, options = {}) => {
-                    const queryKey = queryKeys.pattern(pattern, params);
+                executePattern: async (pattern, inputs = {}, options = {}) => {
+                    const queryKey = queryKeys.pattern(pattern, inputs);
                     
                     // Different cache times for different patterns
                     const cacheConfig = {
@@ -4425,7 +4425,7 @@
                     
                     return CacheManager.get(
                         queryKey,
-                        () => apiClient.executePattern(pattern, params),
+                        () => apiClient.executePattern(pattern, inputs),
                         cacheConfig
                     );
                 },
