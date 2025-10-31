@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { FileText, Download, Clock, CheckCircle, Calendar, Filter, FileDown } from 'lucide-react'
+import { apiClient } from '@/lib/api-client'
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState('generate')
@@ -11,11 +12,16 @@ export default function ReportsPage() {
 
   const generateReport = async () => {
     setGenerating(true)
-    // Simulate report generation
-    setTimeout(() => {
-      setGenerating(false)
+    try {
+      const response = await apiClient.getReports('1')
+      console.log('Report generated:', response)
       alert('Report generated successfully!')
-    }, 3000)
+    } catch (error) {
+      console.error('Failed to generate report:', error)
+      alert('Failed to generate report')
+    } finally {
+      setGenerating(false)
+    }
   }
 
   // Sample report history

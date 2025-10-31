@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Bell, AlertTriangle, TrendingUp, TrendingDown, Clock, Check, X, AlertCircle } from 'lucide-react'
+import { apiClient } from '@/lib/api-client'
 
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState<any[]>([])
@@ -17,9 +18,18 @@ export default function AlertsPage() {
 
   const fetchAlerts = async () => {
     try {
-      const response = await fetch('/api/alerts')
-      const data = await response.json()
-      setAlerts(data.alerts || [])
+      const [activeAlerts, triggeredAlerts] = await Promise.all([
+        apiClient.getAlerts(),
+        apiClient.getTriggeredAlerts()
+      ])
+      
+      // Combine alerts from both endpoints
+      const allAlerts = [
+        ...(activeAlerts || []),
+        ...(triggeredAlerts || [])
+      ]
+      
+      setAlerts(allAlerts.length > 0 ? allAlerts : sampleAlerts)
     } catch (error) {
       console.error('Failed to fetch alerts:', error)
       // Use sample data if API fails

@@ -11,13 +11,16 @@ export default function RiskAnalyticsPage() {
 
   useEffect(() => {
     fetchRiskData()
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchRiskData, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   const fetchRiskData = async () => {
     try {
       const [metricsResponse, attributionResponse] = await Promise.all([
-        fetch('/api/metrics').then(res => res.json()),
-        fetch('/api/attribution').then(res => res.json())
+        apiClient.getMetrics('1'),
+        apiClient.getAttribution('1')
       ])
       setRiskData({ metrics: metricsResponse, attribution: attributionResponse })
     } catch (error) {

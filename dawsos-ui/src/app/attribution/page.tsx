@@ -16,7 +16,7 @@ export default function AttributionPage() {
 
   const fetchAttributionData = async () => {
     try {
-      const response = await fetch('/api/attribution').then(res => res.json())
+      const response = await apiClient.getAttribution('1')
       setAttributionData(response)
     } catch (error) {
       console.error('Failed to fetch attribution data:', error)

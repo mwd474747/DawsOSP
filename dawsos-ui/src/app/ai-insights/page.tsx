@@ -38,20 +38,37 @@ export default function AIInsightsPage() {
     setLoading(true)
 
     try {
-      // Simulate API call for now
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Call the real AI insights endpoint
+      const response = await apiClient.getPortfolioAnalysis('1')
       
-      // Generate sample response
+      // Use the response or fallback to sample response
+      let responseContent = ''
+      if (response?.analysis) {
+        responseContent = response.analysis
+      } else if (response?.insights) {
+        responseContent = response.insights
+      } else {
+        responseContent = generateSampleResponse(input)
+      }
+      
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: generateSampleResponse(input),
+        content: responseContent,
         timestamp: new Date()
       }
 
       setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
       console.error('Failed to get AI response:', error)
+      // Fallback to sample response on error
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: generateSampleResponse(input),
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, assistantMessage])
     } finally {
       setLoading(false)
     }

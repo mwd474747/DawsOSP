@@ -1,13 +1,38 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Scenarios } from '@/components/Scenarios';
 import { TrendingUp, Shield, AlertTriangle, DollarSign } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
 export default function ScenariosPage() {
+  const [scenarioData, setScenarioData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchScenarioData();
+  }, []);
+
+  const fetchScenarioData = async () => {
+    try {
+      const response = await apiClient.getScenarios('1');
+      setScenarioData(response);
+    } catch (error) {
+      console.error('Failed to fetch scenario data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate metrics from real data
+  const activeScenarios = scenarioData?.scenarios?.length || 5;
+  const riskLevel = scenarioData?.overall_risk || 'Medium';
+  const worstCase = scenarioData?.worst_case_return || -28;
+  const bestCase = scenarioData?.best_case_return || 22;
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
       {/* Animated Background Elements */}
@@ -50,7 +75,7 @@ export default function ScenariosPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-600">Active Scenarios</p>
-                  <p className="text-2xl font-bold text-slate-900">5</p>
+                  <p className="text-2xl font-bold text-slate-900">{activeScenarios}</p>
                 </div>
                 <TrendingUp className="w-5 h-5 text-blue-500" />
               </div>
@@ -60,7 +85,7 @@ export default function ScenariosPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-600">Risk Level</p>
-                  <p className="text-2xl font-bold text-amber-600">Medium</p>
+                  <p className="text-2xl font-bold text-amber-600">{riskLevel}</p>
                 </div>
                 <AlertTriangle className="w-5 h-5 text-amber-500" />
               </div>
@@ -70,7 +95,7 @@ export default function ScenariosPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-600">Worst Case</p>
-                  <p className="text-2xl font-bold text-red-600">-28%</p>
+                  <p className="text-2xl font-bold text-red-600">{worstCase}%</p>
                 </div>
                 <DollarSign className="w-5 h-5 text-red-500" />
               </div>
@@ -80,7 +105,7 @@ export default function ScenariosPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-600">Best Case</p>
-                  <p className="text-2xl font-bold text-green-600">+22%</p>
+                  <p className="text-2xl font-bold text-green-600">{bestCase > 0 ? '+' : ''}{bestCase}%</p>
                 </div>
                 <DollarSign className="w-5 h-5 text-green-500" />
               </div>

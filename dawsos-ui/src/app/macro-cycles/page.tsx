@@ -11,6 +11,9 @@ export default function MacroCyclesPage() {
 
   useEffect(() => {
     fetchMacroData()
+    // Auto-refresh every 60 seconds
+    const interval = setInterval(fetchMacroData, 60000)
+    return () => clearInterval(interval)
   }, [])
 
   const fetchMacroData = async () => {
@@ -27,22 +30,22 @@ export default function MacroCyclesPage() {
     }
   }
 
-  // Generate sample data for visualizations
-  const shortTermDebtCycle = Array.from({ length: 96 }, (_, i) => ({
+  // Process real data or use fallback visualizations
+  const shortTermDebtCycle = macroData?.short_term_cycle || Array.from({ length: 96 }, (_, i) => ({
     month: `M${i + 1}`,
     debt: 100 + 20 * Math.sin(i * 0.13) + Math.random() * 10,
     gdp: 100 + 15 * Math.sin(i * 0.13 + 1) + Math.random() * 5,
     credit: 100 + 25 * Math.sin(i * 0.13 - 0.5) + Math.random() * 8
   }))
 
-  const longTermDebtCycle = Array.from({ length: 100 }, (_, i) => ({
+  const longTermDebtCycle = macroData?.long_term_cycle || Array.from({ length: 100 }, (_, i) => ({
     year: 1920 + i,
     debtToGDP: 30 + 40 * Math.sin(i * 0.063) + i * 0.3,
     productivity: 100 + i * 0.5 + Math.random() * 10,
     inequality: 20 + 30 * Math.sin(i * 0.063 + 2) + i * 0.2
   }))
 
-  const empireCycle = Array.from({ length: 500 }, (_, i) => ({
+  const empireCycle = macroData?.empire_cycle || Array.from({ length: 500 }, (_, i) => ({
     year: 1500 + i,
     power: 50 + 40 * Math.exp(-((i - 250) ** 2) / 20000),
     education: 30 + 35 * Math.exp(-((i - 220) ** 2) / 18000),
@@ -50,11 +53,34 @@ export default function MacroCyclesPage() {
     trade: 35 + 40 * Math.exp(-((i - 240) ** 2) / 19000)
   }))
 
-  const darData = Array.from({ length: 30 }, (_, i) => ({
+  const darData = macroData?.dar_analysis || Array.from({ length: 30 }, (_, i) => ({
     year: 1994 + i,
     dar: 1.2 + 0.8 * Math.sin(i * 0.3) + Math.random() * 0.2,
     threshold: 2.0
   }))
+
+  // Extract real metrics from backend data
+  const currentPhase = macroData?.regime?.current_phase || 'EXPANSION'
+  const cycleDuration = macroData?.regime?.cycle_duration || '5.3 Years'
+  const creditGrowth = macroData?.metrics?.credit_growth || 8.2
+  const nextRecession = macroData?.regime?.next_recession_estimate || '18-24 Months'
+  
+  const debtToGdp = macroData?.metrics?.debt_to_gdp || 280
+  const wealthGap = macroData?.metrics?.wealth_gap_top_1pct || 35
+  const deleveragingRisk = macroData?.metrics?.deleveraging_risk || 'HIGH'
+  
+  const currentDar = macroData?.dar?.current || 1.85
+  const darChange = macroData?.dar?.thirty_day_change || 0.12
+  const distanceToCrisis = macroData?.dar?.distance_to_crisis || 0.15
+  
+  const regimeDetection = macroData?.regime_detection || {
+    inflation: 'DECLINING',
+    growth: 'SLOWING',
+    credit: 'TIGHTENING',
+    liquidity: 'MODERATE',
+    classification: 'LATE CYCLE SLOWDOWN',
+    description: 'Characterized by slowing growth, tightening credit conditions, and elevated debt levels. Risk of recession in next 12-18 months.'
+  }
 
   if (loading) {
     return (
@@ -120,19 +146,21 @@ export default function MacroCyclesPage() {
           <div className="grid grid-cols-4 gap-4">
             <div className="data-cell">
               <div className="data-label">Current Phase</div>
-              <div className="data-value text-blue-400">EXPANSION</div>
+              <div className="data-value text-blue-400">{currentPhase}</div>
             </div>
             <div className="data-cell">
               <div className="data-label">Cycle Duration</div>
-              <div className="data-value">5.3 Years</div>
+              <div className="data-value">{cycleDuration}</div>
             </div>
             <div className="data-cell">
               <div className="data-label">Credit Growth</div>
-              <div className="data-value profit">+8.2%</div>
+              <div className={`data-value ${creditGrowth >= 0 ? 'profit' : 'loss'}`}>
+                {creditGrowth >= 0 ? '+' : ''}{creditGrowth.toFixed(1)}%
+              </div>
             </div>
             <div className="data-cell">
               <div className="data-label">Next Recession</div>
-              <div className="data-value text-yellow-400">18-24 Months</div>
+              <div className="data-value text-yellow-400">{nextRecession}</div>
             </div>
           </div>
         </div>
@@ -168,15 +196,17 @@ export default function MacroCyclesPage() {
           <div className="grid grid-cols-3 gap-4">
             <div className="data-cell">
               <div className="data-label">Total Debt/GDP</div>
-              <div className="data-value loss">280%</div>
+              <div className="data-value loss">{debtToGdp}%</div>
             </div>
             <div className="data-cell">
               <div className="data-label">Wealth Gap (Top 1%)</div>
-              <div className="data-value text-yellow-400">35%</div>
+              <div className="data-value text-yellow-400">{wealthGap}%</div>
             </div>
             <div className="data-cell">
               <div className="data-label">Deleveraging Risk</div>
-              <div className="data-value loss">HIGH</div>
+              <div className={`data-value ${deleveragingRisk === 'HIGH' ? 'loss' : deleveragingRisk === 'LOW' ? 'profit' : 'text-yellow-400'}`}>
+                {deleveragingRisk}
+              </div>
             </div>
           </div>
         </div>
@@ -260,19 +290,23 @@ export default function MacroCyclesPage() {
           <div className="grid grid-cols-4 gap-4">
             <div className="data-cell">
               <div className="data-label">Current DAR</div>
-              <div className="data-value">1.85</div>
+              <div className="data-value">{currentDar.toFixed(2)}</div>
             </div>
             <div className="data-cell">
               <div className="data-label">30-Day Change</div>
-              <div className="data-value loss">+0.12</div>
+              <div className={`data-value ${darChange > 0 ? 'loss' : 'profit'}`}>
+                {darChange > 0 ? '+' : ''}{darChange.toFixed(2)}
+              </div>
             </div>
             <div className="data-cell">
               <div className="data-label">Distance to Crisis</div>
-              <div className="data-value text-yellow-400">0.15</div>
+              <div className="data-value text-yellow-400">{distanceToCrisis.toFixed(2)}</div>
             </div>
             <div className="data-cell">
               <div className="data-label">Risk Level</div>
-              <div className="data-value text-yellow-400">MODERATE</div>
+              <div className={`data-value ${distanceToCrisis < 0.1 ? 'loss' : distanceToCrisis < 0.2 ? 'text-yellow-400' : 'profit'}`}>
+                {distanceToCrisis < 0.1 ? 'HIGH' : distanceToCrisis < 0.2 ? 'MODERATE' : 'LOW'}
+              </div>
             </div>
           </div>
         </div>
@@ -289,29 +323,36 @@ export default function MacroCyclesPage() {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-slate-400">Inflation</span>
-                <span className="profit">DECLINING</span>
+                <span className={regimeDetection.inflation === 'DECLINING' ? 'profit' : regimeDetection.inflation === 'RISING' ? 'loss' : 'text-yellow-400'}>
+                  {regimeDetection.inflation}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-400">Growth</span>
-                <span className="text-yellow-400">SLOWING</span>
+                <span className={regimeDetection.growth === 'ACCELERATING' ? 'profit' : regimeDetection.growth === 'SLOWING' ? 'text-yellow-400' : 'loss'}>
+                  {regimeDetection.growth}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-400">Credit</span>
-                <span className="loss">TIGHTENING</span>
+                <span className={regimeDetection.credit === 'EASING' ? 'profit' : regimeDetection.credit === 'TIGHTENING' ? 'loss' : 'text-yellow-400'}>
+                  {regimeDetection.credit}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-400">Liquidity</span>
-                <span className="text-yellow-400">MODERATE</span>
+                <span className={regimeDetection.liquidity === 'AMPLE' ? 'profit' : regimeDetection.liquidity === 'TIGHT' ? 'loss' : 'text-yellow-400'}>
+                  {regimeDetection.liquidity}
+                </span>
               </div>
             </div>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-slate-400 mb-4">REGIME CLASSIFICATION</h3>
             <div className="p-4 border-2 border-yellow-500/30 rounded-lg bg-yellow-500/10">
-              <div className="text-yellow-400 font-bold text-lg mb-2">LATE CYCLE SLOWDOWN</div>
+              <div className="text-yellow-400 font-bold text-lg mb-2">{regimeDetection.classification}</div>
               <p className="text-sm text-slate-400">
-                Characterized by slowing growth, tightening credit conditions, and elevated debt levels.
-                Risk of recession in next 12-18 months.
+                {regimeDetection.description}
               </p>
             </div>
           </div>

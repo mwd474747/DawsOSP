@@ -16,7 +16,9 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = typeof window !== 'undefined' 
+  ? window.location.origin 
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
 const API_TIMEOUT = 30000; // 30 seconds
 
 // Types
@@ -152,7 +154,7 @@ class ApiClient {
 
   private async performTokenRefresh(): Promise<string | null> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {}, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -192,7 +194,7 @@ class ApiClient {
 
   // Authentication Methods
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await this.client.post<LoginResponse>('/auth/login', credentials);
+    const response = await this.client.post<LoginResponse>('/api/auth/login', credentials);
     const { access_token } = response.data;
     this.setAuthToken(access_token);
     return response.data;
@@ -200,7 +202,7 @@ class ApiClient {
 
   async logout(): Promise<void> {
     try {
-      await this.client.post('/auth/logout');
+      await this.client.post('/api/auth/logout');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -209,13 +211,17 @@ class ApiClient {
   }
 
   async getCurrentUser(): Promise<any> {
-    const response = await this.client.get('/auth/me');
+    const response = await this.client.get('/api/auth/me');
     return response.data;
   }
 
   // Pattern Execution Methods
   async executePattern(request: ExecuteRequest): Promise<ExecuteResponse> {
-    const response = await this.client.post<ExecuteResponse>('/execute', request);
+    const response = await this.client.post<ExecuteResponse>('/api/patterns/execute', {
+      pattern: request.pattern,
+      params: request.inputs,
+      require_fresh: request.require_fresh
+    });
     return response.data;
   }
 
@@ -227,6 +233,27 @@ class ApiClient {
     });
   }
 
+  async getPortfolio(portfolioId: string): Promise<any> {
+    const response = await this.client.get(`/api/portfolios/${portfolioId}`);
+    return response.data;
+  }
+
+  async getPortfolioAnalysis(portfolioId: string): Promise<any> {
+    const response = await this.client.get(`/api/portfolios/${portfolioId}/analysis`);
+    return response.data;
+  }
+
+  async getMetrics(portfolioId: string): Promise<any> {
+    const response = await this.client.get(`/api/metrics/${portfolioId}`);
+    return response.data;
+  }
+
+  async getAttribution(portfolioId: string): Promise<any> {
+    const response = await this.client.get(`/api/attribution/${portfolioId}`);
+    return response.data;
+  }
+
+  // Macro and Cycle Methods
   async getMacroDashboard(): Promise<any> {
     return this.executePattern({
       pattern: 'macro_cycles_overview',
@@ -234,6 +261,7 @@ class ApiClient {
     });
   }
 
+  // Holdings Methods
   async getHoldingsDetail(portfolioId: string): Promise<any> {
     return this.executePattern({
       pattern: 'holding_deep_dive',
@@ -241,6 +269,7 @@ class ApiClient {
     });
   }
 
+  // Scenario Methods
   async getScenarios(portfolioId: string): Promise<any> {
     return this.executePattern({
       pattern: 'portfolio_scenario_analysis',
@@ -248,13 +277,47 @@ class ApiClient {
     });
   }
 
-  async getAlerts(portfolioId: string): Promise<any> {
+  // Optimizer Methods
+  async runOptimizer(portfolioId: string, params: any = {}): Promise<any> {
     return this.executePattern({
-      pattern: 'macro_trend_monitor',
+      pattern: 'policy_rebalance',
+      inputs: { portfolio_id: portfolioId, ...params },
+    });
+  }
+
+  // Ratings Methods
+  async getRatings(portfolioId: string, symbol?: string): Promise<any> {
+    return this.executePattern({
+      pattern: 'buffett_checklist',
+      inputs: { portfolio_id: portfolioId, symbol },
+    });
+  }
+
+  // Alert Methods
+  async getAlerts(): Promise<any> {
+    const response = await this.client.get('/api/alerts');
+    return response.data;
+  }
+
+  async createAlert(alert: any): Promise<any> {
+    const response = await this.client.post('/api/alerts', alert);
+    return response.data;
+  }
+
+  async getTriggeredAlerts(): Promise<any> {
+    const response = await this.client.get('/api/alerts/triggered');
+    return response.data;
+  }
+
+  // Market Data Methods
+  async getNewsImpact(portfolioId: string): Promise<any> {
+    return this.executePattern({
+      pattern: 'news_impact_analysis',
       inputs: { portfolio_id: portfolioId },
     });
   }
 
+  // Report Methods
   async getReports(portfolioId: string): Promise<any> {
     return this.executePattern({
       pattern: 'export_portfolio_report',

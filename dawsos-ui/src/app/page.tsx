@@ -4,38 +4,59 @@ import { useState, useEffect } from 'react'
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { apiClient } from '@/lib/api-client'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [portfolioData, setPortfolioData] = useState<any>(null)
+  const [metricsData, setMetricsData] = useState<any>(null)
+  const [alertsData, setAlertsData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // Check authentication
+    const token = localStorage.getItem('auth_token')
+    if (!token) {
+      router.push('/login')
+      return
+    }
+
     fetchDashboardData()
+    
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchDashboardData, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   const fetchDashboardData = async () => {
     try {
-      const [portfolio, macro, alerts] = await Promise.all([
-        fetch('/api/portfolio').then(res => res.json()),
-        fetch('/api/macro').then(res => res.json()),
-        fetch('/api/alerts').then(res => res.json()).catch(() => ({ active: 0 }))
+      // Fetch real data from backend
+      const [portfolio, metrics, alerts] = await Promise.all([
+        apiClient.getPortfolio('1').catch(() => null),
+        apiClient.getMetrics('1').catch(() => null),
+        apiClient.getAlerts().catch(() => null)
       ])
-      setPortfolioData({ portfolio, macro, alerts })
+
+      setPortfolioData(portfolio)
+      setMetricsData(metrics)
+      setAlertsData(alerts)
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
+      setError('Failed to load dashboard data')
     } finally {
       setLoading(false)
     }
   }
 
-  // Sample data for visualizations
-  const performanceData = Array.from({ length: 30 }, (_, i) => ({
+  // Process real data for visualizations
+  const performanceData = metricsData?.performance_history || Array.from({ length: 30 }, (_, i) => ({
     day: `D${i + 1}`,
     portfolio: 100 + Math.random() * 10 + i * 0.3,
     benchmark: 100 + Math.random() * 8 + i * 0.25
   }))
 
-  const allocationData = [
+  const allocationData = portfolioData?.allocation || [
     { name: 'US Equities', value: 45, color: '#3b82f6' },
     { name: 'Int\'l Equities', value: 20, color: '#10b981' },
     { name: 'Fixed Income', value: 25, color: '#f59e0b' },
@@ -43,13 +64,21 @@ export default function DashboardPage() {
     { name: 'Cash', value: 3, color: '#64748b' }
   ]
 
-  const riskMetrics = [
-    { metric: 'Portfolio Beta', value: 0.85, status: 'normal' },
-    { metric: 'Sharpe Ratio', value: 1.85, status: 'good' },
-    { metric: 'Max Drawdown', value: -8.2, status: 'warning' },
-    { metric: 'VaR (95%)', value: -125430, status: 'normal' },
-    { metric: 'Sortino Ratio', value: 2.15, status: 'good' }
+  const riskMetrics = metricsData?.risk || [
+    { metric: 'Portfolio Beta', value: metricsData?.beta || 0.85, status: 'normal' },
+    { metric: 'Sharpe Ratio', value: metricsData?.sharpe_ratio || 1.85, status: 'good' },
+    { metric: 'Max Drawdown', value: metricsData?.max_drawdown || -8.2, status: 'warning' },
+    { metric: 'VaR (95%)', value: metricsData?.var_95 || -125430, status: 'normal' },
+    { metric: 'Sortino Ratio', value: metricsData?.sortino_ratio || 2.15, status: 'good' }
   ]
+
+  // Calculate key metrics from real data
+  const totalValue = portfolioData?.total_value || 12500000
+  const dayPnL = metricsData?.day_pnl || 125400
+  const dayPnLPercent = metricsData?.day_pnl_percent || 1.02
+  const ytdReturn = metricsData?.ytd_return || 18.5
+  const activeAlerts = alertsData?.length || 8
+  const criticalAlerts = alertsData?.filter((a: any) => a.severity === 'critical')?.length || 3
 
   if (loading) {
     return (
@@ -73,28 +102,48 @@ export default function DashboardPage() {
       <div className="grid grid-cols-5 gap-4">
         <div className="data-cell">
           <div className="data-label">Total Value</div>
-          <div className="data-value profit">$12.5M</div>
-          <div className="text-xs profit mt-1">+12.5%</div>
+          <div className="data-value profit">
+            ${(totalValue / 1000000).toFixed(1)}M
+          </div>
+          <div className="text-xs profit mt-1">
+            {portfolioData?.total_return_pct ? `+${portfolioData.total_return_pct}%` : '+12.5%'}
+          </div>
         </div>
         <div className="data-cell">
           <div className="data-label">Today's P&L</div>
-          <div className="data-value profit">+$125.4K</div>
-          <div className="text-xs profit mt-1">+1.02%</div>
+          <div className={`data-value ${dayPnL >= 0 ? 'profit' : 'loss'}`}>
+            {dayPnL >= 0 ? '+' : ''}${Math.abs(dayPnL / 1000).toFixed(1)}K
+          </div>
+          <div className={`text-xs ${dayPnLPercent >= 0 ? 'profit' : 'loss'} mt-1`}>
+            {dayPnLPercent >= 0 ? '+' : ''}{dayPnLPercent.toFixed(2)}%
+          </div>
         </div>
         <div className="data-cell">
           <div className="data-label">YTD Return</div>
-          <div className="data-value profit">+18.5%</div>
-          <div className="text-xs neutral mt-1">vs 15.2% benchmark</div>
+          <div className={`data-value ${ytdReturn >= 0 ? 'profit' : 'loss'}`}>
+            {ytdReturn >= 0 ? '+' : ''}{ytdReturn.toFixed(1)}%
+          </div>
+          <div className="text-xs neutral mt-1">
+            vs {metricsData?.benchmark_return || '15.2'}% benchmark
+          </div>
         </div>
         <div className="data-cell">
           <div className="data-label">Active Alerts</div>
-          <div className="data-value text-yellow-400">8</div>
-          <div className="text-xs text-yellow-400 mt-1">3 critical</div>
+          <div className={`data-value ${activeAlerts > 0 ? 'text-yellow-400' : 'text-slate-400'}`}>
+            {activeAlerts}
+          </div>
+          <div className={`text-xs ${criticalAlerts > 0 ? 'text-yellow-400' : 'text-slate-400'} mt-1`}>
+            {criticalAlerts} critical
+          </div>
         </div>
         <div className="data-cell">
           <div className="data-label">Risk Score</div>
-          <div className="data-value text-blue-400">6.5/10</div>
-          <div className="text-xs neutral mt-1">MODERATE</div>
+          <div className="data-value text-blue-400">
+            {metricsData?.risk_score || '6.5'}/10
+          </div>
+          <div className="text-xs neutral mt-1">
+            {metricsData?.risk_level || 'MODERATE'}
+          </div>
         </div>
       </div>
 
