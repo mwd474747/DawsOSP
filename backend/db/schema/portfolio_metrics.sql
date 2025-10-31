@@ -97,14 +97,14 @@ CREATE INDEX idx_portfolio_metrics_portfolio ON portfolio_metrics(portfolio_id, 
 CREATE INDEX idx_portfolio_metrics_pack ON portfolio_metrics(pricing_pack_id);
 CREATE INDEX idx_portfolio_metrics_date ON portfolio_metrics(asof_date DESC);
 
--- Compression (for old data)
-ALTER TABLE portfolio_metrics SET (
-    timescaledb.compress,
-    timescaledb.compress_segmentby = 'portfolio_id'
-);
+-- Compression disabled (requires TimescaleDB Community/Cloud license)
+-- ALTER TABLE portfolio_metrics SET (
+--     timescaledb.compress,
+--     timescaledb.compress_segmentby = 'portfolio_id'
+-- );
 
--- Add compression policy (compress data older than 90 days)
-SELECT add_compression_policy('portfolio_metrics', INTERVAL '90 days');
+-- Compression policy disabled (requires license upgrade)
+-- SELECT add_compression_policy('portfolio_metrics', INTERVAL '90 days');
 
 -- Comments
 COMMENT ON TABLE portfolio_metrics IS 'Time-series portfolio metrics (TWR, MWR, vol, Sharpe, etc.)';
@@ -236,94 +236,18 @@ COMMENT ON COLUMN factor_exposures.var_idiosyncratic IS 'Variance from stock-spe
 
 -- ============================================================================
 -- Continuous Aggregates (Rolling Metrics)
+-- NOTE: Disabled - requires TimescaleDB Community/Cloud license
 -- ============================================================================
 
--- 30-Day Rolling Volatility
-DROP MATERIALIZED VIEW IF EXISTS portfolio_metrics_30d_rolling CASCADE;
-
-CREATE MATERIALIZED VIEW portfolio_metrics_30d_rolling
-WITH (timescaledb.continuous) AS
-SELECT
-    portfolio_id,
-    time_bucket('1 day', asof_date) AS day,
-    AVG(twr_1d) AS avg_return_30d,
-    STDDEV(twr_1d) * SQRT(252) AS volatility_30d_realized,
-    MAX(portfolio_value_base) AS peak_value_30d,
-    (MAX(portfolio_value_base) - MIN(portfolio_value_base)) / MAX(portfolio_value_base) AS drawdown_30d
-FROM portfolio_metrics
-GROUP BY portfolio_id, time_bucket('1 day', asof_date);
-
--- Refresh policy: every hour
-SELECT add_continuous_aggregate_policy('portfolio_metrics_30d_rolling',
-    start_offset => INTERVAL '1 month',
-    end_offset => INTERVAL '1 hour',
-    schedule_interval => INTERVAL '1 hour');
-
-COMMENT ON MATERIALIZED VIEW portfolio_metrics_30d_rolling IS 'Rolling 30-day metrics (volatility, avg return, drawdown)';
-
-
--- 60-Day Rolling Volatility
-DROP MATERIALIZED VIEW IF EXISTS portfolio_metrics_60d_rolling CASCADE;
-
-CREATE MATERIALIZED VIEW portfolio_metrics_60d_rolling
-WITH (timescaledb.continuous) AS
-SELECT
-    portfolio_id,
-    time_bucket('1 day', asof_date) AS day,
-    AVG(twr_1d) AS avg_return_60d,
-    STDDEV(twr_1d) * SQRT(252) AS volatility_60d_realized,
-    MAX(portfolio_value_base) AS peak_value_60d
-FROM portfolio_metrics
-GROUP BY portfolio_id, time_bucket('1 day', asof_date);
-
--- Refresh policy: every 6 hours
-SELECT add_continuous_aggregate_policy('portfolio_metrics_60d_rolling',
-    start_offset => INTERVAL '2 months',
-    end_offset => INTERVAL '1 hour',
-    schedule_interval => INTERVAL '6 hours');
-
-
--- 90-Day Rolling Sharpe Ratio
-DROP MATERIALIZED VIEW IF EXISTS portfolio_metrics_90d_sharpe CASCADE;
-
-CREATE MATERIALIZED VIEW portfolio_metrics_90d_sharpe
-WITH (timescaledb.continuous) AS
-SELECT
-    portfolio_id,
-    time_bucket('1 day', asof_date) AS day,
-    AVG(twr_1d) AS avg_return_90d,
-    STDDEV(twr_1d) AS stddev_return_90d,
-    (AVG(twr_1d) - 0.0001) / NULLIF(STDDEV(twr_1d), 0) * SQRT(252) AS sharpe_90d_realized  -- Assuming 1bp daily risk-free rate
-FROM portfolio_metrics
-GROUP BY portfolio_id, time_bucket('1 day', asof_date);
-
--- Refresh policy: daily
-SELECT add_continuous_aggregate_policy('portfolio_metrics_90d_sharpe',
-    start_offset => INTERVAL '3 months',
-    end_offset => INTERVAL '1 hour',
-    schedule_interval => INTERVAL '1 day');
-
-
--- 1-Year Rolling Beta
-DROP MATERIALIZED VIEW IF EXISTS portfolio_metrics_1y_beta CASCADE;
-
-CREATE MATERIALIZED VIEW portfolio_metrics_1y_beta
-WITH (timescaledb.continuous) AS
-SELECT
-    portfolio_id,
-    time_bucket('1 day', asof_date) AS day,
-    AVG(beta_1y) AS avg_beta_1y,
-    AVG(alpha_1y) AS avg_alpha_1y,
-    AVG(tracking_error_1y) AS avg_te_1y
-FROM portfolio_metrics
-WHERE beta_1y IS NOT NULL
-GROUP BY portfolio_id, time_bucket('1 day', asof_date);
-
--- Refresh policy: daily
-SELECT add_continuous_aggregate_policy('portfolio_metrics_1y_beta',
-    start_offset => INTERVAL '1 year',
-    end_offset => INTERVAL '1 hour',
-    schedule_interval => INTERVAL '1 day');
+-- These can be computed on-demand via SQL queries instead of continuous aggregates
+-- Example query for 30-day rolling metrics:
+-- SELECT 
+--     portfolio_id,
+--     asof_date,
+--     AVG(twr_1d) OVER w AS avg_return_30d,
+--     STDDEV(twr_1d) OVER w * SQRT(252) AS volatility_30d
+-- FROM portfolio_metrics
+-- WINDOW w AS (PARTITION BY portfolio_id ORDER BY asof_date ROWS BETWEEN 29 PRECEDING AND CURRENT ROW);
 
 
 -- ============================================================================
