@@ -1939,7 +1939,7 @@ class FinancialAnalyst(BaseAgent):
         ctx: RequestCtx,
         state: Dict[str, Any],
         portfolio_id: Optional[str] = None,
-        lookback_days: int = 30,
+        lookback_days: int = 365,  # Changed to 365 days to capture backfilled data
     ) -> Dict[str, Any]:
         """
         Calculate historical NAV (Net Asset Value) for portfolio.
