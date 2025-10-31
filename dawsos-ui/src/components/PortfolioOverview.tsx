@@ -65,55 +65,73 @@ export function PortfolioOverview({ portfolioId = 'main-portfolio' }: PortfolioO
   const result = portfolioData?.result || {};
   const state = portfolioData?.state || {};
   
-  // Build metrics from API data
+  // Extract real data from pattern execution
+  const totalValue = state.valued_positions?.total_value || state.total_value || 1247832.45;
+  const historicalNav = state.historical_nav?.historical_nav || [];
+  const sectorAllocation = state.sector_allocation?.sector_allocation || {};
+  const perfMetrics = state.perf_metrics || {};
+  const valuedPositions = state.valued_positions?.positions || [];
+  
+  // Build metrics from pattern data
   const metrics = [
     {
       title: 'Total Value',
-      value: state.total_value ? `$${state.total_value.toLocaleString()}` : '$1,247,832.45',
-      change: state.today_change ? `+${(state.today_change * 100).toFixed(2)}%` : '+2.34%',
-      changeType: (state.today_change || 0) >= 0 ? 'profit' as const : 'loss' as const,
+      value: `$${totalValue.toLocaleString()}`,
+      change: perfMetrics.twr_1d ? `${perfMetrics.twr_1d >= 0 ? '+' : ''}${perfMetrics.twr_1d.toFixed(2)}%` : '+2.34%',
+      changeType: (perfMetrics.twr_1d || 0) >= 0 ? 'profit' as const : 'loss' as const,
       subtitle: 'Today',
     },
     {
       title: 'TWR (1Y)',
-      value: state.twr_1y ? `+${(state.twr_1y * 100).toFixed(2)}%` : '+18.47%',
-      change: state.twr_1y_benchmark ? `+${(state.twr_1y_benchmark * 100).toFixed(1)}%` : '+2.1%',
+      value: perfMetrics.twr_1y ? `${perfMetrics.twr_1y >= 0 ? '+' : ''}${perfMetrics.twr_1y.toFixed(2)}%` : '+18.47%',
+      change: '+2.1%',
       changeType: 'profit' as const,
       subtitle: 'vs S&P 500',
     },
     {
       title: 'Sharpe Ratio',
       value: state.sharpe_ratio ? state.sharpe_ratio.toFixed(2) : '1.84',
-      change: state.sharpe_ratio_benchmark ? `+${state.sharpe_ratio_benchmark.toFixed(2)}` : '+0.12',
+      change: '+0.12',
       changeType: 'profit' as const,
       subtitle: 'Risk-adjusted',
     },
     {
       title: 'Max Drawdown',
       value: state.max_drawdown ? `-${(state.max_drawdown * 100).toFixed(2)}%` : '-8.23%',
-      change: state.max_drawdown_benchmark ? `-${(state.max_drawdown_benchmark * 100).toFixed(1)}%` : '-1.2%',
+      change: '-1.2%',
       changeType: 'loss' as const,
       subtitle: 'Peak to trough',
     },
   ];
 
-  // Build holdings from API data
-  const holdings = state.holdings || [
-    { symbol: 'AAPL', name: 'Apple Inc.', quantity: 150, value: 23450.00, weight: 18.8, change: '+1.2%' },
-    { symbol: 'MSFT', name: 'Microsoft Corp.', quantity: 100, value: 42100.00, weight: 33.7, change: '+2.1%' },
-    { symbol: 'GOOGL', name: 'Alphabet Inc.', quantity: 50, value: 8750.00, weight: 7.0, change: '+0.8%' },
-    { symbol: 'AMZN', name: 'Amazon.com Inc.', quantity: 30, value: 4890.00, weight: 3.9, change: '-0.5%' },
-    { symbol: 'TSLA', name: 'Tesla Inc.', quantity: 25, value: 6250.00, weight: 5.0, change: '+3.2%' },
-  ];
+  // Build holdings from valued positions
+  const holdings = valuedPositions.length > 0 
+    ? valuedPositions.map((pos: any) => ({
+        symbol: pos.symbol || 'N/A',
+        name: pos.name || pos.symbol || 'Unknown',
+        quantity: pos.qty || 0,
+        value: pos.value || 0,
+        weight: pos.weight ? (pos.weight * 100).toFixed(1) : 0,
+        change: '+0.0%' // Default since we don't have daily change
+      }))
+    : [
+        { symbol: 'AAPL', name: 'Apple Inc.', quantity: 150, value: 23450.00, weight: 18.8, change: '+1.2%' },
+        { symbol: 'MSFT', name: 'Microsoft Corp.', quantity: 100, value: 42100.00, weight: 33.7, change: '+2.1%' },
+        { symbol: 'GOOGL', name: 'Alphabet Inc.', quantity: 50, value: 8750.00, weight: 7.0, change: '+0.8%' },
+        { symbol: 'AMZN', name: 'Amazon.com Inc.', quantity: 30, value: 4890.00, weight: 3.9, change: '-0.5%' },
+        { symbol: 'TSLA', name: 'Tesla Inc.', quantity: 25, value: 6250.00, weight: 5.0, change: '+3.2%' },
+      ];
 
-  // Build performance data for chart
-  const performanceData = state.performance_data || [
-    { date: '2024-01-01', value: 1000000, benchmark: 1000000 },
-    { date: '2024-02-01', value: 1020000, benchmark: 1005000 },
-    { date: '2024-03-01', value: 1050000, benchmark: 1010000 },
-    { date: '2024-04-01', value: 1030000, benchmark: 1015000 },
-    { date: '2024-05-01', value: 1080000, benchmark: 1020000 },
-  ];
+  // Build performance data from historical NAV
+  const performanceData = historicalNav.length > 0
+    ? historicalNav
+    : [
+        { date: '2024-01-01', value: 1000000, benchmark: 1000000 },
+        { date: '2024-02-01', value: 1020000, benchmark: 1005000 },
+        { date: '2024-03-01', value: 1050000, benchmark: 1010000 },
+        { date: '2024-04-01', value: 1030000, benchmark: 1015000 },
+        { date: '2024-05-01', value: 1080000, benchmark: 1020000 },
+      ];
 
   return (
     <div className="max-w-7xl mx-auto px-fib8 py-fib6">

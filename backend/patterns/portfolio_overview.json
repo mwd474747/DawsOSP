@@ -93,6 +93,21 @@
         "lookback_days": "{{inputs.lookback_days}}"
       },
       "as": "currency_attr"
+    },
+    {
+      "capability": "portfolio.sector_allocation",
+      "args": {
+        "valued_positions": "{{valued_positions.positions}}"
+      },
+      "as": "sector_allocation"
+    },
+    {
+      "capability": "portfolio.historical_nav",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "lookback_days": 30
+      },
+      "as": "historical_nav"
     }
   ],
   "presentation": {
