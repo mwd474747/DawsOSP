@@ -6414,9 +6414,12 @@
                     
                     switch(cycleType) {
                         case 'short-term':
-                            // Map to correct data key from API response
+                            // Map to correct data key from API response (pattern returns 'stdc')
                             const stdc = macroData.stdc || macroData.short_term_cycle;
-                            if (!stdc) return null;
+                            if (!stdc) {
+                                console.log('No short-term data found in macroData:', macroData);
+                                return null;
+                            }
                             title = 'SHORT-TERM DEBT CYCLE INDICATORS';
                             indicators = [
                                 { label: 'GDP Growth', value: '3.80%', trend: 'up', source: 'FRED API' },
