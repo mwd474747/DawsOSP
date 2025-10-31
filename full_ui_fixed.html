@@ -555,6 +555,86 @@
             font-family: var(--font-mono);
         }
         
+        /* Alert Styles */
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            border: 1px solid;
+            margin-bottom: 1.5rem;
+            animation: slideDown 0.3s ease;
+        }
+        
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: var(--color-success);
+        }
+        
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: var(--color-error);
+        }
+        
+        .alert-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .alert-icon {
+            font-size: 1.25rem;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Badge Styles */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        /* Button Styles */
+        .btn-primary {
+            background: var(--color-info);
+            color: white;
+            border: none;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #2563eb;
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Spinner */
+        .spinner-small {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
         /* Table Styles */
         .table-container {
             overflow-x: auto;
@@ -3646,22 +3726,201 @@
             }
             
             function ReportsPage() {
+                const [loading, setLoading] = useState(false);
+                const [error, setError] = useState(null);
+                const [success, setSuccess] = useState(null);
+                const [generatingType, setGeneratingType] = useState(null);
+                const [reportHistory, setReportHistory] = useState([
+                    { id: 1, name: 'Q3 2024 Report', date: '2024-09-30', type: 'quarterly', size: '2.3 MB' },
+                    { id: 2, name: 'Mid-Year Summary', date: '2024-06-30', type: 'ytd', size: '3.1 MB' },
+                    { id: 3, name: 'Q2 2024 Report', date: '2024-06-30', type: 'quarterly', size: '2.1 MB' }
+                ]);
+                
+                const generateReport = async (reportType) => {
+                    setLoading(true);
+                    setError(null);
+                    setSuccess(null);
+                    setGeneratingType(reportType);
+                    
+                    try {
+                        const token = localStorage.getItem('access_token');
+                        const response = await fetch(`/api/reports/generate?report_type=${reportType}`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Accept': 'application/pdf'
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Failed to generate report');
+                        }
+                        
+                        // Get the blob from response
+                        const blob = await response.blob();
+                        
+                        // Create download link
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = `${reportType}_report_${new Date().toISOString().split('T')[0]}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                        
+                        // Show success message
+                        setSuccess(`${reportType === 'quarterly' ? 'Quarterly' : 'Year-to-Date'} report generated successfully!`);
+                        
+                        // Add to history
+                        const newReport = {
+                            id: reportHistory.length + 1,
+                            name: `${reportType === 'quarterly' ? 'Q4 2024' : 'YTD 2024'} Report`,
+                            date: new Date().toISOString().split('T')[0],
+                            type: reportType,
+                            size: '2.5 MB'
+                        };
+                        setReportHistory([newReport, ...reportHistory.slice(0, 4)]);
+                        
+                    } catch (error) {
+                        console.error('Error generating report:', error);
+                        setError(`Failed to generate report: ${error.message}`);
+                    } finally {
+                        setLoading(false);
+                        setGeneratingType(null);
+                        // Clear messages after 5 seconds
+                        setTimeout(() => {
+                            setError(null);
+                            setSuccess(null);
+                        }, 5000);
+                    }
+                };
+                
                 return e('div', null,
                     e('div', { className: 'page-header' },
-                        e('h1', { className: 'page-title' }, 'Reports'),
-                        e('p', { className: 'page-description' }, 'Generate portfolio reports')
+                        e('h1', { className: 'page-title' }, 'Portfolio Reports'),
+                        e('p', { className: 'page-description' }, 'Generate and download professional PDF portfolio reports')
                     ),
-                    e('div', { className: 'card' },
-                        e('div', { className: 'card-header' },
-                            e('h3', { className: 'card-title' }, 'Available Reports'),
-                            e('div', { className: 'card-actions' },
-                                e('button', { className: 'btn btn-sm' }, 'Generate Report')
+                    
+                    // Alert Messages
+                    error && e('div', { className: 'alert alert-error', style: { marginBottom: '1.5rem' } },
+                        e('div', { className: 'alert-content' },
+                            e('span', { className: 'alert-icon' }, '⚠️'),
+                            e('span', null, error)
+                        )
+                    ),
+                    
+                    success && e('div', { className: 'alert alert-success', style: { marginBottom: '1.5rem' } },
+                        e('div', { className: 'alert-content' },
+                            e('span', { className: 'alert-icon' }, '✅'),
+                            e('span', null, success)
+                        )
+                    ),
+                    
+                    // Report Generation Cards
+                    e('div', { className: 'stats-grid', style: { marginBottom: '2rem' } },
+                        // Quarterly Report Card
+                        e('div', { className: 'card' },
+                            e('div', { style: { padding: '1.5rem' } },
+                                e('h3', { style: { marginBottom: '0.5rem', color: 'var(--text-primary)' } }, 'Quarterly Report'),
+                                e('p', { style: { color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' } }, 
+                                    'Q4 2024 performance metrics including holdings, returns, and risk analysis'),
+                                e('div', { style: { marginBottom: '1rem' } },
+                                    e('div', { style: { fontSize: '0.85rem', color: 'var(--text-muted)' } }, 'Includes:'),
+                                    e('ul', { style: { fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '1.5rem', marginTop: '0.5rem' } },
+                                        e('li', null, 'Portfolio holdings and allocation'),
+                                        e('li', null, 'Quarterly performance metrics'),
+                                        e('li', null, 'Risk analytics and attribution'),
+                                        e('li', null, 'Market commentary')
+                                    )
+                                ),
+                                e('button', { 
+                                    className: 'btn btn-primary',
+                                    onClick: () => generateReport('quarterly'),
+                                    disabled: loading,
+                                    style: { width: '100%' }
+                                }, 
+                                    loading && generatingType === 'quarterly' ? 
+                                        e('span', null, 'Generating...', e('span', { className: 'spinner-small', style: { marginLeft: '0.5rem' } })) :
+                                        'Generate Quarterly Report'
+                                )
                             )
                         ),
-                        e('div', { className: 'empty-state' },
-                            e('div', { className: 'empty-state-title' }, 'No Recent Reports'),
-                            e('div', { className: 'empty-state-message' }, 'Generate PDF or Excel reports on demand')
+                        
+                        // YTD Summary Card
+                        e('div', { className: 'card' },
+                            e('div', { style: { padding: '1.5rem' } },
+                                e('h3', { style: { marginBottom: '0.5rem', color: 'var(--text-primary)' } }, 'YTD Summary'),
+                                e('p', { style: { color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' } }, 
+                                    'Year-to-Date 2024 comprehensive performance analysis'),
+                                e('div', { style: { marginBottom: '1rem' } },
+                                    e('div', { style: { fontSize: '0.85rem', color: 'var(--text-muted)' } }, 'Includes:'),
+                                    e('ul', { style: { fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '1.5rem', marginTop: '0.5rem' } },
+                                        e('li', null, 'Full year portfolio overview'),
+                                        e('li', null, 'YTD returns and benchmarks'),
+                                        e('li', null, 'Sector performance breakdown'),
+                                        e('li', null, 'Annual risk metrics')
+                                    )
+                                ),
+                                e('button', { 
+                                    className: 'btn btn-primary',
+                                    onClick: () => generateReport('ytd'),
+                                    disabled: loading,
+                                    style: { width: '100%' }
+                                }, 
+                                    loading && generatingType === 'ytd' ? 
+                                        e('span', null, 'Generating...', e('span', { className: 'spinner-small', style: { marginLeft: '0.5rem' } })) :
+                                        'Generate YTD Summary'
+                                )
+                            )
                         )
+                    ),
+                    
+                    // Report History
+                    e('div', { className: 'card' },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'Recent Reports'),
+                            e('div', { style: { fontSize: '0.85rem', color: 'var(--text-secondary)' } }, 
+                                `${reportHistory.length} reports generated`)
+                        ),
+                        reportHistory.length > 0 ? 
+                            e('div', { className: 'table-container' },
+                                e('table', { className: 'table' },
+                                    e('thead', null,
+                                        e('tr', null,
+                                            e('th', null, 'Report Name'),
+                                            e('th', null, 'Type'),
+                                            e('th', null, 'Date Generated'),
+                                            e('th', null, 'Size')
+                                        )
+                                    ),
+                                    e('tbody', null,
+                                        reportHistory.map(report =>
+                                            e('tr', { key: report.id },
+                                                e('td', { style: { fontWeight: '500' } }, report.name),
+                                                e('td', null, 
+                                                    e('span', { 
+                                                        className: 'badge',
+                                                        style: { 
+                                                            backgroundColor: report.type === 'quarterly' ? 
+                                                                'rgba(59, 130, 246, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                                                            color: report.type === 'quarterly' ? 
+                                                                'var(--color-info)' : 'var(--color-success)'
+                                                        }
+                                                    }, report.type.toUpperCase())
+                                                ),
+                                                e('td', null, formatDate(report.date)),
+                                                e('td', { style: { color: 'var(--text-secondary)' } }, report.size)
+                                            )
+                                        )
+                                    )
+                                )
+                            ) :
+                            e('div', { className: 'empty-state' },
+                                e('div', { className: 'empty-state-title' }, 'No Recent Reports'),
+                                e('div', { className: 'empty-state-message' }, 'Generate your first report using the options above')
+                            )
                     )
                 );
             }

@@ -48,3 +48,5 @@ opentelemetry-sdk
 pyjwt
 prometheus-client
 scikit-learn
+weasyprint
+reportlab
