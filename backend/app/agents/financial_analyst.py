@@ -72,6 +72,8 @@ class FinancialAnalyst(BaseAgent):
             "get_transaction_history",
             "get_security_fundamentals",
             "get_comparable_positions",
+            "portfolio.sector_allocation",  # New capability for sector allocation
+            "portfolio.historical_nav",  # New capability for historical NAV
         ]
 
     async def ledger_positions(
