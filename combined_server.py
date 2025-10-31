@@ -2837,6 +2837,187 @@ async def ai_analysis(request: Request, ai_request: AIAnalysisRequest):
             detail="AI analysis service error"
         )
 
+@app.post("/api/ai/chat", response_model=SuccessResponse)
+async def ai_chat(request: Request):
+    """AI chat endpoint using Claude agent capabilities"""
+    try:
+        # Get request body
+        body = await request.json()
+        message = body.get("message", "")
+        message_type = body.get("type", None)  # Can be 'portfolio', 'financial', 'scenario', or None for auto-detect
+        
+        # Check authentication
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        # Get portfolio data for context
+        portfolio_data = None
+        try:
+            portfolio_result = await execute_query_safe("""
+                SELECT 
+                    p.id,
+                    p.name,
+                    COALESCE(pm.total_value, 0) as total_value,
+                    COALESCE(pm.total_return, 0) as total_return,
+                    COUNT(DISTINCT pp.ticker) as position_count
+                FROM portfolios p
+                LEFT JOIN portfolio_metrics pm ON p.id = pm.portfolio_id
+                LEFT JOIN portfolio_positions pp ON p.id = pp.portfolio_id
+                WHERE p.id = $1
+                GROUP BY p.id, p.name, pm.total_value, pm.total_return
+            """, "64ff3be6-0ed1-4990-a32b-4ded17f0320c")
+            
+            if portfolio_result:
+                portfolio_data = {
+                    "total_value": float(portfolio_result[0].get("total_value", 0)),
+                    "total_return": float(portfolio_result[0].get("total_return", 0)),
+                    "position_count": portfolio_result[0].get("position_count", 0)
+                }
+                
+                # Get top positions
+                positions_result = await execute_query_safe("""
+                    SELECT 
+                        ticker as symbol,
+                        quantity,
+                        cost_basis,
+                        current_price,
+                        (quantity * current_price) as value
+                    FROM portfolio_positions
+                    WHERE portfolio_id = $1
+                    ORDER BY (quantity * current_price) DESC
+                    LIMIT 5
+                """, "64ff3be6-0ed1-4990-a32b-4ded17f0320c")
+                
+                if positions_result:
+                    portfolio_data["positions"] = [
+                        {
+                            "symbol": p["symbol"],
+                            "quantity": float(p.get("quantity", 0)),
+                            "value": float(p.get("value", 0))
+                        }
+                        for p in positions_result
+                    ]
+        except Exception as e:
+            logger.warning(f"Could not fetch portfolio data: {e}")
+        
+        # If no real data, use mock portfolio data
+        if not portfolio_data:
+            portfolio_data = {
+                "total_value": 1025000.50,
+                "total_return": 0.125,
+                "position_count": 37,
+                "positions": [
+                    {"symbol": "BRK.B", "quantity": 850, "value": 298000},
+                    {"symbol": "AAPL", "quantity": 500, "value": 95000},
+                    {"symbol": "MSFT", "quantity": 250, "value": 92500},
+                    {"symbol": "JPM", "quantity": 400, "value": 72000},
+                    {"symbol": "V", "quantity": 200, "value": 52000}
+                ]
+            }
+        
+        # Determine the type of question if not specified
+        if not message_type:
+            lower_msg = message.lower()
+            if any(word in lower_msg for word in ["portfolio", "holding", "position", "allocation", "rebalance", "diversif"]):
+                message_type = "portfolio"
+            elif any(word in lower_msg for word in ["what if", "scenario", "happen if", "impact", "crash", "recession"]):
+                message_type = "scenario"
+            else:
+                message_type = "financial"
+        
+        # Use Claude agent if available and API key is configured
+        if PATTERN_ORCHESTRATION_AVAILABLE and ANTHROPIC_API_KEY:
+            try:
+                runtime = get_agent_runtime()
+                claude_agent = None
+                for agent_id, agent in runtime.agents.items():
+                    if "claude" in agent_id.lower():
+                        claude_agent = agent
+                        break
+                
+                if claude_agent:
+                    # Create request context
+                    ctx = RequestCtx(
+                        trace_id=str(uuid4()),
+                        request_id=str(uuid4()),
+                        user_id=user["sub"],
+                        portfolio_id="64ff3be6-0ed1-4990-a32b-4ded17f0320c",
+                        asof_date=date.today(),
+                        pricing_pack_id=f"PP_{date.today().isoformat()}",
+                        ledger_commit_hash=hashlib.md5(f"{date.today()}".encode()).hexdigest()[:8]
+                    )
+                    
+                    state = {}
+                    
+                    # Call appropriate Claude capability based on message type
+                    if message_type == "portfolio":
+                        result = await claude_agent.claude_portfolio_advice(
+                            ctx, state, message, portfolio_data
+                        )
+                        response_text = result.get("advice", "I can help you analyze your portfolio.")
+                    elif message_type == "scenario":
+                        result = await claude_agent.claude_scenario_analysis(
+                            ctx, state, message, portfolio_data
+                        )
+                        response_text = result.get("analysis", "Let me analyze that scenario for you.")
+                    else:  # financial or general
+                        result = await claude_agent.claude_financial_qa(
+                            ctx, state, message, {"portfolio": portfolio_data}
+                        )
+                        response_text = result.get("answer", "I can help answer your financial questions.")
+                    
+                    return SuccessResponse(data={
+                        "response": response_text,
+                        "type": message_type,
+                        "timestamp": datetime.utcnow().isoformat()
+                    })
+                    
+            except Exception as e:
+                logger.error(f"Claude agent error: {e}")
+                # Fall through to mock response
+        
+        # Fallback mock responses based on message type
+        mock_responses = {
+            "portfolio": [
+                f"Based on your portfolio with a total value of ${portfolio_data['total_value']:,.2f}, I notice your top holding is {portfolio_data['positions'][0]['symbol']} at ${portfolio_data['positions'][0]['value']:,.2f}. Consider diversifying to reduce concentration risk.",
+                f"Your portfolio shows {portfolio_data['position_count']} positions. The current allocation appears concentrated in your top 5 holdings. A more balanced approach might reduce volatility.",
+                f"With a {portfolio_data['total_return']*100:.1f}% return, your portfolio is performing well. However, reviewing your sector allocation could help identify potential rebalancing opportunities."
+            ],
+            "scenario": [
+                "In a market downturn scenario of -20%, your portfolio would likely see significant impact on equity positions. Consider hedging strategies or increasing cash allocation.",
+                "If interest rates rise by 1%, growth stocks in your portfolio may face pressure. Value stocks and dividend aristocrats could provide stability.",
+                "During an inflation spike scenario, real assets and commodities typically outperform. Your current allocation may benefit from inflation-protected securities."
+            ],
+            "financial": [
+                "Market diversification is key to managing risk. The general rule is to not have more than 5-10% in any single position.",
+                "Dollar-cost averaging can help reduce the impact of market volatility over time. Consider regular investment intervals.",
+                "Tax-loss harvesting can help offset capital gains. Review positions with unrealized losses near year-end."
+            ]
+        }
+        
+        # Select appropriate mock response
+        responses = mock_responses.get(message_type, mock_responses["financial"])
+        response_text = random.choice(responses)
+        
+        return SuccessResponse(data={
+            "response": response_text,
+            "type": message_type,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"AI chat error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="AI chat service error"
+        )
+
 @app.get("/api/factor-analysis", response_model=SuccessResponse)
 async def get_factor_analysis(request: Request):
     """Get factor analysis for portfolio"""

@@ -849,6 +849,234 @@
             gap: 0.5rem;
         }
         
+        /* Enhanced Chat Styles */
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-primary);
+            background: rgba(15, 23, 42, 0.3);
+        }
+        
+        .chat-status {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .typing-indicator {
+            color: var(--color-info);
+            font-style: italic;
+        }
+        
+        .message-count {
+            color: var(--text-muted);
+        }
+        
+        .btn-clear {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-clear:hover:not(:disabled) {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--color-error);
+            color: var(--color-error);
+        }
+        
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .message-role {
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .chat-message.user .message-role {
+            color: var(--color-info);
+        }
+        
+        .chat-message.ai .message-role {
+            color: var(--color-success);
+        }
+        
+        .message-time {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+        
+        .message-content {
+            padding: 0.875rem 1.125rem;
+            border-radius: 12px;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        
+        .chat-message.user .message-content {
+            background: rgba(59, 130, 246, 0.15);
+            border-left: 3px solid var(--color-info);
+        }
+        
+        .chat-message.ai .message-content {
+            background: rgba(34, 197, 94, 0.08);
+            border-left: 3px solid var(--color-success);
+        }
+        
+        /* Typing animation */
+        .chat-message.typing {
+            opacity: 0.7;
+        }
+        
+        .typing-dots {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.875rem 1.125rem;
+        }
+        
+        .typing-dots .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-success);
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dots .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dots .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+            30% { transform: translateY(-10px); opacity: 1; }
+        }
+        
+        /* Suggested Questions */
+        .suggested-questions {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: rgba(30, 41, 59, 0.3);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+        }
+        
+        .suggestions-title {
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 0.75rem;
+        }
+        
+        .suggestion-chip {
+            padding: 0.625rem 1rem;
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-info);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 20px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        
+        .suggestion-chip:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: var(--color-info);
+            transform: translateX(4px);
+        }
+        
+        textarea.chat-input {
+            width: 100%;
+            resize: none;
+            font-family: inherit;
+        }
+        
+        .chat-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.75rem;
+        }
+        
+        .input-hint {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+        
+        .btn-primary {
+            padding: 0.625rem 1.5rem;
+            background: var(--color-info);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-loading {
+            background: var(--color-info);
+            opacity: 0.8;
+        }
+        
+        .spinner-small {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid transparent;
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.5rem;
+        }
+        
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--color-warning);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        
         /* Responsive Design */
         @media (max-width: 768px) {
             .sidebar {
@@ -3194,64 +3422,206 @@
                 const [messages, setMessages] = useState([]);
                 const [inputValue, setInputValue] = useState('');
                 const [loading, setLoading] = useState(false);
+                const [error, setError] = useState(null);
+                const messagesEndRef = React.useRef(null);
+                
+                // Auto-scroll to bottom when new messages arrive
+                useEffect(() => {
+                    if (messagesEndRef.current) {
+                        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }, [messages]);
+                
+                // Show welcome message on first load
+                useEffect(() => {
+                    const welcomeMessage = {
+                        role: 'ai',
+                        content: 'Welcome! I\'m your AI portfolio advisor powered by Claude. I can help you with:\n\n• Portfolio analysis and recommendations\n• Financial questions and market insights\n• What-if scenarios and risk assessment\n\nHow can I assist you today?',
+                        timestamp: new Date().toISOString()
+                    };
+                    setMessages([welcomeMessage]);
+                }, []);
                 
                 const sendMessage = async () => {
-                    if (!inputValue.trim()) return;
+                    if (!inputValue.trim() || loading) return;
                     
-                    const newMessage = { role: 'user', content: inputValue };
-                    setMessages(prev => [...prev, newMessage]);
+                    const userMessage = { 
+                        role: 'user', 
+                        content: inputValue,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    setMessages(prev => [...prev, userMessage]);
                     setInputValue('');
                     setLoading(true);
+                    setError(null);
                     
                     try {
-                        const response = await axios.post(`${API_BASE}/api/ai/chat`, { 
-                            message: inputValue 
-                        });
+                        const token = localStorage.getItem('access_token');
+                        const response = await axios.post(
+                            `${API_BASE}/api/ai/chat`, 
+                            { message: inputValue },
+                            { headers: { 'Authorization': `Bearer ${token}` } }
+                        );
+                        
                         const aiResponse = { 
                             role: 'ai', 
-                            content: response.data.response || 'I can help analyze your portfolio.'
+                            content: response.data.data.response || response.data.response || 'Let me help you analyze your portfolio.',
+                            type: response.data.data.type || 'general',
+                            timestamp: new Date().toISOString()
                         };
                         setMessages(prev => [...prev, aiResponse]);
                     } catch (error) {
-                        const fallback = { 
+                        console.error('AI chat error:', error);
+                        const errorMessage = { 
                             role: 'ai', 
-                            content: 'Based on your portfolio: Consider rebalancing BRK.B position (29% concentration).' 
+                            content: 'I apologize, but I\'m having trouble connecting to the AI service. Let me provide some general insights: Based on portfolio best practices, ensure your holdings are diversified across sectors and maintain position sizes under 10% for individual stocks to manage concentration risk.',
+                            timestamp: new Date().toISOString()
                         };
-                        setMessages(prev => [...prev, fallback]);
+                        setMessages(prev => [...prev, errorMessage]);
+                        setError('Connection issue - showing offline insights');
                     } finally {
                         setLoading(false);
                     }
                 };
                 
+                const clearChat = () => {
+                    const welcomeMessage = {
+                        role: 'ai',
+                        content: 'Chat history cleared. How can I help you analyze your portfolio?',
+                        timestamp: new Date().toISOString()
+                    };
+                    setMessages([welcomeMessage]);
+                    setError(null);
+                };
+                
+                const suggestedQuestions = [
+                    'How is my portfolio performing?',
+                    'Should I rebalance my holdings?',
+                    'What are my biggest risks?',
+                    'What happens if the market drops 20%?',
+                    'How can I improve diversification?',
+                    'What are dividend aristocrats?'
+                ];
+                
+                const askSuggestion = (question) => {
+                    setInputValue(question);
+                    // Auto-send after a brief delay for UX
+                    setTimeout(() => {
+                        const event = new KeyboardEvent('keypress', { key: 'Enter' });
+                        document.querySelector('.chat-input').dispatchEvent(event);
+                    }, 100);
+                };
+                
+                const formatMessage = (content) => {
+                    // Convert newlines to line breaks for better formatting
+                    if (content.includes('\n')) {
+                        return content.split('\n').map((line, i) => 
+                            e('div', { key: i, style: { marginBottom: line.trim() === '' ? '0.5rem' : '0.25rem' } }, 
+                                line || e('br'))
+                        );
+                    }
+                    return content;
+                };
+                
                 return e('div', null,
                     e('div', { className: 'page-header' },
                         e('h1', { className: 'page-title' }, 'AI Insights'),
-                        e('p', { className: 'page-description' }, 'Claude-powered portfolio analysis')
+                        e('p', { className: 'page-description' }, 'Claude-powered portfolio intelligence and financial advisory')
                     ),
+                    
+                    error && e('div', { className: 'alert alert-warning' }, error),
+                    
+                    // Suggested questions
+                    messages.length === 1 && e('div', { className: 'suggested-questions' },
+                        e('h4', { className: 'suggestions-title' }, 'Suggested Questions:'),
+                        e('div', { className: 'suggestions-grid' },
+                            suggestedQuestions.map(question => 
+                                e('button', {
+                                    key: question,
+                                    className: 'suggestion-chip',
+                                    onClick: () => askSuggestion(question)
+                                }, question)
+                            )
+                        )
+                    ),
+                    
+                    // Chat container
                     e('div', { className: 'chat-container' },
-                        e('div', { className: 'chat-messages' },
-                            messages.length === 0 ? 
-                                e('div', { className: 'empty-state' }, 
-                                    'Ask me about your portfolio...') :
-                                messages.map((msg, i) => 
-                                    e('div', { key: i, className: `chat-message ${msg.role}` }, 
-                                        msg.content)
-                                )
+                        // Chat header with actions
+                        e('div', { className: 'chat-header' },
+                            e('div', { className: 'chat-status' },
+                                loading && e('span', { className: 'typing-indicator' }, 'Claude is thinking...'),
+                                !loading && messages.length > 1 && e('span', { className: 'message-count' }, 
+                                    `${messages.length} messages`)
+                            ),
+                            e('button', { 
+                                className: 'btn-clear',
+                                onClick: clearChat,
+                                disabled: messages.length <= 1
+                            }, 'Clear Chat')
                         ),
+                        
+                        // Messages area
+                        e('div', { className: 'chat-messages' },
+                            messages.map((msg, i) => 
+                                e('div', { 
+                                    key: i, 
+                                    className: `chat-message ${msg.role}`
+                                },
+                                    e('div', { className: 'message-header' },
+                                        e('span', { className: 'message-role' }, 
+                                            msg.role === 'user' ? 'You' : 'Claude AI'),
+                                        msg.timestamp && e('span', { className: 'message-time' }, 
+                                            new Date(msg.timestamp).toLocaleTimeString([], { 
+                                                hour: '2-digit', 
+                                                minute: '2-digit' 
+                                            })
+                                        )
+                                    ),
+                                    e('div', { className: 'message-content' }, formatMessage(msg.content))
+                                )
+                            ),
+                            loading && e('div', { className: 'chat-message ai typing' },
+                                e('div', { className: 'typing-dots' },
+                                    e('span', { className: 'dot' }),
+                                    e('span', { className: 'dot' }),
+                                    e('span', { className: 'dot' })
+                                )
+                            ),
+                            e('div', { ref: messagesEndRef })
+                        ),
+                        
+                        // Input area
                         e('div', { className: 'chat-input-container' },
-                            e('input', {
+                            e('textarea', {
                                 className: 'chat-input',
                                 value: inputValue,
                                 onChange: (e) => setInputValue(e.target.value),
-                                onKeyPress: (e) => e.key === 'Enter' && sendMessage(),
-                                placeholder: 'Ask about your portfolio...',
-                                disabled: loading
+                                onKeyPress: (e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        sendMessage();
+                                    }
+                                },
+                                placeholder: 'Ask about portfolio performance, risks, strategies, or any financial question...',
+                                disabled: loading,
+                                rows: 2
                             }),
-                            e('button', { 
-                                className: 'btn btn-sm', 
-                                onClick: sendMessage,
-                                disabled: loading
-                            }, loading ? '...' : 'Send')
+                            e('div', { className: 'chat-actions' },
+                                e('span', { className: 'input-hint' }, 
+                                    'Press Enter to send, Shift+Enter for new line'),
+                                e('button', { 
+                                    className: `btn ${loading ? 'btn-loading' : 'btn-primary'}`,
+                                    onClick: sendMessage,
+                                    disabled: loading || !inputValue.trim()
+                                }, 
+                                    loading ? e('span', null,
+                                        e('span', { className: 'spinner-small' }),
+                                        ' Sending...'
+                                    ) : 'Send Message'
+                                )
+                            )
                         )
                     )
                 );
