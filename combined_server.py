@@ -1510,11 +1510,11 @@ async def get_transactions(
                 t.quantity as shares,
                 t.price,
                 t.amount,
-                COALESCE(t.realized_gain, 0) as realized_gain,
+                0 as realized_gain,
                 s.name as security_name
             FROM transactions t
             LEFT JOIN securities s ON t.symbol = s.symbol
-            WHERE t.portfolio_id = $1
+            WHERE t.portfolio_id = $1::uuid
             ORDER BY t.transaction_date DESC
             LIMIT $2 OFFSET $3
         """
@@ -1539,8 +1539,22 @@ async def get_transactions(
                 "security_name": txn["security_name"]
             })
 
-        logger.info(f"Returning {len(formatted_transactions)} transactions for portfolio {portfolio_id}")
-        return SuccessResponse(data=formatted_transactions)
+        # Get total count for pagination
+        count_query = """
+            SELECT COUNT(*) as total
+            FROM transactions
+            WHERE portfolio_id = $1::uuid
+        """
+        count_result = await execute_query_safe(count_query, portfolio_id)
+        total = count_result[0]["total"] if count_result else 0
+        
+        logger.info(f"Returning {len(formatted_transactions)} of {total} transactions for portfolio {portfolio_id}")
+        return SuccessResponse(data={
+            "transactions": formatted_transactions,
+            "total": total,
+            "page": page,
+            "page_size": page_size
+        })
 
     except HTTPException:
         raise
