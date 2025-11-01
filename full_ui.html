@@ -1658,6 +1658,18 @@
             
             const API_BASE = '';
             
+            // Helper function to get current portfolio ID
+            const getCurrentPortfolioId = () => {
+                // First try to get from user context
+                const user = TokenManager.getUser();
+                if (user && user.default_portfolio_id) {
+                    return user.default_portfolio_id;
+                }
+                // Fallback to hardcoded ID for now
+                // This should eventually be replaced with proper user portfolio selection
+                return '64ff3be6-0ed1-4990-a32b-4ded17f0320c';
+            };
+            
             // JWT Token Management with Enhanced Features
             const TokenManager = {
                 getToken: () => localStorage.getItem('access_token'),
@@ -1899,7 +1911,7 @@
                 },
                 
                 // Get metrics with enhanced error handling
-                getMetrics: async (portfolioId = '64ff3be6-0ed1-4990-a32b-4ded17f0320c') => {
+                getMetrics: async (portfolioId = getCurrentPortfolioId()) => {
                     try {
                         const response = await axios.get(`${API_BASE}/api/metrics/${portfolioId}`);
                         return response.data;
@@ -1919,7 +1931,7 @@
                 },
                 
                 // Get transactions with enhanced error handling
-                getTransactions: async (portfolioId = '64ff3be6-0ed1-4990-a32b-4ded17f0320c', page = 1, pageSize = 100) => {
+                getTransactions: async (portfolioId = getCurrentPortfolioId(), page = 1, pageSize = 100) => {
                     try {
                         const response = await axios.get(`${API_BASE}/api/transactions`, {
                             params: {
@@ -3056,10 +3068,10 @@
                     if (storedUser) {
                         setUser(storedUser);
                         // Use the user's default portfolio or fallback to hardcoded one
-                        setPortfolioId(storedUser.default_portfolio_id || '64ff3be6-0ed1-4990-a32b-4ded17f0320c');
+                        setPortfolioId(storedUser.default_portfolio_id || getCurrentPortfolioId());
                     } else {
                         // Fallback to default portfolio ID
-                        setPortfolioId('64ff3be6-0ed1-4990-a32b-4ded17f0320c');
+                        setPortfolioId(getCurrentPortfolioId());
                     }
                 }, []);
                 
@@ -7904,7 +7916,7 @@
                         
                         // Load portfolio data
                         setPortfolioLoading(true);
-                        const portfolioRes = await cachedApiClient.getPortfolioOverview('64ff3be6-0ed1-4990-a32b-4ded17f0320c')
+                        const portfolioRes = await cachedApiClient.getPortfolioOverview(getCurrentPortfolioId())
                             .then(res => res.data || res)
                             .catch(error => {
                                 const errorInfo = ErrorHandler.classifyError(error);
@@ -7926,7 +7938,7 @@
                         
                         // Load holdings data
                         setHoldingsLoading(true);
-                        const holdingsRes = await cachedApiClient.getHoldings('64ff3be6-0ed1-4990-a32b-4ded17f0320c')
+                        const holdingsRes = await cachedApiClient.getHoldings(getCurrentPortfolioId())
                             .then(res => res.data || res)
                             .catch(error => {
                                 const errorInfo = ErrorHandler.classifyError(error);
@@ -8274,7 +8286,7 @@
                 const loadPerformance = async () => {
                     try {
                         const result = await apiClient.executePattern('portfolio_overview', {
-                            portfolio_id: '64ff3be6-0ed1-4990-a32b-4ded17f0320c',
+                            portfolio_id: getCurrentPortfolioId(),
                             lookback_days: 252
                         });
                         
@@ -8399,7 +8411,7 @@
                             try {
                                 console.log(`Executing scenario: ${scenario.id}`);
                                 const result = await apiClient.executePattern('portfolio_scenario_analysis', {
-                                    portfolio_id: '64ff3be6-0ed1-4990-a32b-4ded17f0320c',
+                                    portfolio_id: getCurrentPortfolioId(),
                                     scenario_id: scenario.id,
                                     custom_shocks: {}  // Provide empty object instead of null to prevent template path resolution errors
                                 });
@@ -8590,7 +8602,7 @@
                         
                         // Execute portfolio_cycle_risk pattern
                         const riskResult = await apiClient.executePattern('portfolio_cycle_risk', {
-                            portfolio_id: '64ff3be6-0ed1-4990-a32b-4ded17f0320c'
+                            portfolio_id: getCurrentPortfolioId()
                         });
                         
                         // Also get portfolio data for additional metrics
@@ -8815,7 +8827,7 @@
                         
                         // Execute portfolio_overview pattern to get attribution data
                         const result = await apiClient.executePattern('portfolio_overview', {
-                            portfolio_id: '64ff3be6-0ed1-4990-a32b-4ded17f0320c',
+                            portfolio_id: getCurrentPortfolioId(),
                             lookback_days: 252  // 1 year lookback
                         });
                         
@@ -8991,7 +9003,7 @@
                         
                         // Call the policy_rebalance pattern
                         const result = await apiClient.executePattern('policy_rebalance', {
-                            portfolio_id: '64ff3be6-0ed1-4990-a32b-4ded17f0320c',
+                            portfolio_id: getCurrentPortfolioId(),
                             policies: [
                                 { type: 'min_quality_score', value: 7.0 },
                                 { type: 'max_single_position', value: 25.0 },
@@ -10483,7 +10495,7 @@
                         
                         // Execute news impact analysis pattern
                         const newsResponse = await apiClient.executePattern('news_impact_analysis', {
-                            portfolio_id: '64ff3be6-0ed1-4990-a32b-4ded17f0320c',
+                            portfolio_id: getCurrentPortfolioId(),
                             lookback_hours: 72,
                             min_impact_threshold: 0.02
                         }).catch(err => {
