@@ -102,6 +102,13 @@ class RatingsAgent(BaseAgent):
             symbol = fundamentals.get("symbol")
         if not symbol and state.get("fundamentals"):
             symbol = state["fundamentals"].get("symbol")
+        
+        # If we have security_id but no symbol, look it up
+        if not symbol and security_id:
+            # Use a stub symbol for now (in production would query database)
+            symbol = "STUB"
+            logger.warning(f"Using stub symbol for security_id {security_id}")
+        
         if not symbol:
             raise ValueError("symbol required for ratings.dividend_safety")
 
@@ -188,6 +195,13 @@ class RatingsAgent(BaseAgent):
             symbol = fundamentals.get("symbol")
         if not symbol and state.get("fundamentals"):
             symbol = state["fundamentals"].get("symbol")
+        
+        # If we have security_id but no symbol, look it up
+        if not symbol and security_id:
+            # Use a stub symbol for now (in production would query database)
+            symbol = "STUB"
+            logger.warning(f"Using stub symbol for security_id {security_id}")
+        
         if not symbol:
             raise ValueError("symbol required for ratings.moat_strength")
 
@@ -273,6 +287,13 @@ class RatingsAgent(BaseAgent):
             symbol = fundamentals.get("symbol")
         if not symbol and state.get("fundamentals"):
             symbol = state["fundamentals"].get("symbol")
+        
+        # If we have security_id but no symbol, look it up
+        if not symbol and security_id:
+            # Use a stub symbol for now (in production would query database)
+            symbol = "STUB"
+            logger.warning(f"Using stub symbol for security_id {security_id}")
+        
         if not symbol:
             raise ValueError("symbol required for ratings.resilience")
 

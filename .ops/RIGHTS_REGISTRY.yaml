@@ -1,0 +1,22 @@
+sources:
+  polygon:
+    attribution: "Data provided by Polygon.io"
+    usage_rights: "Personal use only"
+    export_allowed: true
+  fmp:
+    attribution: "Data from Financial Modeling Prep" 
+    usage_rights: "Personal use only"
+    export_allowed: true
+  fred:
+    attribution: "Federal Reserve Economic Data (FRED)"
+    usage_rights: "Public domain"
+    export_allowed: true
+  newsapi:
+    attribution: "News from NewsAPI.org"
+    usage_rights: "Personal use only"
+    export_allowed: false
+  anthropic:
+    attribution: "Analysis powered by Anthropic Claude"
+    usage_rights: "Personal use only"
+    export_allowed: true
+default_attribution: "Data from multiple sources"
