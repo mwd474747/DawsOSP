@@ -626,6 +626,8 @@ class MacroHound(BaseAgent):
         ctx: RequestCtx,
         state: Dict[str, Any],
         portfolio_id: Optional[str] = None,
+        pack_id: Optional[str] = None,
+        cycle_adjusted: bool = False,
         confidence: float = 0.95,
         horizon_days: int = 30,
     ) -> Dict[str, Any]:
@@ -681,12 +683,18 @@ class MacroHound(BaseAgent):
         if not portfolio_id_uuid:
             raise ValueError("portfolio_id required for macro.compute_dar")
 
-        pack_id_str = ctx.pricing_pack_id or "PP_latest"
+        # Use provided pack_id or fall back to context pack_id
+        pack_id_str = pack_id or ctx.pricing_pack_id or "PP_latest"
 
         logger.info(
             f"macro.compute_dar: portfolio_id={portfolio_id_uuid}, "
-            f"confidence={confidence}, horizon={horizon_days}d"
+            f"confidence={confidence}, horizon={horizon_days}d, "
+            f"pack_id={pack_id_str}, cycle_adjusted={cycle_adjusted}"
         )
+        
+        # TODO: Implement cycle-adjusted DaR if cycle_adjusted=True
+        if cycle_adjusted:
+            logger.info("Cycle-adjusted DaR requested (not yet fully implemented)")
 
         # Get scenario service
         from app.services.scenarios import get_scenario_service
@@ -768,13 +776,19 @@ class MacroHound(BaseAgent):
         ctx: RequestCtx,
         state: Dict[str, Any],
         lookback_days: int = 365,
+        lookback_weeks: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Get historical regime classifications.
 
         Capability: macro.get_regime_history
         """
-        logger.info(f"macro.get_regime_history: lookback={lookback_days}")
+        # If lookback_weeks is provided, convert to days
+        if lookback_weeks is not None:
+            lookback_days = lookback_weeks * 7
+            logger.info(f"macro.get_regime_history: lookback={lookback_weeks} weeks ({lookback_days} days)")
+        else:
+            logger.info(f"macro.get_regime_history: lookback={lookback_days} days")
 
         macro_service = MacroService()
         history = await macro_service.get_regime_history(lookback_days)

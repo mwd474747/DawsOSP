@@ -271,6 +271,8 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
         from backend.app.agents.claude_agent import ClaudeAgent
         from backend.app.agents.ratings_agent import RatingsAgent
         from backend.app.agents.optimizer_agent import OptimizerAgent
+        from backend.app.agents.charts_agent import ChartsAgent
+        from backend.app.agents.reports_agent import ReportsAgent
 
         data_harvester = DataHarvester("data_harvester", services)
         _agent_runtime.register_agent(data_harvester)
@@ -283,6 +285,14 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 
         optimizer_agent = OptimizerAgent("optimizer_agent", services)
         _agent_runtime.register_agent(optimizer_agent)
+
+        # Register ChartsAgent for chart formatting and visualization
+        charts_agent = ChartsAgent("charts_agent", services)
+        _agent_runtime.register_agent(charts_agent)
+
+        # Register ReportsAgent for PDF/CSV export generation
+        reports_agent = ReportsAgent("reports_agent", services)
+        _agent_runtime.register_agent(reports_agent)
 
         logger.info(f"Agent runtime initialized with {len(_agent_runtime.agents)} agents")
 
