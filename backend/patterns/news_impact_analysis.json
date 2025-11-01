@@ -62,7 +62,7 @@
     {
       "capability": "pricing.apply_pack",
       "args": {
-        "positions": "{{state.positions}}",
+        "positions": "{{positions.positions}}",
         "pack_id": "{{ctx.pricing_pack_id}}"
       },
       "as": "valued"
@@ -70,7 +70,7 @@
     {
       "capability": "news.search",
       "args": {
-        "entities": "{{state.valued.symbols}}",
+        "entities": "{{state.valued.positions}}",
         "lookback_hours": "{{inputs.lookback_hours}}"
       },
       "as": "news_items"
@@ -92,7 +92,7 @@
         "alert_type": "news_impact"
       },
       "as": "alert_result",
-      "condition": "{{inputs.create_alert}} == true"
+      "condition": "{{inputs.create_alert}}"
     }
   ],
   "presentation": {

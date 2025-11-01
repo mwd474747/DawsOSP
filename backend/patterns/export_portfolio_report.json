@@ -62,7 +62,7 @@
         "pack_id": "{{ctx.pricing_pack_id}}"
       },
       "as": "performance",
-      "condition": "{{inputs.include_performance}} == true"
+      "condition": "{{inputs.include_performance}}"
     },
     {
       "capability": "attribution.currency",
@@ -71,7 +71,7 @@
         "pack_id": "{{ctx.pricing_pack_id}}"
       },
       "as": "currency_attr",
-      "condition": "{{inputs.include_performance}} == true"
+      "condition": "{{inputs.include_performance}}"
     },
     {
       "capability": "macro.detect_regime",
@@ -79,7 +79,7 @@
         "asof_date": "{{ctx.asof_date}}"
       },
       "as": "regime",
-      "condition": "{{inputs.include_macro}} == true"
+      "condition": "{{inputs.include_macro}}"
     },
     {
       "capability": "reports.render_pdf",

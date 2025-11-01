@@ -264,8 +264,12 @@ class OptimizerAgent(BaseAgent):
 
         portfolio_uuid = UUID(portfolio_id)
 
-        # Get proposed_trades from state if not provided
+        # Get proposed_trades from multiple possible locations for pattern compatibility
         if not proposed_trades:
+            # Check state for proposed_trades directly
+            proposed_trades = state.get("proposed_trades")
+        if not proposed_trades:
+            # Check state for rebalance_result.trades
             rebalance_result = state.get("rebalance_result")
             if rebalance_result and "trades" in rebalance_result:
                 proposed_trades = rebalance_result["trades"]

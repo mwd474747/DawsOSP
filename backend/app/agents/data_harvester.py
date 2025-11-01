@@ -1444,7 +1444,7 @@ class DataHarvester(BaseAgent):
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
-        entities: List[str],
+        entities: Optional[List] = None,
         lookback_hours: int = 24,
     ) -> Dict[str, Any]:
         """
@@ -1454,20 +1454,41 @@ class DataHarvester(BaseAgent):
         Pattern compatibility for news_impact_analysis.json
 
         Args:
-            entities: List of symbols/entities to search for
+            entities: List of symbols/entities to search for, or list of positions with 'symbol' field
             lookback_hours: Hours to look back for news (default: 24)
 
         Returns:
             Dict with news items and metadata
         """
-        logger.info(f"news.search: entities={entities}, lookback_hours={lookback_hours}")
+        # Handle different input formats
+        if not entities:
+            # Check if valued positions are in state
+            valued = state.get("valued", {})
+            if valued and "positions" in valued:
+                entities = valued["positions"]
+            else:
+                entities = []
+        
+        # Extract symbols if entities contains position objects
+        symbols = []
+        for entity in entities:
+            if isinstance(entity, dict):
+                # This is a position object, extract symbol
+                symbol = entity.get("symbol")
+                if symbol:
+                    symbols.append(symbol)
+            elif isinstance(entity, str):
+                # This is already a symbol string
+                symbols.append(entity)
+        
+        logger.info(f"news.search: symbols={symbols}, lookback_hours={lookback_hours}")
 
         try:
             # Use existing provider.fetch_news capability
             news_items = []
-            for entity in entities:
+            for symbol in symbols:
                 news_result = await self.provider_fetch_news(
-                    ctx, state, symbol=entity, provider="newsapi"
+                    ctx, state, symbol=symbol, provider="newsapi"
                 )
                 if news_result.get("news"):
                     news_items.extend(news_result["news"])
@@ -1490,7 +1511,7 @@ class DataHarvester(BaseAgent):
             return {
                 "news_items": filtered_news,
                 "total_count": len(filtered_news),
-                "entities_searched": entities,
+                "entities_searched": symbols,  # Return the extracted symbols
                 "lookback_hours": lookback_hours,
             }
 

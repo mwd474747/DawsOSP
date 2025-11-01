@@ -250,6 +250,45 @@ class PatternOrchestrator:
             for spec in self.patterns.values()
         ]
 
+    def _apply_pattern_defaults(
+        self, 
+        spec: Dict[str, Any], 
+        inputs: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Apply default values from pattern spec to inputs.
+        
+        Args:
+            spec: Pattern specification
+            inputs: User-provided inputs
+            
+        Returns:
+            Merged inputs with defaults applied
+        """
+        # Start with a copy of user inputs
+        merged = inputs.copy()
+        
+        # Get the inputs spec from the pattern
+        inputs_spec = spec.get("inputs", {})
+        
+        # Apply defaults for any missing optional inputs
+        for input_name, input_config in inputs_spec.items():
+            # Skip if already provided by user
+            if input_name in merged:
+                continue
+                
+            # Skip required inputs without defaults
+            if input_config.get("required", False) and "default" not in input_config:
+                continue
+                
+            # Apply default if available
+            if "default" in input_config:
+                default_value = input_config["default"]
+                merged[input_name] = default_value
+                logger.info(f"Applied default for {input_name}: {default_value}")
+                
+        return merged
+
     async def run_pattern(
         self,
         pattern_id: str,
@@ -281,6 +320,11 @@ class PatternOrchestrator:
             raise ValueError(f"Pattern not found: {pattern_id}")
 
         logger.info(f"Executing pattern: {pattern_id}")
+        logger.info(f"Initial inputs: {inputs}")
+
+        # Apply defaults from pattern spec
+        inputs = self._apply_pattern_defaults(spec, inputs)
+        logger.info(f"Inputs after applying defaults: {inputs}")
 
         # Get metrics registry for pattern-level tracking
         metrics = get_metrics()
@@ -290,10 +334,12 @@ class PatternOrchestrator:
         pattern_start_time = time.time()
         pattern_status = "success"
 
-        # Initialize execution state
+        # Initialize execution state with dual storage
+        # Support both top-level and nested 'state' namespace
         state = {
             "ctx": ctx.to_dict(),  # Context accessible via {{ctx.foo}}
             "inputs": inputs,       # Inputs accessible via {{inputs.foo}}
+            "state": {}             # Additional namespace for state lookups
         }
         trace = Trace(pattern_id, ctx, agent_runtime=self.agent_runtime)
 
@@ -341,12 +387,18 @@ class PatternOrchestrator:
                             capability=capability,
                         ).observe(duration)
 
-                    # Store result in state
+                    # Store result in state with dual storage for compatibility
                     result_key = step.get("as", "last")
                     logger.info(f"📦 Storing result from {capability} in state['{result_key}']")
                     logger.info(f"Result type: {type(result)}, is None: {result is None}")
+                    
+                    # DUAL STORAGE: Store in both top-level AND nested 'state' namespace
+                    # This ensures compatibility with different pattern reference styles
                     state[result_key] = result
+                    state["state"][result_key] = result
+                    
                     logger.info(f"State after storing: keys={list(state.keys())}, '{result_key}' is None: {state.get(result_key) is None}")
+                    logger.info(f"State['state'] after storing: keys={list(state['state'].keys())}, '{result_key}' is None: {state['state'].get(result_key) is None}")
 
                     trace.add_step(capability, result, args, duration)
                     logger.debug(
@@ -469,8 +521,9 @@ class PatternOrchestrator:
                     raise ValueError(
                         f"Cannot resolve template path {value}: {part} not found"
                     )
-                if result is None:
-                    raise ValueError(f"Template path {value} resolved to None")
+                # Allow None for optional parameters
+                # Don't raise ValueError if result is None - just return None
+                # This allows optional fields like custom_shocks to be None
             return result
 
         # Handle nested dicts
