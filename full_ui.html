@@ -3038,6 +3038,1038 @@
                 };
             };
             
+            // ===== UNIFIED PATTERN INTEGRATION SYSTEM =====
+            
+            /**
+             * User Context for managing portfolio ID dynamically
+             */
+            const UserContext = React.createContext();
+            
+            // User Context Provider
+            function UserContextProvider({ children }) {
+                const [portfolioId, setPortfolioId] = useState(null);
+                const [user, setUser] = useState(null);
+                
+                useEffect(() => {
+                    // Get user from token manager
+                    const storedUser = TokenManager.getUser();
+                    if (storedUser) {
+                        setUser(storedUser);
+                        // Use the user's default portfolio or fallback to hardcoded one
+                        setPortfolioId(storedUser.default_portfolio_id || '64ff3be6-0ed1-4990-a32b-4ded17f0320c');
+                    } else {
+                        // Fallback to default portfolio ID
+                        setPortfolioId('64ff3be6-0ed1-4990-a32b-4ded17f0320c');
+                    }
+                }, []);
+                
+                return e(UserContext.Provider, 
+                    { value: { portfolioId, setPortfolioId, user } }, 
+                    children
+                );
+            }
+            
+            // Custom hook to use user context
+            function useUserContext() {
+                const context = React.useContext(UserContext);
+                if (!context) {
+                    throw new Error('useUserContext must be used within UserContextProvider');
+                }
+                return context;
+            }
+            
+            // Pattern Registry with metadata for all 12 patterns
+            const patternRegistry = {
+                portfolio_overview: {
+                    category: 'portfolio',
+                    name: 'Portfolio Overview',
+                    description: 'Comprehensive portfolio snapshot',
+                    icon: '📊',
+                    display: {
+                        panels: [
+                            {
+                                id: 'performance_strip',
+                                title: 'Performance Metrics',
+                                type: 'metrics_grid',
+                                dataPath: 'perf_metrics',
+                                config: {
+                                    columns: 4,
+                                    metrics: [
+                                        { key: 'twr_ytd', label: 'YTD Return', format: 'percentage' },
+                                        { key: 'volatility', label: 'Volatility', format: 'percentage' },
+                                        { key: 'sharpe', label: 'Sharpe Ratio', format: 'number' },
+                                        { key: 'max_drawdown', label: 'Max Drawdown', format: 'percentage' }
+                                    ]
+                                }
+                            },
+                            {
+                                id: 'nav_chart',
+                                title: 'Portfolio Value Over Time',
+                                type: 'line_chart',
+                                dataPath: 'historical_nav'
+                            },
+                            {
+                                id: 'currency_attr',
+                                title: 'Currency Attribution',
+                                type: 'donut_chart',
+                                dataPath: 'currency_attr'
+                            },
+                            {
+                                id: 'sector_alloc',
+                                title: 'Sector Allocation',
+                                type: 'pie_chart',
+                                dataPath: 'sector_allocation'
+                            },
+                            {
+                                id: 'holdings_table',
+                                title: 'Holdings',
+                                type: 'table',
+                                dataPath: 'valued_positions.positions'
+                            }
+                        ]
+                    }
+                },
+                
+                portfolio_scenario_analysis: {
+                    category: 'risk',
+                    name: 'Scenario Analysis',
+                    description: 'Stress test portfolio with macro scenarios',
+                    icon: '⚡',
+                    display: {
+                        panels: [
+                            {
+                                id: 'scenario_impact',
+                                title: 'Scenario Impact',
+                                type: 'metrics_grid',
+                                dataPath: 'scenario_result'
+                            },
+                            {
+                                id: 'position_deltas',
+                                title: 'Position Deltas',
+                                type: 'table',
+                                dataPath: 'scenario_result.position_deltas'
+                            },
+                            {
+                                id: 'winners_losers',
+                                title: 'Winners & Losers',
+                                type: 'dual_list',
+                                dataPath: 'scenario_result'
+                            },
+                            {
+                                id: 'hedge_cards',
+                                title: 'Hedge Suggestions',
+                                type: 'action_cards',
+                                dataPath: 'hedge_suggestions.suggestions'
+                            }
+                        ]
+                    }
+                },
+                
+                portfolio_cycle_risk: {
+                    category: 'risk',
+                    name: 'Cycle Risk Analysis',
+                    description: 'Analyze portfolio risk across economic cycles',
+                    icon: '🔄',
+                    display: {
+                        panels: [
+                            {
+                                id: 'cycle_risk_summary',
+                                title: 'Cycle Risk Summary',
+                                type: 'metrics_grid',
+                                dataPath: 'risk_summary'
+                            },
+                            {
+                                id: 'vulnerabilities',
+                                title: 'Vulnerabilities',
+                                type: 'table',
+                                dataPath: 'vulnerabilities'
+                            }
+                        ]
+                    }
+                },
+                
+                macro_cycles_overview: {
+                    category: 'macro',
+                    name: 'Macro Cycles Overview',
+                    description: 'Dalio framework: Debt, Empire, Civil cycles',
+                    icon: '🌍',
+                    display: {
+                        panels: [
+                            {
+                                id: 'stdc_panel',
+                                title: 'Short-Term Debt Cycle',
+                                type: 'cycle_card',
+                                dataPath: 'stdc'
+                            },
+                            {
+                                id: 'ltdc_panel',
+                                title: 'Long-Term Debt Cycle',
+                                type: 'cycle_card',
+                                dataPath: 'ltdc'
+                            },
+                            {
+                                id: 'empire_panel',
+                                title: 'Empire Cycle',
+                                type: 'cycle_card',
+                                dataPath: 'empire'
+                            },
+                            {
+                                id: 'civil_panel',
+                                title: 'Civil/Internal Order Cycle',
+                                type: 'cycle_card',
+                                dataPath: 'civil'
+                            }
+                        ]
+                    }
+                },
+                
+                macro_trend_monitor: {
+                    category: 'macro',
+                    name: 'Macro Trend Monitor',
+                    description: 'Track key economic indicators and trends',
+                    icon: '📈',
+                    display: {
+                        panels: [
+                            {
+                                id: 'trends_grid',
+                                title: 'Economic Trends',
+                                type: 'metrics_grid',
+                                dataPath: 'trends'
+                            },
+                            {
+                                id: 'indicators_chart',
+                                title: 'Key Indicators',
+                                type: 'line_chart',
+                                dataPath: 'indicators'
+                            }
+                        ]
+                    }
+                },
+                
+                buffett_checklist: {
+                    category: 'analysis',
+                    name: 'Buffett Quality Checklist',
+                    description: 'Buffett-style quality and moat scorecard',
+                    icon: '✅',
+                    display: {
+                        panels: [
+                            {
+                                id: 'quality_score',
+                                title: 'Quality Scorecard',
+                                type: 'scorecard',
+                                dataPath: 'moat_strength'
+                            },
+                            {
+                                id: 'moat_analysis',
+                                title: 'Moat Strength',
+                                type: 'scorecard',
+                                dataPath: 'moat_strength'
+                            },
+                            {
+                                id: 'dividend_safety',
+                                title: 'Dividend Safety',
+                                type: 'scorecard',
+                                dataPath: 'dividend_safety'
+                            },
+                            {
+                                id: 'resilience',
+                                title: 'Balance Sheet Resilience',
+                                type: 'metrics_grid',
+                                dataPath: 'resilience'
+                            }
+                        ]
+                    }
+                },
+                
+                news_impact_analysis: {
+                    category: 'analysis',
+                    name: 'News Impact Analysis',
+                    description: 'Analyze news impact on portfolio',
+                    icon: '📰',
+                    display: {
+                        panels: [
+                            {
+                                id: 'news_summary',
+                                title: 'News Summary',
+                                type: 'metrics_grid',
+                                dataPath: 'summary'
+                            },
+                            {
+                                id: 'news_items',
+                                title: 'Recent News',
+                                type: 'news_list',
+                                dataPath: 'news_items'
+                            }
+                        ]
+                    }
+                },
+                
+                holding_deep_dive: {
+                    category: 'portfolio',
+                    name: 'Holding Deep Dive',
+                    description: 'Detailed analysis of individual holdings',
+                    icon: '🔍',
+                    display: {
+                        panels: [
+                            {
+                                id: 'holding_metrics',
+                                title: 'Holding Metrics',
+                                type: 'metrics_grid',
+                                dataPath: 'metrics'
+                            },
+                            {
+                                id: 'fundamentals',
+                                title: 'Fundamentals',
+                                type: 'table',
+                                dataPath: 'fundamentals'
+                            }
+                        ]
+                    }
+                },
+                
+                policy_rebalance: {
+                    category: 'action',
+                    name: 'Policy Rebalance',
+                    description: 'Generate rebalancing recommendations',
+                    icon: '⚖️',
+                    display: {
+                        panels: [
+                            {
+                                id: 'rebalance_summary',
+                                title: 'Rebalance Summary',
+                                type: 'metrics_grid',
+                                dataPath: 'summary'
+                            },
+                            {
+                                id: 'trade_proposals',
+                                title: 'Trade Proposals',
+                                type: 'table',
+                                dataPath: 'trades'
+                            }
+                        ]
+                    }
+                },
+                
+                cycle_deleveraging_scenarios: {
+                    category: 'action',
+                    name: 'Cycle Deleveraging Scenarios',
+                    description: 'Deleveraging strategies based on cycles',
+                    icon: '📉',
+                    display: {
+                        panels: [
+                            {
+                                id: 'deleveraging_options',
+                                title: 'Deleveraging Options',
+                                type: 'action_cards',
+                                dataPath: 'options'
+                            },
+                            {
+                                id: 'impact_analysis',
+                                title: 'Impact Analysis',
+                                type: 'table',
+                                dataPath: 'impact'
+                            }
+                        ]
+                    }
+                },
+                
+                export_portfolio_report: {
+                    category: 'reports',
+                    name: 'Export Portfolio Report',
+                    description: 'Generate comprehensive portfolio report',
+                    icon: '📄',
+                    display: {
+                        panels: [
+                            {
+                                id: 'report_preview',
+                                title: 'Report Preview',
+                                type: 'report_viewer',
+                                dataPath: 'report'
+                            }
+                        ]
+                    }
+                },
+                
+                portfolio_macro_overview: {
+                    category: 'reports',
+                    name: 'Portfolio Macro Overview',
+                    description: 'Portfolio analysis with macro context',
+                    icon: '🌐',
+                    display: {
+                        panels: [
+                            {
+                                id: 'macro_context',
+                                title: 'Macro Context',
+                                type: 'metrics_grid',
+                                dataPath: 'macro_context'
+                            },
+                            {
+                                id: 'portfolio_positioning',
+                                title: 'Portfolio Positioning',
+                                type: 'table',
+                                dataPath: 'positioning'
+                            }
+                        ]
+                    }
+                }
+            };
+            
+            // Pattern categories for navigation
+            const patternCategories = {
+                portfolio: {
+                    name: 'Portfolio',
+                    patterns: ['portfolio_overview', 'holding_deep_dive']
+                },
+                risk: {
+                    name: 'Risk Analysis',
+                    patterns: ['portfolio_scenario_analysis', 'portfolio_cycle_risk']
+                },
+                macro: {
+                    name: 'Macro Analysis',
+                    patterns: ['macro_cycles_overview', 'macro_trend_monitor']
+                },
+                analysis: {
+                    name: 'Deep Analysis',
+                    patterns: ['buffett_checklist', 'news_impact_analysis']
+                },
+                action: {
+                    name: 'Actions',
+                    patterns: ['policy_rebalance', 'cycle_deleveraging_scenarios']
+                },
+                reports: {
+                    name: 'Reports',
+                    patterns: ['export_portfolio_report', 'portfolio_macro_overview']
+                }
+            };
+            
+            /**
+             * Helper function to extract data from nested path
+             */
+            function getDataByPath(data, path) {
+                if (!path || !data) return data;
+                
+                const parts = path.split('.');
+                let current = data;
+                
+                for (const part of parts) {
+                    if (current && typeof current === 'object') {
+                        current = current[part];
+                    } else {
+                        return null;
+                    }
+                }
+                
+                return current;
+            }
+            
+            /**
+             * Generic Pattern Renderer Component
+             */
+            function PatternRenderer({ pattern, inputs = {}, onDataLoaded }) {
+                const [loading, setLoading] = useState(true);
+                const [error, setError] = useState(null);
+                const [data, setData] = useState(null);
+                const [panels, setPanels] = useState([]);
+                const { portfolioId } = useUserContext();
+                
+                useEffect(() => {
+                    loadPattern();
+                }, [pattern, JSON.stringify(inputs)]);
+                
+                const loadPattern = async () => {
+                    try {
+                        setLoading(true);
+                        setError(null);
+                        
+                        // Add portfolio ID to inputs if not provided
+                        const finalInputs = {
+                            portfolio_id: portfolioId,
+                            ...inputs
+                        };
+                        
+                        // Execute pattern
+                        const result = await apiClient.executePattern(pattern, finalInputs);
+                        
+                        // Get pattern metadata
+                        const metadata = patternRegistry[pattern];
+                        if (!metadata) {
+                            throw new Error(`Pattern ${pattern} not found in registry`);
+                        }
+                        
+                        // Set data and panels
+                        setData(result.data || result);
+                        setPanels(metadata.display.panels || []);
+                        setLoading(false);
+                        
+                        // Callback for parent components
+                        if (onDataLoaded) {
+                            onDataLoaded(result.data || result);
+                        }
+                    } catch (err) {
+                        console.error(`Error loading pattern ${pattern}:`, err);
+                        setError(err.message || 'Failed to load pattern');
+                        setLoading(false);
+                    }
+                };
+                
+                if (loading) {
+                    return e('div', { className: 'loading-container' },
+                        e('div', { className: 'loading-spinner' }),
+                        e('p', null, `Loading ${patternRegistry[pattern]?.name || pattern}...`)
+                    );
+                }
+                
+                if (error) {
+                    return e('div', { className: 'error-container' },
+                        e('h3', null, 'Error Loading Pattern'),
+                        e('p', null, error),
+                        e('button', { 
+                            className: 'btn btn-primary',
+                            onClick: loadPattern
+                        }, 'Retry')
+                    );
+                }
+                
+                return e('div', { className: 'pattern-content' },
+                    panels.map(panel => 
+                        e(PanelRenderer, {
+                            key: panel.id,
+                            panel: panel,
+                            data: getDataByPath(data, panel.dataPath),
+                            fullData: data
+                        })
+                    )
+                );
+            }
+            
+            /**
+             * Generic Panel Renderer that delegates to specific panel types
+             */
+            function PanelRenderer({ panel, data, fullData }) {
+                const { type, title, config } = panel;
+                
+                // Render based on panel type
+                switch (type) {
+                    case 'metrics_grid':
+                        return e(MetricsGridPanel, { title, data, config });
+                    case 'table':
+                        return e(TablePanel, { title, data, config });
+                    case 'line_chart':
+                        return e(LineChartPanel, { title, data, config });
+                    case 'pie_chart':
+                        return e(PieChartPanel, { title, data, config });
+                    case 'donut_chart':
+                        return e(DonutChartPanel, { title, data, config });
+                    case 'bar_chart':
+                        return e(BarChartPanel, { title, data, config });
+                    case 'action_cards':
+                        return e(ActionCardsPanel, { title, data, config });
+                    case 'cycle_card':
+                        return e(CycleCardPanel, { title, data, config });
+                    case 'scorecard':
+                        return e(ScorecardPanel, { title, data, config });
+                    case 'dual_list':
+                        return e(DualListPanel, { title, data, config });
+                    case 'news_list':
+                        return e(NewsListPanel, { title, data, config });
+                    case 'report_viewer':
+                        return e(ReportViewerPanel, { title, data, config });
+                    default:
+                        return e('div', { className: 'card' },
+                            e('div', { className: 'card-header' },
+                                e('h3', { className: 'card-title' }, title || 'Panel')
+                            ),
+                            e('p', null, `Unsupported panel type: ${type}`)
+                        );
+                }
+            }
+            
+            /**
+             * Metrics Grid Panel Component
+             */
+            function MetricsGridPanel({ title, data, config = {} }) {
+                if (!data) return null;
+                
+                const metrics = config.metrics || [];
+                const columns = config.columns || 4;
+                
+                return e('div', { className: 'card' },
+                    title && e('div', { className: 'card-header' },
+                        e('h3', { className: 'card-title' }, title)
+                    ),
+                    e('div', { 
+                        className: 'stats-grid',
+                        style: { gridTemplateColumns: `repeat(${columns}, 1fr)` }
+                    },
+                        metrics.map(metric => {
+                            const value = data[metric.key];
+                            const formattedValue = formatValue(value, metric.format);
+                            const colorClass = getColorClass(value, metric.format);
+                            
+                            return e('div', { key: metric.key, className: 'stat-card' },
+                                e('div', { className: 'stat-label' }, metric.label),
+                                e('div', { className: `stat-value ${colorClass}` }, formattedValue),
+                                metric.description && e('div', { className: 'stat-description' }, metric.description)
+                            );
+                        })
+                    )
+                );
+            }
+            
+            /**
+             * Table Panel Component
+             */
+            function TablePanel({ title, data, config = {} }) {
+                if (!data || !Array.isArray(data)) return null;
+                
+                const columns = config.columns || [];
+                const maxRows = config.maxRows || 20;
+                const displayData = data.slice(0, maxRows);
+                
+                return e('div', { className: 'card' },
+                    title && e('div', { className: 'card-header' },
+                        e('h3', { className: 'card-title' }, title)
+                    ),
+                    e('div', { className: 'table-container' },
+                        e('table', { className: 'data-table' },
+                            columns.length > 0 && e('thead', null,
+                                e('tr', null,
+                                    columns.map(col => 
+                                        e('th', { key: col.field }, col.header || col.field)
+                                    )
+                                )
+                            ),
+                            e('tbody', null,
+                                displayData.map((row, idx) => 
+                                    e('tr', { key: idx },
+                                        columns.length > 0 ?
+                                            columns.map(col => {
+                                                const value = row[col.field];
+                                                const formattedValue = formatValue(value, col.format);
+                                                const colorClass = col.color_condition ? getColorClass(value, col.format) : '';
+                                                
+                                                return e('td', { 
+                                                    key: col.field,
+                                                    className: colorClass
+                                                }, formattedValue);
+                                            }) :
+                                            Object.entries(row).map(([key, value]) =>
+                                                e('td', { key }, formatValue(value))
+                                            )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+            
+            /**
+             * Line Chart Panel Component
+             */
+            function LineChartPanel({ title, data, config = {} }) {
+                const chartRef = useRef(null);
+                const chartInstance = useRef(null);
+                
+                useEffect(() => {
+                    if (!data || !chartRef.current) return;
+                    
+                    // Destroy existing chart
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+                    
+                    const ctx = chartRef.current.getContext('2d');
+                    
+                    // Prepare chart data
+                    const chartData = {
+                        labels: data.labels || (data.data ? data.data.map(d => d.date || d.x) : []),
+                        datasets: [{
+                            label: config.label || 'Value',
+                            data: data.values || (data.data ? data.data.map(d => d.value || d.y) : []),
+                            borderColor: config.color || 'rgb(59, 130, 246)',
+                            backgroundColor: config.backgroundColor || 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.1,
+                            fill: config.fill !== false
+                        }]
+                    };
+                    
+                    // Create new chart
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'line',
+                        data: chartData,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: config.showLegend !== false,
+                                    labels: {
+                                        color: '#94a3b8'
+                                    }
+                                },
+                                title: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.05)'
+                                    },
+                                    ticks: {
+                                        color: '#94a3b8'
+                                    }
+                                },
+                                y: {
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.05)'
+                                    },
+                                    ticks: {
+                                        color: '#94a3b8',
+                                        callback: function(value) {
+                                            return formatValue(value, config.format);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    
+                    return () => {
+                        if (chartInstance.current) {
+                            chartInstance.current.destroy();
+                        }
+                    };
+                }, [data]);
+                
+                if (!data) return null;
+                
+                return e('div', { className: 'card' },
+                    title && e('div', { className: 'card-header' },
+                        e('h3', { className: 'card-title' }, title)
+                    ),
+                    e('div', { className: 'chart-container', style: { height: '400px' } },
+                        e('canvas', { ref: chartRef })
+                    )
+                );
+            }
+            
+            /**
+             * Pie Chart Panel Component
+             */
+            function PieChartPanel({ title, data, config = {} }) {
+                const chartRef = useRef(null);
+                const chartInstance = useRef(null);
+                
+                useEffect(() => {
+                    if (!data || !chartRef.current) return;
+                    
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+                    
+                    const ctx = chartRef.current.getContext('2d');
+                    
+                    // Prepare chart data
+                    const labels = Object.keys(data);
+                    const values = Object.values(data);
+                    
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: values,
+                                backgroundColor: config.colors || [
+                                    '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
+                                    '#9b59b6', '#e67e22', '#1abc9c', '#34495e'
+                                ],
+                                borderColor: 'rgba(255, 255, 255, 0.1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                    labels: {
+                                        color: '#94a3b8',
+                                        padding: 15
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.parsed || 0;
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = ((value / total) * 100).toFixed(1);
+                                            return `${label}: ${formatValue(value, config.format)} (${percentage}%)`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    
+                    return () => {
+                        if (chartInstance.current) {
+                            chartInstance.current.destroy();
+                        }
+                    };
+                }, [data]);
+                
+                if (!data) return null;
+                
+                return e('div', { className: 'card' },
+                    title && e('div', { className: 'card-header' },
+                        e('h3', { className: 'card-title' }, title)
+                    ),
+                    e('div', { className: 'chart-container', style: { height: '400px' } },
+                        e('canvas', { ref: chartRef })
+                    )
+                );
+            }
+            
+            /**
+             * Donut Chart Panel Component (similar to pie but with cutout)
+             */
+            function DonutChartPanel({ title, data, config = {} }) {
+                const modifiedConfig = { ...config, cutout: '50%' };
+                return e(PieChartPanel, { title, data, config: modifiedConfig });
+            }
+            
+            /**
+             * Action Cards Panel Component
+             */
+            function ActionCardsPanel({ title, data, config = {} }) {
+                if (!data || !Array.isArray(data)) return null;
+                
+                return e('div', { className: 'card' },
+                    title && e('div', { className: 'card-header' },
+                        e('h3', { className: 'card-title' }, title)
+                    ),
+                    e('div', { className: 'action-cards-grid' },
+                        data.map((item, idx) =>
+                            e('div', { key: idx, className: 'action-card' },
+                                e('h4', { className: 'action-title' }, item.title || item.instrument),
+                                e('p', { className: 'action-subtitle' }, item.subtitle || item.strategy),
+                                item.metrics && e('div', { className: 'action-metrics' },
+                                    item.metrics.map((metric, midx) =>
+                                        e('div', { key: midx, className: 'metric-row' },
+                                            e('span', { className: 'metric-label' }, metric.label),
+                                            e('span', { className: 'metric-value' }, 
+                                                formatValue(metric.value, metric.format))
+                                        )
+                                    )
+                                ),
+                                item.action && e('button', {
+                                    className: 'btn btn-primary',
+                                    onClick: () => item.action()
+                                }, item.actionLabel || 'Execute')
+                            )
+                        )
+                    )
+                );
+            }
+            
+            /**
+             * Cycle Card Panel Component
+             */
+            function CycleCardPanel({ title, data, config = {} }) {
+                if (!data) return null;
+                
+                const getCycleClass = (phase) => {
+                    if (phase?.toLowerCase().includes('late')) return 'warning';
+                    if (phase?.toLowerCase().includes('early')) return 'success';
+                    if (phase?.toLowerCase().includes('crisis')) return 'error';
+                    return '';
+                };
+                
+                return e('div', { className: `cycle-card ${config.cycleType || ''}` },
+                    e('div', { className: 'cycle-header' },
+                        e('div', { className: 'cycle-title' }, title),
+                        data.phase_label && e('span', { 
+                            className: `badge ${getCycleClass(data.phase_label)}` 
+                        }, data.phase_label)
+                    ),
+                    data.description && e('p', { className: 'cycle-description' }, data.description),
+                    e('div', { className: 'cycle-metrics' },
+                        data.score !== undefined && e('div', { className: 'metric-row' },
+                            e('span', { className: 'metric-label' }, 'Score:'),
+                            e('span', { className: 'metric-value' }, formatValue(data.score, 'number'))
+                        ),
+                        data.confidence !== undefined && e('div', { className: 'metric-row' },
+                            e('span', { className: 'metric-label' }, 'Confidence:'),
+                            e('span', { className: 'metric-value' }, formatValue(data.confidence, 'percentage'))
+                        ),
+                        Object.entries(data).filter(([key]) => 
+                            !['phase_label', 'description', 'score', 'confidence'].includes(key)
+                        ).slice(0, 4).map(([key, value]) =>
+                            e('div', { key, className: 'metric-row' },
+                                e('span', { className: 'metric-label' }, 
+                                    key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + ':'),
+                                e('span', { className: 'metric-value' }, 
+                                    formatValue(value))
+                            )
+                        )
+                    )
+                );
+            }
+            
+            /**
+             * Helper functions for formatting values
+             */
+            function formatValue(value, format) {
+                if (value === null || value === undefined) return '-';
+                
+                switch (format) {
+                    case 'percentage':
+                        return formatPercentage(value);
+                    case 'currency':
+                        return formatCurrency(value);
+                    case 'number':
+                        return formatNumber(value, 2);
+                    case 'bps':
+                        return `${formatNumber(value, 0)} bps`;
+                    default:
+                        return typeof value === 'number' ? formatNumber(value, 2) : String(value);
+                }
+            }
+            
+            function getColorClass(value, format) {
+                if (format === 'percentage' || format === 'currency') {
+                    return value > 0 ? 'positive' : value < 0 ? 'negative' : 'neutral';
+                }
+                return '';
+            }
+            
+            /**
+             * Additional Panel Components
+             */
+            function ScorecardPanel({ title, data, config = {} }) {
+                if (!data) return null;
+                
+                return e('div', { className: 'card' },
+                    title && e('div', { className: 'card-header' },
+                        e('h3', { className: 'card-title' }, title)
+                    ),
+                    e('div', { className: 'scorecard-content' },
+                        data.overall_score !== undefined && e('div', { className: 'overall-score' },
+                            e('div', { className: 'score-value' }, 
+                                `${formatNumber(data.overall_score, 1)}/${data.max_score || 10}`),
+                            e('div', { className: 'score-label' }, 'Overall Score')
+                        ),
+                        data.components && e('div', { className: 'score-components' },
+                            data.components.map((comp, idx) =>
+                                e('div', { key: idx, className: 'score-component' },
+                                    e('div', { className: 'component-header' },
+                                        e('span', { className: 'component-label' }, comp.label),
+                                        e('span', { className: 'component-score' }, 
+                                            formatValue(comp.score, 'number'))
+                                    ),
+                                    comp.value !== undefined && e('div', { className: 'component-value' },
+                                        formatValue(comp.value, comp.format)),
+                                    comp.explanation && e('div', { className: 'component-explanation' },
+                                        comp.explanation)
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+            
+            function DualListPanel({ title, data, config = {} }) {
+                if (!data) return null;
+                
+                const winners = data.winners || [];
+                const losers = data.losers || [];
+                
+                return e('div', { className: 'card' },
+                    title && e('div', { className: 'card-header' },
+                        e('h3', { className: 'card-title' }, title)
+                    ),
+                    e('div', { className: 'dual-list-container' },
+                        e('div', { className: 'list-section winners' },
+                            e('h4', null, 'Top Winners'),
+                            winners.map((item, idx) =>
+                                e('div', { key: idx, className: 'list-item' },
+                                    e('span', { className: 'item-label' }, item.symbol || item.name),
+                                    e('span', { className: 'item-value positive' }, 
+                                        formatValue(item.delta_value || item.value, 'currency'))
+                                )
+                            )
+                        ),
+                        e('div', { className: 'list-section losers' },
+                            e('h4', null, 'Top Losers'),
+                            losers.map((item, idx) =>
+                                e('div', { key: idx, className: 'list-item' },
+                                    e('span', { className: 'item-label' }, item.symbol || item.name),
+                                    e('span', { className: 'item-value negative' }, 
+                                        formatValue(item.delta_value || item.value, 'currency'))
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+            
+            function NewsListPanel({ title, data, config = {} }) {
+                if (!data || !Array.isArray(data)) return null;
+                
+                return e('div', { className: 'card' },
+                    title && e('div', { className: 'card-header' },
+                        e('h3', { className: 'card-title' }, title)
+                    ),
+                    e('div', { className: 'news-list' },
+                        data.slice(0, config.maxItems || 10).map((item, idx) =>
+                            e('div', { key: idx, className: 'news-item' },
+                                e('div', { className: 'news-header' },
+                                    e('h4', { className: 'news-title' }, item.title),
+                                    e('span', { className: 'news-date' }, 
+                                        new Date(item.date || item.published_at).toLocaleDateString())
+                                ),
+                                item.summary && e('p', { className: 'news-summary' }, item.summary),
+                                item.sentiment && e('span', { 
+                                    className: `sentiment-badge ${item.sentiment.toLowerCase()}` 
+                                }, item.sentiment)
+                            )
+                        )
+                    )
+                );
+            }
+            
+            function ReportViewerPanel({ title, data, config = {} }) {
+                if (!data) return null;
+                
+                return e('div', { className: 'card' },
+                    title && e('div', { className: 'card-header' },
+                        e('h3', { className: 'card-title' }, title)
+                    ),
+                    e('div', { className: 'report-viewer' },
+                        e('iframe', {
+                            src: data.url || data,
+                            width: '100%',
+                            height: config.height || '800px',
+                            frameBorder: '0'
+                        })
+                    )
+                );
+            }
+            
+            function BarChartPanel({ title, data, config = {} }) {
+                // Implementation similar to LineChartPanel but with bar chart
+                // For brevity, delegating to LineChartPanel with modified config
+                return e(LineChartPanel, { 
+                    title, 
+                    data, 
+                    config: { ...config, chartType: 'bar' } 
+                });
+            }
+            
             // ----- OPTIMIZATION LOGIC -----
             
             /**
@@ -6837,6 +7869,18 @@
             // ============================================
             
             function DashboardPage() {
+                const { portfolioId } = useUserContext();
+                
+                return e('div', { className: 'dashboard-page' },
+                    e(PatternRenderer, {
+                        pattern: 'portfolio_overview',
+                        inputs: { portfolio_id: portfolioId, lookback_days: 252 }
+                    })
+                );
+            }
+            
+            // Legacy DashboardPage implementation (kept for reference, to be removed)
+            function DashboardPageLegacy() {
                 const [loading, setLoading] = useState(true);
                 const [portfolioData, setPortfolioData] = useState(null);
                 const [portfolioLoading, setPortfolioLoading] = useState(false);
@@ -7208,6 +8252,18 @@
             }
             
             function PerformancePage() {
+                const { portfolioId } = useUserContext();
+                
+                return e('div', { className: 'performance-page' },
+                    e(PatternRenderer, {
+                        pattern: 'portfolio_overview',
+                        inputs: { portfolio_id: portfolioId, lookback_days: 252 }
+                    })
+                );
+            }
+            
+            // Legacy PerformancePage implementation (to be removed)
+            function PerformancePageLegacy() {
                 const [loading, setLoading] = useState(true);
                 const [performanceData, setPerformanceData] = useState(null);
                 
@@ -7280,6 +8336,35 @@
             }
             
             function ScenariosPage() {
+                const { portfolioId } = useUserContext();
+                const [selectedScenario, setSelectedScenario] = useState('late_cycle_rates_up');
+                
+                return e('div', { className: 'scenarios-page' },
+                    e('div', { className: 'scenario-selector' },
+                        e('select', { 
+                            value: selectedScenario,
+                            onChange: (e) => setSelectedScenario(e.target.value),
+                            className: 'form-input'
+                        },
+                            e('option', { value: 'late_cycle_rates_up' }, 'Late Cycle - Rates Up'),
+                            e('option', { value: 'recession_mild' }, 'Mild Recession'),
+                            e('option', { value: 'recession_severe' }, 'Severe Recession'),
+                            e('option', { value: 'inflation_surge' }, 'Inflation Surge'),
+                            e('option', { value: 'deflation_scare' }, 'Deflation Scare')
+                        )
+                    ),
+                    e(PatternRenderer, {
+                        pattern: 'portfolio_scenario_analysis',
+                        inputs: { 
+                            portfolio_id: portfolioId,
+                            scenario_id: selectedScenario 
+                        }
+                    })
+                );
+            }
+            
+            // Legacy ScenariosPage implementation (to be removed)
+            function ScenariosPageLegacy() {
                 const [loading, setLoading] = useState(true);
                 const [error, setError] = useState(null);
                 const [scenarios, setScenarios] = useState([]);
