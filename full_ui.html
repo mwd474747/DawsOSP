@@ -8105,9 +8105,10 @@
                     return e(LoginPage, { onLogin: handleLogin });
                 }
                 
-                return e('div', { className: 'dashboard' },
-                    // Sidebar
-                    e('aside', { className: `sidebar ${sidebarOpen ? 'open' : ''}` },
+                return e(UserContextProvider, { user },
+                    e('div', { className: 'dashboard' },
+                        // Sidebar
+                        e('aside', { className: `sidebar ${sidebarOpen ? 'open' : ''}` },
                         e('div', { className: 'sidebar-header' },
                             e('div', { className: 'sidebar-brand' }, 'DawsOS')
                         ),
@@ -8160,6 +8161,7 @@
                         e('main', { className: 'page-content' },
                             renderPage()
                         )
+                    )
                     )
                 );
             }
