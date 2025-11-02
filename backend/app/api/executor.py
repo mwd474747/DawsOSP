@@ -49,10 +49,43 @@ from app.core.agent_runtime import AgentRuntime
 from app.agents.financial_analyst import FinancialAnalyst
 from app.middleware.auth_middleware import verify_token
 from app.services.audit import get_audit_service
-from observability import setup_observability
-from observability.tracing import trace_context, add_context_attributes, add_pattern_attributes
-from observability.metrics import setup_metrics, get_metrics
-from observability.errors import capture_exception
+
+# Optional imports for observability (graceful degradation)
+try:
+    from observability import setup_observability
+    from observability.tracing import trace_context, add_context_attributes, add_pattern_attributes
+    from observability.metrics import setup_metrics, get_metrics
+    from observability.errors import capture_exception
+except ImportError:
+    # Fallback implementations when observability not available
+    def setup_observability(*args, **kwargs):
+        """Fallback when observability not available"""
+        pass
+
+    def trace_context(*args, **kwargs):
+        """Fallback context manager when tracing not available"""
+        from contextlib import nullcontext
+        return nullcontext()
+
+    def add_context_attributes(*args, **kwargs):
+        """Fallback when tracing not available"""
+        pass
+
+    def add_pattern_attributes(*args, **kwargs):
+        """Fallback when tracing not available"""
+        pass
+
+    def setup_metrics(*args, **kwargs):
+        """Fallback when metrics not available"""
+        pass
+
+    def get_metrics():
+        """Fallback when metrics not available"""
+        return None
+
+    def capture_exception(*args, **kwargs):
+        """Fallback when error capture not available"""
+        pass
 
 logger = logging.getLogger("DawsOS.Executor")
 

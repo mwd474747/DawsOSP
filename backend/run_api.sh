@@ -100,9 +100,6 @@ export EXECUTOR_API_URL="${EXECUTOR_API_URL:-http://localhost:8000}"
 # CORS origins (allow frontend on 8501)
 export CORS_ORIGINS="${CORS_ORIGINS:-http://localhost:8501,http://127.0.0.1:8501}"
 
-# Redis URL
-export REDIS_URL="${REDIS_URL:-redis://localhost:6379/0}"
-
 # Environment
 export ENVIRONMENT="${ENVIRONMENT:-development}"
 
@@ -111,7 +108,6 @@ echo -e "${GREEN}Configuration:${NC}"
 echo "  Database URL: ${DATABASE_URL}"
 echo "  API URL: ${EXECUTOR_API_URL}"
 echo "  CORS Origins: ${CORS_ORIGINS}"
-echo "  Redis URL: ${REDIS_URL}"
 echo "  Environment: ${ENVIRONMENT}"
 
 # Show API provider status (without exposing keys)
