@@ -9348,24 +9348,45 @@
                 
                 const parseBuffettResults = (data, symbol) => {
                     // Parse the pattern result into rating format
-                    // API returns 'overall' field, not 'overall_score'
-                    const moatScore = parseFloat(data.moat_strength?.overall) || parseFloat(data.moat_strength?.score) || 0;
-                    const dividendScore = parseFloat(data.dividend_safety?.overall) || parseFloat(data.dividend_safety?.score) || 0;
-                    const resilienceScore = parseFloat(data.resilience?.overall) || parseFloat(data.resilience?.score) || 0;
+                    // The API returns data in an 'aggregate' object with the following structure:
+                    // aggregate: { overall_rating, overall_grade, moat: {overall}, resilience: {overall}, dividend: {overall} }
                     
-                    // Calculate overall score as average
-                    const scores = [moatScore];
-                    if (dividendScore > 0) scores.push(dividendScore);
-                    if (resilienceScore > 0) scores.push(resilienceScore);
-                    const overallScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+                    // Check if aggregate exists in the response
+                    const aggregate = data.aggregate || data.state?.aggregate || {};
                     
-                    // Calculate letter grade
-                    let letterGrade = 'C';
-                    if (overallScore >= 9) letterGrade = 'A+';
-                    else if (overallScore >= 8) letterGrade = 'A';
-                    else if (overallScore >= 7) letterGrade = 'B+';
-                    else if (overallScore >= 6) letterGrade = 'B';
-                    else if (overallScore >= 5) letterGrade = 'C+';
+                    // Parse the overall rating and grade from aggregate
+                    const overallRating = parseFloat(aggregate.overall_rating) || 0;
+                    const overallGrade = aggregate.overall_grade || 'N/A';
+                    
+                    // Parse component scores from the aggregate nested structure
+                    const moatScore = parseFloat(aggregate.moat?.overall) || 0;
+                    const dividendScore = parseFloat(aggregate.dividend?.overall) || 0;
+                    const resilienceScore = parseFloat(aggregate.resilience?.overall) || 0;
+                    
+                    // Use the overall_rating from API if available, otherwise calculate
+                    const overallScore = overallRating > 0 ? (overallRating / 10) : 
+                        (() => {
+                            const scores = [moatScore];
+                            if (dividendScore > 0) scores.push(dividendScore);
+                            if (resilienceScore > 0) scores.push(resilienceScore);
+                            return scores.reduce((a, b) => a + b, 0) / scores.length;
+                        })();
+                    
+                    // Use the overall_grade from API if available, otherwise calculate
+                    const letterGrade = overallGrade !== 'N/A' ? overallGrade :
+                        (() => {
+                            if (overallScore >= 9) return 'A+';
+                            else if (overallScore >= 8) return 'A';
+                            else if (overallScore >= 7) return 'B+';
+                            else if (overallScore >= 6) return 'B';
+                            else if (overallScore >= 5) return 'C+';
+                            else return 'C';
+                        })();
+                    
+                    // Parse detailed component data if available
+                    const moatDetails = data.moat_strength || aggregate.moat || {};
+                    const dividendDetails = data.dividend_safety || aggregate.dividend || {};
+                    const resilienceDetails = data.resilience || aggregate.resilience || {};
                     
                     return {
                         symbol: symbol,
@@ -9375,14 +9396,15 @@
                         overallScore: overallScore,
                         letterGrade: letterGrade,
                         details: {
-                            roe: data.moat_strength?.roe_score || 0,
-                            margins: data.moat_strength?.margin_score || 0,
-                            fcf: data.moat_strength?.fcf_score || 0,
-                            growthStability: data.moat_strength?.growth_stability_score || 0,
-                            brandPower: data.moat_strength?.brand_score || 0,
-                            networkEffects: data.moat_strength?.network_score || 0,
-                            costAdvantage: data.moat_strength?.cost_score || 0,
-                            switchingCosts: data.moat_strength?.switching_score || 0
+                            // Moat components
+                            roe: moatDetails.components?.roe || moatDetails.roe_score || 0,
+                            margins: moatDetails.components?.margins || moatDetails.margin_score || 0,
+                            fcf: moatDetails.components?.fcf || moatDetails.fcf_score || 0,
+                            growthStability: moatDetails.components?.growth_stability || moatDetails.growth_stability_score || 0,
+                            brandPower: moatDetails.components?.brand_power || moatDetails.brand_score || 0,
+                            networkEffects: moatDetails.components?.network_effects || moatDetails.network_score || 0,
+                            costAdvantage: moatDetails.components?.cost_advantage || moatDetails.cost_score || 0,
+                            switchingCosts: moatDetails.components?.switching_costs || moatDetails.switching_score || 0
                         },
                         rawData: data
                     };

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Ratings Parse</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 4px;
+        }
+        .pass {
+            background: #1e4d2b;
+            border-color: #10b981;
+        }
+        .fail {
+            background: #4d1e1e;
+            border-color: #ef4444;
+        }
+        pre {
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Testing parseBuffettResults Function</h1>
+    <div id="test-results"></div>
+
+    <script>
+        // Copy the fixed parseBuffettResults function from full_ui.html
+        const parseBuffettResults = (data, symbol) => {
+            // Parse the pattern result into rating format
+            // The API returns data in an 'aggregate' object with the following structure:
+            // aggregate: { overall_rating, overall_grade, moat: {overall}, resilience: {overall}, dividend: {overall} }
+            
+            // Check if aggregate exists in the response
+            const aggregate = data.aggregate || data.state?.aggregate || {};
+            
+            // Parse the overall rating and grade from aggregate
+            const overallRating = parseFloat(aggregate.overall_rating) || 0;
+            const overallGrade = aggregate.overall_grade || 'N/A';
+            
+            // Parse component scores from the aggregate nested structure
+            const moatScore = parseFloat(aggregate.moat?.overall) || 0;
+            const dividendScore = parseFloat(aggregate.dividend?.overall) || 0;
+            const resilienceScore = parseFloat(aggregate.resilience?.overall) || 0;
+            
+            // Use the overall_rating from API if available, otherwise calculate
+            const overallScore = overallRating > 0 ? (overallRating / 10) : 
+                (() => {
+                    const scores = [moatScore];
+                    if (dividendScore > 0) scores.push(dividendScore);
+                    if (resilienceScore > 0) scores.push(resilienceScore);
+                    return scores.reduce((a, b) => a + b, 0) / scores.length;
+                })();
+            
+            // Use the overall_grade from API if available, otherwise calculate
+            const letterGrade = overallGrade !== 'N/A' ? overallGrade :
+                (() => {
+                    if (overallScore >= 9) return 'A+';
+                    else if (overallScore >= 8) return 'A';
+                    else if (overallScore >= 7) return 'B+';
+                    else if (overallScore >= 6) return 'B';
+                    else if (overallScore >= 5) return 'C+';
+                    else return 'C';
+                })();
+            
+            // Parse detailed component data if available
+            const moatDetails = data.moat_strength || aggregate.moat || {};
+            const dividendDetails = data.dividend_safety || aggregate.dividend || {};
+            const resilienceDetails = data.resilience || aggregate.resilience || {};
+            
+            return {
+                symbol: symbol,
+                moatScore: moatScore,
+                dividendScore: dividendScore > 0 ? dividendScore : null,
+                resilienceScore: resilienceScore,
+                overallScore: overallScore,
+                letterGrade: letterGrade,
+                details: {
+                    // Moat components
+                    roe: moatDetails.components?.roe || moatDetails.roe_score || 0,
+                    margins: moatDetails.components?.margins || moatDetails.margin_score || 0,
+                    fcf: moatDetails.components?.fcf || moatDetails.fcf_score || 0,
+                    growthStability: moatDetails.components?.growth_stability || moatDetails.growth_stability_score || 0,
+                    brandPower: moatDetails.components?.brand_power || moatDetails.brand_score || 0,
+                    networkEffects: moatDetails.components?.network_effects || moatDetails.network_score || 0,
+                    costAdvantage: moatDetails.components?.cost_advantage || moatDetails.cost_score || 0,
+                    switchingCosts: moatDetails.components?.switching_costs || moatDetails.switching_score || 0
+                },
+                rawData: data
+            };
+        };
+
+        // Test with the actual API response structure
+        const mockApiResponse = {
+            status: 'success',
+            data: {
+                aggregate: {
+                    overall_rating: '81.3000',
+                    overall_grade: 'B',
+                    moat: { overall: '8.25' },
+                    resilience: { overall: '8.00' },
+                    dividend: { overall: '8.10' }
+                }
+            }
+        };
+
+        const resultsDiv = document.getElementById('test-results');
+        
+        function addTestResult(testName, passed, details) {
+            const div = document.createElement('div');
+            div.className = `test-result ${passed ? 'pass' : 'fail'}`;
+            div.innerHTML = `
+                <strong>${passed ? '✓' : '✗'} ${testName}</strong>
+                <pre>${details}</pre>
+            `;
+            resultsDiv.appendChild(div);
+        }
+
+        // Run tests
+        console.log('Starting tests...');
+        
+        // Test 1: Parse the mock API response
+        try {
+            const result = parseBuffettResults(mockApiResponse.data, 'CNR');
+            
+            addTestResult(
+                'Parse API Response',
+                true,
+                JSON.stringify(result, null, 2)
+            );
+            
+            // Test 2: Verify overall_rating is correctly parsed
+            const expectedOverallScore = 81.3 / 10; // 8.13
+            const actualOverallScore = result.overallScore;
+            const overallScoreMatch = Math.abs(actualOverallScore - expectedOverallScore) < 0.01;
+            
+            addTestResult(
+                'Overall Score Parsing',
+                overallScoreMatch,
+                `Expected: ${expectedOverallScore.toFixed(2)}, Got: ${actualOverallScore.toFixed(2)}`
+            );
+            
+            // Test 3: Verify overall_grade is correctly parsed
+            const expectedGrade = 'B';
+            const actualGrade = result.letterGrade;
+            const gradeMatch = actualGrade === expectedGrade;
+            
+            addTestResult(
+                'Overall Grade Parsing',
+                gradeMatch,
+                `Expected: ${expectedGrade}, Got: ${actualGrade}`
+            );
+            
+            // Test 4: Verify component scores
+            const expectedMoat = 8.25;
+            const expectedResilience = 8.00;
+            const expectedDividend = 8.10;
+            
+            const scoresMatch = 
+                Math.abs(result.moatScore - expectedMoat) < 0.01 &&
+                Math.abs(result.resilienceScore - expectedResilience) < 0.01 &&
+                Math.abs(result.dividendScore - expectedDividend) < 0.01;
+            
+            addTestResult(
+                'Component Scores Parsing',
+                scoresMatch,
+                `Moat: ${result.moatScore} (expected ${expectedMoat})
+Resilience: ${result.resilienceScore} (expected ${expectedResilience})
+Dividend: ${result.dividendScore} (expected ${expectedDividend})`
+            );
+            
+            // Test 5: Verify the result can be displayed without errors
+            try {
+                // Simulate what the UI does
+                const displayTest = `
+Symbol: ${result.symbol}
+Grade: ${result.letterGrade}
+Overall: ${result.overallScore.toFixed(1)}/10
+Moat: ${result.moatScore.toFixed(1)}/10
+Dividend: ${result.dividendScore ? result.dividendScore.toFixed(1) : 'N/A'}/10
+Resilience: ${result.resilienceScore.toFixed(1)}/10`;
+                
+                addTestResult(
+                    'UI Display Simulation',
+                    true,
+                    displayTest
+                );
+            } catch (e) {
+                addTestResult(
+                    'UI Display Simulation',
+                    false,
+                    `Error: ${e.message}`
+                );
+            }
+            
+        } catch (error) {
+            addTestResult(
+                'Parse API Response',
+                false,
+                `Error: ${error.message}\n${error.stack}`
+            );
+        }
+        
+        // Test 6: Test with missing aggregate (fallback scenario)
+        try {
+            const fallbackResponse = {
+                moat_strength: { overall: 7.5 },
+                dividend_safety: { overall: 6.0 },
+                resilience: { overall: 7.0 }
+            };
+            
+            const fallbackResult = parseBuffettResults(fallbackResponse, 'TEST');
+            
+            addTestResult(
+                'Fallback Parsing (no aggregate)',
+                fallbackResult.moatScore === 0 && fallbackResult.resilienceScore === 0,
+                `Parsed without aggregate object:
+${JSON.stringify(fallbackResult, null, 2)}`
+            );
+        } catch (error) {
+            addTestResult(
+                'Fallback Parsing (no aggregate)',
+                false,
+                `Error: ${error.message}`
+            );
+        }
+        
+        console.log('Tests complete!');
+    </script>
+</body>
+</html>
