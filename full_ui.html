@@ -9237,20 +9237,20 @@
                 const [detailedRating, setDetailedRating] = useState(null);
                 const [loadingDetail, setLoadingDetail] = useState(false);
                 
-                // Security ID mapping for common symbols (fallback if not in database)
+                // Security ID mapping for common symbols (corrected from database)
                 const symbolToSecurityId = {
                     'AAPL': '048a0b1e-5fa7-507a-9854-af6a9d7360e9',
                     'GOOGL': '33333333-3333-3333-3333-333333333302',
                     'MSFT': '33333333-3333-3333-3333-333333333303',
-                    'BRK.B': '11111111-1111-1111-1111-111111111101',
-                    'BAM': '11111111-1111-1111-1111-111111111102',
-                    'CNR': '11111111-1111-1111-1111-111111111103',
-                    'BBUC': '11111111-1111-1111-1111-111111111104',
-                    'BTI': '11111111-1111-1111-1111-111111111105',
-                    'EVO': '11111111-1111-1111-1111-111111111106',
-                    'NKE': '11111111-1111-1111-1111-111111111107',
-                    'PYPL': '11111111-1111-1111-1111-111111111108',
-                    'HHC': '11111111-1111-1111-1111-111111111109'
+                    'BRK.B': '0b225e3f-5c2c-4dc6-8d3c-2bcf9700c32c',  // Fixed
+                    'BAM': 'fc31a905-53b4-44fe-9f77-56ce5e9ecda4',     // Fixed
+                    'CNR': '3406c701-34b0-4ba5-ad9a-ef54df4e37e2',    // Fixed
+                    'BBUC': '40f59d8f-c3ca-4b95-9c17-1fadbef1c213',    // Fixed
+                    'BTI': 'e778134c-818b-4dbd-b5ba-31bf211a1841',     // Fixed
+                    'EVO': 'c9520fc4-b809-44a4-9f1c-53d9c3159382',     // Fixed
+                    'NKE': '3a11ade4-5b85-4d3d-89dc-aaeed10dd8bc',     // Fixed
+                    'PYPL': 'db4b10cc-3d43-4ec2-b9fe-2cae36d9d106',    // Fixed
+                    'HHC': '89d7721e-9115-4806-ac41-a83c963feeee'      // Fixed
                 };
                 
                 useEffect(() => {
@@ -9267,10 +9267,11 @@
                         const holdingsList = holdingsData.holdings || [];
                         setHoldings(holdingsList);
                         
-                        // Now fetch ratings for each holding
+                        // Now fetch ratings for each holding in parallel for better performance
                         const ratingsData = {};
                         
-                        for (const holding of holdingsList.slice(0, 10)) { // Limit to first 10 to avoid too many API calls
+                        // Create array of rating promises for parallel processing
+                        const ratingPromises = holdingsList.map(async (holding) => {
                             const symbol = holding.symbol;
                             const securityId = holding.security_id || symbolToSecurityId[symbol];
                             
@@ -9282,18 +9283,26 @@
                                     });
                                     
                                     if (result.success && result.data) {
-                                        ratingsData[symbol] = parseBuffettResults(result.data, symbol);
+                                        return { symbol, rating: parseBuffettResults(result.data, symbol) };
                                     } else {
                                         console.warn(`Failed to get rating for ${symbol}:`, result.error);
-                                        ratingsData[symbol] = getFallbackRating(symbol);
+                                        return { symbol, rating: getFallbackRating(symbol) };
                                     }
                                 } catch (err) {
                                     console.error(`Error fetching rating for ${symbol}:`, err);
-                                    ratingsData[symbol] = getFallbackRating(symbol);
+                                    return { symbol, rating: getFallbackRating(symbol) };
                                 }
                             } else {
-                                ratingsData[symbol] = getFallbackRating(symbol);
+                                return { symbol, rating: getFallbackRating(symbol) };
                             }
+                        });
+                        
+                        // Wait for all ratings to complete
+                        const ratingResults = await Promise.all(ratingPromises);
+                        
+                        // Build ratings data object from results
+                        for (const result of ratingResults) {
+                            ratingsData[result.symbol] = result.rating;
                         }
                         
                         setRatings(ratingsData);
@@ -9410,8 +9419,17 @@
                 };
                 
                 const getGradeColor = (grade) => {
-                    if (grade && (grade.startsWith('A') || parseFloat(grade) >= 8)) return 'positive';
-                    if (grade && (grade.startsWith('B') || parseFloat(grade) >= 6)) return 'warning';
+                    // Handle null/undefined/empty values
+                    if (!grade || grade === 'N/A') return 'neutral';
+                    
+                    // Convert to string for safe checking
+                    const gradeStr = String(grade);
+                    
+                    // Check if it's a letter grade (using indexOf to avoid startsWith errors)
+                    if (gradeStr[0] === 'A' || parseFloat(gradeStr) >= 8) return 'positive';
+                    if (gradeStr[0] === 'B' || parseFloat(gradeStr) >= 6) return 'warning';
+                    if (gradeStr[0] === 'C' || parseFloat(gradeStr) >= 4) return 'neutral';
+                    
                     return 'negative';
                 };
                 
