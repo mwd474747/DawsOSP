@@ -525,6 +525,57 @@ class MacroService:
             f"(date: {indicator.date})"
         )
 
+    async def compute_derived_indicators(self, asof_date: Optional[date] = None):
+        """
+        Compute derived indicators from base FRED indicators.
+        
+        This calls the SQL function that calculates:
+        - Real interest rate (nominal - inflation)
+        - GDP gap (actual vs potential)
+        - Employment gap (unemployment vs natural rate)
+        - Money velocity (GDP/M2)
+        - Fiscal impulse (YoY change in deficit)
+        - Credit impulse (change in credit growth)
+        
+        Args:
+            asof_date: Date to compute indicators for (None = all dates)
+        """
+        logger.info(f"Computing derived indicators for date: {asof_date or 'all dates'}")
+        
+        try:
+            # Call the SQL function to compute derived indicators
+            query = "SELECT compute_derived_indicators($1)"
+            await execute_statement(query, asof_date)
+            
+            # Get summary of what was calculated
+            summary_query = """
+                SELECT 
+                    indicator_id,
+                    COUNT(*) as record_count,
+                    MIN(date) as earliest_date,
+                    MAX(date) as latest_date
+                FROM macro_indicators
+                WHERE source = 'calculated'
+                    AND ($1 IS NULL OR date = $1)
+                GROUP BY indicator_id
+                ORDER BY indicator_id
+            """
+            rows = await execute_query(summary_query, asof_date)
+            
+            if rows:
+                logger.info("Computed derived indicators:")
+                for row in rows:
+                    logger.info(
+                        f"  {row['indicator_id']}: {row['record_count']} records "
+                        f"({row['earliest_date']} to {row['latest_date']})"
+                    )
+            else:
+                logger.warning("No derived indicators were computed - check if base indicators are available")
+                
+        except Exception as e:
+            logger.error(f"Failed to compute derived indicators: {e}", exc_info=True)
+            raise
+
     async def fetch_indicators(
         self,
         asof_date: Optional[date] = None,

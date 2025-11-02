@@ -118,6 +118,10 @@ async def fetch_indicators_job(
                     # Update the observation with transformed value
                     last_obs.value = transformed_value
 
+        # Compute derived indicators from the fetched data
+        logger.info("Computing derived indicators...")
+        await macro_service.compute_derived_indicators(asof_date=asof_date)
+
         return results
 
     except Exception as e:
@@ -311,12 +315,16 @@ async def compute_macro_regime(
     logger.info(f"Starting macro regime job for {asof_date}")
 
     try:
-        # Step 1: Fetch indicators from FRED
+        # Step 1: Fetch indicators from FRED (includes derived indicators computation)
         if not skip_fetch:
-            logger.info("Step 1: Fetching indicators from FRED")
+            logger.info("Step 1: Fetching indicators from FRED and computing derived indicators")
             await fetch_indicators_job(asof_date=asof_date)
         else:
             logger.info("Step 1: Skipping FRED fetch (using DB data)")
+            # Still compute derived indicators even if skipping FRED fetch
+            logger.info("Computing derived indicators from existing data...")
+            macro_service = get_macro_service()
+            await macro_service.compute_derived_indicators(asof_date=asof_date)
 
         # Step 2: Detect regime
         logger.info("Step 2: Detecting regime")
