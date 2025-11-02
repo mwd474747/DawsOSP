@@ -5,6 +5,30 @@
 
 ---
 
+## 🔴 CRITICAL: Replit Deployment Guardrails
+
+**READ THIS FIRST:** This application deploys on Replit. Certain files are SACRED and MUST NOT be modified.
+
+**Full Documentation:** [REPLIT_DEPLOYMENT_GUARDRAILS.md](../REPLIT_DEPLOYMENT_GUARDRAILS.md)
+
+**DO NOT MODIFY:**
+- ❌ `.replit` - Deployment configuration (run command, ports)
+- ❌ `combined_server.py` - Application entry point (Replit runs this)
+- ❌ `full_ui.html` - Primary UI (served at `/`)
+- ❌ Port 5000 (hardcoded in server and .replit)
+
+**MODIFY WITH CAUTION:**
+- ⚠️ `requirements.txt` - Missing packages break imports
+- ⚠️ `backend/app/db/connection.py` - Database pool management
+- ⚠️ `backend/app/core/agent_runtime.py` - Agent system core
+- ⚠️ `backend/app/core/pattern_orchestrator.py` - Pattern execution
+- ⚠️ `backend/patterns/*.json` - Business logic definitions
+
+**SAFE TO MODIFY:**
+- ✅ Test files, documentation, scripts, archive files
+
+---
+
 ## 🎯 Current State (As of Nov 2, 2025)
 
 ### Production Stack
