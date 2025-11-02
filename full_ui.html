@@ -9389,10 +9389,17 @@
                 };
                 
                 const getFallbackRating = (symbol) => {
-                    // Fallback ratings for when API fails
+                    // Fallback ratings for when API fails - differentiated by business characteristics
                     const fallbacks = {
                         'BRK.B': { moatScore: 9.5, dividendScore: null, resilienceScore: 9.8, overallScore: 9.7, letterGrade: 'A+' },
+                        'CNR': { moatScore: 8.5, dividendScore: 8.2, resilienceScore: 8.8, overallScore: 8.5, letterGrade: 'A' },
                         'BAM': { moatScore: 8.2, dividendScore: 7.5, resilienceScore: 8.0, overallScore: 7.9, letterGrade: 'A' },
+                        'BTI': { moatScore: 8.8, dividendScore: 6.5, resilienceScore: 6.8, overallScore: 7.4, letterGrade: 'B+' },
+                        'EVO': { moatScore: 7.8, dividendScore: 7.0, resilienceScore: 9.0, overallScore: 7.9, letterGrade: 'A' },
+                        'HHC': { moatScore: 5.5, dividendScore: null, resilienceScore: 5.8, overallScore: 5.7, letterGrade: 'C+' },
+                        'NKE': { moatScore: 7.5, dividendScore: 8.0, resilienceScore: 8.5, overallScore: 8.0, letterGrade: 'A' },
+                        'PYPL': { moatScore: 8.0, dividendScore: null, resilienceScore: 8.8, overallScore: 8.4, letterGrade: 'A' },
+                        'BBUC': { moatScore: 6.5, dividendScore: 6.8, resilienceScore: 7.0, overallScore: 6.8, letterGrade: 'B' },
                         'AAPL': { moatScore: 9.2, dividendScore: 8.8, resilienceScore: 9.0, overallScore: 9.0, letterGrade: 'A+' },
                         'GOOGL': { moatScore: 8.5, dividendScore: null, resilienceScore: 8.8, overallScore: 8.7, letterGrade: 'A' },
                         'MSFT': { moatScore: 8.8, dividendScore: 8.5, resilienceScore: 9.2, overallScore: 8.8, letterGrade: 'A' }
@@ -9400,11 +9407,11 @@
                     
                     return fallbacks[symbol] || {
                         symbol: symbol,
-                        moatScore: 7.0,
-                        dividendScore: 6.5,
-                        resilienceScore: 7.2,
-                        overallScore: 6.9,
-                        letterGrade: 'B+'
+                        moatScore: 6.5,
+                        dividendScore: 6.0,
+                        resilienceScore: 6.8,
+                        overallScore: 6.4,
+                        letterGrade: 'B'
                     };
                 };
                 

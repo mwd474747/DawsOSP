@@ -664,7 +664,7 @@ class DataHarvester(BaseAgent):
 
                 # Call provider.fetch_fundamentals (which may return stub if no API key)
                 fundamentals_data = await self.provider_fetch_fundamentals(
-                    ctx, state, symbol=fmp_symbol, provider=provider
+                    ctx, state, symbol=fmp_symbol
                 )
                 
                 logger.info(f"Fundamentals data received: has_error={('error' in fundamentals_data)}, "
@@ -673,7 +673,7 @@ class DataHarvester(BaseAgent):
 
                 # Call provider.fetch_ratios for additional metrics
                 ratios_data = await self.provider_fetch_ratios(
-                    ctx, state, symbol=fmp_symbol, provider=provider
+                    ctx, state, symbol=fmp_symbol
                 )
                 
                 logger.info(f"Ratios data received: has_error={('error' in ratios_data)}, "
@@ -736,27 +736,167 @@ class DataHarvester(BaseAgent):
 
     def _stub_fundamentals_for_symbol(self, symbol: Optional[str]) -> Dict[str, Any]:
         """
-        Generate stub fundamentals for testing.
+        Generate stub fundamentals for testing with differentiated values per security.
 
-        Returns consistent stub data with note indicating this is test data.
+        Returns realistic stub data based on company characteristics.
         """
-        return {
-            "payout_ratio_5y_avg": Decimal("0.20"),
+        # Default values (will be overridden per symbol)
+        default = {
+            "payout_ratio_5y_avg": Decimal("0.25"),
             "fcf_dividend_coverage": Decimal("2.5"),
-            "dividend_growth_streak_years": 8,
+            "dividend_growth_streak_years": 5,
             "net_cash_position": Decimal("5000000000"),  # $5B
-            "roe_5y_avg": Decimal("0.18"),
-            "gross_margin_5y_avg": Decimal("0.45"),
-            "intangible_assets_ratio": Decimal("0.25"),
-            "switching_cost_score": Decimal("7"),
-            "debt_equity_ratio": Decimal("0.80"),
-            "interest_coverage": Decimal("8.0"),
-            "current_ratio": Decimal("1.8"),
-            "operating_margin_std_dev": Decimal("0.03"),
+            "roe_5y_avg": Decimal("0.15"),
+            "gross_margin_5y_avg": Decimal("0.35"),
+            "intangible_assets_ratio": Decimal("0.20"),
+            "switching_cost_score": Decimal("5"),
+            "debt_equity_ratio": Decimal("1.0"),
+            "interest_coverage": Decimal("6.0"),
+            "current_ratio": Decimal("1.5"),
+            "operating_margin_std_dev": Decimal("0.04"),
             "_is_stub": True,
             "_symbol": symbol or "UNKNOWN",
             "_note": "STUB DATA - Real provider integration not yet complete"
         }
+        
+        # Symbol-specific realistic values based on business characteristics
+        if symbol == "CNR":  # Canadian National Railway - high margins, stable cash flow, low debt
+            default.update({
+                "payout_ratio_5y_avg": Decimal("0.30"),
+                "fcf_dividend_coverage": Decimal("3.5"),
+                "dividend_growth_streak_years": 27,  # Excellent dividend history
+                "net_cash_position": Decimal("2000000000"),  # $2B
+                "roe_5y_avg": Decimal("0.25"),  # High ROE
+                "gross_margin_5y_avg": Decimal("0.55"),  # High margins for railroad
+                "intangible_assets_ratio": Decimal("0.10"),  # Physical assets dominate
+                "switching_cost_score": Decimal("9"),  # Very high switching costs
+                "debt_equity_ratio": Decimal("0.65"),  # Conservative debt
+                "interest_coverage": Decimal("12.0"),  # Strong interest coverage
+                "current_ratio": Decimal("0.95"),  # Railroads typically have lower current ratios
+                "operating_margin_std_dev": Decimal("0.02"),  # Very stable margins
+            })
+        elif symbol == "BAM":  # Brookfield Asset Management - high ROE, strong margins, moderate debt
+            default.update({
+                "payout_ratio_5y_avg": Decimal("0.35"),
+                "fcf_dividend_coverage": Decimal("2.8"),
+                "dividend_growth_streak_years": 12,
+                "net_cash_position": Decimal("8000000000"),  # $8B
+                "roe_5y_avg": Decimal("0.28"),  # Very high ROE for asset manager
+                "gross_margin_5y_avg": Decimal("0.65"),  # High margins
+                "intangible_assets_ratio": Decimal("0.35"),  # Significant intangibles
+                "switching_cost_score": Decimal("8"),  # High switching costs
+                "debt_equity_ratio": Decimal("0.85"),  # Moderate leverage
+                "interest_coverage": Decimal("9.5"),
+                "current_ratio": Decimal("1.4"),
+                "operating_margin_std_dev": Decimal("0.03"),  # Stable
+            })
+        elif symbol == "BRK.B" or symbol == "BRK-B":  # Berkshire Hathaway - excellent across the board
+            default.update({
+                "payout_ratio_5y_avg": Decimal("0.0"),  # No dividends
+                "fcf_dividend_coverage": Decimal("100.0"),  # Infinite (no dividends)
+                "dividend_growth_streak_years": 0,  # No dividends
+                "net_cash_position": Decimal("150000000000"),  # $150B cash fortress
+                "roe_5y_avg": Decimal("0.22"),  # Strong ROE
+                "gross_margin_5y_avg": Decimal("0.48"),
+                "intangible_assets_ratio": Decimal("0.45"),  # Insurance goodwill
+                "switching_cost_score": Decimal("10"),  # Ultimate moat
+                "debt_equity_ratio": Decimal("0.35"),  # Very conservative
+                "interest_coverage": Decimal("20.0"),  # Excellent coverage
+                "current_ratio": Decimal("2.1"),  # Strong liquidity
+                "operating_margin_std_dev": Decimal("0.025"),  # Very stable
+            })
+        elif symbol == "BTI":  # British American Tobacco - high cash flow, high dividends
+            default.update({
+                "payout_ratio_5y_avg": Decimal("0.65"),  # High dividend payout
+                "fcf_dividend_coverage": Decimal("1.5"),  # Adequate coverage
+                "dividend_growth_streak_years": 20,
+                "net_cash_position": Decimal("-5000000000"),  # Net debt position
+                "roe_5y_avg": Decimal("0.19"),
+                "gross_margin_5y_avg": Decimal("0.68"),  # Very high margins (tobacco)
+                "intangible_assets_ratio": Decimal("0.60"),  # Strong brands
+                "switching_cost_score": Decimal("9"),  # Addictive product
+                "debt_equity_ratio": Decimal("1.2"),  # Higher leverage
+                "interest_coverage": Decimal("7.0"),
+                "current_ratio": Decimal("1.1"),
+                "operating_margin_std_dev": Decimal("0.03"),
+            })
+        elif symbol == "EVO":  # Evolution Gaming - high growth, moderate margins, higher volatility
+            default.update({
+                "payout_ratio_5y_avg": Decimal("0.45"),
+                "fcf_dividend_coverage": Decimal("2.2"),
+                "dividend_growth_streak_years": 6,
+                "net_cash_position": Decimal("1500000000"),  # $1.5B
+                "roe_5y_avg": Decimal("0.35"),  # Very high ROE (asset light)
+                "gross_margin_5y_avg": Decimal("0.62"),  # Good margins
+                "intangible_assets_ratio": Decimal("0.50"),  # Software/IP
+                "switching_cost_score": Decimal("7"),  # Platform stickiness
+                "debt_equity_ratio": Decimal("0.20"),  # Low debt
+                "interest_coverage": Decimal("50.0"),  # Minimal debt
+                "current_ratio": Decimal("1.8"),
+                "operating_margin_std_dev": Decimal("0.06"),  # More volatile
+            })
+        elif symbol == "HHC":  # Howard Hughes Corporation - real estate, lower ROE, higher debt
+            default.update({
+                "payout_ratio_5y_avg": Decimal("0.10"),  # Low/no dividends
+                "fcf_dividend_coverage": Decimal("10.0"),
+                "dividend_growth_streak_years": 0,
+                "net_cash_position": Decimal("-3000000000"),  # Net debt
+                "roe_5y_avg": Decimal("0.08"),  # Lower ROE (real estate)
+                "gross_margin_5y_avg": Decimal("0.30"),  # Lower margins
+                "intangible_assets_ratio": Decimal("0.05"),  # Mostly physical assets
+                "switching_cost_score": Decimal("4"),  # Lower switching costs
+                "debt_equity_ratio": Decimal("1.8"),  # Higher leverage typical for RE
+                "interest_coverage": Decimal("3.5"),  # Lower coverage
+                "current_ratio": Decimal("2.5"),  # Good liquidity from inventory
+                "operating_margin_std_dev": Decimal("0.08"),  # More volatile
+            })
+        elif symbol == "NKE":  # Nike - strong brand, good margins, moderate debt
+            default.update({
+                "payout_ratio_5y_avg": Decimal("0.32"),
+                "fcf_dividend_coverage": Decimal("3.1"),
+                "dividend_growth_streak_years": 21,
+                "net_cash_position": Decimal("6000000000"),  # $6B
+                "roe_5y_avg": Decimal("0.42"),  # Very high ROE
+                "gross_margin_5y_avg": Decimal("0.44"),  # Good margins
+                "intangible_assets_ratio": Decimal("0.40"),  # Brand value
+                "switching_cost_score": Decimal("6"),  # Brand loyalty
+                "debt_equity_ratio": Decimal("0.75"),  # Moderate
+                "interest_coverage": Decimal("18.0"),  # Strong
+                "current_ratio": Decimal("2.8"),  # Good liquidity
+                "operating_margin_std_dev": Decimal("0.04"),
+            })
+        elif symbol == "PYPL":  # PayPal - fintech, high growth, good margins, low debt
+            default.update({
+                "payout_ratio_5y_avg": Decimal("0.0"),  # No dividends
+                "fcf_dividend_coverage": Decimal("100.0"),  # No dividends
+                "dividend_growth_streak_years": 0,
+                "net_cash_position": Decimal("12000000000"),  # $12B cash
+                "roe_5y_avg": Decimal("0.20"),  # Good ROE
+                "gross_margin_5y_avg": Decimal("0.52"),  # Good margins (software)
+                "intangible_assets_ratio": Decimal("0.45"),  # Tech/software
+                "switching_cost_score": Decimal("8"),  # Network effects
+                "debt_equity_ratio": Decimal("0.45"),  # Low debt
+                "interest_coverage": Decimal("25.0"),  # Strong
+                "current_ratio": Decimal("1.3"),
+                "operating_margin_std_dev": Decimal("0.05"),  # Some volatility
+            })
+        elif symbol == "BBUC":  # ETF - average metrics
+            default.update({
+                "payout_ratio_5y_avg": Decimal("0.30"),
+                "fcf_dividend_coverage": Decimal("2.5"),
+                "dividend_growth_streak_years": 7,
+                "net_cash_position": Decimal("3000000000"),  # $3B
+                "roe_5y_avg": Decimal("0.15"),  # Average
+                "gross_margin_5y_avg": Decimal("0.38"),  # Average
+                "intangible_assets_ratio": Decimal("0.25"),  # Mixed
+                "switching_cost_score": Decimal("5"),  # Average
+                "debt_equity_ratio": Decimal("1.0"),  # Average
+                "interest_coverage": Decimal("7.0"),  # Average
+                "current_ratio": Decimal("1.5"),  # Average
+                "operating_margin_std_dev": Decimal("0.045"),  # Average
+            })
+        
+        return default
 
     # ========================================================================
     # FMP Transformation Methods
