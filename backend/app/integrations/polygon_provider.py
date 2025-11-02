@@ -67,6 +67,37 @@ class PolygonProvider(BaseProvider):
 
         super().__init__(config)
         self.api_key = api_key
+        
+    async def call(self, request) -> Any:
+        """
+        Generic call method required by BaseProvider.
+        
+        Routes to appropriate Polygon endpoint based on request.
+        """
+        import httpx
+        import time
+        
+        start_time = time.time()
+        
+        async with httpx.AsyncClient(timeout=request.timeout if hasattr(request, 'timeout') else 10.0) as client:
+            response = await client.get(
+                request.endpoint,
+                params=request.params if hasattr(request, 'params') else {}
+            )
+            response.raise_for_status()
+            
+            latency_ms = (time.time() - start_time) * 1000
+            
+            from app.integrations.base_provider import ProviderResponse
+            return ProviderResponse(
+                data=response.json(),
+                provider=self.config.name,
+                endpoint=request.endpoint,
+                status_code=response.status_code,
+                latency_ms=latency_ms,
+                cached=False,
+                stale=False
+            )
 
     @rate_limit(requests_per_minute=100)
     async def get_daily_prices(
@@ -352,3 +383,29 @@ class PolygonProvider(BaseProvider):
             raise ProviderError(f"Polygon snapshot error: {response.get('error', 'Unknown error')}")
 
         return response.get("tickers", [])
+    
+    async def _request(
+        self, method: str, url: str, params: Optional[Dict] = None, json_body: Optional[Dict] = None
+    ) -> Any:
+        """
+        Make HTTP request with error handling.
+        
+        Args:
+            method: HTTP method (GET, POST, etc.)
+            url: Request URL
+            params: Query parameters
+            json_body: JSON request body
+            
+        Returns:
+            Response JSON data
+        """
+        async with httpx.AsyncClient() as client:
+            response = await client.request(
+                method=method,
+                url=url,
+                params=params,
+                json=json_body,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            return response.json()

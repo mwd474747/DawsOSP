@@ -35,7 +35,7 @@ from datetime import datetime, date
 from decimal import Decimal
 
 from .base_provider import BaseProvider, ProviderConfig, ProviderError
-from .rate_limiter import rate_limit, BandwidthBudget
+from .rate_limiter import rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -71,10 +71,37 @@ class FMPProvider(BaseProvider):
         super().__init__(config)
 
         self.api_key = api_key
-        self.bandwidth = BandwidthBudget(
-            monthly_limit_gb=100.0,  # Example: 100GB/month quota
-            alert_thresholds=[0.70, 0.85, 0.95],
-        )
+        
+    async def call(self, request) -> Any:
+        """
+        Generic call method required by BaseProvider.
+        
+        Routes to appropriate FMP endpoint based on request.
+        """
+        import httpx
+        import time
+        
+        start_time = time.time()
+        
+        async with httpx.AsyncClient(timeout=request.timeout if hasattr(request, 'timeout') else 10.0) as client:
+            response = await client.get(
+                request.endpoint,
+                params=request.params if hasattr(request, 'params') else {}
+            )
+            response.raise_for_status()
+            
+            latency_ms = (time.time() - start_time) * 1000
+            
+            from app.integrations.base_provider import ProviderResponse
+            return ProviderResponse(
+                data=response.json(),
+                provider=self.config.name,
+                endpoint=request.endpoint,
+                status_code=response.status_code,
+                latency_ms=latency_ms,
+                cached=False,
+                stale=False
+            )
 
     @rate_limit(requests_per_minute=120)
     async def get_profile(self, symbol: str) -> Dict:
@@ -317,46 +344,24 @@ class FMPProvider(BaseProvider):
         self, method: str, url: str, params: Optional[Dict] = None, json_body: Optional[Dict] = None
     ) -> Any:
         """
-        Make HTTP request with bandwidth tracking.
-
-        Overrides base method to add bandwidth monitoring.
-        """
-        # Call base provider request (handles circuit breaker, DLQ, etc.)
-        response = await super()._request(method, url, params, json_body)
-
-        # Track bandwidth usage (estimate based on response size)
-        # In production, use response headers: Content-Length
-        response_size = len(str(response).encode('utf-8'))
-        self.bandwidth.add_usage(response_size)
-
-        return response
-
-    def get_bandwidth_usage(self) -> Dict:
-        """
-        Get current bandwidth usage statistics.
-
+        Make HTTP request with error handling.
+        
+        Args:
+            method: HTTP method (GET, POST, etc.)
+            url: Request URL
+            params: Query parameters
+            json_body: JSON request body
+            
         Returns:
-            {
-                "current_usage_gb": 45.2,
-                "monthly_limit_gb": 100.0,
-                "usage_pct": 45.2,
-                "alert_level": "WARNING"  # "OK", "WARNING", "CRITICAL"
-            }
+            Response JSON data
         """
-        usage_pct = self.bandwidth.current_usage_gb / self.bandwidth.monthly_limit_gb * 100
-
-        if usage_pct >= 95:
-            alert_level = "CRITICAL"
-        elif usage_pct >= 85:
-            alert_level = "WARNING"
-        elif usage_pct >= 70:
-            alert_level = "CAUTION"
-        else:
-            alert_level = "OK"
-
-        return {
-            "current_usage_gb": round(self.bandwidth.current_usage_gb, 2),
-            "monthly_limit_gb": self.bandwidth.monthly_limit_gb,
-            "usage_pct": round(usage_pct, 2),
-            "alert_level": alert_level,
-        }
+        async with httpx.AsyncClient() as client:
+            response = await client.request(
+                method=method,
+                url=url,
+                params=params,
+                json=json_body,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            return response.json()

@@ -28,7 +28,7 @@ Usage:
 
 import logging
 import os
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional
 from decimal import Decimal
 from uuid import UUID
@@ -124,17 +124,27 @@ class DataHarvester(BaseAgent):
             else:
                 try:
                     provider_client = FMPProvider(api_key=api_key)
-                    quote = await provider_client.get_quote(symbol)
-                    result = {
-                        "symbol": symbol,
-                        "price": float(quote.get("price", 0)),
-                        "change": float(quote.get("change", 0)),
-                        "change_pct": float(quote.get("changesPercentage", 0)) / 100,
-                        "volume": int(quote.get("volume", 0)),
-                        "market_cap": float(quote.get("marketCap", 0)),
-                        "timestamp": quote.get("timestamp"),
-                        "provider": "fmp",
-                    }
+                    # FMP get_quote expects a list of symbols
+                    quotes = await provider_client.get_quote([symbol])
+                    if quotes and len(quotes) > 0:
+                        quote = quotes[0]  # Get first (and only) quote
+                        result = {
+                            "symbol": symbol,
+                            "price": float(quote.get("price", 0)),
+                            "change": float(quote.get("change", 0)),
+                            "change_pct": float(quote.get("changesPercentage", 0)),
+                            "volume": int(quote.get("volume", 0)),
+                            "market_cap": float(quote.get("marketCap", 0)),
+                            "timestamp": quote.get("timestamp"),
+                            "provider": "fmp",
+                            "_is_stub": False,
+                        }
+                    else:
+                        result = {
+                            "symbol": symbol,
+                            "error": f"No quote data available for {symbol}",
+                            "provider": "fmp",
+                        }
                 except Exception as e:
                     logger.error(f"Error fetching quote from FMP: {e}", exc_info=True)
                     result = {
@@ -143,7 +153,7 @@ class DataHarvester(BaseAgent):
                         "provider": "fmp",
                     }
         elif provider == "polygon":
-            from app.providers.polygon_client import get_polygon_client
+            from app.integrations.polygon_provider import PolygonProvider
             api_key = os.getenv("POLYGON_API_KEY")
             if not api_key:
                 result = {
@@ -152,21 +162,26 @@ class DataHarvester(BaseAgent):
                 }
             else:
                 try:
-                    provider_client = get_polygon_client(api_key=api_key)
-                    # Get latest daily price (today's date)
-                    from datetime import date as datetime_date
-                    today = datetime_date.today().isoformat()
-
-                    # Fetch single day price
-                    price_data = await provider_client.get_daily_price(symbol, today, adjusted=True)
-
-                    if price_data:
-                        # Transform Polygon format to DawsOS format
-                        result = self._transform_polygon_to_quote_format(price_data, symbol)
+                    provider_client = PolygonProvider(api_key=api_key)
+                    # Get latest quote using Polygon's last_quote method
+                    quote = await provider_client.get_last_quote(symbol)
+                    
+                    if quote:
+                        # Transform Polygon quote format to DawsOS format
+                        result = {
+                            "symbol": symbol,
+                            "price": float(quote.get("last_trade_price", 0)),
+                            "bid": float(quote.get("bid", 0)),
+                            "ask": float(quote.get("ask", 0)),
+                            "volume": int(quote.get("last_trade_size", 0)),
+                            "timestamp": quote.get("last_trade_time"),
+                            "provider": "polygon",
+                            "_is_stub": False,
+                        }
                     else:
                         result = {
                             "symbol": symbol,
-                            "error": f"No price data available for {symbol} on {today}",
+                            "error": f"No quote data available for {symbol}",
                             "provider": "polygon",
                         }
                 except Exception as e:
@@ -335,7 +350,7 @@ class DataHarvester(BaseAgent):
 
         # Get NewsAPI provider
         from app.integrations.news_provider import NewsAPIProvider
-        api_key = os.getenv("NEWSAPI_KEY")
+        api_key = os.getenv("NEWS_API_KEY")
 
         if not api_key:
             result = {
@@ -433,7 +448,7 @@ class DataHarvester(BaseAgent):
         logger.info(f"provider.fetch_macro: series_id={series_id}, limit={limit}")
 
         # Get FRED provider
-        from app.providers.fred_client import get_fred_client
+        from app.integrations.fred_provider import FREDProvider
         api_key = os.getenv("FRED_API_KEY")
 
         if not api_key:
@@ -444,17 +459,17 @@ class DataHarvester(BaseAgent):
             }
         else:
             try:
-                provider_client = get_fred_client(api_key=api_key)
+                provider_client = FREDProvider(api_key=api_key)
 
-                # Fetch series data
+                # Fetch series info and data
                 series_info = await provider_client.get_series_info(series_id)
-                observations_raw = await provider_client.get_series_observations(
+                observations_raw = await provider_client.get_series(
                     series_id, limit=limit
                 )
 
                 # Transform FRED format to DawsOS format
                 observations_transformed = self._transform_fred_to_macro_format(
-                    observations_raw, series_id
+                    observations_raw.get("observations", []), series_id
                 )
 
                 result = {

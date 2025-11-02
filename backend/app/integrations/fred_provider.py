@@ -142,7 +142,7 @@ class FREDProvider(BaseProvider):
             from app.integrations.base_provider import ProviderResponse
             return ProviderResponse(
                 data=response.json(),
-                provider=self.name,
+                provider=self.config.name,
                 endpoint=request.endpoint,
                 status_code=response.status_code,
                 latency_ms=latency_ms,

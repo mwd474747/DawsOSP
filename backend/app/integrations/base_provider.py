@@ -362,6 +362,7 @@ class BaseProvider(ABC):
         Args:
             config: Provider configuration
         """
+        self.config = config  # Store the full config object
         self.name = config.name
         self.base_url = config.base_url
         self.rate_limit_rpm = config.rate_limit_rpm

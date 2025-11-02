@@ -143,7 +143,7 @@ class NewsAPIProvider(BaseProvider):
             - Business tier: Returns full article content
             - Free tier has 100 requests/day limit
         """
-        url = f"{self.base_url}/everything"
+        url = f"{self.config.base_url}/everything"
 
         # Default date range: last 30 days
         if not from_date:
@@ -220,7 +220,7 @@ class NewsAPIProvider(BaseProvider):
             - Updated more frequently than historical search
             - Same tier restrictions apply
         """
-        url = f"{self.base_url}/top-headlines"
+        url = f"{self.config.base_url}/top-headlines"
 
         params = {
             "apiKey": self.api_key,
