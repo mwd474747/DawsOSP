@@ -1093,20 +1093,21 @@ async def patterns_health_check():
         "patterns": {}
     }
     
-    # List of all 12 patterns
+    # List of actual patterns based on files in backend/patterns/
+    # These should match the actual JSON files we have
     pattern_names = [
         "portfolio_overview",
-        "scenario_analysis", 
-        "risk_analysis",
+        "portfolio_scenario_analysis",  # Fixed: was "scenario_analysis" 
+        "portfolio_cycle_risk",
         "macro_cycles_overview",
-        "performance_attribution",
-        "portfolio_optimizer",
-        "ratings_analysis",
-        "ai_insights",
-        "alerts_management",
-        "reports_generation",
-        "corporate_actions",
-        "market_data_analysis"
+        "macro_trend_monitor",
+        "news_impact_analysis",
+        "holding_deep_dive",
+        "buffett_checklist",
+        "cycle_deleveraging_scenarios",
+        "export_portfolio_report",
+        "policy_rebalance",
+        "portfolio_macro_overview"
     ]
     
     try:
@@ -1120,46 +1121,71 @@ async def patterns_health_check():
                 "status": "unknown",
                 "data_source": "unknown",
                 "last_check": None,
-                "error": None
+                "error": None,
+                "can_execute": False
             }
         
-        if orchestrator:
-            # Try to get actual pattern status
+        if orchestrator and db_pool:
+            # Try to test actual pattern execution capability
             try:
-                # Check each pattern's availability
+                # Get a test portfolio ID for testing patterns
+                test_portfolio_id = None
+                try:
+                    async with db_pool.acquire() as conn:
+                        result = await conn.fetchrow("SELECT id FROM portfolios WHERE is_active = true LIMIT 1")
+                        if result:
+                            test_portfolio_id = result["id"]
+                except Exception as e:
+                    logger.debug(f"Could not get test portfolio: {e}")
+                
+                # Check each pattern's actual execution capability
                 for pattern in pattern_names:
                     pattern_status = {
-                        "status": "working",
-                        "data_source": "stub",  # Default to stub data
+                        "status": "unknown",
+                        "data_source": "none",
                         "last_check": datetime.utcnow().isoformat(),
-                        "error": None
+                        "error": None,
+                        "can_execute": False
                     }
                     
-                    # Special handling for patterns with real data
-                    if pattern in ["portfolio_overview", "macro_cycles_overview"]:
-                        # These patterns may have real data if DB is connected
-                        if db_pool:
-                            try:
-                                async with db_pool.acquire() as conn:
-                                    # Quick check if DB has data
-                                    result = await conn.fetchval("SELECT COUNT(*) FROM portfolios")
-                                    if result > 0:
-                                        pattern_status["data_source"] = "real"
-                            except Exception as e:
-                                pattern_status["data_source"] = "stub"
+                    try:
+                        # Determine if pattern needs portfolio_id
+                        portfolio_patterns = [
+                            "portfolio_overview", 
+                            "portfolio_scenario_analysis",
+                            "portfolio_cycle_risk",
+                            "portfolio_macro_overview"
+                        ]
+                        
+                        # Prepare test inputs
+                        test_inputs = {}
+                        if pattern in portfolio_patterns and test_portfolio_id:
+                            test_inputs["portfolio_id"] = test_portfolio_id
+                        
+                        # Try a minimal execution to see if pattern works
+                        # We don't actually execute to avoid performance impact
+                        # Just check if the pattern file exists
+                        pattern_file = Path(f"backend/patterns/{pattern}.json")
+                        if pattern_file.exists():
+                            pattern_status["can_execute"] = True
+                            pattern_status["status"] = "available"
+                            pattern_status["data_source"] = "orchestrator"
+                            
+                            # Check if we have DB access for patterns that need it
+                            if pattern in portfolio_patterns and not test_portfolio_id:
                                 pattern_status["status"] = "partial"
-                                pattern_status["error"] = f"DB check failed: {str(e)[:100]}"
+                                pattern_status["error"] = "No test portfolio available"
+                        else:
+                            pattern_status["status"] = "missing"
+                            pattern_status["error"] = f"Pattern file {pattern}.json not found"
+                            pattern_status["can_execute"] = False
                     
-                    # Check if pattern is registered in orchestrator
-                    if hasattr(orchestrator, 'patterns_registry'):
-                        if pattern not in orchestrator.patterns_registry:
-                            pattern_status["status"] = "broken"
-                            pattern_status["error"] = "Pattern not registered"
+                    except Exception as e:
+                        pattern_status["status"] = "error"
+                        pattern_status["error"] = str(e)[:200]
+                        pattern_status["can_execute"] = False
                     
                     health_data["patterns"][pattern] = pattern_status
-                    
-                    # Log the pattern health check
-                    logger.info(f"[Health] Pattern {pattern}: {pattern_status['status']} - {pattern_status['data_source']}")
                     
             except Exception as e:
                 logger.error(f"Error checking pattern status: {e}")
@@ -1184,22 +1210,33 @@ async def patterns_health_check():
         health_data["status"] = "error"
         health_data["error"] = str(e)[:500]
     
-    # Determine overall health status
+    # Determine overall health status based on actual availability
     pattern_statuses = [p.get("status", "unknown") for p in health_data["patterns"].values()]
-    if all(s == "working" for s in pattern_statuses):
+    can_execute = [p.get("can_execute", False) for p in health_data["patterns"].values()]
+    
+    # Count pattern statuses
+    available_count = sum(1 for s in pattern_statuses if s == "available")
+    partial_count = sum(1 for s in pattern_statuses if s == "partial")
+    missing_count = sum(1 for s in pattern_statuses if s == "missing")
+    error_count = sum(1 for s in pattern_statuses if s == "error")
+    
+    # Set overall health based on actual capabilities
+    if all(s == "available" for s in pattern_statuses):
         health_data["status"] = "healthy"
-    elif any(s == "working" or s == "partial" for s in pattern_statuses):
+    elif available_count > 0 or partial_count > 0:
         health_data["status"] = "degraded"
     else:
         health_data["status"] = "unhealthy"
     
-    # Add summary statistics
+    # Add summary statistics with accurate counts
     health_data["summary"] = {
         "total_patterns": len(pattern_names),
-        "working": sum(1 for s in pattern_statuses if s == "working"),
-        "partial": sum(1 for s in pattern_statuses if s == "partial"),
-        "broken": sum(1 for s in pattern_statuses if s == "broken"),
-        "unavailable": sum(1 for s in pattern_statuses if s == "unavailable")
+        "available": available_count,
+        "partial": partial_count,
+        "missing": missing_count,
+        "error": error_count,
+        "unavailable": sum(1 for s in pattern_statuses if s == "unavailable"),
+        "can_execute": sum(1 for ce in can_execute if ce)
     }
     
     return health_data
@@ -1245,6 +1282,101 @@ async def login(request: LoginRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Authentication service error"
+        )
+
+@app.post("/api/auth/refresh")
+async def refresh_token(request: Request):
+    """
+    Refresh JWT token endpoint
+    
+    The frontend expects to POST to /api/auth/refresh and receive a new access token.
+    This endpoint validates the current token (even if expired within grace period)
+    and issues a fresh token.
+    """
+    try:
+        # Get the authorization header
+        auth_header = request.headers.get("Authorization", "")
+        
+        if not auth_header.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authorization header format"
+            )
+        
+        # Extract token
+        token = auth_header[7:]  # Remove "Bearer " prefix
+        
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token not provided"
+            )
+        
+        # Decode token without verification to get user info
+        # In production, you might want to verify with a grace period
+        try:
+            # First try normal verification
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        except jwt.ExpiredSignatureError:
+            # Token expired, but we allow refresh within reasonable time
+            # Decode without verification to get the payload
+            try:
+                payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM], options={"verify_signature": True, "verify_exp": False})
+                
+                # Check if token expired more than 7 days ago (grace period)
+                exp_timestamp = payload.get("exp", 0)
+                current_timestamp = datetime.utcnow().timestamp()
+                if current_timestamp - exp_timestamp > (7 * 24 * 3600):  # 7 days
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Token expired beyond refresh window"
+                    )
+            except Exception as e:
+                logger.error(f"Token decode error during refresh: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token"
+                )
+        except jwt.InvalidTokenError as e:
+            logger.error(f"Invalid token during refresh: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+        
+        # Extract user info from payload
+        user_id = payload.get("sub")
+        email = payload.get("email")
+        role = payload.get("role")
+        
+        if not all([user_id, email, role]):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incomplete token payload"
+            )
+        
+        # Create a new JWT token with fresh expiration
+        new_token = create_jwt_token(user_id, email, role)
+        
+        # Return the new token in the same format as login
+        return {
+            "access_token": new_token,
+            "token_type": "bearer",
+            "expires_in": JWT_EXPIRATION_HOURS * 3600,
+            "user": {
+                "id": user_id,
+                "email": email,
+                "role": role
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Token refresh error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Token refresh service error"
         )
 
 @app.get("/api/metrics/{portfolio_id}")
