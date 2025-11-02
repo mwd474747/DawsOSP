@@ -2,19 +2,18 @@
 DawsOS Financial Analyst Agent
 
 Purpose: Portfolio analysis, pricing, metrics computation
-Updated: 2025-10-22 (Phase 4 Task 2: Database integration)
-Priority: P0 (Critical for Phase 4)
+Updated: 2025-11-02
 
 Capabilities:
-    - ledger.positions: Get portfolio positions from Beancount ledger
+    - ledger.positions: Get portfolio positions from database
     - pricing.apply_pack: Apply pricing pack to positions
-    - metrics.compute_twr: Compute Time-Weighted Return (database-backed)
-    - metrics.compute_sharpe: Compute Sharpe Ratio (database-backed)
-    - attribution.currency: Compute currency attribution (database-backed)
+    - metrics.compute_twr: Compute Time-Weighted Return
+    - metrics.compute_sharpe: Compute Sharpe Ratio
+    - attribution.currency: Compute currency attribution
     - charts.overview: Generate overview charts
 
 Architecture:
-    Agent → Database Layer (Phase 3) → TimescaleDB
+    Pattern → Agent Runtime → FinancialAnalyst → Services → PostgreSQL/TimescaleDB
 
 Usage:
     agent = FinancialAnalyst("financial_analyst", services)
@@ -47,7 +46,7 @@ class FinancialAnalyst(BaseAgent):
 
     Provides capabilities for portfolio analysis, pricing, and metrics.
     Integrates with:
-        - Beancount ledger (via ledger service)
+        - Database ledger (lots and transactions tables)
         - Pricing packs (via pricing service)
         - Metrics service (TWR, MWR, Sharpe, etc.)
     """
@@ -84,7 +83,7 @@ class FinancialAnalyst(BaseAgent):
         portfolio_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Get portfolio positions from Beancount ledger.
+        Get portfolio positions from database.
 
         Args:
             ctx: Request context

@@ -2,8 +2,7 @@
 DawsOS Claude Agent
 
 Purpose: AI-powered explanations and analysis
-Created: 2025-10-23 (P0 fix from CODEBASE_AUDIT_REPORT.md)
-Priority: P1 (Important for user experience)
+Updated: 2025-11-02
 
 Capabilities:
     - claude.explain: Generate explanations for metrics, ratings, decisions
@@ -12,12 +11,13 @@ Capabilities:
     - claude.portfolio_advice: Provide personalized portfolio advice
     - claude.financial_qa: Answer general financial questions
     - claude.scenario_analysis: Analyze what-if scenarios
+    - ai.explain: Alternative capability name for explanations
 
 Architecture:
-    Pattern → Agent Runtime → ClaudeAgent → Anthropic API
+    Pattern → Agent Runtime → ClaudeAgent → Anthropic Claude API (claude-3-sonnet)
 
 Usage:
-    agent = ClaudeAgent("claude", services)
+    agent = ClaudeAgent("claude_agent", services)
     runtime.register_agent(agent)
 """
 

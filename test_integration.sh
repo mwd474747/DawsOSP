@@ -81,36 +81,25 @@ echo -e "${BLUE}Step 1: Infrastructure Checks${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-# Test 1: Check Docker containers
-echo -e "${YELLOW}Checking Docker containers...${NC}"
+# Test 1: Check Database Connection
+echo -e "${YELLOW}Checking database connection...${NC}"
 
-POSTGRES_CONTAINER=$(docker ps --format '{{.Names}}' | grep -E '^(dawsos-postgres|dawsos-dev-postgres)$' | head -n1)
-REDIS_CONTAINER=$(docker ps --format '{{.Names}}' | grep -E '^(dawsos-redis|dawsos-dev-redis)$' | head -n1)
-
-# Determine DB user based on container (dev stack uses superuser)
 DB_USER="dawsos_app"
-if [[ "$POSTGRES_CONTAINER" == "dawsos-dev-postgres" ]]; then
-    DB_USER="dawsos"
-fi
 DB_NAME="dawsos"
+DATABASE_URL="${DATABASE_URL:-postgresql://localhost/dawsos}"
 
-if [ -n "$POSTGRES_CONTAINER" ]; then
-    test_result 0 "PostgreSQL container running ($POSTGRES_CONTAINER)"
+# Try to connect to database
+if python3 -c "import asyncpg; import os; import asyncio; async def test(): conn = await asyncpg.connect(os.getenv('DATABASE_URL', '$DATABASE_URL')); await conn.close(); asyncio.run(test())" 2>/dev/null; then
+    test_result 0 "Database connection successful"
 else
-    test_result 1 "PostgreSQL container not running"
-fi
-
-if [ -n "$REDIS_CONTAINER" ]; then
-    test_result 0 "Redis container running ($REDIS_CONTAINER)"
-else
-    test_result 1 "Redis container not running"
+    test_result 1 "Database connection failed (check DATABASE_URL environment variable)"
 fi
 
 echo ""
 
 # Test 2: Check database connectivity
 echo -e "${YELLOW}Checking database connectivity...${NC}"
-if [ -n "$POSTGRES_CONTAINER" ] && docker exec "$POSTGRES_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1; then
+if python3 -c "import asyncpg; import os; import asyncio; async def test(): conn = await asyncpg.connect(os.getenv('DATABASE_URL', '$DATABASE_URL')); await conn.execute('SELECT 1'); await conn.close(); asyncio.run(test())" 2>/dev/null; then
     test_result 0 "Database connection successful"
 else
     test_result 1 "Database connection failed"
@@ -120,10 +109,8 @@ echo ""
 
 # Test 3: Check database tables
 echo -e "${YELLOW}Checking database schema...${NC}"
-table_count=0
-if [ -n "$POSTGRES_CONTAINER" ]; then
-    table_count=$(docker exec "$POSTGRES_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null | tr -d ' ')
-fi
+table_count=$(python3 -c "import asyncpg; import os; import asyncio; async def test(): conn = await asyncpg.connect(os.getenv('DATABASE_URL', '$DATABASE_URL')); count = await conn.fetchval(\"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'\"); await conn.close(); print(count); asyncio.run(test())" 2>/dev/null | tr -d ' ')
+table_count=${table_count:-0}
 
 if [ "$table_count" -ge 10 ]; then
     test_result 0 "Database schema exists ($table_count tables)"
@@ -135,10 +122,8 @@ echo ""
 
 # Test 4: Check seed data
 echo -e "${YELLOW}Checking seed data...${NC}"
-portfolio_count=0
-if [ -n "$POSTGRES_CONTAINER" ]; then
-    portfolio_count=$(docker exec "$POSTGRES_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM portfolios;" 2>/dev/null | tr -d ' ')
-fi
+portfolio_count=$(python3 -c "import asyncpg; import os; import asyncio; async def test(): conn = await asyncpg.connect(os.getenv('DATABASE_URL', '$DATABASE_URL')); count = await conn.fetchval('SELECT COUNT(*) FROM portfolios'); await conn.close(); print(count); asyncio.run(test())" 2>/dev/null | tr -d ' ')
+portfolio_count=${portfolio_count:-0}
 
 if [ "$portfolio_count" -ge 1 ]; then
     test_result 0 "Seed data exists ($portfolio_count portfolios)"
@@ -183,10 +168,7 @@ if [ $API_RUNNING -eq 1 ]; then
     echo -e "${YELLOW}Testing pattern execution...${NC}"
 
     # Get portfolio ID from database
-    portfolio_id=""
-    if [ -n "$POSTGRES_CONTAINER" ]; then
-        portfolio_id=$(docker exec "$POSTGRES_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT id FROM portfolios LIMIT 1;" 2>/dev/null | tr -d ' ')
-    fi
+    portfolio_id=$(python3 -c "import asyncpg; import os; import asyncio; async def test(): conn = await asyncpg.connect(os.getenv('DATABASE_URL', '$DATABASE_URL')); pid = await conn.fetchval('SELECT id FROM portfolios LIMIT 1'); await conn.close(); print(pid if pid else ''); asyncio.run(test())" 2>/dev/null | tr -d ' ')
 
     if [ -n "$portfolio_id" ]; then
         test_api_post "http://localhost:8000/v1/execute" \
@@ -295,7 +277,7 @@ else
     echo "Please fix the failing tests before proceeding."
     echo ""
     echo "Common issues:"
-    echo "  1. Docker services not running: docker-compose -f docker-compose.simple.yml up -d"
+    echo "  1. Database not accessible: Check DATABASE_URL environment variable"
     echo "  2. Backend API not started: ./backend/run_api.sh"
     echo "  3. Frontend UI not started: ./frontend/run_ui.sh"
     echo "  4. Database schema not applied: see backend/db/init_database.sh"

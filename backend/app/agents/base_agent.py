@@ -2,8 +2,7 @@
 DawsOS Base Agent
 
 Purpose: Abstract base class for all capability-providing agents
-Updated: 2025-10-21
-Priority: P0 (Critical for agent architecture)
+Updated: 2025-11-02
 
 Agent Contract:
     1. Declare capabilities via get_capabilities()

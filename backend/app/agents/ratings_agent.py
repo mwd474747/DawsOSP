@@ -2,9 +2,7 @@
 DawsOS Ratings Agent
 
 Purpose: Buffett-style quality ratings (dividend safety, moat strength, resilience)
-Updated: 2025-10-27 (Agent Wiring)
-Priority: P1 (Core business logic)
-
+Updated: 2025-11-02 (Agent Wiring)
 Capabilities:
     - ratings.dividend_safety: Calculate dividend safety rating (0-10)
     - ratings.moat_strength: Calculate economic moat strength (0-10)
@@ -36,8 +34,6 @@ from app.services.ratings import get_ratings_service
 from app.services.fundamentals_transformer import transform_fmp_to_ratings_format
 
 logger = logging.getLogger("DawsOS.RatingsAgent")
-
-
 class RatingsAgent(BaseAgent):
     """
     Ratings Agent - Buffett-style quality scoring.

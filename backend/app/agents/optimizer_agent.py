@@ -2,9 +2,7 @@
 DawsOS Optimizer Agent
 
 Purpose: Portfolio optimization and rebalancing with Riskfolio-Lib
-Updated: 2025-10-27 (Agent Wiring)
-Priority: P1 (Core business logic)
-
+Updated: 2025-11-02 (Agent Wiring)
 Capabilities:
     - optimizer.propose_trades: Generate rebalance trades based on policy constraints
     - optimizer.analyze_impact: Analyze impact of proposed trades on portfolio metrics
@@ -36,8 +34,6 @@ from app.core.types import RequestCtx
 from app.services.optimizer import get_optimizer_service
 
 logger = logging.getLogger("DawsOS.OptimizerAgent")
-
-
 class OptimizerAgent(BaseAgent):
     """
     Optimizer Agent - Portfolio optimization and rebalancing.

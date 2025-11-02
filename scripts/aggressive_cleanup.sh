@@ -590,7 +590,7 @@ cat > DEPLOYMENT.md << 'EOF'
 
 ### Prerequisites
 - Linux server (Ubuntu 20.04+)
-- Docker and Docker Compose
+- PostgreSQL database (Replit or external)
 - Domain name with SSL certificate
 - PostgreSQL database
 - Redis instance
@@ -611,16 +611,12 @@ NEWS_API_KEY=your-news-key
 ANTHROPIC_API_KEY=your-anthropic-key
 ```
 
-### Docker Deployment
+### Replit Deployment
 ```bash
 # Build and start services
-docker-compose up -d
+python combined_server.py
 
-# Check logs
-docker-compose logs -f
-
-# Scale services
-docker-compose up -d --scale backend=3
+# The server will start on http://localhost:8000/
 ```
 
 ### Manual Deployment

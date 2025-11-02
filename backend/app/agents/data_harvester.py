@@ -1,25 +1,17 @@
 """
 DawsOS Data Harvester Agent
 
-Purpose: Data provider integration (FMP, Polygon, FRED, NewsAPI)
-Created: 2025-10-23 (P0 fix from CODEBASE_AUDIT_REPORT.md)
-Priority: P0 (Critical for holding deep-dive and news features)
+Purpose: External data provider integration (FMP, Polygon, FRED, NewsAPI)
+Updated: 2025-11-02
 
 Capabilities:
-    - provider.fetch_quote: Fetch equity quote (FMP/Polygon)
-    - provider.fetch_fundamentals: Fetch company fundamentals (FMP)
-    - provider.fetch_news: Fetch news articles (NewsAPI)
+    - fundamentals.load: Fetch company fundamentals (FMP)
+    - news.search: Search news articles (NewsAPI)
+    - news.compute_portfolio_impact: Analyze news impact on portfolio
     - provider.fetch_macro: Fetch macro indicators (FRED)
-    - provider.fetch_ratios: Fetch financial ratios (FMP)
 
 Architecture:
-    Pattern → Agent Runtime → DataHarvester → Provider Facades → External APIs
-
-Features:
-    - Circuit breaker (3 failures → OPEN for 60s)
-    - Rate limiting (provider-specific)
-    - DLQ retry with exponential backoff
-    - Rights enforcement (export restrictions)
+    Pattern → Agent Runtime → DataHarvester → External APIs
 
 Usage:
     agent = DataHarvester("data_harvester", services)

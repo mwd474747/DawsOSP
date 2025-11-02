@@ -2,15 +2,15 @@
 DawsOS Macro Hound Agent
 
 Purpose: Macro analysis, regime detection, cycles, scenarios, DaR
-Created: 2025-10-23 (P0 fix from CODEBASE_AUDIT_REPORT.md)
-Priority: P0 (Critical for macro features)
+Updated: 2025-11-02
 
 Capabilities:
     - macro.detect_regime: Detect current macro regime (5 regimes)
-    - macro.compute_cycles: Compute STDC/LTDC/Empire cycle phases
+    - macro.compute_cycles: Compute STDC/LTDC/Empire/Civil cycle phases
     - macro.get_indicators: Get current macro indicators with z-score
     - macro.run_scenario: Run stress test scenario
     - macro.compute_dar: Compute Drawdown at Risk (DaR)
+    - scenarios.*: Deleveraging scenarios (austerity, default, money printing)
 
 Architecture:
     Pattern → Agent Runtime → MacroHound → MacroService/CyclesService → Database

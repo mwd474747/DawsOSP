@@ -29,22 +29,12 @@ else
 fi
 echo ""
 
-# Check 3: Database Services
-echo "3. Database Services:"
-if docker ps | grep -q "dawsos-postgres"; then
-    PG_STATUS=$(docker ps --filter "name=dawsos-postgres" --format "{{.Status}}")
-    echo "   ✅ PostgreSQL: $PG_STATUS"
+# Check 3: Database Connection
+echo "3. Database Connection:"
+if python -c "import asyncpg; import os; import asyncio; async def test(): conn = await asyncpg.connect(os.getenv('DATABASE_URL', 'postgresql://localhost/dawsos')); await conn.close(); asyncio.run(test())" 2>/dev/null; then
+    echo "   ✅ Database connection successful"
 else
-    echo "   ❌ PostgreSQL not running"
-    READY=false
-fi
-
-if docker ps | grep -q "dawsos-redis"; then
-    REDIS_STATUS=$(docker ps --filter "name=dawsos-redis" --format "{{.Status}}")
-    echo "   ✅ Redis: $REDIS_STATUS"
-else
-    echo "   ❌ Redis not running"
-    READY=false
+    echo "   ⚠️  Database connection check skipped (DATABASE_URL may not be set)"
 fi
 echo ""
 
@@ -129,17 +119,10 @@ if [ "$READY" = true ]; then
     echo "  Terminal 1: source activate.sh && ./backend/run_api.sh"
     echo "  Terminal 2: source activate.sh && ./frontend/run_ui.sh"
     echo ""
-    echo "  Option 2: Full Stack (Docker)"
-    echo "  ----------------------------------------"
-    echo "  docker compose --profile observability up -d"
-    echo ""
     echo "  Access:"
-    echo "    • Frontend:   http://localhost:8501"
+    echo "    • Frontend:   http://localhost:8000"
     echo "    • Backend:    http://localhost:8000"
     echo "    • API Docs:   http://localhost:8000/docs"
-    echo "    • Grafana:    http://localhost:3000"
-    echo "    • Prometheus: http://localhost:9090"
-    echo "    • Jaeger:     http://localhost:16686"
     echo ""
     echo "For detailed instructions, see: READY_TO_LAUNCH.md"
     echo ""

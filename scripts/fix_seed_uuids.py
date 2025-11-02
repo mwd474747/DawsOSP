@@ -165,7 +165,7 @@ def main():
     print("=" * 80)
     print("\nNext steps:")
     print("  1. Verify: cat data/seeds/symbols/securities.csv")
-    print("  2. Reset DB: docker exec dawsos-postgres psql -U dawsos_app -d dawsos -c 'TRUNCATE securities, prices, lots, portfolios, transactions CASCADE'")
+    print("  2. Reset DB: Connect to your database and run: TRUNCATE securities, prices, lots, portfolios, transactions CASCADE;")
     print("  3. Reload: ./venv/bin/python3 scripts/seed_loader.py --all")
     print("=" * 80)
 

@@ -1,15 +1,17 @@
 # DawsOS Deployment Guide
 
-## Production Deployment
+## Replit Deployment
+
+DawsOS is deployed on Replit. This guide covers deployment on Replit.
 
 ### Prerequisites
-- Linux server (Ubuntu 20.04+)
-- Docker and Docker Compose
-- Domain name with SSL certificate
-- PostgreSQL database
-- Redis instance
+- Replit account
+- PostgreSQL database (provided by Replit or external)
+- API keys for data providers (optional)
 
 ### Environment Variables
+Set these in Replit's Secrets tab:
+
 ```bash
 # Database
 DATABASE_URL=postgresql://user:pass@host:5432/dawsos
@@ -17,7 +19,7 @@ DATABASE_URL=postgresql://user:pass@host:5432/dawsos
 # Authentication
 AUTH_JWT_SECRET=your-secure-jwt-secret
 
-# API Keys
+# API Keys (Optional - for real data)
 FMP_API_KEY=your-fmp-key
 POLYGON_API_KEY=your-polygon-key
 FRED_API_KEY=your-fred-key
@@ -25,26 +27,44 @@ NEWS_API_KEY=your-news-key
 ANTHROPIC_API_KEY=your-anthropic-key
 ```
 
-### Docker Deployment
+### Deployment Steps
+
+1. **Push code to Replit**
+   - Import repository or push to Replit Git
+
+2. **Set environment variables**
+   - Go to Secrets tab
+   - Add all required environment variables
+
+3. **Install dependencies**
+   ```bash
+   pip install -r backend/requirements.txt
+   ```
+
+4. **Run migrations** (if needed)
+   ```bash
+   python backend/init_db.py
+   ```
+
+5. **Start the server**
+   - Replit will automatically run `combined_server.py`
+   - Or set run command: `python combined_server.py`
+
+### Local Development
+
+For local development:
+
 ```bash
-# Build and start services
-docker-compose up -d
+# Install dependencies
+pip install -r backend/requirements.txt
 
-# Check logs
-docker-compose logs -f
+# Set environment variables
+export DATABASE_URL="postgresql://localhost/dawsos"
+export AUTH_JWT_SECRET="dev-secret"
 
-# Scale services
-docker-compose up -d --scale backend=3
+# Run server
+python combined_server.py
 ```
-
-### Manual Deployment
-1. Install dependencies
-2. Set up database
-3. Run migrations
-4. Configure reverse proxy
-5. Set up SSL certificates
-6. Start services
-7. Configure monitoring
 
 ## Monitoring
 

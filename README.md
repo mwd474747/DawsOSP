@@ -1,51 +1,383 @@
 # DawsOS - AI-Powered Portfolio Management
 
-DawsOS is a comprehensive portfolio management system built with FastAPI and Next.js.
+AI-powered portfolio intelligence platform with macro economic analysis, risk assessment, and scenario testing.
 
-## Quick Start
+**Version**: 2.0.0 | **Status**: Production Ready ✅
 
-1. **Setup Environment**
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r backend/requirements.txt
-   ```
+---
 
-2. **Start Backend**
-   ```bash
-   ./backend/run_api.sh
-   ```
+## 🚀 Quick Start
 
-3. **Start Frontend**
-   ```bash
-   cd dawsos-ui && npm run dev
-   ```
+```bash
+# 1. Set environment variables
+export DATABASE_URL="postgresql://user:pass@localhost/dawsos"
+export ANTHROPIC_API_KEY="your-api-key"  # Optional for AI features
 
-4. **Access System**
-   - Frontend: http://localhost:3002
-   - Backend API: http://localhost:8000
-   - API Docs: http://localhost:8000/docs
+# 2. Activate virtual environment (if needed)
+python3 -m venv venv
+source venv/bin/activate
+pip install -r backend/requirements.txt
 
-## Authentication
+# 3. Start the application
+python combined_server.py
+
+# 4. Open browser
+# Visit: http://localhost:8000/
+```
+
+**That's it!** The application serves everything from a single server.
+
+---
+
+## ✨ Features
+
+- ✅ **Portfolio Dashboard**: Real-time metrics, attribution, performance tracking
+- ✅ **Macro Analysis**: 4 economic cycles (STDC, LTDC, Empire, Civil)
+- ✅ **AI Analysis**: Claude-powered insights and explanations
+- ✅ **Buffett Ratings**: Quality assessment for all holdings (A-F grades)
+- ✅ **Risk Management**: Stress testing and scenario analysis
+- ✅ **Transaction History**: Complete audit trail with pagination
+- ✅ **Alerts System**: Real-time monitoring and notifications
+- ✅ **PDF Reports**: Professional report generation
+- ✅ **17 Complete UI Pages**: Fully functional React SPA
+
+---
+
+## 🏗️ Architecture
+
+**Current Production Stack**:
+- **UI**: `full_ui.html` - Single-page React application (14,075 lines, no build step)
+- **Server**: `combined_server.py` - FastAPI server (6,046 lines, 59 endpoints)
+- **Database**: PostgreSQL + TimescaleDB
+- **Agents**: 9 agents providing 59+ capabilities
+- **Patterns**: 12 pattern definitions for orchestration
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.
+
+---
+
+## 📦 Technology Stack
+
+- **Backend**: FastAPI + Python 3.11+
+- **Frontend**: React 18 (UMD builds - no npm/build step)
+- **Database**: PostgreSQL 14+ with TimescaleDB extension
+- **AI**: Anthropic Claude API (claude-3-sonnet)
+- **Charts**: Chart.js
+- **Design**: IBM Plex fonts, professional dark theme
+
+---
+
+## 📋 Prerequisites
+
+- Python 3.11+
+- PostgreSQL 14+ with TimescaleDB extension
+- (Optional) Anthropic API key for AI features
+- (Optional) FRED API key for economic data
+
+---
+
+## 🔧 Installation
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/mwd474747/DawsOSP.git
+cd DawsOSP
+```
+
+### 2. Set Up Python Environment
+
+```bash
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r backend/requirements.txt
+```
+
+### 3. Configure Database
+
+```bash
+# Create database
+createdb dawsos
+
+# Set environment variable
+export DATABASE_URL="postgresql://localhost/dawsos"
+```
+
+### 4. Set Environment Variables
+
+```bash
+export DATABASE_URL="postgresql://localhost/dawsos"
+export ANTHROPIC_API_KEY="sk-ant-..."  # Optional - for AI features
+export FRED_API_KEY="..."              # Optional - for economic data
+export AUTH_JWT_SECRET="your-secret-key-change-in-production"
+```
+
+### 5. Start Application
+
+```bash
+# Start server
+python combined_server.py
+
+# Server starts on http://localhost:8000/
+```
+
+### 6. Access Application
+
+- **UI**: http://localhost:8000/
+- **API Docs**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+
+---
+
+## 🎮 Default Login
 
 - **Email**: michael@dawsos.com
 - **Password**: mozzuq-byfqyQ-5tefvu
 
-## Architecture
+(Change in production!)
 
-- **Backend**: FastAPI with PostgreSQL
-- **Frontend**: Next.js with TypeScript
-- **Authentication**: JWT-based with RBAC
-- **Database**: PostgreSQL with TimescaleDB
+---
 
-## Documentation
+## 📁 Project Structure
 
-- [Product Specification](PRODUCT_SPEC.md)
-- [Architecture Guide](ARCHITECTURE.md)
-- [Development Guide](DEVELOPMENT_GUIDE.md)
-- [Deployment Guide](DEPLOYMENT.md)
-- [Troubleshooting](TROUBLESHOOTING.md)
+```
+DawsOSP/
+├── combined_server.py            # ⭐ PRIMARY SERVER (FastAPI entry point)
+├── full_ui.html                  # ⭐ PRIMARY UI (React SPA)
+├── test_ratings_parse.html       # Buffett ratings testing utility
+├── backend/
+│   ├── app/
+│   │   ├── agents/               # 9 agents (financial_analyst, macro_hound, etc.)
+│   │   ├── api/
+│   │   │   ├── executor.py       # Alternative entry point (not used in production)
+│   │   │   └── routes/           # Modular API routes (imported by combined_server)
+│   │   ├── core/                 # AgentRuntime, PatternOrchestrator
+│   │   ├── services/             # Business logic
+│   │   └── db/                   # Database layer
+│   ├── patterns/                 # 12 pattern definitions (JSON)
+│   ├── db/
+│   │   ├── schema/               # Database schema files
+│   │   └── seeds/                # Seed data
+│   └── requirements.txt
+├── frontend/
+│   └── api-client.js             # API client module for full_ui.html
+├── scripts/                      # Utility scripts
+├── .legacy/                      # Legacy Streamlit UI (archived)
+└── .archive/                     # Archived components
+```
 
-## License
+---
+
+## 🚦 API Endpoints
+
+### Core
+
+- `GET /` - Serves full_ui.html
+- `GET /health` - Health check
+- `POST /api/patterns/execute` - Execute pattern (main endpoint)
+
+### Authentication
+
+- `POST /api/auth/login` - Login (JWT)
+- `POST /api/auth/refresh` - Refresh token
+
+### Portfolio
+
+- `GET /api/portfolios` - List portfolios
+- `GET /api/portfolios/{id}` - Get portfolio details
+- `POST /api/portfolios` - Create portfolio
+
+### Analysis
+
+- `GET /api/metrics/{portfolio_id}` - Performance metrics
+- `GET /api/macro` - Macro economic data
+- `GET /api/alerts` - Alert list
+
+See `/docs` endpoint for complete API documentation.
+
+---
+
+## 🧪 Testing
+
+```bash
+# Backend tests
+cd backend
+pytest
+
+# API tests
+curl http://localhost:8000/health
+
+# UI tests
+# Open browser: http://localhost:8000/
+# Test all 17 pages manually
+```
+
+---
+
+## 🚀 Deployment (Replit)
+
+DawsOS is deployed on Replit. To run locally:
+
+```bash
+# Install dependencies
+pip install -r backend/requirements.txt
+
+# Set environment variables
+export DATABASE_URL="postgresql://user:pass@host:5432/dawsos"
+export ANTHROPIC_API_KEY="your-key"
+export AUTH_JWT_SECRET="your-secret"
+
+# Run the server
+python combined_server.py
+```
+
+The server will start on `http://localhost:8000/`
+
+---
+
+## 📚 Documentation
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and design
+- **[PRODUCT_SPEC.md](PRODUCT_SPEC.md)** - Product specifications
+- **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** - Development guide
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deployment instructions
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
+- **API Docs**: http://localhost:8000/docs (when running)
+
+---
+
+## 🔄 Alternative Entry Points
+
+The application includes a modular backend structure in `backend/app/` that can be used as an alternative entry point:
+
+```bash
+# Alternative: Use modular backend (experimental)
+cd backend
+uvicorn app.api.executor:executor_app --reload --port 8001
+
+# Note: This is NOT the production entry point
+# Use combined_server.py for production
+```
+
+---
+
+## 🛠️ Development
+
+### Adding New Features
+
+1. **Backend API**: Add route to `backend/app/api/routes/` or `combined_server.py`
+2. **Business Logic**: Add to appropriate agent in `backend/app/agents/`
+3. **UI**: Update `full_ui.html` (React components)
+4. **Pattern**: Define new pattern in `backend/patterns/` if needed
+
+### Code Style
+
+```bash
+# Format code
+black backend/
+isort backend/
+
+# Lint
+flake8 backend/
+pylint backend/
+```
+
+---
+
+## 📊 System Status
+
+Check system health:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Response:
+```json
+{
+  "status": "healthy",
+  "service": "DawsOS",
+  "version": "2.0.0",
+  "database": "connected",
+  "agents": 9,
+  "patterns": "available"
+}
+```
+
+---
+
+## 🔐 Security
+
+- **Authentication**: JWT tokens with 24-hour expiration
+- **Authorization**: Role-based access control (ADMIN, MANAGER, USER, VIEWER)
+- **Data Protection**: Password hashing (bcrypt), input validation
+- **Network Security**: Configure CORS appropriately for production
+
+**Important**: Change default credentials and JWT secret in production!
+
+---
+
+## 🐛 Troubleshooting
+
+### "UI not found" error
+
+**Solution**: Ensure `full_ui.html` is in repository root
+
+### "Database connection failed"
+
+**Solution**: Check `DATABASE_URL` environment variable
+
+```bash
+export DATABASE_URL="postgresql://user:pass@localhost/dawsos"
+```
+
+### "Pattern execution failed"
+
+**Solution**: Check agent registration in `combined_server.py`
+
+### Application won't start
+
+**Solution**: Check Python version and dependencies
+
+```bash
+python --version  # Should be 3.11+
+pip install -r backend/requirements.txt
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+---
+
+## 📜 License
 
 Proprietary - All rights reserved
+
+---
+
+## 🙏 Acknowledgments
+
+- **FastAPI** - Modern Python web framework
+- **React** - UI library
+- **Anthropic Claude** - AI analysis
+- **PostgreSQL + TimescaleDB** - Database
+- **Chart.js** - Visualizations
+
+---
+
+## 📞 Support
+
+For issues or questions:
+- **Issues**: https://github.com/mwd474747/DawsOSP/issues
+- **Documentation**: See repository docs
+
+---
+
+**DawsOS** - Portfolio Intelligence Platform | Version 2.0.0 | 2025

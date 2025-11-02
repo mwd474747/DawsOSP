@@ -2,9 +2,7 @@
 DawsOS Reports Agent
 
 Purpose: PDF/CSV export generation with rights enforcement
-Updated: 2025-10-27
-Priority: P1 (Export functionality)
-
+Updated: 2025-11-02
 Capabilities:
     - reports.render_pdf: Generate PDF from pattern result
     - reports.export_csv: Export data to CSV format
@@ -36,8 +34,6 @@ from app.core.types import RequestCtx
 from app.services.reports import ReportService
 
 logger = logging.getLogger(__name__)
-
-
 class ReportsAgent(BaseAgent):
     """
     Reports Agent: Generate PDF/CSV exports with rights enforcement.
@@ -302,13 +298,9 @@ class ReportsAgent(BaseAgent):
             return "production"
         else:
             return "staging"
-
-
 # ============================================================================
 # Module-Level Helper
 # ============================================================================
-
-
 def get_reports_agent(services: Dict[str, Any]) -> ReportsAgent:
     """
     Get ReportsAgent instance.
