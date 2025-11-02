@@ -333,8 +333,8 @@ async def get_db_connection():
     Yields:
         AsyncPG connection
     """
-    # Try to get pool, creating from Redis config if needed (async context)
-    pool = await coordinator.get_pool()
+    # Use get_db_pool() which has proper fallback logic
+    pool = get_db_pool()
     async with pool.acquire() as conn:
         yield conn
 
