@@ -655,16 +655,29 @@ class DataHarvester(BaseAgent):
             # Step 2: Attempt to fetch from provider if symbol found
             if symbol and provider == "fmp":
                 logger.info(f"Attempting to fetch fundamentals for {symbol} from FMP")
+                
+                # Handle special ticker formats (e.g., BRK.B -> BRK-B for FMP)
+                fmp_symbol = symbol.replace(".", "-") if "." in symbol else symbol
+                if fmp_symbol != symbol:
+                    logger.info(f"Converted symbol format for FMP: {symbol} -> {fmp_symbol}")
 
                 # Call provider.fetch_fundamentals (which may return stub if no API key)
                 fundamentals_data = await self.provider_fetch_fundamentals(
-                    ctx, state, symbol=symbol, provider=provider
+                    ctx, state, symbol=fmp_symbol, provider=provider
                 )
+                
+                logger.info(f"Fundamentals data received: has_error={('error' in fundamentals_data)}, "
+                           f"has_income={('income_statement' in fundamentals_data)}, "
+                           f"income_count={len(fundamentals_data.get('income_statement', []))}")
 
                 # Call provider.fetch_ratios for additional metrics
                 ratios_data = await self.provider_fetch_ratios(
-                    ctx, state, symbol=symbol, provider=provider
+                    ctx, state, symbol=fmp_symbol, provider=provider
                 )
+                
+                logger.info(f"Ratios data received: has_error={('error' in ratios_data)}, "
+                           f"has_ratios={('ratios' in ratios_data)}, "
+                           f"ratios_count={len(ratios_data.get('ratios', []))}")
 
                 # Check if we got real data (no error field means success)
                 has_fundamentals = (
@@ -687,9 +700,9 @@ class DataHarvester(BaseAgent):
                             symbol
                         )
                         source = f"fundamentals:fmp:{symbol}"
-                        logger.info(f"Successfully transformed real fundamentals for {symbol}")
-                    except ValueError as e:
-                        logger.warning(f"FMP transformation failed for {symbol}: {e}, using stubs")
+                        logger.info(f"✅ Successfully transformed real FMP fundamentals for {symbol}")
+                    except (ValueError, KeyError, TypeError) as e:
+                        logger.warning(f"FMP transformation failed for {symbol}: {e}, using stubs", exc_info=True)
                         result = self._stub_fundamentals_for_symbol(symbol)
                         source = "fundamentals:stub"
                 else:
@@ -698,7 +711,8 @@ class DataHarvester(BaseAgent):
                     if error_msg:
                         logger.warning(f"Provider error for {symbol}: {error_msg}, using stubs")
                     else:
-                        logger.warning(f"Provider returned empty data for {symbol}, using stubs")
+                        logger.warning(f"Provider returned empty data for {symbol} "
+                                     f"(fundamentals={has_fundamentals}, ratios={has_ratios}), using stubs")
                     result = self._stub_fundamentals_for_symbol(symbol)
                     source = "fundamentals:stub"
             else:
