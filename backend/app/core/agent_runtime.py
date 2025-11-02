@@ -1,15 +1,15 @@
 """
 DawsOS Agent Runtime
 
-Purpose: Agent registration, capability routing, circuit breaker management, and rights enforcement
-Updated: 2025-10-22
+Purpose: Agent registration, capability routing, retry management, and rights enforcement
+Updated: 2025-11-02
 Priority: P0 (Critical for execution architecture)
 
 Features:
     - Agent registration with capability mapping
     - Capability routing to correct agent
     - Dependency injection (services, DB, Redis)
-    - Circuit breaker for agent failures
+    - Simple retry mechanism with exponential backoff
     - Result metadata preservation
     - Capability discovery
     - Rights validation and attribution (NEW)
@@ -20,8 +20,8 @@ Usage:
     result = await runtime.execute_capability("ledger.positions", ctx, state, portfolio_id="...")
 """
 
+import asyncio
 import logging
-from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from app.agents.base_agent import BaseAgent
@@ -50,124 +50,6 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# Circuit Breaker
-# ============================================================================
-
-
-class CircuitBreaker:
-    """
-    Circuit breaker for agent failure management.
-
-    Prevents cascading failures by opening circuit after threshold
-    failures, then attempting recovery after timeout.
-
-    States:
-        - CLOSED: Normal operation, requests pass through
-        - OPEN: Too many failures, requests blocked
-        - HALF_OPEN: Testing recovery, limited requests allowed
-    """
-
-    def __init__(self, failure_threshold: int = 5, timeout: int = 60):
-        """
-        Initialize circuit breaker.
-
-        Args:
-            failure_threshold: Number of failures before opening circuit
-            timeout: Seconds to wait before attempting recovery
-        """
-        self.failure_threshold = failure_threshold
-        self.timeout = timeout
-        self.failures: Dict[str, int] = {}
-        self.open_until: Dict[str, datetime] = {}
-
-    def is_open(self, agent_name: str) -> bool:
-        """
-        Check if circuit is open for agent.
-
-        Args:
-            agent_name: Agent identifier
-
-        Returns:
-            True if circuit is open (requests blocked)
-        """
-        if agent_name in self.open_until:
-            if datetime.now() < self.open_until[agent_name]:
-                return True
-            else:
-                # Timeout expired, move to half-open
-                logger.info(f"Circuit breaker for {agent_name}: OPEN → HALF_OPEN")
-                del self.open_until[agent_name]
-                self.failures[agent_name] = 0
-
-        return False
-
-    def record_failure(self, agent_name: str):
-        """
-        Record agent failure.
-
-        Opens circuit if threshold exceeded.
-
-        Args:
-            agent_name: Agent identifier
-        """
-        self.failures[agent_name] = self.failures.get(agent_name, 0) + 1
-        failure_count = self.failures[agent_name]
-
-        logger.warning(
-            f"Agent {agent_name} failure recorded "
-            f"({failure_count}/{self.failure_threshold})"
-        )
-
-        if failure_count >= self.failure_threshold:
-            self.open_until[agent_name] = datetime.now() + timedelta(
-                seconds=self.timeout
-            )
-            logger.error(
-                f"Circuit breaker OPENED for {agent_name} "
-                f"(timeout: {self.timeout}s)"
-            )
-
-    def record_success(self, agent_name: str):
-        """
-        Record agent success.
-
-        Closes circuit and resets failure count.
-
-        Args:
-            agent_name: Agent identifier
-        """
-        if agent_name in self.failures and self.failures[agent_name] > 0:
-            logger.info(f"Circuit breaker for {agent_name}: resetting failure count")
-            self.failures[agent_name] = 0
-
-        if agent_name in self.open_until:
-            logger.info(f"Circuit breaker for {agent_name}: HALF_OPEN → CLOSED")
-            del self.open_until[agent_name]
-
-    def get_status(self, agent_name: str) -> Dict[str, Any]:
-        """
-        Get circuit breaker status for agent.
-
-        Args:
-            agent_name: Agent identifier
-
-        Returns:
-            Dict with state, failures, and open_until (if applicable)
-        """
-        is_open = self.is_open(agent_name)
-        return {
-            "agent_name": agent_name,
-            "state": "OPEN" if is_open else "CLOSED",
-            "failures": self.failures.get(agent_name, 0),
-            "open_until": (
-                self.open_until[agent_name].isoformat()
-                if agent_name in self.open_until
-                else None
-            ),
-        }
-
-
-# ============================================================================
 # Agent Runtime
 # ============================================================================
 
@@ -180,7 +62,7 @@ class AgentRuntime:
         1. Register agents and build capability map
         2. Route capability requests to correct agent
         3. Inject dependencies (services, DB, Redis)
-        4. Manage circuit breakers for fault tolerance
+        4. Manage retries with exponential backoff for fault tolerance
         5. Preserve result metadata for tracing
         6. Enforce rights and add attributions (NEW)
     """
@@ -196,12 +78,15 @@ class AgentRuntime:
         self.services = services
         self.agents: Dict[str, BaseAgent] = {}
         self.capability_map: Dict[str, str] = {}  # capability → agent_name
-        self.circuit_breaker = CircuitBreaker()
 
         # Request-level capability cache
         # Format: {request_id: {cache_key: result}}
         self._request_caches: Dict[str, Dict[str, Any]] = {}
         self._cache_stats: Dict[str, Dict[str, int]] = {}  # {request_id: {hits: N, misses: N}}
+
+        # Retry configuration
+        self.max_retries = 3
+        self.retry_delays = [1, 2, 4]  # Exponential backoff: 1s, 2s, 4s
 
         # Rights enforcement
         self.enable_rights_enforcement = enable_rights_enforcement
@@ -385,7 +270,6 @@ class AgentRuntime:
             {
                 "name": agent.name,
                 "capabilities": agent.get_capabilities(),
-                "circuit_breaker": self.circuit_breaker.get_status(agent.name),
             }
             for agent in self.agents.values()
         ]
@@ -407,7 +291,12 @@ class AgentRuntime:
         **kwargs,
     ) -> Any:
         """
-        Route capability to correct agent and execute (with request-level caching).
+        Route capability to correct agent and execute with retry logic.
+
+        Implements simple retry mechanism with exponential backoff:
+        - 3 retries maximum
+        - Exponential backoff: 1s, 2s, 4s
+        - If all retries fail, raises the last exception
 
         Args:
             capability: Capability name (e.g., "ledger.positions")
@@ -420,8 +309,7 @@ class AgentRuntime:
 
         Raises:
             ValueError: If capability not registered
-            HTTPException: If circuit breaker is open (503)
-            Exception: If capability execution fails
+            Exception: If capability execution fails after all retries
         """
         agent_name = self.capability_map.get(capability)
         if not agent_name:
@@ -433,19 +321,6 @@ class AgentRuntime:
 
         agent = self.agents[agent_name]
 
-        # Check circuit breaker
-        if self.circuit_breaker.is_open(agent_name):
-            from fastapi import HTTPException, status
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail={
-                    "error": "CIRCUIT_BREAKER_OPEN",
-                    "message": f"Agent {agent_name} circuit breaker is open",
-                    "agent": agent_name,
-                    "capability": capability,
-                },
-            )
-
         # Check cache first
         cache_key = self._get_cache_key(capability, kwargs)
         cached_result = self._get_cached_result(ctx.request_id, cache_key)
@@ -456,66 +331,100 @@ class AgentRuntime:
             )
             return cached_result
 
-        # Execute capability (cache miss) with metrics tracking
+        # Execute capability with retry logic
         metrics = get_metrics()
         import time
-        agent_start_time = time.time()
-        agent_status = "success"
+        
+        last_exception = None
+        for attempt in range(self.max_retries + 1):
+            agent_start_time = time.time()
+            agent_status = "success"
+            
+            try:
+                if attempt > 0:
+                    logger.info(
+                        f"Retry attempt {attempt}/{self.max_retries} for {capability} "
+                        f"in {agent_name}"
+                    )
+                else:
+                    logger.debug(
+                        f"Routing {capability} to {agent_name} "
+                        f"(ctx.pricing_pack_id={ctx.pricing_pack_id})"
+                    )
 
-        try:
-            logger.debug(
-                f"Routing {capability} to {agent_name} "
-                f"(ctx.pricing_pack_id={ctx.pricing_pack_id})"
-            )
+                result = await agent.execute(capability, ctx, state, **kwargs)
 
-            result = await agent.execute(capability, ctx, state, **kwargs)
+                # Add attributions if rights enforcement enabled
+                if self.enable_rights_enforcement and self._attribution_manager:
+                    result = self._add_attributions(result)
 
-            # Add attributions if rights enforcement enabled
-            if self.enable_rights_enforcement and self._attribution_manager:
-                result = self._add_attributions(result)
+                # Cache the result
+                self._set_cached_result(ctx.request_id, cache_key, result)
 
-            # Cache the result
-            self._set_cached_result(ctx.request_id, cache_key, result)
+                # Record success metrics
+                if metrics:
+                    agent_duration = time.time() - agent_start_time
+                    metrics.agent_invocations.labels(
+                        agent_name=agent_name,
+                        capability=capability,
+                        status=agent_status,
+                    ).inc()
 
-            self.circuit_breaker.record_success(agent_name)
+                    metrics.agent_latency.labels(
+                        agent_name=agent_name,
+                        capability=capability,
+                    ).observe(agent_duration)
 
-            # Record circuit breaker state in metrics
-            if metrics:
-                cb_status = self.circuit_breaker.get_status(agent_name)
-                state_value = cb_status.get("state", "CLOSED")
-                metrics.record_circuit_breaker_state(agent_name, state_value)
+                return result
 
-            return result
+            except Exception as e:
+                agent_status = "error"
+                last_exception = e
+                
+                # Log the error with appropriate severity based on attempt
+                if attempt < self.max_retries:
+                    logger.warning(
+                        f"Capability {capability} failed in {agent_name} "
+                        f"(attempt {attempt + 1}/{self.max_retries + 1}): {e}"
+                    )
+                else:
+                    logger.error(
+                        f"Capability {capability} failed in {agent_name} "
+                        f"after {self.max_retries + 1} attempts: {e}",
+                        exc_info=True,
+                    )
+                
+                # Record failure metrics
+                if metrics:
+                    agent_duration = time.time() - agent_start_time
+                    metrics.agent_invocations.labels(
+                        agent_name=agent_name,
+                        capability=capability,
+                        status=agent_status,
+                    ).inc()
 
-        except Exception as e:
-            agent_status = "error"
-            self.circuit_breaker.record_failure(agent_name)
+                    metrics.agent_latency.labels(
+                        agent_name=agent_name,
+                        capability=capability,
+                    ).observe(agent_duration)
+                
+                # If this is not the last attempt, wait before retrying
+                if attempt < self.max_retries:
+                    delay = self.retry_delays[attempt]
+                    logger.info(
+                        f"Waiting {delay}s before retry for {capability} in {agent_name}"
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                
+                # If all retries failed, raise the last exception
+                raise
 
-            # Record circuit breaker state in metrics
-            if metrics:
-                cb_status = self.circuit_breaker.get_status(agent_name)
-                state_value = cb_status.get("state", "CLOSED")
-                metrics.record_circuit_breaker_state(agent_name, state_value)
-
-            logger.error(
-                f"Capability {capability} failed in {agent_name}: {e}",
-                exc_info=True,
-            )
-            raise
-        finally:
-            # Record agent invocation metrics
-            agent_duration = time.time() - agent_start_time
-            if metrics:
-                metrics.agent_invocations.labels(
-                    agent_name=agent_name,
-                    capability=capability,
-                    status=agent_status,
-                ).inc()
-
-                metrics.agent_latency.labels(
-                    agent_name=agent_name,
-                    capability=capability,
-                ).observe(agent_duration)
+        # This should never be reached, but just in case
+        if last_exception:
+            raise last_exception
+        else:
+            raise RuntimeError(f"Unexpected error in retry logic for {capability}")
 
     def _add_attributions(self, result: Any) -> Any:
         """
@@ -547,18 +456,6 @@ class AgentRuntime:
             logger.warning(f"Failed to add attributions: {e}", exc_info=True)
 
         return result
-
-    def get_circuit_breaker_status(self) -> Dict[str, Dict[str, Any]]:
-        """
-        Get circuit breaker status for all agents.
-
-        Returns:
-            Dict of agent_name → status
-        """
-        return {
-            agent_name: self.circuit_breaker.get_status(agent_name)
-            for agent_name in self.agents.keys()
-        }
 
 
 # ============================================================================
