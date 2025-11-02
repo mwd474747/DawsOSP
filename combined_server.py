@@ -1326,51 +1326,96 @@ async def refresh_token(request: Request):
         # Get the authorization header
         auth_header = request.headers.get("Authorization", "")
         
-        if not auth_header.startswith("Bearer "):
+        logger.info(f"Token refresh attempt - Authorization header present: {bool(auth_header)}")
+        
+        if not auth_header:
+            logger.warning("Token refresh failed: No Authorization header provided")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authorization header format"
+                detail="Authorization header not provided"
+            )
+        
+        if not auth_header.startswith("Bearer "):
+            logger.warning(f"Token refresh failed: Invalid header format: {auth_header[:20]}...")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authorization header format - expected 'Bearer <token>'"
             )
         
         # Extract token
         token = auth_header[7:]  # Remove "Bearer " prefix
         
         if not token:
+            logger.warning("Token refresh failed: Empty token after Bearer prefix")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token not provided"
+                detail="Token not provided after Bearer prefix"
             )
         
-        # Decode token without verification to get user info
-        # In production, you might want to verify with a grace period
+        logger.debug(f"Token refresh: Token extracted successfully (length: {len(token)})")
+        
+        # Decode token - handle expired tokens within grace period
+        payload = None
+        token_status = "valid"
+        
         try:
             # First try normal verification
             payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        except jwt.ExpiredSignatureError:
+            logger.info("Token refresh: Token is valid and not expired")
+            
+        except jwt.ExpiredSignatureError as e:
             # Token expired, but we allow refresh within reasonable time
-            # Decode without verification to get the payload
+            logger.info("Token refresh: Token is expired, checking grace period")
+            
             try:
-                payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM], options={"verify_signature": True, "verify_exp": False})
+                # Decode without expiration check but still verify signature
+                payload = jwt.decode(
+                    token, 
+                    JWT_SECRET, 
+                    algorithms=[JWT_ALGORITHM], 
+                    options={"verify_signature": True, "verify_exp": False}
+                )
                 
                 # Check if token expired more than 7 days ago (grace period)
                 exp_timestamp = payload.get("exp", 0)
                 current_timestamp = datetime.utcnow().timestamp()
-                if current_timestamp - exp_timestamp > (7 * 24 * 3600):  # 7 days
+                time_since_expiry = current_timestamp - exp_timestamp
+                
+                logger.info(f"Token refresh: Token expired {time_since_expiry / 3600:.1f} hours ago")
+                
+                if time_since_expiry > (7 * 24 * 3600):  # 7 days
+                    logger.warning(f"Token refresh failed: Token expired beyond 7-day grace period ({time_since_expiry / 86400:.1f} days)")
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Token expired beyond refresh window"
+                        detail=f"Token expired beyond refresh window ({time_since_expiry / 86400:.1f} days ago)"
                     )
-            except Exception as e:
-                logger.error(f"Token decode error during refresh: {e}")
+                
+                token_status = f"expired_but_valid (expired {time_since_expiry / 3600:.1f} hours ago)"
+                
+            except jwt.InvalidTokenError as decode_error:
+                logger.error(f"Token refresh failed: Could not decode expired token - {decode_error}")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token"
+                    detail=f"Invalid token signature: {str(decode_error)}"
                 )
+            except Exception as e:
+                logger.error(f"Token refresh failed: Unexpected error during expired token decode - {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Token validation error"
+                )
+                
         except jwt.InvalidTokenError as e:
-            logger.error(f"Invalid token during refresh: {e}")
+            logger.error(f"Token refresh failed: Invalid token - {e}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
+                detail=f"Invalid token: {str(e)}"
+            )
+        except Exception as e:
+            logger.error(f"Token refresh failed: Unexpected error during token decode - {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Token processing error"
             )
         
         # Extract user info from payload
@@ -1378,14 +1423,24 @@ async def refresh_token(request: Request):
         email = payload.get("email")
         role = payload.get("role")
         
+        logger.debug(f"Token refresh: Extracted user info - email={email}, role={role}, status={token_status}")
+        
         if not all([user_id, email, role]):
+            missing_fields = []
+            if not user_id: missing_fields.append("sub")
+            if not email: missing_fields.append("email")
+            if not role: missing_fields.append("role")
+            
+            logger.error(f"Token refresh failed: Incomplete payload - missing fields: {missing_fields}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incomplete token payload"
+                detail=f"Incomplete token payload - missing: {', '.join(missing_fields)}"
             )
         
         # Create a new JWT token with fresh expiration
         new_token = create_jwt_token(user_id, email, role)
+        
+        logger.info(f"Token refresh successful for user: {email} (previous token status: {token_status})")
         
         # Return the new token in the same format as login
         return {
@@ -1402,7 +1457,7 @@ async def refresh_token(request: Request):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Token refresh error: {e}")
+        logger.error(f"Token refresh unexpected error: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Token refresh service error"

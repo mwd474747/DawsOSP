@@ -43,22 +43,33 @@
         // Perform token refresh
         async performTokenRefresh() {
             try {
+                const currentToken = this.getToken();
+                if (!currentToken) {
+                    console.error('No token available for refresh');
+                    return null;
+                }
+                
+                // Send the current token in the Authorization header for refresh
                 const response = await axios.post(`${API_BASE}/api/auth/refresh`, {}, {
                     headers: {
                         'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
                     },
-                    // Don't use interceptors for refresh request
+                    // Skip the default interceptor to prevent infinite loop
                     transformRequest: [(data, headers) => {
-                        delete headers.Authorization;
+                        // Keep the Authorization header for refresh
                         return JSON.stringify(data);
-                    }]
+                    }],
+                    // Don't trigger retry logic for refresh itself
+                    _retryCount: retryConfig.maxRetries
                 });
                 
                 const { access_token } = response.data;
                 this.setToken(access_token);
+                console.log('Token refreshed successfully');
                 return access_token;
             } catch (error) {
-                console.error('Token refresh failed:', error);
+                console.error('Token refresh failed:', error.response?.data || error.message);
                 return null;
             }
         },
