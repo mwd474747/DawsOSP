@@ -620,10 +620,66 @@ async def get_user_transactions(user_email: str) -> Optional[List[asyncpg.Record
 
     return await execute_query_safe(query, user_email)
 
-async def store_macro_indicators(indicators: Dict[str, Any]) -> bool:
-    """Store macro indicators in database with proper error handling"""
+async def store_macro_indicators(indicators: Dict[str, Any], apply_transformation: bool = True) -> bool:
+    """Store macro indicators in database with proper error handling and transformation"""
     if not db_pool or not indicators:
         return False
+    
+    # Import transformation service
+    from backend.app.services.fred_transformation import get_transformation_service
+    
+    # Apply transformations if needed
+    if apply_transformation:
+        transformation_service = get_transformation_service()
+        transformed_indicators = {}
+        
+        # Map common indicator names to their FRED series IDs
+        series_mapping = {
+            'gdp_growth': 'A191RL1Q225SBEA',
+            'inflation': 'CPIAUCSL',
+            'unemployment': 'UNRATE',
+            'interest_rate': 'DFF',
+            'debt_to_gdp': 'GFDEGDQ188S',
+            'fiscal_deficit': 'FYFSGDA188S',
+            'yield_curve': 'T10Y2Y',
+            'industrial_production': 'INDPRO',
+            'manufacturing_pmi': 'NAPM',
+            'credit_growth': 'TOTBKCR',
+            'debt_service_ratio': 'TDSP',
+            'trade_balance': 'NETEXP',
+            'productivity_growth': 'PRS85006092'
+        }
+        
+        for indicator_name, value in indicators.items():
+            if isinstance(value, (int, float)):
+                # Get the FRED series ID for this indicator
+                series_id = series_mapping.get(indicator_name)
+                
+                if series_id and series_id in transformation_service.SERIES_TRANSFORMATIONS:
+                    # Apply the appropriate transformation
+                    transform_info = transformation_service.SERIES_TRANSFORMATIONS[series_id]
+                    transform_type = transform_info['transform']
+                    
+                    # Apply basic transformations that don't need historical data
+                    if transform_type == 'percent_to_decimal':
+                        transformed_value = value / 100.0
+                    elif transform_type == 'percent_to_decimal_signed':
+                        transformed_value = value / 100.0
+                    elif transform_type == 'index_keep':
+                        transformed_value = value
+                    else:
+                        # For complex transformations, keep the raw value but log it
+                        transformed_value = value
+                        logger.warning(f"Complex transformation needed for {indicator_name} ({series_id}): {transform_type}")
+                    
+                    transformed_indicators[indicator_name] = transformed_value
+                    logger.info(f"Transformed {indicator_name}: {value} → {transformed_value}")
+                else:
+                    # No transformation needed or defined
+                    transformed_indicators[indicator_name] = value
+        
+        # Use transformed values
+        indicators = transformed_indicators
 
     # Create mapping of indicator IDs to human-readable names
     indicator_names = {

@@ -42,6 +42,7 @@ from typing import Optional
 
 from app.integrations.fred_provider import FREDProvider
 from app.services.macro import get_macro_service, Regime
+from app.services.fred_transformation import get_transformation_service
 from app.db.connection import get_db_pool
 
 logger = logging.getLogger("DawsOS.MacroJob")
@@ -87,6 +88,35 @@ async def fetch_indicators_job(
 
         total_fetched = sum(len(obs) for obs in results.values())
         logger.info(f"Fetched {total_fetched} total observations across all indicators")
+
+        # Apply transformations to the fetched data
+        transformation_service = get_transformation_service()
+        logger.info("Applying FRED data transformations...")
+        
+        # Transform and store the data with proper scaling
+        for series_id, observations in results.items():
+            if observations:
+                # Get the last observation for logging
+                last_obs = observations[-1]
+                raw_value = last_obs.value
+                
+                # Apply transformation
+                historical_values = [{'date': obs.date.isoformat(), 'value': obs.value} 
+                                   for obs in observations[:-1]]
+                
+                transformed_value = transformation_service.transform_fred_value(
+                    series_id=series_id,
+                    value=raw_value,
+                    date_str=last_obs.date.isoformat(),
+                    historical_values=historical_values
+                )
+                
+                if transformed_value is not None:
+                    indicator_name = transformation_service.get_indicator_name(series_id)
+                    logger.info(f"Transformed {series_id} ({indicator_name}): {raw_value:.2f} → {transformed_value:.4f}")
+                    
+                    # Update the observation with transformed value
+                    last_obs.value = transformed_value
 
         return results
 

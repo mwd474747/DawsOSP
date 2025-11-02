@@ -2,7 +2,7 @@
 Macro Regime Detection Service
 
 Purpose: Detect macro economic regimes from indicators (Dalio-inspired methodology)
-Updated: 2025-10-23
+Updated: 2025-11-02
 Priority: P0 (Critical for risk management)
 
 Features:
@@ -11,6 +11,7 @@ Features:
     - FRED API integration for real-time indicators
     - Probabilistic regime classification (not binary)
     - Historical regime tracking and transitions
+    - FRED data transformation for consistent units
 
 Regimes:
     1. EARLY_EXPANSION: Recovery phase, yield curve steepening, unemployment falling
@@ -29,7 +30,7 @@ Z-Score Calculation:
     z = (value - rolling_mean_252d) / rolling_std_252d
 
 Architecture:
-    FRED API → MacroService → RegimeDetector → Database
+    FRED API → MacroService → FREDTransformation → RegimeDetector → Database
 
 Usage:
     from app.providers.fred_client import get_fred_client
@@ -57,6 +58,7 @@ import statistics
 
 from app.db.connection import execute_query, execute_statement, execute_query_one
 from app.integrations.fred_provider import FREDProvider
+from app.services.fred_transformation import FREDTransformationService
 
 logger = logging.getLogger("DawsOS.MacroService")
 
@@ -443,6 +445,7 @@ class MacroService:
             fred_client = FREDProvider(api_key=api_key)
         self.fred_client = fred_client
         self.detector = RegimeDetector()
+        self.transformation_service = FREDTransformationService()
 
     async def get_latest_indicator(self, indicator_id: str) -> Optional[MacroIndicator]:
         """
@@ -560,26 +563,70 @@ class MacroService:
 
                 # Convert to MacroIndicator objects
                 indicators = []
+                # Store all observations for YoY calculations
+                historical_values = []
+                
                 for obs in observations:
                     # Skip missing values
                     if obs.get("value") == ".":
                         continue
 
                     try:
-                        value = float(obs["value"])
+                        raw_value = float(obs["value"])
                         obs_date = datetime.strptime(obs["date"], "%Y-%m-%d").date()
+                        
+                        # Add to historical values for transformation context
+                        historical_values.append({
+                            'date': obs["date"],
+                            'value': raw_value
+                        })
+                        
+                    except (ValueError, KeyError) as e:
+                        logger.warning(
+                            f"Skipping invalid observation for {indicator_id}: {e}"
+                        )
+                        continue
+                
+                # Now process all observations with transformation
+                for i, obs in enumerate(observations):
+                    # Skip missing values
+                    if obs.get("value") == ".":
+                        continue
+
+                    try:
+                        raw_value = float(obs["value"])
+                        obs_date = datetime.strptime(obs["date"], "%Y-%m-%d").date()
+                        
+                        # Apply transformation using historical context
+                        # (excluding current value from historical for YoY calculations)
+                        historical_for_transform = historical_values[:i]
+                        
+                        transformed_value = self.transformation_service.transform_fred_value(
+                            series_id=indicator_id,
+                            value=raw_value,
+                            date_str=obs["date"],
+                            historical_values=historical_for_transform if len(historical_for_transform) > 0 else None
+                        )
+                        
+                        # Use transformed value if available, otherwise use raw value
+                        final_value = transformed_value if transformed_value is not None else raw_value
+                        
+                        if transformed_value is not None and abs(transformed_value - raw_value) > 0.001:
+                            logger.debug(
+                                f"Transformed {indicator_id} on {obs_date}: {raw_value:.4f} → {final_value:.6f}"
+                            )
 
                         indicator = MacroIndicator(
                             indicator_id=indicator_id,
                             indicator_name=indicator_name,
                             date=obs_date,
-                            value=value,
+                            value=final_value,
                             source="FRED",
                         )
 
                         indicators.append(indicator)
 
-                        # Store in database
+                        # Store in database with transformed value
                         await self.store_indicator(indicator)
 
                     except (ValueError, KeyError) as e:
