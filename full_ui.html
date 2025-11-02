@@ -9312,10 +9312,10 @@
                                         security_id: securityId
                                     });
                                     
-                                    if (result.success && result.data) {
+                                    if (result.status === 'success' && result.data) {
                                         return { symbol, rating: parseBuffettResults(result.data, symbol) };
                                     } else {
-                                        console.warn(`Failed to get rating for ${symbol}:`, result.error);
+                                        console.warn(`Failed to get rating for ${symbol}:`, result.error || result);
                                         return { symbol, rating: getFallbackRating(symbol) };
                                     }
                                 } catch (err) {
@@ -9348,9 +9348,10 @@
                 
                 const parseBuffettResults = (data, symbol) => {
                     // Parse the pattern result into rating format
-                    const moatScore = data.moat_strength?.overall_score || data.moat_strength?.moat_score || 0;
-                    const dividendScore = data.dividend_safety?.overall_score || 0;
-                    const resilienceScore = data.resilience?.overall_score || 0;
+                    // API returns 'overall' field, not 'overall_score'
+                    const moatScore = parseFloat(data.moat_strength?.overall) || parseFloat(data.moat_strength?.score) || 0;
+                    const dividendScore = parseFloat(data.dividend_safety?.overall) || parseFloat(data.dividend_safety?.score) || 0;
+                    const resilienceScore = parseFloat(data.resilience?.overall) || parseFloat(data.resilience?.score) || 0;
                     
                     // Calculate overall score as average
                     const scores = [moatScore];
@@ -9433,7 +9434,7 @@
                                     security_id: securityId
                                 });
                                 
-                                if (result.success && result.data) {
+                                if (result.status === 'success' && result.data) {
                                     const parsed = parseBuffettResults(result.data, symbol);
                                     setDetailedRating(parsed);
                                 }
