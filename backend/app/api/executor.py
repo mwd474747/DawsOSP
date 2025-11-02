@@ -173,21 +173,24 @@ def get_pattern_orchestrator() -> PatternOrchestrator:
 
 logger = logging.getLogger("DawsOS.Executor")
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="DawsOS Executor API",
+# Create executor app with a different name to avoid conflicts with combined_server.py
+# This app is only used when executor.py is run directly as a standalone service
+executor_app = FastAPI(
+    title="DawsOS Executor API", 
     version="1.0.0",
     description="Pattern execution API with JWT authentication and freshness gate",
 )
 
 # Include auth routes
 from app.api.routes.auth import router as auth_router
-app.include_router(auth_router)
+executor_app.include_router(auth_router)
 logger.info("✅ Auth routes registered at /auth")
 
-print("=" * 80)
-print("FASTAPI APP CREATED - Setting up DB middleware")
-print("=" * 80)
+# Only print when running as main module
+if __name__ == "__main__":
+    print("=" * 80)
+    print("EXECUTOR APP CREATED - Setting up DB middleware")
+    print("=" * 80)
 
 
 # ============================================================================
@@ -238,17 +241,17 @@ class DBInitMiddleware(BaseHTTPMiddleware):
         return response
 
 
-# Add middleware to app
-app.add_middleware(DBInitMiddleware)
-
-print("✅ DB Init Middleware registered")
+# Add middleware to executor app
+executor_app.add_middleware(DBInitMiddleware)
+if __name__ == "__main__":
+    print("✅ DB Init Middleware registered")
 
 
 # ============================================================================
 # Startup/Shutdown Events (keeping for compatibility)
 # ============================================================================
 
-@app.on_event("startup")
+@executor_app.on_event("startup")
 async def startup_event():
     """Initialize database pool and other resources on startup."""
     from app.db.connection import init_db_pool
@@ -281,7 +284,7 @@ async def startup_event():
         raise
 
 
-@app.on_event("shutdown")
+@executor_app.on_event("shutdown")
 async def shutdown_event():
     """Close database pool and other resources on shutdown."""
     from app.db.connection import close_db_pool
@@ -366,7 +369,7 @@ class ErrorResponse(BaseModel):
 # ============================================================================
 
 
-@app.get("/metrics")
+@executor_app.get("/metrics")
 async def metrics_endpoint():
     """
     Prometheus metrics endpoint.
@@ -384,7 +387,7 @@ async def metrics_endpoint():
 # ============================================================================
 
 
-@app.post(
+@executor_app.post(
     "/v1/execute",
     response_model=ExecuteResponse,
     responses={
@@ -801,7 +804,7 @@ async def _execute_pattern_internal(
 # ============================================================================
 
 
-@app.exception_handler(HTTPException)
+@executor_app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc: HTTPException):
     """Custom error handler for HTTPException."""
     return JSONResponse(
@@ -815,13 +818,13 @@ async def http_exception_handler(request, exc: HTTPException):
 # ============================================================================
 
 
-@app.get("/health")
+@executor_app.get("/health")
 async def health_check():
     """Basic health check endpoint."""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
-@app.get("/health/pack")
+@executor_app.get("/health/pack")
 async def health_pack():
     """
     Pricing pack health check endpoint.
@@ -916,4 +919,4 @@ async def health_pack():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(executor_app, host="0.0.0.0", port=8000)
