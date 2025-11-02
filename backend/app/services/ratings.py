@@ -581,8 +581,8 @@ class RatingsService:
 
         Aggregation Weights:
             - moat_strength: 40% (competitive advantage is paramount)
-            - resilience: 35% (financial strength during downturns)
-            - dividend_safety: 25% (income reliability)
+            - dividend_safety: 30% (income reliability)
+            - resilience: 30% (financial strength during downturns)
 
         Args:
             symbol: Security symbol
@@ -600,36 +600,6 @@ class RatingsService:
                 - security_id: Optional[UUID]
         """
         
-        # Return mock data for testing when use_db=False
-        if not self.use_db:
-            return {
-                "overall_rating": Decimal("75.0"),
-                "overall_grade": "B",
-                "moat": {
-                    "overall": Decimal("7.5"),
-                    "roe_consistency": Decimal("8.0"),
-                    "gross_margin": Decimal("7.0"),
-                    "intangibles": Decimal("7.5"),
-                    "switching_cost_score": Decimal("7.0")
-                },
-                "resilience": {
-                    "overall": Decimal("7.0"),
-                    "debt_equity": Decimal("7.5"),
-                    "current_ratio": Decimal("6.5"),
-                    "interest_coverage": Decimal("7.0"),
-                    "margin_stability": Decimal("7.0")
-                },
-                "dividend": {
-                    "overall": Decimal("7.5"),
-                    "fcf_coverage": Decimal("8.0"),
-                    "payout_ratio": Decimal("7.0"),
-                    "growth_streak": Decimal("7.5"),
-                    "net_cash": Decimal("7.0")
-                },
-                "symbol": symbol,
-                "security_id": security_id
-            }
-        
         # Calculate individual ratings (0-10 scale)
         moat_result = await self.calculate_moat_strength(symbol, fundamentals)
         resilience_result = await self.calculate_resilience(symbol, fundamentals)
@@ -640,11 +610,11 @@ class RatingsService:
         resilience_100 = resilience_result["overall"] * Decimal("10")
         dividend_100 = dividend_result["overall"] * Decimal("10")
 
-        # Aggregate with weights (moat 40%, resilience 35%, dividend 25%)
+        # Aggregate with weights (moat 40%, dividend 30%, resilience 30%)
         overall_rating = (
             moat_100 * Decimal("0.40")
-            + resilience_100 * Decimal("0.35")
-            + dividend_100 * Decimal("0.25")
+            + dividend_100 * Decimal("0.30")
+            + resilience_100 * Decimal("0.30")
         )
 
         # Convert to letter grade
@@ -665,8 +635,8 @@ class RatingsService:
             "security_id": str(security_id) if security_id else None,
             "aggregation_weights": {
                 "moat_strength": Decimal("0.40"),
-                "resilience": Decimal("0.35"),
-                "dividend_safety": Decimal("0.25"),
+                "dividend_safety": Decimal("0.30"),
+                "resilience": Decimal("0.30"),
             },
             "moat": moat_result,
             "resilience": resilience_result,
