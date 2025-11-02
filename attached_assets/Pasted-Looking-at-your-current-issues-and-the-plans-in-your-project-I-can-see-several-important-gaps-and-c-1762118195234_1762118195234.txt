@@ -1,0 +1,109 @@
+Looking at your current issues and the plans in your project, I can see several important gaps and considerations:
+
+Current Issues Analysis
+Based on the console logs, you're experiencing:
+
+Circuit breaker opening for macro_hound agent
+Database pool initialization failures ('NoneType' object has no attribute 'get_pool')
+Intermittent pool availability (sometimes works, sometimes fails)
+Plan Review Against Current Issues
+✅ ROADMAP.md - Addresses Some Issues
+The roadmap documents completed Phase 0-5 cleanup but doesn't address:
+
+Database pool initialization race conditions (your current P1 issue)
+Circuit breaker tuning (opening too easily)
+Data quality issues (cycle detection returning 0.0 scores)
+⚠️ PLAN_3_BACKEND_REFACTORING_REVALIDATED.md - NOT Addressing Current Issues
+This plan focuses on:
+
+Extracting combined_server.py into modular structure
+Creating routers and agent factory
+Parallel operation testing
+What it MISSES:
+
+The database pool initialization race condition you're experiencing NOW
+The circuit breaker sensitivity problem
+No mention of the middleware solution already in backend/app/api/executor.py
+Critical Gap: The plan says "ensure DBInitMiddleware is active in combined_server.py" but doesn't verify if it actually is. Looking at your logs, the middleware is NOT being used.
+
+⚠️ LOW_RISK_REFACTORING_OPPORTUNITIES_V2.md - Wrong Focus
+This plan focuses on:
+
+Removing duplicate /execute endpoint
+Extracting constants
+Authentication refactoring
+What it MISSES:
+
+Your database pool issues are NOT addressed
+Circuit breaker problems are NOT addressed
+These are code organization issues, not runtime stability issues
+❌ METRICS_IMPLEMENTATION_PLAN.md - Outdated
+This plan has:
+
+Phase 0 for UI transaction integration (may be partially done based on logs showing transactions work)
+Creates new tables (portfolio_daily_values, portfolio_cash_flows)
+Focuses on TWR/MWR metrics
+What it MISSES:
+
+Your current macro cycle detection issues (0.0 composite scores)
+Database pool initialization problems
+The plan assumes database is stable, but logs show it's not
+🔴 Missing Plans
+No plan addresses these CRITICAL issues from your assessment:
+
+Database Pool Registration Timing (P0)
+Your logs show: "Database pool not initialized. Call init_db_pool() in startup event."
+The cross-module storage works SOMETIMES but fails intermittently
+Root cause: Race condition between startup and first request
+Solution needed: Ensure DBInitMiddleware runs OR add retry logic
+Circuit Breaker Sensitivity (P1)
+Threshold: 5 failures in 60 seconds
+Opens too easily when database pool fails
+Solution needed: Separate circuit breaker for infrastructure vs agent logic failures
+Macro Cycle Data Quality (P1)
+Composite scores of 0.0 indicate algorithms aren't working
+Only 10 indicators from DB, but detectors need many more
+Solution needed: Seed macro indicators table properly
+Derived Indicators Missing (P1)
+Need: UNRATE_change, INDPRO_change, PAYEMS_change, real_interest_rate
+Current: Only base indicators, no calculations
+Solution needed: Implement indicator derivation in get_latest_indicators()
+Recommendations
+Immediate Actions (Not in Any Plan)
+Fix Database Pool Initialization (P0)
+Verify DBInitMiddleware is actually imported and registered in combined_server.py
+If not, add it as middleware
+OR add retry logic in get_db_pool() to wait for pool registration
+Circuit Breaker Tuning (P1)
+Increase threshold from 5 to 10 failures
+OR increase timeout from 60s to 120s
+OR create separate thresholds for infrastructure failures
+Seed Macro Indicators (P1)
+Run backend/jobs/compute_macro.py to populate missing indicators
+Verify FRED API integration is working
+Add derived indicator calculations
+Plans Need Updates
+ROADMAP.md should add:
+
+P0: Fix database pool initialization race condition
+P1: Tune circuit breaker for production reliability
+P1: Seed macro indicator data
+PLAN_3_BACKEND_REFACTORING should be DEFERRED until:
+
+Database pool is stable
+Circuit breaker is tuned
+Macro data is properly seeded
+A NEW PLAN IS NEEDED for:
+
+Database pool initialization robustness
+Circuit breaker configuration
+Macro indicator seeding and derivation
+Summary
+What's Being Addressed: Code organization, refactoring, complexity reduction
+
+What's NOT Being Addressed:
+
+Your actual runtime stability issues (database pool, circuit breaker)
+Data quality issues (missing indicators, 0.0 scores)
+The fact that system works sometimes but fails intermittently
+The plans focus on nice-to-have improvements but miss must-fix stability issues that are preventing your system from working reliably.
