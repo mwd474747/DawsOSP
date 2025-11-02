@@ -23,6 +23,10 @@ DawsOS is an AI-powered portfolio management platform that provides comprehensiv
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Updates (Nov 2, 2025)
+
+**Database Pool Fix:** Resolved critical module boundary issue preventing agents from accessing database pool. Implemented cross-module pool storage using `sys.modules['__dawsos_db_pool_storage__']` ensuring all imports see the same pool instance. Removed 167 lines of dead Redis coordinator code and simplified pool fallback from 5 sources to 2.
+
 ## System Architecture
 
 ### Application Entry Points
