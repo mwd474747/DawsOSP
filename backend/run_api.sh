@@ -2,7 +2,11 @@
 
 # DawsOS Backend API Launcher
 # Purpose: Start the Executor API on port 8000
-# Updated: 2025-10-23
+# Updated: 2025-11-02
+#
+# NOTE: This script is OPTIONAL for Replit deployment.
+# On Replit, use `python combined_server.py` directly.
+# This script is for local development with Docker.
 
 set -e
 

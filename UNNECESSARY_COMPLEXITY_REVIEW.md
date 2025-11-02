@@ -1,6 +1,18 @@
 # Unnecessary Complexity Review
-**Generated:** 2025-01-26  
+**Generated:** 2025-01-26
+**Updated:** 2025-11-02 (Docker infrastructure removed)
 **Purpose:** Identify patterns, abstractions, and code designs unnecessary for alpha stage
+
+---
+
+## ✅ UPDATE: Docker Infrastructure Removed (Nov 2, 2025)
+
+As part of the transition to Replit-first deployment, all Docker Compose infrastructure has been removed:
+- ✅ All docker-compose files DELETED
+- ✅ All Dockerfile files DELETED
+- ✅ deploy.sh and start.sh DELETED
+
+**Remaining Work:** Remove Redis coordinator code, observability stack, and compliance modules.
 
 ---
 
@@ -10,7 +22,8 @@ This review identifies **over-engineered patterns** and **premature optimization
 
 **Key Findings:**
 - ✅ **Core patterns are necessary** (Pattern Orchestrator, Agent Runtime)
-- ⚠️ **Infrastructure patterns are premature** (Redis, Circuit Breakers, Observability)
+- ✅ **RESOLVED: Docker infrastructure removed** (Replit-first deployment)
+- ⚠️ **Infrastructure patterns are premature** (Redis coordinator, Circuit Breakers, Observability)
 - ⚠️ **Compliance features are over-engineered** (Rights, Attribution, Watermarking)
 - ⚠️ **Caching complexity is premature** (Request-level caching, Stats tracking)
 - ⚠️ **Tracing infrastructure is not needed** (OpenTelemetry, Jaeger, Sentry)
@@ -19,35 +32,31 @@ This review identifies **over-engineered patterns** and **premature optimization
 
 ## 1. Infrastructure Patterns (Unnecessary for Alpha)
 
-### 🔴 Redis Infrastructure (High Complexity, No Value)
+### 🟡 Redis Infrastructure (Partially Removed)
 
-**Current State:**
-- `backend/app/db/redis_pool_coordinator.py` - Redis pool coordinator
-- `docker-compose.yml` - Redis service defined
-- `backend/requirements.txt` - Redis dependency
-- Multiple `TODO: Wire real Redis` comments throughout codebase
-- Redis references in `combined_server.py`, `executor.py`, `agent_runtime.py`
+**✅ COMPLETED:**
+- ✅ All Docker Compose files deleted (docker-compose.yml, etc.)
+- ✅ Docker infrastructure removed
+
+**⏳ REMAINING WORK:**
+- ⚠️ `backend/app/db/redis_pool_coordinator.py` - Still exists, needs removal
+- ⚠️ `backend/requirements.txt` - May still have Redis dependency
+- ⚠️ Multiple `TODO: Wire real Redis` comments throughout codebase
+- ⚠️ Redis references in `combined_server.py`, `executor.py`, `agent_runtime.py` with `redis: None`
 
 **Evidence:**
 - Redis is **not actually used** - all `redis: None` in code
-- `ARCHITECTURE_DECISIONS.md` ADR-001 says: "Remove Redis dependency for pool coordination"
-- Docker compose has Redis but it's **failing in deployment**
 - All caching is in-memory, not Redis-backed
-
-**Impact:**
-- Adds infrastructure complexity (extra service to manage)
-- Code references Redis but doesn't use it (confusing)
-- Docker compose fails if Redis unavailable
-- Maintenance burden for unused code
+- Docker Compose infrastructure removed (Replit deployment)
 
 **Recommendation:**
-- ❌ **Remove** Redis from `docker-compose.yml`
-- ❌ **Remove** `redis_pool_coordinator.py` (not needed for monolith)
-- ❌ **Remove** `redis` dependency from `requirements.txt`
+- ✅ Docker infrastructure removed
+- ❌ **Remove** `redis_pool_coordinator.py` (Phase 1 of cleanup)
+- ❌ **Remove** `redis` dependency from `requirements.txt` (Phase 3)
 - ❌ **Remove** all `redis: None` parameters and Redis TODOs
 - ✅ Keep in-memory caching (simpler, sufficient for alpha)
 
-**Complexity Saved:** ~500 lines of code, 1 service, maintenance overhead
+**Complexity Saved:** ~500 lines of code (Docker removed, coordinator code remains)
 
 ---
 
@@ -110,36 +119,39 @@ This review identifies **over-engineered patterns** and **premature optimization
 
 ## 2. Observability Infrastructure (Not Needed for Alpha)
 
-### 🔴 Full Observability Stack (Over-Engineered)
+### 🟡 Full Observability Stack (Partially Removed)
 
-**Current State:**
-- `backend/observability/` - Full observability module
+**✅ COMPLETED:**
+- ✅ `docker-compose.observability.yml` - DELETED
+- ✅ Docker infrastructure for Jaeger/Prometheus removed
+
+**⏳ REMAINING WORK:**
+- ⚠️ `backend/observability/` - Full observability module still exists
   - `tracing.py` - OpenTelemetry distributed tracing
   - `metrics.py` - Prometheus metrics collection
   - `errors.py` - Sentry error capture
-- `docker-compose.observability.yml` - Jaeger, Prometheus stack
-- `observability/otel/otel-collector-config.yml` - OpenTelemetry collector config
+- ⚠️ `observability/otel/otel-collector-config.yml` - May still exist
+- ⚠️ Observability imports in `backend/app/api/executor.py` (test server)
 
 **Evidence:**
 - Only used in `backend/app/api/executor.py` (test server, not production)
 - `combined_server.py` doesn't use observability
-- No Jaeger/Sentry infrastructure running
+- No Jaeger/Sentry infrastructure running (Docker removed)
 - All observability is **optional** and gracefully degrades
 
 **Impact:**
-- Adds ~500+ lines of observability infrastructure code
-- Requires external services (Jaeger, Prometheus, Sentry)
-- Configuration complexity (otel-collector config)
+- Adds ~500+ lines of observability infrastructure code (module still exists)
+- External services removed (Docker infrastructure deleted)
 - Maintenance burden for unused features
 
 **Recommendation:**
-- ❌ **Remove** `backend/observability/` module (not used in production)
-- ❌ **Remove** observability imports from `executor.py` (test server)
-- ❌ **Remove** `docker-compose.observability.yml`
-- ❌ **Remove** OpenTelemetry collector config
+- ✅ Docker infrastructure removed
+- ❌ **Remove** `backend/observability/` module (Phase 1 of cleanup)
+- ❌ **Remove** observability imports from `executor.py` (Phase 2)
+- ❌ **Remove** OpenTelemetry collector config (if exists)
 - ✅ Keep simple logging (already sufficient for alpha)
 
-**Complexity Saved:** ~500 lines, 3 services, config files
+**Complexity Saved:** ~500 lines (Docker removed, module code remains)
 
 ---
 

@@ -43,12 +43,13 @@
 
 ---
 
-### Plan 2: Complexity Reduction ⏳ PLANNED (Awaiting Approval)
-**Status:** Analyzed, not started
+### Plan 2: Complexity Reduction ⏳ IN PROGRESS
+**Status:** Phase 0 pending, Docker infrastructure removed
 **Goal:** Remove ~2100 lines of unused code
 **Documents:** UNNECESSARY_COMPLEXITY_REVIEW.md, SANITY_CHECK_REPORT.md
 
-**⚠️ CRITICAL: Must follow Phase 0 → 6 order**
+**✅ COMPLETED:** Docker Compose files removed (docker-compose.yml, etc.)
+**⚠️ CRITICAL: Must follow Phase 0 → 5 order**
 
 #### Phase 0: Make Code Resilient (MUST DO FIRST)
 **Effort:** 2 hours
@@ -112,51 +113,34 @@
 
 ---
 
-#### Phase 2: Update Deployment Configuration
+#### Phase 2: Update Scripts and Documentation
 **Effort:** 30 minutes
 **Dependencies:** Must complete Phase 1 first
 
 **Tasks:**
-1. Update deployment documentation
-   - Remove Docker references
-   - Update for Replit deployment
-2. Test application startup
+1. Update `backend/run_api.sh`:
+   - Remove `REDIS_URL` export (if present)
+   - Remove Redis URL display (if present)
+   - Remove Docker Compose references
+2. Update analysis documents:
+   - Mark Docker-related issues as RESOLVED in SANITY_CHECK_REPORT.md
+   - Update UNNECESSARY_COMPLEXITY_REVIEW.md status
 
 **Files to Update:**
-- `DEPLOYMENT.md`
-- `README.md`
-- Any deployment scripts
+- `backend/run_api.sh`
+- `SANITY_CHECK_REPORT.md`
+- `UNNECESSARY_COMPLEXITY_REVIEW.md`
 
 **Verification:**
-- [ ] Application starts successfully
-- [ ] Backend service runs
-- [ ] No dependency errors
+- [ ] `./backend/run_api.sh` works (or document that it's not needed for Replit)
+- [ ] Documentation reflects Replit-first deployment
+- [ ] No references to removed Docker files
 
 ---
 
-#### Phase 3: Update Scripts
-**Effort:** 30 minutes
-**Dependencies:** Must complete Phase 2 first
-
-**Tasks:**
-1. Update `start.sh`:
-   - Change `docker compose up -d postgres redis` → `docker compose up -d postgres`
-2. Update `deploy.sh`:
-   - Remove observability mode handling (lines 48-49, 76-79)
-3. Update `run_api.sh`:
-   - Remove `REDIS_URL` export (line 100)
-   - Remove Redis URL display (line 110)
-
-**Verification:**
-- [ ] `./start.sh` works
-- [ ] `./deploy.sh` works
-- [ ] `./backend/run_api.sh` works
-
----
-
-#### Phase 4: Clean Requirements
+#### Phase 3: Clean Requirements
 **Effort:** 15 minutes
-**Dependencies:** Must complete Phase 3 first
+**Dependencies:** Must complete Phase 2 first
 
 **Tasks:**
 1. Edit `backend/requirements.txt`:
@@ -176,9 +160,9 @@
 
 ---
 
-#### Phase 5: Simplify CircuitBreaker (Optional)
+#### Phase 4: Simplify CircuitBreaker (Optional)
 **Effort:** 2 hours
-**Dependencies:** Phase 4 complete
+**Dependencies:** Phase 3 complete
 **Note:** Can skip - CircuitBreaker works fine
 
 **Tasks:**
@@ -194,7 +178,7 @@
 
 ---
 
-#### Phase 6: Delete Safe Unused Files (Low Risk)
+#### Phase 5: Delete Safe Unused Files (Low Risk)
 **Effort:** 15 minutes
 **Dependencies:** None (can do anytime)
 
@@ -212,8 +196,8 @@
 
 **Expected Outcome:**
 - Remove ~2100 lines of code
-- Remove 4 unused services
-- Simplify codebase
+- Remove 4 unused files
+- Simplify codebase for Replit deployment
 - No functional changes
 
 ---
@@ -339,9 +323,11 @@
 ### November 2, 2025
 - ✅ **Decision:** Use `combined_server.py` as production entry point
 - ✅ **Decision:** Use `full_ui.html` (React SPA) instead of Next.js
+- ✅ **Decision:** Replit-first deployment (removed Docker Compose infrastructure)
 - ✅ **Decision:** Archive (don't delete) complexity for potential future use
-- ✅ **Decision:** Follow Phase 0-6 order for cleanup (CRITICAL)
+- ✅ **Decision:** Follow Phase 0-5 order for cleanup (CRITICAL)
 - ✅ **Decision:** Simplify (don't remove) CircuitBreaker
+- ✅ **Decision:** Remove Docker infrastructure (completed - all docker-compose files deleted)
 
 ### October 2025 (Historical)
 - Pattern-driven architecture chosen
@@ -357,6 +343,7 @@
 - [x] Documentation cleanup (Nov 2)
 - [x] Agent docstring updates (Nov 2)
 - [x] Analysis documents created (Nov 2)
+- [x] Docker infrastructure removed (Nov 2)
 - [x] Git rollback to stable state (Nov 1)
 - [x] Pattern validation (Oct 25-31)
 
@@ -381,8 +368,8 @@
 - ✅ All 12 patterns still execute
 - ✅ All 17 UI pages still work
 - ✅ ~2100 lines of code removed
-- ✅ Application still works on Replit
-- ✅ Scripts still work
+- ✅ Application works on Replit (primary deployment)
+- ✅ Docker infrastructure removed (no longer needed)
 
 ### For Backend Refactoring (Plan 3)
 - ✅ New server runs on port 8001

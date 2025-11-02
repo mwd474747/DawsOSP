@@ -114,23 +114,20 @@ All patterns are valid and working:
    - Used in production for failure tracking
    - **Can simplify, but DON'T delete**
 
-3. **Docker Compose Dependencies**:
-   - Backend/worker depend on Redis service
-   - **MUST remove `depends_on: redis` before removing Redis service**
+3. **✅ RESOLVED: Docker Compose Dependencies**:
+   - All Docker Compose files have been removed
+   - Deployment is now Replit-first (no Docker needed)
 
-4. **Scripts Reference Removed Features**:
-   - `start.sh` starts Redis (line 29)
-   - `deploy.sh` references observability mode
-   - `run_api.sh` sets REDIS_URL
-   - **MUST update scripts before cleanup**
+4. **Scripts May Reference Removed Features**:
+   - `backend/run_api.sh` may have Redis/Docker references
+   - **Should be updated or documented as optional**
 
-**⚠️ CORRECT EXECUTION ORDER (From Sanity Check):**
+**⚠️ CORRECT EXECUTION ORDER (Updated After Docker Removal):**
 1. **Phase 0**: Make imports optional (try/except in agent_runtime, pattern_orchestrator, db/connection)
 2. **Phase 1**: Remove modules (compliance/, observability/, redis_pool_coordinator.py)
-3. **Phase 2**: Update docker-compose.yml (remove Redis service + depends_on)
-4. **Phase 3**: Update scripts (start.sh, deploy.sh, run_api.sh)
-5. **Phase 4**: Clean requirements.txt (remove observability packages)
-6. **Phase 5**: Simplify CircuitBreaker (don't remove)
+3. **Phase 2**: Update scripts and documentation (run_api.sh, analysis docs)
+4. **Phase 3**: Clean requirements.txt (remove observability packages)
+5. **Phase 4**: Simplify CircuitBreaker (don't remove)
 
 ---
 
@@ -164,26 +161,21 @@ All patterns are valid and working:
 3. Delete `backend/app/db/redis_pool_coordinator.py`
 4. Test that imports gracefully degrade
 
-**Phase 2: Update Docker Compose** (After Phase 1 only)
-1. Remove `depends_on: redis` from backend/worker services
-2. Remove Redis service definition
-3. Test Docker Compose startup
+**Phase 2: Update Scripts and Documentation** (After Phase 1 only)
+1. Update `backend/run_api.sh` - remove REDIS_URL and Docker references
+2. Mark Docker issues as RESOLVED in SANITY_CHECK_REPORT.md
+3. Update UNNECESSARY_COMPLEXITY_REVIEW.md status
+4. Test script execution (or document as optional for Replit)
 
-**Phase 3: Update Scripts** (After Phase 2 only)
-1. Update `start.sh` - remove redis from docker compose command
-2. Update `deploy.sh` - remove observability mode
-3. Update `run_api.sh` - remove REDIS_URL
-4. Test script execution
-
-**Phase 4: Clean Requirements** (After Phase 3 only)
+**Phase 3: Clean Requirements** (After Phase 2 only)
 1. Remove observability packages from `requirements.txt`
 2. Test pip install
 
-**Phase 5: Simplify CircuitBreaker** (Optional, after Phase 4)
+**Phase 4: Simplify CircuitBreaker** (Optional, after Phase 3)
 1. Simplify `CircuitBreaker` class (remove OPEN/HALF_OPEN states)
 2. **DO NOT delete** - it's used in production
 
-**Phase 6: Delete Safe Files** (Low risk, anytime)
+**Phase 5: Delete Safe Files** (Low risk, anytime)
 1. Delete `backend/app/core/database.py`
 2. Delete `backend/api_server.py`
 3. Delete `backend/simple_api.py`
@@ -420,10 +412,11 @@ grep "register_agent" combined_server.py
 - ✅ Application still stable (no functional code changes)
 
 ### Next Steps (Awaiting User Approval)
+- ✅ **Docker Infrastructure Removed**: All docker-compose files deleted
 - ⏳ **Phase 0 FIRST**: Make imports optional (CRITICAL - prevents ImportErrors)
-- ⏳ Phase 1: Remove unused complexity (Redis, Observability, Compliance)
-- ⏳ Phase 2-5: Update docker-compose, scripts, requirements
-- ⏳ Phase 6: Delete safe unused files
+- ⏳ Phase 1: Remove unused complexity (Redis coordinator, Observability, Compliance)
+- ⏳ Phase 2-4: Update scripts, requirements, simplify CircuitBreaker
+- ⏳ Phase 5: Delete safe unused files
 - ⏳ Start refactoring plan (if user approves)
 
 ---
