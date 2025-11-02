@@ -82,8 +82,8 @@
       "capability": "optimizer.suggest_hedges",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
-        "scenario_result": "{{scenario_result}}",
-        "max_cost_bps": 20
+        "scenario_id": "{{inputs.scenario_id}}",
+        "pricing_pack_id": "{{ctx.pricing_pack_id}}"
       },
       "as": "hedge_suggestions"
     },

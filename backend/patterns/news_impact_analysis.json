@@ -87,9 +87,9 @@
     {
       "capability": "alerts.create_if_threshold",
       "args": {
-        "impact_analysis": "{{state.impact_analysis}}",
-        "threshold": 0.7,
-        "alert_type": "news_impact"
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "news_impact": "{{state.impact_analysis}}",
+        "threshold": 0.7
       },
       "as": "alert_result",
       "condition": "{{inputs.create_alert}}"

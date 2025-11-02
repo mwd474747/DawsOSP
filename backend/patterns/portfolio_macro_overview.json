@@ -76,7 +76,7 @@
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
         "pack_id": "{{ctx.pricing_pack_id}}",
-        "confidence_level": "{{inputs.confidence_level}}"
+        "confidence": "{{inputs.confidence_level}}"
       },
       "as": "dar"
     },

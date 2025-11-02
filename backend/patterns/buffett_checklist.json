@@ -78,13 +78,15 @@
     {
       "capability": "ai.explain",
       "args": {
-        "ratings": {
-          "dividend_safety": "{{state.dividend_safety}}",
-          "moat_strength": "{{state.moat_strength}}",
-          "resilience": "{{state.resilience}}"
-        },
-        "fundamentals": "{{state.fundamentals}}",
-        "prompt": "Explain the quality and moat ratings in Buffett's framework"
+        "topic": "Explain the quality and moat ratings in Buffett's framework",
+        "data": {
+          "ratings": {
+            "dividend_safety": "{{state.dividend_safety}}",
+            "moat_strength": "{{state.moat_strength}}",
+            "resilience": "{{state.resilience}}"
+          },
+          "fundamentals": "{{state.fundamentals}}"
+        }
       },
       "as": "explanation"
     }

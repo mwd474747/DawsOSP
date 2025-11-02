@@ -85,6 +85,8 @@
       "capability": "optimizer.suggest_deleveraging_hedges",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
+        "regime": "DELEVERAGING",
+        "ltdc_phase": "{{state.ltdc.phase}}",
         "scenarios": {
           "money_printing": "{{state.money_printing}}",
           "austerity": "{{state.austerity}}",

@@ -85,16 +85,17 @@
       "capability": "reports.render_pdf",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
-        "positions": "{{valued.positions}}",
-        "performance": "{{performance}}",
-        "currency_attr": "{{currency_attr}}",
-        "regime": "{{regime}}",
-        "pricing_pack_id": "{{ctx.pricing_pack_id}}",
-        "ledger_commit_hash": "{{ctx.ledger_commit_hash}}",
-        "include_sections": {
-          "holdings": "{{inputs.include_holdings}}",
-          "performance": "{{inputs.include_performance}}",
-          "macro": "{{inputs.include_macro}}"
+        "template_name": "portfolio_report",
+        "report_data": {
+          "positions": "{{valued.positions}}",
+          "performance": "{{performance}}",
+          "currency_attr": "{{currency_attr}}",
+          "regime": "{{regime}}",
+          "include_sections": {
+            "holdings": "{{inputs.include_holdings}}",
+            "performance": "{{inputs.include_performance}}",
+            "macro": "{{inputs.include_macro}}"
+          }
         }
       },
       "as": "pdf_result"
