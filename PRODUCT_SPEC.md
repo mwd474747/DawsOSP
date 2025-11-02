@@ -26,11 +26,12 @@ DawsOS is an AI-powered portfolio management system that provides comprehensive 
 
 ## Technical Architecture
 
-- **Backend**: FastAPI with PostgreSQL
-- **Frontend**: Next.js with TypeScript
+- **Backend**: FastAPI with PostgreSQL (Python 3.11+)
+- **Frontend**: React 18 SPA (`full_ui.html` - single HTML file, no build step)
 - **Authentication**: JWT with RBAC
-- **Database**: PostgreSQL with TimescaleDB
+- **Database**: PostgreSQL 14+ with TimescaleDB extension
 - **APIs**: RESTful with OpenAPI documentation
+- **Deployment**: Replit-first (direct Python execution, no Docker)
 
 ## User Roles
 

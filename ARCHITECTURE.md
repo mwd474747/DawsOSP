@@ -54,28 +54,48 @@ Pattern Definition (JSON) → Template Substitution → Agent Capability Calls �
 Routes capability calls to the appropriate agent method:
 
 ```
-Capability Request ("ledger.positions") → Runtime Lookup → LedgerAgent.positions() → Response
+Capability Request ("ledger.positions") → Runtime Lookup → FinancialAnalyst.ledger_positions() → Response
 ```
 
 **Registered Agents** (9 total):
-1. **LedgerAgent**: Position tracking, transaction history (ledger.*)
-2. **PricingAgent**: Market data, valuation (pricing.*)
-3. **MetricsAgent**: Performance calculation, TWR, volatility (metrics.*)
-4. **AttributionAgent**: Return attribution by currency, sector (attribution.*)
-5. **PortfolioAgent**: Portfolio metadata, allocations (portfolio.*)
-6. **MacroHound**: Economic cycle analysis, STDC/LTDC (macro.*)
-7. **FinancialAnalyst**: Buffett ratings, quality assessment (analyst.*)
-8. **DataHarvester**: External data fetching (data.*)
-9. **ClaudeAgent**: AI-powered explanations, insights (claude.*)
+1. **FinancialAnalyst** - Portfolio ledger, pricing, metrics, attribution (~25+ capabilities)
+   - Capabilities: `ledger.*`, `pricing.*`, `metrics.*`, `attribution.*`, `charts.*`, `risk.*`, `portfolio.*`
+2. **MacroHound** - Macro economic cycles, scenarios, regime detection (~15+ capabilities)
+   - Capabilities: `macro.*`, `scenarios.*`, `cycles.*`
+3. **DataHarvester** - External data fetching, news integration (~5+ capabilities)
+   - Capabilities: `data.*`, `news.*`
+4. **ClaudeAgent** - AI-powered explanations and insights (~6 capabilities)
+   - Capabilities: `claude.*`, `ai.*`
+5. **RatingsAgent** - Buffett quality ratings, dividend safety, moat analysis (~4 capabilities)
+   - Capabilities: `ratings.*`, `buffett.*`
+6. **OptimizerAgent** - Portfolio optimization and rebalancing (~4 capabilities)
+   - Capabilities: `optimizer.*`, `rebalance.*`
+7. **ChartsAgent** - Chart formatting and visualization (~3 capabilities)
+   - Capabilities: `charts.*`
+8. **ReportsAgent** - PDF, CSV, Excel export generation (~3 capabilities)
+   - Capabilities: `reports.*`, `export.*`
+9. **AlertsAgent** - Alert suggestions and threshold management (~2 capabilities)
+   - Capabilities: `alerts.*`
 
-**Agent Registration** (combined_server.py:239-304):
+**Agent Registration** (combined_server.py:261-300):
 ```python
-def get_agent_runtime() -> AgentRuntime:
-    runtime = AgentRuntime(db=db_pool, redis=None)
-    runtime.register(LedgerAgent(db=db_pool))
-    runtime.register(PricingAgent(db=db_pool))
-    # ... 7 more agents
-    return runtime
+def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
+    services = {"db": db_pool, "redis": None}
+    _agent_runtime = AgentRuntime(services)
+    
+    # Register Financial Analyst (handles ledger, pricing, metrics, attribution)
+    financial_analyst = FinancialAnalyst("financial_analyst", services)
+    _agent_runtime.register_agent(financial_analyst)
+    
+    # Register Macro Hound (handles macro cycles and scenarios)
+    macro_hound = MacroHound("macro_hound", services)
+    _agent_runtime.register_agent(macro_hound)
+    
+    # Register remaining 7 agents
+    # DataHarvester, ClaudeAgent, RatingsAgent, OptimizerAgent,
+    # ChartsAgent, ReportsAgent, AlertsAgent
+    
+    return _agent_runtime
 ```
 
 ### 3. Backend (FastAPI)
@@ -113,24 +133,36 @@ def get_agent_runtime() -> AgentRuntime:
 - **Client-Side Routing**: Hash-based routing (#/dashboard, #/holdings, etc.)
 - **API Client**: Centralized [frontend/api-client.js](frontend/api-client.js) with caching
 
-**17 Pages**:
-1. Login - JWT authentication
-2. Dashboard - Portfolio overview
-3. Holdings - Position details with Buffett ratings
-4. Transactions - Complete audit trail with pagination
-5. Performance - Time-weighted returns, charts
-6. Scenarios - What-if analysis
-7. Risk - Stress testing, VaR
-8. Attribution - Currency and sector breakdown
-9. Optimizer - Portfolio optimization
-10. Ratings - Buffett quality assessment (A-F grades)
-11. AI Insights - Claude-powered analysis
-12. Alerts - Real-time monitoring
-13. Reports - PDF generation
-14. Macro Cycles - 4 economic cycles (STDC, LTDC, Empire, Civil)
-15. Corporate Actions - Dividends, splits
-16. Market Data - Economic indicators
-17. Settings - User preferences
+**17 Pages** (organized by navigation sections):
+
+**Portfolio Section (5 pages):**
+1. Dashboard (`/dashboard`) - Portfolio overview using `portfolio_overview` pattern
+2. Holdings (`/holdings`) - Position details using `holding_deep_dive` pattern
+3. Transactions (`/transactions`) - Complete audit trail with pagination
+4. Performance (`/performance`) - Time-weighted returns using `portfolio_overview` pattern
+5. Corporate Actions (`/corporate-actions`) - Dividends, splits, corporate actions
+
+**Analysis Section (4 pages):**
+6. Macro Cycles (`/macro-cycles`) - 4 economic cycles (STDC, LTDC, Empire, Civil) using `macro_cycles_overview` and `macro_trend_monitor` patterns
+7. Scenarios (`/scenarios`) - What-if analysis using `portfolio_scenario_analysis` pattern
+8. Risk Analytics (`/risk`) - Stress testing, VaR using `portfolio_cycle_risk` pattern
+9. Attribution (`/attribution`) - Currency and sector breakdown
+
+**Intelligence Section (4 pages):**
+10. Optimizer (`/optimizer`) - Portfolio optimization using `policy_rebalance` and `cycle_deleveraging_scenarios` patterns
+11. Ratings (`/ratings`) - Buffett quality assessment (A-F grades) using `buffett_checklist` pattern
+12. AI Insights (`/ai-insights`) - Claude-powered analysis using `news_impact_analysis` pattern
+13. Market Data (`/market-data`) - Economic indicators and market data
+
+**Operations Section (3 pages):**
+14. Alerts (`/alerts`) - Real-time monitoring and alert management
+15. Reports (`/reports`) - PDF generation using `export_portfolio_report` and `portfolio_macro_overview` patterns
+16. Settings (`/settings`) - User preferences and configuration
+
+**Authentication:**
+17. Login - JWT authentication
+
+**Pattern Registry:** 12 patterns defined in `full_ui.html` patternRegistry (lines 2784-3117)
 
 **Technology**:
 - React 18.2.0 (UMD build)
@@ -183,17 +215,17 @@ def get_agent_runtime() -> AgentRuntime:
 5. Template substitution: {{inputs.portfolio_id}} → "abc-123"
    ↓
 6. Execute Step 1: capability="ledger.positions"
-   → AgentRuntime routes to LedgerAgent.positions()
+   → AgentRuntime routes to FinancialAnalyst.ledger_positions()
    → Query: SELECT * FROM lots WHERE portfolio_id = 'abc-123'
    → Returns: positions
    ↓
 7. Execute Step 2: capability="pricing.apply_pack"
-   → AgentRuntime routes to PricingAgent.apply_pack()
+   → AgentRuntime routes to FinancialAnalyst.pricing_apply_pack()
    → Enriches positions with market prices
    → Returns: valued_positions
    ↓
 8. Execute Step 3: capability="metrics.compute_twr"
-   → AgentRuntime routes to MetricsAgent.compute_twr()
+   → AgentRuntime routes to FinancialAnalyst.metrics_compute_twr()
    → Calculates time-weighted return
    → Returns: perf_metrics
    ↓

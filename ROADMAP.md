@@ -11,7 +11,7 @@
 ### Working Application ✅
 - **Server**: `combined_server.py` (6,046 lines, 59 endpoints)
 - **UI**: `full_ui.html` (14,075 lines, 17 pages)
-- **Agents**: 9 agents, 73 capabilities
+- **Agents**: 9 agents, ~67-70 capabilities
 - **Patterns**: 12 patterns, all validated and working
 - **Database**: PostgreSQL + TimescaleDB
 - **Deployment**: Single command (`python combined_server.py`)
