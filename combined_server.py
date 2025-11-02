@@ -1716,6 +1716,12 @@ async def get_holdings(
                             market_value = float(pos.get("value", 0)) if pos.get("value") else (qty * price)
                             total_value += market_value
 
+                            cost_basis = float(pos.get("cost_basis", 0))
+                            unrealized_pnl = market_value - cost_basis
+                            # Calculate return percentage: (current value - cost) / cost * 100
+                            # This is the total return since purchase (inception to date)
+                            return_pct = ((market_value - cost_basis) / cost_basis * 100) if cost_basis > 0 else 0
+                            
                             holdings.append({
                                 "symbol": pos.get("symbol"),
                                 "name": pos.get("name", pos.get("symbol")),  # Use symbol as fallback for name
@@ -1724,11 +1730,11 @@ async def get_holdings(
                                 "market_value": market_value,
                                 "value": market_value,  # Duplicate for UI compatibility
                                 "sector": pos.get("sector", "Other"),
-                                "cost_basis": float(pos.get("cost_basis", 0)),
-                                "unrealized_pnl": market_value - float(pos.get("cost_basis", 0)),
-                                "unrealized_pnl_pct": ((market_value - float(pos.get("cost_basis", 0))) / float(pos.get("cost_basis", 1))) * 100 if float(pos.get("cost_basis", 0)) > 0 else 0,
+                                "cost_basis": cost_basis,
+                                "unrealized_pnl": unrealized_pnl,
+                                "unrealized_pnl_pct": return_pct,  # Same as return_pct
                                 "weight": 0,  # Will calculate after total
-                                "return_pct": ((market_value - float(pos.get("cost_basis", 0))) / float(pos.get("cost_basis", 1))) * 100 if float(pos.get("cost_basis", 0)) > 0 else 0
+                                "return_pct": return_pct  # Total return since purchase
                             })
 
                         # Calculate weights
