@@ -2725,6 +2725,24 @@
             // ===== UNIFIED PATTERN INTEGRATION SYSTEM =====
             
             /**
+             * Get the current portfolio ID with fallback
+             * This ensures we always have a valid portfolio ID
+             */
+            function getCurrentPortfolioId() {
+                // Check if user has a portfolio ID in token storage
+                const storedUser = TokenManager.getUser();
+                if (storedUser && storedUser.default_portfolio_id) {
+                    console.log('Using user portfolio ID:', storedUser.default_portfolio_id);
+                    return storedUser.default_portfolio_id;
+                }
+                
+                // Use hardcoded fallback portfolio ID
+                const fallbackPortfolioId = '64ff3be6-0ed1-4990-a32b-4ded17f0320c';
+                console.log('Using fallback portfolio ID:', fallbackPortfolioId);
+                return fallbackPortfolioId;
+            }
+            
+            /**
              * User Context for managing portfolio ID dynamically
              */
             const UserContext = React.createContext();
@@ -3165,11 +3183,22 @@
                         setLoading(true);
                         setError(null);
                         
-                        // Add portfolio ID to inputs if not provided
+                        // Ensure we always have a valid portfolio ID
+                        let validPortfolioId = portfolioId || inputs.portfolio_id;
+                        
+                        // If still no portfolio ID, use the fallback
+                        if (!validPortfolioId) {
+                            validPortfolioId = getCurrentPortfolioId();
+                            console.warn('No portfolio ID in context or inputs, using fallback:', validPortfolioId);
+                        }
+                        
+                        // Add portfolio ID to inputs, ensuring it's always present
                         const finalInputs = {
-                            portfolio_id: portfolioId,
-                            ...inputs
+                            ...inputs,
+                            portfolio_id: validPortfolioId  // Override any null/undefined value
                         };
+                        
+                        console.log(`Executing pattern ${pattern} with inputs:`, finalInputs);
                         
                         // Execute pattern
                         const result = await apiClient.executePattern(pattern, finalInputs);
