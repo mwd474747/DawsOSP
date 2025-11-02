@@ -107,34 +107,6 @@ groups:
           description: "Pack {{ $labels.pack_id }} has failed reconciliation or build"
 
   # ============================================================================
-  # Circuit Breaker Alerts
-  # ============================================================================
-  - name: circuit_breaker_alerts
-    interval: 1m
-    rules:
-      # Circuit Breaker Open
-      - alert: CircuitBreakerOpen
-        expr: |
-          dawsos_circuit_breaker_state == 1
-        for: 2m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Circuit breaker OPEN"
-          description: "Circuit breaker for {{ $labels.agent_name }} is OPEN (provider outage)"
-
-      # Circuit Breaker Failures Spike
-      - alert: CircuitBreakerFailuresSpike
-        expr: |
-          rate(dawsos_circuit_breaker_failures_total[5m]) > 1
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Circuit breaker failures spike"
-          description: "{{ $labels.agent_name }} is experiencing {{ $value }} failures/sec"
-
-  # ============================================================================
   # Service Health Alerts
   # ============================================================================
   - name: service_health_alerts

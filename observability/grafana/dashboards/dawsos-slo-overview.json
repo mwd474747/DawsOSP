@@ -177,35 +177,7 @@
           {"format": "short"}
         ]
       },
-      {
-        "id": 8,
-        "title": "Circuit Breaker State",
-        "type": "stat",
-        "gridPos": {"h": 4, "w": 12, "x": 12, "y": 24},
-        "targets": [
-          {
-            "expr": "dawsos_circuit_breaker_state",
-            "legendFormat": "{{agent_name}}",
-            "refId": "A"
-          }
-        ],
-        "mappings": [
-          {"value": 0, "text": "CLOSED"},
-          {"value": 1, "text": "OPEN"},
-          {"value": 2, "text": "HALF_OPEN"}
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "thresholds": {
-              "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 1, "color": "red"},
-                {"value": 2, "color": "yellow"}
-              ]
-            }
-          }
-        }
-      }
+      
     ]
   }
 }

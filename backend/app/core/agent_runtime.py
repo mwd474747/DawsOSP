@@ -9,20 +9,25 @@ Features:
     - Agent registration with capability mapping
     - Capability routing to correct agent
     - Dependency injection (services, DB, Redis)
-    - Simple retry mechanism with exponential backoff
+    - Simple retry mechanism with exponential backoff (3 retries, 1s/2s/4s delays)
+    - Request-level capability result caching
     - Result metadata preservation
     - Capability discovery
-    - Rights validation and attribution (NEW)
+    - Rights validation and attribution (optional)
 
 Usage:
     runtime = AgentRuntime(services)
     runtime.register_agent(FinancialAnalyst("financial_analyst", services))
     result = await runtime.execute_capability("ledger.positions", ctx, state, portfolio_id="...")
+
+Retry Logic:
+    - Max 3 retries with exponential backoff (1s, 2s, 4s)
+    - No circuit breaker (removed for simplicity)
+    - Failures are logged and metrics recorded
 """
 
 import asyncio
 import logging
-import time  # Import time for CircuitBreaker
 from typing import Any, Dict, List, Optional
 
 from app.agents.base_agent import BaseAgent
@@ -48,50 +53,6 @@ except ImportError:
         return None
 
 logger = logging.getLogger(__name__)
-
-
-# ============================================================================
-# Circuit Breaker
-# ============================================================================
-
-class CircuitBreaker:
-    """
-    Simplified circuit breaker for agent failure tracking.
-
-    Opens after failure_threshold consecutive failures and stays open
-    for timeout_seconds before allowing retry.
-    """
-
-    def __init__(self, failure_threshold: int = 5, timeout_seconds: int = 60):
-        self.failure_threshold = failure_threshold
-        self.timeout_seconds = timeout_seconds
-        self.failure_count = 0
-        self.state = "CLOSED"
-        self.opened_at = None
-
-    def record_success(self):
-        """Reset on success."""
-        self.failure_count = 0
-        self.state = "CLOSED"
-        self.opened_at = None
-
-    def record_failure(self):
-        """Increment failure count and open if threshold reached."""
-        self.failure_count += 1
-        if self.failure_count >= self.failure_threshold:
-            self.state = "OPEN"
-            self.opened_at = time.time()
-
-    def can_execute(self) -> bool:
-        """Check if execution allowed."""
-        if self.state == "CLOSED":
-            return True
-        # Auto-reset after timeout
-        if time.time() - self.opened_at > self.timeout_seconds:
-            self.state = "CLOSED"
-            self.failure_count = 0
-            return True
-        return False
 
 
 # ============================================================================
