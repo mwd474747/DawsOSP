@@ -616,16 +616,102 @@ class OptimizerService:
                         "expected_offset_pct": 40.0
                     },
                     ...
-                ]
+                ],
+                "total_notional": 25000.00,
+                "expected_offset_pct": 60.0
             }
 
         Process:
-            1. Load portfolio positions
-            2. Identify vulnerable factor exposures
-            3. Map to hedge instruments based on scenario
-            4. Size hedges based on risk contribution
+            1. Run scenario to get losers
+            2. Use ScenarioService.suggest_hedges to get recommendations
+            3. Format for pattern consumption
         """
         logger.info(f"suggest_hedges: portfolio_id={portfolio_id}, scenario={scenario_id}")
+        
+        from app.services.scenarios import get_scenario_service, ShockType
+        
+        # Map scenario_id to ShockType
+        scenario_mapping = {
+            "rates_up": ShockType.RATES_UP,
+            "rates_down": ShockType.RATES_DOWN,
+            "usd_up": ShockType.USD_UP,
+            "usd_down": ShockType.USD_DOWN,
+            "inflation": ShockType.CPI_SURPRISE,
+            "cpi_surprise": ShockType.CPI_SURPRISE,
+            "credit_spread_widening": ShockType.CREDIT_SPREAD_WIDENING,
+            "equity_selloff": ShockType.EQUITY_SELLOFF,
+            "equity_rally": ShockType.EQUITY_RALLY,
+            "late_cycle_rates_up": ShockType.RATES_UP,
+            "recession_mild": ShockType.EQUITY_SELLOFF,
+        }
+        
+        shock_type = scenario_mapping.get(scenario_id, ShockType.RATES_UP)
+        
+        scenario_service = get_scenario_service()
+        
+        try:
+            # Run scenario to get losers
+            scenario_result = await scenario_service.apply_scenario(
+                portfolio_id=str(portfolio_id),
+                shock_type=shock_type,
+                pack_id=pricing_pack_id,
+            )
+            
+            # Get hedge recommendations
+            hedge_recommendations = await scenario_service.suggest_hedges(
+                losers=scenario_result.losers,
+                shock_type=shock_type,
+            )
+            
+            # Format for pattern
+            hedges = []
+            total_notional = Decimal("0")
+            
+            for rec in hedge_recommendations:
+                notional = rec.notional or Decimal("0")
+                total_notional += notional
+                
+                hedges.append({
+                    "instrument": rec.instruments[0] if rec.instruments else rec.hedge_type,
+                    "instrument_type": "option" if "put" in rec.hedge_type.lower() or "call" in rec.hedge_type.lower() else "etf",
+                    "action": "BUY",
+                    "notional": float(notional),
+                    "hedge_ratio": 0.5,  # Default 50% hedge
+                    "rationale": rec.rationale,
+                    "instruments": rec.instruments,
+                    "expected_offset_pct": 50.0,  # Estimate
+                })
+            
+            return {
+                "scenario_id": scenario_id,
+                "hedges": hedges,
+                "total_notional": float(total_notional),
+                "expected_offset_pct": 60.0,  # Conservative estimate
+                "suggestions_count": len(hedges),
+            }
+            
+        except Exception as e:
+            logger.error(f"Hedge suggestion failed: {e}", exc_info=True)
+            return {
+                "scenario_id": scenario_id,
+                "hedges": [],
+                "total_notional": 0.0,
+                "expected_offset_pct": 0.0,
+                "error": str(e),
+            }
+
+    async def suggest_deleveraging_hedges(
+        self,
+        portfolio_id: UUID,
+        regime: str,
+        pricing_pack_id: str,
+    ) -> Dict[str, Any]:
+        """
+        Suggest deleveraging hedges based on macro regime.
+        
+        This is a placeholder - full implementation uses playbooks service.
+        """
+        logger.info(f"suggest_deleveraging_hedges: portfolio_id={portfolio_id}")
 
         # Return mock data for testing when use_db=False
         if not self.use_db:

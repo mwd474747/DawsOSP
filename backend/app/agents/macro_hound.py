@@ -8,7 +8,7 @@ Priority: P0 (Critical for macro features)
 Capabilities:
     - macro.detect_regime: Detect current macro regime (5 regimes)
     - macro.compute_cycles: Compute STDC/LTDC/Empire cycle phases
-    - macro.get_indicators: Get current macro indicators with z-scores
+    - macro.get_indicators: Get current macro indicators with z-score
     - macro.run_scenario: Run stress test scenario
     - macro.compute_dar: Compute Drawdown at Risk (DaR)
 
@@ -136,7 +136,7 @@ class MacroHound(BaseAgent):
 
         provenance = DataProvenance.UNKNOWN
         warnings = []
-        
+
         try:
             # Detect current regime
             classification = await macro_service.detect_current_regime(asof_date=asof)
@@ -149,7 +149,7 @@ class MacroHound(BaseAgent):
                 "zscores": {k: float(v) for k, v in classification.zscores.items()},
                 "regime_scores": {k.value: float(v) for k, v in classification.regime_scores.items()},
             }
-            
+
             # Data comes from computed indicators
             provenance = DataProvenance.COMPUTED
 
@@ -171,7 +171,7 @@ class MacroHound(BaseAgent):
             ttl=3600,  # Cache for 1 hour
         )
         result = self._attach_metadata(result, metadata)
-        
+
         # Add provenance information
         result["_provenance"] = {
             "type": provenance.value,
@@ -580,7 +580,7 @@ class MacroHound(BaseAgent):
             Dict with regime probability time series
         """
         logger.info(f"macro.get_regime_history: lookback_weeks={lookback_weeks}")
-        
+
         # Return stub data for now - in production would query database
         import datetime
         dates = []
@@ -589,13 +589,13 @@ class MacroHound(BaseAgent):
         late_expansion_probs = []
         early_contraction_probs = []
         deep_contraction_probs = []
-        
+
         base_date = ctx.asof_date if ctx.asof_date else date.today()
-        
+
         for i in range(lookback_weeks * 7):
             current_date = base_date - datetime.timedelta(days=i)
             dates.append(current_date.isoformat())
-            
+
             # Generate some reasonable probabilities
             if i < 7:
                 # Recent: mid expansion
@@ -618,7 +618,7 @@ class MacroHound(BaseAgent):
                 late_expansion_probs.append(0.3)
                 early_contraction_probs.append(0.1)
                 deep_contraction_probs.append(0.1)
-        
+
         return {
             "dates": dates,
             "early_expansion_probs": early_expansion_probs,
@@ -627,7 +627,7 @@ class MacroHound(BaseAgent):
             "early_contraction_probs": early_contraction_probs,
             "deep_contraction_probs": deep_contraction_probs,
         }
-    
+
     async def macro_detect_trend_shifts(
         self,
         ctx: RequestCtx,
@@ -648,17 +648,17 @@ class MacroHound(BaseAgent):
             Dict with trend analysis
         """
         logger.info("macro.detect_trend_shifts")
-        
+
         # Get from state if not provided
         if not regime_history:
             regime_history = state.get("regime_history", state.get("state", {}).get("regime_history", {}))
         if not factor_history:
             factor_history = state.get("factor_history", state.get("state", {}).get("factor_history", {}))
-        
+
         # Analyze for shifts (stub implementation)
         result = {
             "regime_shift_detected": False,
-            "old_regime": "MID_EXPANSION", 
+            "old_regime": "MID_EXPANSION",
             "new_regime": "MID_EXPANSION",
             "confidence": 0.65,
             "dar_increasing": False,
@@ -666,24 +666,24 @@ class MacroHound(BaseAgent):
             "current_dar": -15.5,
             "factor_shifts": [],
         }
-        
+
         # Check if there's a regime shift in the history
         if regime_history:
             # Simple logic: check if dominant regime changed
             mid_exp_probs = regime_history.get("mid_expansion_probs", [])
             late_exp_probs = regime_history.get("late_expansion_probs", [])
-            
+
             if len(mid_exp_probs) > 7 and len(late_exp_probs) > 7:
                 # Check if late expansion is becoming dominant
                 recent_late = sum(late_exp_probs[:7]) / 7
                 older_late = sum(late_exp_probs[7:14]) / 7 if len(late_exp_probs) > 14 else recent_late
-                
+
                 if recent_late > 0.4 and recent_late > older_late * 1.5:
                     result["regime_shift_detected"] = True
                     result["old_regime"] = "MID_EXPANSION"
                     result["new_regime"] = "LATE_EXPANSION"
                     result["confidence"] = min(recent_late, 0.8)
-        
+
         return result
 
     async def scenarios_deleveraging_money_printing(
@@ -696,15 +696,15 @@ class MacroHound(BaseAgent):
     ) -> Dict[str, Any]:
         """
         Run money printing deleveraging scenario.
-        
-        Simulates central bank monetization: inflation rises, currency weakens, 
+
+        Simulates central bank monetization: inflation rises, currency weakens,
         commodities rally, real rates negative.
         """
         from app.services.scenarios import ShockType
-        
+
         portfolio_id = portfolio_id or str(ctx.portfolio_id)
         pack_id = pack_id or ctx.pricing_pack_id
-        
+
         # Use macro.run_scenario with money printing shock
         return await self.macro_run_scenario(
             ctx=ctx,
@@ -713,7 +713,7 @@ class MacroHound(BaseAgent):
             scenario_id="dalio_money_printing_deleveraging",
             pack_id=pack_id,
         )
-    
+
     async def scenarios_deleveraging_austerity(
         self,
         ctx: RequestCtx,
@@ -724,12 +724,12 @@ class MacroHound(BaseAgent):
     ) -> Dict[str, Any]:
         """
         Run austerity deleveraging scenario.
-        
+
         Simulates fiscal cuts: deflation risk, growth weak, spreads widen.
         """
         portfolio_id = portfolio_id or str(ctx.portfolio_id)
         pack_id = pack_id or ctx.pricing_pack_id
-        
+
         return await self.macro_run_scenario(
             ctx=ctx,
             state=state,
@@ -737,7 +737,7 @@ class MacroHound(BaseAgent):
             scenario_id="dalio_austerity_deleveraging",
             pack_id=pack_id,
         )
-    
+
     async def scenarios_deleveraging_default(
         self,
         ctx: RequestCtx,
@@ -748,12 +748,12 @@ class MacroHound(BaseAgent):
     ) -> Dict[str, Any]:
         """
         Run default/restructuring deleveraging scenario.
-        
+
         Simulates debt defaults: severe deflation, credit crisis, massive spreads.
         """
         portfolio_id = portfolio_id or str(ctx.portfolio_id)
         pack_id = pack_id or ctx.pricing_pack_id
-        
+
         return await self.macro_run_scenario(
             ctx=ctx,
             state=state,
@@ -832,7 +832,7 @@ class MacroHound(BaseAgent):
             f"confidence={confidence}, horizon={horizon_days}d, "
             f"pack_id={pack_id_str}, cycle_adjusted={cycle_adjusted}"
         )
-        
+
         # TODO: Implement cycle-adjusted DaR if cycle_adjusted=True
         if cycle_adjusted:
             logger.info("Cycle-adjusted DaR requested (not yet fully implemented)")
@@ -1062,7 +1062,7 @@ class MacroHound(BaseAgent):
         logger.info(f"cycles.compute_empire: asof={asof}")
 
         cycles_service = CyclesService()
-        phase = await cycles_service.detect_empire_phase(as_of_date=asof)
+        phase = await cycles_service.detect_empire_phase(asof_date=asof)
 
         result = {
             "cycle_type": "empire",
@@ -1089,25 +1089,25 @@ class MacroHound(BaseAgent):
     ) -> Dict[str, Any]:
         """
         Compute Civil/Internal Order Cycle phase.
-        
+
         Analyzes social cohesion and internal order based on:
         - Wealth inequality (Gini coefficient, top 1% wealth share)
         - Social polarization (political polarization index)
         - Institutional trust (government/media trust scores)
         - Social mobility metrics
-        
+
         Based on Dalio's framework for internal conflict cycles.
-        
+
         Capability: cycles.compute_civil
         """
         asof = asof_date or ctx.asof_date
         logger.info(f"cycles.compute_civil: asof={asof}")
-        
+
         try:
             # Use the real CyclesService to detect civil phase
             cycles_service = CyclesService()
-            phase = await cycles_service.detect_civil_phase(as_of_date=asof)
-            
+            phase = await cycles_service.detect_civil_phase(asof_date=asof)
+
             # Generate description based on phase
             descriptions = {
                 "Harmony": "Strong social cohesion, low inequality, high trust",
@@ -1117,14 +1117,14 @@ class MacroHound(BaseAgent):
                 "Conflict/Revolution": "Active internal conflict, potential for revolution or civil war",
                 "Reconstruction": "Rebuilding institutions and social trust after conflict"
             }
-            
+
             description = descriptions.get(phase.phase, "Unknown phase state")
-            
+
             # Determine risk factors based on indicators
             gini = phase.indicators.get("gini_coefficient", 0.418)
             polarization = phase.indicators.get("polarization_index", 0.78)
             trust = phase.indicators.get("institutional_trust", 0.38)
-            
+
             # Build result
             result = {
                 "cycle_type": "civil",
@@ -1141,7 +1141,7 @@ class MacroHound(BaseAgent):
                     "trust_deficit": "HIGH" if trust < 0.40 else "MEDIUM" if trust < 0.60 else "LOW",
                 },
             }
-            
+
         except Exception as e:
             logger.error(f"Error computing civil cycle: {e}", exc_info=True)
             # Return fallback values on error
@@ -1167,13 +1167,13 @@ class MacroHound(BaseAgent):
                 },
                 "error": f"Civil cycle computation error: {str(e)}",
             }
-        
+
         metadata = self._create_metadata(
             source=f"cycles_service:civil:{ctx.pricing_pack_id}",
             asof=asof,
             ttl=86400  # Cache for 24 hours (civil cycle changes slowly)
         )
-        
+
         return self._attach_metadata(result, metadata)
 
     async def cycles_aggregate_overview(
@@ -1193,10 +1193,10 @@ class MacroHound(BaseAgent):
         cycles_service = CyclesService()
 
         # Compute all three cycles from service
-        stdc_phase = await cycles_service.detect_stdc_phase(as_of_date=asof)
-        ltdc_phase = await cycles_service.detect_ltdc_phase(as_of_date=asof)
-        empire_phase = await cycles_service.detect_empire_phase(as_of_date=asof)
-        
+        stdc_phase = await cycles_service.detect_stdc_phase(asof_date=asof)
+        ltdc_phase = await cycles_service.detect_ltdc_phase(asof_date=asof)
+        empire_phase = await cycles_service.detect_empire_phase(asof_date=asof)
+
         # Compute civil cycle using our implementation
         civil_data = await self.cycles_compute_civil(ctx, state, asof_date=asof)
 
@@ -1364,27 +1364,27 @@ class MacroHound(BaseAgent):
     ) -> Dict[str, Any]:
         """
         Apply a scenario with macro-aware adjustments based on current regime and cycles.
-        
+
         Capability: scenarios.macro_aware_apply
         """
         logger.info(f"scenarios.macro_aware_apply: portfolio={portfolio_id}, scenario={scenario_name}")
-        
+
         # Initialize the macro-aware scenario service
         macro_aware_service = MacroAwareScenarioService()
-        
+
         # Apply the scenario with macro adjustments
         result = await macro_aware_service.apply_macro_aware_scenario(
             portfolio_id=UUID(portfolio_id),
             scenario_name=scenario_name,
             pack_id=pack_id
         )
-        
+
         metadata = self._create_metadata(
             source=f"macro_aware_scenarios:{scenario_name}:{pack_id}",
             asof=ctx.asof_date,
             ttl=3600  # Cache for 1 hour
         )
-        
+
         return self._attach_metadata(result, metadata)
 
     async def scenarios_macro_aware_rank(
@@ -1396,20 +1396,20 @@ class MacroHound(BaseAgent):
     ) -> Dict[str, Any]:
         """
         Get all scenarios ranked by regime-adjusted probability.
-        
+
         Capability: scenarios.macro_aware_rank
         """
         logger.info(f"scenarios.macro_aware_rank: portfolio={portfolio_id}")
-        
+
         # Initialize the macro-aware scenario service
         macro_aware_service = MacroAwareScenarioService()
-        
+
         # Get regime-weighted scenarios
         ranked_scenarios = await macro_aware_service.get_regime_weighted_scenarios(
             portfolio_id=UUID(portfolio_id),
             pack_id=pack_id
         )
-        
+
         # Format results for UI consumption
         result = {
             "portfolio_id": portfolio_id,
@@ -1421,13 +1421,13 @@ class MacroHound(BaseAgent):
                 s["name"] for s in ranked_scenarios.get("scenarios", [])[:5]
             ],
         }
-        
+
         metadata = self._create_metadata(
             source=f"macro_aware_scenarios:ranking:{pack_id}",
             asof=ctx.asof_date,
             ttl=3600  # Cache for 1 hour
         )
-        
+
         return self._attach_metadata(result, metadata)
 
 

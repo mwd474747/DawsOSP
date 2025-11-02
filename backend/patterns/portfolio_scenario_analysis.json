@@ -16,8 +16,7 @@
     "scenario_id": {
       "type": "string",
       "required": false,
-      "default": "rates_up",
-      "description": "Preset scenario ID (e.g., 'rates_up', 'equity_selloff')"
+      "description": "Preset scenario ID (e.g., 'late_cycle_rates_up')"
     },
     "custom_shocks": {
       "type": "object",
@@ -74,8 +73,7 @@
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
         "pack_id": "{{ctx.pricing_pack_id}}",
-        "scenario_id": "{{inputs.scenario_id}}",
-        "custom_shocks": "{{inputs.custom_shocks}}"
+        "scenario_id": "{{inputs.scenario_id}}"
       },
       "as": "scenario_result"
     },
@@ -83,7 +81,7 @@
       "capability": "optimizer.suggest_hedges",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
-        "scenario_id": "{{inputs.scenario_id}}",
+        "scenario_result": "{{scenario_result}}",
         "pricing_pack_id": "{{ctx.pricing_pack_id}}"
       },
       "as": "hedge_suggestions"
