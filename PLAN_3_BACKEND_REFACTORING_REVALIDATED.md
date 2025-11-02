@@ -179,12 +179,6 @@ async def lifespan(app: FastAPI):
 
         logger.info("Pattern orchestration system initialized")
 
-        # Reset circuit breakers
-        if hasattr(runtime, 'circuit_breaker'):
-            runtime.circuit_breaker.failures.clear()
-            runtime.circuit_breaker.open_until.clear()
-            logger.info("✅ Reset all agent circuit breakers")
-
     except Exception as e:
         logger.error(f"Failed to initialize: {e}")
         logger.warning("Some features may not work")

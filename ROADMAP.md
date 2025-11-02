@@ -20,7 +20,6 @@
 1. **Unnecessary Complexity**: ~2100 lines of unused code (Redis, Observability, Compliance)
 2. **Duplicate Code**: 4 unused files, 1 duplicate endpoint
 3. **Import Dependencies**: Will break if modules removed without Phase 0
-4. **Circuit Breaker**: Over-engineered but actually used (can't remove)
 
 ---
 
@@ -71,7 +70,7 @@
 During Phase 0-5 execution, identified critical database pool registration issue:
 - Module instance separation prevented agents from accessing pool
 - MacroHound cycle detection failing with AttributeError
-- Circuit breaker opening after 5 failures
+- Agent execution failing with retries exhausted
 
 **Root Cause:**
 - Python creates separate module instances on import
@@ -93,7 +92,7 @@ During Phase 0-5 execution, identified critical database pool registration issue
 **Impact:**
 - ✅ All 9 agents can access database
 - ✅ MacroHound cycle detection working
-- ✅ Circuit breaker no longer tripping
+- ✅ Retry mechanism working correctly
 - ✅ Macro Cycles dashboard fully functional
 
 ---
@@ -256,24 +255,6 @@ Centralized JSON-based configuration for ~40 macro economic indicators used in c
 
 ---
 
-#### Phase 4: Simplify CircuitBreaker (Optional)
-**Effort:** 2 hours
-**Dependencies:** Phase 3 complete
-**Note:** Can skip - CircuitBreaker works fine
-
-**Tasks:**
-1. Simplify `CircuitBreaker` class in `agent_runtime.py`:
-   - Remove OPEN/HALF_OPEN states
-   - Keep basic failure counting
-   - **DO NOT delete** - it's used in production
-2. Test failure tracking still works
-
-**Verification:**
-- [ ] Agent failures still tracked
-- [ ] No breaking changes
-
----
-
 #### Phase 5: Delete Safe Unused Files (Low Risk)
 **Effort:** 15 minutes
 **Dependencies:** None (can do anytime)
@@ -422,7 +403,6 @@ Centralized JSON-based configuration for ~40 macro economic indicators used in c
 - ✅ **Decision:** Replit-first deployment (removed Docker Compose infrastructure)
 - ✅ **Decision:** Archive (don't delete) complexity for potential future use
 - ✅ **Decision:** Follow Phase 0-5 order for cleanup (CRITICAL)
-- ✅ **Decision:** Simplify (don't remove) CircuitBreaker
 - ✅ **Decision:** Remove Docker infrastructure (completed - all docker-compose files deleted)
 - ✅ **Decision:** Create REPLIT_DEPLOYMENT_GUARDRAILS.md to protect critical files
 - ✅ **Completed:** Phase 0-5 cleanup (~5000 lines removed, all guardrails respected)

@@ -153,11 +153,6 @@ All previously blocking issues have been resolved:
    - UI uses `/api/patterns/execute` only
    - Safe to delete when convenient
 
-2. **Circuit Breaker is Actually Used** (Can't Remove):
-   - Lines 183, 419, 462, 474 in `agent_runtime.py`
-   - Used in production for failure tracking
-   - **Can simplify, but DON'T delete**
-
 3. **✅ RESOLVED: Docker Compose Dependencies**:
    - All Docker Compose files have been removed
    - Deployment is now Replit-first (no Docker needed)
@@ -171,7 +166,7 @@ All previously blocking issues have been resolved:
 2. **Phase 1**: Remove modules (compliance/, observability/, redis_pool_coordinator.py)
 3. **Phase 2**: Update scripts and documentation (run_api.sh, analysis docs)
 4. **Phase 3**: Clean requirements.txt (remove observability packages)
-5. **Phase 4**: Simplify CircuitBreaker (don't remove)
+5. **Phase 5**: Delete safe unused files
 
 ---
 
@@ -214,10 +209,6 @@ All previously blocking issues have been resolved:
 **Phase 3: Clean Requirements** (After Phase 2 only)
 1. Remove observability packages from `requirements.txt`
 2. Test pip install
-
-**Phase 4: Simplify CircuitBreaker** (Optional, after Phase 3)
-1. Simplify `CircuitBreaker` class (remove OPEN/HALF_OPEN states)
-2. **DO NOT delete** - it's used in production
 
 **Phase 5: Delete Safe Files** (Low risk, anytime)
 1. Delete `backend/app/core/database.py`
@@ -405,7 +396,6 @@ grep "register_agent" combined_server.py
 2. Safe Phase 1 removals:
    - Redis infrastructure (~500 lines)
    - Observability stack (~500 lines)
-   - Circuit breaker (~100 lines)
 3. Archive (don't delete): Compliance module (~1000 lines)
 
 ### When User Reports "UI Not Working"

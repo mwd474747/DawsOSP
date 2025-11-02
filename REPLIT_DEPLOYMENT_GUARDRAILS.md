@@ -145,19 +145,19 @@ grep -r "from package_name" backend/
 **Contains:**
 - Agent registration (9 agents)
 - Capability routing (~70 capabilities)
-- Circuit breaker (used in production)
+- Retry mechanism with exponential backoff (3 retries: 1s, 2s, 4s)
 - Request context management
 
 **DO NOT:**
 - ❌ Remove the singleton `_agent_runtime` instance
 - ❌ Change capability registration interface
-- ❌ Remove circuit breaker (it's used)
+- ❌ Remove retry mechanism
 - ❌ Break agent initialization
 
 **CAN DO:**
 - ✅ Fix bugs in capability execution
 - ✅ Improve error handling
-- ✅ Simplify circuit breaker logic
+- ✅ Adjust retry delays/attempts
 - ✅ Add new agents/capabilities
 
 **Location:** `/Users/mdawson/Documents/GitHub/DawsOSP/backend/app/core/agent_runtime.py`
