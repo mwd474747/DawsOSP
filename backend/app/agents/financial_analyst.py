@@ -29,6 +29,7 @@ from uuid import UUID
 
 from app.agents.base_agent import BaseAgent, AgentMetadata
 from app.core.types import RequestCtx
+from app.core.provenance import ProvenanceWrapper, DataProvenance
 from app.db import (
     get_metrics_queries,
     get_pricing_pack_queries,
@@ -102,6 +103,10 @@ class FinancialAnalyst(BaseAgent):
 
         portfolio_base_currency = ctx.base_currency or "USD"
 
+        # Track provenance based on data source
+        provenance = DataProvenance.UNKNOWN
+        warnings = []
+
         # Query database for real positions using lots table (source of truth)
         try:
             if not ctx.user_id:
@@ -147,6 +152,7 @@ class FinancialAnalyst(BaseAgent):
                 )
 
             logger.info(f"Retrieved {len(positions)} positions from lots table")
+            provenance = DataProvenance.REAL
 
         except Exception as e:
             logger.error(f"Error querying positions from database: {e}", exc_info=True)
@@ -161,6 +167,8 @@ class FinancialAnalyst(BaseAgent):
                     "base_currency": portfolio_base_currency,
                 },
             ]
+            provenance = DataProvenance.STUB
+            warnings.append("Using demo data - database connection failed")
 
         result = {
             "portfolio_id": portfolio_id,
@@ -170,13 +178,21 @@ class FinancialAnalyst(BaseAgent):
             "base_currency": portfolio_base_currency,
         }
 
-        # Attach metadata
+        # Attach metadata with provenance
         metadata = self._create_metadata(
             source=f"ledger:{ctx.ledger_commit_hash[:8]}",
             asof=ctx.asof_date,
             ttl=3600,  # Cache for 1 hour
         )
         result = self._attach_metadata(result, metadata)
+        
+        # Add provenance information
+        result["_provenance"] = {
+            "type": provenance.value,
+            "source": f"database:lots" if provenance == DataProvenance.REAL else "stub:fallback",
+            "warnings": warnings,
+            "confidence": 1.0 if provenance == DataProvenance.REAL else 0.0
+        }
 
         logger.info(f"✅ ledger_positions returning result with {len(positions)} positions")
         logger.info(f"Result type: {type(result)}, keys: {result.keys() if isinstance(result, dict) else 'N/A'}")
@@ -326,6 +342,15 @@ class FinancialAnalyst(BaseAgent):
             ttl=3600,  # Cache for 1 hour
         )
         result = self._attach_metadata(result, metadata)
+        
+        # Add provenance information
+        provenance = DataProvenance.REAL if len(price_map) > 0 else DataProvenance.STUB
+        result["_provenance"] = {
+            "type": provenance.value,
+            "source": f"pricing_pack:{pack_id}" if provenance == DataProvenance.REAL else "stub:default_prices",
+            "warnings": [] if provenance == DataProvenance.REAL else ["Some prices may be missing or defaulted to zero"],
+            "confidence": 1.0 if len(price_map) == len(security_ids) else 0.5
+        }
 
         return result
 

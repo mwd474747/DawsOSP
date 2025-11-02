@@ -13,12 +13,14 @@ Features:
     - Per-panel staleness tracking
     - Conditional step execution
     - Redis caching for intermediate results
+    - Pattern contract validation (Phase 3)
 
 Usage:
     orchestrator = PatternOrchestrator(agent_runtime, db, redis)
     result = await orchestrator.run_pattern("portfolio_overview", ctx, inputs)
 """
 
+import inspect
 import json
 import logging
 import re
@@ -88,13 +90,24 @@ class Trace:
                     "asof": str(meta.asof),
                     "ttl": getattr(meta, "ttl", None),
                 })
+        
+        # Extract provenance information if available
+        provenance = None
+        if isinstance(result, dict) and "_provenance" in result:
+            provenance = result["_provenance"]
 
-        self.steps.append({
+        step_data = {
             "capability": capability,
             "args": args,
             "success": True,
             "duration_seconds": duration_seconds,
-        })
+        }
+        
+        # Add provenance to step if available
+        if provenance:
+            step_data["provenance"] = provenance
+
+        self.steps.append(step_data)
 
     def add_error(self, capability: str, error: str):
         """
@@ -129,7 +142,7 @@ class Trace:
         Serialize trace to dict for API response.
 
         Returns:
-            Dict with pattern_id, pricing_pack_id, ledger_commit_hash, agents, capabilities, sources, steps, cache_stats
+            Dict with pattern_id, pricing_pack_id, ledger_commit_hash, agents, capabilities, sources, steps, cache_stats, and provenance
         """
         trace_dict = {
             "pattern_id": self.pattern_id,
@@ -148,6 +161,34 @@ class Trace:
         if self.agent_runtime:
             cache_stats = self.agent_runtime.get_cache_stats(self.request_id)
             trace_dict["cache_stats"] = cache_stats
+        
+        # Aggregate provenance information from steps
+        provenance_types = set()
+        all_warnings = []
+        for step in self.steps:
+            if "provenance" in step:
+                prov_info = step["provenance"]
+                if "type" in prov_info:
+                    provenance_types.add(prov_info["type"])
+                if "warnings" in prov_info:
+                    all_warnings.extend(prov_info["warnings"])
+        
+        # Determine overall provenance
+        overall_provenance = "unknown"
+        if "stub" in provenance_types:
+            overall_provenance = "mixed" if len(provenance_types) > 1 else "stub"
+        elif "real" in provenance_types:
+            overall_provenance = "real"
+        elif "cached" in provenance_types:
+            overall_provenance = "cached"
+        elif "computed" in provenance_types:
+            overall_provenance = "computed"
+        
+        trace_dict["data_provenance"] = {
+            "overall": overall_provenance,
+            "types_used": sorted(list(provenance_types)),
+            "warnings": list(set(all_warnings))  # Deduplicate warnings
+        }
 
         return trace_dict
 
@@ -289,6 +330,199 @@ class PatternOrchestrator:
                 
         return merged
 
+    def validate_pattern(
+        self, 
+        pattern_id: str,
+        inputs: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
+        """
+        Validate that a pattern's capabilities exist and have matching parameters.
+        
+        This method performs contract validation to ensure:
+        1. All capabilities referenced in the pattern exist in the agent runtime
+        2. Required parameters for each capability are available
+        3. Parameter types match the agent method signatures
+        
+        Args:
+            pattern_id: Pattern ID to validate
+            inputs: Optional inputs to validate against pattern requirements
+            
+        Returns:
+            Dict with validation results:
+            {
+                "valid": bool,
+                "errors": List[str],
+                "warnings": List[str],
+                "capabilities": {
+                    "capability_name": {
+                        "exists": bool,
+                        "agent": str,
+                        "required_params": List[str],
+                        "missing_params": List[str],
+                        "errors": List[str]
+                    }
+                }
+            }
+        """
+        errors = []
+        warnings = []
+        capability_details = {}
+        
+        # Check if pattern exists
+        spec = self.patterns.get(pattern_id)
+        if not spec:
+            return {
+                "valid": False,
+                "errors": [f"Pattern '{pattern_id}' not found"],
+                "warnings": [],
+                "capabilities": {}
+            }
+        
+        # Validate inputs if provided
+        if inputs is None:
+            inputs = {}
+        
+        pattern_inputs_spec = spec.get("inputs", {})
+        
+        # Check required inputs
+        for input_name, input_config in pattern_inputs_spec.items():
+            if input_config.get("required", False):
+                if input_name not in inputs and "default" not in input_config:
+                    errors.append(f"Required input '{input_name}' is missing")
+        
+        # Validate each step's capability
+        for step_idx, step in enumerate(spec.get("steps", [])):
+            capability = step.get("capability")
+            if not capability:
+                errors.append(f"Step {step_idx} missing capability definition")
+                continue
+            
+            # Check if capability exists in agent runtime
+            agent_name = self.agent_runtime.capability_map.get(capability)
+            exists = agent_name is not None
+            
+            capability_detail = {
+                "exists": exists,
+                "agent": agent_name,
+                "required_params": [],
+                "missing_params": [],
+                "errors": []
+            }
+            
+            if not exists:
+                errors.append(f"Capability '{capability}' not found in any agent")
+                capability_detail["errors"].append("Capability not registered")
+            else:
+                # Get the agent and method
+                agent = self.agent_runtime.agents.get(agent_name)
+                if agent:
+                    # Convert capability name to method name
+                    method_name = capability.replace(".", "_")
+                    
+                    if hasattr(agent, method_name):
+                        method = getattr(agent, method_name)
+                        
+                        # Inspect method signature
+                        try:
+                            sig = inspect.signature(method)
+                            params = sig.parameters
+                            
+                            # Get required parameters (excluding self, ctx, state)
+                            required_params = []
+                            for param_name, param in params.items():
+                                if param_name in ['self', 'ctx', 'state']:
+                                    continue
+                                
+                                # Check if parameter has no default value (required)
+                                if param.default == inspect.Parameter.empty:
+                                    required_params.append(param_name)
+                                    capability_detail["required_params"].append(param_name)
+                            
+                            # Check if step provides required parameters
+                            step_args = step.get("args", {})
+                            
+                            # Create a mock state to test argument resolution
+                            mock_state = {
+                                "ctx": {"portfolio_id": "test", "pricing_pack_id": "test"},
+                                "inputs": inputs,
+                                "state": {}
+                            }
+                            
+                            # Check each required parameter
+                            for param_name in required_params:
+                                # Check if parameter is in step args
+                                if param_name not in step_args:
+                                    # Special cases for common parameters
+                                    if param_name == "portfolio_id":
+                                        # Could come from ctx or inputs
+                                        if "portfolio_id" not in step_args:
+                                            warnings.append(
+                                                f"Step {step_idx} ({capability}): "
+                                                f"parameter '{param_name}' not explicitly provided "
+                                                "(may use ctx.portfolio_id or inputs.portfolio_id)"
+                                            )
+                                    else:
+                                        capability_detail["missing_params"].append(param_name)
+                                        errors.append(
+                                            f"Step {step_idx} ({capability}): "
+                                            f"required parameter '{param_name}' not provided"
+                                        )
+                                else:
+                                    # Check if the argument references exist
+                                    arg_value = step_args[param_name]
+                                    if isinstance(arg_value, str) and "{{" in arg_value:
+                                        # It's a template reference, validate it
+                                        try:
+                                            # Extract the reference path
+                                            if arg_value.startswith("{{") and arg_value.endswith("}}"):
+                                                path = arg_value[2:-2].strip()
+                                                parts = path.split(".")
+                                                
+                                                # Check if it references a previous step result
+                                                if parts[0] not in ["ctx", "inputs", "state"]:
+                                                    # It's a direct state reference
+                                                    # Check if this is from a previous step
+                                                    prev_steps = spec["steps"][:step_idx]
+                                                    prev_results = [s.get("as", "last") for s in prev_steps]
+                                                    if parts[0] not in prev_results:
+                                                        warnings.append(
+                                                            f"Step {step_idx} ({capability}): "
+                                                            f"references '{parts[0]}' which may not be available"
+                                                        )
+                                        except Exception as e:
+                                            warnings.append(
+                                                f"Step {step_idx} ({capability}): "
+                                                f"could not validate template '{arg_value}': {e}"
+                                            )
+                        except Exception as e:
+                            warnings.append(
+                                f"Could not inspect signature for {capability}: {e}"
+                            )
+                    else:
+                        errors.append(
+                            f"Agent '{agent_name}' has no method for capability '{capability}'"
+                        )
+                else:
+                    errors.append(f"Agent '{agent_name}' not found in runtime")
+            
+            capability_details[capability] = capability_detail
+        
+        # Determine overall validity
+        valid = len(errors) == 0
+        
+        return {
+            "valid": valid,
+            "errors": errors,
+            "warnings": warnings,
+            "capabilities": capability_details,
+            "pattern": {
+                "id": pattern_id,
+                "name": spec.get("name", "Unknown"),
+                "description": spec.get("description", ""),
+                "steps": len(spec.get("steps", []))
+            }
+        }
+
     async def run_pattern(
         self,
         pattern_id: str,
@@ -321,6 +555,20 @@ class PatternOrchestrator:
 
         logger.info(f"Executing pattern: {pattern_id}")
         logger.info(f"Initial inputs: {inputs}")
+
+        # Perform pre-flight validation (non-blocking, informative only)
+        validation_result = self.validate_pattern(pattern_id, inputs)
+        if not validation_result["valid"]:
+            logger.warning(f"Pattern '{pattern_id}' validation failed (continuing anyway):")
+            for error in validation_result["errors"]:
+                logger.error(f"  ERROR: {error}")
+            for warning in validation_result["warnings"]:
+                logger.warning(f"  WARNING: {warning}")
+        else:
+            logger.info(f"Pattern '{pattern_id}' passed validation")
+            if validation_result["warnings"]:
+                for warning in validation_result["warnings"]:
+                    logger.warning(f"  WARNING: {warning}")
 
         # Apply defaults from pattern spec
         inputs = self._apply_pattern_defaults(spec, inputs)

@@ -28,6 +28,7 @@ from uuid import UUID
 
 from app.agents.base_agent import BaseAgent, AgentMetadata
 from app.core.types import RequestCtx
+from app.core.provenance import ProvenanceWrapper, DataProvenance
 from app.services.macro import MacroService, Regime
 from app.services.cycles import CyclesService, CycleType
 from app.services.macro_aware_scenarios import MacroAwareScenarioService
@@ -133,6 +134,9 @@ class MacroHound(BaseAgent):
         from app.services.macro import get_macro_service
         macro_service = get_macro_service()
 
+        provenance = DataProvenance.UNKNOWN
+        warnings = []
+        
         try:
             # Detect current regime
             classification = await macro_service.detect_current_regime(asof_date=asof)
@@ -145,6 +149,9 @@ class MacroHound(BaseAgent):
                 "zscores": {k: float(v) for k, v in classification.zscores.items()},
                 "regime_scores": {k.value: float(v) for k, v in classification.regime_scores.items()},
             }
+            
+            # Data comes from computed indicators
+            provenance = DataProvenance.COMPUTED
 
         except Exception as e:
             logger.error(f"Error detecting regime: {e}", exc_info=True)
@@ -154,6 +161,8 @@ class MacroHound(BaseAgent):
                 "date": str(asof) if asof else None,
                 "error": f"Regime detection error: {str(e)}",
             }
+            provenance = DataProvenance.STUB
+            warnings.append("Using fallback regime detection due to error")
 
         # Attach metadata
         metadata = self._create_metadata(
@@ -162,6 +171,14 @@ class MacroHound(BaseAgent):
             ttl=3600,  # Cache for 1 hour
         )
         result = self._attach_metadata(result, metadata)
+        
+        # Add provenance information
+        result["_provenance"] = {
+            "type": provenance.value,
+            "source": "macro_service:regime_detector" if provenance == DataProvenance.COMPUTED else "stub:error_fallback",
+            "warnings": warnings,
+            "confidence": result.get("confidence", 0.0)
+        }
 
         return result
 

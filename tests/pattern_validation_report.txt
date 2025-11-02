@@ -1,0 +1,128 @@
+================================================================================
+PATTERN CONTRACT VALIDATION REPORT
+================================================================================
+
+SUMMARY
+----------------------------------------
+Total patterns:           12
+Valid patterns:           1 (8.3%)
+Invalid patterns:         11 (91.7%)
+Patterns with warnings:   0
+
+ERROR BREAKDOWN
+----------------------------------------
+  capability_not_found            20
+  missing_input                    2
+  other                           10
+
+MISSING CAPABILITIES
+----------------------------------------
+  ❌ alerts.create_if_threshold
+  ❌ alerts.suggest_presets
+  ❌ cycles.compute_civil
+  ❌ cycles.compute_empire
+  ❌ cycles.compute_long_term
+  ❌ cycles.compute_short_term
+  ❌ macro.compute_dar
+  ❌ macro.detect_regime
+  ❌ macro.detect_trend_shifts
+  ❌ macro.get_indicators
+  ❌ macro.get_regime_history
+  ❌ macro.run_scenario
+  ❌ scenarios.deleveraging_austerity
+  ❌ scenarios.deleveraging_default
+  ❌ scenarios.deleveraging_money_printing
+
+AGENTS USED
+----------------------------------------
+  • charts_agent
+  • claude_agent
+  • data_harvester
+  • financial_analyst
+  • optimizer_agent
+  • ratings_agent
+  • reports_agent
+
+PATTERN DETAILS
+----------------------------------------
+
+❌ buffett_checklist
+   Name: Buffett Quality Checklist
+   Errors: 5
+     - Required input 'security_id' is missing
+     - Step 1 (ratings.dividend_safety): required parameter 'kwargs' not provided
+     - Step 2 (ratings.moat_strength): required parameter 'kwargs' not provided
+     ... and 2 more
+
+❌ cycle_deleveraging_scenarios
+   Name: Cycle Deleveraging Scenarios
+   Errors: 5
+     - Capability 'cycles.compute_long_term' not found in any agent
+     - Capability 'scenarios.deleveraging_money_printing' not found in any agent
+     - Capability 'scenarios.deleveraging_austerity' not found in any agent
+     ... and 2 more
+
+❌ export_portfolio_report
+   Name: Export Portfolio Report
+   Errors: 2
+     - Capability 'macro.detect_regime' not found in any agent
+     - Step 5 (reports.render_pdf): required parameter 'kwargs' not provided
+
+❌ holding_deep_dive
+   Name: Holding Deep Dive Analysis
+   Errors: 1
+     - Required input 'security_id' is missing
+
+❌ macro_cycles_overview
+   Name: Macro Cycles Overview
+   Errors: 4
+     - Capability 'cycles.compute_short_term' not found in any agent
+     - Capability 'cycles.compute_long_term' not found in any agent
+     - Capability 'cycles.compute_empire' not found in any agent
+     ... and 1 more
+
+❌ macro_trend_monitor
+   Name: Macro Trend Monitor
+   Errors: 3
+     - Capability 'macro.get_regime_history' not found in any agent
+     - Capability 'macro.detect_trend_shifts' not found in any agent
+     - Capability 'alerts.suggest_presets' not found in any agent
+
+❌ news_impact_analysis
+   Name: News Impact Analysis
+   Errors: 1
+     - Capability 'alerts.create_if_threshold' not found in any agent
+
+❌ policy_rebalance
+   Name: Policy-Based Rebalance
+   Errors: 3
+     - Step 2 (ratings.aggregate): required parameter 'kwargs' not provided
+     - Step 3 (optimizer.propose_trades): required parameter 'kwargs' not provided
+     - Step 4 (optimizer.analyze_impact): required parameter 'kwargs' not provided
+
+❌ portfolio_cycle_risk
+   Name: Portfolio Cycle Risk
+   Errors: 3
+     - Capability 'cycles.compute_short_term' not found in any agent
+     - Capability 'cycles.compute_long_term' not found in any agent
+     - Capability 'macro.compute_dar' not found in any agent
+
+❌ portfolio_macro_overview
+   Name: Portfolio Macro Overview
+   Errors: 3
+     - Capability 'macro.detect_regime' not found in any agent
+     - Capability 'macro.get_indicators' not found in any agent
+     - Capability 'macro.compute_dar' not found in any agent
+
+❌ portfolio_scenario_analysis
+   Name: Portfolio Scenario Analysis
+   Errors: 2
+     - Capability 'macro.run_scenario' not found in any agent
+     - Step 3 (optimizer.suggest_hedges): required parameter 'kwargs' not provided
+
+✅ portfolio_overview
+   Name: Portfolio Overview
+
+================================================================================
+END OF REPORT
+================================================================================

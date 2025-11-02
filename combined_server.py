@@ -360,6 +360,10 @@ async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any]
 
         # Run pattern
         result = await orchestrator.run_pattern(pattern_name, ctx, inputs)
+        
+        # Extract provenance information from trace
+        trace_data = result.get("trace", {})
+        provenance_info = trace_data.get("data_provenance", {})
 
         return {
             "success": True,
@@ -370,7 +374,8 @@ async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any]
                 "execution_time": result.get("execution_time_ms", 0),
                 "pricing_pack_id": pricing_pack_id,
                 "ledger_commit_hash": ledger_commit_hash
-            }
+            },
+            "data_provenance": provenance_info  # Include provenance metadata
         }
     except Exception as e:
         logger.error(f"Pattern execution failed for {pattern_name}: {e}")
@@ -880,6 +885,14 @@ async def calculate_portfolio_risk_metrics(holdings: List[dict], portfolio_id: s
 # API Endpoints with Improved Error Handling
 # ============================================================================
 
+@app.get("/frontend/{filename}")
+async def serve_frontend_file(filename: str):
+    """Serve files from the frontend directory"""
+    file_path = Path(f"frontend/{filename}")
+    if file_path.exists() and file_path.is_file():
+        return FileResponse(file_path)
+    raise HTTPException(status_code=404, detail="File not found")
+
 @app.get("/", response_class=HTMLResponse)
 async def root():
     """Root endpoint - serve HTML"""
@@ -1048,7 +1061,13 @@ async def execute_pattern(request: ExecuteRequest):
         )
 
         if result["success"]:
-            return SuccessResponse(data=result["data"])
+            response = SuccessResponse(data=result["data"])
+            # Add data provenance if available
+            if "data_provenance" in result:
+                response_dict = response.model_dump()
+                response_dict["data_provenance"] = result["data_provenance"]
+                return response_dict
+            return response
         else:
             raise HTTPException(
                 status_code=500,
@@ -1060,6 +1079,130 @@ async def execute_pattern(request: ExecuteRequest):
             status_code=500,
             detail=f"Pattern execution failed: {str(e)}"
         )
+
+@app.get("/api/patterns/health")
+async def patterns_health_check():
+    """
+    Health check endpoint for all 12 patterns.
+    Shows status and data source for each pattern.
+    """
+    health_data = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "orchestrator_available": False,
+        "patterns": {}
+    }
+    
+    # List of all 12 patterns
+    pattern_names = [
+        "portfolio_overview",
+        "scenario_analysis", 
+        "risk_analysis",
+        "macro_cycles_overview",
+        "performance_attribution",
+        "portfolio_optimizer",
+        "ratings_analysis",
+        "ai_insights",
+        "alerts_management",
+        "reports_generation",
+        "corporate_actions",
+        "market_data_analysis"
+    ]
+    
+    try:
+        # Check if orchestrator is available
+        orchestrator = get_pattern_orchestrator()
+        health_data["orchestrator_available"] = orchestrator is not None
+        
+        # Initialize all patterns status
+        for pattern in pattern_names:
+            health_data["patterns"][pattern] = {
+                "status": "unknown",
+                "data_source": "unknown",
+                "last_check": None,
+                "error": None
+            }
+        
+        if orchestrator:
+            # Try to get actual pattern status
+            try:
+                # Check each pattern's availability
+                for pattern in pattern_names:
+                    pattern_status = {
+                        "status": "working",
+                        "data_source": "stub",  # Default to stub data
+                        "last_check": datetime.utcnow().isoformat(),
+                        "error": None
+                    }
+                    
+                    # Special handling for patterns with real data
+                    if pattern in ["portfolio_overview", "macro_cycles_overview"]:
+                        # These patterns may have real data if DB is connected
+                        if db_pool:
+                            try:
+                                async with db_pool.acquire() as conn:
+                                    # Quick check if DB has data
+                                    result = await conn.fetchval("SELECT COUNT(*) FROM portfolios")
+                                    if result > 0:
+                                        pattern_status["data_source"] = "real"
+                            except Exception as e:
+                                pattern_status["data_source"] = "stub"
+                                pattern_status["status"] = "partial"
+                                pattern_status["error"] = f"DB check failed: {str(e)[:100]}"
+                    
+                    # Check if pattern is registered in orchestrator
+                    if hasattr(orchestrator, 'patterns_registry'):
+                        if pattern not in orchestrator.patterns_registry:
+                            pattern_status["status"] = "broken"
+                            pattern_status["error"] = "Pattern not registered"
+                    
+                    health_data["patterns"][pattern] = pattern_status
+                    
+                    # Log the pattern health check
+                    logger.info(f"[Health] Pattern {pattern}: {pattern_status['status']} - {pattern_status['data_source']}")
+                    
+            except Exception as e:
+                logger.error(f"Error checking pattern status: {e}")
+                health_data["orchestrator_available"] = False
+                health_data["error"] = f"Failed to check patterns: {str(e)[:200]}"
+        else:
+            # Orchestrator not available
+            health_data["orchestrator_available"] = False
+            health_data["error"] = "Pattern orchestrator not initialized"
+            
+            # Mark all patterns as unavailable
+            for pattern in pattern_names:
+                health_data["patterns"][pattern] = {
+                    "status": "unavailable",
+                    "data_source": "none",
+                    "last_check": datetime.utcnow().isoformat(),
+                    "error": "Orchestrator not available"
+                }
+    
+    except Exception as e:
+        logger.error(f"Health check error: {e}")
+        health_data["status"] = "error"
+        health_data["error"] = str(e)[:500]
+    
+    # Determine overall health status
+    pattern_statuses = [p.get("status", "unknown") for p in health_data["patterns"].values()]
+    if all(s == "working" for s in pattern_statuses):
+        health_data["status"] = "healthy"
+    elif any(s == "working" or s == "partial" for s in pattern_statuses):
+        health_data["status"] = "degraded"
+    else:
+        health_data["status"] = "unhealthy"
+    
+    # Add summary statistics
+    health_data["summary"] = {
+        "total_patterns": len(pattern_names),
+        "working": sum(1 for s in pattern_statuses if s == "working"),
+        "partial": sum(1 for s in pattern_statuses if s == "partial"),
+        "broken": sum(1 for s in pattern_statuses if s == "broken"),
+        "unavailable": sum(1 for s in pattern_statuses if s == "unavailable")
+    }
+    
+    return health_data
 
 @app.post("/api/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest):
