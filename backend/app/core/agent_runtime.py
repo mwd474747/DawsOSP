@@ -22,6 +22,7 @@ Usage:
 
 import asyncio
 import logging
+import time  # Import time for CircuitBreaker
 from typing import Any, Dict, List, Optional
 
 from app.agents.base_agent import BaseAgent
@@ -47,6 +48,50 @@ except ImportError:
         return None
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# Circuit Breaker
+# ============================================================================
+
+class CircuitBreaker:
+    """
+    Simplified circuit breaker for agent failure tracking.
+
+    Opens after failure_threshold consecutive failures and stays open
+    for timeout_seconds before allowing retry.
+    """
+
+    def __init__(self, failure_threshold: int = 5, timeout_seconds: int = 60):
+        self.failure_threshold = failure_threshold
+        self.timeout_seconds = timeout_seconds
+        self.failure_count = 0
+        self.state = "CLOSED"
+        self.opened_at = None
+
+    def record_success(self):
+        """Reset on success."""
+        self.failure_count = 0
+        self.state = "CLOSED"
+        self.opened_at = None
+
+    def record_failure(self):
+        """Increment failure count and open if threshold reached."""
+        self.failure_count += 1
+        if self.failure_count >= self.failure_threshold:
+            self.state = "OPEN"
+            self.opened_at = time.time()
+
+    def can_execute(self) -> bool:
+        """Check if execution allowed."""
+        if self.state == "CLOSED":
+            return True
+        # Auto-reset after timeout
+        if time.time() - self.opened_at > self.timeout_seconds:
+            self.state = "CLOSED"
+            self.failure_count = 0
+            return True
+        return False
 
 
 # ============================================================================
@@ -87,6 +132,10 @@ class AgentRuntime:
         # Retry configuration
         self.max_retries = 3
         self.retry_delays = [1, 2, 4]  # Exponential backoff: 1s, 2s, 4s
+
+        # Circuit breaker configuration for each agent
+        # Using a default circuit breaker for now, can be agent-specific later
+        self.circuit_breaker = CircuitBreaker(failure_threshold=5, timeout_seconds=60)
 
         # Rights enforcement
         self.enable_rights_enforcement = enable_rights_enforcement
@@ -321,6 +370,16 @@ class AgentRuntime:
 
         agent = self.agents[agent_name]
 
+        # Check circuit breaker before attempting execution
+        if not self.circuit_breaker.can_execute():
+            logger.warning(
+                f"Circuit breaker OPEN for {agent_name} (capability: {capability}). "
+                f"Skipping execution."
+            )
+            # Raise a specific error or return a placeholder indicating circuit is open
+            # For now, let's raise a generic error that can be caught upstream
+            raise RuntimeError(f"Agent {agent_name} is temporarily unavailable (circuit open).")
+
         # Check cache first
         cache_key = self._get_cache_key(capability, kwargs)
         cached_result = self._get_cached_result(ctx.request_id, cache_key)
@@ -333,13 +392,12 @@ class AgentRuntime:
 
         # Execute capability with retry logic
         metrics = get_metrics()
-        import time
-        
+
         last_exception = None
         for attempt in range(self.max_retries + 1):
             agent_start_time = time.time()
             agent_status = "success"
-            
+
             try:
                 if attempt > 0:
                     logger.info(
@@ -353,6 +411,10 @@ class AgentRuntime:
                     )
 
                 result = await agent.execute(capability, ctx, state, **kwargs)
+
+                # Record success and reset circuit breaker
+                self.circuit_breaker.record_success()
+                logger.debug(f"Circuit breaker reset for {agent_name} on success.")
 
                 # Add attributions if rights enforcement enabled
                 if self.enable_rights_enforcement and self._attribution_manager:
@@ -380,7 +442,15 @@ class AgentRuntime:
             except Exception as e:
                 agent_status = "error"
                 last_exception = e
-                
+
+                # Record failure and update circuit breaker
+                self.circuit_breaker.record_failure()
+                if self.circuit_breaker.state == "OPEN":
+                    logger.warning(
+                        f"Circuit breaker OPENED for {agent_name} "
+                        f"(capability: {capability}, failure_count: {self.circuit_breaker.failure_count})"
+                    )
+
                 # Log the error with appropriate severity based on attempt
                 if attempt < self.max_retries:
                     logger.warning(
@@ -393,7 +463,7 @@ class AgentRuntime:
                         f"after {self.max_retries + 1} attempts: {e}",
                         exc_info=True,
                     )
-                
+
                 # Record failure metrics
                 if metrics:
                     agent_duration = time.time() - agent_start_time
@@ -407,7 +477,7 @@ class AgentRuntime:
                         agent_name=agent_name,
                         capability=capability,
                     ).observe(agent_duration)
-                
+
                 # If this is not the last attempt, wait before retrying
                 if attempt < self.max_retries:
                     delay = self.retry_delays[attempt]
@@ -416,7 +486,7 @@ class AgentRuntime:
                     )
                     await asyncio.sleep(delay)
                     continue
-                
+
                 # If all retries failed, raise the last exception
                 raise
 
