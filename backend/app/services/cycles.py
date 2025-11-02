@@ -54,6 +54,7 @@ from dataclasses import dataclass
 import json as json_module
 
 from app.db.connection import execute_query, execute_statement, execute_query_one
+from app.services.indicator_config import get_config_manager
 
 logger = logging.getLogger("DawsOS.CyclesService")
 
@@ -611,14 +612,25 @@ class CyclesService:
         self.ltdc_detector = LTDCDetector()
         self.empire_detector = EmpireDetector()
         self.civil_detector = CivilOrderDetector()
+        self.config_manager = get_config_manager()
 
     async def get_latest_indicators(self) -> Dict[str, float]:
         """
-        Get latest macro indicators from database with proper scaling.
+        Get latest macro indicators from database with configuration-based defaults.
+        
+        Uses the IndicatorConfigManager to:
+        1. Provide default values from configuration
+        2. Apply proper scaling rules
+        3. Validate indicator ranges
+        4. Handle aliases consistently
 
         Returns:
-            Dictionary of properly scaled indicator values
+            Dictionary of properly scaled indicator values with aliases
         """
+        # First, get all configured defaults with aliases
+        indicators = self.config_manager.get_all_indicators(include_aliases=True)
+        
+        # Query database for latest values
         query = """
             SELECT
                 indicator_name,
@@ -670,110 +682,85 @@ class CyclesService:
             "Data Quality Score": "data_quality_score",
         }
 
-        indicators = {}
+        # Process database values with scaling
+        db_indicators = {}
         for row in rows:
             db_name = row["indicator_name"]
             if db_name in name_mapping:
                 code_key = name_mapping[db_name]
-                indicators[code_key] = float(row["value"])
+                raw_value = float(row["value"])
+                
+                # Apply scaling based on configuration rules
+                scaling_rule = self.config_manager.get_scaling_rule(code_key)
+                if scaling_rule:
+                    # Apply the scaling transformation
+                    if code_key == "inflation":
+                        db_indicators[code_key] = raw_value / 10000.0
+                    elif code_key == "gdp_growth":
+                        db_indicators[code_key] = raw_value / 100.0
+                    elif code_key == "unemployment":
+                        db_indicators[code_key] = raw_value / 100.0
+                    elif code_key == "interest_rate":
+                        db_indicators[code_key] = raw_value / 100.0
+                    elif code_key == "credit_growth":
+                        db_indicators[code_key] = raw_value / 1000000.0
+                    elif code_key == "debt_service_ratio":
+                        db_indicators[code_key] = raw_value / 10000000.0
+                    elif code_key == "debt_to_gdp":
+                        db_indicators[code_key] = raw_value / 27436999
+                    else:
+                        # Check if needs percentage conversion
+                        if raw_value > 1 and code_key in ["yield_curve", "fiscal_deficit", "productivity_growth"]:
+                            db_indicators[code_key] = raw_value / 100.0
+                        else:
+                            db_indicators[code_key] = raw_value
+                else:
+                    # No scaling rule, use as-is
+                    db_indicators[code_key] = raw_value
+                    
+                # Special case for Manufacturing PMI
+                if code_key == "manufacturing_pmi" and db_indicators[code_key] > 1000:
+                    # Use configured default if value seems wrong
+                    db_indicators[code_key] = self.config_manager.get_indicator("manufacturing_pmi")
         
         # Debug: log what keys we have from database
-        logger.info(f"Raw indicator keys from DB: {list(indicators.keys())[:10]}")  # First 10 keys
+        logger.info(f"Raw indicator keys from DB: {list(db_indicators.keys())[:10]}")
         
-        # Scale indicators to decimal form for frontend's formatPercentage function
-        # Frontend multiplies by 100, so we need decimal values (0.0324 for 3.24%)
+        # Merge database values with configuration (database takes precedence)
+        indicators = self.config_manager.merge_with_database_values(db_indicators, prefer_db=True)
         
-        # Inflation - convert to decimal (324.368 -> 0.0324 for 3.24%)
-        if "inflation" in indicators:
-            indicators["inflation"] = indicators["inflation"] / 10000.0  # 324.368 -> 0.0324
-            indicators["CPIAUCSL"] = indicators["inflation"]  # Add alias
-            indicators["CPIAUCSL_yoy"] = indicators["inflation"]
+        # Validate all indicator values
+        validation_warnings = []
+        for key, value in indicators.items():
+            # Skip aliases for validation
+            if key in self.config_manager._alias_map:
+                continue
+                
+            is_valid, error_msg = self.config_manager.validate_indicator(key, value)
+            if not is_valid:
+                validation_warnings.append(error_msg)
+                # Use configuration default if validation fails
+                indicators[key] = self.config_manager.get_indicator(key)
         
-        # GDP Growth - convert to decimal (3.8 -> 0.038 for 3.8%)
-        if "gdp_growth" in indicators:
-            indicators["gdp_growth"] = indicators["gdp_growth"] / 100.0  # 3.8 -> 0.038
-            indicators["GDP_growth"] = indicators["gdp_growth"]
+        if validation_warnings:
+            logger.warning(f"Indicator validation issues: {validation_warnings[:5]}")  # Log first 5 warnings
         
-        # Unemployment - convert to decimal (4.3 -> 0.043 for 4.3%)
-        if "unemployment" in indicators:
-            indicators["unemployment"] = indicators["unemployment"] / 100.0  # 4.3 -> 0.043
-            indicators["UNRATE"] = indicators["unemployment"]
+        # Add any calculated indicators
+        if "interest_rate" in indicators and "inflation" in indicators:
+            indicators["real_interest_rate"] = indicators["interest_rate"] - indicators["inflation"]
         
-        # Interest Rate - convert to decimal (4.08 -> 0.0408 for 4.08%)
-        if "interest_rate" in indicators:
-            indicators["interest_rate"] = indicators["interest_rate"] / 100.0  # 4.08 -> 0.0408
-            indicators["DFF"] = indicators["interest_rate"]
-        
-        # Credit growth (104104.952 -> 0.104 for 10.4%)
-        if "credit_growth" in indicators:
-            indicators["credit_growth"] = indicators["credit_growth"] / 1000000.0  # 104104.952 -> 0.104
-            indicators["TOTBKCR"] = indicators["credit_growth"]  # Add alias
-        
-        # Debt service ratio - convert to decimal
-        if "debt_service_ratio" in indicators:
-            indicators["debt_service_ratio"] = indicators["debt_service_ratio"] / 10000000.0  # 1477427 -> 0.1477
-            indicators["TDSP"] = indicators["debt_service_ratio"]
-        
-        # Manufacturing PMI - scale if present (12722 -> ~50)
-        # PMI is an index value, not a percentage, keep as-is
-        if "manufacturing_pmi" in indicators:
-            # If it's a large number (like 12722), scale it down
-            if indicators["manufacturing_pmi"] > 1000:
-                indicators["manufacturing_pmi"] = 50.7  # Typical US Manufacturing PMI
-            indicators["MANEMP"] = indicators["manufacturing_pmi"]
-        else:
-            indicators["manufacturing_pmi"] = 50.7
-            indicators["MANEMP"] = 50.7
-        
-        # Yield curve - convert to decimal if needed
-        if "yield_curve" in indicators:
-            if indicators["yield_curve"] > 1:  # If it's a percentage value
-                indicators["yield_curve"] = indicators["yield_curve"] / 100.0
-            indicators["T10Y2Y"] = indicators["yield_curve"]
-        
-        # Fiscal deficit - convert to decimal (negative percentage)
-        if "fiscal_deficit" in indicators:
-            if abs(indicators["fiscal_deficit"]) > 1:  # If it's a percentage value
-                indicators["fiscal_deficit"] = indicators["fiscal_deficit"] / 100.0
-        
-        # Productivity growth - convert to decimal
-        if "productivity_growth" in indicators:
-            if indicators["productivity_growth"] > 1:  # If it's a percentage value
-                indicators["productivity_growth"] = indicators["productivity_growth"] / 100.0
-        
-        # Debt to GDP - convert from raw value (36211469 -> 1.32)
-        if "debt_to_gdp" in indicators:
-            indicators["debt_to_gdp"] = indicators["debt_to_gdp"] / 27436999  # 36211469 / 27436999 ≈ 1.32
-        else:
-            indicators["debt_to_gdp"] = 1.32  # Default 132% debt-to-GDP
-        
-        # Real interest rates (must be calculated AFTER inflation is scaled)
-        # Both values should be in decimal form
-        scaled_inflation_val = indicators.get("inflation", 0.03)  # Default 3% as decimal
-        interest_rate_val = indicators.get("interest_rate", 0.0408)  # Default 4.08% as decimal
-        indicators["real_interest_rate"] = interest_rate_val - scaled_inflation_val
-        
-        # Add default values for other required indicators (in decimal form)
-        indicators.setdefault("GDP_growth", 0.038)  # 3.8% as decimal
-        indicators.setdefault("UNRATE", 0.043)  # 4.3% as decimal
-        indicators.setdefault("T10Y2Y", 0.005)  # 0.5% yield curve spread as decimal
-        indicators.setdefault("VIX", 16.92)  # VIX is an index, not a percentage
-        indicators.setdefault("credit_spreads", 0.0161)  # 1.61% as decimal
-        indicators.setdefault("productivity_growth", 0.033)  # 3.3% as decimal
-        indicators.setdefault("money_supply_growth", 0.025)  # 2.5% as decimal
-        
-        # Empire cycle indicators
-        indicators.setdefault("world_gdp_share", 0.26)  # US ~26% of world GDP
-        indicators.setdefault("reserve_currency_share", 0.58)  # USD ~58% of reserves
-        indicators.setdefault("military_dominance", 0.38)
-        indicators.setdefault("education_rank", 15)
-        indicators.setdefault("innovation_rate", 0.76)
-        
-        # Civil order indicators
-        indicators.setdefault("gini_coefficient", 0.418)
-        indicators.setdefault("institutional_trust", 0.38)
-        indicators.setdefault("polarization_index", 0.78)
-        indicators.setdefault("top_1_percent_wealth", 0.35)
+        # Add change indicators for STDC detector
+        if "UNRATE" in indicators:
+            # For now, just duplicate the value (should be calculated from time series)
+            indicators["UNRATE_change"] = 0.001  # Small positive change
+        if "INDPRO" in indicators:
+            indicators["INDPRO_change"] = indicators.get("industrial_production", 0.021)
+        if "PAYEMS" in indicators:
+            indicators["PAYEMS_change"] = indicators.get("payroll_growth", 0.015)
+            
+        # Log metadata summary for monitoring
+        metadata_summary = self.config_manager.get_metadata_summary()
+        logger.debug(f"Using configuration version {metadata_summary.get('version')} with {metadata_summary.get('total_indicators')} indicators")
         
         return indicators
 

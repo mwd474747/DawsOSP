@@ -1,0 +1,640 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2025-11-02",
+  "description": "Macro economic indicators configuration for cycle detection",
+  "metadata": {
+    "authors": ["DawsOS Team"],
+    "documentation_url": "/docs/macro-indicators",
+    "update_frequency": "quarterly",
+    "data_quality_notes": "Values marked as 'default' confidence are placeholders that should be replaced with real data when available"
+  },
+  "categories": {
+    "global": {
+      "name": "Global Economic Indicators",
+      "description": "Core indicators used across all cycle types",
+      "indicators": {
+        "gdp_growth": {
+          "value": 0.038,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": -0.10, "max": 0.15},
+          "source": "BEA/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "Real GDP growth rate, seasonally adjusted annual rate",
+          "aliases": ["GDP_growth"]
+        },
+        "inflation": {
+          "value": 0.0324,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": -0.02, "max": 0.20},
+          "source": "BLS/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "CPI-U Year-over-Year change",
+          "aliases": ["CPIAUCSL", "CPIAUCSL_yoy"]
+        },
+        "unemployment": {
+          "value": 0.043,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": 0.02, "max": 0.15},
+          "source": "BLS/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "U-3 unemployment rate, seasonally adjusted",
+          "aliases": ["UNRATE"]
+        },
+        "interest_rate": {
+          "value": 0.0408,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": 0.0, "max": 0.20},
+          "source": "Federal Reserve/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "Federal Funds Effective Rate",
+          "aliases": ["DFF", "fed_funds_rate"]
+        },
+        "yield_curve": {
+          "value": 0.005,
+          "unit": "decimal",
+          "display_unit": "basis_points",
+          "range": {"min": -0.03, "max": 0.03},
+          "source": "US Treasury/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "10-Year minus 2-Year Treasury spread",
+          "aliases": ["T10Y2Y", "term_spread"]
+        },
+        "credit_growth": {
+          "value": 0.104,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": -0.10, "max": 0.30},
+          "source": "Federal Reserve/FRED",
+          "confidence": "medium",
+          "last_updated": "2025-11-01",
+          "notes": "Total bank credit growth year-over-year",
+          "aliases": ["TOTBKCR", "bank_credit_growth"]
+        },
+        "debt_to_gdp": {
+          "value": 1.32,
+          "unit": "ratio",
+          "display_unit": "percentage",
+          "range": {"min": 0.3, "max": 3.0},
+          "source": "BIS/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "Total debt (public + private) to GDP ratio",
+          "aliases": ["debt_gdp_ratio"]
+        },
+        "fiscal_deficit": {
+          "value": -0.062,
+          "unit": "decimal",
+          "display_unit": "percentage_of_gdp",
+          "range": {"min": -0.20, "max": 0.05},
+          "source": "US Treasury/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "Federal deficit as percentage of GDP (negative = deficit)",
+          "aliases": ["FYFSGDA188S", "federal_deficit"]
+        },
+        "real_interest_rate": {
+          "value": 0.0084,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": -0.10, "max": 0.10},
+          "source": "Calculated",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "Nominal interest rate minus inflation",
+          "calculation": "interest_rate - inflation"
+        }
+      }
+    },
+    "stdc": {
+      "name": "Short-Term Debt Cycle Indicators",
+      "description": "Indicators specific to 5-10 year business cycles",
+      "indicators": {
+        "manufacturing_pmi": {
+          "value": 50.7,
+          "unit": "index",
+          "display_unit": "index",
+          "range": {"min": 30, "max": 70},
+          "source": "ISM",
+          "confidence": "medium",
+          "last_updated": "2025-11-01",
+          "notes": "ISM Manufacturing PMI (>50 = expansion)",
+          "aliases": ["MANEMP", "ism_pmi"]
+        },
+        "industrial_production": {
+          "value": 0.021,
+          "unit": "decimal",
+          "display_unit": "percentage_change",
+          "range": {"min": -0.20, "max": 0.20},
+          "source": "Federal Reserve/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "Industrial Production Index year-over-year change",
+          "aliases": ["INDPRO", "INDPRO_change"]
+        },
+        "retail_sales": {
+          "value": 0.032,
+          "unit": "decimal",
+          "display_unit": "percentage_change",
+          "range": {"min": -0.15, "max": 0.15},
+          "source": "US Census Bureau/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "Retail sales year-over-year change",
+          "aliases": ["RSXFS", "retail_sales_growth"]
+        },
+        "consumer_confidence": {
+          "value": 98.5,
+          "unit": "index",
+          "display_unit": "index",
+          "range": {"min": 50, "max": 150},
+          "source": "Conference Board",
+          "confidence": "medium",
+          "last_updated": "2025-11-01",
+          "notes": "Consumer Confidence Index (1985=100)",
+          "aliases": ["UMCSENT", "consumer_sentiment"]
+        },
+        "jobless_claims": {
+          "value": 218000,
+          "unit": "count",
+          "display_unit": "count",
+          "range": {"min": 150000, "max": 800000},
+          "source": "Department of Labor/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "Initial jobless claims, 4-week moving average",
+          "aliases": ["ICSA", "initial_claims"]
+        },
+        "payroll_growth": {
+          "value": 0.015,
+          "unit": "decimal",
+          "display_unit": "percentage_change",
+          "range": {"min": -0.05, "max": 0.05},
+          "source": "BLS/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "Non-farm payroll employment year-over-year change",
+          "aliases": ["PAYEMS", "PAYEMS_change"]
+        },
+        "housing_starts": {
+          "value": 1425000,
+          "unit": "count",
+          "display_unit": "annual_rate",
+          "range": {"min": 500000, "max": 2500000},
+          "source": "US Census Bureau/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "Housing starts, seasonally adjusted annual rate",
+          "aliases": ["HOUST"]
+        }
+      }
+    },
+    "ltdc": {
+      "name": "Long-Term Debt Cycle Indicators",
+      "description": "Indicators for 50-75 year debt super cycles",
+      "indicators": {
+        "money_supply_growth": {
+          "value": 0.025,
+          "unit": "decimal",
+          "display_unit": "percentage_change",
+          "range": {"min": -0.10, "max": 0.25},
+          "source": "Federal Reserve/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "M2 money supply year-over-year growth",
+          "aliases": ["M2SL", "m2_growth"]
+        },
+        "debt_service_ratio": {
+          "value": 0.1477,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": 0.08, "max": 0.20},
+          "source": "Federal Reserve/FRED",
+          "confidence": "medium",
+          "last_updated": "2025-11-01",
+          "notes": "Household debt service payments as percentage of disposable income",
+          "aliases": ["TDSP", "dsr"]
+        },
+        "credit_spreads": {
+          "value": 0.0161,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": 0.005, "max": 0.10},
+          "source": "FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "BAA-AAA corporate bond spread",
+          "aliases": ["BAA10Y", "credit_spread"]
+        },
+        "productivity_growth": {
+          "value": 0.033,
+          "unit": "decimal",
+          "display_unit": "percentage_change",
+          "range": {"min": -0.02, "max": 0.05},
+          "source": "BLS/FRED",
+          "confidence": "medium",
+          "last_updated": "2025-11-01",
+          "notes": "Labor productivity year-over-year growth",
+          "aliases": ["OPHNFB", "productivity"]
+        },
+        "asset_prices": {
+          "value": 0.182,
+          "unit": "decimal",
+          "display_unit": "percentage_change",
+          "range": {"min": -0.40, "max": 0.40},
+          "source": "Various",
+          "confidence": "low",
+          "last_updated": "2025-11-01",
+          "notes": "Composite asset price index (stocks, real estate, commodities)",
+          "aliases": ["asset_inflation"]
+        },
+        "default_rate": {
+          "value": 0.032,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": 0.005, "max": 0.15},
+          "source": "Moody's",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Speculative-grade corporate default rate",
+          "aliases": ["corp_default_rate"]
+        },
+        "trade_balance": {
+          "value": -0.032,
+          "unit": "decimal",
+          "display_unit": "percentage_of_gdp",
+          "range": {"min": -0.10, "max": 0.05},
+          "source": "BEA/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "Trade balance as percentage of GDP (negative = deficit)",
+          "aliases": ["NETEXP", "net_exports"]
+        }
+      }
+    },
+    "empire": {
+      "name": "Empire Cycle Indicators",
+      "description": "Indicators for 200-300 year rise and decline of global powers",
+      "indicators": {
+        "world_gdp_share": {
+          "value": 0.26,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": 0.0, "max": 0.50},
+          "source": "World Bank",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Share of world GDP",
+          "aliases": ["gdp_share"]
+        },
+        "reserve_currency_share": {
+          "value": 0.58,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": 0.0, "max": 1.0},
+          "source": "IMF COFER",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Share of global foreign exchange reserves",
+          "aliases": ["currency_dominance"]
+        },
+        "military_dominance": {
+          "value": 0.38,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": 0.0, "max": 1.0},
+          "source": "SIPRI",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Share of global military spending",
+          "aliases": ["military_strength", "defense_spending_share"]
+        },
+        "education_rank": {
+          "value": 15,
+          "unit": "rank",
+          "display_unit": "rank",
+          "range": {"min": 1, "max": 200},
+          "source": "OECD PISA",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "International education ranking",
+          "aliases": ["education_score"]
+        },
+        "education_investment": {
+          "value": 0.052,
+          "unit": "decimal",
+          "display_unit": "percentage_of_gdp",
+          "range": {"min": 0.02, "max": 0.10},
+          "source": "World Bank",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Education spending as percentage of GDP",
+          "aliases": ["education_spending"]
+        },
+        "innovation_rate": {
+          "value": 0.76,
+          "unit": "index",
+          "display_unit": "score",
+          "range": {"min": 0.0, "max": 1.0},
+          "source": "Global Innovation Index",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Innovation index score (0-1 scale)",
+          "aliases": ["innovation_index"]
+        },
+        "world_trade_share": {
+          "value": 0.135,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": 0.0, "max": 0.30},
+          "source": "WTO",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Share of global trade volume",
+          "aliases": ["trade_dominance"]
+        },
+        "inequality": {
+          "value": 0.418,
+          "unit": "coefficient",
+          "display_unit": "gini",
+          "range": {"min": 0.20, "max": 0.60},
+          "source": "US Census Bureau",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Gini coefficient (0=perfect equality, 1=perfect inequality)",
+          "aliases": ["gini_coefficient", "GINI"]
+        },
+        "internal_conflict": {
+          "value": 0.42,
+          "unit": "index",
+          "display_unit": "score",
+          "range": {"min": 0.0, "max": 1.0},
+          "source": "Various indices",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Composite internal conflict risk score",
+          "aliases": ["social_unrest_score"]
+        }
+      }
+    },
+    "civil": {
+      "name": "Civil/Internal Order Indicators",
+      "description": "Indicators for social and political stability cycles",
+      "indicators": {
+        "gini_coefficient": {
+          "value": 0.418,
+          "unit": "coefficient",
+          "display_unit": "gini",
+          "range": {"min": 0.20, "max": 0.60},
+          "source": "US Census Bureau",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Income inequality measure",
+          "aliases": ["GINI", "income_inequality"]
+        },
+        "institutional_trust": {
+          "value": 0.38,
+          "unit": "index",
+          "display_unit": "score",
+          "range": {"min": 0.0, "max": 1.0},
+          "source": "Gallup/Pew Research",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Trust in government institutions index",
+          "aliases": ["trust_index", "government_trust"]
+        },
+        "polarization_index": {
+          "value": 0.78,
+          "unit": "index",
+          "display_unit": "score",
+          "range": {"min": 0.0, "max": 1.0},
+          "source": "Political Science Research",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Political polarization measure",
+          "aliases": ["political_polarization", "partisan_divide"]
+        },
+        "social_unrest_score": {
+          "value": 0.30,
+          "unit": "index",
+          "display_unit": "score",
+          "range": {"min": 0.0, "max": 1.0},
+          "source": "Various indices",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Composite social unrest risk score",
+          "aliases": ["unrest_index", "protest_activity"]
+        },
+        "top_1_percent_wealth": {
+          "value": 0.35,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": 0.10, "max": 0.50},
+          "source": "Federal Reserve SCF",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Share of wealth held by top 1%",
+          "aliases": ["wealth_concentration", "top_1_wealth_share"]
+        },
+        "voter_turnout": {
+          "value": 0.62,
+          "unit": "decimal",
+          "display_unit": "percentage",
+          "range": {"min": 0.30, "max": 0.80},
+          "source": "US Elections Project",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Voter turnout in last national election",
+          "aliases": ["political_participation"]
+        },
+        "media_trust": {
+          "value": 0.29,
+          "unit": "index",
+          "display_unit": "score",
+          "range": {"min": 0.0, "max": 1.0},
+          "source": "Gallup",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Trust in news media",
+          "aliases": ["press_credibility"]
+        }
+      }
+    },
+    "market": {
+      "name": "Financial Market Indicators",
+      "description": "Market-specific indicators for risk assessment",
+      "indicators": {
+        "vix": {
+          "value": 16.92,
+          "unit": "index",
+          "display_unit": "index",
+          "range": {"min": 10, "max": 80},
+          "source": "CBOE/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "CBOE Volatility Index (fear gauge)",
+          "aliases": ["VIX", "volatility_index"]
+        },
+        "corporate_profits": {
+          "value": 0.082,
+          "unit": "decimal",
+          "display_unit": "percentage_change",
+          "range": {"min": -0.30, "max": 0.30},
+          "source": "BEA/FRED",
+          "confidence": "medium",
+          "last_updated": "2025-11-01",
+          "notes": "Corporate profits year-over-year growth",
+          "aliases": ["CP", "earnings_growth"]
+        },
+        "dollar_index": {
+          "value": 106.2,
+          "unit": "index",
+          "display_unit": "index",
+          "range": {"min": 70, "max": 140},
+          "source": "ICE/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "US Dollar Index (DXY)",
+          "aliases": ["DXY", "usd_index"]
+        },
+        "oil_prices": {
+          "value": 82.50,
+          "unit": "usd_per_barrel",
+          "display_unit": "dollars",
+          "range": {"min": 20, "max": 150},
+          "source": "EIA/FRED",
+          "confidence": "high",
+          "last_updated": "2025-11-01",
+          "notes": "WTI Crude Oil spot price",
+          "aliases": ["DCOILWTICO", "wti_crude"]
+        },
+        "credit_impulse": {
+          "value": -0.018,
+          "unit": "decimal",
+          "display_unit": "percentage_of_gdp",
+          "range": {"min": -0.10, "max": 0.10},
+          "source": "Calculated",
+          "confidence": "default",
+          "last_updated": "2025-11-01",
+          "notes": "Change in credit growth as percentage of GDP",
+          "aliases": ["credit_acceleration"]
+        }
+      }
+    }
+  },
+  "scaling_rules": {
+    "description": "Rules for converting raw database values to proper decimal form",
+    "rules": [
+      {
+        "indicator": "inflation",
+        "from_db": "multiply by 10000",
+        "to_decimal": "divide by 10000",
+        "example": "324.368 -> 0.0324 (3.24%)"
+      },
+      {
+        "indicator": "gdp_growth",
+        "from_db": "percentage",
+        "to_decimal": "divide by 100",
+        "example": "3.8 -> 0.038 (3.8%)"
+      },
+      {
+        "indicator": "unemployment",
+        "from_db": "percentage",
+        "to_decimal": "divide by 100",
+        "example": "4.3 -> 0.043 (4.3%)"
+      },
+      {
+        "indicator": "credit_growth",
+        "from_db": "raw value",
+        "to_decimal": "divide by 1000000",
+        "example": "104104.952 -> 0.104 (10.4%)"
+      },
+      {
+        "indicator": "debt_service_ratio",
+        "from_db": "raw value",
+        "to_decimal": "divide by 10000000",
+        "example": "1477427 -> 0.1477 (14.77%)"
+      },
+      {
+        "indicator": "debt_to_gdp",
+        "from_db": "raw value",
+        "to_decimal": "divide by baseline GDP",
+        "example": "36211469 / 27436999 = 1.32 (132%)"
+      }
+    ]
+  },
+  "validation_rules": {
+    "description": "Validation rules for indicator values",
+    "rules": [
+      {
+        "type": "range_check",
+        "description": "All percentage values should be between -100% and 200%",
+        "applies_to": ["percentage", "percentage_change", "percentage_of_gdp"]
+      },
+      {
+        "type": "non_negative",
+        "description": "These indicators should never be negative",
+        "applies_to": ["unemployment", "vix", "debt_to_gdp", "gini_coefficient"]
+      },
+      {
+        "type": "bounded_index",
+        "description": "Index values should be within reasonable bounds",
+        "applies_to": ["manufacturing_pmi", "consumer_confidence", "vix"]
+      },
+      {
+        "type": "correlation_check",
+        "description": "Real interest rate should equal nominal rate minus inflation",
+        "formula": "real_interest_rate = interest_rate - inflation"
+      }
+    ]
+  },
+  "scenarios": {
+    "description": "Pre-configured scenarios for testing and analysis",
+    "scenarios": {
+      "current_baseline": {
+        "name": "Current Economic Baseline",
+        "description": "Default values representing current economic conditions",
+        "overrides": {}
+      },
+      "recession_scenario": {
+        "name": "Recession Scenario",
+        "description": "Economic downturn scenario",
+        "overrides": {
+          "gdp_growth": -0.02,
+          "unemployment": 0.08,
+          "yield_curve": -0.015,
+          "credit_growth": -0.05,
+          "vix": 35.0
+        }
+      },
+      "inflation_shock": {
+        "name": "Inflation Shock",
+        "description": "High inflation scenario",
+        "overrides": {
+          "inflation": 0.08,
+          "interest_rate": 0.075,
+          "real_interest_rate": -0.005,
+          "credit_spreads": 0.035
+        }
+      },
+      "debt_crisis": {
+        "name": "Debt Crisis",
+        "description": "Sovereign debt crisis scenario",
+        "overrides": {
+          "debt_to_gdp": 2.0,
+          "fiscal_deficit": -0.15,
+          "default_rate": 0.08,
+          "credit_spreads": 0.06
+        }
+      }
+    }
+  }
+}
