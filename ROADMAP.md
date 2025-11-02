@@ -98,6 +98,55 @@ During Phase 0-5 execution, identified critical database pool registration issue
 
 ---
 
+### Plan 2.2: Macro Indicator Configuration System ✅ COMPLETED
+
+**Status:** Implemented (November 2, 2025)
+**Commits:** d5d6945, 51b92f3
+**Priority:** P2 (improvement, not critical)
+
+**What Was Added:**
+Centralized JSON-based configuration for ~40 macro economic indicators used in cycle detection (STDC, LTDC, Empire, Civil).
+
+**New Files Created (1,410 lines):**
+- `backend/config/macro_indicators_defaults.json` (640 lines) - Centralized configuration
+- `backend/app/services/indicator_config.py` (471 lines) - Configuration manager
+- `backend/config/INDICATOR_CONFIG_README.md` (122 lines) - Usage documentation
+- `backend/app/services/cycles.py` - Refactored (177 lines changed)
+
+**Features:**
+- ✅ 6 categories: Global, STDC, LTDC, Empire, Civil, Market
+- ✅ ~40 indicators with full metadata (value, source, confidence, range, aliases)
+- ✅ 4 pre-configured scenarios (recession, inflation shock, debt crisis, baseline)
+- ✅ Data quality tracking and validation
+- ✅ Fallback mechanism: Database → Config → Hardcoded defaults
+- ✅ Singleton pattern via `get_config_manager()`
+
+**Benefits:**
+- No code changes needed to update indicator values
+- Transparent data sourcing and quality tracking
+- Scenario testing support
+- Automatic validation and scaling
+- Version control through git
+
+**Impact:**
+- ✅ Backward compatible (no breaking changes)
+- ✅ All 12 patterns still work
+- ✅ Macro cycles dashboard functional
+- ✅ Better separation of configuration from code
+- ✅ Easier maintenance and updates
+
+**Documentation:**
+- Usage Guide: backend/config/INDICATOR_CONFIG_README.md
+- Architecture: ARCHITECTURE.md (Macro Indicator Configuration System section)
+- Guardrails: REPLIT_DEPLOYMENT_GUARDRAILS.md (added as TIER 2 file)
+
+**Related:**
+- MacroHound agent uses indicators via CyclesService
+- IndicatorConfigManager service provides centralized access
+- Supports all 4 cycle types: STDC, LTDC, Empire, Civil
+
+---
+
 #### Phase 0: Make Code Resilient (MUST DO FIRST)
 **Effort:** 2 hours
 **Risk:** High if skipped (ImportErrors on startup)

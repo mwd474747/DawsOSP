@@ -233,6 +233,49 @@ grep -r "from package_name" backend/
 
 ---
 
+### 10. `backend/config/macro_indicators_defaults.json` - Macro Indicator Configuration
+**Why Important:** Default values for ~40 economic indicators used in cycle detection
+**Added:** November 2, 2025 (Commits d5d6945, 51b92f3)
+**Size:** 640 lines
+
+**Contains:**
+- Configuration for STDC, LTDC, Empire, Civil cycle indicators
+- Default values with metadata (source, confidence, validation ranges)
+- Scenario configurations (recession, inflation shock, debt crisis)
+- Alias mappings for indicator compatibility
+
+**DO NOT:**
+- ❌ Delete this file
+- ❌ Break the JSON structure
+- ❌ Remove required indicators without testing
+- ❌ Change indicator keys without updating cycles.py
+- ❌ Invalid JSON syntax (will break configuration loading)
+
+**CAN DO:**
+- ✅ Update indicator values (change "value" field)
+- ✅ Update metadata (source, confidence, last_updated)
+- ✅ Add new indicators (following schema)
+- ✅ Adjust validation ranges
+- ✅ Add new scenarios
+
+**Location:** `/Users/mdawson/Documents/GitHub/DawsOSP/backend/config/macro_indicators_defaults.json`
+
+**Related Files:**
+- Manager: `backend/app/services/indicator_config.py`
+- Consumer: `backend/app/services/cycles.py`
+- Docs: `backend/config/INDICATOR_CONFIG_README.md`
+
+**Testing After Changes:**
+```bash
+# Validate JSON syntax
+python3 -c "import json; json.load(open('backend/config/macro_indicators_defaults.json'))"
+
+# Test configuration loading
+python3 -c "from backend.app.services.indicator_config import get_config_manager; get_config_manager()"
+```
+
+---
+
 ## 🟢 TIER 3: SAFE TO MODIFY
 
 These files can be changed, moved, or deleted without breaking deployment.
@@ -349,6 +392,7 @@ ls -la backend/requirements.txt
 ls -la backend/app/db/connection.py
 ls -la backend/app/core/agent_runtime.py
 ls -la backend/app/core/pattern_orchestrator.py
+ls -la backend/config/macro_indicators_defaults.json
 ```
 
 ### Port Configuration:

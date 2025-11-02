@@ -414,6 +414,103 @@ def register_external_pool(pool: asyncpg.Pool):
 
 ---
 
+## Macro Indicator Configuration System
+
+**Added:** November 2, 2025 (Commits d5d6945, 51b92f3)
+
+### Overview
+
+Centralized JSON-based configuration for ~40 macro economic indicators used in cycle detection (STDC, LTDC, Empire, Civil).
+
+### Components
+
+**Configuration File:** [backend/config/macro_indicators_defaults.json](backend/config/macro_indicators_defaults.json) (640 lines)
+- 6 categories: Global, STDC, LTDC, Empire, Civil, Market
+- ~40 indicators with full metadata (value, source, confidence, range, aliases)
+- 4 pre-configured scenarios (recession, inflation shock, debt crisis, current baseline)
+- Data quality tracking (confidence levels, last updated, notes)
+
+**Configuration Manager:** [backend/app/services/indicator_config.py](backend/app/services/indicator_config.py) (471 lines)
+- `IndicatorConfigManager` class with singleton pattern
+- Accessed via `get_config_manager()` function
+- Fallback mechanism: Database → Config → Hardcoded defaults
+- Validation & scaling rules
+- Alias resolution (e.g., GDP_growth = gdp_growth)
+
+**Documentation:** [backend/config/INDICATOR_CONFIG_README.md](backend/config/INDICATOR_CONFIG_README.md) (122 lines)
+
+### Data Flow
+
+```
+1. CyclesService.get_latest_indicators()
+   ↓
+2. IndicatorConfigManager loads defaults from JSON
+   ↓
+3. Queries database for latest indicator values
+   ↓
+4. Merges DB values with config (DB takes precedence)
+   ↓
+5. Applies scaling rules (percentages to decimals)
+   ↓
+6. Populates aliases for compatibility
+   ↓
+7. Returns validated, scaled indicators
+   ↓
+8. MacroHound uses indicators for cycle detection
+```
+
+### Benefits
+
+- ✅ **No Code Changes:** Update indicator values without modifying Python code
+- ✅ **Transparency:** Clear documentation of data sources and quality
+- ✅ **Flexibility:** Easy scenario testing and overrides
+- ✅ **Validation:** Automatic range checking prevents bad data
+- ✅ **Version Control:** Track changes through git history
+
+### Example Configuration
+
+```json
+"gdp_growth": {
+  "value": 0.038,
+  "unit": "decimal",
+  "display_unit": "percentage",
+  "range": {"min": -0.10, "max": 0.15},
+  "source": "BEA/FRED",
+  "confidence": "high",
+  "last_updated": "2025-11-01",
+  "notes": "Real GDP growth rate, seasonally adjusted annual rate",
+  "aliases": ["GDP_growth"]
+}
+```
+
+### Usage
+
+```python
+from app.services.indicator_config import get_config_manager
+
+# Get configuration manager
+config_manager = get_config_manager()
+
+# Get indicator value
+gdp_growth = config_manager.get_indicator("gdp_growth")
+
+# Get with metadata
+gdp_metadata = config_manager.get_indicator("gdp_growth", with_metadata=True)
+
+# Apply scenario
+recession_indicators = config_manager.get_scenario_indicators("recession_scenario")
+```
+
+### Files
+
+- **Configuration:** backend/config/macro_indicators_defaults.json
+- **Manager:** backend/app/services/indicator_config.py
+- **Service:** backend/app/services/cycles.py (uses configuration)
+- **Agent:** backend/app/agents/macro_hound.py (consumes indicators)
+- **Documentation:** backend/config/INDICATOR_CONFIG_README.md
+
+---
+
 ## Future Considerations
 
 - **Redis Integration**: Currently None, can be added for distributed caching

@@ -71,6 +71,8 @@ Database query via get_db_connection_with_rls()
 ### 9 Agents (All Registered in combined_server.py:239-304)
 1. **FinancialAnalyst** - ledger, pricing, metrics, attribution (25+ capabilities)
 2. **MacroHound** - macro cycles, scenarios, regime detection (15+ capabilities)
+   - Uses: IndicatorConfigManager for ~40 economic indicators
+   - Configuration: backend/config/macro_indicators_defaults.json
 3. **DataHarvester** - external data fetching, news (5+ capabilities)
 4. **ClaudeAgent** - AI-powered explanations (6 capabilities)
 5. **RatingsAgent** - Buffett ratings, dividend safety, moat (4 capabilities)
@@ -133,6 +135,11 @@ All previously blocking issues have been resolved:
    - Solution: Cross-module storage using sys.modules
    - connection.py simplified: 600 → 382 lines
    - All agents can now access database pool
+4. **Macro Indicator Configuration System** ✅ COMPLETE (Nov 2, 2025, commits d5d6945, 51b92f3)
+   - Centralized JSON configuration for ~40 indicators
+   - IndicatorConfigManager service (471 lines)
+   - Data quality tracking and scenario support
+   - 1,410 lines of new infrastructure added
 
 #### 📋 Known Opportunities (Not Urgent)
 
@@ -468,6 +475,9 @@ grep "register_agent" combined_server.py
 - [ARCHITECTURE.md](../ARCHITECTURE.md) - System architecture with pool solution
 - [ROADMAP.md](../ROADMAP.md) - Development roadmap and completed work
 - [PLAN_3_BACKEND_REFACTORING_REVALIDATED.md](../PLAN_3_BACKEND_REFACTORING_REVALIDATED.md) - Future refactoring plan
+
+**Configuration:**
+- [backend/config/INDICATOR_CONFIG_README.md](../backend/config/INDICATOR_CONFIG_README.md) - Macro indicator configuration
 
 **Deployment & Operations:**
 - [REPLIT_DEPLOYMENT_GUARDRAILS.md](../REPLIT_DEPLOYMENT_GUARDRAILS.md) - Critical files (DO NOT MODIFY)

@@ -8,10 +8,11 @@
 
 ## Executive Summary
 
-**Total Opportunities Identified:** 15 refactoring opportunities  
-**Estimated Impact:** ~500-800 lines simplified, ~100-200 lines removed  
-**Risk Level:** LOW - All changes are internal improvements with no API/functional changes  
+**Total Opportunities Identified:** 16 refactoring opportunities
+**Estimated Impact:** ~700-1000 lines simplified, ~300-400 lines removed
+**Risk Level:** LOW - All changes are internal improvements with no API/functional changes
 **Pattern Execution Understanding:** ✅ Full flow analyzed (UI → API → Orchestrator → Agents)
+**Last Updated:** November 2, 2025 (Added duplicate method detection)
 
 ---
 
@@ -753,6 +754,100 @@ def handle_endpoint_errors(func):
 ```
 
 **Note:** This is optional - can be applied gradually.
+
+---
+
+## 11. Remove Duplicate Method Definitions in MacroHound ⚠️ **MEDIUM PRIORITY**
+
+### Issue
+
+**Location:** `backend/app/agents/macro_hound.py`
+
+**Problem:**
+- `macro_get_regime_history()` defined TWICE (lines 565-687 and 915-943)
+- `macro_detect_trend_shifts()` defined TWICE (lines 631-687 and 945-980)
+- Python uses the last definition, making first definition dead code
+- Confusing for maintenance and debugging
+- ~200 lines of duplicate code
+
+**Evidence:**
+```python
+# First definition (line 565) - NOT USED
+async def macro_get_regime_history(
+    self,
+    ctx: RequestCtx,
+    state: Dict[str, Any],
+    lookback_weeks: int = 4
+) -> Dict[str, Any]:
+    # ... implementation ...
+    pass
+
+# Second definition (line 915) - THIS ONE IS ACTIVE
+async def macro_get_regime_history(
+    self,
+    ctx: RequestCtx,
+    state: Dict[str, Any],
+    lookback_weeks: int = 4
+) -> Dict[str, Any]:
+    # ... implementation ...
+    pass
+
+# Same pattern for macro_detect_trend_shifts
+```
+
+**Why This Happened:**
+- Likely copy-paste during refactoring
+- No linting configured to catch duplicate function names
+- Python silently accepts duplicates (last definition wins)
+
+### Solution
+
+**Approach:** Delete the first definitions (lines 565-687 and 631-687)
+
+**Steps:**
+1. Verify second definitions (lines 915-980) are complete and correct
+2. Identify exact line ranges for first definitions
+3. Delete first `macro_get_regime_history()` definition
+4. Delete first `macro_detect_trend_shifts()` definition
+5. Run compilation test: `python3 -m py_compile backend/app/agents/macro_hound.py`
+6. Verify patterns still work (macro_trend_monitor uses these methods)
+
+**Risk:** ✅ LOW
+- Second definitions are actively used (verified from pattern calls)
+- First definitions are unreachable dead code
+- No functional impact
+
+**Impact:**
+- Removes ~200 lines of duplicate code
+- Improves code clarity
+- Easier maintenance
+- Reduces file size: 1,454 lines → ~1,250 lines
+
+**Testing:**
+```bash
+# Compilation test
+python3 -m py_compile backend/app/agents/macro_hound.py
+
+# Runtime test (requires database)
+# Verify macro_trend_monitor pattern still executes
+# Check Macro Cycles dashboard functionality
+```
+
+**Verification:**
+- ✅ Verify no import errors after deletion
+- ✅ Ensure patterns using these capabilities still work:
+  - macro_trend_monitor.json (uses both capabilities)
+- ✅ Check Macro Cycles dashboard UI
+
+**Estimated Effort:** 15 minutes
+
+**Benefits:**
+- Cleaner codebase
+- Reduced confusion
+- Easier debugging
+- Better code maintainability
+
+**Note:** Discovered during documentation review of macro indicator configuration changes (Nov 2, 2025).
 
 ---
 
