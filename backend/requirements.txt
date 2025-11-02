@@ -13,7 +13,6 @@ pydantic-settings>=2.0.0
 # Database
 asyncpg>=0.29.0
 psycopg2-binary>=2.9.9
-redis==5.0.0
 
 # Data Processing
 pandas>=2.0.0
@@ -37,14 +36,6 @@ beancount>=2.3.6
 # Configuration
 pyyaml>=6.0
 python-dotenv>=1.0.0
-
-# Monitoring & Observability
-prometheus-client>=0.18.0
-opentelemetry-api>=1.21.0
-opentelemetry-sdk>=1.21.0
-opentelemetry-exporter-jaeger>=1.21.0
-opentelemetry-instrumentation-fastapi>=0.42b0
-sentry-sdk[fastapi]>=1.38.0
 
 # Testing (dev)
 pytest>=7.4.0
