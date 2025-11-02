@@ -8,8 +8,8 @@ Priority: P1 (Important for news impact, not critical path)
 Features:
     - News search by keyword, symbol, date range
     - Rate limiting: 30 req/min (dev tier) or 100 req/min (business tier)
-    - Circuit breaker: 3 failures → OPEN for 60s
-    - Dead Letter Queue with exponential backoff
+    - Smart retry logic with exponential backoff (1s, 2s, 4s)
+    - Dead Letter Queue for failed requests
     - Rights: BLOCKED export (dev tier), metadata-only storage
     - Production: Requires business tier license
 
@@ -71,8 +71,8 @@ class NewsAPIProvider(BaseProvider):
             name=f"NewsAPI-{tier}",
             base_url=base_url,
             rate_limit_rpm=rate_limit_rpm,
-            circuit_breaker_threshold=3,
-            circuit_breaker_timeout=60,
+            max_retries=3,
+            retry_base_delay=1.0,
             rights={
                 "export_pdf": export_allowed,
                 "export_csv": export_allowed,

@@ -415,13 +415,6 @@ async def lifespan(app: FastAPI):
         get_pattern_orchestrator()
         logger.info("Pattern orchestration system initialized")
 
-        # Reset circuit breakers after successful initialization
-        if runtime and db_pool and hasattr(runtime, 'circuit_breaker'):
-            # Clear circuit breaker state for all agents
-            runtime.circuit_breaker.failures.clear()
-            runtime.circuit_breaker.open_until.clear()
-            logger.info("✅ Reset all agent circuit breakers")
-
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         logger.warning("Database unavailable - some features may not work")

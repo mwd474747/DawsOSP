@@ -11,8 +11,8 @@ Features:
     - Financial ratios
     - Rate limiting: 120 req/min (token bucket)
     - Bandwidth tracking: Alert at 70%, 85%, 95% of monthly quota
-    - Circuit breaker: 3 failures → OPEN for 60s
-    - Dead Letter Queue with exponential backoff
+    - Smart retry logic with exponential backoff (1s, 2s, 4s)
+    - Dead Letter Queue for failed requests
     - Rights: Restricted export, requires attribution
 
 Endpoints:
@@ -57,8 +57,8 @@ class FMPProvider(BaseProvider):
             name="FMP",
             base_url=base_url,
             rate_limit_rpm=120,  # 120 requests per minute
-            circuit_breaker_threshold=3,
-            circuit_breaker_timeout=60,
+            max_retries=3,
+            retry_base_delay=1.0,
             rights={
                 "export_pdf": False,  # Restricted
                 "export_csv": False,  # Restricted

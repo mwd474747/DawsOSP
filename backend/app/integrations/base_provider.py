@@ -2,12 +2,13 @@
 DawsOS Base Provider
 
 Purpose: Abstract base class for all external data provider facades
-Updated: 2025-10-21
+Updated: 2025-11-02
 Priority: P0 (Critical for data resilience)
 
 Features:
-    - Circuit breaker with OPEN/CLOSED/HALF_OPEN states
-    - Dead Letter Queue (DLQ) for failed requests with exponential backoff
+    - Simple retry logic with exponential backoff
+    - Respects API rate limits (429 status and retry-after headers)
+    - Dead Letter Queue (DLQ) for failed requests
     - Rights pre-flight checks
     - OpenTelemetry tracing
     - Prometheus metrics
@@ -22,12 +23,13 @@ Usage:
 import asyncio
 import logging
 import time
+import random
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
+import httpx
 from opentelemetry import trace
 from prometheus_client import Counter, Gauge, Histogram
 
@@ -59,10 +61,10 @@ provider_errors_total = Counter(
     labelnames=["provider", "endpoint", "error_type"],
 )
 
-circuit_breaker_state_gauge = Gauge(
-    "circuit_breaker_state",
-    "Circuit breaker state (0=CLOSED, 1=OPEN, 2=HALF_OPEN)",
-    labelnames=["provider"],
+provider_retries_total = Counter(
+    "provider_retries_total",
+    "Total provider API retries",
+    labelnames=["provider", "endpoint", "retry_attempt"],
 )
 
 dlq_size_gauge = Gauge(
@@ -94,8 +96,8 @@ class ProviderConfig:
     name: str
     base_url: str
     rate_limit_rpm: int
-    circuit_breaker_threshold: int = 3
-    circuit_breaker_timeout: int = 60
+    max_retries: int = 3
+    retry_base_delay: float = 1.0  # Base delay for exponential backoff
     rights: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -133,113 +135,6 @@ class ProviderResponse:
             cached=self.cached,
             stale=True,
         )
-
-
-# ============================================================================
-# Circuit Breaker
-# ============================================================================
-
-
-class CircuitState(Enum):
-    """Circuit breaker states."""
-
-    CLOSED = 0  # Normal operation
-    OPEN = 1  # Blocking requests (serving stale data)
-    HALF_OPEN = 2  # Testing recovery (limited requests)
-
-
-@dataclass
-class CircuitBreaker:
-    """
-    Circuit breaker for provider resilience.
-
-    State transitions:
-        CLOSED → OPEN: After threshold failures
-        OPEN → HALF_OPEN: After timeout expires
-        HALF_OPEN → CLOSED: After successful request
-        HALF_OPEN → OPEN: After failure
-    """
-
-    name: str
-    threshold: int = 3  # Open after N failures
-    timeout: int = 60  # Test recovery after N seconds
-    state: CircuitState = field(default=CircuitState.CLOSED)
-    failure_count: int = 0
-    last_failure_time: Optional[datetime] = None
-    half_open_calls: int = 0
-    max_half_open_calls: int = 1
-
-    def is_open(self) -> bool:
-        """
-        Check if circuit is open.
-
-        Returns:
-            True if circuit is open (requests blocked)
-        """
-        if self.state == CircuitState.OPEN:
-            # Check if timeout expired → move to HALF_OPEN
-            if self.last_failure_time and datetime.utcnow() - self.last_failure_time > timedelta(
-                seconds=self.timeout
-            ):
-                logger.info(f"Circuit breaker {self.name}: OPEN → HALF_OPEN")
-                self.state = CircuitState.HALF_OPEN
-                self.half_open_calls = 0
-                circuit_breaker_state_gauge.labels(provider=self.name).set(
-                    CircuitState.HALF_OPEN.value
-                )
-                return False
-            return True
-
-        if self.state == CircuitState.HALF_OPEN:
-            # Limit calls in half-open state
-            if self.half_open_calls >= self.max_half_open_calls:
-                return True
-
-        return False
-
-    def record_success(self):
-        """Record successful call."""
-        if self.state == CircuitState.HALF_OPEN:
-            logger.info(f"Circuit breaker {self.name}: HALF_OPEN → CLOSED")
-            self.state = CircuitState.CLOSED
-            self.failure_count = 0
-            self.half_open_calls = 0
-            circuit_breaker_state_gauge.labels(provider=self.name).set(
-                CircuitState.CLOSED.value
-            )
-        elif self.state == CircuitState.CLOSED:
-            # Reset failure count on success
-            self.failure_count = 0
-
-    def record_failure(self):
-        """Record failed call."""
-        self.failure_count += 1
-        self.last_failure_time = datetime.utcnow()
-
-        if self.state == CircuitState.HALF_OPEN:
-            # Failed during recovery → back to OPEN
-            logger.warning(f"Circuit breaker {self.name}: HALF_OPEN → OPEN (recovery failed)")
-            self.state = CircuitState.OPEN
-            circuit_breaker_state_gauge.labels(provider=self.name).set(CircuitState.OPEN.value)
-
-        elif self.failure_count >= self.threshold:
-            logger.error(
-                f"Circuit breaker {self.name}: CLOSED → OPEN "
-                f"({self.failure_count} failures, threshold={self.threshold})"
-            )
-            self.state = CircuitState.OPEN
-            circuit_breaker_state_gauge.labels(provider=self.name).set(CircuitState.OPEN.value)
-
-    def get_status(self) -> Dict[str, Any]:
-        """Get circuit breaker status."""
-        return {
-            "name": self.name,
-            "state": self.state.name,
-            "failure_count": self.failure_count,
-            "last_failure_time": (
-                self.last_failure_time.isoformat() if self.last_failure_time else None
-            ),
-        }
 
 
 # ============================================================================
@@ -349,7 +244,7 @@ class DeadLetterQueue:
 
 class BaseProvider(ABC):
     """
-    Base provider facade with circuit breaker and DLQ.
+    Base provider facade with smart retry logic and DLQ.
 
     All provider implementations must inherit from this class and
     implement the call() method.
@@ -367,11 +262,8 @@ class BaseProvider(ABC):
         self.base_url = config.base_url
         self.rate_limit_rpm = config.rate_limit_rpm
         self.rights = config.rights
-        self.circuit_breaker = CircuitBreaker(
-            name=config.name,
-            threshold=config.circuit_breaker_threshold,
-            timeout=config.circuit_breaker_timeout
-        )
+        self.max_retries = config.max_retries
+        self.retry_base_delay = config.retry_base_delay
         self.dlq = DeadLetterQueue(name=f"{config.name}_dlq", max_retries=3)
         self._cache: Dict[str, ProviderResponse] = {}
 
@@ -396,77 +288,146 @@ class BaseProvider(ABC):
         """
         pass
 
-    async def call_with_circuit_breaker(
+    async def call_with_retry(
         self, request: ProviderRequest
     ) -> ProviderResponse:
         """
-        Wrap call with circuit breaker and DLQ.
+        Execute call with smart retry logic and exponential backoff.
 
         Args:
             request: Provider request
 
         Returns:
-            Provider response (may be cached/stale)
+            Provider response (may be cached/stale if all retries fail)
 
         Raises:
-            ProviderTimeoutError: If circuit open and no cached data
+            ProviderError: If all retries fail and no cached data available
         """
-        # Check circuit breaker
-        if self.circuit_breaker.is_open():
+        last_exception = None
+        retry_delays = [self.retry_base_delay, self.retry_base_delay * 2, self.retry_base_delay * 4]  # 1s, 2s, 4s
+        
+        for attempt in range(self.max_retries + 1):
+            try:
+                with tracer.start_as_current_span("provider.call") as span:
+                    span.set_attribute("provider", self.name)
+                    span.set_attribute("endpoint", request.endpoint)
+                    span.set_attribute("retry_attempt", attempt)
+
+                    response = await self.call(request)
+
+                    span.set_attribute("latency_ms", response.latency_ms)
+                    span.set_attribute("status_code", response.status_code)
+                    span.set_attribute("cached", response.cached)
+
+                    # Cache successful response
+                    await self._cache_response(request, response)
+
+                    # Record success metrics
+                    self._record_metrics(request.endpoint, response.status_code, response.latency_ms)
+                    
+                    if attempt > 0:
+                        logger.info(
+                            f"{self.name}: Request succeeded after {attempt} retries for {request.endpoint}"
+                        )
+                    
+                    return response
+
+            except httpx.HTTPStatusError as e:
+                last_exception = e
+                status_code = e.response.status_code if hasattr(e, 'response') else 0
+                
+                # Handle rate limiting (429) with retry-after header
+                if status_code == 429 and hasattr(e.response, 'headers'):
+                    retry_after = e.response.headers.get('retry-after')
+                    if retry_after:
+                        try:
+                            delay = float(retry_after)
+                            logger.warning(
+                                f"{self.name}: Rate limited (429) on {request.endpoint}, "
+                                f"retry-after: {delay}s (attempt {attempt + 1}/{self.max_retries + 1})"
+                            )
+                            
+                            if attempt < self.max_retries:
+                                provider_retries_total.labels(
+                                    provider=self.name,
+                                    endpoint=request.endpoint,
+                                    retry_attempt=str(attempt + 1)
+                                ).inc()
+                                await asyncio.sleep(delay)
+                                continue
+                        except (ValueError, TypeError):
+                            pass
+                
+                # For other errors, use exponential backoff
+                if attempt < self.max_retries:
+                    # Add jitter to prevent thundering herd
+                    delay = retry_delays[attempt] * (1 + random.uniform(-0.2, 0.2))
+                    
+                    logger.warning(
+                        f"{self.name}: Request failed for {request.endpoint} "
+                        f"(status: {status_code}), retrying in {delay:.2f}s "
+                        f"(attempt {attempt + 1}/{self.max_retries + 1})"
+                    )
+                    
+                    provider_retries_total.labels(
+                        provider=self.name,
+                        endpoint=request.endpoint,
+                        retry_attempt=str(attempt + 1)
+                    ).inc()
+                    
+                    await asyncio.sleep(delay)
+                    
+            except Exception as e:
+                last_exception = e
+                
+                if attempt < self.max_retries:
+                    # Add jitter to prevent thundering herd
+                    delay = retry_delays[attempt] * (1 + random.uniform(-0.2, 0.2))
+                    
+                    logger.warning(
+                        f"{self.name}: Request failed for {request.endpoint} "
+                        f"({type(e).__name__}: {str(e)}), retrying in {delay:.2f}s "
+                        f"(attempt {attempt + 1}/{self.max_retries + 1})"
+                    )
+                    
+                    provider_retries_total.labels(
+                        provider=self.name,
+                        endpoint=request.endpoint,
+                        retry_attempt=str(attempt + 1)
+                    ).inc()
+                    
+                    await asyncio.sleep(delay)
+
+        # All retries failed, log error and try cached data
+        logger.error(
+            f"{self.name}: All {self.max_retries + 1} attempts failed for {request.endpoint}: "
+            f"{type(last_exception).__name__}: {str(last_exception)}"
+        )
+        
+        # Record error metrics
+        provider_errors_total.labels(
+            provider=self.name,
+            endpoint=request.endpoint,
+            error_type="max_retries_exceeded"
+        ).inc()
+        
+        # Enqueue in DLQ for potential later retry
+        if last_exception:
+            await self.dlq.enqueue(request, error=str(last_exception))
+        
+        # Try to serve cached data as fallback
+        cached = await self._get_cached(request)
+        if cached:
             logger.warning(
-                f"Circuit breaker OPEN for {self.name}, attempting to serve cached data"
+                f"{self.name}: Serving cached/stale data for {request.endpoint} after all retries failed"
             )
+            return cached.with_stale_flag()
 
-            # Try to serve cached data
-            cached = await self._get_cached(request)
-            if cached:
-                logger.info(
-                    f"Serving cached/stale data for {request.endpoint} "
-                    f"(circuit breaker open)"
-                )
-                return cached.with_stale_flag()
-
-            # No cached data available
-            raise ProviderTimeoutError(self.name, timeout_seconds=0)
-
-        # Circuit breaker closed or half-open - attempt call
-        try:
-            with tracer.start_as_current_span("provider.call") as span:
-                span.set_attribute("provider", self.name)
-                span.set_attribute("endpoint", request.endpoint)
-                span.set_attribute("circuit_breaker_state", self.circuit_breaker.state.name)
-
-                response = await self.call(request)
-
-                span.set_attribute("latency_ms", response.latency_ms)
-                span.set_attribute("status_code", response.status_code)
-                span.set_attribute("cached", response.cached)
-
-                # Record success
-                self.circuit_breaker.record_success()
-
-                # Cache response
-                await self._cache_response(request, response)
-
-                return response
-
-        except Exception as e:
-            # Record failure
-            self.circuit_breaker.record_failure()
-
-            # Enqueue in DLQ for retry
-            await self.dlq.enqueue(request, error=str(e))
-
-            # Try to serve cached data
-            cached = await self._get_cached(request)
-            if cached:
-                logger.warning(
-                    f"Provider call failed, serving cached/stale data for {request.endpoint}"
-                )
-                return cached.with_stale_flag()
-
-            # No cached data - re-raise exception
-            raise
+        # No cached data - re-raise the last exception
+        if last_exception:
+            raise last_exception
+        else:
+            raise ProviderError(f"All retries failed for {request.endpoint}")
 
     async def _get_cached(self, request: ProviderRequest) -> Optional[ProviderResponse]:
         """Get cached response for request."""

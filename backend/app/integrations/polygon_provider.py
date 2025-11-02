@@ -10,8 +10,8 @@ Features:
     - Stock splits with ex-date
     - Dividends with ex-date and pay-date (CRITICAL for ADR accuracy)
     - Rate limiting: 100 req/min (token bucket)
-    - Circuit breaker: 3 failures → OPEN for 60s
-    - Dead Letter Queue with exponential backoff
+    - Smart retry logic with exponential backoff (1s, 2s, 4s)
+    - Dead Letter Queue for failed requests
     - Rights: Restricted export, requires attribution
 
 Endpoints:
@@ -54,8 +54,8 @@ class PolygonProvider(BaseProvider):
             name="Polygon",
             base_url=base_url,
             rate_limit_rpm=100,  # 100 requests per minute
-            circuit_breaker_threshold=3,
-            circuit_breaker_timeout=60,
+            max_retries=3,
+            retry_base_delay=1.0,
             rights={
                 "export_pdf": False,  # Restricted
                 "export_csv": False,  # Restricted

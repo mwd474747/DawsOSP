@@ -8,8 +8,8 @@ Priority: P0 (Critical for macro regime detection and factor analysis)
 Features:
     - Economic time series data (GDP, CPI, unemployment, yields, spreads)
     - Rate limiting: 60 req/min (token bucket)
-    - Circuit breaker: 3 failures → OPEN for 60s
-    - Dead Letter Queue with exponential backoff
+    - Smart retry logic with exponential backoff (1s, 2s, 4s)
+    - Dead Letter Queue for failed requests
     - Rights: Allowed export, free attribution
 
 Series IDs (for factor analysis and regime detection):
@@ -105,8 +105,8 @@ class FREDProvider(BaseProvider):
             name="FRED",
             base_url=base_url,
             rate_limit_rpm=60,  # 60 requests per minute (conservative)
-            circuit_breaker_threshold=3,
-            circuit_breaker_timeout=60,
+            max_retries=3,
+            retry_base_delay=1.0,
             rights={
                 "export_pdf": True,  # Allowed (public data)
                 "export_csv": True,  # Allowed
