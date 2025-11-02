@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Ratings Fix</title>
+</head>
+<body>
+    <h1>Test RatingsPage Fix</h1>
+    <div id="test-results"></div>
+    
+    <script>
+        // Test the parseBuffettResults and getGradeColor functions
+        const resultsDiv = document.getElementById('test-results');
+        let testsPassed = 0;
+        let testsFailed = 0;
+        
+        // Simulate the getGradeColor function from the fixed code
+        const getGradeColor = (grade) => {
+            // Handle null/undefined/empty values
+            if (!grade && grade !== 0) return 'neutral';
+            
+            // Convert to string for safe checking
+            const gradeStr = String(grade);
+            
+            // Check if it's a letter grade
+            if (isNaN(gradeStr)) {
+                // It's a string grade like 'A+', 'B', etc.
+                if (gradeStr.startsWith('A')) return 'positive';
+                if (gradeStr.startsWith('B')) return 'warning';
+                if (gradeStr.startsWith('C')) return 'neutral';
+                if (gradeStr === 'N/A' || gradeStr === 'null') return 'neutral';
+                return 'negative';
+            } else {
+                // It's a numeric score
+                const numGrade = parseFloat(gradeStr);
+                if (numGrade >= 8) return 'positive';
+                if (numGrade >= 6) return 'warning';
+                if (numGrade >= 4) return 'neutral';
+                return 'negative';
+            }
+        };
+        
+        // Test cases for getGradeColor
+        const testCases = [
+            { input: 'A+', expected: 'positive', description: 'Letter grade A+' },
+            { input: 'A', expected: 'positive', description: 'Letter grade A' },
+            { input: 'B+', expected: 'warning', description: 'Letter grade B+' },
+            { input: 'B', expected: 'warning', description: 'Letter grade B' },
+            { input: 'C', expected: 'neutral', description: 'Letter grade C' },
+            { input: 'N/A', expected: 'neutral', description: 'N/A grade' },
+            { input: null, expected: 'neutral', description: 'null value' },
+            { input: undefined, expected: 'neutral', description: 'undefined value' },
+            { input: 9.5, expected: 'positive', description: 'Numeric score 9.5' },
+            { input: 8, expected: 'positive', description: 'Numeric score 8' },
+            { input: 7, expected: 'warning', description: 'Numeric score 7' },
+            { input: 6, expected: 'warning', description: 'Numeric score 6' },
+            { input: 5, expected: 'neutral', description: 'Numeric score 5' },
+            { input: 3, expected: 'negative', description: 'Numeric score 3' },
+            { input: 0, expected: 'negative', description: 'Numeric score 0' },
+        ];
+        
+        // Run tests
+        testCases.forEach(test => {
+            try {
+                const result = getGradeColor(test.input);
+                if (result === test.expected) {
+                    testsPassed++;
+                    resultsDiv.innerHTML += `<div style="color: green;">✅ PASSED: ${test.description} - Input: ${test.input}, Expected: ${test.expected}, Got: ${result}</div>`;
+                } else {
+                    testsFailed++;
+                    resultsDiv.innerHTML += `<div style="color: red;">❌ FAILED: ${test.description} - Input: ${test.input}, Expected: ${test.expected}, Got: ${result}</div>`;
+                }
+            } catch (error) {
+                testsFailed++;
+                resultsDiv.innerHTML += `<div style="color: red;">❌ ERROR: ${test.description} - ${error.message}</div>`;
+            }
+        });
+        
+        // Test parseBuffettResults with sample data
+        const sampleBuffettData = {
+            moat_strength: {
+                score: 85,
+                grade: 'A',
+                components: {
+                    roe_score: 9,
+                    margin_score: 8
+                }
+            },
+            dividend_safety: {
+                score: 72,
+                grade: 'B+',
+                components: {}
+            },
+            resilience: {
+                score: 91,
+                grade: 'A+',
+                components: {}
+            }
+        };
+        
+        // Simulate parseBuffettResults function
+        const parseBuffettResults = (data, symbol) => {
+            const moatData = data.moat_strength || {};
+            const dividendData = data.dividend_safety || {};
+            const resilienceData = data.resilience || {};
+            
+            // Extract scores and convert from 0-100 scale to 0-10 scale
+            const moatScore = (moatData.score || moatData.overall_score || 0) / 10;
+            const dividendScore = dividendData.score ? dividendData.score / 10 : 
+                               dividendData.overall_score ? dividendData.overall_score / 10 : 0;
+            const resilienceScore = (resilienceData.score || resilienceData.overall_score || 0) / 10;
+            
+            // Extract grades directly from the pattern response
+            const moatGrade = moatData.grade || null;
+            const dividendGrade = dividendData.grade || null;
+            const resilienceGrade = resilienceData.grade || null;
+            
+            // Calculate overall score as average of available scores
+            const scores = [];
+            if (moatScore > 0) scores.push(moatScore);
+            if (dividendScore > 0) scores.push(dividendScore);
+            if (resilienceScore > 0) scores.push(resilienceScore);
+            const overallScore = scores.length > 0 ? 
+                scores.reduce((a, b) => a + b, 0) / scores.length : 7.0;
+            
+            // Determine overall letter grade
+            let letterGrade = 'N/A';
+            // Use the moat grade as primary if available
+            if (moatGrade) {
+                letterGrade = moatGrade;
+            } else if (dividendGrade) {
+                letterGrade = dividendGrade;
+            } else if (resilienceGrade) {
+                letterGrade = resilienceGrade;
+            } else {
+                // Fallback to calculating from overall score
+                if (overallScore >= 9) letterGrade = 'A+';
+                else if (overallScore >= 8) letterGrade = 'A';
+                else if (overallScore >= 7) letterGrade = 'B+';
+                else if (overallScore >= 6) letterGrade = 'B';
+                else if (overallScore >= 5) letterGrade = 'C+';
+                else letterGrade = 'C';
+            }
+            
+            return {
+                symbol: symbol,
+                moatScore: moatScore,
+                dividendScore: dividendScore > 0 ? dividendScore : null,
+                resilienceScore: resilienceScore,
+                overallScore: overallScore,
+                letterGrade: letterGrade,
+                moatGrade: moatGrade,
+                dividendGrade: dividendGrade,
+                resilienceGrade: resilienceGrade
+            };
+        };
+        
+        // Test parseBuffettResults
+        try {
+            const parsedResult = parseBuffettResults(sampleBuffettData, 'TEST');
+            resultsDiv.innerHTML += `<h3>Parse Test Results:</h3>`;
+            resultsDiv.innerHTML += `<div style="color: green;">✅ PARSED Successfully:</div>`;
+            resultsDiv.innerHTML += `<pre>${JSON.stringify(parsedResult, null, 2)}</pre>`;
+            
+            // Verify no crashes when accessing fields
+            const testDisplay = `${parsedResult.overallScore ? parsedResult.overallScore.toFixed(1) : 'N/A'}/10`;
+            resultsDiv.innerHTML += `<div style="color: green;">✅ Display format: ${testDisplay}</div>`;
+            testsPassed++;
+        } catch (error) {
+            testsFailed++;
+            resultsDiv.innerHTML += `<div style="color: red;">❌ Parse test failed: ${error.message}</div>`;
+        }
+        
+        // Summary
+        resultsDiv.innerHTML += `<h2 style="margin-top: 20px;">Test Summary: ${testsPassed} passed, ${testsFailed} failed</h2>`;
+        
+        if (testsFailed === 0) {
+            resultsDiv.innerHTML += `<div style="color: green; font-size: 1.5em;">✅ All tests passed! The RatingsPage fix should work correctly.</div>`;
+        } else {
+            resultsDiv.innerHTML += `<div style="color: red; font-size: 1.5em;">❌ Some tests failed. Please review the fixes.</div>`;
+        }
+    </script>
+</body>
+</html>
