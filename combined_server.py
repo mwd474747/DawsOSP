@@ -293,6 +293,11 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
         # Register ReportsAgent for PDF/CSV export generation
         reports_agent = ReportsAgent("reports_agent", services)
         _agent_runtime.register_agent(reports_agent)
+        
+        # Register AlertsAgent for alert suggestions and threshold creation
+        from backend.app.agents.alerts_agent import AlertsAgent
+        alerts_agent = AlertsAgent("alerts_agent", services)
+        _agent_runtime.register_agent(alerts_agent)
 
         logger.info(f"Agent runtime initialized with {len(_agent_runtime.agents)} agents")
 
