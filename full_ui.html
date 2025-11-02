@@ -9265,15 +9265,45 @@
                         // First get the holdings
                         const holdingsData = await apiClient.getHoldings();
                         const holdingsList = holdingsData.holdings || [];
-                        setHoldings(holdingsList);
                         
-                        // Now fetch ratings for each holding in parallel for better performance
+                        // Aggregate holdings by security_id to get unique securities
+                        const aggregatedHoldings = {};
+                        
+                        holdingsList.forEach(lot => {
+                            const securityId = lot.security_id || symbolToSecurityId[lot.symbol];
+                            const symbol = lot.symbol;
+                            
+                            if (!aggregatedHoldings[securityId]) {
+                                // Initialize with first lot's data
+                                aggregatedHoldings[securityId] = {
+                                    symbol: symbol,
+                                    security_id: securityId,
+                                    quantity: 0,
+                                    value: 0,
+                                    cost_basis: 0,
+                                    lots: []
+                                };
+                            }
+                            
+                            // Aggregate quantities and values
+                            aggregatedHoldings[securityId].quantity += lot.quantity || 0;
+                            aggregatedHoldings[securityId].value += lot.value || 0;
+                            aggregatedHoldings[securityId].cost_basis += lot.cost_basis || 0;
+                            aggregatedHoldings[securityId].lots.push(lot);
+                        });
+                        
+                        // Convert to array of unique securities
+                        const uniqueSecurities = Object.values(aggregatedHoldings);
+                        console.log(`Aggregated ${holdingsList.length} lots into ${uniqueSecurities.length} unique securities`);
+                        setHoldings(uniqueSecurities);
+                        
+                        // Now fetch ratings for each unique security in parallel for better performance
                         const ratingsData = {};
                         
                         // Create array of rating promises for parallel processing
-                        const ratingPromises = holdingsList.map(async (holding) => {
-                            const symbol = holding.symbol;
-                            const securityId = holding.security_id || symbolToSecurityId[symbol];
+                        const ratingPromises = uniqueSecurities.map(async (security) => {
+                            const symbol = security.symbol;
+                            const securityId = security.security_id;
                             
                             if (securityId) {
                                 try {
