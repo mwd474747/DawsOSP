@@ -1709,23 +1709,26 @@ async def get_holdings(
                         holdings = []
                         total_value = 0
                         for pos in valued_positions:
-                            # Calculate market value if not present
-                            market_value = pos.get("market_value") or (pos.get("quantity", 0) * pos.get("price", 0))
+                            # Backend returns 'qty' not 'quantity', and values as strings
+                            qty = float(pos.get("qty", 0))
+                            price = float(pos.get("price", 0))
+                            # Use 'value' field from backend or calculate it
+                            market_value = float(pos.get("value", 0)) if pos.get("value") else (qty * price)
                             total_value += market_value
 
                             holdings.append({
                                 "symbol": pos.get("symbol"),
                                 "name": pos.get("name", pos.get("symbol")),  # Use symbol as fallback for name
-                                "quantity": float(pos.get("quantity", 0)),
-                                "price": float(pos.get("price", 0)),
-                                "market_value": float(market_value),
-                                "value": float(market_value),  # Duplicate for UI compatibility
+                                "quantity": qty,  # Use 'qty' field from backend
+                                "price": price,
+                                "market_value": market_value,
+                                "value": market_value,  # Duplicate for UI compatibility
                                 "sector": pos.get("sector", "Other"),
                                 "cost_basis": float(pos.get("cost_basis", 0)),
-                                "unrealized_pnl": float(pos.get("unrealized_pnl", 0)),
-                                "unrealized_pnl_pct": float(pos.get("unrealized_pnl_pct", 0)),
+                                "unrealized_pnl": market_value - float(pos.get("cost_basis", 0)),
+                                "unrealized_pnl_pct": ((market_value - float(pos.get("cost_basis", 0))) / float(pos.get("cost_basis", 1))) * 100 if float(pos.get("cost_basis", 0)) > 0 else 0,
                                 "weight": 0,  # Will calculate after total
-                                "return_pct": float(pos.get("unrealized_pnl_pct", 0))  # Use unrealized P&L as return
+                                "return_pct": ((market_value - float(pos.get("cost_basis", 0))) / float(pos.get("cost_basis", 1))) * 100 if float(pos.get("cost_basis", 0)) > 0 else 0
                             })
 
                         # Calculate weights
