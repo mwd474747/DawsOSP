@@ -146,19 +146,96 @@ class ClaudeAgent(BaseAgent):
         """
         logger.info(f"claude.explain: subject={subject}")
 
-        # TODO: Implement Claude API integration
-        # For now, return placeholder explanation
+        # Prepare context information for Claude
+        context_str = ""
+        value = None
+        
+        if context:
+            value = context.get(subject)
+            # Build context string with relevant financial data
+            context_str = f"Context Information:\n"
+            for key, val in context.items():
+                if val is not None:
+                    if isinstance(val, (int, float)):
+                        context_str += f"- {key}: {val:.4f}\n"
+                    elif isinstance(val, dict):
+                        context_str += f"- {key}: {json.dumps(val, default=str, indent=2)}\n"
+                    else:
+                        context_str += f"- {key}: {str(val)}\n"
+        
+        # Add state information if available
+        if state:
+            if "positions" in state:
+                positions = state.get("positions", [])
+                if positions:
+                    context_str += f"\nPortfolio has {len(positions)} positions\n"
+                    # Add top holdings for context
+                    if "valued_positions" in state:
+                        valued = state["valued_positions"]
+                        if isinstance(valued, list):
+                            sorted_positions = sorted(valued, key=lambda x: x.get("value", 0), reverse=True)[:5]
+                            context_str += "Top Holdings:\n"
+                            for pos in sorted_positions:
+                                context_str += f"- {pos.get('symbol', 'N/A')}: ${pos.get('value', 0):,.2f}\n"
+                    
+            if "perf_metrics" in state:
+                metrics = state.get("perf_metrics", {})
+                context_str += f"\nPerformance Metrics:\n"
+                for key, val in metrics.items():
+                    if isinstance(val, (int, float)):
+                        context_str += f"- {key}: {val:.4f}\n"
+        
+        # Create system prompt for financial explanation
+        system_prompt = """You are a senior financial advisor providing clear, data-driven explanations of portfolio metrics and financial concepts.
+        Break down complex financial metrics into understandable components.
+        Provide specific reasoning based on the actual data provided.
+        Be quantitative and precise when discussing financial values.
+        Format your response as JSON with these exact fields:
+        {
+            "explanation": "A clear, one-paragraph explanation of the metric",
+            "reasoning": ["First specific insight", "Second specific insight", "Third specific insight"],
+            "confidence": "high/medium/low based on data completeness"
+        }"""
+        
+        # Create user prompt
+        user_prompt = f"""Explain this financial metric or concept: {subject}
+        
+{context_str}
+
+Current Value: {value if value is not None else 'Not provided'}
+
+Provide a detailed explanation with 3-5 specific reasoning points based on the portfolio data provided. Be specific about how the portfolio holdings and metrics contribute to this value."""
+
+        # Call Claude API
+        response_text = await self._call_claude(system_prompt, user_prompt, temperature=0.3)
+        
+        # Parse response or use as-is
+        try:
+            # Try to parse as JSON if Claude returns structured response
+            if response_text.startswith("{"):
+                response_data = json.loads(response_text)
+                explanation = response_data.get("explanation", response_text)
+                reasoning = response_data.get("reasoning", [])
+                confidence = response_data.get("confidence", "medium")
+            else:
+                # If not JSON, extract insights from text
+                explanation = response_text
+                # Split into sentences and take meaningful insights
+                sentences = [s.strip() for s in response_text.split(".") if s.strip() and len(s.strip()) > 20]
+                reasoning = sentences[1:4] if len(sentences) > 1 else ["Based on portfolio analysis"]
+                confidence = "medium"
+        except (json.JSONDecodeError, Exception) as e:
+            logger.debug(f"Could not parse JSON response: {e}")
+            explanation = response_text
+            reasoning = ["Analysis based on portfolio data provided"]
+            confidence = "medium"
+        
         result = {
             "subject": subject,
-            "value": context.get(subject) if context else None,
-            "explanation": f"[AI Explanation for {subject} would appear here]",
-            "reasoning": [
-                "Placeholder reasoning point 1",
-                "Placeholder reasoning point 2",
-                "Placeholder reasoning point 3",
-            ],
-            "confidence": "medium",
-            "note": "Claude API integration not yet implemented",
+            "value": value,
+            "explanation": explanation,
+            "reasoning": reasoning if isinstance(reasoning, list) else [reasoning],
+            "confidence": confidence,
         }
 
         # Attach metadata
@@ -213,18 +290,89 @@ class ClaudeAgent(BaseAgent):
             f"content_length={len(content)}, max_length={max_length}"
         )
 
-        # TODO: Implement Claude API integration
+        # Prepare content type-specific prompts
+        content_type_prompts = {
+            "news": "financial news article",
+            "report": "financial report",
+            "portfolio": "portfolio performance summary",
+            "text": "document"
+        }
+        
+        content_description = content_type_prompts.get(content_type, "content")
+        
+        # Create system prompt for summarization
+        system_prompt = f"""You are a financial analyst creating concise summaries of {content_description}s.
+        Create clear, informative summaries that capture the most important information.
+        Focus on financial impacts, key metrics, and actionable insights.
+        Format your response as JSON with these exact fields:
+        {{
+            "summary": "A concise summary in {max_length} words or less",
+            "key_points": ["First key point", "Second key point", "Third key point"],
+            "financial_impact": "Brief description of financial implications if applicable"
+        }}"""
+        
+        # Truncate content if too long for API
+        max_content_chars = 10000
+        truncated_content = content[:max_content_chars] if len(content) > max_content_chars else content
+        if len(content) > max_content_chars:
+            truncated_content += f"\n\n[Content truncated - showing first {max_content_chars} characters of {len(content)} total]"
+        
+        # Add portfolio context if available in state
+        portfolio_context = ""
+        if state and "positions" in state:
+            portfolio_context = "\n\nPortfolio Context: "
+            portfolio_context += f"{len(state.get('positions', []))} positions in portfolio"
+            if "valued_positions" in state:
+                total_value = sum(p.get("value", 0) for p in state.get("valued_positions", []))
+                portfolio_context += f", Total Value: ${total_value:,.2f}"
+        
+        # Create user prompt
+        user_prompt = f"""Please summarize the following {content_description} in {max_length} words or less:
+
+{truncated_content}
+{portfolio_context}
+
+Focus on the most important information, financial impacts, and actionable insights. Extract 3-5 key points."""
+
+        # Call Claude API
+        response_text = await self._call_claude(system_prompt, user_prompt, temperature=0.4)
+        
+        # Parse response
+        try:
+            if response_text.startswith("{"):
+                response_data = json.loads(response_text)
+                summary = response_data.get("summary", response_text)
+                key_points = response_data.get("key_points", [])
+                financial_impact = response_data.get("financial_impact", "")
+            else:
+                # Fallback to text parsing
+                summary = response_text[:max_length * 10]  # Approximate word to char ratio
+                # Extract bullet points or sentences as key points
+                lines = response_text.split("\n")
+                key_points = [l.strip("- •·").strip() for l in lines if l.strip().startswith(("-", "•", "·"))][:5]
+                if not key_points:
+                    sentences = [s.strip() for s in response_text.split(".") if s.strip() and len(s.strip()) > 20]
+                    key_points = sentences[:3]
+                financial_impact = ""
+        except (json.JSONDecodeError, Exception) as e:
+            logger.debug(f"Could not parse JSON response: {e}")
+            summary = response_text[:max_length * 10]
+            key_points = ["Summary generated from content analysis"]
+            financial_impact = ""
+        
+        # Count actual words in summary
+        summary_words = len(summary.split())
+        
         result = {
             "content_type": content_type,
             "original_length": len(content),
-            "summary": "[AI Summary would appear here]",
-            "summary_length": 0,
-            "key_points": [
-                "Placeholder key point 1",
-                "Placeholder key point 2",
-            ],
-            "note": "Claude API integration not yet implemented",
+            "summary": summary,
+            "summary_length": summary_words,
+            "key_points": key_points if isinstance(key_points, list) else [key_points],
         }
+        
+        if financial_impact:
+            result["financial_impact"] = financial_impact
 
         # Attach metadata
         metadata = self._create_metadata(
@@ -276,18 +424,129 @@ class ClaudeAgent(BaseAgent):
         """
         logger.info(f"claude.analyze: analysis_type={analysis_type}")
 
-        # TODO: Implement Claude API integration
+        # Prepare data for analysis
+        data_summary = ""
+        data_points = 0
+        
+        if isinstance(data, list):
+            data_points = len(data)
+            if data_points > 0:
+                # Sample data for context
+                sample_size = min(10, data_points)
+                data_summary = f"Data contains {data_points} items.\nSample data:\n"
+                for item in data[:sample_size]:
+                    if isinstance(item, dict):
+                        data_summary += f"- {json.dumps(item, default=str, indent=2)[:500]}\n"
+                    else:
+                        data_summary += f"- {str(item)[:100]}\n"
+        elif isinstance(data, dict):
+            data_points = len(data)
+            data_summary = f"Data contains {data_points} fields:\n"
+            for key, val in list(data.items())[:10]:
+                if isinstance(val, (list, dict)):
+                    data_summary += f"- {key}: {type(val).__name__} with {len(val)} items\n"
+                else:
+                    data_summary += f"- {key}: {str(val)[:100]}\n"
+        else:
+            data_points = 1
+            data_summary = f"Data type: {type(data).__name__}\nValue: {str(data)[:1000]}"
+        
+        # Add portfolio context from state
+        portfolio_context = ""
+        if state:
+            if "positions" in state:
+                portfolio_context += f"\nPortfolio Context: {len(state.get('positions', []))} positions"
+            if "perf_metrics" in state:
+                metrics = state.get("perf_metrics", {})
+                if metrics:
+                    portfolio_context += f"\nKey Metrics:"
+                    for key in ["twr_ytd", "sharpe_ratio", "volatility", "max_drawdown"]:
+                        if key in metrics:
+                            portfolio_context += f"\n- {key}: {metrics[key]:.4f}"
+            if "historical_nav" in state:
+                nav_data = state.get("historical_nav", {})
+                if "values" in nav_data:
+                    portfolio_context += f"\nHistorical Data: {len(nav_data['values'])} data points"
+        
+        # Analysis type specific prompts
+        analysis_prompts = {
+            "general": "Provide general insights and patterns",
+            "anomaly": "Identify any unusual patterns, outliers, or anomalies",
+            "trend": "Analyze trends, momentum, and directional changes",
+            "risk": "Assess risk factors and potential vulnerabilities",
+            "opportunity": "Identify opportunities for improvement or optimization"
+        }
+        
+        analysis_focus = analysis_prompts.get(analysis_type, analysis_prompts["general"])
+        
+        # Create system prompt
+        system_prompt = f"""You are a quantitative financial analyst specializing in data analysis and pattern recognition.
+        Analyze the provided financial data to {analysis_focus}.
+        Be specific and quantitative in your insights.
+        Format your response as JSON with these exact fields:
+        {{
+            "insights": ["First key insight", "Second key insight", "Third key insight"],
+            "patterns_detected": "Brief description of patterns found",
+            "recommendations": ["First recommendation", "Second recommendation"],
+            "confidence": "high/medium/low based on data quality and completeness",
+            "risk_factors": "Any identified risks or concerns"
+        }}"""
+        
+        # Create user prompt
+        user_prompt = f"""Analyze this financial data for {analysis_type} analysis:
+
+{data_summary}
+{portfolio_context}
+
+Data Points: {data_points}
+Analysis Type: {analysis_type}
+
+Focus: {analysis_focus}
+
+Provide 3-5 specific insights and 2-3 actionable recommendations based on the data patterns."""
+
+        # Call Claude API
+        response_text = await self._call_claude(system_prompt, user_prompt, temperature=0.4)
+        
+        # Parse response
+        try:
+            if response_text.startswith("{"):
+                response_data = json.loads(response_text)
+                insights = response_data.get("insights", [])
+                patterns = response_data.get("patterns_detected", "")
+                recommendations = response_data.get("recommendations", [])
+                confidence = response_data.get("confidence", "medium")
+                risk_factors = response_data.get("risk_factors", "")
+            else:
+                # Fallback parsing
+                lines = response_text.split("\n")
+                insights = [l.strip("- •·").strip() for l in lines if l.strip() and len(l.strip()) > 20][:5]
+                if not insights:
+                    insights = ["Analysis completed based on available data"]
+                recommendations = []
+                patterns = ""
+                confidence = "medium"
+                risk_factors = ""
+        except (json.JSONDecodeError, Exception) as e:
+            logger.debug(f"Could not parse JSON response: {e}")
+            insights = [response_text[:200] if response_text else "Analysis based on provided data"]
+            recommendations = []
+            patterns = ""
+            confidence = "medium" 
+            risk_factors = ""
+        
         result = {
             "analysis_type": analysis_type,
-            "data_points": len(data) if isinstance(data, (list, dict)) else 0,
-            "insights": [
-                "Placeholder insight 1",
-                "Placeholder insight 2",
-            ],
-            "confidence": "medium",
-            "recommendations": [],
-            "note": "Claude API integration not yet implemented",
+            "data_points": data_points,
+            "insights": insights if isinstance(insights, list) else [insights],
+            "confidence": confidence,
+            "recommendations": recommendations if isinstance(recommendations, list) else [],
         }
+        
+        if patterns:
+            result["patterns_detected"] = patterns
+        if risk_factors:
+            result["risk_factors"] = risk_factors
 
         # Attach metadata
         metadata = self._create_metadata(
