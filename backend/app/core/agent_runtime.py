@@ -133,10 +133,6 @@ class AgentRuntime:
         self.max_retries = 3
         self.retry_delays = [1, 2, 4]  # Exponential backoff: 1s, 2s, 4s
 
-        # Circuit breaker configuration for each agent
-        # Using a default circuit breaker for now, can be agent-specific later
-        self.circuit_breaker = CircuitBreaker(failure_threshold=5, timeout_seconds=60)
-
         # Rights enforcement
         self.enable_rights_enforcement = enable_rights_enforcement
         if enable_rights_enforcement and get_attribution_manager is not None:
@@ -370,16 +366,6 @@ class AgentRuntime:
 
         agent = self.agents[agent_name]
 
-        # Check circuit breaker before attempting execution
-        if not self.circuit_breaker.can_execute():
-            logger.warning(
-                f"Circuit breaker OPEN for {agent_name} (capability: {capability}). "
-                f"Skipping execution."
-            )
-            # Raise a specific error or return a placeholder indicating circuit is open
-            # For now, let's raise a generic error that can be caught upstream
-            raise RuntimeError(f"Agent {agent_name} is temporarily unavailable (circuit open).")
-
         # Check cache first
         cache_key = self._get_cache_key(capability, kwargs)
         cached_result = self._get_cached_result(ctx.request_id, cache_key)
@@ -412,10 +398,6 @@ class AgentRuntime:
 
                 result = await agent.execute(capability, ctx, state, **kwargs)
 
-                # Record success and reset circuit breaker
-                self.circuit_breaker.record_success()
-                logger.debug(f"Circuit breaker reset for {agent_name} on success.")
-
                 # Add attributions if rights enforcement enabled
                 if self.enable_rights_enforcement and self._attribution_manager:
                     result = self._add_attributions(result)
@@ -442,14 +424,6 @@ class AgentRuntime:
             except Exception as e:
                 agent_status = "error"
                 last_exception = e
-
-                # Record failure and update circuit breaker
-                self.circuit_breaker.record_failure()
-                if self.circuit_breaker.state == "OPEN":
-                    logger.warning(
-                        f"Circuit breaker OPENED for {agent_name} "
-                        f"(capability: {capability}, failure_count: {self.circuit_breaker.failure_count})"
-                    )
 
                 # Log the error with appropriate severity based on attempt
                 if attempt < self.max_retries:
