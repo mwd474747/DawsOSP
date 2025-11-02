@@ -835,6 +835,7 @@ class DataHarvester(BaseAgent):
             # Get most recent statements
             latest_income = income_statements[0]
             latest_balance = balance_sheets[0]
+            latest_cash_flow = cash_flows[0] if cash_flows else {}
             latest_ratios = ratios[0]
 
             # ================================================================
@@ -859,8 +860,9 @@ class DataHarvester(BaseAgent):
 
             # FCF dividend coverage = Free Cash Flow / Dividends Paid
             # Note: FMP reports dividendsPaid as negative (cash outflow)
-            fcf = Decimal(str(latest_income.get("freeCashFlow", 0)))
-            dividends_paid_raw = latest_income.get("dividendsPaid", 0)
+            # Free cash flow and dividends are in the cash flow statement
+            fcf = Decimal(str(latest_cash_flow.get("freeCashFlow", 0)))
+            dividends_paid_raw = latest_cash_flow.get("dividendsPaid", 0)
             dividends_paid = abs(Decimal(str(dividends_paid_raw)))  # Make positive
 
             if dividends_paid > 0:
@@ -869,7 +871,8 @@ class DataHarvester(BaseAgent):
                 fcf_dividend_coverage = Decimal("0")
 
             # Dividend growth streak (consecutive years of dividend increases)
-            dividend_growth_streak_years = self._calculate_dividend_streak(income_statements)
+            # Dividends are in cash flow statements, not income statements
+            dividend_growth_streak_years = self._calculate_dividend_streak(cash_flows)
 
             # Net cash position = Cash - Total Debt
             cash = Decimal(str(latest_balance.get("cashAndCashEquivalents", 0)))
