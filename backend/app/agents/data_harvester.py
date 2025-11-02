@@ -1389,7 +1389,7 @@ class DataHarvester(BaseAgent):
                 relevance = self._calculate_news_relevance(title, description, query)
 
                 transformed.append({
-                    "title": title,
+                    "headline": title,  # Changed from "title" to "headline" for compatibility
                     "summary": description,
                     "url": url,
                     "published_at": published_at,
@@ -1491,51 +1491,97 @@ class DataHarvester(BaseAgent):
                 # This is a position object, extract symbol
                 symbol = entity.get("symbol")
                 if symbol:
-                    symbols.append(symbol)
+                    # Normalize symbol (e.g., BRK.B -> BRK-B for better search)
+                    normalized_symbol = symbol.replace(".", "-")
+                    symbols.append(normalized_symbol)
             elif isinstance(entity, str):
                 # This is already a symbol string
-                symbols.append(entity)
+                normalized_symbol = entity.replace(".", "-")
+                symbols.append(normalized_symbol)
         
         logger.info(f"news.search: symbols={symbols}, lookback_hours={lookback_hours}")
 
         try:
             # Use existing provider.fetch_news capability
-            news_items = []
+            all_news_items = []
+            unique_articles = set()  # Track unique URLs to avoid duplicates
+            
             for symbol in symbols:
-                news_result = await self.provider_fetch_news(
-                    ctx, state, symbol=symbol, provider="newsapi"
-                )
-                if news_result.get("news"):
-                    news_items.extend(news_result["news"])
+                try:
+                    news_result = await self.provider_fetch_news(
+                        ctx, state, symbol=symbol, limit=20  # Pass limit to provider_fetch_news
+                    )
+                    
+                    # Fix: Check for "articles" key instead of "news"
+                    if news_result.get("articles"):
+                        for article in news_result["articles"]:
+                            # Skip duplicates based on URL
+                            url = article.get("url", "")
+                            if url and url not in unique_articles:
+                                unique_articles.add(url)
+                                # Add symbol reference to track which symbol matched
+                                article["matched_symbol"] = symbol
+                                all_news_items.append(article)
+                    
+                    # Log if no articles found for a symbol
+                    if not news_result.get("articles"):
+                        logger.info(f"No news articles found for symbol: {symbol}")
+                        
+                except Exception as e:
+                    logger.warning(f"Failed to fetch news for symbol {symbol}: {e}")
+                    continue
 
             # Filter by lookback time
             from datetime import datetime, timedelta
             cutoff_time = datetime.now() - timedelta(hours=lookback_hours)
             
             filtered_news = []
-            for item in news_items:
+            for item in all_news_items:
                 if item.get("published_at"):
                     try:
-                        pub_time = datetime.fromisoformat(item["published_at"].replace("Z", "+00:00"))
+                        # Handle different date formats
+                        pub_date_str = item["published_at"]
+                        if pub_date_str.endswith("Z"):
+                            pub_time = datetime.fromisoformat(pub_date_str.replace("Z", "+00:00"))
+                        else:
+                            pub_time = datetime.fromisoformat(pub_date_str)
+                        
                         if pub_time >= cutoff_time:
                             filtered_news.append(item)
-                    except (ValueError, TypeError):
-                        # Include if we can't parse the date
+                    except (ValueError, TypeError) as e:
+                        logger.debug(f"Could not parse date {item.get('published_at')}: {e}")
+                        # Include if we can't parse the date (better to show than miss)
                         filtered_news.append(item)
+                else:
+                    # Include articles without dates (shouldn't happen but be safe)
+                    filtered_news.append(item)
+
+            # Sort by relevance and date
+            filtered_news.sort(
+                key=lambda x: (
+                    float(x.get("relevance", 0.5)),
+                    x.get("published_at", "")
+                ),
+                reverse=True
+            )
+
+            # Log summary
+            logger.info(f"news.search found {len(filtered_news)} articles for {len(symbols)} symbols")
 
             return {
                 "news_items": filtered_news,
                 "total_count": len(filtered_news),
-                "entities_searched": symbols,  # Return the extracted symbols
+                "entities_searched": symbols,
                 "lookback_hours": lookback_hours,
+                "_source": "newsapi",
             }
 
         except Exception as e:
-            logger.error(f"news.search failed: {e}")
+            logger.error(f"news.search failed: {e}", exc_info=True)
             return {
                 "news_items": [],
                 "total_count": 0,
-                "entities_searched": entities,
+                "entities_searched": symbols,
                 "lookback_hours": lookback_hours,
                 "error": str(e),
             }
@@ -1544,8 +1590,8 @@ class DataHarvester(BaseAgent):
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
-        news_items: List[Dict[str, Any]],
-        positions: List[Dict[str, Any]],
+        news_items: Any,  # Can be Dict or List
+        positions: Any,  # Can be Dict or List
         min_threshold: float = 0.1,
     ) -> Dict[str, Any]:
         """
@@ -1555,94 +1601,206 @@ class DataHarvester(BaseAgent):
         Pattern compatibility for news_impact_analysis.json
 
         Args:
-            news_items: List of news items from news.search
-            positions: List of portfolio positions
+            news_items: Dict from news.search or List of news items
+            positions: Dict from pricing.apply_pack or List of portfolio positions
             min_threshold: Minimum impact threshold (default: 0.1)
 
         Returns:
             Dict with impact analysis results
         """
+        # Extract the actual lists from the input objects
+        if isinstance(news_items, dict):
+            actual_news_items = news_items.get("news_items", [])
+        else:
+            actual_news_items = news_items if isinstance(news_items, list) else []
+        
+        if isinstance(positions, dict):
+            actual_positions = positions.get("positions", [])
+        else:
+            actual_positions = positions if isinstance(positions, list) else []
+        
         logger.info(
-            f"news.compute_portfolio_impact: {len(news_items)} news items, "
-            f"{len(positions)} positions, threshold={min_threshold}"
+            f"news.compute_portfolio_impact: {len(actual_news_items)} news items, "
+            f"{len(actual_positions)} positions, threshold={min_threshold}"
         )
 
         try:
             # Create position lookup by symbol
-            position_lookup = {pos.get("symbol"): pos for pos in positions}
+            position_lookup = {}
+            for pos in actual_positions:
+                if isinstance(pos, dict):
+                    symbol = pos.get("symbol")
+                    if symbol:
+                        position_lookup[symbol] = pos
             
             # Analyze each news item for portfolio impact
             impact_analysis = []
             total_impact_score = 0.0
+            entity_mention_counts = {}
             
-            for news_item in news_items:
-                # Simple sentiment analysis (placeholder - could be enhanced with NLP)
-                title = news_item.get("title", "").lower()
-                content = news_item.get("content", "").lower()
+            for news_item in actual_news_items:
+                if not isinstance(news_item, dict):
+                    continue
+                    
+                # Extract news fields - handle None values
+                title = (news_item.get("title") or news_item.get("headline") or "").lower()
+                summary = (news_item.get("summary") or "").lower()
+                content = (news_item.get("content") or summary or "").lower()
                 
-                # Basic sentiment keywords
-                positive_keywords = ["up", "rise", "gain", "profit", "beat", "exceed", "strong", "growth"]
-                negative_keywords = ["down", "fall", "drop", "loss", "miss", "weak", "decline", "crash"]
+                # Enhanced sentiment analysis with more keywords  
+                positive_keywords = ["up", "rise", "gain", "profit", "beat", "exceed", "strong", "growth", 
+                                   "surge", "rally", "boost", "upgrade", "bullish", "record", "breakthrough"]
+                negative_keywords = ["down", "fall", "drop", "loss", "miss", "weak", "decline", "crash",
+                                   "plunge", "slump", "cut", "downgrade", "bearish", "warning", "concern"]
                 
+                # Calculate sentiment score based on keyword presence
                 sentiment_score = 0.0
                 for keyword in positive_keywords:
-                    if keyword in title or keyword in content:
-                        sentiment_score += 0.1
+                    if keyword in title:
+                        sentiment_score += 0.15  # Title mentions are weighted higher
+                    if keyword in content:
+                        sentiment_score += 0.05
+                        
                 for keyword in negative_keywords:
-                    if keyword in title or keyword in content:
-                        sentiment_score -= 0.1
+                    if keyword in title:
+                        sentiment_score -= 0.15
+                    if keyword in content:
+                        sentiment_score -= 0.05
                 
-                # Check if news mentions any portfolio symbols
+                # Clamp sentiment score to [-1, 1]
+                sentiment_score = max(-1.0, min(1.0, sentiment_score))
+                
+                # Check which portfolio holdings are mentioned
                 mentioned_symbols = []
-                for symbol in position_lookup.keys():
-                    if symbol.lower() in title or symbol.lower() in content:
+                for symbol, position in position_lookup.items():
+                    # Check both the symbol and possible variations
+                    symbol_lower = symbol.lower()
+                    symbol_normalized = symbol.replace(".", "").replace("-", "").lower()
+                    
+                    # Check if symbol or variations appear in title/content
+                    if (symbol_lower in title or symbol_lower in content or
+                        symbol_normalized in title or symbol_normalized in content):
                         mentioned_symbols.append(symbol)
+                        # Track entity mentions for visualization
+                        entity_mention_counts[symbol] = entity_mention_counts.get(symbol, 0) + 1
                 
-                # Calculate impact for mentioned positions
+                # Also check if news mentions matched_symbol from search
+                matched_symbol = news_item.get("matched_symbol", "")
+                if matched_symbol:
+                    # Convert back from normalized form (BRK-B -> BRK.B)
+                    original_symbol = matched_symbol.replace("-", ".")
+                    if original_symbol in position_lookup and original_symbol not in mentioned_symbols:
+                        mentioned_symbols.append(original_symbol)
+                        entity_mention_counts[original_symbol] = entity_mention_counts.get(original_symbol, 0) + 1
+                
+                # Calculate impact for each mentioned position
                 position_impacts = []
                 for symbol in mentioned_symbols:
-                    position = position_lookup[symbol]
-                    weight = position.get("weight", 0.0)  # Portfolio weight
-                    impact_score = abs(sentiment_score) * weight
+                    position = position_lookup.get(symbol, {})
+                    weight = float(position.get("weight", 0.0))  # Portfolio weight as percentage
+                    
+                    # Impact score combines relevance, sentiment, and portfolio weight
+                    relevance = float(news_item.get("relevance", 0.5))
+                    impact_score = abs(sentiment_score) * relevance * weight / 100.0
                     
                     if impact_score >= min_threshold:
                         position_impacts.append({
                             "symbol": symbol,
                             "weight": weight,
-                            "impact_score": impact_score,
-                            "sentiment": "positive" if sentiment_score > 0 else "negative",
+                            "impact_score": round(impact_score, 4),
+                            "sentiment": "positive" if sentiment_score > 0 else "negative" if sentiment_score < 0 else "neutral",
+                            "sentiment_score": round(sentiment_score, 3),
                         })
                         total_impact_score += impact_score
                 
+                # Include news item if it has portfolio impact
                 if position_impacts:
                     impact_analysis.append({
-                        "news_item": news_item,
-                        "sentiment_score": sentiment_score,
+                        "headline": news_item.get("title", ""),
+                        "summary": news_item.get("summary", ""),
+                        "source": news_item.get("source", ""),
+                        "published_at": news_item.get("published_at", ""),
+                        "url": news_item.get("url", ""),
+                        "sentiment": "positive" if sentiment_score > 0 else "negative" if sentiment_score < 0 else "neutral",
+                        "sentiment_score": round(sentiment_score, 3),
+                        "impact_score": round(max(imp["impact_score"] for imp in position_impacts), 4),
+                        "entities": mentioned_symbols,
+                        "weight_affected": round(sum(imp["weight"] for imp in position_impacts), 2),
                         "mentioned_symbols": mentioned_symbols,
                         "position_impacts": position_impacts,
                     })
             
-            # Sort by impact score
-            impact_analysis.sort(key=lambda x: max(imp["impact_score"] for imp in x["position_impacts"]), reverse=True)
+            # Sort by impact score (highest impact first)
+            impact_analysis.sort(key=lambda x: x["impact_score"], reverse=True)
+            
+            # Prepare entity mentions for bar chart (top 10)
+            entity_mentions_list = sorted(
+                [{"entity": k, "mention_count": v} for k, v in entity_mention_counts.items()],
+                key=lambda x: x["mention_count"],
+                reverse=True
+            )[:10]
+            
+            # Calculate portfolio exposure percentage
+            exposed_positions = len(set(sum([item["entities"] for item in impact_analysis], [])))
+            exposed_portfolio_pct = (exposed_positions / len(actual_positions) * 100) if actual_positions else 0
+            
+            # Calculate overall sentiment
+            if impact_analysis:
+                avg_sentiment = sum(item["sentiment_score"] for item in impact_analysis) / len(impact_analysis)
+                overall_sentiment = "positive" if avg_sentiment > 0.1 else "negative" if avg_sentiment < -0.1 else "neutral"
+            else:
+                overall_sentiment = "neutral"
+            
+            # Calculate weighted impact score (0-1 scale)
+            total_weight = sum(float(pos.get("weight", 0)) for pos in actual_positions)
+            weighted_impact = (total_impact_score / total_weight * 100) if total_weight > 0 else 0
             
             return {
-                "impact_analysis": impact_analysis,
-                "total_impact_score": total_impact_score,
-                "high_impact_count": len([item for item in impact_analysis if any(imp["impact_score"] >= min_threshold for imp in item["position_impacts"])]),
+                # Core analysis results
+                "news_with_impact": impact_analysis,  # For news_items panel
+                "impact_analysis": impact_analysis,   # Backwards compatibility
+                
+                # Summary metrics for impact_summary panel
+                "total_items": len(actual_news_items),
+                "high_impact_count": len([item for item in impact_analysis if item["impact_score"] >= min_threshold]),
+                "weighted_impact": round(weighted_impact, 4),
+                "exposed_portfolio_pct": round(exposed_portfolio_pct, 2),
+                "overall_sentiment": overall_sentiment,
+                
+                # Entity mentions for bar chart
+                "entity_mentions": entity_mentions_list,
+                
+                # Additional metadata
+                "total_impact_score": round(total_impact_score, 4),
                 "min_threshold": min_threshold,
-                "positions_analyzed": len(positions),
-                "news_items_analyzed": len(news_items),
+                "positions_analyzed": len(actual_positions),
+                "news_items_analyzed": len(actual_news_items),
+                "_source": "newsapi" if actual_news_items else "empty",
             }
 
         except Exception as e:
-            logger.error(f"news.compute_portfolio_impact failed: {e}")
+            logger.error(f"news.compute_portfolio_impact failed: {e}", exc_info=True)
             return {
+                # Core analysis results (empty)
+                "news_with_impact": [],
                 "impact_analysis": [],
-                "total_impact_score": 0.0,
+                
+                # Summary metrics (defaults)
+                "total_items": 0,
                 "high_impact_count": 0,
+                "weighted_impact": 0.0,
+                "exposed_portfolio_pct": 0.0,
+                "overall_sentiment": "neutral",
+                
+                # Entity mentions (empty)
+                "entity_mentions": [],
+                
+                # Additional metadata
+                "total_impact_score": 0.0,
                 "min_threshold": min_threshold,
-                "positions_analyzed": len(positions),
-                "news_items_analyzed": len(news_items),
+                "positions_analyzed": len(actual_positions),
+                "news_items_analyzed": len(actual_news_items),
+                "_source": "error",
                 "error": str(e),
             }
 
