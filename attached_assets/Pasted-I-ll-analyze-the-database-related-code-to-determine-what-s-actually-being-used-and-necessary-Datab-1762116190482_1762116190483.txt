@@ -1,0 +1,114 @@
+I'll analyze the database-related code to determine what's actually being used and necessary.
+
+Database Operations Analysis
+Based on the error logs and codebase review, here's what's actually being used:
+
+✅ ACTIVELY USED (Keep)
+backend/app/db/connection.py - Core connection management
+get_db_pool() - Called by all agents/services
+get_db_connection_with_rls() - Used for user isolation
+execute_query(), execute_query_one(), execute_statement() - Used throughout
+ISSUE: Pool registration mechanism is failing (lines 60-100)
+backend/app/db/metrics_queries.py - Portfolio metrics
+Used by PerformanceCalculator service
+Used by /api/v1/portfolios/{id}/metrics endpoint
+Actually querying: portfolio_metrics, portfolio_daily_values, portfolio_cash_flows tables
+backend/app/db/pricing_pack_queries.py - Pricing pack status
+Used by executor and pattern orchestrator
+Actually querying: pricing_packs table
+backend/app/db/continuous_aggregate_manager.py - TimescaleDB aggregates
+Used for monitoring continuous aggregates
+Actually querying: TimescaleDB metadata tables
+❌ NOT BEING USED (Can Remove/Simplify)
+Redis Coordinator (backend/app/db/redis_pool_coordinator.py - referenced but file doesn't exist)
+Line 126-131 in connection.py tries to import it
+Falls back gracefully if missing
+VERDICT: Dead code reference, remove import
+Complex Pool Fallback Chain (connection.py lines 147-202)
+5 different pool sources checked
+Only #1 (external pool) and #4 (PoolManager singleton) are actually working
+VERDICT: Over-engineered, simplify to 2 sources
+Compliance Modules (app/core/agent_runtime.py lines 23-32)
+Tries to import compliance.attribution and compliance.rights_registry
+These are in .archive/compliance-archived-20251102/
+VERDICT: Dead code, already archived
+Observability Metrics (multiple files)
+Graceful degradation if not available
+Not currently configured in Replit
+VERDICT: Keep fallback pattern, but not actively used
+🔴 CRITICAL ISSUES FOUND
+Database Pool Not Initializing for Agents (THE ROOT CAUSE)
+'NoneType' object has no attribute 'get_pool'
+combined_server.py creates pool on line 346
+Registers it on line 355 via register_external_pool(db_pool)
+BUT agents/services import connection.py in different module instances
+Pool registration doesn't persist across module boundaries
+Circuit Breaker Opens Due to Pool Failures
+'Agent macro_hound circuit breaker is open'
+MacroHound agent fails 5+ times trying to access database
+CyclesService.detect_stdc_phase() calls get_latest_indicators()
+get_latest_indicators() calls execute_query() → get_db_pool() → FAILS
+Circuit breaker opens after 5 failures (60s timeout)
+Module Instance Separation Problem
+When uvicorn reloads or imports happen in different order
+_external_pool, _shared_pool variables reset to None
+Pool created in combined_server.py doesn't propagate to service imports
+📊 Database Schema Usage
+ACTUALLY USED (queries found in codebase):
+
+✅ portfolios - User portfolio records (RLS isolated)
+✅ lots - Position holdings (used by ledger.positions)
+✅ transactions - Trade history
+✅ portfolio_metrics - Daily metrics (TimescaleDB hypertable)
+✅ portfolio_daily_values - NAV time-series
+✅ portfolio_cash_flows - Cash flow tracking for MWR
+✅ pricing_packs - Pricing pack status/freshness
+✅ securities - Security master data
+✅ prices - Security prices by pack
+✅ fx_rates - Currency exchange rates
+✅ macro_indicators - FRED macro data
+✅ regime_history - Macro regime classifications
+✅ users - Authentication
+✅ rating_rubrics - Rating weights/thresholds
+MINIMALLY USED (created but rarely queried):
+
+⚠️ currency_attribution - Schema exists, service implemented, but no API endpoint usage
+⚠️ factor_exposures - Schema exists, service implemented, but no API endpoint usage
+⚠️ alerts, notifications, dlq - Schema exists, but alert evaluation not actively used
+⚠️ scenario_shocks, position_factor_betas - Schema exists for future use
+⚠️ audit_log - Schema exists, but audit service not actively logging
+NOT USED AT ALL (can safely ignore for now):
+
+❌ cycle_phases - Schema in macro_indicators.sql but no queries found
+❌ dar_history - Schema exists but DaR computation not integrated
+❌ scenario_results - Schema exists but scenario persistence not implemented
+💡 RECOMMENDATIONS (Documentation Only)
+Fix Pool Registration (Priority: P0)
+Root cause: Module instance separation
+Current workaround: Restart server clears circuit breaker
+Need: More robust pool sharing mechanism
+Simplify Pool Fallback (Priority: P1)
+Remove 5-source fallback chain
+Keep only: External registration + PoolManager singleton
+Remove Redis coordinator references
+Archive Unused Compliance Imports (Priority: P2)
+Remove imports from agent_runtime.py lines 23-32
+Already archived in .archive/compliance-archived-20251102/
+Database Schema Cleanup (Priority: P3)
+Document which tables are actively queried
+Mark cycle_phases, dar_history, scenario_results as "future use"
+No need to drop them, just document status
+Summary
+NECESSARY (72% of database code):
+
+Core connection pooling (with fixes needed)
+Metrics queries (actively used)
+Pricing pack queries (actively used)
+Schema for 13 core tables (portfolios, lots, transactions, metrics, etc.)
+UNNECESSARY (28% of database code):
+
+Redis coordinator references (dead code)
+Complex 5-source pool fallback (over-engineered)
+Compliance module imports (archived)
+8 schema tables defined but not queried (can ignore for now)
+CRITICAL FIX NEEDED: Pool registration mechanism is the root cause of all current errors.
