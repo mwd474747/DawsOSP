@@ -139,7 +139,7 @@ class MacroHound(BaseAgent):
 
         try:
             # Detect current regime
-            classification = await macro_service.detect_current_regime(asof_date=asof)
+            classification = await macro_service.detect_current_regime()
 
             result = {
                 "regime_name": classification.regime.value,
@@ -241,9 +241,9 @@ class MacroHound(BaseAgent):
 
         try:
             # Detect all cycle phases
-            stdc_phase = await cycles_service.detect_stdc_phase(asof_date=asof)
-            ltdc_phase = await cycles_service.detect_ltdc_phase(asof_date=asof)
-            empire_phase = await cycles_service.detect_empire_phase(asof_date=asof)
+            stdc_phase = await cycles_service.detect_stdc_phase(as_of_date=asof)
+            ltdc_phase = await cycles_service.detect_ltdc_phase(as_of_date=asof)
+            empire_phase = await cycles_service.detect_empire_phase(as_of_date=asof)
 
             result = {
                 "stdc": {
@@ -848,7 +848,7 @@ class MacroHound(BaseAgent):
         try:
             # Detect current regime for conditioning
             try:
-                regime_classification = await macro_service.detect_current_regime(asof_date=ctx.asof_date)
+                regime_classification = await macro_service.detect_current_regime()
                 regime = regime_classification.regime.value
             except Exception as e:
                 logger.warning(f"Could not detect regime for DaR conditioning: {e}")
@@ -1062,7 +1062,7 @@ class MacroHound(BaseAgent):
         logger.info(f"cycles.compute_empire: asof={asof}")
 
         cycles_service = CyclesService()
-        phase = await cycles_service.detect_empire_phase(asof_date=asof)
+        phase = await cycles_service.detect_empire_phase(as_of_date=asof)
 
         result = {
             "cycle_type": "empire",
@@ -1106,7 +1106,7 @@ class MacroHound(BaseAgent):
         try:
             # Use the real CyclesService to detect civil phase
             cycles_service = CyclesService()
-            phase = await cycles_service.detect_civil_phase(asof_date=asof)
+            phase = await cycles_service.detect_civil_phase(as_of_date=asof)
 
             # Generate description based on phase
             descriptions = {
@@ -1193,9 +1193,9 @@ class MacroHound(BaseAgent):
         cycles_service = CyclesService()
 
         # Compute all three cycles from service
-        stdc_phase = await cycles_service.detect_stdc_phase(asof_date=asof)
-        ltdc_phase = await cycles_service.detect_ltdc_phase(asof_date=asof)
-        empire_phase = await cycles_service.detect_empire_phase(asof_date=asof)
+        stdc_phase = await cycles_service.detect_stdc_phase(as_of_date=asof)
+        ltdc_phase = await cycles_service.detect_ltdc_phase(as_of_date=asof)
+        empire_phase = await cycles_service.detect_empire_phase(as_of_date=asof)
 
         # Compute civil cycle using our implementation
         civil_data = await self.cycles_compute_civil(ctx, state, asof_date=asof)
