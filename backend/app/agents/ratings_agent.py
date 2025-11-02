@@ -33,6 +33,7 @@ from uuid import UUID
 from app.agents.base_agent import BaseAgent, AgentMetadata
 from app.core.types import RequestCtx
 from app.services.ratings import get_ratings_service
+from app.services.fundamentals_transformer import transform_fmp_to_ratings_format
 
 logger = logging.getLogger("DawsOS.RatingsAgent")
 
@@ -123,6 +124,15 @@ class RatingsAgent(BaseAgent):
 
         logger.info(f"ratings.dividend_safety: symbol={symbol}")
 
+        # Transform FMP data to ratings format if needed
+        if "income_statement" in fundamentals and "balance_sheet" in fundamentals:
+            # This is raw FMP data, transform it
+            logger.info(f"Transforming FMP fundamentals for {symbol}")
+            transformed_fundamentals = transform_fmp_to_ratings_format(fundamentals)
+        else:
+            # Already in the correct format or has required fields
+            transformed_fundamentals = fundamentals
+
         # Call ratings service
         ratings_service = get_ratings_service()
         security_uuid = UUID(security_id) if security_id else None
@@ -130,7 +140,7 @@ class RatingsAgent(BaseAgent):
         try:
             result = await ratings_service.calculate_dividend_safety(
                 symbol=symbol,
-                fundamentals=fundamentals,
+                fundamentals=transformed_fundamentals,
                 security_id=security_uuid,
             )
 
@@ -216,6 +226,15 @@ class RatingsAgent(BaseAgent):
 
         logger.info(f"ratings.moat_strength: symbol={symbol}")
 
+        # Transform FMP data to ratings format if needed
+        if "income_statement" in fundamentals and "balance_sheet" in fundamentals:
+            # This is raw FMP data, transform it
+            logger.info(f"Transforming FMP fundamentals for {symbol}")
+            transformed_fundamentals = transform_fmp_to_ratings_format(fundamentals)
+        else:
+            # Already in the correct format or has required fields
+            transformed_fundamentals = fundamentals
+
         # Call ratings service
         ratings_service = get_ratings_service()
         security_uuid = UUID(security_id) if security_id else None
@@ -223,7 +242,7 @@ class RatingsAgent(BaseAgent):
         try:
             result = await ratings_service.calculate_moat_strength(
                 symbol=symbol,
-                fundamentals=fundamentals,
+                fundamentals=transformed_fundamentals,
                 security_id=security_uuid,
             )
 
@@ -308,6 +327,15 @@ class RatingsAgent(BaseAgent):
 
         logger.info(f"ratings.resilience: symbol={symbol}")
 
+        # Transform FMP data to ratings format if needed
+        if "income_statement" in fundamentals and "balance_sheet" in fundamentals:
+            # This is raw FMP data, transform it
+            logger.info(f"Transforming FMP fundamentals for {symbol}")
+            transformed_fundamentals = transform_fmp_to_ratings_format(fundamentals)
+        else:
+            # Already in the correct format or has required fields
+            transformed_fundamentals = fundamentals
+
         # Call ratings service
         ratings_service = get_ratings_service()
         security_uuid = UUID(security_id) if security_id else None
@@ -315,7 +343,7 @@ class RatingsAgent(BaseAgent):
         try:
             result = await ratings_service.calculate_resilience(
                 symbol=symbol,
-                fundamentals=fundamentals,
+                fundamentals=transformed_fundamentals,
                 security_id=security_uuid,
             )
 
@@ -432,6 +460,15 @@ class RatingsAgent(BaseAgent):
 
         logger.info(f"ratings.aggregate: symbol={symbol}")
 
+        # Transform FMP data to ratings format if needed
+        if "income_statement" in fundamentals and "balance_sheet" in fundamentals:
+            # This is raw FMP data, transform it
+            logger.info(f"Transforming FMP fundamentals for {symbol}")
+            transformed_fundamentals = transform_fmp_to_ratings_format(fundamentals)
+        else:
+            # Already in the correct format or has required fields
+            transformed_fundamentals = fundamentals
+
         # Call ratings service
         ratings_service = get_ratings_service()
         security_uuid = UUID(security_id) if security_id else None
@@ -439,7 +476,7 @@ class RatingsAgent(BaseAgent):
         try:
             result = await ratings_service.aggregate(
                 symbol=symbol,
-                fundamentals=fundamentals,
+                fundamentals=transformed_fundamentals,
                 security_id=security_uuid,
             )
 

@@ -35,6 +35,7 @@ from uuid import UUID
 
 from app.agents.base_agent import BaseAgent, AgentMetadata
 from app.core.types import RequestCtx
+from app.services.fundamentals_transformer import transform_fmp_to_ratings_format
 
 logger = logging.getLogger("DawsOS.DataHarvester")
 
@@ -694,11 +695,12 @@ class DataHarvester(BaseAgent):
                 # If we got real data from both endpoints, transform it
                 if has_fundamentals and has_ratios:
                     try:
-                        result = self._transform_fmp_to_ratings_format(
-                            fundamentals_data,
-                            ratios_data,
-                            symbol
-                        )
+                        # Use the external transformer which handles FMP data properly
+                        result = transform_fmp_to_ratings_format(fundamentals_data)
+                        # Add ratios data if available (for additional metrics)
+                        if ratios_data and "ratios" in ratios_data:
+                            # TODO: Enhance transformer to use ratios data for more accurate metrics
+                            pass
                         source = f"fundamentals:fmp:{symbol}"
                         logger.info(f"✅ Successfully transformed real FMP fundamentals for {symbol}")
                     except (ValueError, KeyError, TypeError) as e:
