@@ -39,7 +39,8 @@ class ChartsAgent(BaseAgent):
         """Return list of capabilities."""
         return [
             "charts.macro_overview",
-            "charts.scenario_deltas"
+            "charts.scenario_deltas",
+            "charts.overview",
         ]
 
     async def charts_macro_overview(

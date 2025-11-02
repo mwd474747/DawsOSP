@@ -16,7 +16,8 @@
     "scenario_id": {
       "type": "string",
       "required": false,
-      "description": "Preset scenario ID (e.g., 'late_cycle_rates_up')"
+      "default": "rates_up",
+      "description": "Preset scenario ID (e.g., 'rates_up', 'equity_selloff')"
     },
     "custom_shocks": {
       "type": "object",

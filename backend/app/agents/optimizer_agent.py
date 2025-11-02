@@ -515,7 +515,7 @@ class OptimizerAgent(BaseAgent):
             regime_result = state.get("regime")
             if regime_result and isinstance(regime_result, dict):
                 regime = regime_result.get("regime")
-        
+
         if not regime:
             raise ValueError(
                 "regime required for optimizer.suggest_deleveraging_hedges. "
