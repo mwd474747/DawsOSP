@@ -374,6 +374,46 @@ backend/app/
 
 ---
 
+## Database Connection Architecture
+
+### Pool Management (Fixed Nov 2, 2025)
+
+**Challenge:** Module instance separation prevented pool sharing across agents
+
+**Solution:** Cross-module storage using sys.modules
+
+**Implementation** (`backend/app/db/connection.py` lines 35-56):
+```python
+# Cross-module pool storage
+POOL_STORAGE_KEY = '__dawsos_db_pool_storage__'
+
+def _get_pool_storage():
+    """Get or create cross-module pool storage."""
+    if POOL_STORAGE_KEY not in sys.modules:
+        storage = types.SimpleNamespace(pool=None)
+        sys.modules[POOL_STORAGE_KEY] = storage
+    return sys.modules[POOL_STORAGE_KEY]
+
+def register_external_pool(pool: asyncpg.Pool):
+    """Register pool accessible across all module instances."""
+    storage = _get_pool_storage()
+    storage.pool = pool
+```
+
+**Why This Works:**
+- `sys.modules` shared across all Python imports
+- Pool stored once, accessible everywhere
+- No module boundary issues
+- Simpler than previous 5-priority fallback
+
+**Historical Context:**
+- **Problem:** Module-level variables reset in new import instances (commits before e54da93)
+- **Old Approach:** Complex 5-priority fallback (600 lines, unreliable)
+- **New Approach:** sys.modules storage (382 lines, reliable)
+- **Analysis:** See [DATABASE_OPERATIONS_VALIDATION.md](DATABASE_OPERATIONS_VALIDATION.md)
+
+---
+
 ## Future Considerations
 
 - **Redis Integration**: Currently None, can be added for distributed caching

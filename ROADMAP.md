@@ -59,6 +59,45 @@
 
 **🔒 GUARDRAILS RESPECTED:** See [REPLIT_DEPLOYMENT_GUARDRAILS.md](REPLIT_DEPLOYMENT_GUARDRAILS.md)
 
+---
+
+### Plan 2.1: Database Pool Fix ✅ COMPLETED
+
+**Status:** Resolved (November 2, 2025)
+**Commits:** 4d15246, e54da93
+**Priority:** P0 (was blocking macro cycles)
+
+**Problem Discovered:**
+During Phase 0-5 execution, identified critical database pool registration issue:
+- Module instance separation prevented agents from accessing pool
+- MacroHound cycle detection failing with AttributeError
+- Circuit breaker opening after 5 failures
+
+**Root Cause:**
+- Python creates separate module instances on import
+- Pool registered in combined_server.py module instance
+- Agents importing connection.py got NEW module instances
+- Module-level variables (_external_pool) reset to None
+
+**Solution Implemented:**
+- Cross-module pool storage using `sys.modules['__dawsos_db_pool_storage__']`
+- Pool stored once in sys.modules, accessible across all imports
+- Simplified connection.py from 600 lines to 382 lines
+- Removed complex 5-priority fallback system
+
+**Documentation:**
+- Analysis: [DATABASE_OPERATIONS_VALIDATION.md](DATABASE_OPERATIONS_VALIDATION.md) (historical root cause)
+- Solution: [ARCHITECTURE.md](ARCHITECTURE.md) (pool architecture section)
+- Status: [CURRENT_ISSUES.md](CURRENT_ISSUES.md) (shows as fixed)
+
+**Impact:**
+- ✅ All 9 agents can access database
+- ✅ MacroHound cycle detection working
+- ✅ Circuit breaker no longer tripping
+- ✅ Macro Cycles dashboard fully functional
+
+---
+
 #### Phase 0: Make Code Resilient (MUST DO FIRST)
 **Effort:** 2 hours
 **Risk:** High if skipped (ImportErrors on startup)
