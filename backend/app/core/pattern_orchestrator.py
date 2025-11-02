@@ -28,7 +28,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from app.core.types import RequestCtx
-from observability.metrics import get_metrics
+
+# Optional import for observability (graceful degradation)
+try:
+    from observability.metrics import get_metrics
+except ImportError:
+    def get_metrics():
+        """Fallback metrics function when observability not available"""
+        return None
 
 logger = logging.getLogger(__name__)
 

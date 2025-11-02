@@ -26,9 +26,25 @@ from typing import Any, Dict, List, Optional
 
 from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
-from compliance.attribution import get_attribution_manager
-from compliance.rights_registry import get_rights_registry
-from observability.metrics import get_metrics
+
+# Optional imports for compliance and observability (graceful degradation)
+try:
+    from compliance.attribution import get_attribution_manager
+    from compliance.rights_registry import get_rights_registry
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.warning("Compliance modules not available - attribution and rights enforcement disabled")
+    get_attribution_manager = None
+    get_rights_registry = None
+
+try:
+    from observability.metrics import get_metrics
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.warning("Observability metrics module not available - metrics disabled")
+    def get_metrics():
+        """Fallback metrics function when observability not available"""
+        return None
 
 logger = logging.getLogger(__name__)
 
@@ -189,13 +205,15 @@ class AgentRuntime:
 
         # Rights enforcement
         self.enable_rights_enforcement = enable_rights_enforcement
-        if enable_rights_enforcement:
+        if enable_rights_enforcement and get_attribution_manager is not None:
             self._attribution_manager = get_attribution_manager()
             self._rights_registry = get_rights_registry()
             logger.info("AgentRuntime initialized with rights enforcement enabled")
         else:
             self._attribution_manager = None
             self._rights_registry = None
+            if enable_rights_enforcement:
+                logger.warning("Rights enforcement requested but compliance modules not available")
             logger.info("AgentRuntime initialized (rights enforcement disabled)")
 
     def _get_cache_key(self, capability: str, kwargs: Dict[str, Any]) -> str:

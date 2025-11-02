@@ -162,7 +162,12 @@ _pool_manager = PoolManager()
 # ============================================================================
 # Redis Coordinator (NEW - Fixes cross-module pool access)
 # ============================================================================
-from app.db.redis_pool_coordinator import coordinator
+# Optional import for redis coordinator (graceful degradation)
+try:
+    from app.db.redis_pool_coordinator import coordinator
+except ImportError:
+    logger.warning("Redis pool coordinator not available - using local pool only")
+    coordinator = None
 
 
 async def init_db_pool(
@@ -279,15 +284,18 @@ def get_db_pool() -> asyncpg.Pool:
         logger.info("❌ PoolManager singleton pool not initialized")
     
     # PRIORITY 5: Fallback to Redis coordinator (for backward compatibility)
-    try:
-        pool = coordinator.get_pool_sync()
-        if pool is not None:
-            logger.info("✅ Using pool from Redis coordinator")
-            return pool
-        else:
-            logger.info("❌ Redis coordinator pool is None")
-    except Exception as e:
-        logger.info(f"❌ Redis coordinator failed: {e}")
+    if coordinator is not None:
+        try:
+            pool = coordinator.get_pool_sync()
+            if pool is not None:
+                logger.info("✅ Using pool from Redis coordinator")
+                return pool
+            else:
+                logger.info("❌ Redis coordinator pool is None")
+        except Exception as e:
+            logger.info(f"❌ Redis coordinator failed: {e}")
+    else:
+        logger.info("❌ Redis coordinator not available (module not imported)")
 
     # Pool not initialized yet - this is an error
     logger.error("❌ CRITICAL: No pool available from any source!")
