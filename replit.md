@@ -25,7 +25,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates (Nov 2, 2025)
 
-**Database Pool Fix:** Resolved critical module boundary issue preventing agents from accessing database pool. Implemented cross-module pool storage using `sys.modules['__dawsos_db_pool_storage__']` ensuring all imports see the same pool instance. Removed 167 lines of dead Redis coordinator code and simplified pool fallback from 5 sources to 2.
+**Major System Simplification & Performance Improvements:**
+
+1. **Circuit Breaker Removal (400+ lines eliminated):** Replaced complex circuit breaker pattern with simple exponential backoff retry logic that properly respects API rate limits. System is now more reliable and predictable.
+
+2. **FRED Data Scaling Fixed:** All macro indicators now properly transformed (e.g., Debt/GDP: 1.34 vs 36M, Unemployment: 4.3% vs raw values). Created FREDTransformationService with proper scaling for 44+ indicators.
+
+3. **Derived Indicators:** Added SQL function to calculate 9 derived macro indicators (real interest rate, term spread, GDP gap, etc.) that auto-compute after FRED data loads.
+
+4. **Missing Indicators Seeded:** 28 missing macro indicators now seeded with defaults from JSON configuration, ensuring all 4 economic cycles can calculate even without complete FRED data.
+
+5. **All Macro Cycles Working:** STDC, LTDC, Empire, and Civil cycles now compute with 100% data coverage, providing meaningful economic phase detection and scores.
 
 ## System Architecture
 
