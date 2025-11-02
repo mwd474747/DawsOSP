@@ -14,34 +14,7 @@
       "description": "Security UUID"
     }
   },
-  "outputs": {
-    "panels": [
-      {
-        "id": "quality_scorecard",
-        "title": "Quality Scorecard",
-        "type": "scorecard",
-        "refresh_ttl": 86400
-      },
-      {
-        "id": "moat_analysis",
-        "title": "Moat Strength",
-        "type": "scorecard",
-        "refresh_ttl": 86400
-      },
-      {
-        "id": "dividend_safety",
-        "title": "Dividend Safety",
-        "type": "scorecard",
-        "refresh_ttl": 86400
-      },
-      {
-        "id": "resilience",
-        "title": "Balance Sheet Resilience",
-        "type": "metrics_grid",
-        "refresh_ttl": 86400
-      }
-    ]
-  },
+  "outputs": ["fundamentals", "dividend_safety", "moat_strength", "resilience", "aggregate", "explanation"],
   "steps": [
     {
       "capability": "fundamentals.load",
@@ -76,6 +49,14 @@
       "as": "resilience"
     },
     {
+      "capability": "ratings.aggregate",
+      "args": {
+        "security_id": "{{inputs.security_id}}",
+        "fundamentals": "{{state.fundamentals}}"
+      },
+      "as": "aggregate"
+    },
+    {
       "capability": "ai.explain",
       "args": {
         "topic": "Explain the quality and moat ratings in Buffett's framework",
@@ -83,7 +64,8 @@
           "ratings": {
             "dividend_safety": "{{state.dividend_safety}}",
             "moat_strength": "{{state.moat_strength}}",
-            "resilience": "{{state.resilience}}"
+            "resilience": "{{state.resilience}}",
+            "aggregate": "{{state.aggregate}}"
           },
           "fundamentals": "{{state.fundamentals}}"
         }
