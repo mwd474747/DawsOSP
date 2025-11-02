@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Enhanced DawsOS Server - Comprehensive Portfolio Management System
-Version 6.0.0 - Refactored with Improved Error Handling and Code Quality
+Version 6.0.1 - Technical Debt Fixes and Refactoring
 """
 
 import os
@@ -112,6 +112,47 @@ MIN_POSITIONS_FOR_DIVERSIFICATION = 5
 MAX_RISK_SCORE = 1.0
 MIN_SHARPE_RATIO = -2.0
 MAX_SHARPE_RATIO = 3.0
+
+# ============================================================================
+# Magic Number Constants (P3 - Technical Debt Fix)
+# ============================================================================
+
+# Default Portfolio and User IDs
+DEFAULT_PORTFOLIO_ID = "64ff3be6-0ed1-4990-a32b-4ded17f0320c"  # Example portfolio
+SYSTEM_USER_ID = "system"
+DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000001"
+
+# Lookback Day Constants
+LOOKBACK_DAYS_YEAR = 252  # Trading days in a year
+LOOKBACK_DAYS_QUARTER = 90
+LOOKBACK_DAYS_CALENDAR_YEAR = 365
+
+# ============================================================================
+# Pattern Lists (P2 - Consolidated Pattern Lists)
+# ============================================================================
+
+# All portfolio-related patterns that require portfolio_id
+PORTFOLIO_PATTERNS = [
+    "portfolio_overview", 
+    "portfolio_scenario_analysis", 
+    "portfolio_cycle_risk",
+    "portfolio_macro_overview", 
+    "holding_deep_dive", 
+    "news_impact_analysis",
+    "policy_rebalance", 
+    "buffett_checklist", 
+    "export_portfolio_report"
+]
+
+# Macro patterns that don't require portfolio_id
+MACRO_PATTERNS = [
+    "macro_cycles_overview",
+    "macro_trend_monitor",
+    "cycle_deleveraging_scenarios"
+]
+
+# All valid patterns
+ALL_VALID_PATTERNS = PORTFOLIO_PATTERNS + MACRO_PATTERNS
 
 # ============================================================================
 # Global State
@@ -356,7 +397,7 @@ async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any]
         ctx = RequestCtx(
             trace_id=str(uuid4()),
             request_id=str(uuid4()),
-            user_id=user_id or "system",
+            user_id=user_id or SYSTEM_USER_ID,
             portfolio_id=inputs.get("portfolio_id"),
             asof_date=date.today(),
             pricing_pack_id=pricing_pack_id,
@@ -822,6 +863,37 @@ async def get_current_user(request_or_token: Union[Request, str]) -> Optional[di
     return None
 
 # ============================================================================
+# Authentication Dependency (P4 - Technical Debt Fix)
+# ============================================================================
+
+async def require_auth(request: Request) -> dict:
+    """
+    FastAPI dependency for requiring authentication.
+    
+    This replaces the repeated pattern:
+    ```
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    ```
+    
+    Usage:
+    ```
+    @app.get("/protected")
+    async def protected_route(user: dict = Depends(require_auth)):
+        return {"user": user}
+    ```
+    """
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    return user
+
+# ============================================================================
 # Portfolio Calculations with Error Handling
 # ============================================================================
 
@@ -877,14 +949,14 @@ async def calculate_portfolio_risk_metrics(holdings: List[dict], portfolio_id: s
             # Use the performance calculator to get real metrics
             calc = PerformanceCalculator(db_pool)
 
-            # Get TWR and related metrics for past year (252 trading days)
-            metrics = await calc.compute_twr(portfolio_id, pack_id=None, lookback_days=252)
+            # Get TWR and related metrics for past year (trading days)
+            metrics = await calc.compute_twr(portfolio_id, pack_id=None, lookback_days=LOOKBACK_DAYS_YEAR)
 
             # Get max drawdown
-            dd = await calc.compute_max_drawdown(portfolio_id, lookback_days=252)
+            dd = await calc.compute_max_drawdown(portfolio_id, lookback_days=LOOKBACK_DAYS_YEAR)
 
             # Get VaR
-            var_result = await calc.compute_var(portfolio_id, confidence=0.95, lookback_days=252)
+            var_result = await calc.compute_var(portfolio_id, confidence=0.95, lookback_days=LOOKBACK_DAYS_YEAR)
 
             # Calculate weighted beta for positions
             weighted_beta = 0
@@ -1096,16 +1168,10 @@ async def execute_pattern(request: ExecuteRequest):
         # Provide default values for common missing parameters
         # portfolio_overview pattern needs lookback_days
         if request.pattern == "portfolio_overview" and "lookback_days" not in pattern_inputs:
-            pattern_inputs["lookback_days"] = 252  # Default to 1 year
+            pattern_inputs["lookback_days"] = LOOKBACK_DAYS_YEAR  # Default to 1 year
 
         # Validate and ensure portfolio_id is provided and not None
-        portfolio_patterns = [
-            "portfolio_overview", "portfolio_scenario_analysis", "portfolio_cycle_risk",
-            "portfolio_macro_overview", "holding_deep_dive", "news_impact_analysis",
-            "policy_rebalance", "buffett_checklist", "export_portfolio_report"
-        ]
-        
-        if request.pattern in portfolio_patterns:
+        if request.pattern in PORTFOLIO_PATTERNS:
             # Check if portfolio_id is None, empty string, or missing
             portfolio_id = pattern_inputs.get("portfolio_id")
             
@@ -1122,18 +1188,17 @@ async def execute_pattern(request: ExecuteRequest):
                                 logger.info(f"Using database portfolio_id: {pattern_inputs['portfolio_id']}")
                             else:
                                 # Use fallback portfolio ID
-                                fallback_id = "64ff3be6-0ed1-4990-a32b-4ded17f0320c"
-                                pattern_inputs["portfolio_id"] = fallback_id
-                                logger.info(f"Using fallback portfolio_id: {fallback_id}")
+                                pattern_inputs["portfolio_id"] = DEFAULT_PORTFOLIO_ID
+                                logger.info(f"Using fallback portfolio_id: {DEFAULT_PORTFOLIO_ID}")
                     except Exception as e:
                         logger.error(f"Failed to fetch portfolio from database: {e}")
                         # Use fallback portfolio ID
-                        fallback_id = "64ff3be6-0ed1-4990-a32b-4ded17f0320c"
+                        fallback_id = "DEFAULT_PORTFOLIO_ID"
                         pattern_inputs["portfolio_id"] = fallback_id
                         logger.info(f"Using fallback portfolio_id: {fallback_id}")
                 else:
                     # No database available, use fallback
-                    fallback_id = "64ff3be6-0ed1-4990-a32b-4ded17f0320c"
+                    fallback_id = "DEFAULT_PORTFOLIO_ID"
                     pattern_inputs["portfolio_id"] = fallback_id
                     logger.info(f"No database, using fallback portfolio_id: {fallback_id}")
 
@@ -1233,16 +1298,11 @@ async def patterns_health_check():
                     
                     try:
                         # Determine if pattern needs portfolio_id
-                        portfolio_patterns = [
-                            "portfolio_overview", 
-                            "portfolio_scenario_analysis",
-                            "portfolio_cycle_risk",
-                            "portfolio_macro_overview"
-                        ]
+                        # Use consolidated pattern list from constants
                         
                         # Prepare test inputs
                         test_inputs = {}
-                        if pattern in portfolio_patterns and test_portfolio_id:
+                        if pattern in PORTFOLIO_PATTERNS and test_portfolio_id:
                             test_inputs["portfolio_id"] = test_portfolio_id
                         
                         # Try a minimal execution to see if pattern works
@@ -1255,7 +1315,7 @@ async def patterns_health_check():
                             pattern_status["data_source"] = "orchestrator"
                             
                             # Check if we have DB access for patterns that need it
-                            if pattern in portfolio_patterns and not test_portfolio_id:
+                            if pattern in PORTFOLIO_PATTERNS and not test_portfolio_id:
                                 pattern_status["status"] = "partial"
                                 pattern_status["error"] = "No test portfolio available"
                         else:
@@ -1586,7 +1646,7 @@ async def get_portfolio(request: Request):
                         "portfolio_overview",
                         {
                             "portfolio_id": portfolio_id,
-                            "lookback_days": 252  # Default to 1 year
+                            "lookback_days": LOOKBACK_DAYS_YEAR  # Default to 1 year
                         },
                         user_id=user.get("id")
                     )
@@ -1735,7 +1795,7 @@ async def get_holdings(
                         "portfolio_overview",
                         {
                             "portfolio_id": portfolio_id,
-                            "lookback_days": 252  # Default to 1 year
+                            "lookback_days": LOOKBACK_DAYS_YEAR  # Default to 1 year
                         },
                         user_id=user.get("id")
                     )
@@ -2004,48 +2064,6 @@ async def create_alert(request: Request, alert_config: AlertConfig):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Alert service error"
-        )
-
-@app.post("/execute", response_model=SuccessResponse)
-async def execute_pattern(request: Request, execute_req: ExecuteRequest):
-    """Execute analysis pattern with validation"""
-    try:
-        # Get current user
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
-
-        # Validate pattern exists
-        valid_patterns = ["portfolio_overview", "macro_analysis", "risk_assessment", "optimization"]
-        if execute_req.pattern not in valid_patterns:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid pattern. Valid patterns: {', '.join(valid_patterns)}"
-            )
-
-        # Execute pattern (simplified for example)
-        result = {
-            "pattern": execute_req.pattern,
-            "status": "completed",
-            "execution_time": 0.5,
-            "result": {
-                "summary": f"Executed {execute_req.pattern} pattern successfully",
-                "data": execute_req.inputs
-            }
-        }
-
-        return SuccessResponse(data=result)
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Execute pattern error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Pattern execution error"
         )
 
 # ============================================================================
@@ -3295,7 +3313,7 @@ async def get_portfolio_holdings(request: Request):
                 result = await _pattern_orchestrator.execute_pattern(
                     ctx=ctx,
                     pattern_id="portfolio_overview",
-                    inputs={"portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c"}
+                    inputs={"portfolio_id": "DEFAULT_PORTFOLIO_ID"}
                 )
 
                 if result and result.outputs:
@@ -3307,7 +3325,7 @@ async def get_portfolio_holdings(request: Request):
 
         # Fallback to mock data
         holdings = {
-            "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
+            "portfolio_id": "DEFAULT_PORTFOLIO_ID",
             "holdings": [
                 {"symbol": "AAPL", "shares": 100, "market_value": 17500.00, "cost_basis": 15000.00, "pnl": 2500.00, "pnl_pct": 16.67, "weight": 0.15},
                 {"symbol": "GOOGL", "shares": 50, "market_value": 7000.00, "cost_basis": 6500.00, "pnl": 500.00, "pnl_pct": 7.69, "weight": 0.06},
@@ -3345,7 +3363,7 @@ async def get_portfolio_positions(request: Request):
 
         # Similar to holdings but with more position details
         positions = {
-            "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
+            "portfolio_id": "DEFAULT_PORTFOLIO_ID",
             "positions": [
                 {
                     "symbol": "AAPL",
@@ -3407,7 +3425,7 @@ async def get_portfolio_summary(request: Request):
             )
 
         summary = {
-            "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
+            "portfolio_id": "DEFAULT_PORTFOLIO_ID",
             "total_value": 116625.00,
             "total_cost": 107300.00,
             "cash_balance": 5000.00,
@@ -3471,7 +3489,7 @@ async def get_risk_metrics(request: Request):
                 result = await _pattern_orchestrator.execute_pattern(
                     ctx=ctx,
                     pattern_id="portfolio_cycle_risk",
-                    inputs={"portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c"}
+                    inputs={"portfolio_id": "DEFAULT_PORTFOLIO_ID"}
                 )
 
                 if result and result.outputs:
@@ -3483,7 +3501,7 @@ async def get_risk_metrics(request: Request):
 
         # Fallback to mock data
         risk_metrics = {
-            "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
+            "portfolio_id": "DEFAULT_PORTFOLIO_ID",
             "volatility": 0.18,
             "sharpe_ratio": 1.45,
             "sortino_ratio": 1.82,
@@ -3535,7 +3553,7 @@ async def get_value_at_risk(request: Request):
             )
 
         var_data = {
-            "portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
+            "portfolio_id": "DEFAULT_PORTFOLIO_ID",
             "portfolio_value": 116625.00,
             "var_95": {
                 "1_day": -2099.25,
@@ -4763,7 +4781,7 @@ async def get_scenarios(request: Request):
             try:
                 result = await execute_pattern_orchestrator(
                     pattern_name="portfolio_scenario_analysis",
-                    inputs={"portfolio_id": "64ff3be6-0ed1-4990-a32b-4ded17f0320c"},
+                    inputs={"portfolio_id": "DEFAULT_PORTFOLIO_ID"},
                     user_id=user.get("id")
                 )
                 if result.get("success"):
@@ -5886,7 +5904,7 @@ async def get_user_profile(request: Request):
                 }
             },
             "portfolio_settings": {
-                "default_portfolio": "64ff3be6-0ed1-4990-a32b-4ded17f0320c",
+                "default_portfolio": "DEFAULT_PORTFOLIO_ID",
                 "benchmark": "SPY",
                 "risk_tolerance": "moderate",
                 "investment_horizon": "long-term",
