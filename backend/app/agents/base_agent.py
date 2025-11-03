@@ -223,7 +223,7 @@ class BaseAgent(ABC):
         except (AttributeError, TypeError):
             # Can't set attribute - wrap in dict instead
             return {
-                "data": result,
+                "value": result,
                 "_metadata": metadata.to_dict()
             }
 
