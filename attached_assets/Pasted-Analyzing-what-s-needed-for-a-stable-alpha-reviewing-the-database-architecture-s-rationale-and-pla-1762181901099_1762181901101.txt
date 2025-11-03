@@ -1,0 +1,81 @@
+Analyzing what's needed for a stable alpha, reviewing the database architecture's rationale, and planning next steps.
+
+
+[14 tools called]
+
+## Database architecture: why it was designed this way
+
+### Original intent: compute-first with optional storage
+
+1. Performance optimization ready
+   - Tables like `factor_exposures` and `currency_attribution` exist for future caching
+   - Services compute on-demand now (acceptable for alpha)
+   - Can switch to caching later without schema changes
+
+2. TimescaleDB for time-series
+   - Hypertables optimize historical queries (portfolio_daily_values, portfolio_metrics)
+   - Automatic compression and retention
+   - Efficient for time-series analysis
+
+3. Reproducibility
+   - Pricing packs ensure point-in-time consistency
+   - All metrics stored with `pricing_pack_id` for auditability
+
+4. Scalability
+   - Compute-first avoids storage bloat for infrequently accessed data
+   - Can cache hot data when needed
+
+### Is this still the best design?
+
+Yes, with clarifications:
+- Strengths: Intentional architecture, future optimization ready, TimescaleDB benefits, reproducibility
+- Needs: Documentation of intent (why tables exist but aren't used), decision point definition (when to switch to caching)
+
+Recommendation: Keep the architecture; document the compute-first pattern and future optimization strategy.
+
+## What's necessary for alpha stability
+
+### 3 critical blockers (must fix)
+
+1. Agent missing metrics fields (CRITICAL)
+   - `metrics_compute_twr()` doesn't return `volatility`, `sharpe`, `max_drawdown`
+   - Fix: Add field extraction (15 min)
+
+2. Pattern reference mismatch (CRITICAL)
+   - Pattern references `{{twr.*}}` but result stored as `perf_metrics`
+   - Fix: Update pattern references (30 min)
+
+3. Nested storage pattern (HIGH)
+   - Causes `historical_nav.historical_nav` double nesting
+   - Fix: Flatten orchestrator storage or document pattern (1–2 hours)
+
+### Path to alpha: 18–36 hours total
+
+- Phase 1 (P0): Fix critical blockers — 8–12 hours
+- Phase 2 (P1): Clarify architecture — 4–6 hours
+- Phase 3 (P1): Reduce technical debt — 6–10 hours
+- Phase 4 (P2): Polish — 4–8 hours
+
+## Complexity analysis
+
+### Essential complexity (keep)
+- Pattern orchestrator — core to architecture
+- Agent capabilities — enables modular design
+- Pricing packs — ensures financial accuracy
+- TimescaleDB hypertables — real performance benefits
+- Compute-first pattern — appropriate for alpha, scalable for future
+
+### Unnecessary complexity (reduce/remove)
+- Dual storage — already removed
+- Unused cache tables — document intent (don't remove yet)
+- Multiple metrics implementations — document which to use
+- Pattern presentation duplication — simplify later if not needed
+
+Created `ALPHA_STABILITY_PLAN.md` with:
+- Analysis of database architecture intent and current design
+- Critical blockers and fix plans
+- Complexity analysis (essential vs unnecessary)
+- 4-phase path to alpha stability with time estimates
+- Recommendations for keeping vs removing complexity
+
+Bottom line: The database design is sound; integration gaps prevent functionality. Fix 3 critical blockers (8–12 hours) to achieve alpha stability.
