@@ -195,6 +195,33 @@ class PerformanceSeeder:
             days_since_inception = max(1, i + 1)  # Avoid division by zero
             inception_ann = ((1 + inception_return) ** (365 / days_since_inception)) - 1 if days_since_inception > 0 else 0
             
+            # Calculate additional Sharpe ratios for different periods
+            sharpe_30d = self._calculate_sharpe(self._calculate_return(nav_values, i, 30), vol_30d)
+            sharpe_60d = self._calculate_sharpe(self._calculate_return(nav_values, i, 60), vol_60d)
+            sharpe_90d = self._calculate_sharpe(self._calculate_return(nav_values, i, 90), vol_90d)
+            
+            # Calculate current drawdown
+            if i > 0:
+                running_max = np.max(nav_values[:i+1])
+                current_dd = (nav_values[i] - running_max) / running_max if running_max > 0 else 0
+            else:
+                current_dd = 0
+            
+            # Calculate alpha and beta (simplified for demo)
+            market_return = 0.12  # Assume 12% market return
+            alpha_1y = max(0, twr_1y - (market_return * 0.85))  # Excess return over beta-adjusted market
+            
+            # Win rate calculation (simplified - based on daily returns)
+            if i > 252:
+                period_returns = np.diff(nav_values[i-252:i+1]) / nav_values[i-252:i]
+                win_rate = np.sum(period_returns > 0) / len(period_returns) if len(period_returns) > 0 else 0.5
+                avg_win = np.mean(period_returns[period_returns > 0]) if np.sum(period_returns > 0) > 0 else 0
+                avg_loss = np.mean(np.abs(period_returns[period_returns < 0])) if np.sum(period_returns < 0) > 0 else 0
+            else:
+                win_rate = 0.52  # Default to slightly positive
+                avg_win = 0.015
+                avg_loss = 0.012
+            
             metrics = {
                 'portfolio_id': PORTFOLIO_ID,
                 'asof_date': date,
@@ -216,17 +243,28 @@ class PerformanceSeeder:
                 'volatility_60d': vol_60d,
                 'volatility_90d': vol_90d,
                 'volatility_1y': vol_1y,
+                'sharpe_30d': sharpe_30d,
+                'sharpe_60d': sharpe_60d,
+                'sharpe_90d': sharpe_90d,
                 'sharpe_1y': sharpe_1y,
                 'max_drawdown_1y': max_dd_1y,
-                'beta_spy_1y': 0.85 + np.random.normal(0, 0.1),  # Market beta
-                'correlation_spy_1y': 0.75 + np.random.normal(0, 0.05),
-                'tracking_error_1y': 0.08 + np.random.normal(0, 0.02),
-                'information_ratio_1y': 0.5 + np.random.normal(0, 0.2),
-                'total_contributions': 0,
-                'total_withdrawals': abs(nav_df['cash_flows'][:i+1][nav_df['cash_flows'][:i+1] < 0].sum()) if i > 0 else 0,
-                'net_cash_flows': nav_df['cash_flows'][:i+1].sum() if i > 0 else 0,
-                'expense_ratio': 0.0075,  # 75 bps
-                'computed_at': datetime.now()
+                'max_drawdown_3y': max_dd_1y * 1.2,  # Assume slightly worse over 3y
+                'current_drawdown': current_dd,
+                'alpha_1y': alpha_1y,
+                'alpha_3y_ann': alpha_1y * 0.8,  # Conservative for 3y
+                'beta_1y': 0.85 + np.random.normal(0, 0.05),  # Market beta
+                'beta_3y': 0.82 + np.random.normal(0, 0.03),
+                'tracking_error_1y': 0.08 + np.random.normal(0, 0.01),
+                'information_ratio_1y': 0.5 + np.random.normal(0, 0.1),
+                'win_rate_1y': win_rate,
+                'avg_win': avg_win,
+                'avg_loss': avg_loss,
+                'portfolio_value_base': nav_values[i],
+                'portfolio_value_local': nav_values[i],
+                'cash_balance': nav_values[i] * 0.82,  # ~82% cash based on current data
+                'base_currency': 'USD',
+                'benchmark_id': 'SPY',
+                'reconciliation_error_bps': np.random.normal(0, 2)  # Small reconciliation errors
             }
             
             metrics_list.append(metrics)
@@ -382,14 +420,18 @@ class PerformanceSeeder:
                     twr_3y_ann, twr_5y_ann, twr_inception_ann,
                     mwr_ytd, mwr_1y, mwr_3y_ann, mwr_inception_ann,
                     volatility_30d, volatility_60d, volatility_90d, volatility_1y,
-                    sharpe_1y, max_drawdown_1y,
-                    beta_spy_1y, correlation_spy_1y, tracking_error_1y, information_ratio_1y,
-                    total_contributions, total_withdrawals, net_cash_flows,
-                    expense_ratio, computed_at
+                    sharpe_30d, sharpe_60d, sharpe_90d, sharpe_1y,
+                    max_drawdown_1y, max_drawdown_3y, current_drawdown,
+                    alpha_1y, alpha_3y_ann, beta_1y, beta_3y,
+                    tracking_error_1y, information_ratio_1y,
+                    win_rate_1y, avg_win, avg_loss,
+                    portfolio_value_base, portfolio_value_local, cash_balance,
+                    base_currency, benchmark_id, reconciliation_error_bps
                 ) VALUES (
                     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-                    $13, $14, $15, $16, $17, $18, $19, $20, $21, $22,
-                    $23, $24, $25, $26, $27, $28, $29, $30, $31
+                    $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24,
+                    $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36,
+                    $37, $38, $39, $40, $41, $42
                 )
             """,
                 PORTFOLIO_ID,
@@ -412,20 +454,62 @@ class PerformanceSeeder:
                 Decimal(str(row['volatility_60d'])) if not pd.isna(row['volatility_60d']) else None,
                 Decimal(str(row['volatility_90d'])) if not pd.isna(row['volatility_90d']) else None,
                 Decimal(str(row['volatility_1y'])),
+                Decimal(str(row['sharpe_30d'])) if not pd.isna(row['sharpe_30d']) else None,
+                Decimal(str(row['sharpe_60d'])) if not pd.isna(row['sharpe_60d']) else None,
+                Decimal(str(row['sharpe_90d'])) if not pd.isna(row['sharpe_90d']) else None,
                 Decimal(str(row['sharpe_1y'])),
                 Decimal(str(row['max_drawdown_1y'])),
-                Decimal(str(row['beta_spy_1y'])) if not pd.isna(row['beta_spy_1y']) else None,
-                Decimal(str(row['correlation_spy_1y'])) if not pd.isna(row['correlation_spy_1y']) else None,
+                Decimal(str(row['max_drawdown_3y'])) if not pd.isna(row['max_drawdown_3y']) else None,
+                Decimal(str(row['current_drawdown'])),
+                Decimal(str(row['alpha_1y'])) if not pd.isna(row['alpha_1y']) else None,
+                Decimal(str(row['alpha_3y_ann'])) if not pd.isna(row['alpha_3y_ann']) else None,
+                Decimal(str(row['beta_1y'])) if not pd.isna(row['beta_1y']) else None,
+                Decimal(str(row['beta_3y'])) if not pd.isna(row['beta_3y']) else None,
                 Decimal(str(row['tracking_error_1y'])) if not pd.isna(row['tracking_error_1y']) else None,
                 Decimal(str(row['information_ratio_1y'])) if not pd.isna(row['information_ratio_1y']) else None,
-                Decimal(str(row['total_contributions'])),
-                Decimal(str(row['total_withdrawals'])),
-                Decimal(str(row['net_cash_flows'])),
-                Decimal(str(row['expense_ratio'])) if not pd.isna(row['expense_ratio']) else None,
-                row['computed_at']
+                Decimal(str(row['win_rate_1y'])) if not pd.isna(row['win_rate_1y']) else None,
+                Decimal(str(row['avg_win'])) if not pd.isna(row['avg_win']) else None,
+                Decimal(str(row['avg_loss'])) if not pd.isna(row['avg_loss']) else None,
+                Decimal(str(row['portfolio_value_base'])),
+                Decimal(str(row['portfolio_value_local'])),
+                Decimal(str(row['cash_balance'])),
+                row['base_currency'],
+                row['benchmark_id'],
+                Decimal(str(row['reconciliation_error_bps'])) if not pd.isna(row['reconciliation_error_bps']) else None
             )
         
         logger.info("Portfolio metrics inserted successfully")
+    
+    async def create_pricing_packs(self, dates):
+        """Create pricing packs for all dates"""
+        logger.info("Creating pricing packs...")
+        
+        for date in dates:
+            pack_id = f'PP_{pd.to_datetime(date).strftime("%Y-%m-%d")}'
+            
+            # Check if pricing pack exists
+            exists = await self.conn.fetchval(
+                "SELECT 1 FROM pricing_packs WHERE id = $1",
+                pack_id
+            )
+            
+            if not exists:
+                # Create pricing pack
+                # Convert pandas Timestamp to Python datetime
+                date_obj = pd.to_datetime(date)
+                if hasattr(date_obj, 'to_pydatetime'):
+                    date_obj = date_obj.to_pydatetime()
+                
+                await self.conn.execute("""
+                    INSERT INTO pricing_packs (id, created_at)
+                    VALUES ($1, $2)
+                    ON CONFLICT (id) DO NOTHING
+                """, 
+                    pack_id,
+                    date_obj
+                )
+        
+        logger.info(f"Created pricing packs for {len(dates)} dates")
     
     async def seed_performance_data(self):
         """Main seeding function"""
@@ -439,6 +523,9 @@ class PerformanceSeeder:
             # Calculate metrics
             metrics_df = await self.calculate_metrics(nav_df)
             logger.info(f"Calculated {len(metrics_df)} days of portfolio metrics")
+            
+            # Create pricing packs for all dates
+            await self.create_pricing_packs(metrics_df['asof_date'].unique())
             
             # Update database
             await self.update_nav_history(nav_df)
@@ -472,7 +559,7 @@ class PerformanceSeeder:
         latest_metrics = await self.conn.fetchrow("""
             SELECT 
                 asof_date,
-                nav,
+                portfolio_value_base,
                 twr_1y,
                 sharpe_1y,
                 volatility_1y,
@@ -489,7 +576,7 @@ class PerformanceSeeder:
         
         if latest_metrics:
             logger.info(f"  - Latest Date: {latest_metrics['asof_date']}")
-            logger.info(f"  - Latest NAV: ${latest_metrics['nav']:,.2f}")
+            logger.info(f"  - Latest Portfolio Value: ${latest_metrics['portfolio_value_base']:,.2f}")
             logger.info(f"  - 1Y Return: {latest_metrics['twr_1y']*100:.2f}%")
             logger.info(f"  - Sharpe Ratio: {latest_metrics['sharpe_1y']:.2f}")
             logger.info(f"  - Volatility: {latest_metrics['volatility_1y']*100:.2f}%")
