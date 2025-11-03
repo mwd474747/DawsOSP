@@ -3188,16 +3188,12 @@ async def ai_analysis(request: Request, ai_request: AIAnalysisRequest):
         )
 
 @app.get("/api/factor-analysis", response_model=SuccessResponse)
-async def get_factor_analysis(request: Request):
-    """Get factor analysis for portfolio"""
+async def get_factor_analysis(user: dict = Depends(require_auth)):
+    """
+    Get factor analysis for portfolio
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Mock factor analysis (in production, would calculate from historical data)
         factor_analysis = {
@@ -4225,17 +4221,14 @@ async def get_optimizer_analysis(
 
 @app.get("/api/ratings/overview", response_model=SuccessResponse)
 async def get_ratings_overview(
-    request: Request,
-    portfolio_id: Optional[str] = Query(None)
+    portfolio_id: Optional[str] = Query(None),
+    user: dict = Depends(require_auth)
 ):
-    """Get overall portfolio ratings"""
+    """
+    Get overall portfolio ratings
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Mock ratings overview
         overview = {
@@ -4278,18 +4271,15 @@ async def get_ratings_overview(
 
 @app.get("/api/ratings/buffett", response_model=SuccessResponse)
 async def get_buffett_checklist(
-    request: Request,
     symbol: Optional[str] = Query(None),
-    security_id: Optional[str] = Query(None)
+    security_id: Optional[str] = Query(None),
+    user: dict = Depends(require_auth)
 ):
-    """Get Buffett checklist scores for a security"""
+    """
+    Get Buffett checklist scores for a security
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # If pattern orchestration is available, try to use it
         if PATTERN_ORCHESTRATION_AVAILABLE and _pattern_orchestrator:
@@ -4848,16 +4838,12 @@ async def get_scenarios(request: Request):
         )
 
 @app.get("/api/risk/concentration", response_model=SuccessResponse)
-async def get_risk_concentration(request: Request):
-    """Get concentration risk metrics for portfolio"""
+async def get_risk_concentration(user: dict = Depends(require_auth)):
+    """
+    Get concentration risk metrics for portfolio
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Return concentration risk metrics
         concentration_risk = {
@@ -5185,16 +5171,12 @@ async def get_optimizer_recommendations(request: Request):
         )
 
 @app.get("/api/ratings", response_model=SuccessResponse)
-async def get_all_ratings(request: Request):
-    """Get all portfolio ratings (different from overview)"""
+async def get_all_ratings(user: dict = Depends(require_auth)):
+    """
+    Get all portfolio ratings (different from overview)
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Return detailed ratings for all holdings
         all_ratings = {
@@ -5337,16 +5319,12 @@ async def get_all_ratings(request: Request):
         )
 
 @app.get("/api/ratings/holdings", response_model=SuccessResponse)
-async def get_holdings_ratings(request: Request):
-    """Get detailed ratings for portfolio holdings"""
+async def get_holdings_ratings(user: dict = Depends(require_auth)):
+    """
+    Get detailed ratings for portfolio holdings
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Return detailed ratings specifically for holdings
         holdings_ratings = {
