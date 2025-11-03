@@ -721,6 +721,364 @@ Before executing refactoring:
 ---
 
 **Analysis Completed:** November 3, 2025  
-**Total Issues:** 47  
-**Ready for Execution:** Yes (after approval)
+**Last Updated:** November 3, 2025 (after remote sync - Week 3 completion)  
+**Total Issues:** 51 (updated)  
+**Completed:** Phase 1 (4/4) ✅ | Phase 2 (3/5) ✅ | Phase 3 (0/7) ⏳  
+**Ready for Execution:** Yes (Phase 3 planning complete)
+
+---
+
+## 📋 Phase 3 Planning: Documentation Organization
+
+### Current Documentation Structure Analysis
+
+**Root Directory Files:** ~100+ .md files
+**Archived Files:** 16 documents in `.archive/` subdirectories
+**Consolidated Guides:** 3 (PHASE_3_WEEK1_SUMMARY.md, CORPORATE_ACTIONS_GUIDE.md, DATABASE.md updated)
+
+### Proposed Structure
+
+```
+docs/
+├── planning/              # Planning documents
+│   ├── PHASE_1_COMPLETE.md
+│   ├── PHASE_2_PLAN.md
+│   ├── PHASE_2_COMPLETION_SUMMARY.md
+│   ├── PHASE_3_EXECUTION_PLAN_CLAUDE_CODE.md
+│   ├── PHASE_3_CURRENT_STATUS_REVIEW.md
+│   ├── PHASE_3_PLAN_ASSESSMENT.md
+│   ├── PHASE_3_REVISED_PLAN.md
+│   └── ROADMAP.md
+├── reports/              # Report documents
+│   ├── PHASE_2A_VALIDATION_REPORT.md
+│   ├── PHASE_2B_STANDARDIZATION_REPORT.md
+│   ├── PHASE_3_WEEK1_SUMMARY.md
+│   ├── PHASE_3_WEEK2_ROLLOUT_CHECKLIST.md
+│   ├── PHASE_3_WEEK3_ROLLOUT_CHECKLIST.md
+│   ├── FEATURE_FLAG_TEST_REPORT.md
+│   ├── CAPABILITY_ROUTING_REPORT.md
+│   └── WORKFLOW_DEPENDENCIES_REPORT.md
+├── analysis/             # Analysis documents
+│   ├── PATTERN_STABILITY_VALIDATION.md
+│   ├── SERVICE_LAYER_ASSESSMENT.md
+│   ├── COMPLEXITY_REDUCTION_ANALYSIS.md
+│   ├── DEPENDENCY_BREAKING_CHANGE_ANALYSIS.md
+│   ├── REFACTOR_PROGRESS_REVIEW.md
+│   └── UI_INTEGRATION_STATE_ANALYSIS.md
+├── guides/               # Comprehensive guides
+│   ├── CORPORATE_ACTIONS_GUIDE.md
+│   ├── WORK_COMPLETED_SUMMARY.md
+│   └── DOCUMENTATION_REFACTORING_OPPORTUNITIES.md
+└── reference/            # Reference documents
+    ├── PATTERNS_REFERENCE.md
+    ├── AGENT_COORDINATION_PLAN.md
+    └── CLAUDE_CODE_MILESTONES_AND_DELEGATION_PLAN.md
+```
+
+### Files to Keep in Root
+
+**Core Documentation (Keep in Root):**
+- README.md
+- ARCHITECTURE.md
+- DATABASE.md
+- DEVELOPMENT_GUIDE.md
+- DEPLOYMENT.md
+- TROUBLESHOOTING.md
+- PRODUCT_SPEC.md
+- ROADMAP.md
+- AGENT_CONVERSATION_MEMORY.md
+
+**Active Planning (Keep in Root):**
+- PHASE_3_CURRENT_STATUS_REVIEW.md (most current status)
+- DOCUMENTATION_REFACTORING_OPPORTUNITIES.md (this document)
+
+### Files to Move
+
+**Planning Documents → docs/planning/ (15 files):**
+- PHASE_1_COMPLETE.md
+- PHASE_2_PLAN.md
+- PHASE_2_EXECUTION_PLAN.md
+- PHASE_2_COMPLETION_SUMMARY.md
+- PHASE_2_VALIDATION_CHECKLIST.md
+- PHASE_3_EXECUTION_PLAN_CLAUDE_CODE.md
+- PHASE_3_PLAN_ASSESSMENT.md
+- PHASE_3_REVISED_PLAN.md
+- PHASE_3_WEEKS_2-5_PREPARATION_COMPLETE.md
+- ALPHA_STABILITY_PLAN.md
+- ARCHITECTURE_SIMPLIFICATION_PLAN.md
+- COMPREHENSIVE_CONTEXT_SUMMARY.md
+- CURRENT_STATE_SUMMARY.md
+- AUTH_REFACTOR_CHECKLIST.md
+- AUTH_REFACTOR_STATUS.md
+
+**Report Documents → docs/reports/ (20 files):**
+- PHASE_2A_VALIDATION_REPORT.md
+- PHASE_2B_STANDARDIZATION_REPORT.md
+- PHASE_2B_DELIVERABLES.md
+- PHASE_2B_LIST_WRAPPING_ANALYSIS.md
+- PHASE_2B_QUICK_REFERENCE.md
+- PHASE_3_WEEK1_SUMMARY.md
+- PHASE_3_WEEK2_ROLLOUT_CHECKLIST.md
+- PHASE_3_WEEK3_ROLLOUT_CHECKLIST.md
+- FEATURE_FLAG_TEST_REPORT.md
+- CAPABILITY_ROUTING_REPORT.md
+- WORKFLOW_DEPENDENCIES_REPORT.md
+- REPLIT_AGENT_PHASE_2_SUMMARY.md
+- RATINGS_CONSOLIDATION_SUMMARY.md
+- RATINGS_AGENT_CONSOLIDATION_CHECKLIST.md
+- RATINGS_AGENT_EXECUTIVE_SUMMARY.txt
+- RATINGS_AGENT_INDEX.md
+- RATINGS_AGENT_ANALYSIS.md
+- REPORTS_AGENT_ANALYSIS.md
+- REPORTS_AGENT_ANALYSIS_SUMMARY.txt
+- REPORTS_AGENT_INDEX.md
+- REPORTS_AGENT_QUICK_REFERENCE.md
+- REPORTS_AGENT_VISUAL_OVERVIEW.txt
+
+**Analysis Documents → docs/analysis/ (25 files):**
+- PATTERN_STABILITY_VALIDATION.md
+- SERVICE_LAYER_ASSESSMENT.md
+- COMPLEXITY_REDUCTION_ANALYSIS.md
+- DEPENDENCY_BREAKING_CHANGE_ANALYSIS.md
+- REFACTOR_PROGRESS_REVIEW.md
+- REFACTOR_PROGRESS_DETAILED_ANALYSIS.md
+- REFACTORING_PLAN_VALIDATION.md
+- UI_INTEGRATION_STATE_ANALYSIS.md
+- PATTERNS_AND_METRICS_GAPS_ANALYSIS.md
+- HOLDINGS_DETAIL_INVESTIGATION.md
+- CRITICAL_ISSUES_ASSESSMENT.md
+- SIMPLIFICATION_PLAN_ASSESSMENT.md
+- DUAL_STORAGE_REFACTORING_EVALUATION.md
+- DOCUMENTATION_ALIGNMENT_REVIEW_PHASE3.md
+- DOCUMENTATION_ACCURACY_REVIEW.md
+- DOCUMENTATION_CONSOLIDATION_PLAN.md
+- DOCUMENTATION_CONSOLIDATION_REVIEW.md
+- DOCUMENTATION_FINAL_REVIEW_REPORT.md
+- DOCUMENTATION_IMPROVEMENTS_SUMMARY.md
+- DATABASE_AGENT_PROMPTS.md
+- DATABASE_NEEDS_VALIDATION.md
+- COMMIT_94CBB01_ANALYSIS.md
+- CONSOLIDATION_CODE_PATTERNS.md
+- OPTIMIZER_AGENT_ANALYSIS.md
+- OPTIMIZER_CONSOLIDATION_SUMMARY.txt
+- ANALYSIS_INDEX.md
+- ANALYSIS_SUMMARY.txt
+
+**Guide Documents → docs/guides/ (5 files):**
+- CORPORATE_ACTIONS_GUIDE.md
+- WORK_COMPLETED_SUMMARY.md
+- UI_ERROR_HANDLING_IMPLEMENTATION_PLAN.md
+- UI_ERROR_HANDLING_COMPLETE.md
+- TROUBLESHOOTING.md (if not core)
+
+**Reference Documents → docs/reference/ (10 files):**
+- PATTERNS_REFERENCE.md
+- AGENT_COORDINATION_PLAN.md
+- CLAUDE_CODE_MILESTONES_AND_DELEGATION_PLAN.md
+- CLAUDE_CODE_AGENT_ROLE_ASSESSMENT.md
+- CLAUDE_CODE_ROLE_ASSESSMENT_REVIEW.md
+- CLAUDE_CODE_SUBAGENT_REVIEW.md
+- CLAUDE_CODE_IDE_AGENT_REVIEW.md
+- FEATURE_FLAGS_GUIDE.md (backend/FEATURE_FLAGS_GUIDE.md)
+- REPLIT_DEPLOYMENT_GUARDRAILS.md
+- replit.md
+
+---
+
+## 📋 Phase 3 Execution Plan
+
+### Step 1: Update Week 3 Status (30 minutes)
+
+**Priority:** HIGH - Incorrect status in multiple documents
+
+**Tasks:**
+1. Update `COMPREHENSIVE_CONTEXT_SUMMARY.md`:
+   - Change "Week 2-5: ⏳ PENDING" to "Week 2-3: ✅ COMPLETE, Week 4-5: ⏳ PENDING"
+
+2. Update `PHASE_3_EXECUTION_PLAN_CLAUDE_CODE.md`:
+   - Change status from "WEEK 1 COMPLETE" to "WEEKS 1-3 COMPLETE"
+   - Add Week 3 completion details
+
+3. Update `AGENT_CONVERSATION_MEMORY.md`:
+   - Update status line to include Week 3 completion
+   - Add Week 3 completion details to recent work section
+
+4. Update `PHASE_3_CURRENT_STATUS_REVIEW.md`:
+   - Add Week 3 status breakdown
+   - Update overall progress to 60% (3/5 agents)
+
+**Files to Update:** 4
+**Estimated Time:** 30 minutes
+
+---
+
+### Step 2: Consolidate Phase 2 Documents (1 hour)
+
+**Priority:** HIGH - 9 redundant documents
+
+**Tasks:**
+1. Create `PHASE_2_SUMMARY.md` consolidating:
+   - Phase 2A validation
+   - Phase 2B standardization
+   - Phase 2 completion
+   - Key deliverables
+
+2. Archive to `.archive/phase2/`:
+   - PHASE_2_PLAN.md
+   - PHASE_2_EXECUTION_PLAN.md
+   - PHASE_2_VALIDATION_CHECKLIST.md
+   - PHASE_2A_VALIDATION_REPORT.md
+   - PHASE_2B_STANDARDIZATION_REPORT.md
+   - PHASE_2B_DELIVERABLES.md
+   - PHASE_2B_LIST_WRAPPING_ANALYSIS.md
+   - PHASE_2B_QUICK_REFERENCE.md
+
+3. Update cross-references in other documents
+
+**Files to Consolidate:** 9
+**Files to Create:** 1
+**Estimated Time:** 1 hour
+
+---
+
+### Step 3: Consolidate Documentation Review Documents (1 hour)
+
+**Priority:** MEDIUM - 6 redundant documents
+
+**Tasks:**
+1. Create `DOCUMENTATION_MAINTENANCE_GUIDE.md` consolidating:
+   - Documentation alignment review
+   - Documentation accuracy review
+   - Documentation consolidation plan
+   - Documentation consolidation review
+   - Documentation final review
+   - Documentation improvements summary
+
+2. Archive to `.archive/documentation-reviews/`:
+   - DOCUMENTATION_ALIGNMENT_REVIEW_PHASE3.md
+   - DOCUMENTATION_ACCURACY_REVIEW.md
+   - DOCUMENTATION_CONSOLIDATION_PLAN.md
+   - DOCUMENTATION_CONSOLIDATION_REVIEW.md
+   - DOCUMENTATION_FINAL_REVIEW_REPORT.md
+   - DOCUMENTATION_IMPROVEMENTS_SUMMARY.md
+
+3. Update cross-references
+
+**Files to Consolidate:** 6
+**Files to Create:** 1
+**Estimated Time:** 1 hour
+
+---
+
+### Step 4: Organize Documentation Structure (1 hour)
+
+**Priority:** HIGH - Will significantly reduce root directory clutter
+
+**Tasks:**
+1. Create subdirectories:
+   ```bash
+   mkdir -p docs/planning docs/reports docs/analysis docs/guides docs/reference
+   ```
+
+2. Move documents to appropriate locations:
+   - Planning documents → docs/planning/
+   - Report documents → docs/reports/
+   - Analysis documents → docs/analysis/
+   - Guide documents → docs/guides/
+   - Reference documents → docs/reference/
+
+3. Update cross-references in all moved documents
+
+4. Update README.md with new documentation structure
+
+**Files to Move:** ~75 files
+**Estimated Time:** 1 hour
+
+---
+
+### Step 5: Create Documentation Index (30 minutes)
+
+**Priority:** HIGH - Will improve discoverability
+
+**Tasks:**
+1. Create `DOCUMENTATION_INDEX.md`:
+   - Core Documentation section (README, ARCHITECTURE, etc.)
+   - Planning Documents section
+   - Report Documents section
+   - Analysis Documents section
+   - Guide Documents section
+   - Reference Documents section
+   - Archived Documents section (with links to .archive/)
+
+2. Link from README.md
+
+**Files to Create:** 1
+**Estimated Time:** 30 minutes
+
+---
+
+### Step 6: Establish Documentation Template (30 minutes)
+
+**Priority:** MEDIUM - Will improve consistency
+
+**Tasks:**
+1. Create documentation template:
+   - Standard header format
+   - Status section format
+   - Executive summary format
+   - Section organization standards
+
+2. Add to DEVELOPMENT_GUIDE.md:
+   - Documentation standards section
+   - Template example
+   - Formatting guidelines
+
+**Files to Create:** 1 (template)
+**Files to Update:** 1 (DEVELOPMENT_GUIDE.md)
+**Estimated Time:** 30 minutes
+
+---
+
+### Step 7: Audit Links (1 hour)
+
+**Priority:** HIGH - Broken links confuse readers
+
+**Tasks:**
+1. Check all links in documentation:
+   - Internal links (references to other .md files)
+   - External links (if any)
+   - Cross-references
+
+2. Fix broken references:
+   - Update links to moved files
+   - Update links to archived files
+   - Remove links to deleted files
+
+3. Update cross-references:
+   - Update AGENT_CONVERSATION_MEMORY.md references
+   - Update README.md references
+   - Update ARCHITECTURE.md references
+
+**Files to Check:** ~50 files
+**Estimated Time:** 1 hour
+
+---
+
+## 📊 Phase 3 Execution Summary
+
+### Total Tasks: 7
+### Total Estimated Time: 5.5 hours
+
+**Breakdown:**
+1. Update Week 3 Status: 30 min
+2. Consolidate Phase 2 Documents: 1 hour
+3. Consolidate Documentation Reviews: 1 hour
+4. Organize Documentation Structure: 1 hour
+5. Create Documentation Index: 30 min
+6. Establish Documentation Template: 30 min
+7. Audit Links: 1 hour
+
+**Priority Order:**
+1. High Priority (Do First): Steps 1, 2, 4, 5, 7 (4.5 hours)
+2. Medium Priority (Do Next): Steps 3, 6 (1.5 hours)
 
