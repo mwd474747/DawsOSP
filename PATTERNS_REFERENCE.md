@@ -21,9 +21,9 @@
 
 ---
 
-## Pattern Inventory (13 patterns)
+## Pattern Inventory (12 patterns)
 
-### Portfolio Patterns (6 patterns)
+### Portfolio Patterns (5 patterns)
 
 #### 1. portfolio_overview.json
 **Steps:** 6
@@ -39,28 +39,21 @@
 **Inputs:** portfolio_id (required), security_id (required), lookback_days (default: 252)
 **Outputs:** position_details, position_return, portfolio_contribution, currency_attribution, risk_analysis, transactions, fundamentals (optional), comparables (optional)
 
-#### 3. holdings_detail.json ⭐ NEW
-**Steps:** 8
-**Purpose:** Individual holding deep dive analysis
-**Capabilities:** Similar to holding_deep_dive.json
-**Inputs:** portfolio_id (required), security_id (required), lookback_days (default: 252)
-**Note:** Recently discovered pattern, not previously documented
-
-#### 4. portfolio_macro_overview.json
+#### 3. portfolio_macro_overview.json
 **Steps:** 6
 **Purpose:** Regime detection + factor exposures
 **Capabilities:** macro.detect_regime, risk.compute_factor_exposures, cycles.aggregate_overview, risk.overlay_cycle_phases, ledger.positions, pricing.apply_pack
 **Inputs:** portfolio_id (required), asof_date (optional)
 **Outputs:** regime, factor_exposures, cycles, cycle_overlay, positions, valued_positions
 
-#### 5. portfolio_cycle_risk.json
+#### 4. portfolio_cycle_risk.json
 **Steps:** 5
 **Purpose:** Macro-aware risk mapping
 **Capabilities:** cycles.aggregate_overview, ledger.positions, pricing.apply_pack, risk.compute_factor_exposures, risk.overlay_cycle_phases
 **Inputs:** portfolio_id (required)
 **Outputs:** cycles, positions, valued_positions, factor_exposures, cycle_risk_map
 
-#### 6. portfolio_scenario_analysis.json
+#### 5. portfolio_scenario_analysis.json
 **Steps:** 5
 **Purpose:** Stress testing with hedge suggestions
 **Capabilities:** ledger.positions, pricing.apply_pack, scenarios.deleveraging_austerity, scenarios.deleveraging_default, scenarios.deleveraging_money_printing
@@ -69,7 +62,7 @@
 
 ### Macro Patterns (2 patterns)
 
-#### 7. macro_cycles_overview.json
+#### 6. macro_cycles_overview.json
 **Steps:** 4
 **Purpose:** Dalio's 4 cycles (STDC, LTDC, Empire, Civil)
 **Capabilities:** cycles.compute_short_term, cycles.compute_long_term, cycles.compute_empire, cycles.compute_civil
@@ -77,7 +70,7 @@
 **Outputs:** stdc, ltdc, empire, civil
 **Note:** ONLY pattern that doesn't require portfolio_id
 
-#### 8. macro_trend_monitor.json
+#### 7. macro_trend_monitor.json
 **Steps:** 4
 **Purpose:** Trend tracking and regime shifts
 **Capabilities:** macro.detect_regime, macro.get_indicators, cycles.aggregate_overview, macro.detect_trend_shifts
@@ -86,14 +79,14 @@
 
 ### Analysis Patterns (2 patterns)
 
-#### 9. buffett_checklist.json
+#### 8. buffett_checklist.json
 **Steps:** 6
 **Purpose:** Quality assessment (moat, dividend, resilience)
 **Capabilities:** fundamentals.load, ratings.dividend_safety, ratings.moat_strength, ratings.resilience, ratings.aggregate, ai.explain
 **Inputs:** portfolio_id (required), security_id (required)
 **Outputs:** fundamentals, dividend_safety, moat_strength, resilience, buffett_score, ai_explanation
 
-#### 10. news_impact_analysis.json
+#### 9. news_impact_analysis.json
 **Steps:** 5
 **Purpose:** Portfolio-weighted sentiment analysis
 **Capabilities:** ledger.positions, pricing.apply_pack, news.search, news.compute_portfolio_impact, ai.explain (conditional)
@@ -102,21 +95,21 @@
 
 ### Workflow Patterns (3 patterns)
 
-#### 11. export_portfolio_report.json
+#### 10. export_portfolio_report.json
 **Steps:** 6
 **Purpose:** PDF generation with full portfolio data
 **Capabilities:** ledger.positions, pricing.apply_pack, metrics.compute_twr, attribution.currency, macro.detect_regime (conditional), reports.render_pdf
 **Inputs:** portfolio_id (required), report_format (default: "pdf")
 **Outputs:** positions, valued_positions, performance, attribution, regime (optional), pdf_report
 
-#### 12. policy_rebalance.json
+#### 11. policy_rebalance.json
 **Steps:** 5
 **Purpose:** Buffett-style portfolio rebalancing
 **Capabilities:** ledger.positions, pricing.apply_pack, ratings.aggregate, optimizer.rebalance, reports.render_pdf (conditional)
 **Inputs:** portfolio_id (required), rebalance_threshold (default: 0.05)
 **Outputs:** positions, valued_positions, ratings, rebalance_result, report (optional)
 
-#### 13. cycle_deleveraging_scenarios.json
+#### 12. cycle_deleveraging_scenarios.json
 **Steps:** 7
 **Purpose:** Dalio-style deleveraging shock analysis
 **Capabilities:** ledger.positions, pricing.apply_pack, scenarios.deleveraging_austerity, scenarios.deleveraging_default, scenarios.deleveraging_money_printing, scenarios.macro_aware_apply, scenarios.macro_aware_rank
@@ -430,7 +423,7 @@ curl -X POST http://localhost:8000/api/patterns/execute \
 ## References
 
 **Code:**
-- [backend/patterns/](backend/patterns/) - Pattern JSON files (13 patterns)
+- [backend/patterns/](backend/patterns/) - Pattern JSON files (12 patterns)
 - [backend/app/core/pattern_orchestrator.py](backend/app/core/pattern_orchestrator.py) - Orchestrator implementation
 - [backend/app/core/agent_runtime.py](backend/app/core/agent_runtime.py) - Agent routing
 

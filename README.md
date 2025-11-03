@@ -47,11 +47,11 @@ python combined_server.py
 ## 🏗️ Architecture
 
 **Current Production Stack**:
-- **UI**: `full_ui.html` - Single-page React application (10,882 lines, no build step)
+- **UI**: `full_ui.html` - Single-page React application (11,594 lines, no build step)
 - **Server**: `combined_server.py` - FastAPI server (6,043 lines, 53 endpoints)
 - **Database**: PostgreSQL + TimescaleDB
 - **Agents**: 9 agents providing ~70 capabilities
-- **Patterns**: 13 pattern definitions for orchestration
+- **Patterns**: 12 pattern definitions for orchestration
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.
 
@@ -106,12 +106,22 @@ export DATABASE_URL="postgresql://localhost/dawsos"
 
 ### 4. Set Environment Variables
 
+**⚠️ REQUIRED Variables:**
 ```bash
+# Database connection (REQUIRED)
 export DATABASE_URL="postgresql://localhost/dawsos"
-export ANTHROPIC_API_KEY="sk-ant-..."  # Optional - for AI features
-export FRED_API_KEY="..."              # Optional - for economic data
-export AUTH_JWT_SECRET="your-secret-key-change-in-production"
+
+# JWT secret for authentication (REQUIRED - generate securely!)
+export AUTH_JWT_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
 ```
+
+**Optional Variables:**
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."  # For AI insights (claude.* capabilities)
+export FRED_API_KEY="..."              # For economic data (macro indicators)
+```
+
+**⚠️ CRITICAL**: Never use `AUTH_JWT_SECRET="your-secret"` in production! Generate a secure random key using the command above.
 
 ### 5. Start Application
 
@@ -132,10 +142,33 @@ python combined_server.py
 
 ## 🎮 Default Login
 
+**Development Only:**
 - **Email**: michael@dawsos.com
 - **Password**: mozzuq-byfqyQ-5tefvu
 
-(Change in production!)
+## 🔒 SECURITY WARNING
+
+**⚠️ BEFORE PRODUCTION DEPLOYMENT:**
+
+1. **Change Default Password**:
+   ```sql
+   -- Generate new password hash
+   python3 -c "import bcrypt; print(bcrypt.hashpw(b'YOUR_NEW_PASSWORD', bcrypt.gensalt(12)).decode())"
+
+   -- Update in database
+   UPDATE users SET password_hash = '<new-hash>' WHERE email = 'michael@dawsos.com';
+   ```
+
+2. **Delete Test Users**:
+   ```sql
+   DELETE FROM users WHERE email IN ('admin@dawsos.com', 'user@dawsos.com');
+   ```
+
+3. **Generate Secure AUTH_JWT_SECRET** (see environment variables section above)
+
+4. **Enable HTTPS/TLS** for all connections
+
+5. **Review CORS Settings** in combined_server.py (never use `allow_origins=["*"]`)
 
 ---
 

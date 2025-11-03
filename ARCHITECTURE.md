@@ -9,8 +9,8 @@
 DawsOS is an AI-powered portfolio management platform built on a **pattern-driven agent orchestration architecture**. The system uses specialized agents that provide capabilities, which are composed into executable patterns defined in JSON.
 
 **Production Stack**:
-- **Server**: `combined_server.py` - Single FastAPI application (6,046 lines, 59 endpoints)
-- **UI**: `full_ui.html` - React 18 SPA (14,075 lines, 17 pages, no build step)
+- **Server**: `combined_server.py` - Single FastAPI application (6,043 lines, 53 functional endpoints)
+- **UI**: `full_ui.html` - React 18 SPA (11,594 lines, 18 pages including login, no build step)
 - **Database**: PostgreSQL 14+ with TimescaleDB extension
 - **Agents**: 9 specialized agents providing 59+ capabilities
 - **Patterns**: 12 pattern definitions for business workflows
@@ -102,7 +102,7 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 
 ### 3. Backend (FastAPI)
 
-**Primary Entry Point**: [combined_server.py](combined_server.py) (6,046 lines)
+**Primary Entry Point**: [combined_server.py](combined_server.py) (6,043 lines)
 
 **Architecture**:
 - **Monolithic Design**: Single file containing all endpoints
@@ -110,7 +110,7 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 - **Lifespan Management**: Async context managers for database pool and agent initialization
 - **Static File Serving**: Serves full_ui.html at root path
 
-**Key Endpoints** (59 total):
+**Key Endpoints** (53 functional endpoints):
 - `GET /` - Serves full_ui.html
 - `POST /api/patterns/execute` - Execute pattern (main endpoint)
 - `POST /api/auth/login` - JWT authentication
@@ -127,7 +127,7 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 
 ### 4. Frontend (React SPA)
 
-**Primary UI**: [full_ui.html](full_ui.html) (14,075 lines, 508 KB)
+**Primary UI**: [full_ui.html](full_ui.html) (11,594 lines)
 
 **Architecture**:
 - **Single-Page Application**: Complete React 18 app in one HTML file
@@ -135,7 +135,7 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 - **Client-Side Routing**: Hash-based routing (#/dashboard, #/holdings, etc.)
 - **API Client**: Centralized [frontend/api-client.js](frontend/api-client.js) with caching
 
-**17 Pages** (organized by navigation sections):
+**18 Pages** (organized by navigation sections):
 
 **Portfolio Section (5 pages):**
 1. Dashboard (`/dashboard`) - Portfolio overview using `portfolio_overview` pattern
@@ -273,19 +273,27 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 
 ### Authorization
 - **Role-Based Access Control (RBAC)**: ADMIN, MANAGER, USER, VIEWER
-- **Endpoint Protection**: JWT validation on 45 authenticated endpoints (manual checks in each endpoint)
-- **Optional Dependency**: `require_auth` dependency available but not yet adopted
+- **Endpoint Protection**: JWT validation via `Depends(require_auth)` on 44 protected endpoints (83% coverage)
+- **Authentication Pattern**: Centralized dependency injection (see `backend/app/auth/dependencies.py`)
 - **Pattern-Level Rights**: Patterns can require specific rights (e.g., "portfolio_read")
+
+**Note:** 2 endpoints still use legacy `get_current_user()` pattern and should be migrated to `require_auth`.
 
 ### Data Protection
 - **Input Validation**: FastAPI Pydantic models
-- **SQL Injection Prevention**: Parameterized queries via asyncpg
+- **SQL Injection Prevention**: Parameterized queries via asyncpg (NEVER string formatting)
 - **XSS Prevention**: React's built-in escaping
-- **CORS**: Configured for production domain
+- **CORS**: Configured for specific origins (see combined_server.py)
+  - ⚠️ **CRITICAL**: Never use `allow_origins=["*"]` with `allow_credentials=True`
 
-### Default Credentials (CHANGE IN PRODUCTION!)
+### Default Credentials
+
+**⚠️ DEVELOPMENT ONLY - CHANGE IN PRODUCTION!**
+
 - Email: michael@dawsos.com
-- Password: admin123
+- Password: mozzuq-byfqyQ-5tefvu
+
+**See README.md for production security checklist.**
 
 ---
 
@@ -307,12 +315,49 @@ python combined_server.py
 ```
 
 ### Environment Variables
+
+**⚠️ REQUIRED (Application will not start without these):**
 ```bash
+# Database connection
 DATABASE_URL="postgresql://user:pass@localhost/dawsos"
-ANTHROPIC_API_KEY="sk-ant-..."  # Optional - for AI features
-FRED_API_KEY="..."              # Optional - for economic data
-AUTH_JWT_SECRET="your-secret-key-change-in-production"
+
+# JWT authentication secret (32+ characters)
+# Generate with: python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
+AUTH_JWT_SECRET="<generated-secure-random-key>"
 ```
+
+**Optional (Feature-specific):**
+```bash
+# AI-powered insights and explanations
+# Used by: ClaudeAgent (claude.* capabilities)
+# Features: AI Insights page, news impact analysis, pattern explanations
+ANTHROPIC_API_KEY="sk-ant-api03-..."
+
+# Federal Reserve economic data
+# Used by: MacroHound agent for macro indicators
+# Features: Macro Cycles page, economic indicator updates
+FRED_API_KEY="your-fred-api-key"
+
+# CORS allowed origins (comma-separated)
+# Default: http://localhost:8000
+CORS_ORIGINS="https://yourdomain.com,https://app.yourdomain.com"
+
+# Logging level
+# Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+# Default: INFO
+LOG_LEVEL="INFO"
+```
+
+**Development Only:**
+```bash
+# Enable debug mode (detailed error pages)
+DEBUG="true"
+
+# Enable auto-reload on code changes
+RELOAD="true"
+```
+
+**Note:** All environment variables can be set via `.env` file (supported via python-dotenv) or exported in shell.
 
 ---
 

@@ -18,6 +18,165 @@ DawsOSP uses PostgreSQL 14+ with TimescaleDB extension for portfolio and time-se
 
 ---
 
+## Database Setup
+
+### Prerequisites
+
+**Required Software:**
+- PostgreSQL 14+
+- TimescaleDB extension
+- psql command-line tool
+
+### Installation
+
+**macOS:**
+```bash
+# Install PostgreSQL and TimescaleDB
+brew install postgresql@14
+brew install timescaledb
+
+# Start PostgreSQL
+brew services start postgresql@14
+
+# Enable TimescaleDB
+timescaledb-tune --quiet --yes
+```
+
+**Ubuntu/Debian:**
+```bash
+# Add PostgreSQL repository
+sudo apt-get install -y postgresql-common
+sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+
+# Install PostgreSQL and TimescaleDB
+sudo apt-get install -y postgresql-14 timescaledb-2-postgresql-14
+
+# Enable and start PostgreSQL
+sudo systemctl enable postgresql
+sudo systemctl start postgresql
+```
+
+### Database Creation
+
+**Step 1: Create Database**
+```bash
+# Create database (as postgres user or your user)
+createdb dawsos
+
+# Or via psql:
+psql -c "CREATE DATABASE dawsos;"
+```
+
+**Step 2: Enable TimescaleDB Extension**
+```bash
+psql -d dawsos -c "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;"
+```
+
+**Step 3: Verify Installation**
+```bash
+psql -d dawsos -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'timescaledb';"
+```
+
+Expected output:
+```
+   extname   | extversion
+-------------+------------
+ timescaledb | 2.x.x
+```
+
+### Running Migrations
+
+**IMPORTANT**: Migrations must be run in order.
+
+**Core Migrations (REQUIRED):**
+```bash
+# 1. Core schema
+psql -d dawsos < backend/db/migrations/001_core_schema.sql
+
+# 2. Seed reference data
+psql -d dawsos < backend/db/migrations/002_seed_data.sql
+
+# 3. TimescaleDB hypertables (portfolio metrics)
+psql -d dawsos < backend/db/migrations/003_create_portfolio_metrics.sql
+
+# 4. Currency attribution support
+psql -d dawsos < backend/db/migrations/004_create_currency_attribution.sql
+```
+
+**Authentication Setup (REQUIRED):**
+```bash
+# Note: Some migration files have .sql.disabled extension
+# Rename to .sql to enable, or run directly:
+
+# Create users table and audit log
+psql -d dawsos < backend/db/migrations/010_add_users_and_audit_log.sql.disabled
+```
+
+**Optional Migrations:**
+```bash
+# Row-level security policies (if needed)
+psql -d dawsos < backend/db/migrations/005_create_rls_policies.sql.disabled
+
+# Advanced lot quantity tracking
+psql -d dawsos < backend/db/migrations/007_add_lot_qty_tracking.sql.disabled
+
+# Alert delivery system
+psql -d dawsos < backend/db/migrations/011_alert_delivery_system.sql.disabled
+```
+
+### Verify Setup
+
+**Check Tables:**
+```bash
+psql -d dawsos -c "\\dt"
+```
+
+Expected tables: portfolios, lots, transactions, securities, pricing_packs, prices, users, etc.
+
+**Check Users:**
+```bash
+psql -d dawsos -c "SELECT email, role FROM users;"
+```
+
+Should show at least one user (michael@dawsos.com or similar).
+
+**Check Application Connection:**
+```bash
+export DATABASE_URL="postgresql://localhost/dawsos"
+python3 -c "import asyncpg; import asyncio; asyncio.run(asyncpg.connect('postgresql://localhost/dawsos'))" && echo "✅ Connection successful"
+```
+
+### Troubleshooting Setup
+
+**Error: "database does not exist"**
+```bash
+createdb dawsos
+```
+
+**Error: "role does not exist"**
+```bash
+# Create PostgreSQL user (if needed)
+createuser -s $USER  # Create superuser with your username
+```
+
+**Error: "extension timescaledb not found"**
+```bash
+# macOS
+brew install timescaledb
+timescaledb-tune --quiet --yes
+
+# Ubuntu
+sudo apt-get install timescaledb-2-postgresql-14
+```
+
+**Error: "permission denied"**
+```bash
+# Grant permissions (as postgres user)
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE dawsos TO $USER;"
+```
+
+---
+
 ## Connection Architecture
 
 ### Pool Management
