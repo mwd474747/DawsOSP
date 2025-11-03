@@ -279,7 +279,7 @@ The server will start on `http://localhost:8000/`
 - **[PRODUCT_SPEC.md](PRODUCT_SPEC.md)** - Product specifications
 - **[DATABASE.md](DATABASE.md)** - Database reference and operations
 - **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** - Development guide
-- **[PATTERNS_REFERENCE.md](PATTERNS_REFERENCE.md)** - Pattern system reference
+- **[PATTERNS_REFERENCE.md](docs/reference/PATTERNS_REFERENCE.md)** - Pattern system reference
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deployment instructions
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
 - **API Docs**: http://localhost:8000/docs (when running)

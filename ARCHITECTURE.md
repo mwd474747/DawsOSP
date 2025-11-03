@@ -468,7 +468,7 @@ def register_external_pool(pool: asyncpg.Pool):
 - **Problem:** Module-level variables reset in new import instances (commits before e54da93)
 - **Old Approach:** Complex 5-priority fallback (600 lines, unreliable)
 - **New Approach:** sys.modules storage (382 lines, reliable)
-- **Analysis:** See [DATABASE_OPERATIONS_VALIDATION.md](DATABASE_OPERATIONS_VALIDATION.md)
+- **Analysis:** See [DATABASE.md](DATABASE.md) for database operations documentation
 
 ---
 
