@@ -2994,13 +2994,22 @@
                                 id: 'news_summary',
                                 title: 'News Summary',
                                 type: 'metrics_grid',
-                                dataPath: 'impact_analysis'
+                                dataPath: 'impact_analysis',
+                                config: {
+                                    metrics: [
+                                        { key: 'total_items', label: 'News Analyzed', format: 'integer' },
+                                        { key: 'high_impact_count', label: 'High Impact', format: 'integer' },
+                                        { key: 'exposed_portfolio_pct', label: 'Portfolio Exposure', format: 'percentage' },
+                                        { key: 'overall_sentiment', label: 'Overall Sentiment', format: 'sentiment' }
+                                    ],
+                                    columns: 4
+                                }
                             },
                             {
                                 id: 'news_items',
                                 title: 'Recent News',
                                 type: 'news_list',
-                                dataPath: 'news_items'
+                                dataPath: null
                             }
                         ]
                     }
@@ -3167,7 +3176,7 @@
             /**
              * Generic Pattern Renderer Component
              */
-            function PatternRenderer({ pattern, inputs = {}, onDataLoaded }) {
+            function PatternRenderer({ pattern, inputs = {}, config = {}, onDataLoaded }) {
                 const [loading, setLoading] = useState(true);
                 const [error, setError] = useState(null);
                 const [data, setData] = useState(null);
@@ -3464,6 +3473,185 @@
                     ),
                     e('div', { className: 'chart-container', style: { height: '400px' } },
                         e('canvas', { ref: chartRef })
+                    )
+                );
+            }
+            
+            /**
+             * News List Panel Component
+             */
+            function NewsListPanel({ title, data, config = {} }) {
+                // Initialize filters from config if provided, otherwise use defaults
+                const [filterSymbol, setFilterSymbol] = useState(config.filterSymbol || '');
+                const [sentimentFilter, setSentimentFilter] = useState(config.sentimentFilter || 'all');
+                
+                const formatSentiment = (sentiment) => {
+                    const sentimentMap = {
+                        'POSITIVE': { text: 'Positive', className: 'positive' },
+                        'NEGATIVE': { text: 'Negative', className: 'negative' },
+                        'NEUTRAL': { text: 'Neutral', className: 'neutral' },
+                        'MIXED': { text: 'Mixed', className: 'neutral' }
+                    };
+                    return sentimentMap[sentiment] || sentimentMap['NEUTRAL'];
+                };
+                
+                const formatImpactScore = (score) => {
+                    if (score >= 0.2) return { text: 'High Impact', className: 'negative' };
+                    if (score >= 0.1) return { text: 'Medium Impact', className: 'neutral' };
+                    return { text: 'Low Impact', className: 'positive' };
+                };
+                
+                const formatTimeAgo = (dateStr) => {
+                    const date = new Date(dateStr);
+                    const now = new Date();
+                    const diff = now - date;
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    
+                    if (hours < 1) return 'Just now';
+                    if (hours === 1) return '1 hour ago';
+                    if (hours < 24) return `${hours} hours ago`;
+                    const days = Math.floor(hours / 24);
+                    if (days === 1) return '1 day ago';
+                    return `${days} days ago`;
+                };
+                
+                if (!data || !data.news_with_impact) return null;
+                
+                const filteredNews = data.news_with_impact.filter(item => {
+                    const symbolMatch = !filterSymbol || 
+                        item.entities.some(e => e.toLowerCase().includes(filterSymbol.toLowerCase()));
+                    const sentimentMatch = sentimentFilter === 'all' || 
+                        item.sentiment.toLowerCase() === sentimentFilter.toLowerCase();
+                    return symbolMatch && sentimentMatch;
+                });
+                
+                return e('div', { className: 'card' },
+                    e('div', { className: 'card-header' },
+                        e('h3', { className: 'card-title' }, title || 'News Feed'),
+                        e('div', { style: { display: 'flex', gap: '1rem', marginTop: '1rem' } },
+                            e('input', {
+                                type: 'text',
+                                className: 'form-input',
+                                placeholder: 'Filter by symbol...',
+                                value: filterSymbol,
+                                onChange: (e) => setFilterSymbol(e.target.value),
+                                style: { maxWidth: '200px' }
+                            }),
+                            e('select', {
+                                className: 'form-input',
+                                value: sentimentFilter,
+                                onChange: (e) => setSentimentFilter(e.target.value),
+                                style: { maxWidth: '150px' }
+                            },
+                                e('option', { value: 'all' }, 'All Sentiment'),
+                                e('option', { value: 'positive' }, 'Positive'),
+                                e('option', { value: 'negative' }, 'Negative'),
+                                e('option', { value: 'neutral' }, 'Neutral')
+                            ),
+                            filterSymbol && e('button', {
+                                onClick: () => setFilterSymbol(''),
+                                style: { 
+                                    background: 'transparent',
+                                    border: '1px solid var(--border-primary)',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '6px',
+                                    color: 'var(--text-secondary)',
+                                    cursor: 'pointer'
+                                }
+                            }, 'Clear Filter')
+                        )
+                    ),
+                    e('div', { style: { padding: '1rem 0' } },
+                        filteredNews.length > 0 ?
+                            filteredNews.map((item, idx) => 
+                                e('div', {
+                                    key: idx,
+                                    style: {
+                                        padding: '1.5rem',
+                                        borderBottom: idx < filteredNews.length - 1 ? 
+                                            '1px solid var(--border-secondary)' : 'none',
+                                        transition: 'background 0.2s',
+                                        cursor: 'pointer'
+                                    },
+                                    onMouseEnter: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.02)',
+                                    onMouseLeave: (e) => e.target.style.background = 'transparent'
+                                },
+                                    e('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' } },
+                                        e('div', { style: { flex: 1 } },
+                                            e('h4', { style: { fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' } },
+                                                item.headline
+                                            ),
+                                            e('div', { 
+                                                style: { 
+                                                    display: 'flex', 
+                                                    gap: '1rem', 
+                                                    fontSize: '0.875rem', 
+                                                    color: 'var(--text-secondary)',
+                                                    marginBottom: '0.5rem'
+                                                }
+                                            },
+                                                e('span', null, item.source),
+                                                e('span', null, '•'),
+                                                e('span', null, formatTimeAgo(item.published_at)),
+                                                item.entities.length > 0 && e('span', null, '•'),
+                                                item.entities.length > 0 && e('span', { 
+                                                    style: { color: 'var(--color-info)' }
+                                                }, item.entities.join(', '))
+                                            )
+                                        ),
+                                        e('div', { style: { display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '150px', alignItems: 'flex-end' } },
+                                            e('span', {
+                                                className: formatSentiment(item.sentiment).className,
+                                                style: {
+                                                    padding: '0.25rem 0.75rem',
+                                                    borderRadius: '12px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: '600',
+                                                    background: item.sentiment === 'POSITIVE' ? 'rgba(16, 185, 129, 0.2)' :
+                                                              item.sentiment === 'NEGATIVE' ? 'rgba(239, 68, 68, 0.2)' :
+                                                              'rgba(148, 163, 184, 0.2)'
+                                                }
+                                            }, formatSentiment(item.sentiment).text),
+                                            e('span', {
+                                                className: formatImpactScore(item.impact_score).className,
+                                                style: {
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: '500'
+                                                }
+                                            }, formatImpactScore(item.impact_score).text)
+                                        )
+                                    ),
+                                    e('p', { style: { color: 'var(--text-secondary)', marginTop: '0.75rem' } },
+                                        item.summary
+                                    ),
+                                    e('div', { 
+                                        style: { 
+                                            display: 'flex', 
+                                            gap: '2rem', 
+                                            marginTop: '0.75rem',
+                                            fontSize: '0.875rem',
+                                            color: 'var(--text-muted)'
+                                        }
+                                    },
+                                        e('span', null, 
+                                            `Sentiment Score: ${item.sentiment_score > 0 ? '+' : ''}${(item.sentiment_score * 100).toFixed(0)}%`
+                                        ),
+                                        e('span', null, 
+                                            `Impact Score: ${(item.impact_score * 100).toFixed(1)}%`
+                                        ),
+                                        e('span', null,
+                                            `Portfolio Weight: ${formatPercentage(item.weight_affected)}`
+                                        )
+                                    )
+                                )
+                            ) :
+                            e('div', { 
+                                style: { 
+                                    textAlign: 'center', 
+                                    padding: '3rem',
+                                    color: 'var(--text-secondary)' 
+                                }
+                            }, 'No news items match your filters')
                     )
                 );
             }
@@ -10440,25 +10628,27 @@
             }
             
             function MarketDataPage() {
-                const [loading, setLoading] = useState(true);
-                const [newsData, setNewsData] = useState(null);
                 const [portfolioSecurities, setPortfolioSecurities] = useState([]);
                 const [marketData, setMarketData] = useState({});
-                const [error, setError] = useState(null);
+                const [loadingPrices, setLoadingPrices] = useState(true);
+                const [refreshKey, setRefreshKey] = useState(0);
                 const [refreshing, setRefreshing] = useState(false);
+                
+                // News filtering state
                 const [filterSymbol, setFilterSymbol] = useState('');
                 const [sentimentFilter, setSentimentFilter] = useState('all');
+                const [lookbackHours, setLookbackHours] = useState(72);
+                const [minImpactThreshold, setMinImpactThreshold] = useState(0.02);
                 
                 useEffect(() => {
-                    loadMarketData();
+                    loadSecurityPrices();
                 }, []);
                 
-                const loadMarketData = async () => {
+                const loadSecurityPrices = async () => {
                     try {
-                        setLoading(true);
-                        setError(null);
+                        setLoadingPrices(true);
                         
-                        // Get portfolio holdings first
+                        // Get portfolio holdings for price display
                         const holdingsRes = await apiClient.getHoldings().catch((error) => {
                             console.error('Failed to get holdings for market data:', error);
                             return { holdings: [] };
@@ -10466,46 +10656,20 @@
                         const holdings = holdingsRes.holdings || [];
                         setPortfolioSecurities(holdings);
                         
-                        // Execute news impact analysis pattern
-                        const newsResponse = await apiClient.executePattern('news_impact_analysis', {
-                            portfolio_id: getCurrentPortfolioId(),
-                            lookback_hours: 72,
-                            min_impact_threshold: 0.02
-                        }).catch(err => {
-                            console.error('Pattern execution failed:', err);
-                            return null;
-                        });
-                        
-                        if (newsResponse && newsResponse.data) {
-                            setNewsData(newsResponse.data);
-                        } else {
-                            setNewsData(null);
-                            setError('Unable to load news data');
-                        }
-                        
                         // Fetch real-time prices for portfolio securities
                         const pricesData = await fetchSecurityPrices(holdings.map(h => h.symbol));
                         setMarketData(pricesData);
-                        
                     } catch (err) {
-                        console.error('Error loading market data:', err);
-                        setError('Failed to load market data.');
-                        setNewsData(null);
+                        console.error('Error loading security prices:', err);
                         setPortfolioSecurities([]);
+                        setMarketData({});
                     } finally {
-                        setLoading(false);
+                        setLoadingPrices(false);
                     }
-                };
-                
-                const handleRefresh = async () => {
-                    setRefreshing(true);
-                    await loadMarketData();
-                    setRefreshing(false);
                 };
                 
                 const fetchSecurityPrices = async (symbols) => {
                     try {
-                        // Fetch real-time prices from backend API
                         const prices = {};
                         for (const symbol of symbols) {
                             const result = await apiClient.getQuote(symbol);
@@ -10524,51 +10688,20 @@
                     }
                 };
                 
-                const formatSentiment = (sentiment) => {
-                    const sentimentMap = {
-                        'POSITIVE': { text: 'Positive', className: 'positive' },
-                        'NEGATIVE': { text: 'Negative', className: 'negative' },
-                        'NEUTRAL': { text: 'Neutral', className: 'neutral' },
-                        'MIXED': { text: 'Mixed', className: 'neutral' }
-                    };
-                    return sentimentMap[sentiment] || sentimentMap['NEUTRAL'];
+                const handleRefresh = async () => {
+                    setRefreshing(true);
+                    // Refresh both prices and news by incrementing key
+                    await loadSecurityPrices();
+                    setRefreshKey(prev => prev + 1);
+                    setRefreshing(false);
                 };
                 
-                const formatImpactScore = (score) => {
-                    if (score >= 0.2) return { text: 'High Impact', className: 'negative' };
-                    if (score >= 0.1) return { text: 'Medium Impact', className: 'neutral' };
-                    return { text: 'Low Impact', className: 'positive' };
+                // Build inputs for PatternRenderer - only include supported parameters
+                const patternInputs = {
+                    portfolio_id: getCurrentPortfolioId(),
+                    lookback_hours: lookbackHours,
+                    min_impact_threshold: minImpactThreshold
                 };
-                
-                const formatTimeAgo = (dateStr) => {
-                    const date = new Date(dateStr);
-                    const now = new Date();
-                    const diff = now - date;
-                    const hours = Math.floor(diff / (1000 * 60 * 60));
-                    
-                    if (hours < 1) return 'Just now';
-                    if (hours === 1) return '1 hour ago';
-                    if (hours < 24) return `${hours} hours ago`;
-                    const days = Math.floor(hours / 24);
-                    if (days === 1) return '1 day ago';
-                    return `${days} days ago`;
-                };
-                
-                const filteredNews = newsData?.news_with_impact?.filter(item => {
-                    const symbolMatch = !filterSymbol || 
-                        item.entities.some(e => e.toLowerCase().includes(filterSymbol.toLowerCase()));
-                    const sentimentMatch = sentimentFilter === 'all' || 
-                        item.sentiment.toLowerCase() === sentimentFilter.toLowerCase();
-                    return symbolMatch && sentimentMatch;
-                }) || [];
-                
-                if (loading) {
-                    return e('div', { className: 'loading' }, 
-                        e('div', { className: 'spinner' }),
-                        e('p', { style: { marginTop: '1rem', color: 'var(--text-secondary)' } }, 
-                            'Loading market data and news analysis...')
-                    );
-                }
                 
                 return e('div', null,
                     e('div', { className: 'page-header', style: { marginBottom: '1.5rem' } },
@@ -10576,7 +10709,7 @@
                             e('div', null,
                                 e('h1', { className: 'page-title' }, 'Market Data & News Analysis'),
                                 e('p', { className: 'page-description' }, 
-                                    `Real-time prices and sentiment analysis for your portfolio`)
+                                    'Real-time prices and sentiment analysis for your portfolio')
                             ),
                             e('button', {
                                 className: 'btn',
@@ -10591,19 +10724,107 @@
                         )
                     ),
                     
-                    error && e('div', { 
-                        style: { 
-                            padding: '1rem',
-                            background: 'rgba(239, 68, 68, 0.1)',
-                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                            borderRadius: '8px',
-                            marginBottom: '1rem',
-                            color: 'var(--color-error)'
-                        }
-                    }, error),
-                    
-                    // Portfolio Securities Prices
+                    // News Filtering Controls
                     e('div', { className: 'card', style: { marginBottom: '1.5rem' } },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'News Filter Controls')
+                        ),
+                        e('div', { style: { padding: '1rem', display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' } },
+                            // Symbol filter
+                            e('div', { style: { flex: '1 1 200px', minWidth: '150px' } },
+                                e('label', { 
+                                    className: 'form-label', 
+                                    style: { fontSize: '0.75rem', marginBottom: '0.25rem' } 
+                                }, 'Filter by Symbol'),
+                                e('input', {
+                                    type: 'text',
+                                    className: 'form-input',
+                                    placeholder: 'e.g., AAPL, MSFT',
+                                    value: filterSymbol,
+                                    onChange: (e) => setFilterSymbol(e.target.value),
+                                    style: { fontSize: '0.875rem' }
+                                })
+                            ),
+                            
+                            // Sentiment filter
+                            e('div', { style: { flex: '1 1 150px', minWidth: '130px' } },
+                                e('label', { 
+                                    className: 'form-label', 
+                                    style: { fontSize: '0.75rem', marginBottom: '0.25rem' } 
+                                }, 'Sentiment'),
+                                e('select', {
+                                    className: 'form-input',
+                                    value: sentimentFilter,
+                                    onChange: (e) => setSentimentFilter(e.target.value),
+                                    style: { fontSize: '0.875rem' }
+                                },
+                                    e('option', { value: 'all' }, 'All Sentiment'),
+                                    e('option', { value: 'positive' }, 'Positive'),
+                                    e('option', { value: 'negative' }, 'Negative'),
+                                    e('option', { value: 'neutral' }, 'Neutral')
+                                )
+                            ),
+                            
+                            // Lookback period
+                            e('div', { style: { flex: '1 1 150px', minWidth: '130px' } },
+                                e('label', { 
+                                    className: 'form-label', 
+                                    style: { fontSize: '0.75rem', marginBottom: '0.25rem' } 
+                                }, 'Lookback Period'),
+                                e('select', {
+                                    className: 'form-input',
+                                    value: lookbackHours,
+                                    onChange: (e) => setLookbackHours(Number(e.target.value)),
+                                    style: { fontSize: '0.875rem' }
+                                },
+                                    e('option', { value: 24 }, '24 hours'),
+                                    e('option', { value: 48 }, '48 hours'),
+                                    e('option', { value: 72 }, '72 hours'),
+                                    e('option', { value: 168 }, '1 week')
+                                )
+                            ),
+                            
+                            // Impact threshold
+                            e('div', { style: { flex: '1 1 150px', minWidth: '130px' } },
+                                e('label', { 
+                                    className: 'form-label', 
+                                    style: { fontSize: '0.75rem', marginBottom: '0.25rem' } 
+                                }, 'Min Impact'),
+                                e('select', {
+                                    className: 'form-input',
+                                    value: minImpactThreshold,
+                                    onChange: (e) => setMinImpactThreshold(Number(e.target.value)),
+                                    style: { fontSize: '0.875rem' }
+                                },
+                                    e('option', { value: 0.01 }, 'Low (1%)'),
+                                    e('option', { value: 0.02 }, 'Medium (2%)'),
+                                    e('option', { value: 0.05 }, 'High (5%)'),
+                                    e('option', { value: 0.10 }, 'Very High (10%)')
+                                )
+                            ),
+                            
+                            // Clear filters button
+                            (filterSymbol || sentimentFilter !== 'all') && e('button', {
+                                onClick: () => {
+                                    setFilterSymbol('');
+                                    setSentimentFilter('all');
+                                },
+                                style: { 
+                                    background: 'transparent',
+                                    border: '1px solid var(--border-primary)',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '6px',
+                                    color: 'var(--text-secondary)',
+                                    cursor: 'pointer',
+                                    fontSize: '0.875rem',
+                                    alignSelf: 'flex-end'
+                                }
+                            }, 'Clear Filters')
+                        )
+                    ),
+                    
+                    // Portfolio Securities Prices (Secondary Feature)
+                    !loadingPrices && portfolioSecurities.length > 0 && e('div', { className: 'card', style: { marginBottom: '1.5rem' } },
                         e('div', { className: 'card-header' },
                             e('h3', { className: 'card-title' }, 'Portfolio Security Prices')
                         ),
@@ -10613,8 +10834,6 @@
                                 return e('div', { 
                                     key: security.symbol,
                                     className: 'stat-card',
-                                    style: { cursor: 'pointer' },
-                                    onClick: () => setFilterSymbol(security.symbol)
                                 },
                                     e('div', { className: 'stat-label' }, security.symbol),
                                     e('div', { style: { fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' } }, 
@@ -10633,169 +10852,17 @@
                         )
                     ),
                     
-                    // News Impact Summary
-                    newsData && e('div', { className: 'card', style: { marginBottom: '1.5rem' } },
-                        e('div', { className: 'card-header' },
-                            e('h3', { className: 'card-title' }, 'News Impact Analysis Summary')
-                        ),
-                        e('div', { className: 'stats-grid' },
-                            e('div', { className: 'stat-card' },
-                                e('div', { className: 'stat-label' }, 'News Analyzed'),
-                                e('div', { className: 'stat-value' }, newsData.impact_analysis?.total_items || 0),
-                                e('div', { className: 'stat-description' }, 'Last 72 hours')
-                            ),
-                            e('div', { className: 'stat-card' },
-                                e('div', { className: 'stat-label' }, 'High Impact'),
-                                e('div', { className: 'stat-value' }, newsData.impact_analysis?.high_impact_count || 0),
-                                e('div', { className: 'stat-description' }, 'Articles with significant impact')
-                            ),
-                            e('div', { className: 'stat-card' },
-                                e('div', { className: 'stat-label' }, 'Portfolio Exposure'),
-                                e('div', { className: 'stat-value' }, 
-                                    formatPercentage(newsData.impact_analysis?.exposed_portfolio_pct || 0)),
-                                e('div', { className: 'stat-description' }, 'Securities mentioned in news')
-                            ),
-                            e('div', { className: 'stat-card' },
-                                e('div', { className: 'stat-label' }, 'Overall Sentiment'),
-                                e('div', { 
-                                    className: `stat-value ${formatSentiment(newsData.impact_analysis?.overall_sentiment).className}` 
-                                }, 
-                                    formatSentiment(newsData.impact_analysis?.overall_sentiment).text),
-                                e('div', { className: 'stat-description' }, 'Weighted by impact score')
-                            )
-                        )
-                    ),
-                    
-                    // News Feed with Filters
-                    e('div', { className: 'card' },
-                        e('div', { className: 'card-header' },
-                            e('h3', { className: 'card-title' }, 'News Feed with Sentiment Analysis'),
-                            e('div', { style: { display: 'flex', gap: '1rem', marginTop: '1rem' } },
-                                e('input', {
-                                    type: 'text',
-                                    className: 'form-input',
-                                    placeholder: 'Filter by symbol...',
-                                    value: filterSymbol,
-                                    onChange: (e) => setFilterSymbol(e.target.value),
-                                    style: { maxWidth: '200px' }
-                                }),
-                                e('select', {
-                                    className: 'form-input',
-                                    value: sentimentFilter,
-                                    onChange: (e) => setSentimentFilter(e.target.value),
-                                    style: { maxWidth: '150px' }
-                                },
-                                    e('option', { value: 'all' }, 'All Sentiment'),
-                                    e('option', { value: 'positive' }, 'Positive'),
-                                    e('option', { value: 'negative' }, 'Negative'),
-                                    e('option', { value: 'neutral' }, 'Neutral')
-                                ),
-                                filterSymbol && e('button', {
-                                    onClick: () => setFilterSymbol(''),
-                                    style: { 
-                                        background: 'transparent',
-                                        border: '1px solid var(--border-primary)',
-                                        padding: '0.5rem 1rem',
-                                        borderRadius: '6px',
-                                        color: 'var(--text-secondary)',
-                                        cursor: 'pointer'
-                                    }
-                                }, 'Clear Filter')
-                            )
-                        ),
-                        e('div', { style: { padding: '1rem 0' } },
-                            filteredNews.length > 0 ?
-                                filteredNews.map((item, idx) => 
-                                    e('div', {
-                                        key: idx,
-                                        style: {
-                                            padding: '1.5rem',
-                                            borderBottom: idx < filteredNews.length - 1 ? 
-                                                '1px solid var(--border-secondary)' : 'none',
-                                            transition: 'background 0.2s',
-                                            cursor: 'pointer'
-                                        },
-                                        onMouseEnter: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.02)',
-                                        onMouseLeave: (e) => e.target.style.background = 'transparent'
-                                    },
-                                        e('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' } },
-                                            e('div', { style: { flex: 1 } },
-                                                e('h4', { style: { fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' } },
-                                                    item.headline
-                                                ),
-                                                e('div', { 
-                                                    style: { 
-                                                        display: 'flex', 
-                                                        gap: '1rem', 
-                                                        fontSize: '0.875rem', 
-                                                        color: 'var(--text-secondary)',
-                                                        marginBottom: '0.5rem'
-                                                    }
-                                                },
-                                                    e('span', null, item.source),
-                                                    e('span', null, '•'),
-                                                    e('span', null, formatTimeAgo(item.published_at)),
-                                                    item.entities.length > 0 && e('span', null, '•'),
-                                                    item.entities.length > 0 && e('span', { 
-                                                        style: { color: 'var(--color-info)' }
-                                                    }, item.entities.join(', '))
-                                                )
-                                            ),
-                                            e('div', { style: { display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '150px', alignItems: 'flex-end' } },
-                                                e('span', {
-                                                    className: formatSentiment(item.sentiment).className,
-                                                    style: {
-                                                        padding: '0.25rem 0.75rem',
-                                                        borderRadius: '12px',
-                                                        fontSize: '0.75rem',
-                                                        fontWeight: '600',
-                                                        background: item.sentiment === 'POSITIVE' ? 'rgba(16, 185, 129, 0.2)' :
-                                                                  item.sentiment === 'NEGATIVE' ? 'rgba(239, 68, 68, 0.2)' :
-                                                                  'rgba(148, 163, 184, 0.2)'
-                                                    }
-                                                }, formatSentiment(item.sentiment).text),
-                                                e('span', {
-                                                    className: formatImpactScore(item.impact_score).className,
-                                                    style: {
-                                                        fontSize: '0.75rem',
-                                                        fontWeight: '500'
-                                                    }
-                                                }, formatImpactScore(item.impact_score).text)
-                                            )
-                                        ),
-                                        e('p', { style: { color: 'var(--text-secondary)', marginTop: '0.75rem' } },
-                                            item.summary
-                                        ),
-                                        e('div', { 
-                                            style: { 
-                                                display: 'flex', 
-                                                gap: '2rem', 
-                                                marginTop: '0.75rem',
-                                                fontSize: '0.875rem',
-                                                color: 'var(--text-muted)'
-                                            }
-                                        },
-                                            e('span', null, 
-                                                `Sentiment Score: ${item.sentiment_score > 0 ? '+' : ''}${(item.sentiment_score * 100).toFixed(0)}%`
-                                            ),
-                                            e('span', null, 
-                                                `Impact Score: ${(item.impact_score * 100).toFixed(1)}%`
-                                            ),
-                                            e('span', null,
-                                                `Portfolio Weight: ${formatPercentage(item.weight_affected)}`
-                                            )
-                                        )
-                                    )
-                                ) :
-                                e('div', { 
-                                    style: { 
-                                        textAlign: 'center', 
-                                        padding: '3rem',
-                                        color: 'var(--text-secondary)' 
-                                    }
-                                }, 'No news items match your filters')
-                        )
-                    )
+                    // News Impact Analysis using PatternRenderer with dynamic inputs
+                    // Pass filters as config to be used by NewsListPanel for client-side filtering
+                    e(PatternRenderer, {
+                        key: `${refreshKey}-${filterSymbol}-${sentimentFilter}-${lookbackHours}-${minImpactThreshold}`,
+                        pattern: 'news_impact_analysis',
+                        inputs: patternInputs,
+                        config: {
+                            filterSymbol: filterSymbol,
+                            sentimentFilter: sentimentFilter
+                        }
+                    })
                 );
             }
             
