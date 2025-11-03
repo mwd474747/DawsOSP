@@ -113,3 +113,17 @@ async def cleanup_tracker(db_connection):
                 await db_connection.execute("DELETE FROM portfolios WHERE id = $1", record_id)
         except Exception as e:
             print(f"Cleanup warning for {record_type} {record_id}: {e}")
+
+
+@pytest_asyncio.fixture
+async def async_client():
+    """Create an async test client for FastAPI app."""
+    from httpx import AsyncClient, ASGITransport
+    from combined_server import app
+    
+    # Set the test JWT secret
+    os.environ["AUTH_JWT_SECRET"] = "test-secret-key-change-in-production"
+    
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client

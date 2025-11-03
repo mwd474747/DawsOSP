@@ -1598,19 +1598,12 @@ async def get_portfolio_metrics(portfolio_id: str):
         }
 
 @app.get("/api/portfolio")
-async def get_portfolio(request: Request):
+async def get_portfolio(user: dict = Depends(require_auth)):
     """
     Get portfolio data using pattern orchestrator
-    AUTH_STATUS: PENDING - Sprint 2
+    AUTH_STATUS: MIGRATED - Sprint 2
     """
     try:
-        # Get current user
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Try to use pattern orchestrator for real data
         if db_pool:
@@ -1747,19 +1740,15 @@ async def get_portfolio(request: Request):
 
 @app.get("/api/holdings")
 async def get_holdings(
-    request: Request,
     page: int = Query(1, ge=1, le=1000),
-    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE)
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
+    user: dict = Depends(require_auth)
 ):
-    """Get holdings data using pattern orchestrator with pagination"""
+    """
+    Get holdings data using pattern orchestrator with pagination
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Try to use pattern orchestrator for real data
         if db_pool:
@@ -1905,20 +1894,16 @@ async def get_holdings(
 
 @app.get("/api/transactions")
 async def get_transactions(
-    request: Request,
     portfolio_id: str = Query(..., description="Portfolio ID"),
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(100, ge=1, le=1000, description="Items per page")
+    page_size: int = Query(100, ge=1, le=1000, description="Items per page"),
+    user: dict = Depends(require_auth)
 ):
-    """Get transaction history from database"""
+    """
+    Get transaction history from database
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Get current user
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Validate portfolio_id
         if not portfolio_id:
@@ -2658,16 +2643,12 @@ def optimize_portfolio(
 # ============================================================================
 
 @app.get("/api/macro", response_model=SuccessResponse)
-async def get_macro_indicators(request: Request):
-    """Get macro economic indicators with caching"""
+async def get_macro_indicators(user: dict = Depends(require_auth)):
+    """
+    Get macro economic indicators with caching
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Get enhanced macro data
         indicators = await get_enhanced_macro_data()
@@ -2717,18 +2698,14 @@ async def get_macro_indicators(request: Request):
 
 @app.post("/api/optimize", response_model=SuccessResponse)
 async def optimize_portfolio_endpoint(
-    request: Request,
-    optimization_request: OptimizationRequest
+    optimization_request: OptimizationRequest,
+    user: dict = Depends(require_auth)
 ):
-    """Optimize portfolio allocation based on risk tolerance"""
+    """
+    Optimize portfolio allocation based on risk tolerance
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Get current portfolio
         portfolio_data = await get_portfolio_data(user["email"])
@@ -3118,16 +3095,12 @@ async def run_scenario_analysis(
         )
 
 @app.get("/api/reports", response_model=SuccessResponse)
-async def get_reports(request: Request):
-    """Get available reports with proper error handling"""
+async def get_reports(user: dict = Depends(require_auth)):
+    """
+    Get available reports with proper error handling
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Available report types
         reports = [
@@ -5856,16 +5829,12 @@ async def get_active_alerts(request: Request):
         )
 
 @app.get("/api/user/profile", response_model=SuccessResponse)
-async def get_user_profile(request: Request):
-    """Get user profile information"""
+async def get_user_profile(user: dict = Depends(require_auth)):
+    """
+    Get user profile information
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Return user profile data
         profile = {

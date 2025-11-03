@@ -9,6 +9,7 @@ Created as part of Sprint 1 of the authentication refactoring.
 
 import hashlib
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Optional, Union
 
@@ -22,7 +23,7 @@ from jose import JWTError, jwt
 logger = logging.getLogger(__name__)
 
 # JWT Configuration - Exported for compatibility with verify_jwt_token
-JWT_SECRET = "dawsos-secret-key-2024"  # In production, use environment variable
+JWT_SECRET = os.environ.get("AUTH_JWT_SECRET", "dawsos-secret-key-2024")  # Use env var or fallback
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
