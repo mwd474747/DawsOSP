@@ -53,7 +53,8 @@ class FinancialAnalyst(BaseAgent):
 
     def get_capabilities(self) -> List[str]:
         """Return list of capabilities."""
-        return [
+        capabilities = [
+            # Original FinancialAnalyst capabilities
             "ledger.positions",
             "pricing.apply_pack",
             "metrics.compute",  # Generic metrics computation (wrapper)
@@ -75,6 +76,32 @@ class FinancialAnalyst(BaseAgent):
             "portfolio.sector_allocation",  # New capability for sector allocation
             "portfolio.historical_nav",  # New capability for historical NAV
         ]
+        
+        # Add consolidated capabilities from OptimizerAgent
+        # These are only exposed when agent consolidation is enabled via feature flags
+        consolidated_capabilities = [
+            # From OptimizerAgent
+            "financial_analyst.propose_trades",  # optimizer.propose_trades
+            "financial_analyst.analyze_impact",  # optimizer.analyze_impact  
+            "financial_analyst.suggest_hedges",  # optimizer.suggest_hedges
+            "financial_analyst.suggest_deleveraging_hedges",  # optimizer.suggest_deleveraging_hedges
+            
+            # From RatingsAgent  
+            "financial_analyst.dividend_safety",  # ratings.dividend_safety
+            "financial_analyst.moat_strength",  # ratings.moat_strength
+            "financial_analyst.resilience",  # ratings.resilience
+            "financial_analyst.aggregate_ratings",  # ratings.aggregate
+            
+            # From ChartsAgent
+            "financial_analyst.macro_overview_charts",  # charts.macro_overview
+            "financial_analyst.scenario_charts",  # charts.scenario_deltas
+        ]
+        
+        # Add consolidated capabilities for dual registration support
+        # This allows both old and new capability names to work during transition
+        capabilities.extend(consolidated_capabilities)
+        
+        return capabilities
 
     async def ledger_positions(
         self,

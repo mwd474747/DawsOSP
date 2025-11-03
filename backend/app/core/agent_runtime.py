@@ -63,6 +63,24 @@ except ImportError:
     get_feature_flags = None
     FEATURE_FLAGS_AVAILABLE = False
 
+# Import capability mapping for consolidation routing
+try:
+    from app.core.capability_mapping import (
+        get_consolidated_capability,
+        get_target_agent,
+        get_consolidation_info,
+        AGENT_CONSOLIDATION_MAP
+    )
+    CAPABILITY_MAPPING_AVAILABLE = True
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.warning("Capability mapping module not available - using direct routing")
+    get_consolidated_capability = None
+    get_target_agent = None
+    get_consolidation_info = None
+    AGENT_CONSOLIDATION_MAP = {}
+    CAPABILITY_MAPPING_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -94,12 +112,20 @@ class AgentRuntime:
         """
         self.services = services
         self.agents: Dict[str, BaseAgent] = {}
-        self.capability_map: Dict[str, str] = {}  # capability → agent_name
-
+        self.capability_map: Dict[str, str] = {}  # capability → primary agent_name
+        
+        # Support for dual registration (multiple agents for same capability)
+        # Format: {capability: [(agent_name, priority), ...]}
+        self.capability_registry: Dict[str, List[Tuple[str, int]]] = {}
+        
         # Request-level capability cache
         # Format: {request_id: {cache_key: result}}
         self._request_caches: Dict[str, Dict[str, Any]] = {}
         self._cache_stats: Dict[str, Dict[str, int]] = {}  # {request_id: {hits: N, misses: N}}
+        
+        # Routing decision log for monitoring
+        self._routing_decisions: List[Dict[str, Any]] = []
+        self._max_routing_log = 1000  # Keep last N routing decisions
 
         # Retry configuration
         self.max_retries = 3
@@ -214,15 +240,20 @@ class AgentRuntime:
         if request_id in self._cache_stats:
             del self._cache_stats[request_id]
 
-    def register_agent(self, agent: BaseAgent):
+    def register_agent(self, agent: BaseAgent, priority: int = 100, allow_dual_registration: bool = True):
         """
         Register an agent and its capabilities.
+        
+        Supports dual registration where multiple agents can provide the same capability
+        for safe consolidation rollout.
 
         Args:
             agent: Agent instance to register
+            priority: Priority for capability routing (lower = higher priority, default 100)
+            allow_dual_registration: Allow multiple agents to handle same capability
 
         Raises:
-            ValueError: If capability already registered by another agent
+            ValueError: If capability conflict and dual registration not allowed
         """
         agent_name = agent.name
 
@@ -233,21 +264,47 @@ class AgentRuntime:
 
         self.agents[agent_name] = agent
 
-        # Map capabilities to agent
+        # Map capabilities to agent with support for dual registration
         capabilities = agent.get_capabilities()
+        conflicts = []
+        
         for cap in capabilities:
-            if cap in self.capability_map:
+            # Check for existing registration
+            if cap in self.capability_map and not allow_dual_registration:
                 existing_agent = self.capability_map[cap]
-                raise ValueError(
-                    f"Capability {cap} already registered by {existing_agent}, "
-                    f"cannot register for {agent_name}"
-                )
-            self.capability_map[cap] = agent_name
+                conflicts.append(f"{cap} (already in {existing_agent})")
+                continue
+                
+            # Initialize registry entry if needed
+            if cap not in self.capability_registry:
+                self.capability_registry[cap] = []
+            
+            # Add agent to registry with priority
+            self.capability_registry[cap].append((agent_name, priority))
+            # Sort by priority (ascending)
+            self.capability_registry[cap].sort(key=lambda x: x[1])
+            
+            # Update primary mapping (agent with highest priority)
+            if not self.capability_map.get(cap) or priority < self.capability_registry[cap][0][1]:
+                self.capability_map[cap] = agent_name
+        
+        if conflicts and not allow_dual_registration:
+            raise ValueError(
+                f"Capability conflicts for {agent_name}: {', '.join(conflicts)}. "
+                f"Set allow_dual_registration=True to enable consolidation mode."
+            )
 
         logger.info(
-            f"Registered agent {agent_name} with {len(capabilities)} capabilities: "
-            f"{', '.join(capabilities)}"
+            f"Registered agent {agent_name} with {len(capabilities)} capabilities "
+            f"(priority={priority}, dual_reg={allow_dual_registration}): "
+            f"{', '.join(capabilities[:5])}{'...' if len(capabilities) > 5 else ''}"
         )
+        
+        # Log any dual registrations for monitoring
+        for cap in capabilities:
+            if len(self.capability_registry.get(cap, [])) > 1:
+                agents = [a for a, _ in self.capability_registry[cap]]
+                logger.debug(f"Capability '{cap}' now handled by multiple agents: {agents}")
 
     def get_agent(self, agent_name: str) -> Optional[BaseAgent]:
         """
@@ -300,6 +357,33 @@ class AgentRuntime:
         """
         return self.capability_map.copy()
 
+    def _log_routing_decision(self, decision: Dict[str, Any]):
+        """
+        Log a routing decision for monitoring.
+        
+        Args:
+            decision: Routing decision details
+        """
+        import datetime
+        decision["timestamp"] = datetime.datetime.now().isoformat()
+        
+        # Keep only last N decisions
+        self._routing_decisions.append(decision)
+        if len(self._routing_decisions) > self._max_routing_log:
+            self._routing_decisions.pop(0)
+            
+    def get_routing_decisions(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """
+        Get recent routing decisions for monitoring.
+        
+        Args:
+            limit: Maximum number of decisions to return
+            
+        Returns:
+            List of recent routing decisions
+        """
+        return self._routing_decisions[-limit:]
+
     def _get_capability_routing_override(
         self, 
         capability: str, 
@@ -307,99 +391,93 @@ class AgentRuntime:
         context: Optional[Dict[str, Any]] = None
     ) -> Optional[str]:
         """
-        Check if capability routing should be overridden by feature flags.
+        Check if capability routing should be overridden by feature flags and capability mapping.
         
-        This enables agent consolidation without code changes.
+        Uses both feature flags and capability mapping for intelligent routing during consolidation.
         
         Args:
-            capability: Capability name (e.g., "optimizer.suggest")
+            capability: Capability name (e.g., "optimizer.propose_trades")
             original_agent: Original agent that handles this capability
-            context: Context for percentage rollout decisions
+            context: Context for percentage rollout decisions (user_id, request_id, etc.)
             
         Returns:
             Override agent name or None to use original routing
         """
-        if not FEATURE_FLAGS_AVAILABLE or get_feature_flags is None:
-            return None
+        routing_decision = {
+            "capability": capability,
+            "original_agent": original_agent,
+            "override_agent": None,
+            "reason": None,
+            "context": context
+        }
         
-        try:
-            flags = get_feature_flags()
+        # First check capability mapping if available
+        if CAPABILITY_MAPPING_AVAILABLE and get_target_agent is not None:
+            # Get consolidation info for this capability
+            consolidation_info = get_consolidation_info(capability) if get_consolidation_info else {}
+            target_agent = consolidation_info.get("target_agent")
             
-            # Define agent consolidation mappings
-            # Map from original agent to consolidated agent based on flags
-            consolidation_map = {
-                # FinancialAnalyst consolidation (Phase 3a)
-                "optimizer_agent": {
-                    "flag": "agent_consolidation.optimizer_to_financial",
-                    "target": "financial_analyst"
-                },
-                "ratings_agent": {
-                    "flag": "agent_consolidation.ratings_to_financial", 
-                    "target": "financial_analyst"
-                },
-                "reports_agent": {
-                    "flag": "agent_consolidation.reports_to_financial",
-                    "target": "financial_analyst"
-                },
-                "charts_agent": {
-                    "flag": "agent_consolidation.charts_to_financial",
-                    "target": "financial_analyst"
-                },
-                # MacroHound consolidation (Phase 3b)
-                "alerts_agent": {
-                    "flag": "agent_consolidation.alerts_to_macro",
-                    "target": "macro_hound"
-                },
-                "data_harvester": {
-                    "flag": "agent_consolidation.harvester_to_macro",
-                    "target": "macro_hound"
-                }
-            }
-            
-            # Check unified consolidation flag first (master switch)
-            if flags.is_enabled("agent_consolidation.unified_consolidation", context):
-                # If unified consolidation is enabled, check individual mappings
-                if original_agent in consolidation_map:
-                    mapping = consolidation_map[original_agent]
-                    target_agent = mapping["target"]
+            if target_agent and target_agent != original_agent:
+                # This capability should be consolidated
+                # Now check if feature flags allow it
+                if FEATURE_FLAGS_AVAILABLE and get_feature_flags is not None:
+                    try:
+                        flags = get_feature_flags()
+                        
+                        # Build flag name from agent consolidation
+                        # e.g., "optimizer" → "agent_consolidation.optimizer_to_financial"
+                        agent_prefix = capability.split(".")[0] if "." in capability else original_agent
+                        
+                        # Check consolidation flags
+                        flag_mappings = {
+                            "optimizer": "agent_consolidation.optimizer_to_financial",
+                            "ratings": "agent_consolidation.ratings_to_financial",
+                            "charts": "agent_consolidation.charts_to_financial",
+                            "reports": "agent_consolidation.reports_to_financial",
+                            "alerts": "agent_consolidation.alerts_to_macro",
+                        }
+                        
+                        flag_name = flag_mappings.get(agent_prefix)
+                        
+                        # Check unified consolidation flag first
+                        if flags.is_enabled("agent_consolidation.unified_consolidation", context):
+                            # Unified consolidation enabled - check if target agent exists
+                            if target_agent in self.agents:
+                                # Check if agent can handle this (priority-based)
+                                agents_for_cap = self.capability_registry.get(capability, [])
+                                if any(a[0] == target_agent for a in agents_for_cap):
+                                    routing_decision["override_agent"] = target_agent
+                                    routing_decision["reason"] = "unified_consolidation_flag"
+                                    logger.info(
+                                        f"Routing {capability}: {original_agent} → {target_agent} "
+                                        f"(unified consolidation, priority={consolidation_info.get('priority', 'unknown')})"
+                                    )
+                                    self._log_routing_decision(routing_decision)
+                                    return target_agent
+                        
+                        # Check specific consolidation flag
+                        elif flag_name and flags.is_enabled(flag_name, context):
+                            # Specific consolidation enabled
+                            if target_agent in self.agents:
+                                # Check if agent can handle this
+                                agents_for_cap = self.capability_registry.get(capability, [])
+                                if any(a[0] == target_agent for a in agents_for_cap):
+                                    routing_decision["override_agent"] = target_agent
+                                    routing_decision["reason"] = f"flag:{flag_name}"
+                                    logger.info(
+                                        f"Routing {capability}: {original_agent} → {target_agent} "
+                                        f"(flag: {flag_name}, risk: {consolidation_info.get('risk_level', 'unknown')})"
+                                    )
+                                    self._log_routing_decision(routing_decision)
+                                    return target_agent
                     
-                    # Verify target agent exists and has the capability
-                    if target_agent in self.agents:
-                        target = self.agents[target_agent]
-                        if capability in target.get_capabilities():
-                            logger.info(
-                                f"Feature flag routing: {capability} from {original_agent} "
-                                f"to {target_agent} (unified consolidation)"
-                            )
-                            return target_agent
-            
-            # Check individual consolidation flags
-            if original_agent in consolidation_map:
-                mapping = consolidation_map[original_agent]
-                flag_name = mapping["flag"]
-                target_agent = mapping["target"]
-                
-                # Check if this specific consolidation is enabled
-                if flags.is_enabled(flag_name, context):
-                    # Verify target agent exists and has the capability
-                    if target_agent in self.agents:
-                        target = self.agents[target_agent]
-                        if capability in target.get_capabilities():
-                            logger.info(
-                                f"Feature flag routing: {capability} from {original_agent} "
-                                f"to {target_agent} (flag: {flag_name})"
-                            )
-                            return target_agent
-                        else:
-                            logger.warning(
-                                f"Target agent {target_agent} doesn't have capability {capability}, "
-                                f"using original routing"
-                            )
-            
-        except Exception as e:
-            logger.error(f"Error checking feature flags for routing: {e}")
-            # Fall back to original routing on error
+                    except Exception as e:
+                        logger.error(f"Error checking feature flags for {capability}: {e}")
+                        routing_decision["reason"] = f"error:{str(e)}"
         
+        # No override - use original routing
+        routing_decision["reason"] = "no_override"
+        self._log_routing_decision(routing_decision)
         return None
 
     async def execute_capability(
