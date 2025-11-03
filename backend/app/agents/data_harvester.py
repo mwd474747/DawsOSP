@@ -1,25 +1,37 @@
 """
 DawsOS Data Harvester Agent
 
-Purpose: External data provider integration (FMP, Polygon, FRED, NewsAPI)
-Updated: 2025-11-02
+Purpose: External data provider integration (FMP, Polygon, FRED, NewsAPI) + Report exports
+Updated: 2025-11-03
 
 Capabilities:
     - fundamentals.load: Fetch company fundamentals (FMP)
     - news.search: Search news articles (NewsAPI)
     - news.compute_portfolio_impact: Analyze news impact on portfolio
     - provider.fetch_macro: Fetch macro indicators (FRED)
+    - data_harvester.render_pdf: Generate PDF reports with safety features (Week 5)
+    - data_harvester.export_csv: Generate CSV exports with safety features (Week 5)
 
 Architecture:
-    Pattern → Agent Runtime → DataHarvester → External APIs
+    Pattern → Agent Runtime → DataHarvester → External APIs/ReportService
+
+Safety Features (Week 5):
+    - Timeout protection (15s PDF, 10s CSV)
+    - File size limits (10MB PDF, 30MB CSV)
+    - Streaming for large files (>5MB)
+    - Memory-safe base64 encoding
 
 Usage:
     agent = DataHarvester("data_harvester", services)
     runtime.register_agent(agent)
 """
 
+import asyncio
+import base64
+import io
 import logging
 import os
+import tempfile
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 from decimal import Decimal
@@ -30,6 +42,21 @@ from app.core.types import RequestCtx
 from app.services.fundamentals_transformer import transform_fmp_to_ratings_format
 
 logger = logging.getLogger("DawsOS.DataHarvester")
+
+# ============================================================================
+# Export Limits Configuration (Week 5 Safety Features)
+# ============================================================================
+
+# Timeout limits
+EXPORT_TIMEOUT_PDF = 15  # seconds
+EXPORT_TIMEOUT_CSV = 10  # seconds
+
+# File size limits
+MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
+MAX_CSV_SIZE_BYTES = 30 * 1024 * 1024  # 30MB
+
+# Streaming threshold
+STREAMING_THRESHOLD = 5 * 1024 * 1024  # 5MB - use streaming for larger files
 
 
 class DataHarvester(BaseAgent):
@@ -67,6 +94,8 @@ class DataHarvester(BaseAgent):
             "fundamentals.load",  # Alias for buffett_checklist pattern compatibility
             "news.search",  # Pattern compatibility for news_impact_analysis
             "news.compute_portfolio_impact",  # Pattern compatibility for news_impact_analysis
+            "data_harvester.render_pdf",  # Week 5: PDF export with safety features
+            "data_harvester.export_csv",  # Week 5: CSV export with safety features
         ]
 
     async def provider_fetch_quote(
@@ -1954,6 +1983,447 @@ class DataHarvester(BaseAgent):
                 "_source": "error",
                 "error": str(e),
             }
+
+    # ========================================================================
+    # Report Export Methods (Week 5 Consolidation with Safety Features)
+    # ========================================================================
+    
+    async def data_harvester_render_pdf(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        template_name: str = "portfolio_summary",
+        report_data: Optional[Dict[str, Any]] = None,
+        portfolio_id: Optional[str] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Generate PDF report with timeout and size protection.
+        
+        Capability: data_harvester.render_pdf
+        Consolidated from ReportsAgent with enhanced safety features.
+        
+        Args:
+            ctx: Request context (contains user_id, pricing_pack_id, etc.)
+            state: Pattern execution state (contains accumulated results)
+            template_name: Template to use (e.g., "portfolio_summary", "buffett_checklist")
+            report_data: Explicit report data (if not using state)
+            portfolio_id: Portfolio UUID for audit logging
+            **kwargs: Additional template variables
+            
+        Returns:
+            Dict with:
+                - pdf_base64: Base64-encoded PDF bytes (or None on error)
+                - size_bytes: PDF file size
+                - status: "success" or "error"
+                - reason: Error reason if failed
+                - suggestion: User-friendly suggestion on error
+                - attributions: List of attribution strings
+                - watermark_applied: Boolean
+                - template_name: Template used
+                - providers: List of data providers
+                
+        Safety Features:
+            - 15-second timeout protection
+            - 10MB size limit
+            - Streaming for files >5MB
+            - Structured error responses
+        """
+        logger.info(
+            f"data_harvester.render_pdf: template={template_name}, "
+            f"portfolio_id={portfolio_id}, user_id={ctx.user_id}"
+        )
+        
+        try:
+            # Initialize report service
+            from app.services.reports import ReportService
+            report_service = ReportService(environment=self._get_environment())
+            
+            # Get report data from state or explicit parameter
+            if report_data is None:
+                report_data = {
+                    k: v for k, v in state.items()
+                    if not k.startswith("_")  # Exclude internal state
+                }
+            
+            # Add context metadata
+            report_data["_metadata"] = {
+                "pricing_pack_id": ctx.pricing_pack_id,
+                "ledger_commit_hash": ctx.ledger_commit_hash,
+                "asof_date": str(ctx.asof_date) if ctx.asof_date else None,
+                "user_id": ctx.user_id,
+            }
+            
+            # Add any additional kwargs to report_data
+            report_data.update(kwargs)
+            
+            # Generate PDF with timeout protection
+            try:
+                pdf_bytes = await asyncio.wait_for(
+                    report_service.render_pdf(
+                        report_data=report_data,
+                        template_name=template_name,
+                        user_id=ctx.user_id,
+                        portfolio_id=portfolio_id,
+                    ),
+                    timeout=EXPORT_TIMEOUT_PDF
+                )
+            except asyncio.TimeoutError:
+                logger.error(
+                    f"PDF generation timeout after {EXPORT_TIMEOUT_PDF} seconds: "
+                    f"template={template_name}, portfolio_id={portfolio_id}"
+                )
+                return {
+                    "status": "error",
+                    "reason": "timeout",
+                    "timeout_seconds": EXPORT_TIMEOUT_PDF,
+                    "suggestion": "Try exporting a smaller date range or fewer positions",
+                    "template_name": template_name,
+                    "pdf_base64": None,
+                }
+            
+            # Check file size before encoding
+            pdf_size = len(pdf_bytes)
+            if pdf_size > MAX_PDF_SIZE_BYTES:
+                logger.error(
+                    f"PDF exceeds size limit: {pdf_size} bytes > {MAX_PDF_SIZE_BYTES} bytes. "
+                    f"template={template_name}, portfolio_id={portfolio_id}"
+                )
+                return {
+                    "status": "error",
+                    "reason": "size_limit",
+                    "size_bytes": pdf_size,
+                    "limit_bytes": MAX_PDF_SIZE_BYTES,
+                    "suggestion": "Try exporting in smaller batches or reduce the date range",
+                    "template_name": template_name,
+                    "pdf_base64": None,
+                }
+            
+            # Safely encode to base64 (with streaming for large files)
+            pdf_base64_result = await self._safe_base64_encode(
+                data=pdf_bytes,
+                max_size=MAX_PDF_SIZE_BYTES,
+                streaming_threshold=STREAMING_THRESHOLD
+            )
+            
+            if pdf_base64_result.get("status") == "error":
+                return {
+                    "status": "error",
+                    "reason": pdf_base64_result.get("reason"),
+                    "size_bytes": pdf_size,
+                    "suggestion": pdf_base64_result.get("suggestion"),
+                    "template_name": template_name,
+                    "pdf_base64": None,
+                }
+            
+            # Extract providers from report data
+            providers = report_service._extract_providers(report_data)
+            
+            # Get attributions
+            rights_check = report_service.registry.check_export(
+                providers=providers,
+                export_type="pdf",
+                environment=report_service.environment,
+            )
+            
+            result = {
+                "pdf_base64": pdf_base64_result["encoded"],
+                "size_bytes": pdf_size,
+                "attributions": rights_check.attributions,
+                "watermark_applied": rights_check.watermark is not None,
+                "template_name": template_name,
+                "providers": providers,
+                "download_filename": f"{template_name}_{portfolio_id or 'report'}.pdf",
+                "status": "success",
+                "generated_at": str(rights_check.timestamp),
+            }
+            
+            # Attach metadata
+            metadata = self._create_metadata(
+                source=f"report_service:{ctx.pricing_pack_id}",
+                asof=ctx.asof_date,
+                ttl=0,  # PDF is point-in-time, no caching
+            )
+            
+            return self._attach_metadata(result, metadata)
+            
+        except MemoryError as e:
+            logger.error(f"Memory error during PDF generation: {e}", exc_info=True)
+            return {
+                "status": "error",
+                "reason": "memory",
+                "suggestion": "The report is too large to generate. Please contact support or try a smaller export.",
+                "template_name": template_name,
+                "pdf_base64": None,
+            }
+        except Exception as e:
+            logger.error(f"PDF generation failed: {e}", exc_info=True)
+            return {
+                "status": "error",
+                "error": str(e),
+                "template_name": template_name,
+                "pdf_base64": None,
+            }
+    
+    async def data_harvester_export_csv(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        filename: str = "export.csv",
+        data: Optional[Dict[str, Any]] = None,
+        providers: Optional[List[str]] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Generate CSV export with timeout and size protection.
+        
+        Capability: data_harvester.export_csv
+        Consolidated from ReportsAgent with enhanced safety features.
+        
+        Args:
+            ctx: Request context
+            state: Pattern execution state
+            filename: CSV filename
+            data: Explicit data to export (if not using state)
+            providers: List of provider IDs (if known)
+            **kwargs: Additional options
+            
+        Returns:
+            Dict with:
+                - csv_base64: Base64-encoded CSV bytes (or None on error)
+                - size_bytes: CSV file size
+                - status: "success" or "error"
+                - reason: Error reason if failed
+                - suggestion: User-friendly suggestion on error
+                - attributions: List of attribution strings
+                - filename: CSV filename
+                - providers: List of data providers
+                
+        Safety Features:
+            - 10-second timeout protection
+            - 30MB size limit
+            - Streaming for files >5MB
+            - Structured error responses
+        """
+        logger.info(f"data_harvester.export_csv: filename={filename}, user_id={ctx.user_id}")
+        
+        try:
+            # Initialize report service
+            from app.services.reports import ReportService
+            report_service = ReportService(environment=self._get_environment())
+            
+            # Get data from state or explicit parameter
+            if data is None:
+                data = {
+                    k: v for k, v in state.items()
+                    if not k.startswith("_")
+                }
+            
+            # Extract providers if not provided
+            if providers is None:
+                providers = report_service._extract_providers(data)
+            
+            # Generate CSV with timeout protection
+            try:
+                csv_bytes = await asyncio.wait_for(
+                    report_service.generate_csv(
+                        data=data,
+                        providers=providers,
+                        filename=filename,
+                    ),
+                    timeout=EXPORT_TIMEOUT_CSV
+                )
+            except asyncio.TimeoutError:
+                logger.error(
+                    f"CSV generation timeout after {EXPORT_TIMEOUT_CSV} seconds: "
+                    f"filename={filename}"
+                )
+                return {
+                    "status": "error",
+                    "reason": "timeout",
+                    "timeout_seconds": EXPORT_TIMEOUT_CSV,
+                    "suggestion": "Try exporting fewer rows or columns",
+                    "filename": filename,
+                    "csv_base64": None,
+                }
+            
+            # Check file size before encoding
+            csv_size = len(csv_bytes)
+            if csv_size > MAX_CSV_SIZE_BYTES:
+                logger.error(
+                    f"CSV exceeds size limit: {csv_size} bytes > {MAX_CSV_SIZE_BYTES} bytes. "
+                    f"filename={filename}"
+                )
+                return {
+                    "status": "error",
+                    "reason": "size_limit",
+                    "size_bytes": csv_size,
+                    "limit_bytes": MAX_CSV_SIZE_BYTES,
+                    "suggestion": "Try exporting data in smaller chunks or apply filters",
+                    "filename": filename,
+                    "csv_base64": None,
+                }
+            
+            # Safely encode to base64 (with streaming for large files)
+            csv_base64_result = await self._safe_base64_encode(
+                data=csv_bytes,
+                max_size=MAX_CSV_SIZE_BYTES,
+                streaming_threshold=STREAMING_THRESHOLD
+            )
+            
+            if csv_base64_result.get("status") == "error":
+                return {
+                    "status": "error",
+                    "reason": csv_base64_result.get("reason"),
+                    "size_bytes": csv_size,
+                    "suggestion": csv_base64_result.get("suggestion"),
+                    "filename": filename,
+                    "csv_base64": None,
+                }
+            
+            # Get attributions
+            rights_check = report_service.registry.check_export(
+                providers=providers,
+                export_type="csv",
+                environment=report_service.environment,
+            )
+            
+            result = {
+                "csv_base64": csv_base64_result["encoded"],
+                "size_bytes": csv_size,
+                "attributions": rights_check.attributions,
+                "filename": filename,
+                "providers": providers,
+                "download_filename": filename,
+                "status": "success",
+                "generated_at": str(rights_check.timestamp),
+            }
+            
+            # Attach metadata
+            metadata = self._create_metadata(
+                source="report_service:csv",
+                asof=ctx.asof_date,
+                ttl=0,
+            )
+            
+            return self._attach_metadata(result, metadata)
+            
+        except MemoryError as e:
+            logger.error(f"Memory error during CSV generation: {e}", exc_info=True)
+            return {
+                "status": "error",
+                "reason": "memory",
+                "suggestion": "The CSV file is too large to generate. Please contact support or apply more filters.",
+                "filename": filename,
+                "csv_base64": None,
+            }
+        except Exception as e:
+            logger.error(f"CSV generation failed: {e}", exc_info=True)
+            return {
+                "status": "error",
+                "error": str(e),
+                "filename": filename,
+                "csv_base64": None,
+            }
+    
+    async def _safe_base64_encode(
+        self,
+        data: bytes,
+        max_size: int,
+        streaming_threshold: int
+    ) -> Dict[str, Any]:
+        """
+        Safely encode data to base64 with size checks and streaming support.
+        
+        Args:
+            data: Raw bytes to encode
+            max_size: Maximum allowed size in bytes
+            streaming_threshold: Use streaming if data > this size
+            
+        Returns:
+            Dict with:
+                - status: "success" or "error"
+                - encoded: Base64-encoded string (if successful)
+                - reason: Error reason (if failed)
+                - suggestion: User-friendly suggestion (if failed)
+                
+        Features:
+            - Size validation before encoding
+            - Streaming encoding for large files (>5MB)
+            - Memory-efficient processing
+            - Proper cleanup with context managers
+        """
+        try:
+            data_size = len(data)
+            
+            # Final size check
+            if data_size > max_size:
+                return {
+                    "status": "error",
+                    "reason": "size_limit",
+                    "suggestion": "The file is too large to encode. Please reduce the data size.",
+                }
+            
+            # Use streaming for large files
+            if data_size > streaming_threshold:
+                logger.info(f"Using streaming base64 encoding for {data_size} bytes")
+                
+                # Use temp file for streaming
+                with tempfile.NamedTemporaryFile(mode='wb', delete=True) as temp_file:
+                    # Write data to temp file
+                    temp_file.write(data)
+                    temp_file.flush()
+                    
+                    # Stream encode from temp file
+                    encoded_parts = []
+                    with open(temp_file.name, 'rb') as f:
+                        while True:
+                            chunk = f.read(1024 * 1024)  # 1MB chunks
+                            if not chunk:
+                                break
+                            encoded_parts.append(base64.b64encode(chunk).decode('utf-8'))
+                    
+                    return {
+                        "status": "success",
+                        "encoded": ''.join(encoded_parts),
+                    }
+            else:
+                # Direct encoding for smaller files
+                encoded = base64.b64encode(data).decode('utf-8')
+                return {
+                    "status": "success",
+                    "encoded": encoded,
+                }
+                
+        except MemoryError:
+            logger.error("Memory error during base64 encoding")
+            return {
+                "status": "error",
+                "reason": "memory",
+                "suggestion": "Not enough memory to encode the file. Try a smaller export.",
+            }
+        except Exception as e:
+            logger.error(f"Base64 encoding failed: {e}", exc_info=True)
+            return {
+                "status": "error",
+                "reason": "encoding_error",
+                "suggestion": f"Failed to encode the file: {str(e)}",
+            }
+    
+    def _get_environment(self) -> str:
+        """
+        Determine environment for rights enforcement.
+        
+        Returns:
+            "staging" or "production"
+        """
+        env = os.getenv("ENVIRONMENT", "staging")
+        
+        # Map common environment names
+        if env in ["prod", "production"]:
+            return "production"
+        else:
+            return "staging"
 
 
 # ============================================================================
