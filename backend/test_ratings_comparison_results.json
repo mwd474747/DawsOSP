@@ -1,0 +1,1586 @@
+{
+  "ratings_agent": {
+    "ratings.dividend_safety": {
+      "AAPL": {
+        "overall": 8.7,
+        "rating_type": "dividend_safety",
+        "symbol": "AAPL",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "payout_ratio": {
+            "score": 10.0,
+            "value": 0.15132044312670426,
+            "weight": 0.3,
+            "label": "Payout Ratio (5Y Avg)"
+          },
+          "fcf_coverage": {
+            "score": 10.0,
+            "value": 6.404707865897153,
+            "weight": 0.35,
+            "label": "FCF Dividend Coverage"
+          },
+          "growth_streak": {
+            "score": 5.0,
+            "value": 4,
+            "weight": 0.2,
+            "label": "Dividend Growth Streak (Years)"
+          },
+          "net_cash": {
+            "score": 8.0,
+            "value": 27955000000.0,
+            "weight": 0.15,
+            "label": "Net Cash Position"
+          }
+        }
+      },
+      "MSFT": {
+        "overall": 7.05,
+        "rating_type": "dividend_safety",
+        "symbol": "MSFT",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "payout_ratio": {
+            "score": 10.0,
+            "value": 0.25521784459890745,
+            "weight": 0.3,
+            "label": "Payout Ratio (5Y Avg)"
+          },
+          "fcf_coverage": {
+            "score": 7.0,
+            "value": 2.9736317581596214,
+            "weight": 0.35,
+            "label": "FCF Dividend Coverage"
+          },
+          "growth_streak": {
+            "score": 5.0,
+            "value": 4,
+            "weight": 0.2,
+            "label": "Dividend Growth Streak (Years)"
+          },
+          "net_cash": {
+            "score": 4.0,
+            "value": -30346000000.0,
+            "weight": 0.15,
+            "label": "Net Cash Position"
+          }
+        }
+      },
+      "GOOGL": {
+        "overall": 8.1,
+        "rating_type": "dividend_safety",
+        "symbol": "GOOGL",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "payout_ratio": {
+            "score": 10.0,
+            "value": 0.07354321900157813,
+            "weight": 0.3,
+            "label": "Payout Ratio (5Y Avg)"
+          },
+          "fcf_coverage": {
+            "score": 10.0,
+            "value": 9.882384897460275,
+            "weight": 0.35,
+            "label": "FCF Dividend Coverage"
+          },
+          "growth_streak": {
+            "score": 5.0,
+            "value": 1,
+            "weight": 0.2,
+            "label": "Dividend Growth Streak (Years)"
+          },
+          "net_cash": {
+            "score": 4.0,
+            "value": -1995000000.0,
+            "weight": 0.15,
+            "label": "Net Cash Position"
+          }
+        }
+      }
+    },
+    "ratings.moat_strength": {
+      "AAPL": {
+        "overall": 6.75,
+        "rating_type": "moat_strength",
+        "symbol": "AAPL",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "roe_consistency": {
+            "score": 10.0,
+            "value": 1.639225400754853,
+            "weight": 0.25,
+            "label": "ROE Consistency (5Y Avg)"
+          },
+          "gross_margin": {
+            "score": 8.0,
+            "value": 0.4446632673722596,
+            "weight": 0.25,
+            "label": "Gross Margin (5Y Avg)"
+          },
+          "intangibles": {
+            "score": 4.0,
+            "value": 0.0,
+            "weight": 0.25,
+            "label": "Intangible Assets Ratio"
+          },
+          "switching_costs": {
+            "score": 5.0,
+            "value": 5.0,
+            "weight": 0.25,
+            "label": "Switching Costs (Qualitative)"
+          }
+        }
+      },
+      "MSFT": {
+        "overall": 7.75,
+        "rating_type": "moat_strength",
+        "symbol": "MSFT",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "roe_consistency": {
+            "score": 10.0,
+            "value": 0.36878357486375923,
+            "weight": 0.25,
+            "label": "ROE Consistency (5Y Avg)"
+          },
+          "gross_margin": {
+            "score": 10.0,
+            "value": 0.6896714947058827,
+            "weight": 0.25,
+            "label": "Gross Margin (5Y Avg)"
+          },
+          "intangibles": {
+            "score": 6.0,
+            "value": 0.22958370153294896,
+            "weight": 0.25,
+            "label": "Intangible Assets Ratio"
+          },
+          "switching_costs": {
+            "score": 5.0,
+            "value": 5.0,
+            "weight": 0.25,
+            "label": "Switching Costs (Qualitative)"
+          }
+        }
+      },
+      "GOOGL": {
+        "overall": 6.75,
+        "rating_type": "moat_strength",
+        "symbol": "GOOGL",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "roe_consistency": {
+            "score": 10.0,
+            "value": 0.25712501308918656,
+            "weight": 0.25,
+            "label": "ROE Consistency (5Y Avg)"
+          },
+          "gross_margin": {
+            "score": 8.0,
+            "value": 0.5614462070023428,
+            "weight": 0.25,
+            "label": "Gross Margin (5Y Avg)"
+          },
+          "intangibles": {
+            "score": 4.0,
+            "value": 0.0708152695355531,
+            "weight": 0.25,
+            "label": "Intangible Assets Ratio"
+          },
+          "switching_costs": {
+            "score": 5.0,
+            "value": 5.0,
+            "weight": 0.25,
+            "label": "Switching Costs (Qualitative)"
+          }
+        }
+      }
+    },
+    "ratings.resilience": {
+      "AAPL": {
+        "overall": 7.5,
+        "rating_type": "resilience",
+        "symbol": "AAPL",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "debt_equity": {
+            "score": 10.0,
+            "value": 0.10821477493117057,
+            "weight": 0.25,
+            "label": "Debt-to-Equity Ratio"
+          },
+          "interest_coverage": {
+            "score": 6.0,
+            "value": 5.0,
+            "weight": 0.25,
+            "label": "Interest Coverage"
+          },
+          "current_ratio": {
+            "score": 4.0,
+            "value": 0.8932929222186667,
+            "weight": 0.25,
+            "label": "Current Ratio"
+          },
+          "margin_stability": {
+            "score": 10.0,
+            "value": 0.010063888590481625,
+            "weight": 0.25,
+            "label": "Operating Margin Stability (Std Dev)"
+          }
+        }
+      },
+      "MSFT": {
+        "overall": 9.25,
+        "rating_type": "resilience",
+        "symbol": "MSFT",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "debt_equity": {
+            "score": 10.0,
+            "value": 0.17639506345366093,
+            "weight": 0.25,
+            "label": "Debt-to-Equity Ratio"
+          },
+          "interest_coverage": {
+            "score": 10.0,
+            "value": 53.89014675052411,
+            "weight": 0.25,
+            "label": "Interest Coverage"
+          },
+          "current_ratio": {
+            "score": 7.0,
+            "value": 1.3534464445042416,
+            "weight": 0.25,
+            "label": "Current Ratio"
+          },
+          "margin_stability": {
+            "score": 10.0,
+            "value": 0.01861184917790921,
+            "weight": 0.25,
+            "label": "Operating Margin Stability (Std Dev)"
+          }
+        }
+      },
+      "GOOGL": {
+        "overall": 9.0,
+        "rating_type": "resilience",
+        "symbol": "GOOGL",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "debt_equity": {
+            "score": 10.0,
+            "value": 0.07832129541903016,
+            "weight": 0.25,
+            "label": "Debt-to-Equity Ratio"
+          },
+          "interest_coverage": {
+            "score": 10.0,
+            "value": 419.36567164179104,
+            "weight": 0.25,
+            "label": "Interest Coverage"
+          },
+          "current_ratio": {
+            "score": 8.0,
+            "value": 1.8369313974102914,
+            "weight": 0.25,
+            "label": "Current Ratio"
+          },
+          "margin_stability": {
+            "score": 8.0,
+            "value": 0.037173828848092276,
+            "weight": 0.25,
+            "label": "Operating Margin Stability (Std Dev)"
+          }
+        }
+      }
+    },
+    "ratings.aggregate": {
+      "AAPL": {
+        "overall_rating": 75.6,
+        "overall_grade": "C",
+        "symbol": "AAPL",
+        "security_id": null,
+        "aggregation_weights": {
+          "moat_strength": 0.4,
+          "dividend_safety": 0.3,
+          "resilience": 0.3
+        },
+        "moat": {
+          "overall": 6.75,
+          "rating_type": "moat_strength",
+          "symbol": "AAPL",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "roe_consistency": {
+              "score": 10.0,
+              "value": 1.639225400754853,
+              "weight": 0.25,
+              "label": "ROE Consistency (5Y Avg)"
+            },
+            "gross_margin": {
+              "score": 8.0,
+              "value": 0.4446632673722596,
+              "weight": 0.25,
+              "label": "Gross Margin (5Y Avg)"
+            },
+            "intangibles": {
+              "score": 4.0,
+              "value": 0.0,
+              "weight": 0.25,
+              "label": "Intangible Assets Ratio"
+            },
+            "switching_costs": {
+              "score": 5.0,
+              "value": 5.0,
+              "weight": 0.25,
+              "label": "Switching Costs (Qualitative)"
+            }
+          },
+          "rating_100": 67.5,
+          "grade": "D"
+        },
+        "resilience": {
+          "overall": 7.5,
+          "rating_type": "resilience",
+          "symbol": "AAPL",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "debt_equity": {
+              "score": 10.0,
+              "value": 0.10821477493117057,
+              "weight": 0.25,
+              "label": "Debt-to-Equity Ratio"
+            },
+            "interest_coverage": {
+              "score": 6.0,
+              "value": 5.0,
+              "weight": 0.25,
+              "label": "Interest Coverage"
+            },
+            "current_ratio": {
+              "score": 4.0,
+              "value": 0.8932929222186667,
+              "weight": 0.25,
+              "label": "Current Ratio"
+            },
+            "margin_stability": {
+              "score": 10.0,
+              "value": 0.010063888590481625,
+              "weight": 0.25,
+              "label": "Operating Margin Stability (Std Dev)"
+            }
+          },
+          "rating_100": 75.0,
+          "grade": "C"
+        },
+        "dividend": {
+          "overall": 8.7,
+          "rating_type": "dividend_safety",
+          "symbol": "AAPL",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "payout_ratio": {
+              "score": 10.0,
+              "value": 0.15132044312670426,
+              "weight": 0.3,
+              "label": "Payout Ratio (5Y Avg)"
+            },
+            "fcf_coverage": {
+              "score": 10.0,
+              "value": 6.404707865897153,
+              "weight": 0.35,
+              "label": "FCF Dividend Coverage"
+            },
+            "growth_streak": {
+              "score": 5.0,
+              "value": 4,
+              "weight": 0.2,
+              "label": "Dividend Growth Streak (Years)"
+            },
+            "net_cash": {
+              "score": 8.0,
+              "value": 27955000000.0,
+              "weight": 0.15,
+              "label": "Net Cash Position"
+            }
+          },
+          "rating_100": 87.0,
+          "grade": "B"
+        },
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:aggregate:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        }
+      },
+      "MSFT": {
+        "overall_rating": 79.9,
+        "overall_grade": "C",
+        "symbol": "MSFT",
+        "security_id": null,
+        "aggregation_weights": {
+          "moat_strength": 0.4,
+          "dividend_safety": 0.3,
+          "resilience": 0.3
+        },
+        "moat": {
+          "overall": 7.75,
+          "rating_type": "moat_strength",
+          "symbol": "MSFT",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "roe_consistency": {
+              "score": 10.0,
+              "value": 0.36878357486375923,
+              "weight": 0.25,
+              "label": "ROE Consistency (5Y Avg)"
+            },
+            "gross_margin": {
+              "score": 10.0,
+              "value": 0.6896714947058827,
+              "weight": 0.25,
+              "label": "Gross Margin (5Y Avg)"
+            },
+            "intangibles": {
+              "score": 6.0,
+              "value": 0.22958370153294896,
+              "weight": 0.25,
+              "label": "Intangible Assets Ratio"
+            },
+            "switching_costs": {
+              "score": 5.0,
+              "value": 5.0,
+              "weight": 0.25,
+              "label": "Switching Costs (Qualitative)"
+            }
+          },
+          "rating_100": 77.5,
+          "grade": "C"
+        },
+        "resilience": {
+          "overall": 9.25,
+          "rating_type": "resilience",
+          "symbol": "MSFT",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "debt_equity": {
+              "score": 10.0,
+              "value": 0.17639506345366093,
+              "weight": 0.25,
+              "label": "Debt-to-Equity Ratio"
+            },
+            "interest_coverage": {
+              "score": 10.0,
+              "value": 53.89014675052411,
+              "weight": 0.25,
+              "label": "Interest Coverage"
+            },
+            "current_ratio": {
+              "score": 7.0,
+              "value": 1.3534464445042416,
+              "weight": 0.25,
+              "label": "Current Ratio"
+            },
+            "margin_stability": {
+              "score": 10.0,
+              "value": 0.01861184917790921,
+              "weight": 0.25,
+              "label": "Operating Margin Stability (Std Dev)"
+            }
+          },
+          "rating_100": 92.5,
+          "grade": "A"
+        },
+        "dividend": {
+          "overall": 7.05,
+          "rating_type": "dividend_safety",
+          "symbol": "MSFT",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "payout_ratio": {
+              "score": 10.0,
+              "value": 0.25521784459890745,
+              "weight": 0.3,
+              "label": "Payout Ratio (5Y Avg)"
+            },
+            "fcf_coverage": {
+              "score": 7.0,
+              "value": 2.9736317581596214,
+              "weight": 0.35,
+              "label": "FCF Dividend Coverage"
+            },
+            "growth_streak": {
+              "score": 5.0,
+              "value": 4,
+              "weight": 0.2,
+              "label": "Dividend Growth Streak (Years)"
+            },
+            "net_cash": {
+              "score": 4.0,
+              "value": -30346000000.0,
+              "weight": 0.15,
+              "label": "Net Cash Position"
+            }
+          },
+          "rating_100": 70.5,
+          "grade": "C"
+        },
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:aggregate:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        }
+      },
+      "GOOGL": {
+        "overall_rating": 78.3,
+        "overall_grade": "C",
+        "symbol": "GOOGL",
+        "security_id": null,
+        "aggregation_weights": {
+          "moat_strength": 0.4,
+          "dividend_safety": 0.3,
+          "resilience": 0.3
+        },
+        "moat": {
+          "overall": 6.75,
+          "rating_type": "moat_strength",
+          "symbol": "GOOGL",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "roe_consistency": {
+              "score": 10.0,
+              "value": 0.25712501308918656,
+              "weight": 0.25,
+              "label": "ROE Consistency (5Y Avg)"
+            },
+            "gross_margin": {
+              "score": 8.0,
+              "value": 0.5614462070023428,
+              "weight": 0.25,
+              "label": "Gross Margin (5Y Avg)"
+            },
+            "intangibles": {
+              "score": 4.0,
+              "value": 0.0708152695355531,
+              "weight": 0.25,
+              "label": "Intangible Assets Ratio"
+            },
+            "switching_costs": {
+              "score": 5.0,
+              "value": 5.0,
+              "weight": 0.25,
+              "label": "Switching Costs (Qualitative)"
+            }
+          },
+          "rating_100": 67.5,
+          "grade": "D"
+        },
+        "resilience": {
+          "overall": 9.0,
+          "rating_type": "resilience",
+          "symbol": "GOOGL",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "debt_equity": {
+              "score": 10.0,
+              "value": 0.07832129541903016,
+              "weight": 0.25,
+              "label": "Debt-to-Equity Ratio"
+            },
+            "interest_coverage": {
+              "score": 10.0,
+              "value": 419.36567164179104,
+              "weight": 0.25,
+              "label": "Interest Coverage"
+            },
+            "current_ratio": {
+              "score": 8.0,
+              "value": 1.8369313974102914,
+              "weight": 0.25,
+              "label": "Current Ratio"
+            },
+            "margin_stability": {
+              "score": 8.0,
+              "value": 0.037173828848092276,
+              "weight": 0.25,
+              "label": "Operating Margin Stability (Std Dev)"
+            }
+          },
+          "rating_100": 90.0,
+          "grade": "A"
+        },
+        "dividend": {
+          "overall": 8.1,
+          "rating_type": "dividend_safety",
+          "symbol": "GOOGL",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "payout_ratio": {
+              "score": 10.0,
+              "value": 0.07354321900157813,
+              "weight": 0.3,
+              "label": "Payout Ratio (5Y Avg)"
+            },
+            "fcf_coverage": {
+              "score": 10.0,
+              "value": 9.882384897460275,
+              "weight": 0.35,
+              "label": "FCF Dividend Coverage"
+            },
+            "growth_streak": {
+              "score": 5.0,
+              "value": 1,
+              "weight": 0.2,
+              "label": "Dividend Growth Streak (Years)"
+            },
+            "net_cash": {
+              "score": 4.0,
+              "value": -1995000000.0,
+              "weight": 0.15,
+              "label": "Net Cash Position"
+            }
+          },
+          "rating_100": 81.0,
+          "grade": "B"
+        },
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:aggregate:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        }
+      }
+    }
+  },
+  "financial_analyst": {
+    "ratings.dividend_safety": {
+      "AAPL": {
+        "overall": 8.7,
+        "rating_type": "dividend_safety",
+        "symbol": "AAPL",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "payout_ratio": {
+            "score": 10.0,
+            "value": 0.15132044312670426,
+            "weight": 0.3,
+            "label": "Payout Ratio (5Y Avg)"
+          },
+          "fcf_coverage": {
+            "score": 10.0,
+            "value": 6.404707865897153,
+            "weight": 0.35,
+            "label": "FCF Dividend Coverage"
+          },
+          "growth_streak": {
+            "score": 5.0,
+            "value": 4,
+            "weight": 0.2,
+            "label": "Dividend Growth Streak (Years)"
+          },
+          "net_cash": {
+            "score": 8.0,
+            "value": 27955000000.0,
+            "weight": 0.15,
+            "label": "Net Cash Position"
+          }
+        }
+      },
+      "MSFT": {
+        "overall": 7.05,
+        "rating_type": "dividend_safety",
+        "symbol": "MSFT",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "payout_ratio": {
+            "score": 10.0,
+            "value": 0.25521784459890745,
+            "weight": 0.3,
+            "label": "Payout Ratio (5Y Avg)"
+          },
+          "fcf_coverage": {
+            "score": 7.0,
+            "value": 2.9736317581596214,
+            "weight": 0.35,
+            "label": "FCF Dividend Coverage"
+          },
+          "growth_streak": {
+            "score": 5.0,
+            "value": 4,
+            "weight": 0.2,
+            "label": "Dividend Growth Streak (Years)"
+          },
+          "net_cash": {
+            "score": 4.0,
+            "value": -30346000000.0,
+            "weight": 0.15,
+            "label": "Net Cash Position"
+          }
+        }
+      },
+      "GOOGL": {
+        "overall": 8.1,
+        "rating_type": "dividend_safety",
+        "symbol": "GOOGL",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "payout_ratio": {
+            "score": 10.0,
+            "value": 0.07354321900157813,
+            "weight": 0.3,
+            "label": "Payout Ratio (5Y Avg)"
+          },
+          "fcf_coverage": {
+            "score": 10.0,
+            "value": 9.882384897460275,
+            "weight": 0.35,
+            "label": "FCF Dividend Coverage"
+          },
+          "growth_streak": {
+            "score": 5.0,
+            "value": 1,
+            "weight": 0.2,
+            "label": "Dividend Growth Streak (Years)"
+          },
+          "net_cash": {
+            "score": 4.0,
+            "value": -1995000000.0,
+            "weight": 0.15,
+            "label": "Net Cash Position"
+          }
+        }
+      }
+    },
+    "ratings.moat_strength": {
+      "AAPL": {
+        "overall": 6.75,
+        "rating_type": "moat_strength",
+        "symbol": "AAPL",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "roe_consistency": {
+            "score": 10.0,
+            "value": 1.639225400754853,
+            "weight": 0.25,
+            "label": "ROE Consistency (5Y Avg)"
+          },
+          "gross_margin": {
+            "score": 8.0,
+            "value": 0.4446632673722596,
+            "weight": 0.25,
+            "label": "Gross Margin (5Y Avg)"
+          },
+          "intangibles": {
+            "score": 4.0,
+            "value": 0.0,
+            "weight": 0.25,
+            "label": "Intangible Assets Ratio"
+          },
+          "switching_costs": {
+            "score": 5.0,
+            "value": 5.0,
+            "weight": 0.25,
+            "label": "Switching Costs (Qualitative)"
+          }
+        }
+      },
+      "MSFT": {
+        "overall": 7.75,
+        "rating_type": "moat_strength",
+        "symbol": "MSFT",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "roe_consistency": {
+            "score": 10.0,
+            "value": 0.36878357486375923,
+            "weight": 0.25,
+            "label": "ROE Consistency (5Y Avg)"
+          },
+          "gross_margin": {
+            "score": 10.0,
+            "value": 0.6896714947058827,
+            "weight": 0.25,
+            "label": "Gross Margin (5Y Avg)"
+          },
+          "intangibles": {
+            "score": 6.0,
+            "value": 0.22958370153294896,
+            "weight": 0.25,
+            "label": "Intangible Assets Ratio"
+          },
+          "switching_costs": {
+            "score": 5.0,
+            "value": 5.0,
+            "weight": 0.25,
+            "label": "Switching Costs (Qualitative)"
+          }
+        }
+      },
+      "GOOGL": {
+        "overall": 6.75,
+        "rating_type": "moat_strength",
+        "symbol": "GOOGL",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "roe_consistency": {
+            "score": 10.0,
+            "value": 0.25712501308918656,
+            "weight": 0.25,
+            "label": "ROE Consistency (5Y Avg)"
+          },
+          "gross_margin": {
+            "score": 8.0,
+            "value": 0.5614462070023428,
+            "weight": 0.25,
+            "label": "Gross Margin (5Y Avg)"
+          },
+          "intangibles": {
+            "score": 4.0,
+            "value": 0.0708152695355531,
+            "weight": 0.25,
+            "label": "Intangible Assets Ratio"
+          },
+          "switching_costs": {
+            "score": 5.0,
+            "value": 5.0,
+            "weight": 0.25,
+            "label": "Switching Costs (Qualitative)"
+          }
+        }
+      }
+    },
+    "ratings.resilience": {
+      "AAPL": {
+        "overall": 7.5,
+        "rating_type": "resilience",
+        "symbol": "AAPL",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "debt_equity": {
+            "score": 10.0,
+            "value": 0.10821477493117057,
+            "weight": 0.25,
+            "label": "Debt-to-Equity Ratio"
+          },
+          "interest_coverage": {
+            "score": 6.0,
+            "value": 5.0,
+            "weight": 0.25,
+            "label": "Interest Coverage"
+          },
+          "current_ratio": {
+            "score": 4.0,
+            "value": 0.8932929222186667,
+            "weight": 0.25,
+            "label": "Current Ratio"
+          },
+          "margin_stability": {
+            "score": 10.0,
+            "value": 0.010063888590481625,
+            "weight": 0.25,
+            "label": "Operating Margin Stability (Std Dev)"
+          }
+        }
+      },
+      "MSFT": {
+        "overall": 9.25,
+        "rating_type": "resilience",
+        "symbol": "MSFT",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "debt_equity": {
+            "score": 10.0,
+            "value": 0.17639506345366093,
+            "weight": 0.25,
+            "label": "Debt-to-Equity Ratio"
+          },
+          "interest_coverage": {
+            "score": 10.0,
+            "value": 53.89014675052411,
+            "weight": 0.25,
+            "label": "Interest Coverage"
+          },
+          "current_ratio": {
+            "score": 7.0,
+            "value": 1.3534464445042416,
+            "weight": 0.25,
+            "label": "Current Ratio"
+          },
+          "margin_stability": {
+            "score": 10.0,
+            "value": 0.01861184917790921,
+            "weight": 0.25,
+            "label": "Operating Margin Stability (Std Dev)"
+          }
+        }
+      },
+      "GOOGL": {
+        "overall": 9.0,
+        "rating_type": "resilience",
+        "symbol": "GOOGL",
+        "security_id": null,
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        },
+        "components": {
+          "debt_equity": {
+            "score": 10.0,
+            "value": 0.07832129541903016,
+            "weight": 0.25,
+            "label": "Debt-to-Equity Ratio"
+          },
+          "interest_coverage": {
+            "score": 10.0,
+            "value": 419.36567164179104,
+            "weight": 0.25,
+            "label": "Interest Coverage"
+          },
+          "current_ratio": {
+            "score": 8.0,
+            "value": 1.8369313974102914,
+            "weight": 0.25,
+            "label": "Current Ratio"
+          },
+          "margin_stability": {
+            "score": 8.0,
+            "value": 0.037173828848092276,
+            "weight": 0.25,
+            "label": "Operating Margin Stability (Std Dev)"
+          }
+        }
+      }
+    },
+    "ratings.aggregate": {
+      "AAPL": {
+        "overall_rating": 75.6,
+        "overall_grade": "C",
+        "symbol": "AAPL",
+        "security_id": null,
+        "aggregation_weights": {
+          "moat_strength": 0.4,
+          "dividend_safety": 0.3,
+          "resilience": 0.3
+        },
+        "moat": {
+          "overall": 6.75,
+          "rating_type": "moat_strength",
+          "symbol": "AAPL",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "roe_consistency": {
+              "score": 10.0,
+              "value": 1.639225400754853,
+              "weight": 0.25,
+              "label": "ROE Consistency (5Y Avg)"
+            },
+            "gross_margin": {
+              "score": 8.0,
+              "value": 0.4446632673722596,
+              "weight": 0.25,
+              "label": "Gross Margin (5Y Avg)"
+            },
+            "intangibles": {
+              "score": 4.0,
+              "value": 0.0,
+              "weight": 0.25,
+              "label": "Intangible Assets Ratio"
+            },
+            "switching_costs": {
+              "score": 5.0,
+              "value": 5.0,
+              "weight": 0.25,
+              "label": "Switching Costs (Qualitative)"
+            }
+          },
+          "rating_100": 67.5,
+          "grade": "D"
+        },
+        "resilience": {
+          "overall": 7.5,
+          "rating_type": "resilience",
+          "symbol": "AAPL",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "debt_equity": {
+              "score": 10.0,
+              "value": 0.10821477493117057,
+              "weight": 0.25,
+              "label": "Debt-to-Equity Ratio"
+            },
+            "interest_coverage": {
+              "score": 6.0,
+              "value": 5.0,
+              "weight": 0.25,
+              "label": "Interest Coverage"
+            },
+            "current_ratio": {
+              "score": 4.0,
+              "value": 0.8932929222186667,
+              "weight": 0.25,
+              "label": "Current Ratio"
+            },
+            "margin_stability": {
+              "score": 10.0,
+              "value": 0.010063888590481625,
+              "weight": 0.25,
+              "label": "Operating Margin Stability (Std Dev)"
+            }
+          },
+          "rating_100": 75.0,
+          "grade": "C"
+        },
+        "dividend": {
+          "overall": 8.7,
+          "rating_type": "dividend_safety",
+          "symbol": "AAPL",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "payout_ratio": {
+              "score": 10.0,
+              "value": 0.15132044312670426,
+              "weight": 0.3,
+              "label": "Payout Ratio (5Y Avg)"
+            },
+            "fcf_coverage": {
+              "score": 10.0,
+              "value": 6.404707865897153,
+              "weight": 0.35,
+              "label": "FCF Dividend Coverage"
+            },
+            "growth_streak": {
+              "score": 5.0,
+              "value": 4,
+              "weight": 0.2,
+              "label": "Dividend Growth Streak (Years)"
+            },
+            "net_cash": {
+              "score": 8.0,
+              "value": 27955000000.0,
+              "weight": 0.15,
+              "label": "Net Cash Position"
+            }
+          },
+          "rating_100": 87.0,
+          "grade": "B"
+        },
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:aggregate:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        }
+      },
+      "MSFT": {
+        "overall_rating": 79.9,
+        "overall_grade": "C",
+        "symbol": "MSFT",
+        "security_id": null,
+        "aggregation_weights": {
+          "moat_strength": 0.4,
+          "dividend_safety": 0.3,
+          "resilience": 0.3
+        },
+        "moat": {
+          "overall": 7.75,
+          "rating_type": "moat_strength",
+          "symbol": "MSFT",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "roe_consistency": {
+              "score": 10.0,
+              "value": 0.36878357486375923,
+              "weight": 0.25,
+              "label": "ROE Consistency (5Y Avg)"
+            },
+            "gross_margin": {
+              "score": 10.0,
+              "value": 0.6896714947058827,
+              "weight": 0.25,
+              "label": "Gross Margin (5Y Avg)"
+            },
+            "intangibles": {
+              "score": 6.0,
+              "value": 0.22958370153294896,
+              "weight": 0.25,
+              "label": "Intangible Assets Ratio"
+            },
+            "switching_costs": {
+              "score": 5.0,
+              "value": 5.0,
+              "weight": 0.25,
+              "label": "Switching Costs (Qualitative)"
+            }
+          },
+          "rating_100": 77.5,
+          "grade": "C"
+        },
+        "resilience": {
+          "overall": 9.25,
+          "rating_type": "resilience",
+          "symbol": "MSFT",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "debt_equity": {
+              "score": 10.0,
+              "value": 0.17639506345366093,
+              "weight": 0.25,
+              "label": "Debt-to-Equity Ratio"
+            },
+            "interest_coverage": {
+              "score": 10.0,
+              "value": 53.89014675052411,
+              "weight": 0.25,
+              "label": "Interest Coverage"
+            },
+            "current_ratio": {
+              "score": 7.0,
+              "value": 1.3534464445042416,
+              "weight": 0.25,
+              "label": "Current Ratio"
+            },
+            "margin_stability": {
+              "score": 10.0,
+              "value": 0.01861184917790921,
+              "weight": 0.25,
+              "label": "Operating Margin Stability (Std Dev)"
+            }
+          },
+          "rating_100": 92.5,
+          "grade": "A"
+        },
+        "dividend": {
+          "overall": 7.05,
+          "rating_type": "dividend_safety",
+          "symbol": "MSFT",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "payout_ratio": {
+              "score": 10.0,
+              "value": 0.25521784459890745,
+              "weight": 0.3,
+              "label": "Payout Ratio (5Y Avg)"
+            },
+            "fcf_coverage": {
+              "score": 7.0,
+              "value": 2.9736317581596214,
+              "weight": 0.35,
+              "label": "FCF Dividend Coverage"
+            },
+            "growth_streak": {
+              "score": 5.0,
+              "value": 4,
+              "weight": 0.2,
+              "label": "Dividend Growth Streak (Years)"
+            },
+            "net_cash": {
+              "score": 4.0,
+              "value": -30346000000.0,
+              "weight": 0.15,
+              "label": "Net Cash Position"
+            }
+          },
+          "rating_100": 70.5,
+          "grade": "C"
+        },
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:aggregate:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        }
+      },
+      "GOOGL": {
+        "overall_rating": 78.3,
+        "overall_grade": "C",
+        "symbol": "GOOGL",
+        "security_id": null,
+        "aggregation_weights": {
+          "moat_strength": 0.4,
+          "dividend_safety": 0.3,
+          "resilience": 0.3
+        },
+        "moat": {
+          "overall": 6.75,
+          "rating_type": "moat_strength",
+          "symbol": "GOOGL",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "roe_consistency": {
+              "score": 10.0,
+              "value": 0.25712501308918656,
+              "weight": 0.25,
+              "label": "ROE Consistency (5Y Avg)"
+            },
+            "gross_margin": {
+              "score": 8.0,
+              "value": 0.5614462070023428,
+              "weight": 0.25,
+              "label": "Gross Margin (5Y Avg)"
+            },
+            "intangibles": {
+              "score": 4.0,
+              "value": 0.0708152695355531,
+              "weight": 0.25,
+              "label": "Intangible Assets Ratio"
+            },
+            "switching_costs": {
+              "score": 5.0,
+              "value": 5.0,
+              "weight": 0.25,
+              "label": "Switching Costs (Qualitative)"
+            }
+          },
+          "rating_100": 67.5,
+          "grade": "D"
+        },
+        "resilience": {
+          "overall": 9.0,
+          "rating_type": "resilience",
+          "symbol": "GOOGL",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "debt_equity": {
+              "score": 10.0,
+              "value": 0.07832129541903016,
+              "weight": 0.25,
+              "label": "Debt-to-Equity Ratio"
+            },
+            "interest_coverage": {
+              "score": 10.0,
+              "value": 419.36567164179104,
+              "weight": 0.25,
+              "label": "Interest Coverage"
+            },
+            "current_ratio": {
+              "score": 8.0,
+              "value": 1.8369313974102914,
+              "weight": 0.25,
+              "label": "Current Ratio"
+            },
+            "margin_stability": {
+              "score": 8.0,
+              "value": 0.037173828848092276,
+              "weight": 0.25,
+              "label": "Operating Margin Stability (Std Dev)"
+            }
+          },
+          "rating_100": 90.0,
+          "grade": "A"
+        },
+        "dividend": {
+          "overall": 8.1,
+          "rating_type": "dividend_safety",
+          "symbol": "GOOGL",
+          "security_id": null,
+          "_metadata": {
+            "weights_source": "fallback",
+            "method_version": "v1"
+          },
+          "components": {
+            "payout_ratio": {
+              "score": 10.0,
+              "value": 0.07354321900157813,
+              "weight": 0.3,
+              "label": "Payout Ratio (5Y Avg)"
+            },
+            "fcf_coverage": {
+              "score": 10.0,
+              "value": 9.882384897460275,
+              "weight": 0.35,
+              "label": "FCF Dividend Coverage"
+            },
+            "growth_streak": {
+              "score": 5.0,
+              "value": 1,
+              "weight": 0.2,
+              "label": "Dividend Growth Streak (Years)"
+            },
+            "net_cash": {
+              "score": 4.0,
+              "value": -1995000000.0,
+              "weight": 0.15,
+              "label": "Net Cash Position"
+            }
+          },
+          "rating_100": 81.0,
+          "grade": "B"
+        },
+        "_metadata": {
+          "agent_name": "ratings",
+          "source": "ratings_service:aggregate:v1:2025-11-03",
+          "asof": "2025-11-03",
+          "ttl": 86400,
+          "confidence": null
+        }
+      }
+    }
+  },
+  "comparison": {
+    "ratings.dividend_safety": {
+      "AAPL": {
+        "capability": "ratings.dividend_safety",
+        "match": true,
+        "differences": []
+      },
+      "MSFT": {
+        "capability": "ratings.dividend_safety",
+        "match": true,
+        "differences": []
+      },
+      "GOOGL": {
+        "capability": "ratings.dividend_safety",
+        "match": true,
+        "differences": []
+      }
+    },
+    "ratings.moat_strength": {
+      "AAPL": {
+        "capability": "ratings.moat_strength",
+        "match": true,
+        "differences": []
+      },
+      "MSFT": {
+        "capability": "ratings.moat_strength",
+        "match": true,
+        "differences": []
+      },
+      "GOOGL": {
+        "capability": "ratings.moat_strength",
+        "match": true,
+        "differences": []
+      }
+    },
+    "ratings.resilience": {
+      "AAPL": {
+        "capability": "ratings.resilience",
+        "match": true,
+        "differences": []
+      },
+      "MSFT": {
+        "capability": "ratings.resilience",
+        "match": true,
+        "differences": []
+      },
+      "GOOGL": {
+        "capability": "ratings.resilience",
+        "match": true,
+        "differences": []
+      }
+    },
+    "ratings.aggregate": {
+      "AAPL": {
+        "capability": "ratings.aggregate",
+        "match": true,
+        "differences": []
+      },
+      "MSFT": {
+        "capability": "ratings.aggregate",
+        "match": true,
+        "differences": []
+      },
+      "GOOGL": {
+        "capability": "ratings.aggregate",
+        "match": true,
+        "differences": []
+      }
+    }
+  }
+}

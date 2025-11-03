@@ -10,7 +10,7 @@ from decimal import Decimal
 from enum import Enum
 
 # Core imports
-from backend.app.services.scenarios import (
+from app.services.scenarios import (
     ScenarioService,
     ShockType,
     Shock,
@@ -19,7 +19,7 @@ from backend.app.services.scenarios import (
     HedgeRecommendation,
     SCENARIO_LIBRARY
 )
-from backend.app.services.macro import MacroService, Regime, RegimeClassification
+from app.services.macro import MacroService, Regime, RegimeClassification
 
 logger = logging.getLogger(__name__)
 
