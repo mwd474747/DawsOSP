@@ -352,6 +352,19 @@
             } catch (error) {
                 return apiClient.handleApiCallError('Health check', error);
             }
+        },
+        
+        // AI Chat endpoint
+        aiChat: async (message, context = {}) => {
+            try {
+                const response = await axios.post(`${API_BASE}/api/ai/chat`, {
+                    message: message,
+                    context: context
+                });
+                return response.data;
+            } catch (error) {
+                return apiClient.handleApiCallError('AI chat', error);
+            }
         }
     };
     

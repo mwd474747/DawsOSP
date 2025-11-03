@@ -6738,6 +6738,7 @@
                         { id: 'optimizer', label: 'Optimizer', path: '/optimizer' },
                         { id: 'ratings', label: 'Ratings', path: '/ratings' },
                         { id: 'ai-insights', label: 'AI Insights', path: '/ai-insights' },
+                        { id: 'ai-assistant', label: 'AI Assistant', path: '/ai-assistant' },
                         { id: 'market-data', label: 'Market Data', path: '/market-data' }
                     ]
                 },
@@ -8256,6 +8257,8 @@
                             return e(RatingsPage);
                         case 'ai-insights':
                             return e(AIInsightsPage);
+                        case 'ai-assistant':
+                            return e(AIAssistantPage);
                         case 'alerts':
                             return e(AlertsPage);
                         case 'reports':
@@ -10079,6 +10082,203 @@
                                         e('span', { className: 'spinner-small' }),
                                         ' Sending...'
                                     ) : 'Send Message'
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+            
+            function AIAssistantPage() {
+                const [messages, setMessages] = useState([]);
+                const [inputValue, setInputValue] = useState('');
+                const [loading, setLoading] = useState(false);
+                const [error, setError] = useState(null);
+                const { portfolioId } = useUserContext();
+                const messagesEndRef = React.useRef(null);
+                
+                // Auto-scroll to bottom when new messages arrive
+                useEffect(() => {
+                    if (messagesEndRef.current) {
+                        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }, [messages]);
+                
+                // Show welcome message on first load
+                useEffect(() => {
+                    const welcomeMessage = {
+                        role: 'assistant',
+                        content: 'Hello! I\'m your AI Assistant. I can help you with:\n\n• Portfolio analysis and optimization\n• Market insights and trends\n• Risk assessment and management\n• Financial questions and advice\n• Trading strategies and recommendations\n\nHow can I assist you today?',
+                        timestamp: new Date().toISOString()
+                    };
+                    setMessages([welcomeMessage]);
+                }, []);
+                
+                const sendMessage = async () => {
+                    if (!inputValue.trim() || loading) return;
+                    
+                    const userMessage = { 
+                        role: 'user', 
+                        content: inputValue,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    setMessages(prev => [...prev, userMessage]);
+                    setInputValue('');
+                    setLoading(true);
+                    setError(null);
+                    
+                    try {
+                        // Use the apiClient.aiChat method with correct format
+                        const response = await apiClient.aiChat(inputValue, {
+                            portfolioId: portfolioId,
+                            source: 'assistant'
+                        });
+                        
+                        const aiResponse = { 
+                            role: 'assistant', 
+                            content: response.data?.response || response.response || 'I understand your question. Let me help you with that.',
+                            timestamp: new Date().toISOString()
+                        };
+                        setMessages(prev => [...prev, aiResponse]);
+                    } catch (error) {
+                        console.error('AI Assistant error:', error);
+                        setError('Unable to get response. Please try again.');
+                        
+                        // Provide a helpful fallback response
+                        const errorResponse = { 
+                            role: 'assistant', 
+                            content: 'I apologize, but I\'m having trouble connecting right now. Please check your connection and try again. In the meantime, I can still provide general guidance based on portfolio management best practices.',
+                            timestamp: new Date().toISOString(),
+                            isError: true
+                        };
+                        setMessages(prev => [...prev, errorResponse]);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                
+                const clearChat = () => {
+                    const welcomeMessage = {
+                        role: 'assistant',
+                        content: 'Chat cleared. How can I help you today?',
+                        timestamp: new Date().toISOString()
+                    };
+                    setMessages([welcomeMessage]);
+                    setError(null);
+                };
+                
+                const formatMessage = (content) => {
+                    // Split content by newlines and format
+                    return content.split('\n').map((line, idx) => {
+                        if (line.startsWith('•')) {
+                            return e('li', { key: idx }, line.substring(1).trim());
+                        }
+                        if (line.trim() === '') {
+                            return e('br', { key: idx });
+                        }
+                        return e('span', { key: idx }, [line, idx < content.split('\n').length - 1 ? e('br') : null]);
+                    });
+                };
+                
+                const handleKeyPress = (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                };
+                
+                return e('div', { className: 'page-container ai-assistant-page' },
+                    e('div', { className: 'page-header' },
+                        e('h1', null, 'AI Assistant'),
+                        e('p', { className: 'page-subtitle' }, 
+                            'Get personalized insights and recommendations powered by advanced AI'
+                        )
+                    ),
+                    
+                    // Error notification
+                    error && e('div', { className: 'alert alert-error mb-4' },
+                        e('div', { className: 'alert-content' },
+                            e('strong', null, 'Connection Issue'),
+                            e('p', null, error)
+                        )
+                    ),
+                    
+                    // Chat container
+                    e('div', { className: 'chat-container' },
+                        // Chat header with actions
+                        e('div', { className: 'chat-header' },
+                            e('div', { className: 'chat-title' },
+                                e('span', { className: 'status-dot online' }),
+                                'AI Assistant - Online'
+                            ),
+                            e('button', {
+                                className: 'btn btn-secondary btn-sm',
+                                onClick: clearChat
+                            }, 'Clear Chat')
+                        ),
+                        
+                        // Messages area
+                        e('div', { className: 'chat-messages' },
+                            messages.map((msg, index) =>
+                                e('div', { 
+                                    key: index, 
+                                    className: `chat-message ${msg.role} ${msg.isError ? 'error' : ''}` 
+                                },
+                                    e('div', { className: 'message-header' },
+                                        e('span', { className: 'message-role' }, 
+                                            msg.role === 'user' ? 'You' : 'AI Assistant'),
+                                        msg.timestamp && e('span', { className: 'message-time' }, 
+                                            new Date(msg.timestamp).toLocaleTimeString([], { 
+                                                hour: '2-digit', 
+                                                minute: '2-digit' 
+                                            })
+                                        )
+                                    ),
+                                    e('div', { className: 'message-content' }, 
+                                        msg.content.startsWith('•') 
+                                            ? e('ul', { className: 'message-list' }, formatMessage(msg.content))
+                                            : formatMessage(msg.content)
+                                    )
+                                )
+                            ),
+                            loading && e('div', { className: 'chat-message assistant typing' },
+                                e('div', { className: 'typing-dots' },
+                                    e('span', { className: 'dot' }),
+                                    e('span', { className: 'dot' }),
+                                    e('span', { className: 'dot' })
+                                )
+                            ),
+                            e('div', { ref: messagesEndRef })
+                        ),
+                        
+                        // Input area
+                        e('div', { className: 'chat-input-container' },
+                            e('textarea', {
+                                className: 'chat-input',
+                                value: inputValue,
+                                onChange: (e) => setInputValue(e.target.value),
+                                onKeyPress: handleKeyPress,
+                                placeholder: 'Type your question here... (Press Enter to send, Shift+Enter for new line)',
+                                disabled: loading,
+                                rows: 3
+                            }),
+                            e('div', { className: 'chat-actions' },
+                                e('div', { className: 'chat-info' },
+                                    e('span', { className: 'input-hint' }, 
+                                        loading ? 'AI is thinking...' : 'Press Enter to send')
+                                ),
+                                e('button', { 
+                                    className: `btn ${loading ? 'btn-loading' : 'btn-primary'}`,
+                                    onClick: sendMessage,
+                                    disabled: loading || !inputValue.trim()
+                                }, 
+                                    loading ? e('span', null,
+                                        e('span', { className: 'spinner-small' }),
+                                        ' Processing...'
+                                    ) : e('span', null,
+                                        '✨ Send Message'
+                                    )
                                 )
                             )
                         )
