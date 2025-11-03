@@ -141,7 +141,28 @@ class TradeExecutionService:
 
         # Create transaction record
         trade_id = uuid4()
-        security_id = uuid4()  # TODO: Lookup from securities table
+        
+        # Lookup security from securities table
+        security_row = await self.conn.fetchrow(
+            "SELECT id FROM securities WHERE symbol = $1",
+            symbol
+        )
+        
+        if security_row:
+            security_id = security_row['id']
+            logger.info(f"Found existing security for {symbol}: {security_id}")
+        else:
+            # Create new security if it doesn't exist
+            security_id = uuid4()
+            await self.conn.execute(
+                """
+                INSERT INTO securities (id, symbol, name, security_type, currency, created_at)
+                VALUES ($1, $2, $3, 'EQUITY', $4, NOW())
+                ON CONFLICT (symbol) DO UPDATE SET updated_at = NOW()
+                """,
+                security_id, symbol, symbol, currency  # Use symbol as name if not provided
+            )
+            logger.info(f"Created new security for {symbol}: {security_id}")
 
         async with self.conn.transaction():
             await self.conn.execute(
