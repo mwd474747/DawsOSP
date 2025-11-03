@@ -23,7 +23,12 @@ from jose import JWTError, jwt
 logger = logging.getLogger(__name__)
 
 # JWT Configuration - Exported for compatibility with verify_jwt_token
-JWT_SECRET = os.environ.get("AUTH_JWT_SECRET", "dawsos-secret-key-2024")  # Use env var or fallback
+JWT_SECRET = os.environ.get("AUTH_JWT_SECRET")
+if not JWT_SECRET:
+    raise ValueError(
+        "AUTH_JWT_SECRET environment variable is required for security. "
+        "Please set it in Replit Secrets or your .env file."
+    )
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
