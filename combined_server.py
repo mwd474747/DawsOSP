@@ -3933,16 +3933,12 @@ async def get_settings(user: dict = Depends(require_auth)):
         )
 
 @app.post("/api/settings", response_model=SuccessResponse)
-async def update_settings(request: Request):
-    """Update user settings"""
+async def update_settings(request: Request, user: dict = Depends(require_auth)):
+    """
+    Update user settings
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
-
         body = await request.json()
 
         # Here you would normally validate and save the settings
