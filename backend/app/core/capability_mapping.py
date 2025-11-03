@@ -122,14 +122,14 @@ CAPABILITY_CONSOLIDATION_MAP = {
     # AlertsAgent → MacroHound
     # --------------------------------------------------------------------------
     "alerts.suggest_presets": {
-        "target": "macro_hound.suggest_alerts",
+        "target": "macro_hound.suggest_alert_presets",
         "target_agent": "macro_hound",
         "priority": 2,
         "risk_level": "medium",
         "dependencies": ["macro.detect_trend_shifts"],
     },
     "alerts.create_if_threshold": {
-        "target": "macro_hound.create_alert",
+        "target": "macro_hound.create_alert_if_threshold",
         "target_agent": "macro_hound",
         "priority": 2,
         "risk_level": "medium",
