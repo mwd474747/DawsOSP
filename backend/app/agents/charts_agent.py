@@ -3,16 +3,21 @@ DawsOS Charts Agent
 
 Purpose: Chart formatting and visualization specifications
 Updated: 2025-11-02
-Capabilities:
-    - charts.macro_overview: Format macro data for visualization
-    - charts.scenario_deltas: Format scenario delta comparisons
+
+⚠️ LEGACY AGENT - Capabilities consolidated into FinancialAnalyst (Phase 3 Week 3, November 3, 2025)
+This agent will be removed after Week 6 cleanup once all rollouts are stable.
+Current capabilities are routed via feature flags and capability mapping to FinancialAnalyst.
+
+Capabilities (now in FinancialAnalyst):
+    - financial_analyst.macro_overview_charts: Format macro data for visualization
+    - financial_analyst.scenario_charts: Format scenario delta comparisons
 
 Used by Patterns:
     - portfolio_macro_overview.json
     - portfolio_scenario_analysis.json
 
 Architecture:
-    Agent → Pure formatting logic (no external dependencies)
+    Pattern → Agent Runtime → Capability Routing → FinancialAnalyst → Pure formatting logic (no external dependencies)
 """
 
 import logging

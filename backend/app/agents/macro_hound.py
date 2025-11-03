@@ -566,130 +566,6 @@ class MacroHound(BaseAgent):
 
         return result
 
-    async def macro_get_regime_history(
-        self,
-        ctx: RequestCtx,
-        state: Dict[str, Any],
-        lookback_weeks: int = 4,
-    ) -> Dict[str, Any]:
-        """
-        Get regime probability history over time.
-
-        Args:
-            ctx: Request context
-            state: Execution state
-            lookback_weeks: Number of weeks to look back
-
-        Returns:
-            Dict with regime probability time series
-        """
-        logger.info(f"macro.get_regime_history: lookback_weeks={lookback_weeks}")
-
-        # Return stub data for now - in production would query database
-        import datetime
-        dates = []
-        early_expansion_probs = []
-        mid_expansion_probs = []
-        late_expansion_probs = []
-        early_contraction_probs = []
-        deep_contraction_probs = []
-
-        base_date = ctx.asof_date if ctx.asof_date else date.today()
-
-        for i in range(lookback_weeks * 7):
-            current_date = base_date - datetime.timedelta(days=i)
-            dates.append(current_date.isoformat())
-
-            # Generate some reasonable probabilities
-            if i < 7:
-                # Recent: mid expansion
-                early_expansion_probs.append(0.1)
-                mid_expansion_probs.append(0.6)
-                late_expansion_probs.append(0.2)
-                early_contraction_probs.append(0.05)
-                deep_contraction_probs.append(0.05)
-            elif i < 14:
-                # 1-2 weeks ago: more early expansion
-                early_expansion_probs.append(0.3)
-                mid_expansion_probs.append(0.4)
-                late_expansion_probs.append(0.2)
-                early_contraction_probs.append(0.05)
-                deep_contraction_probs.append(0.05)
-            else:
-                # Older: mixed
-                early_expansion_probs.append(0.2)
-                mid_expansion_probs.append(0.3)
-                late_expansion_probs.append(0.3)
-                early_contraction_probs.append(0.1)
-                deep_contraction_probs.append(0.1)
-
-        return {
-            "dates": dates,
-            "early_expansion_probs": early_expansion_probs,
-            "mid_expansion_probs": mid_expansion_probs,
-            "late_expansion_probs": late_expansion_probs,
-            "early_contraction_probs": early_contraction_probs,
-            "deep_contraction_probs": deep_contraction_probs,
-        }
-
-    async def macro_detect_trend_shifts(
-        self,
-        ctx: RequestCtx,
-        state: Dict[str, Any],
-        regime_history: Optional[Dict[str, Any]] = None,
-        factor_history: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        """
-        Detect trend shifts in regime and factor exposures.
-
-        Args:
-            ctx: Request context
-            state: Execution state
-            regime_history: Regime probability history
-            factor_history: Factor exposure history
-
-        Returns:
-            Dict with trend analysis
-        """
-        logger.info("macro.detect_trend_shifts")
-
-        # Get from state if not provided
-        if not regime_history:
-            regime_history = state.get("regime_history", state.get("state", {}).get("regime_history", {}))
-        if not factor_history:
-            factor_history = state.get("factor_history", state.get("state", {}).get("factor_history", {}))
-
-        # Analyze for shifts (stub implementation)
-        result = {
-            "regime_shift_detected": False,
-            "old_regime": "MID_EXPANSION",
-            "new_regime": "MID_EXPANSION",
-            "confidence": 0.65,
-            "dar_increasing": False,
-            "dar_change_pct": 0.0,
-            "current_dar": -15.5,
-            "factor_shifts": [],
-        }
-
-        # Check if there's a regime shift in the history
-        if regime_history:
-            # Simple logic: check if dominant regime changed
-            mid_exp_probs = regime_history.get("mid_expansion_probs", [])
-            late_exp_probs = regime_history.get("late_expansion_probs", [])
-
-            if len(mid_exp_probs) > 7 and len(late_exp_probs) > 7:
-                # Check if late expansion is becoming dominant
-                recent_late = sum(late_exp_probs[:7]) / 7
-                older_late = sum(late_exp_probs[7:14]) / 7 if len(late_exp_probs) > 14 else recent_late
-
-                if recent_late > 0.4 and recent_late > older_late * 1.5:
-                    result["regime_shift_detected"] = True
-                    result["old_regime"] = "MID_EXPANSION"
-                    result["new_regime"] = "LATE_EXPANSION"
-                    result["confidence"] = min(recent_late, 0.8)
-
-        return result
-
     async def scenarios_deleveraging_money_printing(
         self,
         ctx: RequestCtx,
@@ -950,30 +826,61 @@ class MacroHound(BaseAgent):
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
+        regime_history: Optional[Dict[str, Any]] = None,
+        factor_history: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Detect recent regime transitions/trend shifts.
 
         Capability: macro.detect_trend_shifts
+        
+        If regime_history and factor_history are provided (from pattern steps),
+        uses those. Otherwise, fetches from MacroService.
         """
         logger.info("macro.detect_trend_shifts")
 
-        # Get recent regime history and detect transitions
-        macro_service = MacroService()
-        history = await macro_service.get_regime_history(90)  # Last 90 days
+        # Use provided data if available, otherwise fetch from service
+        if regime_history and factor_history:
+            # Use data from pattern steps (preferred)
+            logger.debug("Using regime_history and factor_history from pattern steps")
+            
+            # Analyze for shifts using provided data
+            shifts = []
+            if regime_history:
+                # Extract history from provided data structure
+                history_data = regime_history.get("history", regime_history) if isinstance(regime_history, dict) else []
+                
+                prev_regime = None
+                if isinstance(history_data, list):
+                    for entry in history_data:
+                        if isinstance(entry, dict) and "regime" in entry:
+                            current_regime = entry["regime"]
+                            if prev_regime and current_regime != prev_regime:
+                                shifts.append({
+                                    "date": entry.get("date", ""),
+                                    "from_regime": prev_regime,
+                                    "to_regime": current_regime,
+                                    "confidence": entry.get("confidence", 0.0)
+                                })
+                            prev_regime = current_regime
+        else:
+            # Fetch from MacroService (fallback)
+            logger.debug("Fetching regime history from MacroService")
+            macro_service = MacroService()
+            history = await macro_service.get_regime_history(90)  # Last 90 days
 
-        # Find regime changes
-        shifts = []
-        prev_regime = None
-        for entry in history:
-            if prev_regime and entry["regime"] != prev_regime:
-                shifts.append({
-                    "date": entry["date"],
-                    "from_regime": prev_regime,
-                    "to_regime": entry["regime"],
-                    "confidence": entry.get("confidence", 0.0)
-                })
-            prev_regime = entry["regime"]
+            # Find regime changes
+            shifts = []
+            prev_regime = None
+            for entry in history:
+                if prev_regime and entry["regime"] != prev_regime:
+                    shifts.append({
+                        "date": entry["date"],
+                        "from_regime": prev_regime,
+                        "to_regime": entry["regime"],
+                        "confidence": entry.get("confidence", 0.0)
+                    })
+                prev_regime = entry["regime"]
 
         metadata = self._create_metadata(
             source=f"macro_service:trend_shifts",

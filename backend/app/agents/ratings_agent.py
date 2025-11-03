@@ -3,18 +3,23 @@ DawsOS Ratings Agent
 
 Purpose: Buffett-style quality ratings (dividend safety, moat strength, resilience)
 Updated: 2025-11-02 (Agent Wiring)
-Capabilities:
-    - ratings.dividend_safety: Calculate dividend safety rating (0-10)
-    - ratings.moat_strength: Calculate economic moat strength (0-10)
-    - ratings.resilience: Calculate balance sheet resilience (0-10)
-    - ratings.aggregate: Aggregate all ratings into overall quality score
+
+⚠️ LEGACY AGENT - Capabilities consolidated into FinancialAnalyst (Phase 3 Week 2, November 3, 2025)
+This agent will be removed after Week 6 cleanup once all rollouts are stable.
+Current capabilities are routed via feature flags and capability mapping to FinancialAnalyst.
+
+Capabilities (now in FinancialAnalyst):
+    - financial_analyst.dividend_safety: Calculate dividend safety rating (0-10)
+    - financial_analyst.moat_strength: Calculate economic moat strength (0-10)
+    - financial_analyst.resilience: Calculate balance sheet resilience (0-10)
+    - financial_analyst.aggregate_ratings: Aggregate all ratings into overall quality score
 
 Architecture:
-    Pattern → Agent → RatingsService → rating_rubrics table → Database
+    Pattern → Agent Runtime → Capability Routing → FinancialAnalyst → RatingsService → rating_rubrics table → Database
 
 Usage:
     agent = RatingsAgent("ratings", services)
-    runtime.register_agent(agent)
+    runtime.register_agent(agent)  # Dual registration with FinancialAnalyst
 
 Integration:
     - Consumes fundamentals from Data Harvester (provider.fetch_fundamentals)

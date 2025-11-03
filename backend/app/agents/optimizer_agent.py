@@ -3,18 +3,23 @@ DawsOS Optimizer Agent
 
 Purpose: Portfolio optimization and rebalancing with Riskfolio-Lib
 Updated: 2025-11-02 (Agent Wiring)
-Capabilities:
-    - optimizer.propose_trades: Generate rebalance trades based on policy constraints
-    - optimizer.analyze_impact: Analyze impact of proposed trades on portfolio metrics
-    - optimizer.suggest_hedges: Recommend hedges for scenario stress tests
-    - optimizer.suggest_deleveraging_hedges: Regime-specific deleveraging recommendations
+
+⚠️ LEGACY AGENT - Capabilities consolidated into FinancialAnalyst (Phase 3 Week 1, November 3, 2025)
+This agent will be removed after Week 6 cleanup once all rollouts are stable.
+Current capabilities are routed via feature flags and capability mapping to FinancialAnalyst.
+
+Capabilities (now in FinancialAnalyst):
+    - financial_analyst.propose_trades: Generate rebalance trades based on policy constraints
+    - financial_analyst.analyze_impact: Analyze impact of proposed trades on portfolio metrics
+    - financial_analyst.suggest_hedges: Recommend hedges for scenario stress tests
+    - financial_analyst.suggest_deleveraging_hedges: Regime-specific deleveraging recommendations
 
 Architecture:
-    Pattern → Agent → OptimizerService → Riskfolio-Lib → Database
+    Pattern → Agent Runtime → Capability Routing → FinancialAnalyst → OptimizerService → Riskfolio-Lib → Database
 
 Usage:
     agent = OptimizerAgent("optimizer", services)
-    runtime.register_agent(agent)
+    runtime.register_agent(agent)  # Dual registration with FinancialAnalyst
 
 Integration:
     - Consumes positions from Financial Analyst (ledger.positions)
