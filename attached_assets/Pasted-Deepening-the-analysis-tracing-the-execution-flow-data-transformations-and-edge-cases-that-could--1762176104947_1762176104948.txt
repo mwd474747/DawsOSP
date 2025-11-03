@@ -1,0 +1,75 @@
+Deepening the analysis: tracing the execution flow, data transformations, and edge cases that could prevent chart rendering.
+
+
+[35 tools called]
+
+Tracing the execution flow in detail to identify issues.
+
+
+[6 tools called]
+
+Created `CHART_RENDERING_DEEP_ANALYSIS.md` with full execution flow analysis.
+
+## Critical findings
+
+### Root cause: nested storage pattern
+
+The pattern orchestrator stores backend responses using the step's `"as"` key, creating nested structures when the backend returns an object with the same key name:
+
+1. Backend returns: `{historical_nav: [...], lookback_days: 30, ...}`
+2. Pattern stores as: `state["historical_nav"] = {historical_nav: [...], ...}`
+3. Creates nesting: `historical_nav.historical_nav`
+4. UI extracts via `getDataByPath(data, 'historical_nav')` → Gets entire object
+5. Chart components expect array directly or `data.data` → Mismatch
+
+---
+
+## Subtle issues that agents often miss
+
+### Issue A: Metadata preservation vs. data extraction
+
+Backend agents return structured responses with metadata, which is good for debugging but creates nested structures that the UI doesn't handle.
+
+### Issue B: SuccessResponse wrapper chain
+
+The response goes through multiple wrappers:
+```
+Orchestrator → API Endpoint → API Client → PatternRenderer
+```
+Each layer adds/removes a `data` wrapper, making it hard to track the final structure.
+
+### Issue C: Chart component assumptions
+
+Chart components make hardcoded assumptions about data format without checking for nested structures:
+- LineChartPanel expects `data.data` but receives `data.historical_nav`
+- PieChartPanel expects flat object but receives nested object
+
+### Issue D: Silent failures
+
+Chart components return `null` when data is wrong but don't show error messages, so failures appear silent to users.
+
+---
+
+## Complete data flow trace
+
+The document includes a step-by-step trace showing:
+1. Backend agent returns structured response
+2. Pattern orchestrator stores it using `"as"` key (creates nesting)
+3. Outputs extraction preserves nesting
+4. API endpoint wraps in `SuccessResponse`
+5. Frontend API client unwraps `response.data`
+6. PatternRenderer extracts `result.data`
+7. PanelRenderer extracts via `getDataByPath`
+8. Chart components receive nested structure but expect flat structure
+
+---
+
+## Verification checklist
+
+Includes debugging steps to:
+1. Inspect network responses
+2. Check browser console
+3. Verify `getDataByPath` results
+4. Confirm what chart components receive
+
+This analysis identifies the root cause and provides verification steps without changing code.

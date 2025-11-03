@@ -1,0 +1,83 @@
+Analyzing systems for over-engineering and unnecessary complexity, without changing code.
+
+
+[11 tools called]
+
+Created `COMPLEXITY_REDUCTION_ANALYSIS.md` analyzing over-engineering and simplification opportunities.
+
+## Over-engineering issues
+
+### Issue #1: Nested storage pattern (root cause)
+- Problem: Backend returns `{historical_nav: [...]}`, orchestrator stores it as `state["historical_nav"] = {historical_nav: [...]}`, creating `historical_nav.historical_nav` nesting
+- Why it’s over-engineered: The orchestrator doesn’t need to preserve the metadata wrapper; the UI only needs the array
+- Simplification: Unwrap single-key objects in the orchestrator before storing
+- Impact: ⭐⭐⭐⭐⭐ — Fixes chart rendering and simplifies the stack
+
+### Issue #2: Dual state storage (unnecessary)
+- Problem: Results are stored in both `state[result_key]` and `state["state"][result_key]`
+- Why it’s over-engineered: Only one reference style is used (`{{state.foo}}`); duplicate storage adds overhead
+- Simplification: Store only in top-level state
+- Impact: ⭐⭐⭐ — Removes duplication and clarifies structure
+
+### Issue #3: Multiple response wrappers (unnecessary)
+- Problem: 3 wrapper layers add/remove `data` (Orchestrator → API Endpoint → Frontend)
+- Why it’s over-engineered: Creates `data.data.historical_nav` confusion
+- Simplification: Reduce to 1 wrapper layer
+- Impact: ⭐⭐⭐ — Simplifies frontend extraction
+
+---
+
+## Recommended simplification
+
+### Phase 1: Fix root cause (high priority)
+
+Unwrap single-key objects in the pattern orchestrator:
+
+```python
+# In pattern_orchestrator.py:645-653
+# BEFORE:
+state[result_key] = result  # Stores {historical_nav: [...]} as-is
+
+# AFTER:
+# Unwrap single-key objects to avoid nesting
+if isinstance(result, dict) and len(result) == 1:
+    single_key = list(result.keys())[0]
+    if single_key == result_key:
+        # Unwrap: {historical_nav: [...]} → [...]
+        state[result_key] = result[single_key]
+    else:
+        state[result_key] = result
+else:
+    state[result_key] = result
+```
+
+Benefits:
+- Fixes nested storage (`historical_nav.historical_nav`)
+- UI receives the expected format (`[...]` array)
+- Chart components work without changes
+- Resolves chart rendering issue
+
+---
+
+### Phase 2: Remove unnecessary layers (medium priority)
+
+1. Remove dual state storage — delete `state["state"][result_key] = result`
+2. Simplify response wrappers — reduce from 3 to 1 layer
+
+---
+
+## Complexity reduction impact
+
+| Issue | Current | After Fix | Reduction | Priority |
+|-------|---------|-----------|-----------|----------|
+| Nested Storage | High | Low | ⭐⭐⭐⭐⭐ | HIGH |
+| Dual Storage | Medium | Low | ⭐⭐⭐ | MEDIUM |
+| Response Wrappers | Medium | Low | ⭐⭐⭐ | MEDIUM |
+
+---
+
+## Conclusion
+
+The nested storage pattern (Issue #1) is the primary source of complexity. Unwrapping single-key objects in the orchestrator fixes the root cause and simplifies the stack without breaking functionality.
+
+The document includes a detailed simplification plan with code examples, impact analysis, and a verification checklist—all without changing code.
