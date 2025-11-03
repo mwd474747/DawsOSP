@@ -1,0 +1,22 @@
+{
+  "test_date": "2025-11-03",
+  "results": {
+    "macro_overview": {
+      "passed": true,
+      "differences": []
+    },
+    "scenario_charts": {
+      "passed": true,
+      "differences": []
+    },
+    "edge_cases": {
+      "passed": true,
+      "differences": []
+    },
+    "helpers": {
+      "passed": true,
+      "differences": []
+    }
+  },
+  "all_passed": true
+}
