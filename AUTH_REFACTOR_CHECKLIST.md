@@ -8,13 +8,13 @@
 
 ---
 
-## SPRINT 1: Foundation (30 min) 🚀
-- [ ] Fix `/api/patterns/execute` hardcoded user ID
-- [ ] Create `backend/app/auth/dependencies.py`
-- [ ] Move auth functions to new module
-- [ ] Add AUTH_STATUS markers to endpoints
-- [ ] Test: Server starts and patterns execute
-- [ ] Commit: `git commit -m "Sprint 1: Auth foundation"`
+## SPRINT 1: Foundation (30 min) 🚀 ✅ COMPLETE
+- [x] Fix `/api/patterns/execute` hardcoded user ID
+- [x] Create `backend/app/auth/dependencies.py`
+- [x] Move auth functions to new module
+- [x] Add AUTH_STATUS markers to endpoints
+- [x] Test: Server starts and patterns execute
+- [x] Authentication verified: 401 for unauthenticated, 200 for authenticated
 
 ## SPRINT 2: Simple Endpoints (45 min) 🎯
 ### Batch 1: Portfolio (10 endpoints)

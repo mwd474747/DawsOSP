@@ -39,6 +39,19 @@ from asyncpg.pool import Pool
 import uvicorn
 import httpx
 
+# Import authentication utilities from centralized module
+from backend.app.auth.dependencies import (
+    hash_password, 
+    verify_password, 
+    create_jwt_token, 
+    get_current_user, 
+    require_auth,
+    require_role,
+    JWT_SECRET,
+    JWT_ALGORITHM,
+    JWT_EXPIRATION_HOURS
+)
+
 # Import backend services for pattern orchestration
 from backend.app.services.macro_data_agent import enhance_macro_data
 
@@ -88,9 +101,11 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 
 # JWT Configuration
-JWT_SECRET = os.environ.get("AUTH_JWT_SECRET", "your-secret-key-change-in-production")
-JWT_ALGORITHM = "HS256"
-JWT_EXPIRATION_HOURS = 24
+# JWT constants moved to backend/app/auth/dependencies.py - Sprint 1
+# Now imported at top of file
+# JWT_SECRET = os.environ.get("AUTH_JWT_SECRET", "your-secret-key-change-in-production")
+# JWT_ALGORITHM = "HS256"
+# JWT_EXPIRATION_HOURS = 24
 
 # API URLs
 CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
@@ -503,14 +518,8 @@ app.add_middleware(
 # Password Management
 # ============================================================================
 
-def hash_password(password: str) -> str:
-    """Hash password using SHA256 with salt"""
-    salt = "dawsos_salt_"  # In production, use unique salt per user
-    return hashlib.sha256(f"{salt}{password}".encode()).hexdigest()
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password against hash"""
-    return hash_password(plain_password) == hashed_password
+# Authentication functions moved to backend/app/auth/dependencies.py
+# Sprint 1: Authentication refactoring - functions now imported from centralized module
 
 # ============================================================================
 # Default Users (Should be in database in production)
@@ -795,24 +804,14 @@ async def store_macro_indicators(indicators: Dict[str, Any], apply_transformatio
 # JWT Authentication
 # ============================================================================
 
-def create_jwt_token(user_id: str, email: str, role: str) -> str:
-    """Create JWT token with proper error handling"""
-    try:
-        payload = {
-            "sub": user_id,
-            "email": email,
-            "role": role,
-            "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS),
-            "iat": datetime.utcnow()
-        }
-        return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
-    except Exception as e:
-        logger.error(f"Error creating JWT token: {e}")
-        raise AuthenticationError("Failed to create authentication token")
+# Authentication functions moved to backend/app/auth/dependencies.py
+# Sprint 1: Authentication refactoring - functions now imported from centralized module
 
+# Keep verify_jwt_token here temporarily (not in auth module yet)
 def verify_jwt_token(token: str) -> Optional[dict]:
     """Verify JWT token with proper error handling"""
     try:
+        from backend.app.auth.dependencies import JWT_SECRET, JWT_ALGORITHM
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         return payload
     except jwt.ExpiredSignatureError:
@@ -825,33 +824,11 @@ def verify_jwt_token(token: str) -> Optional[dict]:
         logger.error(f"Error verifying JWT token: {e}")
         return None
 
-async def get_current_user(request_or_token: Union[Request, str]) -> Optional[dict]:
-    """Get current user from JWT token in request or from token string
-
-    Args:
-        request_or_token: Either a FastAPI Request object or a bearer token string
-
-    Returns:
-        User dict with id, email, role or None if invalid
-    """
-    auth_header = ""
-
-    # Handle both Request object and string token
-    if isinstance(request_or_token, str):
-        # Direct token string
-        auth_header = request_or_token if request_or_token.startswith("Bearer ") else f"Bearer {request_or_token}"
-    elif hasattr(request_or_token, 'headers'):
-        # FastAPI Request object
-        auth_header = request_or_token.headers.get("Authorization", "")
-    else:
-        logger.warning(f"Invalid input to get_current_user: {type(request_or_token)}")
-        return None
-
-    if not auth_header.startswith("Bearer "):
-        return None
-
-    token = auth_header.replace("Bearer ", "")
-    payload = verify_jwt_token(token)
+# Commented out - now imported from backend/app/auth/dependencies.py
+# def create_jwt_token(user_id: str, email: str, role: str) -> str:
+#     ...
+# async def get_current_user(request_or_token: Union[Request, str]) -> Optional[dict]:
+#     ...
 
     if payload:
         return {
@@ -1146,13 +1123,19 @@ async def test_pool_access():
     return results
 
 @app.post("/api/patterns/execute", response_model=SuccessResponse)
-async def execute_pattern(request: ExecuteRequest):
+async def execute_pattern(request: ExecuteRequest, http_request: Request):
     """
     Execute a pattern through the orchestrator
+    AUTH_STATUS: FIXED - Sprint 1
     """
+    # Get user from JWT token - FIXED in Sprint 1 (was hardcoded user-001)
+    # Check auth BEFORE try block to avoid catching HTTPException
+    user = await get_current_user(http_request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    user_id = user["id"]
+    
     try:
-        # Get user from token (optional - for now we'll use a default)
-        user_id = "user-001"  # In production, extract from JWT token
 
         # Execute the pattern
         # Handle both 'inputs' and 'params' fields for backwards compatibility
@@ -1386,7 +1369,10 @@ async def patterns_health_check():
 
 @app.post("/api/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest):
-    """User login endpoint with validation"""
+    """
+    User login endpoint with validation
+    AUTH_STATUS: NO_AUTH_REQUIRED - Public endpoint
+    """
     try:
         # Validate user exists
         user = USERS_DB.get(request.email)
@@ -1613,7 +1599,10 @@ async def get_portfolio_metrics(portfolio_id: str):
 
 @app.get("/api/portfolio")
 async def get_portfolio(request: Request):
-    """Get portfolio data using pattern orchestrator"""
+    """
+    Get portfolio data using pattern orchestrator
+    AUTH_STATUS: PENDING - Sprint 2
+    """
     try:
         # Get current user
         user = await get_current_user(request)
