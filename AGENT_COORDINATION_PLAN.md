@@ -1,14 +1,24 @@
-# Agent Coordination Plan: Claude IDE & Replit Agent Collaboration
+# Agent Coordination Plan: Three-Agent Collaboration
 
-**Purpose:** Define how Claude IDE Agent and Replit Agent can work together effectively on refactoring without conflicts  
+**Purpose:** Define how Claude IDE Agent (PRIMARY), Claude Code Agent, and Replit Agent work together effectively on refactoring without conflicts  
 **Status:** 📋 Planning  
 **Last Updated:** November 3, 2025
 
 ---
 
+## 🎯 Three-Agent Structure
+
+### Agent Roles
+
+1. **Claude IDE Agent (PRIMARY)** - This agent
+2. **Claude Code Agent** - Code implementation specialist (has subagents)
+3. **Replit Agent** - Execution and testing specialist
+
+---
+
 ## 🎯 Core Principle: Division of Labor
 
-### Claude IDE Agent (This Agent) - Analysis & Planning Specialist
+### Claude IDE Agent (PRIMARY - This Agent) - Analysis & Planning Specialist
 
 **Strengths:**
 - ✅ Comprehensive codebase analysis
@@ -17,8 +27,25 @@
 - ✅ Planning and documentation
 - ✅ Code review without execution
 - ✅ Breaking change identification
+- ✅ Coordination between agents
 
-**Role:** **Analyst & Planner** - Provides insights, validation, and planning
+**Role:** **Primary Coordinator, Analyst & Planner** - Provides insights, validation, planning, and coordinates other agents
+
+---
+
+### Claude Code Agent - Code Implementation Specialist
+
+**Strengths:**
+- ✅ Code implementation and refactoring
+- ✅ Complex code modifications
+- ✅ Agent code updates
+- ✅ Service layer changes
+- ✅ Code organization and structure
+- ✅ Subagents for specialized tasks (documented in .md files)
+
+**Role:** **Implementer** - Implements code changes based on analysis and plans
+
+**Subagents:** Documented in `.md` files (check `.claude/` directory for details)
 
 ---
 
@@ -32,40 +59,52 @@
 - ✅ Live system validation
 - ✅ Performance testing
 
-**Role:** **Executor & Validator** - Executes code changes and validates in live environment
+**Role:** **Executor & Validator** - Executes code changes and validates in live Replit environment
 
 ---
 
-## 🔄 Coordination Model
+## 🔄 Three-Agent Coordination Model
 
 ### Phase-Based Coordination
 
-**Pattern:** Claude IDE analyzes → Replit validates → Both update shared memory
+**Pattern:** Claude IDE analyzes → Claude Code implements → Replit validates → All update shared memory
 
 ### Example Workflow
 
-1. **Claude IDE Agent:**
+1. **Claude IDE Agent (PRIMARY):**
    - Analyzes codebase
    - Identifies issues and opportunities
    - Creates detailed plans
    - Updates `AGENT_CONVERSATION_MEMORY.md` with findings
+   - Marks tasks as "READY FOR IMPLEMENTATION" or "READY FOR EXECUTION"
 
-2. **Replit Agent:**
+2. **Claude Code Agent:**
    - Reads shared memory
-   - Executes planned changes
-   - Tests and validates
-   - Updates shared memory with results
+   - Checks for tasks marked "READY FOR IMPLEMENTATION"
+   - Implements planned changes
+   - Updates shared memory: Marks as "READY FOR TESTING" or "COMPLETE"
+   - Uses subagents for specialized implementation tasks
 
-3. **Both Agents:**
+3. **Replit Agent:**
+   - Reads shared memory
+   - Checks for tasks marked "READY FOR EXECUTION" or "READY FOR TESTING"
+   - Tests and validates in live environment
+   - Updates shared memory with test results
+   - Marks as "COMPLETE" or reports issues
+
+4. **All Agents:**
    - Reference shared memory before starting work
    - Update status in shared memory
    - Avoid duplicate work
+   - Coordinate via shared memory
 
 ---
 
-## 📋 Specific Ways Claude IDE Agent Can Help (Without Conflicts)
+## 📋 Specific Ways Each Agent Can Help (Without Conflicts)
 
-### 1. Pre-Execution Analysis ✅ **SAFE - NO CODE CHANGES**
+### Claude IDE Agent (PRIMARY) - Analysis & Planning
+
+### 1. Pre-Implementation Analysis ✅ **SAFE - NO CODE CHANGES**
 
 **Tasks:**
 - Analyze codebase patterns before refactoring
@@ -83,8 +122,8 @@
 
 **How to Use Shared Memory:**
 - Document findings in `AGENT_CONVERSATION_MEMORY.md`
-- Mark tasks as "READY FOR EXECUTION" after analysis
-- Replit agent reads and executes
+- Mark tasks as "READY FOR IMPLEMENTATION" (for Claude Code) or "READY FOR EXECUTION" (for Replit)
+- Other agents read and execute
 
 **Risk:** ✅ **ZERO** - No code changes, only analysis
 
@@ -109,7 +148,7 @@
 - Create dependency maps in shared memory
 - Document breaking change risks
 - Mark dependencies as "VERIFIED" or "NEEDS VALIDATION"
-- Replit agent uses this to execute safely
+- Claude Code and Replit agents use this to work safely
 
 **Risk:** ✅ **ZERO** - Read-only analysis
 
@@ -138,6 +177,52 @@
 - Replit agent executes and reports results
 
 **Risk:** ✅ **ZERO** - Planning only, no execution
+
+---
+
+### Claude Code Agent - Implementation
+
+### 1. Code Implementation ✅ **SAFE - COORDINATED WITH REPLIT**
+
+**Tasks:**
+- Implement code changes based on Claude IDE analysis
+- Refactor agent code
+- Update service layers
+- Modify backend logic
+- Use subagents for specialized tasks
+
+**How to Use Shared Memory:**
+- Read shared memory for task assignments
+- Check for tasks marked "READY FOR IMPLEMENTATION"
+- Update status: "IN IMPLEMENTATION" → "READY FOR TESTING" → "COMPLETE"
+- Document implementation details in shared memory
+
+**Risk:** ⚠️ **MEDIUM** - Code changes, but coordinated via shared memory
+
+**Coordination:**
+- Wait for Claude IDE analysis before implementation
+- Mark tasks as "READY FOR TESTING" when complete
+- Replit agent validates in live environment
+
+---
+
+### Replit Agent - Execution & Testing
+
+### 1. Live Environment Validation ✅ **SAFE - TESTING ONLY**
+
+**Tasks:**
+- Execute code in live Replit environment
+- Test pattern execution
+- Validate integration
+- Performance testing
+- Report results
+
+**How to Use Shared Memory:**
+- Read shared memory for tasks marked "READY FOR EXECUTION" or "READY FOR TESTING"
+- Update status: "IN TESTING" → "COMPLETE" or "BLOCKED"
+- Report test results in shared memory
+
+**Risk:** ✅ **LOW** - Testing only, no code modifications
 
 ---
 
@@ -191,7 +276,14 @@
 
 ---
 
-## 🚫 What Claude IDE Agent Should NOT Do (To Avoid Conflicts)
+## 🚫 What Each Agent Should NOT Do (To Avoid Conflicts)
+
+### Claude IDE Agent (PRIMARY) - Should NOT
+
+### ❌ Code Implementation
+- **Don't:** Implement code changes
+- **Don't:** Refactor agent code directly
+- **Reason:** Claude Code agent handles implementation
 
 ### ❌ Code Execution
 - **Don't:** Execute refactoring changes
@@ -199,8 +291,8 @@
 - **Reason:** Replit agent handles execution in live environment
 
 ### ❌ Simultaneous Code Changes
-- **Don't:** Modify same files Replit agent is working on
-- **Don't:** Commit changes while Replit agent is executing
+- **Don't:** Modify same files other agents are working on
+- **Don't:** Commit changes while other agents are executing
 - **Reason:** Git conflicts and race conditions
 
 ### ❌ Live System Changes
@@ -210,28 +302,72 @@
 
 ---
 
+### Claude Code Agent - Should NOT
+
+### ❌ Analysis Without Plan
+- **Don't:** Start implementation without Claude IDE analysis
+- **Don't:** Make architectural decisions independently
+- **Reason:** Claude IDE coordinates and plans
+
+### ❌ Live Environment Testing
+- **Don't:** Test in live Replit environment
+- **Don't:** Deploy changes directly
+- **Reason:** Replit agent handles live testing
+
+### ❌ Simultaneous Changes
+- **Don't:** Modify files Replit agent is testing
+- **Don't:** Commit while Replit agent is validating
+- **Reason:** Git conflicts and testing interference
+
+---
+
+### Replit Agent - Should NOT
+
+### ❌ Implementation Without Analysis
+- **Don't:** Implement code changes without Claude IDE planning
+- **Don't:** Make architectural changes
+- **Reason:** Claude IDE coordinates, Claude Code implements
+
+### ❌ Code Modifications
+- **Don't:** Modify code (except for testing/debugging)
+- **Don't:** Refactor without coordination
+- **Reason:** Claude Code agent handles implementation
+
+---
+
 ## 📝 Shared Memory Usage Protocol
 
 ### Before Starting Work
 
-**Claude IDE Agent:**
+**Claude IDE Agent (PRIMARY):**
 1. ✅ Read `AGENT_CONVERSATION_MEMORY.md`
-2. ✅ Check current status and work in progress
-3. ✅ Identify available tasks (marked "READY FOR ANALYSIS")
-4. ✅ Update status: Mark task as "IN ANALYSIS"
-5. ✅ Work on analysis/planning
-6. ✅ Update shared memory with findings
-7. ✅ Mark task as "READY FOR EXECUTION" or "BLOCKED"
+2. ✅ Check "Current Work Status" section
+3. ✅ Check for tasks from other agents
+4. ✅ Identify available tasks (marked "READY FOR ANALYSIS" or "NEEDS REVIEW")
+5. ✅ Update status: Mark task as "IN ANALYSIS"
+6. ✅ Work on analysis/planning
+7. ✅ Update shared memory with findings
+8. ✅ Mark task as "READY FOR IMPLEMENTATION" (Claude Code) or "READY FOR EXECUTION" (Replit)
+
+**Claude Code Agent:**
+1. ✅ Read `AGENT_CONVERSATION_MEMORY.md`
+2. ✅ Check "Current Work Status" section
+3. ✅ Check for Claude IDE analysis complete
+4. ✅ Identify available tasks (marked "READY FOR IMPLEMENTATION")
+5. ✅ Update status: Mark task as "IN IMPLEMENTATION"
+6. ✅ Implement code changes
+7. ✅ Update shared memory with implementation status
+8. ✅ Mark task as "READY FOR TESTING" or "COMPLETE"
 
 **Replit Agent:**
 1. ✅ Read `AGENT_CONVERSATION_MEMORY.md`
-2. ✅ Check current status and work in progress
-3. ✅ Identify available tasks (marked "READY FOR EXECUTION")
-4. ✅ Update status: Mark task as "IN EXECUTION"
-5. ✅ Execute changes
-6. ✅ Test and validate
-7. ✅ Update shared memory with results
-8. ✅ Mark task as "COMPLETE" or "NEEDS REVIEW"
+2. ✅ Check "Current Work Status" section
+3. ✅ Check for tasks ready for testing
+4. ✅ Identify available tasks (marked "READY FOR EXECUTION" or "READY FOR TESTING")
+5. ✅ Update status: Mark task as "IN TESTING"
+6. ✅ Execute tests in live environment
+7. ✅ Update shared memory with test results
+8. ✅ Mark task as "COMPLETE" or "BLOCKED"
 
 ---
 
@@ -241,27 +377,40 @@
 - 📋 **PENDING** - Not started
 - 🔍 **READY FOR ANALYSIS** - Needs Claude IDE analysis
 - 📝 **IN ANALYSIS** - Claude IDE currently working on it
-- ✅ **READY FOR EXECUTION** - Analysis complete, ready for Replit agent
-- ⚙️ **IN EXECUTION** - Replit agent currently working on it
+- ✅ **READY FOR IMPLEMENTATION** - Analysis complete, ready for Claude Code agent
+- ⚙️ **IN IMPLEMENTATION** - Claude Code agent currently implementing
+- ✅ **READY FOR TESTING** - Implementation complete, ready for Replit agent
+- 🧪 **IN TESTING** - Replit agent currently testing
+- ✅ **READY FOR EXECUTION** - Ready for Replit agent execution (no implementation needed)
+- ⚙️ **IN EXECUTION** - Replit agent currently executing
 - ✅ **COMPLETE** - Task finished and validated
 - ⚠️ **BLOCKED** - Needs clarification or has issues
-- 🔄 **NEEDS REVIEW** - Execution complete, needs validation
+- 🔄 **NEEDS REVIEW** - Complete, needs Claude IDE review
 
 ---
 
 ### Communication Patterns
 
-**Claude IDE → Replit:**
+**Claude IDE → Claude Code:**
 ```
 Claude IDE: "Phase 2B analysis complete. List data standardization plan ready.
             Standardize ledger.positions and pricing.apply_pack to use {items: [...]} pattern.
-            See AGENT_CONVERSATION_MEMORY.md Phase 2 section."
+            See AGENT_CONVERSATION_MEMORY.md Phase 2 section.
+            Status: READY FOR IMPLEMENTATION"
+```
+
+**Claude Code → Replit:**
+```
+Claude Code: "Phase 2B implementation complete. Updated ledger.positions and pricing.apply_pack.
+              Changes ready for testing.
+              Status: READY FOR TESTING"
 ```
 
 **Replit → Claude IDE:**
 ```
-Replit: "Phase 2B execution complete. Standardized list data wrapping.
-         All patterns tested, 12/12 pass. See shared memory for details."
+Replit: "Phase 2B testing complete. Standardized list data wrapping validated.
+         All patterns tested, 12/12 pass. See shared memory for details.
+         Status: COMPLETE"
 ```
 
 ---
@@ -270,22 +419,29 @@ Replit: "Phase 2B execution complete. Standardized list data wrapping.
 
 ### 1. Phase 2: Validation & Standardization
 
-**Claude IDE Agent Tasks:**
+**Claude IDE Agent (PRIMARY) Tasks:**
 - ✅ Create validation checklist (DONE)
 - ✅ Define test scenarios
 - ✅ Document expected outcomes
 - ✅ Create standardization guidelines
 - ✅ Identify all agents needing updates
+- ✅ Mark tasks as "READY FOR IMPLEMENTATION" or "READY FOR EXECUTION"
+
+**Claude Code Agent Tasks:**
+- ✅ Read standardization guidelines from shared memory
+- ✅ Implement list data standardization changes
+- ✅ Update agent code (ledger.positions, pricing.apply_pack)
+- ✅ Mark as "READY FOR TESTING" when complete
 
 **Replit Agent Tasks:**
-- ✅ Execute validation tests
+- ✅ Execute validation tests (Phase 2A)
 - ✅ Run pattern execution tests
-- ✅ Execute standardization changes
-- ✅ Test and validate results
-- ✅ Report findings
+- ✅ Test standardized changes (Phase 2B)
+- ✅ Validate results
+- ✅ Report findings in shared memory
 
 **Coordination:**
-- Claude IDE creates plan → Updates shared memory → Replit executes → Updates shared memory
+- Claude IDE creates plan → Updates shared memory → Claude Code implements → Updates shared memory → Replit validates → Updates shared memory
 
 ---
 
@@ -443,29 +599,30 @@ Replit: "Phase 2B execution complete. Standardized list data wrapping.
 
 ### 1. Pre-Flight Analysis ✅ **HIGHLY VALUABLE**
 
-**Before Replit Agent Starts Work:**
+**Before Claude Code or Replit Agent Starts Work:**
 - Analyze proposed changes for risks
 - Identify dependencies that might break
 - Create validation checklist
 - Document expected outcomes
 
-**Value:** Prevents Replit agent from making breaking changes
+**Value:** Prevents breaking changes and guides safe implementation
 
 **Example:**
 ```
 Claude IDE: "Analyzed Phase 2B standardization. 
             Risk: Low - Only affects list data wrapping.
             Dependency: Patterns use {{positions.positions}} - still works.
-            Recommendation: Safe to execute."
+            Recommendation: Safe to implement.
+            Status: READY FOR IMPLEMENTATION"
 ```
 
 ---
 
 ### 2. Continuous Monitoring ✅ **VALUABLE**
 
-**During Replit Agent Execution:**
+**During Claude Code or Replit Agent Work:**
 - Monitor shared memory for results
-- Review execution results for issues
+- Review implementation/test results for issues
 - Identify follow-up work needed
 - Plan next tasks
 
@@ -473,28 +630,34 @@ Claude IDE: "Analyzed Phase 2B standardization.
 
 **Example:**
 ```
-Replit: "Phase 2B complete. Found issue: pattern X failed."
+Replit: "Phase 2B testing complete. Found issue: pattern X failed."
 Claude IDE: "Analyzing pattern X failure. Checking template references..."
-         → Documents fix in shared memory
+         → Documents fix in shared memory: "READY FOR IMPLEMENTATION"
+
+Claude Code: "Phase 2B implementation complete. Standardized list wrapping."
+Claude IDE: "Reviewing implementation results. All looks good."
+         → Updates plan for next phase
 ```
 
 ---
 
-### 3. Post-Execution Analysis ✅ **VALUABLE**
+### 3. Post-Implementation/Testing Analysis ✅ **VALUABLE**
 
-**After Replit Agent Completes:**
-- Analyze execution results
+**After Claude Code or Replit Agent Completes:**
+- Analyze implementation/test results
 - Identify patterns in issues
 - Plan next phase
 - Update documentation
 
-**Value:** Learns from execution, improves future planning
+**Value:** Learns from work, improves future planning
 
 **Example:**
 ```
+Replit: "Phase 2B testing complete. All patterns pass."
 Claude IDE: "Analyzed Phase 2B results. 
             Finding: Standardization revealed 2 more inconsistencies.
-            Recommendation: Phase 2C - Standardize these as well."
+            Recommendation: Phase 2C - Standardize these as well.
+            Status: READY FOR IMPLEMENTATION"
 ```
 
 ---
@@ -520,19 +683,24 @@ Claude IDE: "After Phase 2 standardization complete, Phase 3 consolidation
 
 ## 🔄 Real-Time Collaboration Patterns
 
-### Pattern 1: Analysis → Execution → Review
+### Pattern 1: Analysis → Implementation → Testing → Review
 
-**Claude IDE:**
+**Claude IDE (PRIMARY):**
 1. Analyze codebase
 2. Create plan
-3. Update shared memory: "READY FOR EXECUTION"
+3. Update shared memory: "READY FOR IMPLEMENTATION" (for Claude Code) or "READY FOR EXECUTION" (for Replit)
+
+**Claude Code:**
+1. Read shared memory
+2. Implement plan
+3. Update shared memory: "READY FOR TESTING"
 
 **Replit:**
 1. Read shared memory
-2. Execute plan
+2. Test implementation
 3. Update shared memory: "COMPLETE" with results
 
-**Claude IDE:**
+**Claude IDE (PRIMARY):**
 1. Review results
 2. Plan next steps
 3. Update shared memory: "NEXT TASK READY"
@@ -541,35 +709,44 @@ Claude IDE: "After Phase 2 standardization complete, Phase 3 consolidation
 
 ### Pattern 2: Parallel Analysis
 
-**Claude IDE:**
+**Claude IDE (PRIMARY):**
 - Analyze Pattern A
 - Analyze Pattern B
 - Document both in shared memory
+- Mark both as "READY FOR IMPLEMENTATION"
+
+**Claude Code:**
+- Implement Pattern A changes
+- Mark Pattern A as "READY FOR TESTING"
+- Implement Pattern B when ready
 
 **Replit:**
-- Execute Pattern A changes
-- Test Pattern A
-- Use Pattern B analysis when ready
+- Test Pattern A changes
+- Use Pattern B when ready for testing
 
-**Benefit:** Replit agent always has next task ready
+**Benefit:** Other agents always have next task ready
 
 ---
 
 ### Pattern 3: Issue Discovery & Resolution
 
 **Replit:**
-- Discovers issue during execution
+- Discovers issue during testing
 - Documents in shared memory: "BLOCKED: Issue X"
 
-**Claude IDE:**
+**Claude IDE (PRIMARY):**
 - Reads shared memory
 - Analyzes issue
-- Documents fix: "READY FOR EXECUTION: Fix for Issue X"
+- Documents fix: "READY FOR IMPLEMENTATION: Fix for Issue X"
+
+**Claude Code:**
+- Reads fix plan
+- Implements fix
+- Marks as "READY FOR TESTING: Fix for Issue X"
 
 **Replit:**
-- Reads fix
-- Executes fix
-- Marks resolved
+- Tests fix
+- Marks resolved: "COMPLETE: Issue X fixed"
 
 ---
 
@@ -580,15 +757,22 @@ Claude IDE: "After Phase 2 standardization complete, Phase 3 consolidation
 ```markdown
 ## 🔄 Current Work Status
 
-### Claude IDE Agent
+### Claude IDE Agent (PRIMARY)
 - Current Task: [Task Name]
-- Status: [IN ANALYSIS / READY FOR EXECUTION / COMPLETE]
+- Status: [IN ANALYSIS / READY FOR IMPLEMENTATION / READY FOR EXECUTION / COMPLETE]
 - Expected Completion: [Time]
 - Blockers: [Any blockers]
 
+### Claude Code Agent
+- Current Task: [Task Name]
+- Status: [IN IMPLEMENTATION / READY FOR TESTING / COMPLETE]
+- Progress: [Progress update]
+- Issues: [Any issues found]
+- Subagents: [List active subagents if any]
+
 ### Replit Agent
 - Current Task: [Task Name]
-- Status: [IN EXECUTION / TESTING / COMPLETE]
+- Status: [IN TESTING / IN EXECUTION / COMPLETE]
 - Progress: [Progress update]
 - Issues: [Any issues found]
 
@@ -598,13 +782,22 @@ Claude IDE: "After Phase 2 standardization complete, Phase 3 consolidation
 - [ ] Task 1: [Description]
 - [ ] Task 2: [Description]
 
-### Ready for Execution (Replit)
+### Ready for Implementation (Claude Code)
+- [ ] Task 1: [Description] - Analysis complete
+- [ ] Task 2: [Description] - Analysis complete
+
+### Ready for Testing (Replit)
+- [ ] Task 1: [Description] - Implementation complete
+- [ ] Task 2: [Description] - Implementation complete
+
+### Ready for Execution (Replit - no implementation needed)
 - [ ] Task 1: [Description] - Analysis complete
 - [ ] Task 2: [Description] - Analysis complete
 
 ### In Progress
 - [ ] Task 1: [Description] - Claude IDE analyzing
-- [ ] Task 2: [Description] - Replit executing
+- [ ] Task 2: [Description] - Claude Code implementing
+- [ ] Task 3: [Description] - Replit testing
 
 ### Complete
 - [x] Task 1: [Description] - Validated
@@ -613,14 +806,15 @@ Claude IDE: "After Phase 2 standardization complete, Phase 3 consolidation
 
 ---
 
-## 🎯 Immediate Actions for Claude IDE Agent
+## 🎯 Immediate Actions for Each Agent
 
-### Available Tasks (No Code Changes)
+### Claude IDE Agent (PRIMARY) - Available Tasks
 
 1. ✅ **Phase 2B Standardization Guidelines** (Can do now)
    - Create detailed guidelines for list data wrapping
    - Document all agents needing updates
    - Create validation checklist
+   - Mark as "READY FOR IMPLEMENTATION" when complete
 
 2. ✅ **Agent Return Pattern Audit** (Can do now)
    - Audit all agent capabilities
@@ -637,6 +831,29 @@ Claude IDE: "After Phase 2 standardization complete, Phase 3 consolidation
    - After Phase 2, reassess Phase 3 plan
    - Update risk assessment
    - Refine consolidation strategy
+
+### Claude Code Agent - Available Tasks
+
+**Check shared memory for tasks marked "READY FOR IMPLEMENTATION"**
+
+1. **Phase 2B: List Data Standardization** (Waiting for guidelines)
+   - Implement standardization once Claude IDE creates guidelines
+   - Update ledger.positions and pricing.apply_pack
+   - Mark as "READY FOR TESTING" when complete
+
+### Replit Agent - Available Tasks
+
+**Check shared memory for tasks marked "READY FOR EXECUTION" or "READY FOR TESTING"**
+
+1. **Phase 2A: Validation** (Can do now)
+   - Execute validation tests
+   - Test all 12 patterns
+   - Report results in shared memory
+
+2. **Phase 2B: Testing** (Waiting for implementation)
+   - Test standardized changes once Claude Code completes
+   - Validate all patterns work
+   - Report results in shared memory
 
 ---
 
@@ -657,8 +874,8 @@ Claude IDE: "After Phase 2 standardization complete, Phase 3 consolidation
 - Recommendation 1: [Description]
 - Recommendation 2: [Description]
 
-**Status:** ✅ READY FOR EXECUTION
-**Assigned To:** Replit Agent
+**Status:** ✅ READY FOR IMPLEMENTATION (if code changes needed) or READY FOR EXECUTION (if testing only)
+**Assigned To:** Claude Code Agent (if implementation) or Replit Agent (if testing only)
 **Estimated Time:** [Time]
 **Risk Level:** [LOW / MEDIUM / HIGH]
 
@@ -666,14 +883,41 @@ Claude IDE: "After Phase 2 standardization complete, Phase 3 consolidation
 - File 1: [Change description]
 - File 2: [Change description]
 
+**Implementation Steps:**
+- [ ] Step 1: [Description]
+- [ ] Step 2: [Description]
+
 **Validation Checklist:**
 - [ ] Test item 1
 - [ ] Test item 2
 
 **Next Steps:**
-1. Replit agent executes changes
-2. Test and validate
+1. Claude Code agent implements (if needed)
+2. Replit agent tests and validates
 3. Update shared memory with results
+```
+
+**When Claude Code Agent completes implementation:**
+
+```markdown
+## [Date] - Claude Code Agent Update
+
+### Implementation Complete: [Task Name]
+
+**Changes Made:**
+- File 1: [Change description]
+- File 2: [Change description]
+
+**Status:** ✅ READY FOR TESTING
+**Assigned To:** Replit Agent
+**Files Modified:**
+- File 1: [Summary]
+- File 2: [Summary]
+
+**Next Steps:**
+1. Replit agent tests in live environment
+2. Validate all patterns work
+3. Report results in shared memory
 ```
 
 ---

@@ -1,15 +1,27 @@
 # Agent Conversation Memory
 
-**Purpose:** This file serves as a shared memory and communication bridge between agents working on the DawsOS codebase, including:
-- Cursor/Claude IDE Agent (this agent)
-- Replit Agent
-- Claude Code Agent
-- Any other agents working on this project
+**Purpose:** This file serves as a shared memory and communication bridge between agents working on the DawsOS codebase. There are **three primary agents**:
+
+1. **Claude IDE/Cursor Agent (PRIMARY)** - This agent
+   - Primary analysis, planning, and coordination agent
+   - Handles comprehensive codebase analysis and planning
+   - Coordinates between other agents
+
+2. **Claude Code Agent** - Code execution specialist
+   - Implements code changes and refactoring
+   - Has subagents documented in `.md` files
+   - Handles complex code modifications
+
+3. **Replit Agent** - Execution and testing specialist
+   - Executes code in live Replit environment
+   - Runtime validation and testing
+   - Pattern execution verification
 
 **Usage:** 
 - Agents should read this file at the start of their work to understand current context
 - Agents should update this file with their findings and decisions
 - Agents should reference this file when making decisions to maintain consistency
+- Check "Current Work Status" section before starting any task
 
 **Last Updated:** November 3, 2025  
 **Status:** Active conversation memory
@@ -202,12 +214,105 @@
 
 ## 📝 Agent Communication Protocol
 
+### Three-Agent Structure
+
+**Agent Roles:**
+1. **Claude IDE Agent (PRIMARY)** - Analysis, planning, coordination
+2. **Claude Code Agent** - Code implementation and refactoring (has subagents)
+3. **Replit Agent** - Execution and testing in live environment
+
+**Coordination Pattern:**
+- Claude IDE analyzes → Documents plan → Claude Code implements → Replit validates → All update shared memory
+
+---
+
+### For Claude IDE Agent (PRIMARY - This Agent)
+
+**Role:** **Primary coordinator, analyst, and planner**
+
+**Responsibilities:**
+- ✅ Comprehensive codebase analysis
+- ✅ Pattern identification and architecture understanding
+- ✅ Dependency analysis and impact assessment
+- ✅ Planning and documentation
+- ✅ Breaking change identification
+- ✅ Coordination between Claude Code and Replit agents
+
+**Current Priorities:**
+1. ✅ Phase 1 complete and synced
+2. 📋 Phase 2 planning complete
+3. ✅ Agent coordination planning complete
+4. ⏳ Ready for analysis tasks while other agents execute
+
+**Key Insights:**
+- Phase 1 feedback validated: Most concerns already addressed
+- Pattern templates safe: No nested references found
+- Agent returns inconsistent: Only list data wrapping needs standardization
+- Chart components robust: Handle multiple formats gracefully
+
+**Work Types:**
+- Pre-execution analysis (dependency mapping, risk assessment)
+- Post-execution analysis (results review, next-phase planning)
+- Architecture documentation
+- Pattern discovery
+- Code review without execution
+
+---
+
+### For Claude Code Agent
+
+**Role:** **Code implementation and refactoring specialist**
+
+**Responsibilities:**
+- ✅ Implement code changes and refactoring
+- ✅ Complex code modifications
+- ✅ Agent code updates
+- ✅ Service layer changes
+- ✅ Database migrations (if needed)
+
+**Subagents:** Claude Code Agent has subagents that are documented in `.md` files (check `.claude/` directory and `DATABASE_AGENT_PROMPTS.md` for details)
+
+**When working on refactoring:**
+1. ✅ Read shared memory for current context
+2. ✅ Check task status: Look for "READY FOR IMPLEMENTATION"
+3. ✅ Follow return pattern guidelines (to be documented in Phase 2)
+4. ✅ Don't attach metadata to results (moved to trace only)
+5. ✅ For chart data, return flattened structures
+6. ⚠️ For list data, use consistent wrapping pattern
+7. ✅ Update shared memory when complete: Mark "COMPLETE" or "BLOCKED"
+
+**Reference Files:**
+- `PHASE_1_COMPLETE.md` - Phase 1 changes and rationale
+- `PHASE_2_PLAN.md` - Phase 2 objectives and approach
+- `backend/app/agents/financial_analyst.py` - Example of flattened returns (Phase 1)
+- `.claude/PROJECT_CONTEXT.md` - Project context and guardrails
+
+**Coordination with Other Agents:**
+- Waits for Claude IDE analysis before implementation
+- Implements changes that Replit agent will validate
+- Updates shared memory with implementation status
+
+---
+
 ### For Replit Agent
 
+**Role:** **Execution and testing specialist in live environment**
+
+**Responsibilities:**
+- ✅ Execute code in live Replit environment
+- ✅ Runtime validation and testing
+- ✅ Pattern execution verification
+- ✅ Integration testing
+- ✅ Live system validation
+- ✅ Performance testing
+
 **When working on Phase 2:**
-1. ✅ Start by validating all patterns execute (Task 1)
-2. ⚠️ Focus on standardizing list data wrapping (Task 2)
-3. ✅ Document return pattern guidelines (Task 3)
+1. ✅ Read shared memory for current context
+2. ✅ Check task status: Look for "READY FOR EXECUTION" or "READY FOR TESTING"
+3. ✅ Start by validating all patterns execute (Phase 2A)
+4. ⚠️ Focus on standardizing list data wrapping (Phase 2B)
+5. ✅ Test and validate all changes
+6. ✅ Update shared memory when complete: Mark "COMPLETE" with results
 
 **Important Context:**
 - Phase 1 already fixed chart data flattening
@@ -217,35 +322,10 @@
 
 **Risk Level:** ⚠️ **LOW-MEDIUM** - Validation first, then selective changes
 
----
-
-### For Claude Code Agent
-
-**When reviewing or modifying agent code:**
-1. ✅ Follow return pattern guidelines (to be documented in Phase 2)
-2. ✅ Don't attach metadata to results (moved to trace only)
-3. ✅ For chart data, return flattened structures
-4. ⚠️ For list data, use consistent wrapping pattern
-
-**Reference Files:**
-- `PHASE_1_COMPLETE.md` - Phase 1 changes and rationale
-- `PHASE_2_PLAN.md` - Phase 2 objectives and approach
-- `backend/app/agents/financial_analyst.py` - Example of flattened returns (Phase 1)
-
----
-
-### For This Agent (Cursor/Claude IDE Agent)
-
-**Current Priorities:**
-1. ✅ Phase 1 complete and synced
-2. 📋 Phase 2 planning complete
-3. ⏳ Awaiting approval to execute Phase 2
-
-**Key Insights:**
-- Phase 1 feedback validated: Most concerns already addressed
-- Pattern templates safe: No nested references found
-- Agent returns inconsistent: Only list data wrapping needs standardization
-- Chart components robust: Handle multiple formats gracefully
+**Coordination with Other Agents:**
+- Receives tasks from Claude IDE (after analysis)
+- Validates implementation from Claude Code
+- Updates shared memory with test results
 
 ---
 
