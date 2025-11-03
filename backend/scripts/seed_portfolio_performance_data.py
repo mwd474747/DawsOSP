@@ -24,6 +24,7 @@ from typing import Dict, List, Tuple, Optional
 import os
 import logging
 from uuid import UUID
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -494,19 +495,33 @@ class PerformanceSeeder:
             )
             
             if not exists:
-                # Create pricing pack
-                # Convert pandas Timestamp to Python datetime
+                # Create pricing pack with all required columns
+                # Convert pandas Timestamp to Python date
                 date_obj = pd.to_datetime(date)
-                if hasattr(date_obj, 'to_pydatetime'):
-                    date_obj = date_obj.to_pydatetime()
+                if hasattr(date_obj, 'date'):
+                    date_value = date_obj.date()
+                else:
+                    date_value = date_obj
                 
                 await self.conn.execute("""
-                    INSERT INTO pricing_packs (id, created_at)
-                    VALUES ($1, $2)
+                    INSERT INTO pricing_packs (
+                        id, date, policy, sources_json, status, 
+                        is_fresh, prewarm_done, reconciliation_passed, 
+                        reconciliation_failed, created_at, updated_at
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)
                     ON CONFLICT (id) DO NOTHING
                 """, 
                     pack_id,
-                    date_obj
+                    date_value,
+                    'WM4PM_CAD',  # Default policy
+                    json.dumps({}),  # Empty sources as JSON string
+                    'warming',  # Status
+                    False,  # is_fresh
+                    False,  # prewarm_done
+                    False,  # reconciliation_passed
+                    False,  # reconciliation_failed
+                    datetime.now()  # created_at and updated_at
                 )
         
         logger.info(f"Created pricing packs for {len(dates)} dates")
