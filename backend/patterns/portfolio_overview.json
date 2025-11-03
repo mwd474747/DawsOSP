@@ -105,7 +105,7 @@
       "capability": "portfolio.historical_nav",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
-        "lookback_days": 30
+        "lookback_days": "{{inputs.lookback_days}}"
       },
       "as": "historical_nav"
     }
