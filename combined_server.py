@@ -840,35 +840,12 @@ def verify_jwt_token(token: str) -> Optional[dict]:
     return None
 
 # ============================================================================
-# Authentication Dependency (P4 - Technical Debt Fix)
+# Authentication Functions - Now imported from backend.app.auth.dependencies
+# Sprint 1: Authentication refactoring completed
 # ============================================================================
-
-async def require_auth(request: Request) -> dict:
-    """
-    FastAPI dependency for requiring authentication.
-    
-    This replaces the repeated pattern:
-    ```
-    user = await get_current_user(request)
-    if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    ```
-    
-    Usage:
-    ```
-    @app.get("/protected")
-    async def protected_route(user: dict = Depends(require_auth)):
-        return {"user": user}
-    ```
-    """
-    user = await get_current_user(request)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-    return user
+# All authentication functions (hash_password, verify_password, create_jwt_token, 
+# get_current_user, require_auth, require_role) are now imported from 
+# backend.app.auth.dependencies module for centralized authentication management
 
 # ============================================================================
 # Portfolio Calculations with Error Handling
@@ -1980,16 +1957,12 @@ async def get_transactions(
 
 
 @app.post("/api/alerts", response_model=SuccessResponse)
-async def create_alert(request: Request, alert_config: AlertConfig):
-    """Create a new alert with validation"""
+async def create_alert(alert_config: AlertConfig, user: dict = Depends(require_auth)):
+    """
+    Create a new alert with validation
+    AUTH_STATUS: MIGRATED - Sprint 3
+    """
     try:
-        # Get current user
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Create alert ID
         alert_id = str(uuid4())
@@ -2799,16 +2772,12 @@ async def get_alerts(user: dict = Depends(require_auth)):
         )
 
 @app.delete("/api/alerts/{alert_id}", response_model=SuccessResponse)
-async def delete_alert(request: Request, alert_id: str):
-    """Delete an alert with proper validation"""
+async def delete_alert(alert_id: str, user: dict = Depends(require_auth)):
+    """
+    Delete an alert with proper validation
+    AUTH_STATUS: MIGRATED - Sprint 3
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Validate alert ID format
         try:
@@ -2848,18 +2817,14 @@ async def delete_alert(request: Request, alert_id: str):
 
 @app.post("/api/scenario", response_model=SuccessResponse)
 async def run_scenario_analysis(
-    request: Request,
-    scenario: str = "rates_up"
+    scenario: str = "rates_up",
+    user: dict = Depends(require_auth)
 ):
-    """Run scenario analysis using real pattern orchestrator and ScenarioService"""
+    """
+    Run scenario analysis using real pattern orchestrator and ScenarioService
+    AUTH_STATUS: MIGRATED - Sprint 3
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Map frontend scenarios to ShockType enum values
         scenario_mapping = {
@@ -3241,15 +3206,12 @@ async def get_factor_analysis(user: dict = Depends(require_auth)):
 # ============================================================================
 
 @app.get("/api/portfolio/holdings", response_model=SuccessResponse)
-async def get_portfolio_holdings(request: Request):
-    """Get portfolio holdings with additional details"""
+async def get_portfolio_holdings(user: dict = Depends(require_auth)):
+    """
+    Get portfolio holdings with additional details
+    AUTH_STATUS: MIGRATED - Sprint 3
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Try pattern orchestrator first
         if PATTERN_ORCHESTRATION_AVAILABLE and _pattern_orchestrator:
@@ -3301,15 +3263,12 @@ async def get_portfolio_holdings(request: Request):
         )
 
 @app.get("/api/portfolio/positions", response_model=SuccessResponse)
-async def get_portfolio_positions(request: Request):
-    """Get portfolio positions with detailed breakdown"""
+async def get_portfolio_positions(user: dict = Depends(require_auth)):
+    """
+    Get portfolio positions with detailed breakdown
+    AUTH_STATUS: MIGRATED - Sprint 3
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Similar to holdings but with more position details
         positions = {
@@ -3364,15 +3323,12 @@ async def get_portfolio_positions(request: Request):
         )
 
 @app.get("/api/portfolio/summary", response_model=SuccessResponse)
-async def get_portfolio_summary(request: Request):
-    """Get portfolio summary with key metrics"""
+async def get_portfolio_summary(user: dict = Depends(require_auth)):
+    """
+    Get portfolio summary with key metrics
+    AUTH_STATUS: MIGRATED - Sprint 3
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         summary = {
             "portfolio_id": "DEFAULT_PORTFOLIO_ID",
@@ -3417,15 +3373,12 @@ async def get_portfolio_summary(request: Request):
 # ============================================================================
 
 @app.get("/api/risk/metrics", response_model=SuccessResponse)
-async def get_risk_metrics(request: Request):
-    """Get comprehensive risk metrics for the portfolio"""
+async def get_risk_metrics(user: dict = Depends(require_auth)):
+    """
+    Get comprehensive risk metrics for the portfolio
+    AUTH_STATUS: MIGRATED - Sprint 3
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Try pattern orchestrator first for risk metrics
         if PATTERN_ORCHESTRATION_AVAILABLE and _pattern_orchestrator:
@@ -3492,15 +3445,12 @@ async def get_risk_metrics(request: Request):
         )
 
 @app.get("/api/risk/var", response_model=SuccessResponse)
-async def get_value_at_risk(request: Request):
-    """Get Value at Risk (VaR) calculations"""
+async def get_value_at_risk(user: dict = Depends(require_auth)):
+    """
+    Get Value at Risk (VaR) calculations
+    AUTH_STATUS: MIGRATED - Sprint 3
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         var_data = {
             "portfolio_id": "DEFAULT_PORTFOLIO_ID",
@@ -3552,15 +3502,12 @@ async def get_value_at_risk(request: Request):
 # ============================================================================
 
 @app.get("/api/macro/cycles", response_model=SuccessResponse)
-async def get_macro_cycles(request: Request):
-    """Get detailed macro cycle information"""
+async def get_macro_cycles(user: dict = Depends(require_auth)):
+    """
+    Get detailed macro cycle information
+    AUTH_STATUS: MIGRATED - Sprint 3
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Try pattern orchestrator for cycle data
         if PATTERN_ORCHESTRATION_AVAILABLE and _pattern_orchestrator:
@@ -3649,15 +3596,12 @@ async def get_macro_cycles(request: Request):
         )
 
 @app.get("/api/macro/indicators", response_model=SuccessResponse)
-async def get_macro_indicators(request: Request):
-    """Get current macro economic indicators"""
+async def get_macro_indicators(user: dict = Depends(require_auth)):
+    """
+    Get current macro economic indicators
+    AUTH_STATUS: MIGRATED - Sprint 3
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         indicators = {
             "gdp": {
@@ -3725,15 +3669,12 @@ async def get_macro_indicators(request: Request):
 # ============================================================================
 
 @app.get("/api/quotes/{symbol}", response_model=SuccessResponse)
-async def get_quote(symbol: str, request: Request):
-    """Get real-time quote for a symbol"""
+async def get_quote(symbol: str, user: dict = Depends(require_auth)):
+    """
+    Get real-time quote for a symbol
+    AUTH_STATUS: MIGRATED - Sprint 3
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Mock quote data
         quote = {
@@ -3773,15 +3714,12 @@ async def get_quote(symbol: str, request: Request):
         )
 
 @app.get("/api/market/overview", response_model=SuccessResponse)
-async def get_market_overview(request: Request):
-    """Get market overview with major indices and stats"""
+async def get_market_overview(user: dict = Depends(require_auth)):
+    """
+    Get market overview with major indices and stats
+    AUTH_STATUS: MIGRATED - Sprint 3
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         overview = {
             "indices": {
@@ -5467,19 +5405,15 @@ async def get_holdings_ratings(user: dict = Depends(require_auth)):
 
 @app.get("/api/portfolio/transactions", response_model=SuccessResponse)
 async def get_portfolio_transactions(
-    request: Request,
     page: int = Query(1, ge=1),
-    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE)
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
+    user: dict = Depends(require_auth)
 ):
-    """Get portfolio-specific transactions (different from general transactions)"""
+    """
+    Get portfolio-specific transactions (different from general transactions)
+    AUTH_STATUS: MIGRATED - Sprint 3
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Generate portfolio-specific transaction data
         all_transactions = [
