@@ -26,6 +26,8 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
+import numpy as np
+
 from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 from app.core.provenance import ProvenanceWrapper, DataProvenance
@@ -2182,7 +2184,8 @@ class FinancialAnalyst(BaseAgent):
                 # Convert list of policies to a dict format for optimizer
                 merged_policy = {}
                 for policy in policies:
-                    if 'type' in policy:
+                    # Check if policy is a dict before accessing keys
+                    if isinstance(policy, dict) and 'type' in policy:
                         # Convert policy type to dict key
                         if policy['type'] == 'min_quality_score':
                             merged_policy['min_quality_score'] = policy.get('value', 0.0)

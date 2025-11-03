@@ -122,7 +122,8 @@ class OptimizerAgent(BaseAgent):
                 # Convert list of policies to a dict format for optimizer
                 merged_policy = {}
                 for policy in policies:
-                    if 'type' in policy:
+                    # Check if policy is a dict before accessing keys
+                    if isinstance(policy, dict) and 'type' in policy:
                         # Convert policy type to dict key
                         if policy['type'] == 'min_quality_score':
                             merged_policy['min_quality_score'] = policy.get('value', 0.0)
