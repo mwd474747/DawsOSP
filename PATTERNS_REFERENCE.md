@@ -207,17 +207,18 @@ PatternOrchestrator.run_pattern()
 }
 ```
 
-**{{state.field}}** - From execution state
+**{{step_name}}** or **{{step_name.field}}** - From previous step result (use step's "as" name)
 ```json
 {
-  "capability": "custom.transform",
+  "capability": "pricing.apply_pack",
   "args": {
-    "previous_result": "{{state.last_step}}"
-  }
+    "positions": "{{positions.positions}}"
+  },
+  "as": "valued_positions"
 }
 ```
 
-**{{step_name.field}}** - From previous step result (use step's "as" name)
+**Note**: All patterns now use direct references to step results. The `{{state.foo}}` style has been deprecated and all patterns have been migrated to use `{{foo}}` where `foo` is the step's `"as"` key.
 ```json
 {
   "capability": "metrics.compute_twr",

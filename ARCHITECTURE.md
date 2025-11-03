@@ -32,7 +32,7 @@ Pattern Definition (JSON) → Template Substitution → Agent Capability Calls �
 **Key Concepts**:
 - **Patterns**: Declarative JSON files defining multi-step workflows
 - **Capabilities**: Agent methods exposed as "capability.method" strings (e.g., "ledger.positions", "pricing.apply_pack")
-- **Template Substitution**: Dynamic values using `{{inputs.x}}`, `{{state.y}}`, `{{ctx.z}}`
+- **Template Substitution**: Dynamic values using `{{inputs.x}}`, `{{step_result}}`, `{{ctx.z}}`
 - **Request Context (RequestCtx)**: Immutable context ensuring reproducibility (pricing_pack_id, ledger_commit_hash, trace_id)
 
 **Example Pattern** ([backend/patterns/portfolio_overview.json](backend/patterns/portfolio_overview.json)):
@@ -46,6 +46,8 @@ Pattern Definition (JSON) → Template Substitution → Agent Capability Calls �
   ]
 }
 ```
+
+**Template Reference Style**: Patterns use direct references to step results via the step's `"as"` key. For example, if a step has `"as": "positions"`, subsequent steps can reference it as `{{positions}}` or access nested properties as `{{positions.positions}}`. This is simpler than the previous `{{state.foo}}` style which required a nested namespace.
 
 ### 2. Agent Runtime Layer
 

@@ -47,7 +47,7 @@
     {
       "capability": "pricing.apply_pack",
       "args": {
-        "positions": "{{state.positions}}",
+        "positions": "{{positions.positions}}",
         "pack_id": "{{ctx.pricing_pack_id}}"
       },
       "as": "valued_base"
@@ -86,11 +86,11 @@
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
         "regime": "DELEVERAGING",
-        "ltdc_phase": "{{state.ltdc.phase}}",
+        "ltdc_phase": "{{ltdc.phase}}",
         "scenarios": {
-          "money_printing": "{{state.money_printing}}",
-          "austerity": "{{state.austerity}}",
-          "default": "{{state.default}}"
+          "money_printing": "{{money_printing}}",
+          "austerity": "{{austerity}}",
+          "default": "{{default}}"
         }
       },
       "as": "hedge_suggestions"

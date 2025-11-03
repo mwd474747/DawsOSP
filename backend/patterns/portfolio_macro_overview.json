@@ -83,10 +83,10 @@
     {
       "capability": "charts.macro_overview",
       "args": {
-        "regime": "{{state.regime}}",
-        "indicators": "{{state.indicators}}",
-        "factor_exposures": "{{state.factor_exposures}}",
-        "dar": "{{state.dar}}"
+        "regime": "{{regime}}",
+        "indicators": "{{indicators}}",
+        "factor_exposures": "{{factor_exposures}}",
+        "dar": "{{dar}}"
       },
       "as": "charts"
     }

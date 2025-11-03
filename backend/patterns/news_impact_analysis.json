@@ -70,7 +70,7 @@
     {
       "capability": "news.search",
       "args": {
-        "entities": "{{state.valued.positions}}",
+        "entities": "{{valued.positions}}",
         "lookback_hours": "{{inputs.lookback_hours}}"
       },
       "as": "news_items"
@@ -78,8 +78,8 @@
     {
       "capability": "news.compute_portfolio_impact",
       "args": {
-        "news_items": "{{state.news_items}}",
-        "positions": "{{state.valued}}",
+        "news_items": "{{news_items}}",
+        "positions": "{{valued}}",
         "min_threshold": "{{inputs.min_impact_threshold}}"
       },
       "as": "impact_analysis"
@@ -88,7 +88,7 @@
       "capability": "alerts.create_if_threshold",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
-        "news_impact": "{{state.impact_analysis}}",
+        "news_impact": "{{impact_analysis}}",
         "threshold": 0.7
       },
       "as": "alert_result",

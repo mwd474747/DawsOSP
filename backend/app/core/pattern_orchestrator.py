@@ -8,7 +8,7 @@ Priority: P0 (Critical for pattern-driven execution)
 Features:
     - Load patterns from patterns/ directory
     - Execute DAG steps sequentially (parallel support in S2)
-    - Template substitution ({{state.foo}}, {{ctx.bar}}, {{inputs.baz}})
+    - Template substitution ({{foo}}, {{ctx.bar}}, {{inputs.baz}})
     - Build execution trace with agents_used, capabilities_used, sources
     - Per-panel staleness tracking
     - Conditional step execution
@@ -213,7 +213,7 @@ class PatternOrchestrator:
         1. Load pattern definitions from patterns/ directory
         2. Validate pattern structure against schema
         3. Execute steps in order (sequential for S1, parallel in S2)
-        4. Resolve template arguments ({{state.foo}}, {{ctx.bar}})
+        4. Resolve template arguments ({{foo}}, {{ctx.bar}}, {{inputs.baz}})
         5. Route capabilities to agent runtime
         6. Build execution trace for reproducibility
         7. Cache intermediate results in Redis
@@ -589,12 +589,10 @@ class PatternOrchestrator:
         pattern_start_time = time.time()
         pattern_status = "success"
 
-        # Initialize execution state with dual storage
-        # Support both top-level and nested 'state' namespace
+        # Initialize execution state
         state = {
             "ctx": ctx.to_dict(),  # Context accessible via {{ctx.foo}}
             "inputs": inputs,       # Inputs accessible via {{inputs.foo}}
-            "state": {}             # Additional namespace for state lookups
         }
         trace = Trace(pattern_id, ctx, agent_runtime=self.agent_runtime)
 
@@ -642,18 +640,14 @@ class PatternOrchestrator:
                             capability=capability,
                         ).observe(duration)
 
-                    # Store result in state with dual storage for compatibility
+                    # Store result in state
                     result_key = step.get("as", "last")
                     logger.info(f"📦 Storing result from {capability} in state['{result_key}']")
                     logger.info(f"Result type: {type(result)}, is None: {result is None}")
                     
-                    # DUAL STORAGE: Store in both top-level AND nested 'state' namespace
-                    # This ensures compatibility with different pattern reference styles
                     state[result_key] = result
-                    state["state"][result_key] = result
                     
                     logger.info(f"State after storing: keys={list(state.keys())}, '{result_key}' is None: {state.get(result_key) is None}")
-                    logger.info(f"State['state'] after storing: keys={list(state['state'].keys())}, '{result_key}' is None: {state['state'].get(result_key) is None}")
 
                     trace.add_step(capability, result, args, duration)
                     logger.debug(
@@ -730,7 +724,7 @@ class PatternOrchestrator:
         Resolve template arguments.
 
         Templates:
-            {{state.foo}} - Access state variable
+            {{foo}} - Access state variable (from previous step's "as" key)
             {{ctx.pricing_pack_id}} - Access context field
             {{inputs.symbol}} - Access user input
 
@@ -742,9 +736,9 @@ class PatternOrchestrator:
             Resolved arguments dict
 
         Example:
-            args = {"positions": "{{state.positions}}", "pack_id": "{{ctx.pricing_pack_id}}"}
-            state = {"positions": [...], "ctx": {"pricing_pack_id": "20241020_v1"}}
-            → {"positions": [...], "pack_id": "20241020_v1"}
+            args = {"positions": "{{positions.positions}}", "pack_id": "{{ctx.pricing_pack_id}}"}
+            state = {"positions": {...}, "ctx": {"pricing_pack_id": "20241020_v1"}}
+            → {"positions": {...}, "pack_id": "20241020_v1"}
         """
         resolved = {}
         for key, value in args.items():
@@ -764,7 +758,7 @@ class PatternOrchestrator:
         """
         # Handle string templates
         if isinstance(value, str) and value.startswith("{{") and value.endswith("}}"):
-            # Extract path: {{state.positions}} → ["state", "positions"]
+            # Extract path: {{positions}} → ["positions"] or {{positions.positions}} → ["positions", "positions"]
             path = value[2:-2].strip().split(".")
             result = state
             for part in path:
@@ -798,7 +792,7 @@ class PatternOrchestrator:
         Evaluate simple boolean conditions.
 
         Supported conditions:
-            - "state.positions.length > 0"
+            - "positions.length > 0" (where positions is a step result key)
             - "inputs.include_charts == true"
             - "ctx.portfolio_id != null"
 
@@ -815,7 +809,7 @@ class PatternOrchestrator:
         """
         try:
             # Replace template syntax for eval
-            # {{state.foo}} → state["foo"]
+            # {{foo}} → state["foo"] (where foo is a step result key)
             safe_condition = re.sub(
                 r'\{\{(\w+)\.(\w+)\}\}',
                 r'\1["\2"]',
@@ -852,7 +846,7 @@ EXAMPLE_PATTERN = {
             "capability": "pricing.apply_pack",
             "as": "valued_positions",
             "args": {
-                "positions": "{{state.positions}}",
+                "positions": "{{positions.positions}}",
                 "pack_id": "{{ctx.pricing_pack_id}}"
             }
         },
@@ -860,7 +854,7 @@ EXAMPLE_PATTERN = {
             "capability": "metrics.compute_twr",
             "as": "perf_metrics",
             "args": {
-                "positions": "{{state.valued_positions}}",
+                "positions": "{{valued_positions.positions}}",
                 "pack_id": "{{ctx.pricing_pack_id}}"
             }
         },
@@ -868,8 +862,8 @@ EXAMPLE_PATTERN = {
             "capability": "charts.overview",
             "as": "charts",
             "args": {
-                "positions": "{{state.valued_positions}}",
-                "metrics": "{{state.perf_metrics}}"
+                "positions": "{{valued_positions.positions}}",
+                "metrics": "{{perf_metrics}}"
             }
         }
     ],

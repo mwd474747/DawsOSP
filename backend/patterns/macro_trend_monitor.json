@@ -60,15 +60,15 @@
     {
       "capability": "macro.detect_trend_shifts",
       "args": {
-        "regime_history": "{{state.regime_history}}",
-        "factor_history": "{{state.factor_history}}"
+        "regime_history": "{{regime_history}}",
+        "factor_history": "{{factor_history}}"
       },
       "as": "trend_analysis"
     },
     {
       "capability": "alerts.suggest_presets",
       "args": {
-        "trend_analysis": "{{state.trend_analysis}}",
+        "trend_analysis": "{{trend_analysis}}",
         "portfolio_id": "{{inputs.portfolio_id}}"
       },
       "as": "alert_suggestions"

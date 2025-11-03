@@ -28,7 +28,7 @@
       "capability": "ratings.dividend_safety",
       "args": {
         "security_id": "{{inputs.security_id}}",
-        "fundamentals": "{{state.fundamentals}}"
+        "fundamentals": "{{fundamentals}}"
       },
       "as": "dividend_safety"
     },
@@ -36,7 +36,7 @@
       "capability": "ratings.moat_strength",
       "args": {
         "security_id": "{{inputs.security_id}}",
-        "fundamentals": "{{state.fundamentals}}"
+        "fundamentals": "{{fundamentals}}"
       },
       "as": "moat_strength"
     },
@@ -44,7 +44,7 @@
       "capability": "ratings.resilience",
       "args": {
         "security_id": "{{inputs.security_id}}",
-        "fundamentals": "{{state.fundamentals}}"
+        "fundamentals": "{{fundamentals}}"
       },
       "as": "resilience"
     },
@@ -52,7 +52,7 @@
       "capability": "ratings.aggregate",
       "args": {
         "security_id": "{{inputs.security_id}}",
-        "fundamentals": "{{state.fundamentals}}"
+        "fundamentals": "{{fundamentals}}"
       },
       "as": "aggregate"
     },
@@ -62,12 +62,12 @@
         "topic": "Explain the quality and moat ratings in Buffett's framework",
         "data": {
           "ratings": {
-            "dividend_safety": "{{state.dividend_safety}}",
-            "moat_strength": "{{state.moat_strength}}",
-            "resilience": "{{state.resilience}}",
-            "aggregate": "{{state.aggregate}}"
+            "dividend_safety": "{{dividend_safety}}",
+            "moat_strength": "{{moat_strength}}",
+            "resilience": "{{resilience}}",
+            "aggregate": "{{aggregate}}"
           },
-          "fundamentals": "{{state.fundamentals}}"
+          "fundamentals": "{{fundamentals}}"
         }
       },
       "as": "explanation"
