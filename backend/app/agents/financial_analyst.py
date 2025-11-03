@@ -36,6 +36,7 @@ from app.db import (
 )
 from app.services.pricing import get_pricing_service
 from app.services.currency_attribution import CurrencyAttributor
+from app.services.optimizer import get_optimizer_service
 
 logger = logging.getLogger("DawsOS.FinancialAnalyst")
 
@@ -2113,3 +2114,543 @@ class FinancialAnalyst(BaseAgent):
         
         logger.info(f"✅ portfolio.historical_nav: {len(historical_data)} data points")
         return self._attach_metadata(result, metadata)
+
+    # ============================================================================
+    # CONSOLIDATED CAPABILITIES FROM OPTIMIZER AGENT (Phase 3, Week 1)
+    # ============================================================================
+
+    async def financial_analyst_propose_trades(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: Optional[str] = None,
+        policy_json: Optional[Dict[str, Any]] = None,
+        policies: Optional[Dict[str, Any]] = None,  # Pattern compatibility
+        constraints: Optional[Dict[str, Any]] = None,  # Pattern compatibility
+        positions: Optional[List[Dict[str, Any]]] = None,
+        ratings: Optional[Dict[str, float]] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Generate rebalance trade proposals based on policy constraints.
+
+        Capability: financial_analyst.propose_trades
+        (Consolidated from optimizer.propose_trades)
+
+        Policy Constraints (policy_json):
+            - min_quality_score: Minimum aggregate quality rating (0-10)
+            - max_single_position_pct: Maximum weight per position (%)
+            - max_sector_pct: Maximum sector concentration (%)
+            - max_turnover_pct: Maximum turnover percentage
+            - max_tracking_error_pct: Maximum tracking error vs benchmark
+            - method: Optimization method (mean_variance, risk_parity, max_sharpe, cvar)
+
+        Args:
+            ctx: Request context
+            state: Execution state (may contain positions, ratings from prior steps)
+            portfolio_id: Portfolio UUID (optional, uses ctx.portfolio_id if not provided)
+            policy_json: Policy constraints dict (optional, uses defaults)
+            positions: Valued positions (optional, fetched if not provided)
+            ratings: Dict of {symbol: quality_score} (optional, from ratings agent)
+            **kwargs: Additional arguments
+
+        Returns:
+            Dict with:
+                - trades: List of trade proposals
+                - trade_count: int
+                - total_turnover: Decimal
+                - turnover_pct: float
+                - estimated_costs: Decimal
+                - cost_bps: float
+                - method: str (optimization method)
+                - constraints_met: bool
+                - warnings: List[str]
+                - _metadata: Metadata dict
+        """
+        # Resolve portfolio_id
+        if not portfolio_id:
+            portfolio_id = str(ctx.portfolio_id) if ctx.portfolio_id else None
+        if not portfolio_id:
+            raise ValueError("portfolio_id required for financial_analyst.propose_trades")
+
+        portfolio_uuid = UUID(portfolio_id)
+
+        # Merge policies and constraints for pattern compatibility
+        if policies or constraints:
+            # Handle both list and dict formats for policies
+            if isinstance(policies, list):
+                # Convert list of policies to a dict format for optimizer
+                merged_policy = {}
+                for policy in policies:
+                    if 'type' in policy:
+                        # Convert policy type to dict key
+                        if policy['type'] == 'min_quality_score':
+                            merged_policy['min_quality_score'] = policy.get('value', 0.0)
+                        elif policy['type'] == 'max_single_position':
+                            merged_policy['max_single_position_pct'] = policy.get('value', 20.0)
+                        elif policy['type'] == 'max_sector':
+                            merged_policy['max_sector_pct'] = policy.get('value', 30.0)
+                        elif policy['type'] == 'target_allocation':
+                            # Handle target allocations separately
+                            category = policy.get('category', '')
+                            value = policy.get('value', 0.0)
+                            merged_policy[f'target_{category}'] = value
+            else:
+                # Use policies as base if it's a dict
+                merged_policy = policies or {}
+
+            # Merge constraints if provided
+            if constraints and isinstance(constraints, dict):
+                # Add constraints to the policy dict
+                if 'max_turnover_pct' in constraints:
+                    merged_policy['max_turnover_pct'] = constraints['max_turnover_pct']
+                if 'max_te_pct' in constraints:
+                    merged_policy['max_tracking_error_pct'] = constraints['max_te_pct']
+                if 'min_lot_value' in constraints:
+                    merged_policy['min_lot_value'] = constraints['min_lot_value']
+
+            policy_json = merged_policy
+
+        # Default policy if not provided
+        if not policy_json:
+            policy_json = {
+                "min_quality_score": 0.0,
+                "max_single_position_pct": 20.0,
+                "max_sector_pct": 30.0,
+                "max_turnover_pct": 20.0,
+                "max_tracking_error_pct": 3.0,
+                "method": "mean_variance",
+            }
+
+        # Get pricing_pack_id from context (SACRED for reproducibility)
+        pricing_pack_id = ctx.pricing_pack_id
+        if not pricing_pack_id:
+            raise ValueError("pricing_pack_id required in context for financial_analyst.propose_trades")
+
+        # Get ratings from state if not provided
+        if not ratings and state.get("ratings"):
+            # Extract quality scores from ratings result
+            ratings_result = state["ratings"]
+            if isinstance(ratings_result, dict) and "positions" in ratings_result:
+                # Portfolio ratings mode
+                ratings = {
+                    pos["symbol"]: pos.get("rating", 0.0)
+                    for pos in ratings_result["positions"]
+                    if pos.get("rating") is not None
+                }
+            elif isinstance(ratings_result, dict) and "overall_rating" in ratings_result:
+                # Single security ratings mode
+                symbol = ratings_result.get("symbol")
+                if symbol:
+                    ratings = {symbol: float(ratings_result["overall_rating"]) / 10.0}
+
+        logger.info(
+            f"financial_analyst.propose_trades: portfolio_id={portfolio_id}, "
+            f"pricing_pack_id={pricing_pack_id}, "
+            f"policy={policy_json.get('method', 'mean_variance')}"
+        )
+
+        # Call optimizer service
+        optimizer_service = get_optimizer_service()
+
+        try:
+            result = await optimizer_service.propose_trades(
+                portfolio_id=portfolio_uuid,
+                policy_json=policy_json,
+                pricing_pack_id=pricing_pack_id,
+                ratings=ratings,
+                positions=positions,  # Pass caller-supplied positions
+                use_db=positions is None,  # Use DB only if positions not provided
+            )
+
+            # Attach metadata
+            metadata = self._create_metadata(
+                source=f"optimizer_service:{ctx.pricing_pack_id}",
+                asof=ctx.asof_date or date.today(),
+                ttl=0,  # No caching for trade proposals (always fresh)
+            )
+
+            return self._attach_metadata(result, metadata)
+
+        except Exception as e:
+            logger.error(f"Trade proposal generation failed: {e}", exc_info=True)
+            error_result = {
+                "trades": [],
+                "trade_count": 0,
+                "total_turnover": Decimal("0"),
+                "turnover_pct": 0.0,
+                "estimated_costs": Decimal("0"),
+                "cost_bps": 0.0,
+                "error": str(e),
+                "constraints_met": False,
+                "warnings": [f"Optimization failed: {str(e)}"],
+            }
+            metadata = self._create_metadata(
+                source=f"optimizer_service:error",
+                asof=ctx.asof_date or date.today(),
+                ttl=0,
+            )
+            return self._attach_metadata(error_result, metadata)
+
+    async def financial_analyst_analyze_impact(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: Optional[str] = None,
+        proposed_trades: Optional[List[Dict[str, Any]]] = None,
+        current_positions: Optional[List[Dict[str, Any]]] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Analyze impact of proposed trades on portfolio metrics.
+
+        Capability: financial_analyst.analyze_impact
+        (Consolidated from optimizer.analyze_impact)
+
+        Analyzes before/after:
+            - Portfolio value
+            - Average dividend safety
+            - Average moat strength
+            - Concentration (top 10 holdings)
+            - Tracking error
+            - Sharpe ratio
+            - Expected return
+
+        Args:
+            ctx: Request context
+            state: Execution state (may contain trades, positions from prior steps)
+            portfolio_id: Portfolio UUID
+            proposed_trades: List of trade proposals (from propose_trades)
+            current_positions: Current valued positions
+            **kwargs: Additional arguments
+
+        Returns:
+            Dict with:
+                - current_value: Decimal
+                - post_rebalance_value: Decimal
+                - value_delta: Decimal
+                - current_div_safety: float
+                - post_div_safety: float
+                - div_safety_delta: float
+                - current_moat: float
+                - post_moat: float
+                - moat_delta: float
+                - current_concentration: float
+                - post_concentration: float
+                - concentration_delta: float
+                - te_delta: float
+                - _metadata: Metadata dict
+        """
+        # Resolve portfolio_id
+        if not portfolio_id:
+            portfolio_id = str(ctx.portfolio_id) if ctx.portfolio_id else None
+        if not portfolio_id:
+            raise ValueError("portfolio_id required for financial_analyst.analyze_impact")
+
+        portfolio_uuid = UUID(portfolio_id)
+
+        # Get proposed_trades from multiple possible locations for pattern compatibility
+        if not proposed_trades:
+            # Check state for proposed_trades directly
+            proposed_trades = state.get("proposed_trades")
+        if not proposed_trades:
+            # Check state for rebalance_result.trades
+            rebalance_result = state.get("rebalance_result")
+            if rebalance_result and "trades" in rebalance_result:
+                proposed_trades = rebalance_result["trades"]
+        if not proposed_trades:
+            raise ValueError(
+                "proposed_trades required for financial_analyst.analyze_impact. "
+                "Run financial_analyst.propose_trades first."
+            )
+
+        # Get pricing_pack_id from context
+        pricing_pack_id = ctx.pricing_pack_id
+        if not pricing_pack_id:
+            raise ValueError("pricing_pack_id required in context for financial_analyst.analyze_impact")
+
+        logger.info(
+            f"financial_analyst.analyze_impact: portfolio_id={portfolio_id}, "
+            f"trades={len(proposed_trades)}, "
+            f"pricing_pack_id={pricing_pack_id}"
+        )
+
+        # Call optimizer service
+        optimizer_service = get_optimizer_service()
+
+        try:
+            result = await optimizer_service.analyze_impact(
+                portfolio_id=portfolio_uuid,
+                proposed_trades=proposed_trades,
+                pricing_pack_id=pricing_pack_id,
+            )
+
+            # Attach metadata
+            metadata = self._create_metadata(
+                source=f"optimizer_service:{ctx.pricing_pack_id}",
+                asof=ctx.asof_date or date.today(),
+                ttl=0,  # No caching for impact analysis
+            )
+
+            return self._attach_metadata(result, metadata)
+
+        except Exception as e:
+            logger.error(f"Impact analysis failed: {e}", exc_info=True)
+            error_result = {
+                "current_value": Decimal("0"),
+                "post_rebalance_value": Decimal("0"),
+                "value_delta": Decimal("0"),
+                "error": str(e),
+            }
+            metadata = self._create_metadata(
+                source=f"optimizer_service:error",
+                asof=ctx.asof_date or date.today(),
+                ttl=0,
+            )
+            return self._attach_metadata(error_result, metadata)
+
+    async def financial_analyst_suggest_hedges(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: Optional[str] = None,
+        scenario_id: Optional[str] = None,
+        scenario_result: Optional[Dict[str, Any]] = None,  # Pattern compatibility
+        max_cost_bps: float = 20.0,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Suggest hedge instruments for a scenario stress test.
+
+        Capability: financial_analyst.suggest_hedges
+        (Consolidated from optimizer.suggest_hedges)
+
+        Scenario Types:
+            - rates_up: Rate increase scenario
+            - equity_selloff: Equity market crash
+            - usd_up: USD appreciation
+            - credit_spread_widening: Credit spread blowout
+
+        Hedge Instruments:
+            - SPY put options (equity hedges)
+            - TLT put options (duration hedges)
+            - UUP short (USD hedges)
+            - LQD put options (credit hedges)
+
+        Args:
+            ctx: Request context
+            state: Execution state
+            portfolio_id: Portfolio UUID
+            scenario_id: Scenario ID (e.g., "rates_up", "equity_selloff")
+            **kwargs: Additional arguments
+
+        Returns:
+            Dict with:
+                - hedges: List[HedgeRecommendation] as dicts
+                - total_notional: Decimal
+                - expected_offset_pct: float (expected portfolio loss offset)
+                - scenario_id: str
+                - _metadata: Metadata dict
+        """
+        # Resolve portfolio_id
+        if not portfolio_id:
+            portfolio_id = str(ctx.portfolio_id) if ctx.portfolio_id else None
+        if not portfolio_id:
+            raise ValueError("portfolio_id required for financial_analyst.suggest_hedges")
+
+        portfolio_uuid = UUID(portfolio_id)
+
+        # Handle scenario_result from pattern or scenario_id parameter
+        if scenario_result:
+            # Extract scenario_id from scenario_result object
+            if isinstance(scenario_result, dict):
+                scenario_id = scenario_result.get("scenario_id") or scenario_result.get("id")
+                if not scenario_id:
+                    # Try to infer from scenario type or name
+                    scenario_id = scenario_result.get("scenario_type") or scenario_result.get("name") or "unknown"
+        elif not scenario_id:
+            raise ValueError("Either scenario_id or scenario_result required for financial_analyst.suggest_hedges")
+
+        # Get pricing_pack_id from context
+        pricing_pack_id = ctx.pricing_pack_id
+        if not pricing_pack_id:
+            raise ValueError("pricing_pack_id required in context for financial_analyst.suggest_hedges")
+
+        logger.info(
+            f"financial_analyst.suggest_hedges: portfolio_id={portfolio_id}, "
+            f"scenario_id={scenario_id}, "
+            f"pricing_pack_id={pricing_pack_id}"
+        )
+
+        # Call optimizer service
+        optimizer_service = get_optimizer_service()
+
+        try:
+            result = await optimizer_service.suggest_hedges(
+                portfolio_id=portfolio_uuid,
+                scenario_id=scenario_id,
+                pricing_pack_id=pricing_pack_id,
+            )
+
+            # Attach metadata
+            metadata = self._create_metadata(
+                source=f"optimizer_service:hedges:{scenario_id}",
+                asof=ctx.asof_date or date.today(),
+                ttl=3600,  # Cache for 1 hour
+            )
+
+            return self._attach_metadata(result, metadata)
+
+        except Exception as e:
+            logger.error(f"Hedge suggestion failed for scenario {scenario_id}: {e}", exc_info=True)
+            error_result = {
+                "hedges": [],
+                "total_notional": Decimal("0"),
+                "expected_offset_pct": 0.0,
+                "scenario_id": scenario_id,
+                "error": str(e),
+            }
+            metadata = self._create_metadata(
+                source=f"optimizer_service:error",
+                asof=ctx.asof_date or date.today(),
+                ttl=0,
+            )
+            return self._attach_metadata(error_result, metadata)
+
+    async def financial_analyst_suggest_deleveraging_hedges(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: Optional[str] = None,
+        regime: Optional[str] = None,
+        scenarios: Optional[Dict[str, Any]] = None,  # Pattern compatibility
+        ltdc_phase: Optional[str] = None,  # Pattern compatibility
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Suggest deleveraging hedges based on macro regime.
+
+        Capability: financial_analyst.suggest_deleveraging_hedges
+        (Consolidated from optimizer.suggest_deleveraging_hedges)
+
+        Dalio Deleveraging Playbook:
+            - DELEVERAGING / DEPRESSION: Aggressive deleveraging
+                - Reduce equity 40%
+                - Increase safe havens (GLD, TLT, CASH) to 30%
+                - Exit high-yield credit 100%
+
+            - LATE_EXPANSION: Moderate deleveraging
+                - Reduce equity 20%
+                - Increase defensive sectors (XLU, XLP, VNQ) to 15%
+
+            - REFLATION: Reduce duration, increase real assets
+                - Reduce long-duration bonds (TLT, IEF) 50%
+                - Increase inflation hedges (GLD, TIP, DBC) to 20%
+
+        Args:
+            ctx: Request context
+            state: Execution state (may contain regime from macro.detect_regime)
+            portfolio_id: Portfolio UUID
+            regime: Macro regime (e.g., "LATE_EXPANSION", "DELEVERAGING")
+            **kwargs: Additional arguments
+
+        Returns:
+            Dict with:
+                - recommendations: List[Dict] with action/instruments/rationale
+                - regime: str
+                - total_reduction_pct: float
+                - total_allocation_pct: float
+                - _metadata: Metadata dict
+        """
+        # Resolve portfolio_id
+        if not portfolio_id:
+            portfolio_id = str(ctx.portfolio_id) if ctx.portfolio_id else None
+        if not portfolio_id:
+            raise ValueError("portfolio_id required for financial_analyst.suggest_deleveraging_hedges")
+
+        portfolio_uuid = UUID(portfolio_id)
+
+        # Resolve regime from pattern parameters or state
+        if ltdc_phase:
+            # Map LTDC phase to regime
+            regime_mapping = {
+                "Phase 1": "LATE_EXPANSION",
+                "Phase 2": "DELEVERAGING",
+                "Phase 3": "DEPRESSION",
+                "Phase 4": "EARLY_EXPANSION",
+            }
+            regime = regime_mapping.get(ltdc_phase, "LATE_EXPANSION")
+        elif scenarios:
+            # Infer regime from scenario results
+            # Look for the most severe scenario impact
+            max_impact = 0.0
+            regime = "LATE_EXPANSION"  # Default
+            for scenario_name, scenario_result in scenarios.items():
+                if isinstance(scenario_result, dict):
+                    impact = scenario_result.get("total_delta_pct", 0.0)
+                    if impact > max_impact:
+                        max_impact = impact
+                        # Map scenario to regime
+                        if "default" in scenario_name.lower():
+                            regime = "DEPRESSION"
+                        elif "austerity" in scenario_name.lower():
+                            regime = "DELEVERAGING"
+                        elif "money_printing" in scenario_name.lower():
+                            regime = "LATE_EXPANSION"
+        elif not regime:
+            # Get regime from state if not provided
+            regime_result = state.get("regime")
+            if regime_result and isinstance(regime_result, dict):
+                regime = regime_result.get("regime")
+
+        if not regime:
+            raise ValueError(
+                "regime required for financial_analyst.suggest_deleveraging_hedges. "
+                "Provide regime, ltdc_phase, scenarios, or run macro.detect_regime first."
+            )
+
+        # Get pricing_pack_id from context
+        pricing_pack_id = ctx.pricing_pack_id
+        if not pricing_pack_id:
+            raise ValueError("pricing_pack_id required in context for financial_analyst.suggest_deleveraging_hedges")
+
+        logger.info(
+            f"financial_analyst.suggest_deleveraging_hedges: portfolio_id={portfolio_id}, "
+            f"regime={regime}, "
+            f"pricing_pack_id={pricing_pack_id}"
+        )
+
+        # Call optimizer service
+        optimizer_service = get_optimizer_service()
+
+        try:
+            result = await optimizer_service.suggest_deleveraging_hedges(
+                portfolio_id=portfolio_uuid,
+                regime=regime,
+                pricing_pack_id=pricing_pack_id,
+            )
+
+            # Attach metadata
+            metadata = self._create_metadata(
+                source=f"optimizer_service:deleveraging:{regime}",
+                asof=ctx.asof_date or date.today(),
+                ttl=3600,  # Cache for 1 hour
+            )
+
+            return self._attach_metadata(result, metadata)
+
+        except Exception as e:
+            logger.error(f"Deleveraging hedge suggestion failed for regime {regime}: {e}", exc_info=True)
+            error_result = {
+                "recommendations": [],
+                "regime": regime,
+                "total_reduction_pct": 0.0,
+                "total_allocation_pct": 0.0,
+                "error": str(e),
+            }
+            metadata = self._create_metadata(
+                source=f"optimizer_service:error",
+                asof=ctx.asof_date or date.today(),
+                ttl=0,
+            )
+            return self._attach_metadata(error_result, metadata)
