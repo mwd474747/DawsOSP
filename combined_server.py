@@ -1146,19 +1146,13 @@ async def test_pool_access():
     return results
 
 @app.post("/api/patterns/execute", response_model=SuccessResponse)
-async def execute_pattern(http_request: Request, request: ExecuteRequest):
+async def execute_pattern(request: ExecuteRequest):
     """
     Execute a pattern through the orchestrator
     """
     try:
-        # Get authenticated user from JWT token
-        user = await get_current_user(http_request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
-        user_id = user["id"]
+        # Get user from token (optional - for now we'll use a default)
+        user_id = "user-001"  # In production, extract from JWT token
 
         # Execute the pattern
         # Handle both 'inputs' and 'params' fields for backwards compatibility
