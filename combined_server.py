@@ -830,15 +830,6 @@ def verify_jwt_token(token: str) -> Optional[dict]:
 # async def get_current_user(request_or_token: Union[Request, str]) -> Optional[dict]:
 #     ...
 
-    if payload:
-        return {
-            "id": payload.get("sub"),
-            "email": payload.get("email"),
-            "role": payload.get("role")
-        }
-
-    return None
-
 # ============================================================================
 # Authentication Functions - Now imported from backend.app.auth.dependencies
 # Sprint 1: Authentication refactoring completed
@@ -1100,16 +1091,11 @@ async def test_pool_access():
     return results
 
 @app.post("/api/patterns/execute", response_model=SuccessResponse)
-async def execute_pattern(request: ExecuteRequest, http_request: Request):
+async def execute_pattern(request: ExecuteRequest, user: dict = Depends(require_auth)):
     """
     Execute a pattern through the orchestrator
-    AUTH_STATUS: FIXED - Sprint 1
+    AUTH_STATUS: MIGRATED - Sprint 3 (Final)
     """
-    # Get user from JWT token - FIXED in Sprint 1 (was hardcoded user-001)
-    # Check auth BEFORE try block to avoid catching HTTPException
-    user = await get_current_user(http_request)
-    if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
     user_id = user["id"]
     
     try:
