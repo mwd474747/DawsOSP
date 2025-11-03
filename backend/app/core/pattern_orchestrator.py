@@ -645,18 +645,10 @@ class PatternOrchestrator:
                     logger.info(f"📦 Storing result from {capability} in state['{result_key}']")
                     logger.info(f"Result type: {type(result)}, is None: {result is None}")
                     
-                    # Smart unwrapping: If result is a dict that contains a key matching result_key,
-                    # and the frontend expects just that value (common for chart data),
-                    # extract just that value to avoid nested access patterns
-                    if isinstance(result, dict) and result_key in result:
-                        # Special case: for keys that typically contain arrays/data the frontend expects directly
-                        if result_key in ['historical_nav', 'currency_attr', 'sector_allocation', 'allocation_data']:
-                            logger.info(f"🔓 Smart unwrapping: extracting '{result_key}' value from result dict")
-                            state[result_key] = result[result_key]
-                        else:
-                            state[result_key] = result
-                    else:
-                        state[result_key] = result
+                    # Store result directly without smart unwrapping to avoid nested access patterns
+                    # Each pattern should explicitly reference the data structure it needs
+                    # This prevents double-nesting issues (result.result.data)
+                    state[result_key] = result
                     
                     logger.info(f"State after storing: keys={list(state.keys())}, '{result_key}' is None: {state.get(result_key) is None}")
 

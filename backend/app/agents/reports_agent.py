@@ -27,7 +27,6 @@ Usage:
 import base64
 import logging
 from typing import Any, Dict, List, Optional
-from uuid import UUID
 
 from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
@@ -298,17 +297,3 @@ class ReportsAgent(BaseAgent):
             return "production"
         else:
             return "staging"
-# ============================================================================
-# Module-Level Helper
-# ============================================================================
-def get_reports_agent(services: Dict[str, Any]) -> ReportsAgent:
-    """
-    Get ReportsAgent instance.
-
-    Args:
-        services: Service container
-
-    Returns:
-        ReportsAgent instance
-    """
-    return ReportsAgent("reports_agent", services)

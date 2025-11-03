@@ -20,12 +20,12 @@ Usage:
 
 import logging
 import os
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 from decimal import Decimal
 from uuid import UUID
 
-from app.agents.base_agent import BaseAgent, AgentMetadata
+from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 from app.services.fundamentals_transformer import transform_fmp_to_ratings_format
 

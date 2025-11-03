@@ -26,11 +26,11 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from app.agents.base_agent import BaseAgent, AgentMetadata
+from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 from app.core.provenance import ProvenanceWrapper, DataProvenance
-from app.services.macro import MacroService, Regime
-from app.services.cycles import CyclesService, CycleType
+from app.services.macro import MacroService
+from app.services.cycles import CyclesService
 from app.services.macro_aware_scenarios import MacroAwareScenarioService
 
 logger = logging.getLogger("DawsOS.MacroHound")

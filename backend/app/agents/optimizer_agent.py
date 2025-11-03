@@ -29,7 +29,7 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from app.agents.base_agent import BaseAgent, AgentMetadata
+from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 from app.services.optimizer import get_optimizer_service
 

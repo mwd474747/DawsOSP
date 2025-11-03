@@ -28,7 +28,7 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from app.agents.base_agent import BaseAgent, AgentMetadata
+from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 from app.services.ratings import get_ratings_service
 from app.services.fundamentals_transformer import transform_fmp_to_ratings_format

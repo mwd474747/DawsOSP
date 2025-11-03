@@ -17,9 +17,8 @@ Architecture:
 
 import logging
 from typing import Any, Dict, List, Optional
-from decimal import Decimal
 
-from app.agents.base_agent import BaseAgent, AgentMetadata
+from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 
 logger = logging.getLogger("DawsOS.AlertsAgent")

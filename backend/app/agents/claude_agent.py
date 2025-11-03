@@ -27,7 +27,7 @@ import json
 import httpx
 from typing import Any, Dict, List, Optional
 
-from app.agents.base_agent import BaseAgent, AgentMetadata
+from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 
 logger = logging.getLogger("DawsOS.ClaudeAgent")

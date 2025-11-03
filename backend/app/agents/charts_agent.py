@@ -19,7 +19,7 @@ import logging
 from typing import Any, Dict, List, Optional
 from decimal import Decimal
 
-from app.agents.base_agent import BaseAgent, AgentMetadata
+from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 
 logger = logging.getLogger("DawsOS.ChartsAgent")
@@ -36,7 +36,6 @@ class ChartsAgent(BaseAgent):
         return [
             "charts.macro_overview",
             "charts.scenario_deltas",
-            "charts.overview",
         ]
 
     async def charts_macro_overview(

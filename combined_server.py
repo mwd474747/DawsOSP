@@ -4644,16 +4644,25 @@ async def get_ai_insights(
 
 @app.get("/api/corporate-actions", response_model=SuccessResponse)
 async def get_corporate_actions(
-    portfolio_id: Optional[str] = Query(None),
-    days_ahead: int = Query(30, ge=1, le=365),
+    portfolio_id: str = Query(..., description="Portfolio ID to get corporate actions for"),
+    days_ahead: int = Query(30, ge=1, le=365, description="Number of days to look ahead"),
     user: dict = Depends(require_auth)
 ):
     """
-    Get upcoming corporate actions for portfolio holdings
+    Get upcoming corporate actions for portfolio holdings.
+    Requires portfolio_id to be specified.
+    
     AUTH_STATUS: MIGRATED - Sprint 2
     NOTE: Not yet implemented - returns empty data
     """
     try:
+        # Validate portfolio_id format (basic UUID check)
+        if not portfolio_id or len(portfolio_id) != 36:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid portfolio_id format"
+            )
+        
         # Corporate actions tracking not implemented in alpha
         # Return empty array with informative message
         response = {
