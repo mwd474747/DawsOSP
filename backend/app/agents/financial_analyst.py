@@ -39,6 +39,8 @@ from app.db import (
 from app.services.pricing import get_pricing_service
 from app.services.currency_attribution import CurrencyAttributor
 from app.services.optimizer import get_optimizer_service
+from app.services.ratings import get_ratings_service
+from app.services.fundamentals_transformer import transform_fmp_to_ratings_format
 
 logger = logging.getLogger("DawsOS.FinancialAnalyst")
 
