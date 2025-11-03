@@ -3451,12 +3451,35 @@
                     
                     const ctx = chartRef.current.getContext('2d');
                     
+                    // Handle nested agent return structures (Phase 1: Fix data nesting)
+                    // Agent may return: {historical_nav: [{date, value}], ...} or {data: [{date, value}]}
+                    let chartLabels = [];
+                    let chartValues = [];
+                    
+                    if (data.labels && data.values) {
+                        // Flat structure with labels and values
+                        chartLabels = data.labels;
+                        chartValues = data.values;
+                    } else if (data.data && Array.isArray(data.data)) {
+                        // Array of {date, value} or {x, y}
+                        chartLabels = data.data.map(d => d.date || d.x);
+                        chartValues = data.data.map(d => d.value || d.y);
+                    } else if (Array.isArray(data)) {
+                        // Direct array of {date, value}
+                        chartLabels = data.map(d => d.date || d.x);
+                        chartValues = data.map(d => d.value || d.y);
+                    } else if (data.historical_nav && Array.isArray(data.historical_nav)) {
+                        // Nested structure from agent: {historical_nav: [{date, value}], ...}
+                        chartLabels = data.historical_nav.map(d => d.date || d.x);
+                        chartValues = data.historical_nav.map(d => d.value || d.y);
+                    }
+                    
                     // Prepare chart data
                     const chartData = {
-                        labels: data.labels || (data.data ? data.data.map(d => d.date || d.x) : []),
+                        labels: chartLabels,
                         datasets: [{
                             label: config.label || 'Value',
-                            data: data.values || (data.data ? data.data.map(d => d.value || d.y) : []),
+                            data: chartValues,
                             borderColor: config.color || 'rgb(59, 130, 246)',
                             backgroundColor: config.backgroundColor || 'rgba(59, 130, 246, 0.1)',
                             tension: 0.1,
@@ -3720,9 +3743,18 @@
                     
                     const ctx = chartRef.current.getContext('2d');
                     
+                    // Handle nested agent return structures (Phase 1: Fix data nesting)
+                    // Agent may return: {sector_allocation: {Tech: 30, ...}, ...} or {Tech: 30, ...}
+                    let chartDataObj = data;
+                    
+                    if (data.sector_allocation && typeof data.sector_allocation === 'object' && !Array.isArray(data.sector_allocation)) {
+                        // Nested structure from agent: {sector_allocation: {Tech: 30, ...}, ...}
+                        chartDataObj = data.sector_allocation;
+                    }
+                    
                     // Prepare chart data
-                    const labels = Object.keys(data);
-                    const values = Object.values(data);
+                    const labels = Object.keys(chartDataObj);
+                    const values = Object.values(chartDataObj);
                     
                     chartInstance.current = new Chart(ctx, {
                         type: 'pie',
@@ -6202,10 +6234,9 @@
             function getDataSourceFromResponse(data) {
                 if (!data) return 'demo';
                 
-                // Check for metadata indicating data source
-                if (data._metadata?.source) {
-                    return data._metadata.source;
-                }
+                // Phase 1: Metadata removed from results (moved to trace only)
+                // Metadata no longer available in results, use default 'demo'
+                // TODO: Read from trace if data source display is needed
                 
                 // Check for error states that indicate demo data
                 if (data.error || data.fallback) {
@@ -6986,9 +7017,9 @@
                 
                 const displayHoldings = showAll ? holdings : holdings.slice(0, 5);
                 
-                // Determine data source for provenance badge
-                const dataSource = holdings[0]?._metadata?.source || 
-                                  (holdings.length > 0 ? 'cached' : 'demo');
+                // Phase 1: Metadata removed from results (moved to trace only)
+                // Use default 'cached' if holdings exist, 'demo' if empty
+                const dataSource = holdings.length > 0 ? 'cached' : 'demo';
                 console.log('[HoldingsTable] Data source:', dataSource, holdings);
                 
                 return e('div', { className: 'card', style: { position: 'relative' } },

@@ -1963,14 +1963,18 @@ class FinancialAnalyst(BaseAgent):
                 percentage = float((value / total_value) * 100)
                 sector_allocation[sector] = round(percentage, 2)
         
+        # Phase 1: Fix data nesting - Return flattened structure for chart compatibility
+        # Chart expects: Flat object {Tech: 30, Finance: 20, ...}
+        # Return flat structure directly (chart component handles nested gracefully)
         result = {
-            "sector_allocation": sector_allocation,
+            **sector_allocation,  # Flattened: {Tech: 30, Finance: 20, ...}
+            # Additional metadata (preserved but not used by chart)
             "total_sectors": len(sector_allocation),
             "total_value": float(total_value),
             "currency": ctx.base_currency or "USD",
         }
         
-        # Attach metadata
+        # Attach metadata (will be moved to trace only in Phase 1.7)
         metadata = self._create_metadata(
             source="calculated_from_positions",
             asof=ctx.asof_date,
@@ -2058,8 +2062,14 @@ class FinancialAnalyst(BaseAgent):
         else:
             total_return = 0
         
+        # Phase 1: Fix data nesting - Return flattened structure for chart compatibility
+        # Chart expects: {data: [{date, value}], labels: [...], values: [...]}
+        # OR: Direct array of {date, value} objects
         result = {
-            "historical_nav": historical_data,
+            "data": historical_data,  # Primary chart data array
+            "labels": [d["date"] for d in historical_data] if historical_data else [],
+            "values": [d["value"] for d in historical_data] if historical_data else [],
+            # Additional metadata (preserved but not used by chart)
             "lookback_days": lookback_days,
             "start_date": historical_data[0]["date"] if historical_data else None,
             "end_date": historical_data[-1]["date"] if historical_data else None,
@@ -2067,7 +2077,7 @@ class FinancialAnalyst(BaseAgent):
             "data_points": len(historical_data),
         }
         
-        # Attach metadata
+        # Attach metadata (will be moved to trace only in Phase 1.7)
         metadata = self._create_metadata(
             source="portfolio_daily_values" if len(historical_data) > 0 else "simulated",
             asof=ctx.asof_date,

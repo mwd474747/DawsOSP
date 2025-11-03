@@ -84,18 +84,33 @@ class Trace:
         """
         self.capabilities_used.add(capability)
 
-        # Extract metadata from result if available
+        # Extract metadata from result if available (Phase 1: Move metadata to trace only)
+        # Support both __metadata__ attribute and _metadata key in dicts
+        metadata = None
         if hasattr(result, "__metadata__"):
-            meta = result.__metadata__
-            if hasattr(meta, "agent_name") and meta.agent_name:
-                self.agents_used.add(meta.agent_name)
-            if hasattr(meta, "source") and meta.source:
-                self.sources.add(meta.source)
-            if hasattr(meta, "asof") and meta.asof:
+            metadata = result.__metadata__
+        elif isinstance(result, dict) and "_metadata" in result:
+            # Extract metadata dict and convert to object-like structure for compatibility
+            metadata_dict = result["_metadata"]
+            class MetadataObj:
+                def __init__(self, d):
+                    self.agent_name = d.get("agent_name")
+                    self.source = d.get("source")
+                    self.asof = d.get("asof")
+                    self.ttl = d.get("ttl")
+                    self.confidence = d.get("confidence")
+            metadata = MetadataObj(metadata_dict)
+        
+        if metadata:
+            if hasattr(metadata, "agent_name") and metadata.agent_name:
+                self.agents_used.add(metadata.agent_name)
+            if hasattr(metadata, "source") and metadata.source:
+                self.sources.add(metadata.source)
+            if hasattr(metadata, "asof") and metadata.asof:
                 self.per_panel_staleness.append({
                     "capability": capability,
-                    "asof": str(meta.asof),
-                    "ttl": getattr(meta, "ttl", None),
+                    "asof": str(metadata.asof),
+                    "ttl": getattr(metadata, "ttl", None),
                 })
         
         # Extract provenance information if available
@@ -645,10 +660,17 @@ class PatternOrchestrator:
                     logger.info(f"📦 Storing result from {capability} in state['{result_key}']")
                     logger.info(f"Result type: {type(result)}, is None: {result is None}")
                     
+                    # Phase 1: Remove metadata from results (metadata moved to trace only)
+                    # Strip _metadata key from dict results before storing
+                    cleaned_result = result
+                    if isinstance(result, dict) and "_metadata" in result:
+                        cleaned_result = {k: v for k, v in result.items() if k != "_metadata"}
+                        logger.debug(f"Removed _metadata from {result_key} result (moved to trace)")
+                    
                     # Store result directly without smart unwrapping to avoid nested access patterns
                     # Each pattern should explicitly reference the data structure it needs
                     # This prevents double-nesting issues (result.result.data)
-                    state[result_key] = result
+                    state[result_key] = cleaned_result
                     
                     logger.info(f"State after storing: keys={list(state.keys())}, '{result_key}' is None: {state.get(result_key) is None}")
 
