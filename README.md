@@ -40,7 +40,7 @@ python combined_server.py
 - ✅ **Transaction History**: Complete audit trail with pagination
 - ✅ **Alerts System**: Real-time monitoring and notifications
 - ✅ **PDF Reports**: Professional report generation
-- ✅ **17 Complete UI Pages**: Fully functional React SPA
+- ✅ **18 Complete UI Pages**: Fully functional React SPA
 
 ---
 
@@ -48,10 +48,10 @@ python combined_server.py
 
 **Current Production Stack**:
 - **UI**: `full_ui.html` - Single-page React application (10,882 lines, no build step)
-- **Server**: `combined_server.py` - FastAPI server (6,052 lines, 54 endpoints)
+- **Server**: `combined_server.py` - FastAPI server (6,043 lines, 53 endpoints)
 - **Database**: PostgreSQL + TimescaleDB
 - **Agents**: 9 agents providing ~70 capabilities
-- **Patterns**: 12 pattern definitions for orchestration
+- **Patterns**: 13 pattern definitions for orchestration
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.
 
@@ -155,7 +155,7 @@ DawsOSP/
 │   │   ├── core/                 # AgentRuntime, PatternOrchestrator
 │   │   ├── services/             # Business logic
 │   │   └── db/                   # Database layer
-│   ├── patterns/                 # 12 pattern definitions (JSON)
+│   ├── patterns/                 # 13 pattern definitions (JSON)
 │   ├── db/
 │   │   ├── schema/               # Database schema files
 │   │   └── seeds/                # Seed data
@@ -240,7 +240,9 @@ The server will start on `http://localhost:8000/`
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and design
 - **[PRODUCT_SPEC.md](PRODUCT_SPEC.md)** - Product specifications
+- **[DATABASE.md](DATABASE.md)** - Database reference and operations
 - **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** - Development guide
+- **[PATTERNS_REFERENCE.md](PATTERNS_REFERENCE.md)** - Pattern system reference
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deployment instructions
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
 - **API Docs**: http://localhost:8000/docs (when running)
