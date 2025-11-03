@@ -4651,77 +4651,35 @@ async def get_corporate_actions(
     """
     Get upcoming corporate actions for portfolio holdings
     AUTH_STATUS: MIGRATED - Sprint 2
+    NOTE: Not yet implemented - returns empty data
     """
     try:
-
-        # Mock corporate actions data
-        actions = {
-            "portfolio_id": portfolio_id or "mock-portfolio",
+        # Corporate actions tracking not implemented in alpha
+        # Return empty array with informative message
+        response = {
+            "portfolio_id": portfolio_id,
             "time_horizon_days": days_ahead,
-            "actions": [
-                {
-                    "id": "ca_001",
-                    "symbol": "AAPL",
-                    "type": "dividend",
-                    "action": "Quarterly Dividend",
-                    "ex_date": "2025-11-07",
-                    "record_date": "2025-11-10",
-                    "payment_date": "2025-11-14",
-                    "amount": 0.24,
-                    "currency": "USD",
-                    "impact": "You own 100 shares. Expected payment: $24.00",
-                    "status": "announced"
-                },
-                {
-                    "id": "ca_002",
-                    "symbol": "GOOGL",
-                    "type": "split",
-                    "action": "Stock Split",
-                    "announcement_date": "2025-11-01",
-                    "ex_date": "2025-12-01",
-                    "ratio": "20:1",
-                    "impact": "Your 50 shares will become 1,000 shares",
-                    "status": "announced"
-                },
-                {
-                    "id": "ca_003",
-                    "symbol": "MSFT",
-                    "type": "earnings",
-                    "action": "Earnings Release",
-                    "date": "2025-11-15",
-                    "time": "After Market Close",
-                    "consensus_eps": 2.85,
-                    "prior_eps": 2.69,
-                    "impact": "Potential volatility around earnings",
-                    "status": "scheduled"
-                },
-                {
-                    "id": "ca_004",
-                    "symbol": "T",
-                    "type": "merger",
-                    "action": "Merger Announcement",
-                    "announcement_date": "2025-10-25",
-                    "expected_close": "2026-Q2",
-                    "terms": "Cash and stock consideration",
-                    "impact": "Review position for tax implications",
-                    "status": "pending_shareholder_vote"
-                }
-            ],
+            "actions": [],
             "summary": {
-                "total_actions": 4,
-                "dividends_expected": 24.00,
-                "splits_pending": 1,
-                "earnings_releases": 1,
-                "mergers_acquisitions": 1
+                "total_actions": 0,
+                "dividends_expected": 0.00,
+                "splits_pending": 0,
+                "earnings_releases": 0,
+                "mergers_acquisitions": 0
             },
             "notifications": {
-                "urgent": ["GOOGL split approaching ex-date"],
-                "informational": ["MSFT earnings on 11/15", "T merger vote scheduled"]
+                "urgent": [],
+                "informational": []
             },
-            "last_updated": datetime.utcnow().isoformat()
+            "last_updated": datetime.utcnow().isoformat(),
+            "metadata": {
+                "message": "Corporate actions tracking not implemented in alpha version",
+                "version": "alpha",
+                "note": "Past dividends are tracked in the transactions table"
+            }
         }
 
-        return SuccessResponse(data=actions)
+        return SuccessResponse(data=response)
 
     except HTTPException:
         raise

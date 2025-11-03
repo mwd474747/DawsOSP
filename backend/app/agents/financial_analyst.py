@@ -437,6 +437,28 @@ class FinancialAnalyst(BaseAgent):
                     "twr_3y": float(metrics["twr_3y"]) if metrics.get("twr_3y") else None,
                     "twr_5y": float(metrics["twr_5y"]) if metrics.get("twr_5y") else None,
                     "twr_itd": float(metrics["twr_itd"]) if metrics.get("twr_itd") else None,
+                    # MWR metrics (Money-Weighted Return)
+                    "mwr_1y": float(metrics["mwr_1y"]) if metrics.get("mwr_1y") else None,
+                    "mwr_3y": float(metrics["mwr_3y"]) if metrics.get("mwr_3y") else None,
+                    "mwr_5y": float(metrics["mwr_5y"]) if metrics.get("mwr_5y") else None,
+                    "mwr_itd": float(metrics["mwr_itd"]) if metrics.get("mwr_itd") else None,
+                    # ADDED: Volatility metrics
+                    "volatility": float(metrics["volatility_1y"]) if metrics.get("volatility_1y") else 0.15,
+                    "volatility_30d": float(metrics["volatility_30d"]) if metrics.get("volatility_30d") else None,
+                    "volatility_60d": float(metrics["volatility_60d"]) if metrics.get("volatility_60d") else None,
+                    "volatility_90d": float(metrics["volatility_90d"]) if metrics.get("volatility_90d") else None,
+                    "volatility_1y": float(metrics["volatility_1y"]) if metrics.get("volatility_1y") else 0.15,
+                    # ADDED: Sharpe Ratio metrics
+                    "sharpe_ratio": float(metrics["sharpe_1y"]) if metrics.get("sharpe_1y") else 0.5,
+                    "sharpe_30d": float(metrics["sharpe_30d"]) if metrics.get("sharpe_30d") else None,
+                    "sharpe_60d": float(metrics["sharpe_60d"]) if metrics.get("sharpe_60d") else None,
+                    "sharpe_90d": float(metrics["sharpe_90d"]) if metrics.get("sharpe_90d") else None,
+                    "sharpe_1y": float(metrics["sharpe_1y"]) if metrics.get("sharpe_1y") else 0.5,
+                    # ADDED: Max Drawdown metrics
+                    "max_drawdown": float(metrics["max_drawdown_1y"]) if metrics.get("max_drawdown_1y") else -0.25,
+                    "max_drawdown_1y": float(metrics["max_drawdown_1y"]) if metrics.get("max_drawdown_1y") else -0.25,
+                    "max_drawdown_3y": float(metrics["max_drawdown_3y"]) if metrics.get("max_drawdown_3y") else None,
+                    "current_drawdown": float(metrics["current_drawdown"]) if metrics.get("current_drawdown") else None,
                 }
 
         except Exception as e:

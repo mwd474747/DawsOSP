@@ -115,29 +115,29 @@
       "metrics": [
         {
           "label": "TWR (1Y)",
-          "value": "{{twr.total_return}}",
+          "value": "{{perf_metrics.twr_1y}}",
           "format": "percentage",
           "color_condition": "sign"
         },
         {
           "label": "Volatility",
-          "value": "{{twr.volatility}}",
+          "value": "{{perf_metrics.volatility}}",
           "format": "percentage"
         },
         {
           "label": "Sharpe Ratio",
-          "value": "{{twr.sharpe}}",
+          "value": "{{perf_metrics.sharpe_ratio}}",
           "format": "decimal_2"
         },
         {
           "label": "Max Drawdown",
-          "value": "{{twr.max_drawdown}}",
+          "value": "{{perf_metrics.max_drawdown}}",
           "format": "percentage",
           "color": "red"
         },
         {
           "label": "Total Value",
-          "value": "{{valued.total_value}}",
+          "value": "{{valued_positions.total_value}}",
           "format": "currency"
         }
       ]
@@ -176,7 +176,7 @@
         {"field": "dividend_safety", "header": "Div Safety", "format": "rating", "width": 100},
         {"field": "moat_strength", "header": "Moat", "format": "rating", "width": 100}
       ],
-      "data": "{{valued.positions}}"
+      "data": "{{valued_positions.positions}}"
     }
   },
   "rights_required": ["portfolio_read"],
