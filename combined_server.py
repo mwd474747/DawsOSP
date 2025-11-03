@@ -107,7 +107,9 @@ except ImportError as e:
 
 # Environment Configuration
 DATABASE_URL = os.environ.get("DATABASE_URL")
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+# Check for Replit managed credentials first, then fall back to user's key
+ANTHROPIC_API_KEY = os.environ.get("AI_INTEGRATIONS_ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
+USING_REPLIT_INTEGRATION = bool(os.environ.get("AI_INTEGRATIONS_ANTHROPIC_API_KEY"))
 
 # JWT Configuration
 # JWT constants moved to backend/app/auth/dependencies.py - Sprint 1
@@ -117,7 +119,8 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 # JWT_EXPIRATION_HOURS = 24
 
 # API URLs
-CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
+# Use Replit's base URL if available, otherwise use default
+CLAUDE_API_URL = os.environ.get("AI_INTEGRATIONS_ANTHROPIC_BASE_URL") or "https://api.anthropic.com/v1/messages"
 FRED_API_KEY = os.environ.get("FRED_API_KEY")
 
 # Cache Configuration
@@ -3167,17 +3170,24 @@ async def ai_chat(request: AIChatRequest, user: dict = Depends(require_auth)):
         # Check if Claude API is configured
         if not ANTHROPIC_API_KEY:
             logger.warning("Claude API key not configured, returning fallback response")
+            error_message = ("I'm currently unable to process your request as the AI service is not configured. "
+                           "Please set up the Replit Anthropic integration or provide your own ANTHROPIC_API_KEY.")
             return JSONResponse(
                 content={
-                    "response": "I'm currently unable to process your request as the AI service is not configured. Please contact your administrator to set up the AI integration.",
+                    "response": error_message,
                     "metadata": {
                         **metadata,
                         "model": "fallback",
-                        "fallback_reason": "api_key_not_configured"
+                        "fallback_reason": "api_key_not_configured",
+                        "integration_method": "none"
                     }
                 },
                 status_code=200
             )
+        
+        # Log which integration method is being used
+        integration_method = "replit_managed" if USING_REPLIT_INTEGRATION else "user_provided"
+        logger.info(f"Using {integration_method} Anthropic API credentials")
         
         # Try to use ClaudeAgent if available
         if ANTHROPIC_AVAILABLE and anthropic:
@@ -3216,10 +3226,17 @@ async def ai_chat(request: AIChatRequest, user: dict = Depends(require_auth)):
                     user_prompt = f"{request.message}\n{context_str}"
                 
                 # Direct Claude API call (not through agent system)
-                client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+                # Use base URL if available (for Replit integration)
+                client = anthropic.Anthropic(
+                    api_key=ANTHROPIC_API_KEY,
+                    base_url=CLAUDE_API_URL if CLAUDE_API_URL != "https://api.anthropic.com/v1/messages" else None
+                )
+                
+                # Use updated model
+                model_name = "claude-3-5-sonnet-20241022"
                 
                 response = client.messages.create(
-                    model="claude-3-sonnet-20240229",
+                    model=model_name,
                     max_tokens=1500,
                     temperature=0.7,
                     system=system_prompt,
@@ -3232,7 +3249,8 @@ async def ai_chat(request: AIChatRequest, user: dict = Depends(require_auth)):
                 response_text = response.content[0].text if response.content else "I couldn't generate a response."
                 
                 # Update metadata
-                metadata["model"] = "claude-3-sonnet-20240229"
+                metadata["model"] = model_name
+                metadata["integration_method"] = integration_method
                 metadata["tokens_used"] = response.usage.total_tokens if hasattr(response, 'usage') else None
                 metadata["latency_ms"] = int((time.time() - start_time) * 1000)
                 
@@ -4567,16 +4585,26 @@ async def ai_chat(
         if not ANTHROPIC_API_KEY:
             raise HTTPException(
                 status_code=500,
-                detail="ANTHROPIC_API_KEY not configured. Please set it in environment variables."
+                detail="Claude API key not configured. Please set up the Replit Anthropic integration or provide your own ANTHROPIC_API_KEY."
             )
 
-        # Initialize Claude client
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        # Log which integration method is being used
+        integration_method = "replit_managed" if USING_REPLIT_INTEGRATION else "user_provided"
+        logger.info(f"Using {integration_method} Anthropic API credentials")
+        
+        # Initialize Claude client with base URL if available
+        client = anthropic.Anthropic(
+            api_key=ANTHROPIC_API_KEY,
+            base_url=CLAUDE_API_URL if CLAUDE_API_URL != "https://api.anthropic.com/v1/messages" else None
+        )
 
+        # Use updated model
+        model_name = "claude-3-5-sonnet-20241022"
+        
         # Direct API call to Claude
         response = await asyncio.to_thread(
             client.messages.create,
-            model="claude-3-sonnet-20240229",
+            model=model_name,
             messages=[{"role": "user", "content": ai_request.query}],
             max_tokens=1024,
             temperature=0.7
@@ -4587,7 +4615,8 @@ async def ai_chat(
 
         return SuccessResponse(data={
             "response": response_text,
-            "model": "claude-3-sonnet-20240229",
+            "model": model_name,
+            "integration_method": integration_method,
             "tokens": response.usage.total_tokens if hasattr(response, 'usage') else None
         })
 

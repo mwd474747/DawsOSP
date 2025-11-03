@@ -57,14 +57,30 @@ class ClaudeAgent(BaseAgent):
     
     def __init__(self, agent_id: str, services: Dict[str, Any] = None):
         super().__init__(agent_id, services)
-        self.api_key = os.environ.get("ANTHROPIC_API_KEY")
-        self.api_url = "https://api.anthropic.com/v1/messages"
-        self.model = "claude-3-sonnet-20240229"  # Using Sonnet for balance of cost and performance
+        
+        # Check for Replit managed credentials first, then fall back to user's key
+        self.api_key = os.environ.get("AI_INTEGRATIONS_ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
+        
+        # Use Replit's base URL if available, otherwise use default
+        self.api_url = os.environ.get("AI_INTEGRATIONS_ANTHROPIC_BASE_URL") or "https://api.anthropic.com/v1/messages"
+        
+        # Use updated Claude model
+        self.model = "claude-3-5-sonnet-20241022"  # Updated to latest Sonnet model
+        
+        # Track which integration method is being used
+        self.using_replit_integration = bool(os.environ.get("AI_INTEGRATIONS_ANTHROPIC_API_KEY"))
+        
+        if self.using_replit_integration:
+            logger.info("Using Replit managed Anthropic integration")
+        elif self.api_key:
+            logger.info("Using user-provided ANTHROPIC_API_KEY")
+        else:
+            logger.warning("No Anthropic API credentials found")
         
     async def _call_claude(self, system_prompt: str, user_prompt: str, temperature: float = 0.7) -> str:
         """Call Claude API with error handling."""
         if not self.api_key:
-            return "Claude API key not configured. Please set ANTHROPIC_API_KEY environment variable."
+            return "Claude API key not configured. Please set up the Replit Anthropic integration or provide your own ANTHROPIC_API_KEY environment variable."
             
         headers = {
             "x-api-key": self.api_key,
