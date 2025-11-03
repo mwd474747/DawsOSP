@@ -247,7 +247,7 @@ curl http://localhost:8000/health
 
 # UI tests
 # Open browser: http://localhost:8000/
-# Test all 17 pages manually
+# Test all 18 pages manually
 ```
 
 ---

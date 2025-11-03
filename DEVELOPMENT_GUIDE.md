@@ -55,7 +55,7 @@ DawsOSP/
 │   │   ├── services/           # Business logic
 │   │   ├── db/                 # Database layer
 │   │   └── auth/               # Authentication (JWT, RBAC)
-│   ├── patterns/               # 13 pattern definitions (JSON)
+│   ├── patterns/               # 12 pattern definitions (JSON)
 │   ├── db/
 │   │   ├── migrations/         # Sequential SQL migrations
 │   │   └── seeds/              # Seed data
