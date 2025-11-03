@@ -13,13 +13,13 @@ This index provides a single reference point for all DawsOS documentation. Docum
 **Documentation Statistics:**
 - **Core Documentation:** 9 files (root directory)
 - **Planning Documents:** 11 files (`docs/planning/`)
-- **Report Documents:** 14 files (`docs/reports/`)
-- **Analysis Documents:** 20 files (`docs/analysis/`)
-- **Guide Documents:** 4 files (`docs/guides/`)
-- **Reference Documents:** 9 files (`docs/reference/`)
-- **Archived Documents:** 28+ files (`.archive/` subdirectories)
+- **Report Documents:** 9 files (`docs/reports/`)
+- **Analysis Documents:** 18 files (`docs/analysis/`)
+- **Guide Documents:** 3 files (`docs/guides/`)
+- **Reference Documents:** 6 files (`docs/reference/`)
+- **Archived Documents:** 120+ files (`.archive/` subdirectories)
 
-**Total Active Documentation:** ~67 files
+**Total Active Documentation:** ~56 files
 
 ---
 
