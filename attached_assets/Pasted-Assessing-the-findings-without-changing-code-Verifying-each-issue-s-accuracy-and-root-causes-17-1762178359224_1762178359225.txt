@@ -1,0 +1,73 @@
+Assessing the findings without changing code. Verifying each issue's accuracy and root causes.
+
+
+[17 tools called]
+
+## Assessment Summary
+
+Findings are validated. Summary:
+
+### Confirmed issues (critical)
+
+1. Nested storage pattern — Confirmed
+   - `portfolio_historical_nav()` returns `{"historical_nav": [...]}`
+   - Pattern stores with `"as": "historical_nav"`
+   - Creates `state["historical_nav"] = {"historical_nav": [...]}`
+   - Frontend expects array directly → mismatch
+   - Fix: single-key unwrapping in orchestrator
+
+2. Optimizer page crash — Confirmed
+   - `full_ui.html:9441` uses `refreshing` without declaration
+   - Will cause JavaScript runtime error
+   - Fix: declare `useState` variable (1 line)
+
+### Partially confirmed (needs investigation)
+
+3. FX rates missing — Logic exists
+   - `PricingService.get_fx_rate()` implemented
+   - Warning logs show fallback to 1.0
+   - Likely data issue, not code
+   - Need to verify FX rates table has CAD/USD data
+
+4. Currency attribution empty — Service exists
+   - `CurrencyAttributor.compute_attribution()` implemented
+   - Query joins `lots`, `securities`, `prices`, `fx_rates`
+   - May be query filter issue (e.g., `qty_open > 0`)
+   - Need to debug with actual holdings data
+
+5. Security lookup broken — Confirmed
+   - `trade_execution.py:144` has `security_id = uuid4()  # TODO: Lookup from securities table`
+   - Creates orphaned records
+   - Fix: implement lookup by symbol → security_id
+
+### Assessment accuracy: ~90%
+
+- Correctly identified the nested storage issue
+- Correctly identified the optimizer crash
+- FX rates issue exists but may be data-related
+- Currency attribution needs query debugging
+- Security lookup confirmed with TODO comment
+
+### Revised priority
+
+1. Optimizer crash (5 min) — immediate fix
+2. Nested storage pattern (45 min) — chart blocker
+3. Security lookup (1 hour) — data quality
+4. FX rates (1 hour) — data/query verification
+5. Currency attribution (1–2 hours) — query debugging
+
+### Impact on dual storage refactoring
+
+The refactoring is correct and complete. These issues are separate:
+- Not caused by the refactoring
+- Not fixed by the refactoring
+- Must be addressed separately
+
+### Recommendations
+
+1. Deploy the dual storage refactoring (already committed)
+2. Fix optimizer crash immediately (1 line)
+3. Fix nested storage pattern (enables charts)
+4. Investigate and fix remaining issues in priority order
+
+The assessment document (`CRITICAL_ISSUES_ASSESSMENT.md`) contains detailed analysis of each issue with code evidence and fix recommendations.
