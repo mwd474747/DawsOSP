@@ -51,7 +51,10 @@ python combined_server.py
 - **Server**: `combined_server.py` - FastAPI server (6,043 lines, 53 endpoints)
 - **Database**: PostgreSQL + TimescaleDB
 - **Agents**: 9 agents providing ~70 capabilities
-  - **Note:** Phase 3 consolidation in progress (OptimizerAgent → FinancialAnalyst, Week 1 complete)
+  - **Note:** Phase 3 consolidation in progress:
+    - Week 1: OptimizerAgent → FinancialAnalyst ✅ COMPLETE (awaiting rollout)
+    - Week 2: RatingsAgent → FinancialAnalyst ✅ COMPLETE (awaiting rollout)
+    - Week 3: ChartsAgent → FinancialAnalyst ✅ COMPLETE (awaiting rollout)
 - **Patterns**: 12 pattern definitions for orchestration
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.

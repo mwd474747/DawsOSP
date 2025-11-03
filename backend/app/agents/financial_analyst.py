@@ -1,16 +1,35 @@
 """
 DawsOS Financial Analyst Agent
 
-Purpose: Portfolio analysis, pricing, metrics computation
-Updated: 2025-11-02
+Purpose: Portfolio analysis, pricing, metrics computation, and consolidated capabilities
+Updated: 2025-11-03
 
-Capabilities:
+Core Capabilities:
     - ledger.positions: Get portfolio positions from database
     - pricing.apply_pack: Apply pricing pack to positions
     - metrics.compute_twr: Compute Time-Weighted Return
     - metrics.compute_sharpe: Compute Sharpe Ratio
     - attribution.currency: Compute currency attribution
     - charts.overview: Generate overview charts
+    - portfolio.sector_allocation: Sector allocation analysis
+    - portfolio.historical_nav: Historical NAV tracking
+
+Consolidated Capabilities (Phase 3):
+    Week 1 (OptimizerAgent):
+        - financial_analyst.propose_trades: Portfolio rebalancing proposals
+        - financial_analyst.analyze_impact: Trade impact analysis
+        - financial_analyst.suggest_hedges: Hedge recommendations
+        - financial_analyst.suggest_deleveraging_hedges: Deleveraging strategies
+    
+    Week 2 (RatingsAgent):
+        - financial_analyst.dividend_safety: Dividend safety ratings
+        - financial_analyst.moat_strength: Competitive moat assessment
+        - financial_analyst.resilience: Financial resilience scoring
+        - financial_analyst.aggregate_ratings: Combined ratings aggregation
+    
+    Week 3 (ChartsAgent):
+        - financial_analyst.macro_overview_charts: Macro overview visualizations
+        - financial_analyst.scenario_charts: Scenario analysis charts
 
 Architecture:
     Pattern → Agent Runtime → FinancialAnalyst → Services → PostgreSQL/TimescaleDB

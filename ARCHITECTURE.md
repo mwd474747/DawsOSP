@@ -13,6 +13,7 @@ DawsOS is an AI-powered portfolio management platform built on a **pattern-drive
 - **UI**: `full_ui.html` - React 18 SPA (11,594 lines, 18 pages including login, no build step)
 - **Database**: PostgreSQL 14+ with TimescaleDB extension
 - **Agents**: 9 specialized agents providing 59+ capabilities
+  - **Note:** Phase 3 consolidation in progress (Weeks 1-3 complete, awaiting rollout)
 - **Patterns**: 12 pattern definitions for business workflows
 
 ---
@@ -70,6 +71,9 @@ Capability Request ("ledger.positions") → Runtime Lookup → FinancialAnalyst.
    - Capabilities: `claude.*`, `ai.*`
 5. **RatingsAgent** - Buffett quality ratings, dividend safety, moat analysis (~4 capabilities)
    - Capabilities: `ratings.*`, `buffett.*`
+   - **Note:** Capabilities consolidated into FinancialAnalyst (Phase 3 Week 2, November 3, 2025)
+   - Both agents registered (dual registration) for gradual migration via feature flags
+   - Capability routing handles `ratings.*` → `financial_analyst.*` mapping
 6. **OptimizerAgent** - Portfolio optimization and rebalancing (~4 capabilities)
    - Capabilities: `optimizer.*`, `rebalance.*`
    - **Note:** Capabilities consolidated into FinancialAnalyst (Phase 3 Week 1, November 3, 2025)
@@ -77,6 +81,9 @@ Capability Request ("ledger.positions") → Runtime Lookup → FinancialAnalyst.
    - Capability routing handles `optimizer.*` → `financial_analyst.*` mapping
 7. **ChartsAgent** - Chart formatting and visualization (~3 capabilities)
    - Capabilities: `charts.*`
+   - **Note:** Capabilities consolidated into FinancialAnalyst (Phase 3 Week 3, November 3, 2025)
+   - Both agents registered (dual registration) for gradual migration via feature flags
+   - Capability routing handles `charts.*` → `financial_analyst.*` mapping
 8. **ReportsAgent** - PDF, CSV, Excel export generation (~3 capabilities)
    - Capabilities: `reports.*`, `export.*`
 9. **AlertsAgent** - Alert suggestions and threshold management (~2 capabilities)

@@ -50,6 +50,7 @@ DawsOSP/
 ├── backend/
 │   ├── app/
 │   │   ├── agents/             # 9 agents (financial_analyst, macro_hound, etc.)
+│   │   │                       # Phase 3 consolidation in progress (Weeks 1-3 complete)
 │   │   ├── core/               # AgentRuntime, PatternOrchestrator
 │   │   ├── services/           # Business logic
 │   │   ├── db/                 # Database layer
