@@ -107,6 +107,7 @@ async def get_current_user(request_or_token: Union[Request, str]) -> Optional[di
         
         return {
             "id": payload.get("sub"),
+            "user_id": payload.get("sub"),  # Duplicate for backward compatibility with endpoints using user_id
             "email": payload.get("email"),
             "role": payload.get("role", "user")
         }
