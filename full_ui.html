@@ -3204,20 +3204,46 @@
             /**
              * Helper function to extract data from nested path
              */
-            function getDataByPath(data, path) {
+            function getDataByPath(data, path, options = {}) {
+                const { componentName = 'PatternRenderer', warnOnMissing = true } = options;
+
                 if (!path || !data) return data;
-                
+
                 const parts = path.split('.');
                 let current = data;
-                
+                const traversalPath = [];
+
                 for (const part of parts) {
+                    traversalPath.push(part);
+
                     if (current && typeof current === 'object') {
-                        current = current[part];
+                        const nextValue = current[part];
+
+                        if (nextValue === undefined && warnOnMissing) {
+                            console.warn(`[${componentName}] Data path returned undefined:`, {
+                                path,
+                                traversed: traversalPath.join('.'),
+                                missing: part,
+                                availableKeys: Object.keys(current),
+                                currentValue: current
+                            });
+                        }
+
+                        current = nextValue;
                     } else {
+                        if (warnOnMissing) {
+                            console.warn(`[${componentName}] Data path traversal failed - not an object:`, {
+                                path,
+                                traversed: traversalPath.slice(0, -1).join('.'),
+                                failedAt: part,
+                                currentType: typeof current,
+                                currentValue: current
+                            });
+                        }
                         return null;
                     }
                 }
-                
+
                 return current;
             }
             
@@ -3316,8 +3342,65 @@
              * Generic Panel Renderer that delegates to specific panel types
              */
             function PanelRenderer({ panel, data, fullData }) {
-                const { type, title, config } = panel;
-                
+                const { type, title, config, dataPath } = panel;
+
+                // Validate panel configuration
+                if (!panel || typeof panel !== 'object') {
+                    console.error('[PanelRenderer] Invalid panel configuration:', panel);
+                    return null;
+                }
+
+                if (!type) {
+                    console.error('[PanelRenderer] Missing panel type:', panel);
+                    return e('div', { className: 'card' },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, title || 'Panel Error')
+                        ),
+                        e('div', { className: 'alert alert-danger', role: 'alert' },
+                            'Panel configuration error: Missing type'
+                        )
+                    );
+                }
+
+                // Log panel rendering for debugging
+                console.log('[PanelRenderer] Rendering panel:', {
+                    type,
+                    title,
+                    hasData: !!data,
+                    dataType: Array.isArray(data) ? 'array' : typeof data,
+                    dataPath,
+                    dataKeys: data && typeof data === 'object' ? Object.keys(data) : null
+                });
+
+                // If no data and dataPath was specified, show helpful message
+                if (!data && dataPath) {
+                    return e('div', { className: 'card' },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, title || 'Data Not Available')
+                        ),
+                        e('div', { className: 'alert alert-warning', role: 'alert' }, [
+                            e('p', { key: 'msg' }, `No data found at path: ${dataPath}`),
+                            e('details', { key: 'debug', style: { marginTop: '1rem' } }, [
+                                e('summary', { key: 'summary' }, 'Debug Information'),
+                                e('pre', {
+                                    key: 'pre',
+                                    style: {
+                                        fontSize: '0.8rem',
+                                        background: 'rgba(0,0,0,0.05)',
+                                        padding: '0.5rem',
+                                        borderRadius: '4px',
+                                        maxHeight: '200px',
+                                        overflow: 'auto'
+                                    }
+                                }, JSON.stringify({
+                                    panel,
+                                    fullDataKeys: fullData ? Object.keys(fullData) : null
+                                }, null, 2))
+                            ])
+                        ])
+                    );
+                }
+
                 // Render based on panel type
                 switch (type) {
                     case 'metrics_grid':
@@ -3345,11 +3428,14 @@
                     case 'report_viewer':
                         return e(ReportViewerPanel, { title, data, config });
                     default:
+                        console.warn('[PanelRenderer] Unsupported panel type:', { type, panel });
                         return e('div', { className: 'card' },
                             e('div', { className: 'card-header' },
                                 e('h3', { className: 'card-title' }, title || 'Panel')
                             ),
-                            e('p', null, `Unsupported panel type: ${type}`)
+                            e('div', { className: 'alert alert-warning', role: 'alert' },
+                                `Unsupported panel type: ${type}`
+                            )
                         );
                 }
             }
@@ -3358,30 +3444,71 @@
              * Metrics Grid Panel Component
              */
             function MetricsGridPanel({ title, data, config = {} }) {
-                if (!data) return null;
-                
-                const metrics = config.metrics || [];
-                const columns = config.columns || 4;
-                
+                // Validate data
+                if (!data) {
+                    console.warn('[MetricsGridPanel] No data provided:', { title, config });
+                    return e('div', { className: 'card' },
+                        title && e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, title)
+                        ),
+                        e('div', { className: 'alert alert-info', role: 'alert' },
+                            'No metrics data available'
+                        )
+                    );
+                }
+
+                const metrics = Array.isArray(config.metrics) ? config.metrics : [];
+                const columns = parseInt(config.columns) || 4;
+
+                // Validate metrics configuration
+                if (metrics.length === 0) {
+                    console.warn('[MetricsGridPanel] No metrics configured:', { title, config });
+                    return e('div', { className: 'card' },
+                        title && e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, title)
+                        ),
+                        e('div', { className: 'alert alert-warning', role: 'alert' },
+                            'No metrics configured for this panel'
+                        )
+                    );
+                }
+
                 return e('div', { className: 'card' },
                     title && e('div', { className: 'card-header' },
                         e('h3', { className: 'card-title' }, title)
                     ),
-                    e('div', { 
+                    e('div', {
                         className: 'stats-grid',
                         style: { gridTemplateColumns: `repeat(${columns}, 1fr)` }
                     },
                         metrics.map(metric => {
+                            // Validate metric configuration
+                            if (!metric || !metric.key) {
+                                console.warn('[MetricsGridPanel] Invalid metric config:', { metric, title });
+                                return null;
+                            }
+
                             const value = data[metric.key];
+
+                            // Warn if metric key not found in data
+                            if (value === undefined) {
+                                console.warn('[MetricsGridPanel] Metric key not found in data:', {
+                                    key: metric.key,
+                                    label: metric.label,
+                                    availableKeys: Object.keys(data),
+                                    title
+                                });
+                            }
+
                             const formattedValue = formatValue(value, metric.format);
                             const colorClass = getColorClass(value, metric.format);
-                            
+
                             return e('div', { key: metric.key, className: 'stat-card' },
-                                e('div', { className: 'stat-label' }, metric.label),
+                                e('div', { className: 'stat-label' }, metric.label || metric.key),
                                 e('div', { className: `stat-value ${colorClass}` }, formattedValue),
                                 metric.description && e('div', { className: 'stat-description' }, metric.description)
                             );
-                        })
+                        }).filter(Boolean)
                     )
                 );
             }
@@ -3390,12 +3517,50 @@
              * Table Panel Component
              */
             function TablePanel({ title, data, config = {} }) {
-                if (!data || !Array.isArray(data)) return null;
-                
-                const columns = config.columns || [];
-                const maxRows = config.maxRows || 20;
+                // Validate data
+                if (!data) {
+                    console.warn('[TablePanel] No data provided:', { title, config });
+                    return e('div', { className: 'card' },
+                        title && e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, title)
+                        ),
+                        e('div', { className: 'alert alert-info', role: 'alert' },
+                            'No table data available'
+                        )
+                    );
+                }
+
+                if (!Array.isArray(data)) {
+                    console.error('[TablePanel] Data is not an array:', {
+                        title,
+                        dataType: typeof data,
+                        data
+                    });
+                    return e('div', { className: 'card' },
+                        title && e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, title)
+                        ),
+                        e('div', { className: 'alert alert-danger', role: 'alert' },
+                            `Invalid table data: expected array, got ${typeof data}`
+                        )
+                    );
+                }
+
+                if (data.length === 0) {
+                    return e('div', { className: 'card' },
+                        title && e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, title)
+                        ),
+                        e('div', { className: 'alert alert-info', role: 'alert' },
+                            'No data to display'
+                        )
+                    );
+                }
+
+                const columns = Array.isArray(config.columns) ? config.columns : [];
+                const maxRows = parseInt(config.maxRows) || 20;
                 const displayData = data.slice(0, maxRows);
-                
+
                 return e('div', { className: 'card' },
                     title && e('div', { className: 'card-header' },
                         e('h3', { className: 'card-title' }, title)
@@ -3404,30 +3569,56 @@
                         e('table', { className: 'data-table' },
                             columns.length > 0 && e('thead', null,
                                 e('tr', null,
-                                    columns.map(col => 
-                                        e('th', { key: col.field }, col.header || col.field)
-                                    )
+                                    columns.map(col => {
+                                        if (!col || !col.field) {
+                                            console.warn('[TablePanel] Invalid column config:', { col, title });
+                                            return null;
+                                        }
+                                        return e('th', { key: col.field }, col.header || col.field);
+                                    }).filter(Boolean)
                                 )
                             ),
                             e('tbody', null,
-                                displayData.map((row, idx) => 
-                                    e('tr', { key: idx },
+                                displayData.map((row, idx) => {
+                                    // Validate row is an object
+                                    if (!row || typeof row !== 'object') {
+                                        console.warn('[TablePanel] Invalid row data:', {
+                                            index: idx,
+                                            row,
+                                            title
+                                        });
+                                        return null;
+                                    }
+
+                                    return e('tr', { key: idx },
                                         columns.length > 0 ?
                                             columns.map(col => {
+                                                if (!col || !col.field) return null;
+
                                                 const value = row[col.field];
+
+                                                // Warn if field not found in row
+                                                if (value === undefined && idx === 0) {
+                                                    console.warn('[TablePanel] Column field not found in data:', {
+                                                        field: col.field,
+                                                        availableFields: Object.keys(row),
+                                                        title
+                                                    });
+                                                }
+
                                                 const formattedValue = formatValue(value, col.format);
                                                 const colorClass = col.color_condition ? getColorClass(value, col.format) : '';
-                                                
-                                                return e('td', { 
+
+                                                return e('td', {
                                                     key: col.field,
                                                     className: colorClass
                                                 }, formattedValue);
-                                            }) :
+                                            }).filter(Boolean) :
                                             Object.entries(row).map(([key, value]) =>
                                                 e('td', { key }, formatValue(value))
                                             )
-                                    )
-                                )
+                                    );
+                                }).filter(Boolean)
                             )
                         )
                     )
@@ -9040,36 +9231,162 @@
                 };
                 
                 const processOptimizationData = (data) => {
-                    // Extract data from the pattern response
-                    const rebalanceSummary = data.rebalance_summary || {};
-                    const proposedTrades = data.proposed_trades || [];
-                    const impactAnalysis = data.impact_analysis || {};
-                    const rebalanceResult = data.rebalance_result || {};
-                    
+                    // Helper function to validate data structure
+                    const validateDataStructure = (obj, expectedKeys, componentName) => {
+                        if (!obj || typeof obj !== 'object') {
+                            console.warn(`[OptimizerPage.${componentName}] Data is null/undefined or not an object:`, {
+                                hasData: !!obj,
+                                type: typeof obj,
+                                data: obj
+                            });
+                            return false;
+                        }
+
+                        const missingKeys = expectedKeys.filter(key => !(key in obj));
+                        if (missingKeys.length > 0) {
+                            console.warn(`[OptimizerPage.${componentName}] Missing expected keys:`, {
+                                missing: missingKeys,
+                                found: Object.keys(obj),
+                                data: obj
+                            });
+                            return false;
+                        }
+
+                        return true;
+                    };
+
+                    // Extract data from the pattern response with validation
+                    const rebalanceSummary = data?.rebalance_summary || {};
+                    const proposedTrades = data?.proposed_trades;
+                    const impactAnalysis = data?.impact_analysis || {};
+                    const rebalanceResult = data?.rebalance_result || {};
+
+                    // Validate main data object
+                    if (!data) {
+                        console.warn('[OptimizerPage] No data provided to processOptimizationData');
+                    } else {
+                        console.log('[OptimizerPage] Processing optimization data:', {
+                            hasRebalanceSummary: !!data.rebalance_summary,
+                            hasProposedTrades: !!data.proposed_trades,
+                            hasImpactAnalysis: !!data.impact_analysis,
+                            hasRebalanceResult: !!data.rebalance_result,
+                            dataKeys: Object.keys(data)
+                        });
+                    }
+
+                    // Validate rebalance_result structure
+                    if (rebalanceResult && Object.keys(rebalanceResult).length > 0) {
+                        validateDataStructure(
+                            rebalanceResult,
+                            ['trade_count', 'total_turnover', 'turnover_pct'],
+                            'rebalance_result'
+                        );
+                    }
+
+                    // Safe trade extraction with validation
+                    let trades = [];
+                    if (Array.isArray(proposedTrades)) {
+                        trades = proposedTrades;
+                    } else if (Array.isArray(rebalanceResult?.trades)) {
+                        trades = rebalanceResult.trades;
+                    } else {
+                        console.warn('[OptimizerPage] No valid trades array found:', {
+                            proposedTradesType: typeof proposedTrades,
+                            rebalanceResultTradesType: typeof rebalanceResult?.trades,
+                            proposedTrades,
+                            rebalanceResultTrades: rebalanceResult?.trades
+                        });
+                    }
+
+                    // Validate each trade object
+                    const validTrades = trades.filter((trade, index) => {
+                        if (!trade || typeof trade !== 'object') {
+                            console.warn('[OptimizerPage] Invalid trade object:', { index, trade });
+                            return false;
+                        }
+
+                        const requiredFields = ['symbol', 'action', 'quantity'];
+                        const missingFields = requiredFields.filter(field => !(field in trade));
+
+                        if (missingFields.length > 0) {
+                            console.warn('[OptimizerPage] Trade missing required fields:', {
+                                index,
+                                trade,
+                                missing: missingFields
+                            });
+                            return false;
+                        }
+
+                        return true;
+                    });
+
+                    if (validTrades.length !== trades.length) {
+                        console.warn('[OptimizerPage] Filtered out invalid trades:', {
+                            original: trades.length,
+                            valid: validTrades.length,
+                            filtered: trades.length - validTrades.length
+                        });
+                    }
+
+                    // Safe numeric extraction with validation
+                    const safeNumber = (value, fallback = 0, name = 'value') => {
+                        const parsed = parseFloat(value);
+                        if (isNaN(parsed)) {
+                            if (value !== undefined && value !== null) {
+                                console.warn(`[OptimizerPage] Invalid numeric value for ${name}:`, {
+                                    value,
+                                    type: typeof value,
+                                    fallback
+                                });
+                            }
+                            return fallback;
+                        }
+                        return parsed;
+                    };
+
                     return {
                         summary: {
-                            totalTrades: rebalanceResult.trade_count || rebalanceSummary.trade_count || 0,
-                            totalTurnover: rebalanceResult.total_turnover || rebalanceSummary.total_turnover || 0,
-                            turnoverPct: rebalanceResult.turnover_pct || rebalanceSummary.turnover_pct || 0,
-                            estimatedCosts: rebalanceResult.estimated_costs || rebalanceSummary.estimated_costs || 0,
-                            costBps: rebalanceResult.cost_bps || rebalanceSummary.cost_bps || 0,
-                            teImpact: impactAnalysis.te_delta || 0
+                            totalTrades: safeNumber(
+                                rebalanceResult.trade_count ?? rebalanceSummary.trade_count,
+                                0,
+                                'trade_count'
+                            ),
+                            totalTurnover: safeNumber(
+                                rebalanceResult.total_turnover ?? rebalanceSummary.total_turnover,
+                                0,
+                                'total_turnover'
+                            ),
+                            turnoverPct: safeNumber(
+                                rebalanceResult.turnover_pct ?? rebalanceSummary.turnover_pct,
+                                0,
+                                'turnover_pct'
+                            ),
+                            estimatedCosts: safeNumber(
+                                rebalanceResult.estimated_costs ?? rebalanceSummary.estimated_costs,
+                                0,
+                                'estimated_costs'
+                            ),
+                            costBps: safeNumber(
+                                rebalanceResult.cost_bps ?? rebalanceSummary.cost_bps,
+                                0,
+                                'cost_bps'
+                            ),
+                            teImpact: safeNumber(impactAnalysis.te_delta, 0, 'te_delta')
                         },
-                        trades: Array.isArray(proposedTrades) ? proposedTrades : 
-                                (rebalanceResult.trades || []),
+                        trades: validTrades,
                         impact: {
-                            currentValue: impactAnalysis.current_value || 291290,
-                            postValue: impactAnalysis.post_rebalance_value || 291290,
-                            valueDelta: impactAnalysis.value_delta || 0,
-                            currentDivSafety: impactAnalysis.current_div_safety || 0,
-                            postDivSafety: impactAnalysis.post_div_safety || 0,
-                            divSafetyDelta: impactAnalysis.div_safety_delta || 0,
-                            currentMoat: impactAnalysis.current_moat || 0,
-                            postMoat: impactAnalysis.post_moat || 0,
-                            moatDelta: impactAnalysis.moat_delta || 0,
-                            currentConcentration: impactAnalysis.current_concentration || 0,
-                            postConcentration: impactAnalysis.post_concentration || 0,
-                            concentrationDelta: impactAnalysis.concentration_delta || 0
+                            currentValue: safeNumber(impactAnalysis.current_value, 291290, 'current_value'),
+                            postValue: safeNumber(impactAnalysis.post_rebalance_value, 291290, 'post_rebalance_value'),
+                            valueDelta: safeNumber(impactAnalysis.value_delta, 0, 'value_delta'),
+                            currentDivSafety: safeNumber(impactAnalysis.current_div_safety, 0, 'current_div_safety'),
+                            postDivSafety: safeNumber(impactAnalysis.post_div_safety, 0, 'post_div_safety'),
+                            divSafetyDelta: safeNumber(impactAnalysis.div_safety_delta, 0, 'div_safety_delta'),
+                            currentMoat: safeNumber(impactAnalysis.current_moat, 0, 'current_moat'),
+                            postMoat: safeNumber(impactAnalysis.post_moat, 0, 'post_moat'),
+                            moatDelta: safeNumber(impactAnalysis.moat_delta, 0, 'moat_delta'),
+                            currentConcentration: safeNumber(impactAnalysis.current_concentration, 0, 'current_concentration'),
+                            postConcentration: safeNumber(impactAnalysis.post_concentration, 0, 'post_concentration'),
+                            concentrationDelta: safeNumber(impactAnalysis.concentration_delta, 0, 'concentration_delta')
                         }
                     };
                 };
