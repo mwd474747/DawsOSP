@@ -266,6 +266,11 @@ class AIAnalysisRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=1000)
     context: Dict[str, Any] = Field(default_factory=dict)
 
+class AIChatRequest(BaseModel):
+    """Request model for direct AI chat endpoint."""
+    message: str = Field(..., min_length=1, max_length=5000, description="User's message or question")
+    context: Optional[Dict[str, Any]] = Field(default=None, description="Optional portfolio or financial context")
+
 # ============================================================================
 # Error Response Models
 # ============================================================================
@@ -3133,6 +3138,238 @@ async def ai_analysis(ai_request: AIAnalysisRequest, user: dict = Depends(requir
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="AI analysis service error"
+        )
+
+@app.post("/api/ai/chat")
+async def ai_chat(request: AIChatRequest, user: dict = Depends(require_auth)):
+    """
+    Direct AI chat endpoint for user questions.
+    
+    This endpoint bypasses the pattern orchestration system and directly
+    calls the Claude API for simple chat interactions.
+    
+    AUTH_STATUS: MIGRATED - Direct Claude Integration
+    """
+    try:
+        logger.info(f"AI chat request from user {user.get('email', 'unknown')}: {request.message[:100]}...")
+        
+        # Initialize response metadata
+        metadata = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "user_id": user.get("user_id", user.get("sub", "unknown")),
+            "model": None,
+            "tokens_used": None,
+            "latency_ms": None
+        }
+        
+        start_time = time.time()
+        
+        # Check if Claude API is configured
+        if not ANTHROPIC_API_KEY:
+            logger.warning("Claude API key not configured, returning fallback response")
+            return JSONResponse(
+                content={
+                    "response": "I'm currently unable to process your request as the AI service is not configured. Please contact your administrator to set up the AI integration.",
+                    "metadata": {
+                        **metadata,
+                        "model": "fallback",
+                        "fallback_reason": "api_key_not_configured"
+                    }
+                },
+                status_code=200
+            )
+        
+        # Try to use ClaudeAgent if available
+        if ANTHROPIC_AVAILABLE and anthropic:
+            try:
+                # Prepare context for Claude
+                system_prompt = """You are an intelligent financial advisor assistant for the DawsOS portfolio management platform. 
+                You provide clear, accurate, and helpful responses about portfolio management, financial markets, and investment strategies.
+                Be concise but thorough. Use financial data when provided in the context.
+                Always be professional and provide actionable insights when appropriate."""
+                
+                # Build user prompt with context if provided
+                user_prompt = request.message
+                
+                if request.context:
+                    context_str = "\n\nContext Information:"
+                    
+                    # Add portfolio data if available
+                    if "portfolio" in request.context:
+                        portfolio_data = request.context["portfolio"]
+                        context_str += f"\nPortfolio Value: ${portfolio_data.get('total_value', 0):,.2f}"
+                        context_str += f"\nNumber of Holdings: {portfolio_data.get('holdings_count', 0)}"
+                        
+                        if "performance" in portfolio_data:
+                            perf = portfolio_data["performance"]
+                            context_str += f"\nYTD Return: {perf.get('ytd_return', 0):.2%}"
+                            context_str += f"\nSharpe Ratio: {perf.get('sharpe_ratio', 0):.2f}"
+                    
+                    # Add any other context data
+                    for key, value in request.context.items():
+                        if key != "portfolio" and value is not None:
+                            if isinstance(value, (int, float)):
+                                context_str += f"\n{key}: {value:,.2f}"
+                            else:
+                                context_str += f"\n{key}: {value}"
+                    
+                    user_prompt = f"{request.message}\n{context_str}"
+                
+                # Direct Claude API call (not through agent system)
+                client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+                
+                response = client.messages.create(
+                    model="claude-3-sonnet-20240229",
+                    max_tokens=1500,
+                    temperature=0.7,
+                    system=system_prompt,
+                    messages=[
+                        {"role": "user", "content": user_prompt}
+                    ]
+                )
+                
+                # Extract response text
+                response_text = response.content[0].text if response.content else "I couldn't generate a response."
+                
+                # Update metadata
+                metadata["model"] = "claude-3-sonnet-20240229"
+                metadata["tokens_used"] = response.usage.total_tokens if hasattr(response, 'usage') else None
+                metadata["latency_ms"] = int((time.time() - start_time) * 1000)
+                
+                logger.info(f"AI chat successful - model: {metadata['model']}, latency: {metadata['latency_ms']}ms")
+                
+                return JSONResponse(
+                    content={
+                        "response": response_text,
+                        "metadata": metadata
+                    },
+                    status_code=200
+                )
+                
+            except Exception as claude_error:
+                logger.error(f"Claude API error: {claude_error}")
+                
+                # Return graceful fallback
+                return JSONResponse(
+                    content={
+                        "response": "I encountered an issue while processing your request. Please try again or rephrase your question.",
+                        "metadata": {
+                            **metadata,
+                            "model": "fallback",
+                            "error": str(claude_error),
+                            "fallback_reason": "claude_api_error"
+                        }
+                    },
+                    status_code=200
+                )
+        
+        # Fallback to ClaudeAgent from pattern system if available
+        elif PATTERN_ORCHESTRATION_AVAILABLE and _agent_runtime:
+            try:
+                # Get the ClaudeAgent
+                claude_agent = None
+                for agent_id, agent in _agent_runtime.agents.items():
+                    if agent_id == "claude_agent":
+                        claude_agent = agent
+                        break
+                
+                if claude_agent:
+                    # Create a minimal context
+                    from backend.app.core.types import RequestCtx
+                    ctx = RequestCtx(
+                        trace_id=str(uuid4()),
+                        request_id=str(uuid4()),
+                        user_id=user.get("user_id", user.get("sub", "unknown")),
+                        portfolio_id=request.context.get("portfolio_id") if request.context else None,
+                        asof_date=date.today(),
+                        pricing_pack_id=f"PP_{date.today().isoformat()}",
+                        ledger_commit_hash="latest"
+                    )
+                    
+                    # Call the agent's analyze method as a simple Q&A
+                    result = await claude_agent.claude_analyze(
+                        ctx=ctx,
+                        state={},
+                        data=request.message,
+                        analysis_type="general"
+                    )
+                    
+                    # Extract insights as response
+                    insights = result.get("insights", [])
+                    response_text = " ".join(insights) if insights else "I understand your question but need more context to provide a detailed answer."
+                    
+                    metadata["model"] = "claude-agent"
+                    metadata["latency_ms"] = int((time.time() - start_time) * 1000)
+                    
+                    return JSONResponse(
+                        content={
+                            "response": response_text,
+                            "metadata": metadata
+                        },
+                        status_code=200
+                    )
+            except Exception as agent_error:
+                logger.warning(f"ClaudeAgent fallback failed: {agent_error}")
+        
+        # Final fallback - intelligent static response based on common queries
+        logger.info("Using intelligent fallback response system")
+        
+        # Simple keyword-based response system
+        message_lower = request.message.lower()
+        
+        if "diversification" in message_lower or "diversify" in message_lower:
+            response_text = ("To improve portfolio diversification, consider: "
+                           "1) Spreading investments across different asset classes (stocks, bonds, commodities), "
+                           "2) Diversifying across sectors and geographic regions, "
+                           "3) Including assets with low correlation to reduce overall portfolio risk. "
+                           "A well-diversified portfolio typically includes 15-30 different holdings across multiple sectors.")
+        elif "risk" in message_lower:
+            response_text = ("Portfolio risk can be managed through: "
+                           "1) Diversification across uncorrelated assets, "
+                           "2) Regular rebalancing to maintain target allocations, "
+                           "3) Setting stop-loss orders for downside protection, "
+                           "4) Monitoring key risk metrics like Sharpe ratio and maximum drawdown.")
+        elif "sharpe" in message_lower or "ratio" in message_lower:
+            response_text = ("The Sharpe ratio measures risk-adjusted returns. "
+                           "A ratio above 1.0 is considered good, above 2.0 is very good, and above 3.0 is excellent. "
+                           "It's calculated as (Portfolio Return - Risk-free Rate) / Portfolio Standard Deviation. "
+                           "Higher Sharpe ratios indicate better risk-adjusted performance.")
+        elif "rebalance" in message_lower or "rebalancing" in message_lower:
+            response_text = ("Portfolio rebalancing helps maintain your target asset allocation. "
+                           "Consider rebalancing when: "
+                           "1) Any asset class deviates more than 5-10% from its target, "
+                           "2) Quarterly or annually on a fixed schedule, "
+                           "3) After significant market moves. "
+                           "Rebalancing forces you to sell high and buy low.")
+        else:
+            response_text = ("I understand you're asking about: '" + request.message[:100] + "...'. "
+                           "While I don't have access to the full AI service right now, "
+                           "I recommend reviewing your portfolio's current allocation, risk metrics, and performance. "
+                           "Consider consulting the portfolio overview and risk analysis sections for detailed insights.")
+        
+        metadata["model"] = "fallback-intelligent"
+        metadata["latency_ms"] = int((time.time() - start_time) * 1000)
+        
+        return JSONResponse(
+            content={
+                "response": response_text,
+                "metadata": metadata
+            },
+            status_code=200
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"AI chat error: {e}", exc_info=True)
+        
+        return JSONResponse(
+            content={
+                "error": "ai_chat_error",
+                "message": "An error occurred while processing your chat request.",
+                "details": {"error": str(e)}
+            },
+            status_code=500
         )
 
 @app.get("/api/factor-analysis", response_model=SuccessResponse)
