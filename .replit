@@ -1,10 +1,11 @@
 modules = ["nodejs-20", "bash", "web", "python-3.11", "postgresql-16"]
 [agent]
 expertMode = true
+integrations = ["python_anthropic_ai_integrations:1.0.0"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["cargo", "fontconfig", "freetype", "geckodriver", "ghostscript", "glib", "glibcLocales", "harfbuzz", "libiconv", "libxcrypt", "pango", "postgresql", "rustc", "chromium"]
+packages = ["cargo", "chromium", "fontconfig", "freetype", "geckodriver", "ghostscript", "glib", "glibcLocales", "harfbuzz", "libiconv", "libxcrypt", "pango", "postgresql", "rustc"]
 
 [workflows]
 runButton = "Project"
