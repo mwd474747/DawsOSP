@@ -1,0 +1,104 @@
+{
+  "agent_consolidation": {
+    "optimizer_to_financial": {
+      "enabled": false,
+      "rollout_percentage": 0,
+      "description": "Route optimizer agent capabilities to FinancialAnalyst agent",
+      "created_at": "2025-11-03",
+      "updated_at": "2025-11-03"
+    },
+    "ratings_to_financial": {
+      "enabled": false,
+      "rollout_percentage": 0,
+      "description": "Route ratings agent capabilities to FinancialAnalyst agent",
+      "created_at": "2025-11-03",
+      "updated_at": "2025-11-03"
+    },
+    "reports_to_financial": {
+      "enabled": false,
+      "rollout_percentage": 0,
+      "description": "Route reports agent capabilities to FinancialAnalyst agent",
+      "created_at": "2025-11-03",
+      "updated_at": "2025-11-03"
+    },
+    "charts_to_financial": {
+      "enabled": false,
+      "rollout_percentage": 0,
+      "description": "Route charts agent capabilities to FinancialAnalyst agent",
+      "created_at": "2025-11-03",
+      "updated_at": "2025-11-03"
+    },
+    "alerts_to_macro": {
+      "enabled": false,
+      "rollout_percentage": 0,
+      "description": "Route alerts agent capabilities to MacroHound agent",
+      "created_at": "2025-11-03",
+      "updated_at": "2025-11-03"
+    },
+    "harvester_to_macro": {
+      "enabled": false,
+      "rollout_percentage": 0,
+      "description": "Route data harvester capabilities to MacroHound agent",
+      "created_at": "2025-11-03",
+      "updated_at": "2025-11-03"
+    },
+    "unified_consolidation": {
+      "enabled": false,
+      "rollout_percentage": 0,
+      "description": "Master flag to enable all agent consolidations at once",
+      "created_at": "2025-11-03",
+      "updated_at": "2025-11-03"
+    }
+  },
+  "experimental_features": {
+    "advanced_risk_metrics": {
+      "enabled": false,
+      "rollout_percentage": 0,
+      "description": "Enable advanced risk metrics calculation"
+    },
+    "real_time_pricing": {
+      "enabled": false,
+      "rollout_percentage": 0,
+      "description": "Enable real-time pricing updates"
+    },
+    "ai_insights": {
+      "enabled": false,
+      "rollout_percentage": 0,
+      "description": "Enable AI-powered insights and recommendations"
+    }
+  },
+  "performance_optimizations": {
+    "aggressive_caching": {
+      "enabled": true,
+      "rollout_percentage": 100,
+      "description": "Enable aggressive caching for better performance"
+    },
+    "parallel_execution": {
+      "enabled": false,
+      "rollout_percentage": 0,
+      "description": "Enable parallel pattern step execution"
+    },
+    "lazy_loading": {
+      "enabled": true,
+      "rollout_percentage": 100,
+      "description": "Enable lazy loading of heavy resources"
+    }
+  },
+  "safety_controls": {
+    "dry_run_mode": {
+      "enabled": false,
+      "rollout_percentage": 0,
+      "description": "Enable dry-run mode for testing without side effects"
+    },
+    "enhanced_logging": {
+      "enabled": true,
+      "rollout_percentage": 100,
+      "description": "Enable enhanced logging for debugging"
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "rollout_percentage": 100,
+      "description": "Enable rate limiting for API calls"
+    }
+  }
+}

@@ -53,6 +53,16 @@ except ImportError:
         """Fallback metrics function when observability not available"""
         return None
 
+# Import feature flags for capability routing
+try:
+    from app.core.feature_flags import get_feature_flags
+    FEATURE_FLAGS_AVAILABLE = True
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.warning("Feature flags module not available - using default routing")
+    get_feature_flags = None
+    FEATURE_FLAGS_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -290,6 +300,108 @@ class AgentRuntime:
         """
         return self.capability_map.copy()
 
+    def _get_capability_routing_override(
+        self, 
+        capability: str, 
+        original_agent: str,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Optional[str]:
+        """
+        Check if capability routing should be overridden by feature flags.
+        
+        This enables agent consolidation without code changes.
+        
+        Args:
+            capability: Capability name (e.g., "optimizer.suggest")
+            original_agent: Original agent that handles this capability
+            context: Context for percentage rollout decisions
+            
+        Returns:
+            Override agent name or None to use original routing
+        """
+        if not FEATURE_FLAGS_AVAILABLE or get_feature_flags is None:
+            return None
+        
+        try:
+            flags = get_feature_flags()
+            
+            # Define agent consolidation mappings
+            # Map from original agent to consolidated agent based on flags
+            consolidation_map = {
+                # FinancialAnalyst consolidation (Phase 3a)
+                "optimizer_agent": {
+                    "flag": "agent_consolidation.optimizer_to_financial",
+                    "target": "financial_analyst"
+                },
+                "ratings_agent": {
+                    "flag": "agent_consolidation.ratings_to_financial", 
+                    "target": "financial_analyst"
+                },
+                "reports_agent": {
+                    "flag": "agent_consolidation.reports_to_financial",
+                    "target": "financial_analyst"
+                },
+                "charts_agent": {
+                    "flag": "agent_consolidation.charts_to_financial",
+                    "target": "financial_analyst"
+                },
+                # MacroHound consolidation (Phase 3b)
+                "alerts_agent": {
+                    "flag": "agent_consolidation.alerts_to_macro",
+                    "target": "macro_hound"
+                },
+                "data_harvester": {
+                    "flag": "agent_consolidation.harvester_to_macro",
+                    "target": "macro_hound"
+                }
+            }
+            
+            # Check unified consolidation flag first (master switch)
+            if flags.is_enabled("agent_consolidation.unified_consolidation", context):
+                # If unified consolidation is enabled, check individual mappings
+                if original_agent in consolidation_map:
+                    mapping = consolidation_map[original_agent]
+                    target_agent = mapping["target"]
+                    
+                    # Verify target agent exists and has the capability
+                    if target_agent in self.agents:
+                        target = self.agents[target_agent]
+                        if capability in target.get_capabilities():
+                            logger.info(
+                                f"Feature flag routing: {capability} from {original_agent} "
+                                f"to {target_agent} (unified consolidation)"
+                            )
+                            return target_agent
+            
+            # Check individual consolidation flags
+            if original_agent in consolidation_map:
+                mapping = consolidation_map[original_agent]
+                flag_name = mapping["flag"]
+                target_agent = mapping["target"]
+                
+                # Check if this specific consolidation is enabled
+                if flags.is_enabled(flag_name, context):
+                    # Verify target agent exists and has the capability
+                    if target_agent in self.agents:
+                        target = self.agents[target_agent]
+                        if capability in target.get_capabilities():
+                            logger.info(
+                                f"Feature flag routing: {capability} from {original_agent} "
+                                f"to {target_agent} (flag: {flag_name})"
+                            )
+                            return target_agent
+                        else:
+                            logger.warning(
+                                f"Target agent {target_agent} doesn't have capability {capability}, "
+                                f"using original routing"
+                            )
+            
+        except Exception as e:
+            logger.error(f"Error checking feature flags for routing: {e}")
+            # Fall back to original routing on error
+        
+        return None
+
     async def execute_capability(
         self,
         capability: str,
@@ -326,6 +438,25 @@ class AgentRuntime:
                 f"Available: {available}"
             )
 
+        # Check for feature flag routing overrides
+        # Build context for feature flag decisions
+        flag_context = {
+            "request_id": ctx.request_id,
+            "portfolio_id": getattr(ctx, "portfolio_id", None),
+            "user_id": getattr(ctx, "user_id", None),
+        }
+        
+        # Check if routing should be overridden
+        override_agent = self._get_capability_routing_override(
+            capability, agent_name, flag_context
+        )
+        
+        if override_agent:
+            logger.info(
+                f"Feature flag override: Routing {capability} from {agent_name} to {override_agent}"
+            )
+            agent_name = override_agent
+        
         agent = self.agents[agent_name]
 
         # Check cache first
