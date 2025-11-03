@@ -410,6 +410,103 @@
 
 ---
 
-**Last Updated By:** Claude IDE Agent (PRIMARY)  
-**Last Updated:** November 3, 2025 (Updated with Phase 2 completion, Phase 3 execution plan, and subagent clarification)  
-**Next Update:** When Phase 3 begins or significant findings occur
+## Phase 3 Week 1 Progress (November 3, 2025)
+
+### Status: IMPLEMENTATION IN PROGRESS
+
+**Branch:** `phase3/week1-optimizer-consolidation`
+**Commit:** `8351aa2` - "Phase 3 Week 1: Consolidate OptimizerAgent → FinancialAnalyst"
+
+### Completed Work
+
+#### Prep Tasks (55 minutes)
+1. ✅ **ReportsAgent Target Discrepancy Resolved**
+   - Fixed feature flag name: `reports_to_financial` → `reports_to_data_harvester`
+   - Updated description to match Week 5 plan (ReportsAgent → DataHarvester)
+   - File: `backend/config/feature_flags.json` (line 17)
+
+2. ✅ **Agent Registration Priorities Verified**
+   - Confirmed FinancialAnalyst registered BEFORE OptimizerAgent
+   - Registration order in `combined_server.py`: FinancialAnalyst (1st) → OptimizerAgent (6th)
+   - Ensures feature flag routing works correctly
+
+3. ✅ **Git Branch Created**
+   - Branch: `phase3/week1-optimizer-consolidation`
+   - Clean separation from main for safe development
+
+4. ✅ **OptimizerAgent Analysis Complete**
+   - Launched Explore subagent (20 min autonomous work)
+   - Generated 4 comprehensive documents (69KB, 2,087 lines):
+     - `OPTIMIZER_AGENT_ANALYSIS.md` - Deep technical analysis
+     - `OPTIMIZER_CONSOLIDATION_SUMMARY.txt` - Executive summary
+     - `CONSOLIDATION_CODE_PATTERNS.md` - Implementation patterns
+     - `ANALYSIS_INDEX.md` - Navigation guide
+   - Risk assessment: **LOW** (stateless service, clean patterns)
+
+#### Implementation (4 hours)
+5. ✅ **All 4 Methods Implemented in FinancialAnalyst**
+   - File: `backend/app/agents/financial_analyst.py`
+   - Added import: `from app.services.optimizer import get_optimizer_service` (line 39)
+   - Total code added: 541 lines (2,115 → 2,656 lines)
+
+**Methods Implemented:**
+1. `financial_analyst_propose_trades()` - 171 lines (2122-2293)
+   - Consolidates: `optimizer.propose_trades`
+   - Generates rebalance trade proposals with Riskfolio-Lib optimization
+   - TTL: 0 (always fresh)
+
+2. `financial_analyst_analyze_impact()` - 115 lines (2295-2410)
+   - Consolidates: `optimizer.analyze_impact`
+   - Before/after portfolio metrics analysis
+   - TTL: 0 (no caching)
+
+3. `financial_analyst_suggest_hedges()` - 106 lines (2412-2518)
+   - Consolidates: `optimizer.suggest_hedges`
+   - Scenario-specific hedge recommendations
+   - TTL: 3600 (1-hour cache)
+
+4. `financial_analyst_suggest_deleveraging_hedges()` - 136 lines (2520-2656)
+   - Consolidates: `optimizer.suggest_deleveraging_hedges`
+   - Regime-specific deleveraging playbook (Dalio framework)
+   - TTL: 3600 (1-hour cache)
+
+#### Code Quality
+- ✅ All files compile successfully (verified with `python3 -m py_compile`)
+- ✅ Follows existing patterns from OptimizerAgent
+- ✅ Uses shared OptimizerService (no service layer changes needed)
+- ✅ Graceful error handling with fallback results
+- ✅ Comprehensive docstrings with capability names
+
+### Remaining Week 1 Tasks
+
+**Testing & Validation (Estimated: 2-3 hours)**
+- [ ] Unit test each consolidated method
+- [ ] Integration test with OptimizerService
+- [ ] Pattern execution test (`policy_rebalance.json`)
+- [ ] API endpoint test (`/api/optimize`)
+- [ ] Feature flag routing verification
+- [ ] Rollback test (disable flag, verify old agent works)
+
+**Feature Flag Rollout (1 week monitoring)**
+- [ ] Enable `optimizer_to_financial` flag at 10%
+- [ ] Monitor for 24-48 hours
+- [ ] Increase to 50% rollout
+- [ ] Monitor for 24 hours
+- [ ] Increase to 100% rollout
+- [ ] Monitor for full week before Week 2
+
+### Technical Notes
+
+**SACRED Invariant Preserved:** `pricing_pack_id` must be in RequestCtx (all methods validate)
+
+**Pattern Compatibility:** All methods handle multiple input formats for backward compatibility with existing patterns
+
+**Service Layer:** Reuses OptimizerService methods unchanged (clean separation maintained)
+
+**Error Handling:** Each method has comprehensive try/except with graceful degradation
+
+---
+
+**Last Updated By:** Claude Code Agent
+**Last Updated:** November 3, 2025 (Phase 3 Week 1 implementation complete, testing pending)
+**Next Update:** After testing validation or feature flag rollout begins
