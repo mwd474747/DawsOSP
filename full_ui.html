@@ -1084,6 +1084,54 @@
             font-size: 0.95rem;
         }
         
+        /* Form Range Styles */
+        .form-range {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--border-primary);
+            outline: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .form-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--color-info);
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+        
+        .form-range::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--color-info);
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s, transform 0.2s;
+        }
+        
+        .form-range:hover::-webkit-slider-thumb {
+            background: #2563eb;
+            transform: scale(1.1);
+        }
+        
+        .form-range:hover::-moz-range-thumb {
+            background: #2563eb;
+            transform: scale(1.1);
+        }
+        
+        .policy-form {
+            max-width: 800px;
+        }
+        
         /* Alert Components */
         .alert-success {
             background: rgba(16, 185, 129, 0.1);
@@ -8856,52 +8904,100 @@
             }
             
             function OptimizerPage() {
-                const [loading, setLoading] = useState(true);
-                const [error, setError] = useState(null);
                 const [optimizationData, setOptimizationData] = useState(null);
-                const [refreshing, setRefreshing] = useState(false);
+                const [isConfigOpen, setIsConfigOpen] = useState(true);
+                const [refreshKey, setRefreshKey] = useState(0);
+                const portfolioId = getCurrentPortfolioId();
                 
-                useEffect(() => {
-                    fetchOptimizationRecommendations();
-                }, []);
+                // Policy configuration state
+                const [policyConfig, setPolicyConfig] = useState({
+                    risk: 30,
+                    growth: 30,
+                    dividend: 20,
+                    defensive: 20,
+                    minQualityScore: 7.0,
+                    maxSinglePosition: 25.0,
+                    maxSector: 35.0,
+                    maxTurnoverPct: 10.0,
+                    minLotValue: 500
+                });
                 
-                const fetchOptimizationRecommendations = async () => {
-                    try {
-                        setRefreshing(true);
-                        setError(null);
-                        
-                        // Call the policy_rebalance pattern
-                        const result = await apiClient.executePattern('policy_rebalance', {
-                            portfolio_id: getCurrentPortfolioId(),
-                            policies: [
-                                { type: 'min_quality_score', value: 7.0 },
-                                { type: 'max_single_position', value: 25.0 },
-                                { type: 'max_sector', value: 35.0 }
-                            ],
-                            constraints: {
-                                max_te_pct: 2.0,
-                                max_turnover_pct: 10.0,
-                                min_lot_value: 500
-                            }
-                        });
-                        
-                        console.log('Policy rebalance result:', result);
-                        
-                        if (result.success && result.data) {
-                            setOptimizationData(processOptimizationData(result.data));
-                        } else {
-                            console.warn('Using fallback data:', result.error);
-                            setOptimizationData(getFallbackOptimizationData());
-                            setError(result.error || 'Failed to load optimization recommendations');
-                        }
-                    } catch (error) {
-                        console.error('Failed to fetch optimization recommendations:', error);
-                        setError('Failed to load optimization recommendations');
-                        setOptimizationData(getFallbackOptimizationData());
-                    } finally {
-                        setLoading(false);
-                        setRefreshing(false);
+                // Computed inputs for PatternRenderer
+                const patternInputs = React.useMemo(() => {
+                    // Create policies array based on configuration
+                    const policies = [];
+                    
+                    // Add allocation targets based on weights
+                    if (policyConfig.risk > 0) {
+                        policies.push({ type: 'target_allocation', category: 'risk', value: policyConfig.risk / 100 });
                     }
+                    if (policyConfig.growth > 0) {
+                        policies.push({ type: 'target_allocation', category: 'growth', value: policyConfig.growth / 100 });
+                    }
+                    if (policyConfig.dividend > 0) {
+                        policies.push({ type: 'target_allocation', category: 'dividend', value: policyConfig.dividend / 100 });
+                    }
+                    if (policyConfig.defensive > 0) {
+                        policies.push({ type: 'target_allocation', category: 'defensive', value: policyConfig.defensive / 100 });
+                    }
+                    
+                    // Add quality and position constraints
+                    policies.push({ type: 'min_quality_score', value: policyConfig.minQualityScore });
+                    policies.push({ type: 'max_single_position', value: policyConfig.maxSinglePosition });
+                    policies.push({ type: 'max_sector', value: policyConfig.maxSector });
+                    
+                    return {
+                        portfolio_id: portfolioId,
+                        policies: policies,
+                        constraints: {
+                            max_te_pct: 2.0,
+                            max_turnover_pct: policyConfig.maxTurnoverPct,
+                            min_lot_value: policyConfig.minLotValue
+                        }
+                    };
+                }, [portfolioId, policyConfig, refreshKey]);
+                
+                // Callback when pattern data loads
+                const handleDataLoaded = (data) => {
+                    console.log('Optimizer data loaded:', data);
+                    if (data) {
+                        setOptimizationData(processOptimizationData(data));
+                    }
+                };
+                
+                const handlePolicySubmit = (e) => {
+                    e.preventDefault();
+                    // Trigger refresh by changing key
+                    setRefreshKey(prev => prev + 1);
+                    setIsConfigOpen(false);
+                };
+                
+                const handleSliderChange = (field, value) => {
+                    const newValue = parseInt(value);
+                    
+                    // For allocation weights, ensure they sum to 100
+                    if (['risk', 'growth', 'dividend', 'defensive'].includes(field)) {
+                        const currentTotal = policyConfig.risk + policyConfig.growth + 
+                                           policyConfig.dividend + policyConfig.defensive;
+                        const otherFields = ['risk', 'growth', 'dividend', 'defensive'].filter(f => f !== field);
+                        const otherTotal = otherFields.reduce((sum, f) => sum + policyConfig[f], 0);
+                        
+                        // Adjust the value if it would exceed 100
+                        const maxValue = 100 - otherTotal;
+                        const finalValue = Math.min(newValue, maxValue);
+                        
+                        setPolicyConfig(prev => ({ ...prev, [field]: finalValue }));
+                    } else {
+                        setPolicyConfig(prev => ({ ...prev, [field]: parseFloat(value) }));
+                    }
+                };
+                
+                const getTotalWeight = () => {
+                    return policyConfig.risk + policyConfig.growth + policyConfig.dividend + policyConfig.defensive;
+                };
+                
+                const fetchOptimizationRecommendations = () => {
+                    setRefreshKey(prev => prev + 1);
                 };
                 
                 const processOptimizationData = (data) => {
@@ -9009,26 +9105,217 @@
                     }
                 };
                 
-                if (loading) {
-                    return e('div', null,
-                        e('div', { className: 'page-header' },
-                            e('h1', { className: 'page-title' }, 'Portfolio Optimizer'),
-                            e('p', { className: 'page-description' }, 'Loading optimization recommendations...')
-                        ),
-                        e('div', { className: 'loading' }, e('div', { className: 'spinner' }))
-                    );
-                }
-                
-                return e('div', null,
+                return e('div', { className: 'optimizer-page' },
                     e('div', { className: 'page-header' },
                         e('h1', { className: 'page-title' }, 'Portfolio Optimizer'),
                         e('p', { className: 'page-description' }, 'AI-powered optimization with policy-based rebalancing')
                     ),
                     
-                    error && e('div', { className: 'error-banner' }, error),
+                    // Policy Configuration Form
+                    e('div', { className: 'card', style: { marginBottom: '2rem' } },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'Policy Configuration'),
+                            e('button', { 
+                                className: 'btn btn-sm',
+                                onClick: () => setIsConfigOpen(!isConfigOpen)
+                            }, isConfigOpen ? 'Hide Config' : 'Show Config')
+                        ),
+                        isConfigOpen && e('form', { 
+                            className: 'policy-form', 
+                            onSubmit: handlePolicySubmit,
+                            style: { padding: '1.5rem' }
+                        },
+                            // Target Allocations Section
+                            e('div', { style: { marginBottom: '2rem' } },
+                                e('h4', { style: { marginBottom: '1rem', color: 'var(--text-secondary)' } }, 
+                                    'Target Allocations (must sum to 100%)'),
+                                
+                                // Risk Weight
+                                e('div', { className: 'form-group', style: { marginBottom: '1rem' } },
+                                    e('label', { className: 'form-label' }, 
+                                        `Risk Assets: ${policyConfig.risk}%`),
+                                    e('input', {
+                                        type: 'range',
+                                        className: 'form-range',
+                                        min: 0,
+                                        max: 100,
+                                        value: policyConfig.risk,
+                                        onChange: (e) => handleSliderChange('risk', e.target.value),
+                                        style: { width: '100%' }
+                                    })
+                                ),
+                                
+                                // Growth Weight
+                                e('div', { className: 'form-group', style: { marginBottom: '1rem' } },
+                                    e('label', { className: 'form-label' }, 
+                                        `Growth Assets: ${policyConfig.growth}%`),
+                                    e('input', {
+                                        type: 'range',
+                                        className: 'form-range',
+                                        min: 0,
+                                        max: 100,
+                                        value: policyConfig.growth,
+                                        onChange: (e) => handleSliderChange('growth', e.target.value),
+                                        style: { width: '100%' }
+                                    })
+                                ),
+                                
+                                // Dividend Weight
+                                e('div', { className: 'form-group', style: { marginBottom: '1rem' } },
+                                    e('label', { className: 'form-label' }, 
+                                        `Dividend Assets: ${policyConfig.dividend}%`),
+                                    e('input', {
+                                        type: 'range',
+                                        className: 'form-range',
+                                        min: 0,
+                                        max: 100,
+                                        value: policyConfig.dividend,
+                                        onChange: (e) => handleSliderChange('dividend', e.target.value),
+                                        style: { width: '100%' }
+                                    })
+                                ),
+                                
+                                // Defensive Weight
+                                e('div', { className: 'form-group', style: { marginBottom: '1rem' } },
+                                    e('label', { className: 'form-label' }, 
+                                        `Defensive Assets: ${policyConfig.defensive}%`),
+                                    e('input', {
+                                        type: 'range',
+                                        className: 'form-range',
+                                        min: 0,
+                                        max: 100,
+                                        value: policyConfig.defensive,
+                                        onChange: (e) => handleSliderChange('defensive', e.target.value),
+                                        style: { width: '100%' }
+                                    })
+                                ),
+                                
+                                // Total Weight Display
+                                e('div', { 
+                                    style: { 
+                                        padding: '0.75rem',
+                                        background: getTotalWeight() === 100 ? 
+                                            'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                        border: getTotalWeight() === 100 ? 
+                                            '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)',
+                                        borderRadius: '8px',
+                                        color: getTotalWeight() === 100 ? 
+                                            'var(--color-success)' : 'var(--color-warning)',
+                                        marginBottom: '1rem'
+                                    }
+                                }, `Total Weight: ${getTotalWeight()}%`)
+                            ),
+                            
+                            // Constraints Section
+                            e('div', { style: { marginBottom: '2rem' } },
+                                e('h4', { style: { marginBottom: '1rem', color: 'var(--text-secondary)' } }, 
+                                    'Constraints'),
+                                
+                                // Min Quality Score
+                                e('div', { className: 'form-group', style: { marginBottom: '1rem' } },
+                                    e('label', { className: 'form-label' }, 
+                                        `Min Quality Score: ${policyConfig.minQualityScore.toFixed(1)}`),
+                                    e('input', {
+                                        type: 'range',
+                                        className: 'form-range',
+                                        min: 5,
+                                        max: 10,
+                                        step: 0.5,
+                                        value: policyConfig.minQualityScore,
+                                        onChange: (e) => handleSliderChange('minQualityScore', e.target.value),
+                                        style: { width: '100%' }
+                                    })
+                                ),
+                                
+                                // Max Single Position
+                                e('div', { className: 'form-group', style: { marginBottom: '1rem' } },
+                                    e('label', { className: 'form-label' }, 
+                                        `Max Single Position: ${policyConfig.maxSinglePosition.toFixed(1)}%`),
+                                    e('input', {
+                                        type: 'range',
+                                        className: 'form-range',
+                                        min: 5,
+                                        max: 50,
+                                        step: 5,
+                                        value: policyConfig.maxSinglePosition,
+                                        onChange: (e) => handleSliderChange('maxSinglePosition', e.target.value),
+                                        style: { width: '100%' }
+                                    })
+                                ),
+                                
+                                // Max Sector
+                                e('div', { className: 'form-group', style: { marginBottom: '1rem' } },
+                                    e('label', { className: 'form-label' }, 
+                                        `Max Sector Concentration: ${policyConfig.maxSector.toFixed(1)}%`),
+                                    e('input', {
+                                        type: 'range',
+                                        className: 'form-range',
+                                        min: 20,
+                                        max: 50,
+                                        step: 5,
+                                        value: policyConfig.maxSector,
+                                        onChange: (e) => handleSliderChange('maxSector', e.target.value),
+                                        style: { width: '100%' }
+                                    })
+                                ),
+                                
+                                // Max Turnover
+                                e('div', { className: 'form-group', style: { marginBottom: '1rem' } },
+                                    e('label', { className: 'form-label' }, 
+                                        `Max Turnover: ${policyConfig.maxTurnoverPct.toFixed(1)}%`),
+                                    e('input', {
+                                        type: 'range',
+                                        className: 'form-range',
+                                        min: 5,
+                                        max: 30,
+                                        step: 5,
+                                        value: policyConfig.maxTurnoverPct,
+                                        onChange: (e) => handleSliderChange('maxTurnoverPct', e.target.value),
+                                        style: { width: '100%' }
+                                    })
+                                )
+                            ),
+                            
+                            // Submit Button
+                            e('button', { 
+                                type: 'submit',
+                                className: 'btn btn-primary',
+                                disabled: getTotalWeight() !== 100,
+                                style: { marginRight: '1rem' }
+                            }, 'Apply Configuration'),
+                            
+                            e('button', {
+                                type: 'button',
+                                className: 'btn btn-secondary',
+                                onClick: () => {
+                                    setPolicyConfig({
+                                        risk: 30,
+                                        growth: 30,
+                                        dividend: 20,
+                                        defensive: 20,
+                                        minQualityScore: 7.0,
+                                        maxSinglePosition: 25.0,
+                                        maxSector: 35.0,
+                                        maxTurnoverPct: 10.0,
+                                        minLotValue: 500
+                                    });
+                                }
+                            }, 'Reset to Defaults')
+                        )
+                    ),
+                    
+                    // PatternRenderer to load optimization data (hidden)
+                    e('div', { style: { display: 'none' } },
+                        e(PatternRenderer, {
+                            key: refreshKey,
+                            pattern: 'policy_rebalance',
+                            inputs: patternInputs,
+                            onDataLoaded: handleDataLoaded
+                        })
+                    ),
                     
                     // Summary Statistics
-                    optimizationData && optimizationData.summary && e('div', { className: 'stats-grid' },
+                    optimizationData && optimizationData.summary && e('div', { className: 'stats-grid', style: { marginBottom: '2rem' } },
                         e('div', { className: 'stat-card' },
                             e('div', { className: 'stat-label' }, 'Total Trades'),
                             e('div', { className: 'stat-value' }, optimizationData.summary.totalTrades || 0)

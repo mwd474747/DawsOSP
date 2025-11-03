@@ -117,10 +117,38 @@ class OptimizerAgent(BaseAgent):
 
         # Merge policies and constraints for pattern compatibility
         if policies or constraints:
-            # Use policies as base, merge with constraints
-            merged_policy = policies or {}
-            if constraints:
-                merged_policy.update(constraints)
+            # Handle both list and dict formats for policies
+            if isinstance(policies, list):
+                # Convert list of policies to a dict format for optimizer
+                merged_policy = {}
+                for policy in policies:
+                    if 'type' in policy:
+                        # Convert policy type to dict key
+                        if policy['type'] == 'min_quality_score':
+                            merged_policy['min_quality_score'] = policy.get('value', 0.0)
+                        elif policy['type'] == 'max_single_position':
+                            merged_policy['max_single_position_pct'] = policy.get('value', 20.0)
+                        elif policy['type'] == 'max_sector':
+                            merged_policy['max_sector_pct'] = policy.get('value', 30.0)
+                        elif policy['type'] == 'target_allocation':
+                            # Handle target allocations separately
+                            category = policy.get('category', '')
+                            value = policy.get('value', 0.0)
+                            merged_policy[f'target_{category}'] = value
+            else:
+                # Use policies as base if it's a dict
+                merged_policy = policies or {}
+            
+            # Merge constraints if provided
+            if constraints and isinstance(constraints, dict):
+                # Add constraints to the policy dict
+                if 'max_turnover_pct' in constraints:
+                    merged_policy['max_turnover_pct'] = constraints['max_turnover_pct']
+                if 'max_te_pct' in constraints:
+                    merged_policy['max_tracking_error_pct'] = constraints['max_te_pct']
+                if 'min_lot_value' in constraints:
+                    merged_policy['min_lot_value'] = constraints['min_lot_value']
+            
             policy_json = merged_policy
 
         # Default policy if not provided
