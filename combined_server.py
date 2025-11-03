@@ -4051,17 +4051,14 @@ async def get_api_keys(request: Request):
 
 @app.get("/api/optimizer/proposals", response_model=SuccessResponse)
 async def get_optimizer_proposals(
-    request: Request,
-    portfolio_id: Optional[str] = Query(None)
+    portfolio_id: Optional[str] = Query(None),
+    user: dict = Depends(require_auth)
 ):
-    """Get optimization proposals for portfolio"""
+    """
+    Get optimization proposals for portfolio
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # If pattern orchestration is available, use the optimizer agent
         if PATTERN_ORCHESTRATION_AVAILABLE and _pattern_orchestrator:
@@ -4151,17 +4148,14 @@ async def get_optimizer_proposals(
 
 @app.get("/api/optimizer/analysis", response_model=SuccessResponse)
 async def get_optimizer_analysis(
-    request: Request,
-    portfolio_id: Optional[str] = Query(None)
+    portfolio_id: Optional[str] = Query(None),
+    user: dict = Depends(require_auth)
 ):
-    """Get optimization impact analysis"""
+    """
+    Get optimization impact analysis
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Mock optimization analysis
         analysis = {
@@ -4717,16 +4711,12 @@ async def update_api_keys(request: Request):
 # ============================================================================
 
 @app.get("/api/scenarios", response_model=SuccessResponse)
-async def get_scenarios(request: Request):
-    """Get available scenario definitions and current analysis"""
+async def get_scenarios(user: dict = Depends(require_auth)):
+    """
+    Get available scenario definitions and current analysis
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Try to execute pattern for scenarios
         if PATTERN_ORCHESTRATION_AVAILABLE and db_pool:
@@ -4907,18 +4897,14 @@ async def get_risk_concentration(user: dict = Depends(require_auth)):
 
 @app.get("/api/market/quotes", response_model=SuccessResponse)
 async def get_market_quotes(
-    request: Request,
-    symbols: str = Query(default=None, description="Comma-separated list of symbols")
+    symbols: str = Query(default=None, description="Comma-separated list of symbols"),
+    user: dict = Depends(require_auth)
 ):
-    """Get multiple market quotes at once"""
+    """
+    Get multiple market quotes at once
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Parse symbols or use default watchlist
         if symbols:
@@ -4975,16 +4961,12 @@ async def get_market_quotes(
         )
 
 @app.get("/api/optimizer/efficient-frontier", response_model=SuccessResponse)
-async def get_efficient_frontier(request: Request):
-    """Get efficient frontier data for portfolio optimization"""
+async def get_efficient_frontier(user: dict = Depends(require_auth)):
+    """
+    Get efficient frontier data for portfolio optimization
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Generate efficient frontier points
         frontier_points = []
@@ -5050,16 +5032,12 @@ async def get_efficient_frontier(request: Request):
         )
 
 @app.get("/api/optimizer/recommendations", response_model=SuccessResponse)
-async def get_optimizer_recommendations(request: Request):
-    """Get optimization recommendations for portfolio"""
+async def get_optimizer_recommendations(user: dict = Depends(require_auth)):
+    """
+    Get optimization recommendations for portfolio
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         recommendations = {
             "optimization_score": 72,  # Out of 100
