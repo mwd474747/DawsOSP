@@ -8910,6 +8910,7 @@
                 const [optimizationData, setOptimizationData] = useState(null);
                 const [isConfigOpen, setIsConfigOpen] = useState(true);
                 const [refreshKey, setRefreshKey] = useState(0);
+                const [refreshing, setRefreshing] = useState(false);
                 const portfolioId = getCurrentPortfolioId();
                 
                 // Policy configuration state
@@ -8999,8 +9000,12 @@
                     return policyConfig.risk + policyConfig.growth + policyConfig.dividend + policyConfig.defensive;
                 };
                 
-                const fetchOptimizationRecommendations = () => {
+                const fetchOptimizationRecommendations = async () => {
+                    setRefreshing(true);
                     setRefreshKey(prev => prev + 1);
+                    // The actual data loading is handled by PatternRenderer
+                    // Set refreshing to false after a short delay to show the state change
+                    setTimeout(() => setRefreshing(false), 1000);
                 };
                 
                 const processOptimizationData = (data) => {
