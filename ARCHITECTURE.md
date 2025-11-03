@@ -72,6 +72,9 @@ Capability Request ("ledger.positions") → Runtime Lookup → FinancialAnalyst.
    - Capabilities: `ratings.*`, `buffett.*`
 6. **OptimizerAgent** - Portfolio optimization and rebalancing (~4 capabilities)
    - Capabilities: `optimizer.*`, `rebalance.*`
+   - **Note:** Capabilities consolidated into FinancialAnalyst (Phase 3 Week 1, November 3, 2025)
+   - Both agents registered (dual registration) for gradual migration via feature flags
+   - Capability routing handles `optimizer.*` → `financial_analyst.*` mapping
 7. **ChartsAgent** - Chart formatting and visualization (~3 capabilities)
    - Capabilities: `charts.*`
 8. **ReportsAgent** - PDF, CSV, Excel export generation (~3 capabilities)
