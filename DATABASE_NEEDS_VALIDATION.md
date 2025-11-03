@@ -1,18 +1,26 @@
 # DATABASE.md Needs Validation - Comprehensive Pre-Update Assessment
 
 **Date:** November 3, 2025  
-**Purpose:** Validate what the application ACTUALLY needs before updating documentation  
+**Last Updated:** After remote sync with updated DATABASE.md (Version 2.0)  
+**Purpose:** Validate what the application ACTUALLY needs and assess gaps after remote updates  
 **Status:** 📋 VALIDATION ONLY (No Code Changes)
 
 ---
 
 ## 📊 Executive Summary
 
-After thoroughly examining the codebase, database migrations, and actual usage patterns, I've identified significant discrepancies between what was assessed as "missing" and what the application actually uses. **Several assessed items are NOT actually implemented** or are used differently than documented in the assessment.
+After thoroughly examining the codebase, database migrations, and actual usage patterns, AND after syncing with remote to review updated DATABASE.md (Version 2.0), I've found that:
 
-**Critical Finding:** Some tables assessed as "missing" don't exist in migrations, and some assessed as "used" are computed on-demand rather than stored.
+**Key Finding:** Another agent has already updated DATABASE.md significantly (Version 2.0), documenting 33 tables with architecture patterns. However, **critical gaps still remain** that need documentation.
 
-**Overall Assessment:** 60% of assessed items are accurate, 40% need correction/clarification
+**Overall Assessment:** 
+- ✅ 80% of missing tables are now documented
+- ✅ Architecture patterns are documented (compute-first, cache-optional)
+- ✅ Field naming transformations are documented
+- ✅ Current data population status is documented
+- ❌ Corporate Actions gaps still not documented
+- ❌ Pattern response structures still not documented
+- ⚠️ Some operational details still need emphasis
 
 ---
 
@@ -42,19 +50,23 @@ After thoroughly examining the codebase, database migrations, and actual usage p
 **Assessment Claim:** Missing from documentation, used by financial_analyst agent
 
 **Reality Check:**
-- ❌ **Table NOT FOUND in migrations** - No migration creates `factor_exposures` table
+- ✅ **Table EXISTS in schema:** `backend/db/schema/portfolio_metrics.sql` (lines 179-234)
+- ✅ **Table IS a hypertable:** Created via `create_hypertable`
 - ✅ **Agent USES capability:** `risk.compute_factor_exposures`
-- ⚠️ **Usage Pattern:** Factor exposures are COMPUTED on-demand, not stored
+- ⚠️ **Usage Pattern:** Factor exposures are COMPUTED on-demand, table exists for future caching
 - **Code Evidence:**
   - `financial_analyst.py` calls `risk.compute_factor_exposures` capability
-  - No queries found that SELECT from `factor_exposures` table
-  - Risk service computes exposures dynamically
+  - Returns fallback data (doesn't query table currently)
+  - Table exists in schema but not actively queried
+  - **Updated DATABASE.md Status:** ✅ NOW DOCUMENTED (with architecture note about compute-first pattern)
 
-**Verdict:** ❌ **DOES NOT EXIST** - Table was assessed as missing but doesn't exist in migrations
+**Verdict:** ✅ **EXISTS** - Table exists but is computed on-demand (not queried)
 
-**Documentation Need:** Document that factor exposures are COMPUTED, not stored in a table
+**Documentation Status:** ✅ **NOW DOCUMENTED** in DATABASE.md Version 2.0:
+- Documented with architecture note: "Currently computed on-demand, table for future caching"
+- Matches compute-first, cache-optional pattern
 
-**Architecture Note:** May be a future optimization (store computed exposures), but currently computed on-demand
+**Updated Understanding:** Our original assessment was **WRONG** - table DOES exist, just not actively used. DATABASE.md now correctly documents it.
 
 ---
 
@@ -111,18 +123,23 @@ After thoroughly examining the codebase, database migrations, and actual usage p
 **Assessment Claim:** Missing from documentation, used by macro service
 
 **Reality Check:**
-- ⚠️ **Table STATUS:** Need to verify if table exists in migrations
-- ⚠️ **Usage Pattern:** Regime history may be computed on-demand or stored
+- ✅ **Table EXISTS in schema:** `backend/db/schema/macro_indicators.sql` (lines 69-112)
+- ✅ **Table IS stored:** Not a hypertable, regular table
+- ✅ **Actively USED:** `MacroService.store_regime_snapshot()` inserts into it
+- ✅ **Actively QUERIED:** `MacroService.get_regime_history()` queries from it
 - **Code Evidence:**
-  - `macro_trend_monitor.json` uses `macro.get_regime_history` capability
-  - Pattern expects `regime_history` as step result
-  - May be computed dynamically from `macro_indicators`
+  - `macro.py:768-809` - `store_regime_snapshot()` method inserts into table
+  - `macro.py:811-816` - `get_regime_history()` method queries from table
+  - Table exists and is actively used
+  - **Updated DATABASE.md Status:** ✅ NOW DOCUMENTED (with current row count: 2 rows)
 
-**Verdict:** ⚠️ **UNCLEAR** - Need to verify if table exists or is computed
+**Verdict:** ✅ **EXISTS AND USED** - Table exists and is actively stored/queried
 
-**Documentation Need:** Clarify whether regime_history is stored table or computed result
+**Documentation Status:** ✅ **NOW DOCUMENTED** in DATABASE.md Version 2.0:
+- Documented in "Risk & Scenario Analysis Tables" section
+- Notes current data: "Contains 2 rows of regime data"
 
-**Architecture Note:** If computed, may be stored temporarily but not as permanent hypertable
+**Updated Understanding:** Our original assessment was **INCOMPLETE** - table DOES exist and IS used. DATABASE.md now correctly documents it.
 
 ---
 
