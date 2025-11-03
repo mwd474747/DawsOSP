@@ -133,7 +133,7 @@ class CurrencyAttributor:
                 fx_end.rate as fx_end
             FROM lots l
             JOIN securities s ON l.security_id = s.id
-            JOIN prices p_start ON l.security_id = p_start.security_id
+            LEFT JOIN prices p_start ON l.security_id = p_start.security_id
                 AND p_start.pricing_pack_id = $3
             JOIN prices p_end ON l.security_id = p_end.security_id
                 AND p_end.pricing_pack_id = $2
@@ -259,15 +259,15 @@ class CurrencyAttributor:
                 "weight": 0.60  # Portfolio weight
             }
         """
-        # Extract values
-        price_start = Decimal(str(holding["price_start_local"]))
-        price_end = Decimal(str(holding["price_end_local"]))
-        fx_start = Decimal(str(holding.get("fx_start", 1.0)))
-        fx_end = Decimal(str(holding.get("fx_end", 1.0)))
+        # Extract values with null handling
+        price_start = Decimal(str(holding["price_start_local"])) if holding["price_start_local"] is not None else Decimal("0")
+        price_end = Decimal(str(holding["price_end_local"])) if holding["price_end_local"] is not None else Decimal("0")
+        fx_start = Decimal(str(holding["fx_start"])) if holding.get("fx_start") is not None else Decimal("1.0")
+        fx_end = Decimal(str(holding["fx_end"])) if holding.get("fx_end") is not None else Decimal("1.0")
         qty = Decimal(str(holding["qty_open"]))
 
         # Local return (price change in local currency)
-        if price_start > 0:
+        if price_start > 0 and price_end > 0:
             r_local = float((price_end - price_start) / price_start)
         else:
             r_local = 0.0
