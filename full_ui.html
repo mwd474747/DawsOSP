@@ -2878,13 +2878,13 @@
                                 id: 'cycle_risk_summary',
                                 title: 'Cycle Risk Summary',
                                 type: 'metrics_grid',
-                                dataPath: 'risk_summary'
+                                dataPath: 'cycle_risk_map'
                             },
                             {
                                 id: 'vulnerabilities',
                                 title: 'Vulnerabilities',
                                 type: 'table',
-                                dataPath: 'vulnerabilities'
+                                dataPath: 'cycle_risk_map.amplified_factors'
                             }
                         ]
                     }
@@ -2936,13 +2936,13 @@
                                 id: 'trends_grid',
                                 title: 'Economic Trends',
                                 type: 'metrics_grid',
-                                dataPath: 'trends'
+                                dataPath: 'trend_analysis'
                             },
                             {
                                 id: 'indicators_chart',
                                 title: 'Key Indicators',
                                 type: 'line_chart',
-                                dataPath: 'indicators'
+                                dataPath: 'factor_history'
                             }
                         ]
                     }
@@ -2994,7 +2994,7 @@
                                 id: 'news_summary',
                                 title: 'News Summary',
                                 type: 'metrics_grid',
-                                dataPath: 'summary'
+                                dataPath: 'impact_analysis'
                             },
                             {
                                 id: 'news_items',
@@ -3017,7 +3017,7 @@
                                 id: 'holding_metrics',
                                 title: 'Holding Metrics',
                                 type: 'metrics_grid',
-                                dataPath: 'metrics'
+                                dataPath: 'position'
                             },
                             {
                                 id: 'fundamentals',
@@ -3040,13 +3040,13 @@
                                 id: 'rebalance_summary',
                                 title: 'Rebalance Summary',
                                 type: 'metrics_grid',
-                                dataPath: 'summary'
+                                dataPath: 'rebalance_result'
                             },
                             {
                                 id: 'trade_proposals',
                                 title: 'Trade Proposals',
                                 type: 'table',
-                                dataPath: 'trades'
+                                dataPath: 'rebalance_result.trades'
                             }
                         ]
                     }
