@@ -10939,6 +10939,217 @@
                 );
             }
             
+            function RatingsPage() {
+                const [positions, setPositions] = useState([]);
+                const [selectedSecurity, setSelectedSecurity] = useState(null);
+                const [loadingPositions, setLoadingPositions] = useState(true);
+                const [portfolioData, setPortfolioData] = useState(null);
+                const { portfolioId } = useUserContext();
+                
+                useEffect(() => {
+                    fetchPortfolioData();
+                }, []);
+                
+                const fetchPortfolioData = async () => {
+                    try {
+                        setLoadingPositions(true);
+                        
+                        // Execute portfolio overview pattern to get positions with security IDs
+                        const response = await axios.post('/api/patterns/execute', {
+                            pattern: 'portfolio_overview',
+                            inputs: {
+                                portfolio_id: portfolioId || getCurrentPortfolioId(),
+                                lookback_days: 30
+                            }
+                        }, {
+                            headers: {
+                                'Authorization': `Bearer ${TokenManager.getToken()}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.data && response.data.valued_positions) {
+                            const positionsData = response.data.valued_positions.positions || [];
+                            setPositions(positionsData);
+                            setPortfolioData(response.data);
+                            
+                            // Auto-select first security if available
+                            if (positionsData.length > 0 && !selectedSecurity) {
+                                setSelectedSecurity(positionsData[0]);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch portfolio data:', error);
+                        setPositions([]);
+                    } finally {
+                        setLoadingPositions(false);
+                    }
+                };
+                
+                const handleSecuritySelect = (e) => {
+                    const securityId = e.target.value;
+                    const security = positions.find(p => p.security_id === securityId);
+                    setSelectedSecurity(security);
+                };
+                
+                if (loadingPositions) {
+                    return e('div', { className: 'loading' },
+                        e('div', { className: 'spinner' }),
+                        e('p', { style: { marginTop: '1rem' } }, 'Loading positions...')
+                    );
+                }
+                
+                return e('div', { className: 'ratings-page' },
+                    e('div', { className: 'page-header', style: { marginBottom: '2rem' } },
+                        e('h1', { className: 'page-title' }, 'Security Ratings & Analysis'),
+                        e('p', { className: 'page-description' }, 
+                            'Deep dive analysis with comprehensive ratings for individual holdings')
+                    ),
+                    
+                    // Security Selector Card
+                    e('div', { className: 'card', style: { marginBottom: '2rem' } },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'Select Security for Analysis')
+                        ),
+                        e('div', { style: { padding: '1.5rem' } },
+                            e('div', { className: 'form-group' },
+                                e('label', { className: 'form-label' }, 'Choose a holding to analyze'),
+                                e('select', {
+                                    className: 'form-input',
+                                    value: selectedSecurity?.security_id || '',
+                                    onChange: handleSecuritySelect,
+                                    style: { fontSize: '0.95rem' }
+                                },
+                                    !selectedSecurity && e('option', { value: '' }, 'Select a security...'),
+                                    positions.map(position => 
+                                        e('option', { 
+                                            key: position.security_id, 
+                                            value: position.security_id 
+                                        }, 
+                                            `${position.symbol} - ${position.name || 'Unknown'} (${formatCurrency(position.market_value || 0)} | ${formatPercentage(position.weight || 0)})`
+                                        )
+                                    )
+                                )
+                            ),
+                            
+                            // Quick position summary for selected security
+                            selectedSecurity && e('div', { 
+                                style: { 
+                                    marginTop: '1rem',
+                                    padding: '1rem',
+                                    background: 'rgba(59, 130, 246, 0.1)',
+                                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                                    borderRadius: '8px'
+                                }
+                            },
+                                e('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' } },
+                                    e('div', null,
+                                        e('div', { className: 'stat-label' }, 'Symbol'),
+                                        e('div', { className: 'stat-value', style: { fontSize: '1.125rem' } }, selectedSecurity.symbol)
+                                    ),
+                                    e('div', null,
+                                        e('div', { className: 'stat-label' }, 'Shares'),
+                                        e('div', { className: 'stat-value', style: { fontSize: '1.125rem' } }, 
+                                            formatNumber(selectedSecurity.qty_open || selectedSecurity.quantity || 0))
+                                    ),
+                                    e('div', null,
+                                        e('div', { className: 'stat-label' }, 'Market Value'),
+                                        e('div', { className: 'stat-value', style: { fontSize: '1.125rem' } }, 
+                                            formatCurrency(selectedSecurity.market_value || 0))
+                                    ),
+                                    e('div', null,
+                                        e('div', { className: 'stat-label' }, 'Unrealized P&L'),
+                                        e('div', { 
+                                            className: `stat-value ${(selectedSecurity.unrealized_pnl || 0) >= 0 ? 'positive' : 'negative'}`,
+                                            style: { fontSize: '1.125rem' }
+                                        }, 
+                                            formatCurrency(selectedSecurity.unrealized_pnl || 0))
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    
+                    // PatternRenderer for selected security deep dive
+                    selectedSecurity && selectedSecurity.security_id ? 
+                        e('div', { style: { marginBottom: '2rem' } },
+                            e('div', { className: 'card' },
+                                e('div', { className: 'card-header' },
+                                    e('h3', { className: 'card-title' }, 
+                                        `${selectedSecurity.symbol} - Deep Dive Analysis`)
+                                ),
+                                e(PatternRenderer, {
+                                    key: selectedSecurity.security_id,
+                                    pattern: 'holding_deep_dive',
+                                    inputs: {
+                                        portfolio_id: portfolioId || getCurrentPortfolioId(),
+                                        security_id: selectedSecurity.security_id,
+                                        lookback_days: 252
+                                    }
+                                })
+                            )
+                        ) : 
+                        !loadingPositions && positions.length === 0 && e('div', { className: 'empty-state' },
+                            e('div', { className: 'empty-state-title' }, 'No Holdings Found'),
+                            e('div', { className: 'empty-state-message' }, 
+                                'Your portfolio doesn\'t have any holdings to analyze.')
+                        ),
+                    
+                    // Portfolio-wide ratings summary (optional)
+                    positions.length > 0 && e('div', { className: 'card' },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'Portfolio Holdings Overview')
+                        ),
+                        e('div', { className: 'table-container' },
+                            e('table', { className: 'table' },
+                                e('thead', null,
+                                    e('tr', null,
+                                        e('th', null, 'Symbol'),
+                                        e('th', null, 'Name'),
+                                        e('th', null, 'Shares'),
+                                        e('th', null, 'Price'),
+                                        e('th', null, 'Market Value'),
+                                        e('th', null, 'Weight'),
+                                        e('th', null, 'Unrealized P&L'),
+                                        e('th', null, 'Return')
+                                    )
+                                ),
+                                e('tbody', null,
+                                    positions.map(position =>
+                                        e('tr', { 
+                                            key: position.security_id,
+                                            onClick: () => setSelectedSecurity(position),
+                                            style: { 
+                                                cursor: 'pointer',
+                                                background: selectedSecurity?.security_id === position.security_id ? 
+                                                    'rgba(59, 130, 246, 0.1)' : 'transparent'
+                                            }
+                                        },
+                                            e('td', { className: 'symbol' }, position.symbol),
+                                            e('td', null, position.name || '--'),
+                                            e('td', null, formatNumber(position.qty_open || position.quantity || 0)),
+                                            e('td', null, formatCurrency(position.current_price || position.price || 0)),
+                                            e('td', null, formatCurrency(position.market_value || 0)),
+                                            e('td', null, formatPercentage(position.weight || 0)),
+                                            e('td', { 
+                                                className: (position.unrealized_pnl || 0) >= 0 ? 'positive' : 'negative' 
+                                            }, 
+                                                formatCurrency(position.unrealized_pnl || 0)
+                                            ),
+                                            e('td', { 
+                                                className: (position.unrealized_pnl_pct || 0) >= 0 ? 'positive' : 'negative' 
+                                            }, 
+                                                formatPercentage(position.unrealized_pnl_pct || 0)
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+            
             function SettingsPage() {
                 return e('div', null,
                     e('div', { className: 'page-header' },
