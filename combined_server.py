@@ -39,6 +39,15 @@ from asyncpg.pool import Pool
 import uvicorn
 import httpx
 
+# Import Anthropic SDK for AI chat
+try:
+    import anthropic
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    logger.warning("Anthropic SDK not installed. AI chat will use fallback responses.")
+    ANTHROPIC_AVAILABLE = False
+    anthropic = None
+
 # Import authentication utilities from centralized module
 from backend.app.auth.dependencies import (
     hash_password, 
@@ -4298,66 +4307,63 @@ async def ai_chat(
     user: dict = Depends(require_auth)
 ):
     """
-    Send chat message to Claude AI
-    AUTH_STATUS: MIGRATED - Sprint 2
+    AI chat endpoint with direct Claude API call.
+
+    Simple, direct implementation appropriate for conversational use case.
+    For complex multi-step workflows, use pattern orchestrator.
+
+    AUTH_STATUS: MIGRATED
     """
     try:
+        # Check if Anthropic API is configured and available
+        if not ANTHROPIC_AVAILABLE:
+            # Fallback: Mock response when SDK not installed
+            logger.warning("Anthropic SDK not available, using mock response")
+            return SuccessResponse(data={
+                "response": f"I'm currently in demo mode. Based on your query about '{ai_request.query[:50]}...', "
+                           "I would analyze your portfolio and provide insights. "
+                           "To enable real AI responses, please install the Anthropic SDK.",
+                "model": "mock",
+                "tokens": None
+            })
 
-        # If Claude agent is available, use it
-        if PATTERN_ORCHESTRATION_AVAILABLE and _agent_runtime:
-            try:
-                runtime = get_agent_runtime()
-                ctx = RequestCtx(
-                    user_id=user.get("user_id"),
-                    asof_date=date.today(),
-                )
+        if not ANTHROPIC_API_KEY:
+            raise HTTPException(
+                status_code=500,
+                detail="ANTHROPIC_API_KEY not configured. Please set it in environment variables."
+            )
 
-                # Use claude agent
-                result = await runtime.execute_capability(
-                    agent_id="claude_agent",
-                    capability="claude.analyze",
-                    ctx=ctx,
-                    state={
-                        "query": ai_request.query,
-                        "context": ai_request.context
-                    }
-                )
+        # Initialize Claude client
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-                if result:
-                    return SuccessResponse(data={
-                        "response": result.get("analysis", result.get("response", "Analysis completed")),
-                        "confidence": result.get("confidence", 0.85),
-                        "sources": result.get("sources", []),
-                        "timestamp": datetime.utcnow().isoformat()
-                    })
-            except Exception as e:
-                logger.error(f"Error using Claude agent: {e}")
+        # Direct API call to Claude
+        response = await asyncio.to_thread(
+            client.messages.create,
+            model="claude-3-sonnet-20240229",
+            messages=[{"role": "user", "content": ai_request.query}],
+            max_tokens=1024,
+            temperature=0.7
+        )
 
-        # Fallback mock response
-        response = {
-            "response": f"Based on your query '{ai_request.query[:50]}...', here's my analysis:\n\n" +
-                       "The current market conditions suggest a cautious approach. " +
-                       "Key factors to consider include:\n" +
-                       "1. Rising interest rates impacting valuations\n" +
-                       "2. Strong corporate earnings in select sectors\n" +
-                       "3. Geopolitical uncertainties creating volatility\n\n" +
-                       "I recommend maintaining a balanced portfolio with defensive positions.",
-            "confidence": 0.75,
-            "sources": ["Market data", "Economic indicators", "Portfolio analysis"],
-            "follow_up_questions": [
-                "Would you like more details on sector rotation strategies?",
-                "Should I analyze specific holdings in your portfolio?",
-                "Do you want risk-adjusted recommendations?"
-            ],
-            "timestamp": datetime.utcnow().isoformat()
-        }
+        # Extract response text
+        response_text = response.content[0].text if response.content else ""
 
-        return SuccessResponse(data=response)
+        return SuccessResponse(data={
+            "response": response_text,
+            "model": "claude-3-sonnet-20240229",
+            "tokens": response.usage.total_tokens if hasattr(response, 'usage') else None
+        })
 
+    except anthropic.APIError as e:
+        logger.error(f"Claude API error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Chat failed: {str(e)}"
+        )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in AI chat: {e}")
+        logger.error(f"Unexpected error in AI chat: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to process AI chat request"

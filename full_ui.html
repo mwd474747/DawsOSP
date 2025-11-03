@@ -9918,8 +9918,8 @@
                     try {
                         const token = localStorage.getItem('access_token');
                         const response = await axios.post(
-                            `${API_BASE}/api/ai/chat`, 
-                            { message: inputValue },
+                            `${API_BASE}/api/ai/chat`,
+                            { query: inputValue },
                             { headers: { 'Authorization': `Bearer ${token}` } }
                         );
                         
