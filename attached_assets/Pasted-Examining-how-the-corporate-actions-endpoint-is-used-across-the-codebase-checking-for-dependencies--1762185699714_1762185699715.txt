@@ -1,0 +1,59 @@
+Examining how the corporate actions endpoint is used across the codebase, checking for dependencies, and assessing potential breaking changes.
+
+
+[13 tools called]
+
+Analyzing endpoint usage and potential breaking changes.
+
+
+[6 tools called]
+
+## Summary
+
+### Key findings
+
+1. Isolated usage — single consumer
+   - Only used by `CorporateActionsPage` in `full_ui.html`
+   - No patterns, agents, or other services depend on it
+   - UI handles empty arrays defensively
+
+2. Design issues identified
+   - API route duplication: `/api/corporate-actions` (display) vs `/v1/corporate-actions/*` (recording)
+   - Missing RLS pattern: current endpoint doesn't query DB; must use RLS when implementing
+   - Parameter validation: `portfolio_id` is optional but should be required
+
+3. Breaking change risk: low
+   - Changes are additive (populating arrays instead of empty)
+   - Response structure remains the same
+   - UI already handles array responses
+
+4. Pattern comparison
+   - Other portfolio endpoints use:
+     - Pattern Orchestrator (`/api/portfolio`, `/api/holdings`)
+     - Direct Service with RLS (`/v1/trades/*`, `/v1/corporate-actions/*` router)
+
+### Design recommendations
+
+1. Use RLS-enabled connection (required for security)
+2. Validate `portfolio_id` parameter (make required or validate explicitly)
+3. Follow router pattern (use direct service with RLS, similar to `/v1/corporate-actions/*`)
+4. Keep response structure (already good, maintain consistency)
+
+### Implementation safety
+
+Answer: Yes, safe to implement.
+
+Reasons:
+- Single consumer (UI component only)
+- Additive changes (populating data, not changing structure)
+- Defensive UI code (handles errors gracefully)
+- RLS improves security, doesn't break functionality
+
+The document includes:
+- Endpoint usage analysis
+- Design issues with severity ratings
+- Breaking change risk assessment
+- Pattern comparisons with other endpoints
+- Implementation recommendations
+
+Ready for implementation planning. The analysis confirms it's safe to proceed, with minor design improvements recommended during implementation.
