@@ -10661,15 +10661,200 @@
             }
             
             function CorporateActionsPage() {
+                const [corporateActions, setCorporateActions] = useState([]);
+                const [loading, setLoading] = useState(true);
+                const [error, setError] = useState(null);
+                const [filterType, setFilterType] = useState('all');
+                const [filterDays, setFilterDays] = useState(90);
+                
+                // Fetch corporate actions from API
+                useEffect(() => {
+                    fetchCorporateActions();
+                }, [filterDays]);
+                
+                const fetchCorporateActions = async () => {
+                    try {
+                        setLoading(true);
+                        setError(null);
+                        
+                        const token = TokenManager.getToken();
+                        const response = await axios.get('/api/corporate-actions', {
+                            params: {
+                                days_ahead: filterDays,
+                                portfolio_id: getCurrentPortfolioId()
+                            },
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.data && response.data.data) {
+                            setCorporateActions(response.data.data.actions || []);
+                        }
+                    } catch (err) {
+                        console.error('Error fetching corporate actions:', err);
+                        setError('Failed to load corporate actions');
+                        setCorporateActions([]);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                
+                // Filter actions based on type
+                const filteredActions = corporateActions.filter(action => {
+                    if (filterType === 'all') return true;
+                    return action.type?.toLowerCase() === filterType;
+                });
+                
+                // Format details based on action type
+                const formatActionDetails = (action) => {
+                    if (action.type === 'dividend') {
+                        // Use amount from API response
+                        return action.amount ? `$${action.amount.toFixed(2)} per share` : action.action || 'Dividend';
+                    } else if (action.type === 'split') {
+                        // Use ratio from API response
+                        return action.ratio ? `${action.ratio} stock split` : action.action || 'Stock split';
+                    } else if (action.type === 'earnings') {
+                        // Format earnings details
+                        return action.consensus_eps ? `EPS: $${action.consensus_eps}` : action.action || 'Earnings release';
+                    } else if (action.type === 'buyback') {
+                        return action.action || action.details || 'Share buyback program';
+                    } else if (action.type === 'merger') {
+                        return action.terms || action.action || 'Merger announcement';
+                    }
+                    return action.action || action.details || action.impact || '--';
+                };
+                
+                // Format date for display - handle multiple date field names
+                const formatActionDate = (action) => {
+                    // Try different date field names based on action type
+                    let dateStr = action.date || action.ex_date || action.payment_date || 
+                                 action.announcement_date || action.expected_close;
+                    if (!dateStr) return '--';
+                    try {
+                        const date = new Date(dateStr);
+                        return date.toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric' 
+                        });
+                    } catch (e) {
+                        return dateStr;
+                    }
+                };
+                
+                // Get badge color based on action type
+                const getTypeBadgeColor = (type) => {
+                    const typeColors = {
+                        'dividend': { bg: 'rgba(16, 185, 129, 0.2)', color: 'var(--color-success)' },
+                        'split': { bg: 'rgba(59, 130, 246, 0.2)', color: 'var(--color-info)' },
+                        'buyback': { bg: 'rgba(245, 158, 11, 0.2)', color: 'var(--color-warning)' },
+                        'merger': { bg: 'rgba(155, 89, 182, 0.2)', color: 'var(--color-empire)' },
+                        'spinoff': { bg: 'rgba(230, 126, 34, 0.2)', color: 'var(--color-civil)' }
+                    };
+                    return typeColors[type?.toLowerCase()] || { bg: 'rgba(148, 163, 184, 0.2)', color: 'var(--text-secondary)' };
+                };
+                
                 return e('div', null,
                     e('div', { className: 'page-header' },
                         e('h1', { className: 'page-title' }, 'Corporate Actions'),
                         e('p', { className: 'page-description' }, 'Track dividends, splits, and other corporate events')
                     ),
+                    
+                    // Filtering Controls
+                    e('div', { className: 'card', style: { marginBottom: '1.5rem' } },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'Filter Corporate Actions')
+                        ),
+                        e('div', { style: { padding: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' } },
+                            // Action Type Filter
+                            e('div', { style: { flex: '1 1 200px', minWidth: '150px' } },
+                                e('label', { 
+                                    className: 'form-label', 
+                                    style: { fontSize: '0.75rem', marginBottom: '0.25rem' } 
+                                }, 'Action Type'),
+                                e('select', {
+                                    className: 'form-input',
+                                    value: filterType,
+                                    onChange: (e) => setFilterType(e.target.value),
+                                    style: { fontSize: '0.875rem' }
+                                },
+                                    e('option', { value: 'all' }, 'All Types'),
+                                    e('option', { value: 'dividend' }, 'Dividends'),
+                                    e('option', { value: 'split' }, 'Stock Splits'),
+                                    e('option', { value: 'earnings' }, 'Earnings'),
+                                    e('option', { value: 'buyback' }, 'Buybacks'),
+                                    e('option', { value: 'merger' }, 'Mergers')
+                                )
+                            ),
+                            
+                            // Date Range Filter
+                            e('div', { style: { flex: '1 1 200px', minWidth: '150px' } },
+                                e('label', { 
+                                    className: 'form-label', 
+                                    style: { fontSize: '0.75rem', marginBottom: '0.25rem' } 
+                                }, 'Date Range'),
+                                e('select', {
+                                    className: 'form-input',
+                                    value: filterDays,
+                                    onChange: (e) => setFilterDays(Number(e.target.value)),
+                                    style: { fontSize: '0.875rem' }
+                                },
+                                    e('option', { value: 30 }, 'Last 30 days'),
+                                    e('option', { value: 90 }, 'Last 90 days'),
+                                    e('option', { value: 180 }, 'Last 180 days'),
+                                    e('option', { value: 365 }, 'Last year'),
+                                    e('option', { value: 730 }, 'Last 2 years')
+                                )
+                            ),
+                            
+                            // Refresh Button
+                            e('button', {
+                                className: 'btn',
+                                onClick: fetchCorporateActions,
+                                disabled: loading,
+                                style: { 
+                                    padding: '0.5rem 1rem',
+                                    fontSize: '0.875rem',
+                                    minWidth: '100px',
+                                    alignSelf: 'flex-end'
+                                }
+                            }, loading ? 'Loading...' : '↻ Refresh')
+                        )
+                    ),
+                    
+                    // Corporate Actions Table
                     e('div', { className: 'card' },
                         e('div', { className: 'card-header' },
-                            e('h3', { className: 'card-title' }, 'Recent Corporate Actions')
+                            e('h3', { className: 'card-title' }, 'Recent Corporate Actions'),
+                            filteredActions.length > 0 && e('span', { 
+                                style: { 
+                                    fontSize: '0.875rem', 
+                                    color: 'var(--text-secondary)' 
+                                } 
+                            }, `${filteredActions.length} action${filteredActions.length === 1 ? '' : 's'} found`)
                         ),
+                        
+                        error ? 
+                            e('div', { className: 'alert alert-error' },
+                                e('div', { className: 'alert-content' },
+                                    e('span', { className: 'alert-icon' }, '⚠'),
+                                    e('span', null, error)
+                                )
+                            ) :
+                        loading ? 
+                            e('div', { style: { padding: '2rem', textAlign: 'center' } },
+                                e('div', { className: 'loading-spinner' }),
+                                e('p', { style: { marginTop: '1rem', color: 'var(--text-secondary)' } }, 
+                                    'Loading corporate actions...')
+                            ) :
+                        filteredActions.length === 0 ?
+                            e('div', { className: 'empty-state' },
+                                e('div', { className: 'empty-state-title' }, 'No Corporate Actions Found'),
+                                e('div', { className: 'empty-state-message' }, 
+                                    'No corporate actions match your filter criteria. Try adjusting the filters.')
+                            ) :
                         e('div', { className: 'table-container' },
                             e('table', { className: 'table' },
                                 e('thead', null,
@@ -10677,22 +10862,39 @@
                                         e('th', null, 'Date'),
                                         e('th', null, 'Symbol'),
                                         e('th', null, 'Type'),
-                                        e('th', null, 'Details')
+                                        e('th', null, 'Details'),
+                                        e('th', null, 'Status')
                                     )
                                 ),
                                 e('tbody', null,
-                                    e('tr', null,
-                                        e('td', null, '2025-10-15'),
-                                        e('td', { className: 'symbol' }, 'CNR'),
-                                        e('td', null, 'Dividend'),
-                                        e('td', null, '$1.25 per share')
-                                    ),
-                                    e('tr', null,
-                                        e('td', null, '2025-09-30'),
-                                        e('td', { className: 'symbol' }, 'BAM'),
-                                        e('td', null, 'Dividend'),
-                                        e('td', null, '$0.32 per share')
-                                    )
+                                    filteredActions.map((action, index) => {
+                                        const badgeStyle = getTypeBadgeColor(action.type);
+                                        return e('tr', { key: action.id || index },
+                                            e('td', null, formatActionDate(action)),
+                                            e('td', { className: 'symbol' }, action.symbol || '--'),
+                                            e('td', null, 
+                                                e('span', { 
+                                                    className: 'badge',
+                                                    style: {
+                                                        backgroundColor: badgeStyle.bg,
+                                                        color: badgeStyle.color
+                                                    }
+                                                }, (action.type || 'Unknown').toUpperCase())
+                                            ),
+                                            e('td', null, formatActionDetails(action)),
+                                            e('td', null,
+                                                e('span', {
+                                                    className: 'badge',
+                                                    style: {
+                                                        backgroundColor: action.status === 'completed' ? 
+                                                            'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                                                        color: action.status === 'completed' ? 
+                                                            'var(--color-success)' : 'var(--color-warning)'
+                                                    }
+                                                }, (action.status || 'pending').toUpperCase())
+                                            )
+                                        );
+                                    })
                                 )
                             )
                         )
