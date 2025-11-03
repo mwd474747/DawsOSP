@@ -96,6 +96,7 @@ class DataHarvester(BaseAgent):
             "news.compute_portfolio_impact",  # Pattern compatibility for news_impact_analysis
             "data_harvester.render_pdf",  # Week 5: PDF export with safety features
             "data_harvester.export_csv",  # Week 5: CSV export with safety features
+            "data_harvester.export_excel",  # Week 5: Excel export (not yet implemented)
         ]
 
     async def provider_fetch_quote(
@@ -2409,6 +2410,37 @@ class DataHarvester(BaseAgent):
                 "reason": "encoding_error",
                 "suggestion": f"Failed to encode the file: {str(e)}",
             }
+    
+    async def data_harvester_export_excel(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        filename: str = "export.xlsx",
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Generate Excel export (not yet implemented).
+        
+        Capability: data_harvester.export_excel
+        Placeholder for future Excel export functionality.
+        
+        Args:
+            ctx: Request context
+            state: Pattern execution state
+            filename: Excel filename
+            **kwargs: Additional options
+            
+        Returns:
+            Dict with status and error message (not yet implemented)
+        """
+        logger.warning("data_harvester.export_excel: Not yet implemented")
+        
+        return {
+            "status": "not_implemented",
+            "error": "Excel export not yet implemented",
+            "filename": filename,
+            "excel_base64": None,
+        }
     
     def _get_environment(self) -> str:
         """
