@@ -34,15 +34,10 @@ from typing import Any, Dict, List, Optional
 from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 
-# Optional imports for compliance and observability (graceful degradation)
-try:
-    from compliance.attribution import get_attribution_manager
-    from compliance.rights_registry import get_rights_registry
-except ImportError:
-    logger = logging.getLogger(__name__)
-    logger.warning("Compliance modules not available - attribution and rights enforcement disabled")
-    get_attribution_manager = None
-    get_rights_registry = None
+# Compliance modules archived (Phase 0-5 cleanup), not available
+# See: .archive/compliance-archived-20251102/
+get_attribution_manager = None
+get_rights_registry = None
 
 try:
     from observability.metrics import get_metrics
