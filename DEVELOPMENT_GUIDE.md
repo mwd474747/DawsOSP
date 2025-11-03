@@ -518,6 +518,127 @@ logging.basicConfig(level=logging.DEBUG)
 
 ---
 
+## Documentation Standards
+
+### Documentation Template
+
+When creating new documentation, use the following template:
+
+```markdown
+# Document Title
+
+**Date:** [Date]
+**Status:** [Status]
+**Purpose:** [Purpose]
+
+---
+
+## 📊 Executive Summary
+
+[Brief summary of the document's content and purpose]
+
+---
+
+## [Section 1]
+
+[Content]
+
+---
+
+## [Section 2]
+
+[Content]
+
+---
+
+## ✅ Conclusion
+
+[Summary and next steps]
+
+---
+
+**Last Updated:** [Date]
+**Status:** [Status]
+```
+
+### Standard Header Format
+
+**Required Fields:**
+- **Date:** Date of creation or last update
+- **Status:** Current status (✅ COMPLETE, ⏳ IN PROGRESS, 📋 PLANNING, ⚠️ BLOCKED)
+- **Purpose:** Brief description of document purpose
+
+**Optional Fields:**
+- **Reviewer:** Person or agent reviewing
+- **Assigned To:** Person or agent responsible
+- **Coordinated By:** Person or agent coordinating
+
+### Status Values
+
+**Standard Status Values:**
+- ✅ **COMPLETE** - Work finished
+- ⏳ **IN PROGRESS** - Work ongoing
+- ⏸️ **PAUSED** - Work paused
+- 📋 **PLANNING** - Planning phase
+- ⚠️ **BLOCKED** - Blocked by dependency
+- ✅ **READY FOR TESTING** - Ready for testing
+- ✅ **READY FOR ROLLOUT** - Ready for rollout
+
+### Documentation Structure
+
+**Standard Sections:**
+1. **Executive Summary** - Brief overview
+2. **Detailed Analysis/Content** - Main content
+3. **Findings/Results** - Key findings
+4. **Recommendations/Next Steps** - Actions to take
+5. **Conclusion** - Summary and status
+
+### File Naming Conventions
+
+**Planning Documents:**
+- `PHASE_X_PLAN.md` - Planning documents
+- `PHASE_X_EXECUTION_PLAN.md` - Execution plans
+- `PHASE_X_CURRENT_STATUS_REVIEW.md` - Status reviews
+
+**Report Documents:**
+- `PHASE_X_SUMMARY.md` - Consolidated summaries
+- `PHASE_X_WEEKY_COMPLETION.md` - Week completion reports
+- `*_REPORT.md` - Detailed reports (to be archived)
+
+**Guide Documents:**
+- `*_GUIDE.md` - Comprehensive guides
+- `*_REFERENCE.md` - Reference documents
+
+### Documentation Location
+
+**Core Documentation (Root):**
+- Core project files (README, ARCHITECTURE, DATABASE, etc.)
+- Active status tracking (AGENT_CONVERSATION_MEMORY, PHASE_3_CURRENT_STATUS_REVIEW)
+- Active planning (DOCUMENTATION_REFACTORING_OPPORTUNITIES)
+
+**Organized Documentation (`docs/`):**
+- `docs/planning/` - Planning documents
+- `docs/reports/` - Report documents
+- `docs/analysis/` - Analysis documents
+- `docs/guides/` - Comprehensive guides
+- `docs/reference/` - Reference documents
+
+**Archived Documentation (`.archive/`):**
+- Historical documents organized by category
+- See [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) for full index
+
+### Best Practices
+
+1. **Update Immediately** - Update documentation when code changes
+2. **Cross-Reference** - Link related documents
+3. **Status Tracking** - Always include status section
+4. **Consolidate Regularly** - Reduce redundancy
+5. **Archive Promptly** - Move outdated docs to `.archive/`
+
+For more details, see [DOCUMENTATION_MAINTENANCE_GUIDE.md](DOCUMENTATION_MAINTENANCE_GUIDE.md).
+
+---
+
 ## Resources
 
 **Code:**
@@ -526,15 +647,16 @@ logging.basicConfig(level=logging.DEBUG)
 - [backend/patterns/](backend/patterns/) - Pattern definitions
 - [full_ui.html](full_ui.html) - React UI
 
-**Archived Documentation:**
-- [.archive/deprecated/LOW_RISK_REFACTORING_OPPORTUNITIES_V2.md](.archive/deprecated/) - Refactoring guide (955 lines)
-- [.archive/deprecated/PATTERN_UI_INTEGRATION_PLAN.md](.archive/deprecated/) - UI integration (1,260 lines)
-- [.archive/deprecated/UI_INTEGRATION_PRIORITIES.md](.archive/deprecated/) - Integration priorities (494 lines)
-
-**Architecture:**
+**Documentation:**
+- [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) - Complete documentation index
+- [DOCUMENTATION_MAINTENANCE_GUIDE.md](DOCUMENTATION_MAINTENANCE_GUIDE.md) - Documentation maintenance guide
 - [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
 - [README.md](README.md) - Quick start guide
 - [DATABASE.md](DATABASE.md) - Database reference
+
+**Archived Documentation:**
+- [.archive/deprecated/](.archive/deprecated/) - Historical documentation
+- See [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) for full archive index
 
 ---
 
