@@ -824,11 +824,7 @@ def verify_jwt_token(token: str) -> Optional[dict]:
         logger.error(f"Error verifying JWT token: {e}")
         return None
 
-# Commented out - now imported from backend/app/auth/dependencies.py
-# def create_jwt_token(user_id: str, email: str, role: str) -> str:
-#     ...
-# async def get_current_user(request_or_token: Union[Request, str]) -> Optional[dict]:
-#     ...
+# All authentication functions now imported from backend.app.auth.dependencies
 
 # ============================================================================
 # Authentication Functions - Now imported from backend.app.auth.dependencies
