@@ -271,7 +271,8 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 
 ### Authorization
 - **Role-Based Access Control (RBAC)**: ADMIN, MANAGER, USER, VIEWER
-- **Endpoint Protection**: JWT middleware on all /api/* routes (except /api/auth/login)
+- **Endpoint Protection**: JWT validation on 45 authenticated endpoints (manual checks in each endpoint)
+- **Optional Dependency**: `require_auth` dependency available but not yet adopted
 - **Pattern-Level Rights**: Patterns can require specific rights (e.g., "portfolio_read")
 
 ### Data Protection
@@ -282,7 +283,7 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 
 ### Default Credentials (CHANGE IN PRODUCTION!)
 - Email: michael@dawsos.com
-- Password: mozzuq-byfqyQ-5tefvu
+- Password: admin123
 
 ---
 

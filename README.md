@@ -23,6 +23,7 @@ python combined_server.py
 
 # 4. Open browser
 # Visit: http://localhost:8000/
+# Login: michael@dawsos.com / admin123
 ```
 
 **That's it!** The application serves everything from a single server.
@@ -46,10 +47,10 @@ python combined_server.py
 ## 🏗️ Architecture
 
 **Current Production Stack**:
-- **UI**: `full_ui.html` - Single-page React application (14,075 lines, no build step)
-- **Server**: `combined_server.py` - FastAPI server (6,046 lines, 59 endpoints)
+- **UI**: `full_ui.html` - Single-page React application (10,882 lines, no build step)
+- **Server**: `combined_server.py` - FastAPI server (6,052 lines, 54 endpoints)
 - **Database**: PostgreSQL + TimescaleDB
-- **Agents**: 9 agents providing ~67-70 capabilities
+- **Agents**: 9 agents providing ~70 capabilities
 - **Patterns**: 12 pattern definitions for orchestration
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.

@@ -32,10 +32,10 @@
 ## 🎯 Current State (As of Nov 2, 2025)
 
 ### Production Stack
-- **Server**: `combined_server.py` - Single FastAPI application (6,046 lines, 59 endpoints)
-- **UI**: `full_ui.html` - React 18 SPA (14,075 lines, 17 pages, no build step)
+- **Server**: `combined_server.py` - Single FastAPI application (6,052 lines, 54 endpoints)
+- **UI**: `full_ui.html` - React 18 SPA (10,882 lines, 17 pages, no build step)
 - **Database**: PostgreSQL 14+ with TimescaleDB
-- **Agents**: 9 specialized agents providing 73 capabilities
+- **Agents**: 9 specialized agents providing ~70 capabilities
 - **Patterns**: 12 JSON pattern definitions
 
 ### Key Entry Points
