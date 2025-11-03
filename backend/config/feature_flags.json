@@ -1,36 +1,36 @@
 {
   "agent_consolidation": {
     "optimizer_to_financial": {
-      "enabled": false,
-      "rollout_percentage": 0,
+      "enabled": true,
+      "rollout_percentage": 100,
       "description": "Route optimizer agent capabilities to FinancialAnalyst agent",
       "created_at": "2025-11-03",
       "updated_at": "2025-11-03"
     },
     "ratings_to_financial": {
-      "enabled": false,
-      "rollout_percentage": 0,
+      "enabled": true,
+      "rollout_percentage": 100,
       "description": "Route ratings agent capabilities to FinancialAnalyst agent",
       "created_at": "2025-11-03",
       "updated_at": "2025-11-03"
     },
     "reports_to_data_harvester": {
-      "enabled": false,
-      "rollout_percentage": 0,
+      "enabled": true,
+      "rollout_percentage": 100,
       "description": "Route reports agent capabilities to DataHarvester agent",
       "created_at": "2025-11-03",
       "updated_at": "2025-11-03"
     },
     "charts_to_financial": {
-      "enabled": false,
-      "rollout_percentage": 0,
+      "enabled": true,
+      "rollout_percentage": 100,
       "description": "Route charts agent capabilities to FinancialAnalyst agent",
       "created_at": "2025-11-03",
       "updated_at": "2025-11-03"
     },
     "alerts_to_macro": {
-      "enabled": false,
-      "rollout_percentage": 0,
+      "enabled": true,
+      "rollout_percentage": 100,
       "description": "Route alerts agent capabilities to MacroHound agent",
       "created_at": "2025-11-03",
       "updated_at": "2025-11-03"

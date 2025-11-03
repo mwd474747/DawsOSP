@@ -1,0 +1,176 @@
+# DawsOS - AI-Powered Portfolio Management Platform
+
+## Overview
+
+DawsOS is a production-ready portfolio intelligence platform that combines real-time portfolio tracking with AI-powered analysis. The system uses a pattern-driven architecture where business workflows are defined declaratively in JSON files and executed by specialized agents.
+
+**Key Characteristics:**
+- **Single-file deployment**: Everything runs from `combined_server.py` (6,043 lines, 53 endpoints)
+- **No build step**: React 18 SPA served as a single HTML file (`full_ui.html`, 11,594 lines)
+- **Pattern-based workflows**: 12 JSON patterns defining multi-step business logic
+- **Agent orchestration**: 9 specialized agents providing 59+ capabilities
+- **Database**: PostgreSQL 14+ with TimescaleDB for time-series optimization
+
+**Current Status**: Production ready, deployed on Replit with active Phase 3 consolidation in progress.
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Core Design Pattern: Pattern Orchestration
+
+The system uses a **declarative pattern orchestration** approach instead of hardcoded business logic. Patterns are JSON files that define multi-step workflows, which the orchestrator executes by calling agent capabilities.
+
+**Key Architectural Decisions:**
+
+1. **Pattern-Driven Execution**
+   - Business logic lives in JSON pattern files (`backend/patterns/*.json`)
+   - Pattern orchestrator (`backend/app/core/pattern_orchestrator.py`) executes steps sequentially
+   - Template substitution enables dynamic data flow between steps (e.g., `{{inputs.portfolio_id}}`, `{{step_result}}`)
+   - **Rationale**: Separates business logic from code, making workflows easy to modify without code changes
+
+2. **Agent-Based Capabilities**
+   - 9 specialized agents (FinancialAnalyst, MacroHound, DataHarvester, etc.)
+   - Each agent exposes capabilities as "agent.method" strings (e.g., "ledger.positions", "pricing.apply_pack")
+   - Agent runtime routes capability calls to appropriate agent methods
+   - **Rationale**: Clear separation of concerns, testable in isolation, composable capabilities
+
+3. **Immutable Request Context**
+   - Every pattern execution creates a RequestCtx with frozen pricing_pack_id and ledger_commit_hash
+   - Ensures reproducibility - same inputs always produce same outputs
+   - Supports audit trails and debugging
+   - **Rationale**: Financial systems require deterministic behavior for compliance and debugging
+
+4. **Compute-First with Optional Caching**
+   - Services compute metrics on-demand by default (e.g., TWR, factor exposures)
+   - Database tables exist for future caching but are currently unused
+   - Can switch to cached mode later without schema changes
+   - **Rationale**: Simpler for alpha stage, optimizable later without breaking changes
+
+5. **Single-Server Monolith**
+   - All functionality in `combined_server.py` (FastAPI)
+   - All UI in `full_ui.html` (React without build step)
+   - **Rationale**: Simplifies deployment on Replit, reduces complexity for small team
+
+6. **Feature Flag Protection**
+   - Phase 3 agent consolidation uses feature flags for gradual rollout
+   - Allows testing consolidated agents alongside originals
+   - Rollback capability if issues arise
+   - **Rationale**: Risk mitigation for production changes
+
+### Authentication & Authorization
+
+- JWT-based authentication with bcrypt password hashing
+- Role-based access control (ADMIN, MANAGER, USER, VIEWER)
+- Row-level security (RLS) enforced at database connection level
+- Centralized auth dependency pattern (`Depends(require_auth)`)
+
+### Data Layer
+
+**TimescaleDB Hypertables** (time-series optimization):
+- `portfolio_daily_values` - Daily NAV tracking
+- `portfolio_metrics` - Performance metrics history
+- `pricing_packs` - Point-in-time price snapshots
+- `factor_exposures` - Portfolio factor analysis (cache table, currently unused)
+
+**Core Tables**:
+- `portfolios` - Portfolio definitions
+- `lots` - Tax lot accounting (FIFO/LIFO/HIFO)
+- `transactions` - Trade/dividend/split history
+- `securities` - Security master data
+- `prices` - Price history
+- `fx_rates` - Currency conversion rates
+
+**Design Note**: The system uses a "compute-first" pattern where many tables (e.g., `factor_exposures`, `currency_attribution`) exist for future caching but services currently compute values on-demand. This was intentional for alpha simplicity with future optimization capability.
+
+### API Structure
+
+**Pattern Execution** (`/api/patterns/execute`):
+- Primary interface for complex workflows
+- Accepts pattern_id and inputs
+- Returns structured data + charts + execution trace
+
+**Direct Endpoints** (`/api/*` and `/v1/*`):
+- Portfolio CRUD (`/api/portfolio`, `/v1/portfolios/*`)
+- Trade execution (`/v1/trades`)
+- Holdings queries (`/api/holdings`)
+- Metrics retrieval (`/v1/portfolios/{id}/metrics`)
+
+**UI Pages** (18 total, served from `full_ui.html`):
+- Dashboard, Holdings, Transactions, Risk Analysis, etc.
+- Login page with email/password authentication
+- Pattern-based pages use PatternRenderer component
+
+## External Dependencies
+
+### Required Services
+
+1. **PostgreSQL 14+** with TimescaleDB extension
+   - Connection via `DATABASE_URL` environment variable
+   - Used for: All data persistence, time-series optimization
+
+2. **Anthropic Claude API** (optional)
+   - Used for: AI-powered analysis and chat features
+   - Graceful degradation: System works without it, uses fallback responses
+   - Configuration: `ANTHROPIC_API_KEY` environment variable
+
+### Optional Data Provider APIs
+
+**Market Data** (system works without these, using mock/fallback data):
+- Financial Modeling Prep API (`FMP_API_KEY`)
+- Polygon.io API (`POLYGON_API_KEY`)
+- FRED API (`FRED_API_KEY`)
+- News API (`NEWS_API_KEY`)
+
+**Current State**: These are configured but not fully integrated. Corporate actions feature, for example, is partially implemented (UI exists, backend returns empty arrays).
+
+### Python Dependencies
+
+Core framework:
+- FastAPI + Uvicorn (web server)
+- asyncpg (PostgreSQL async driver)
+- pydantic (data validation)
+- python-jose, bcrypt, passlib (authentication)
+
+Data & ML:
+- pandas, numpy (data processing)
+- scikit-learn (optimization, risk modeling)
+- Chart.js (frontend visualization)
+
+AI:
+- anthropic (Claude API client)
+- instructor (structured outputs)
+
+### Deployment Platform
+
+**Replit** - Primary deployment target
+- Entry point: `combined_server.py` (configured in `.replit`)
+- Port: 5000 (hardcoded, do not change)
+- Environment variables managed via Replit Secrets
+- No Docker or containerization
+
+**Critical Files (DO NOT MODIFY)**:
+- `.replit` - Run command and port configuration
+- `combined_server.py` - Application entry point
+- `full_ui.html` - Primary UI file
+
+### Known Integration Gaps
+
+1. **Corporate Actions** - UI exists but backend returns empty data (needs external API integration)
+2. **Real-time Prices** - Currently uses database prices, not live feeds
+3. **News Feed** - UI component exists, backend not fully implemented
+4. **Alerts** - Recently consolidated from AlertsAgent to MacroHound (Week 4), feature flag disabled
+
+### Phase 3 Consolidation Status
+
+**In Progress** - Reducing from 9 agents to 4 core agents:
+- ✅ Week 1: OptimizerAgent → FinancialAnalyst (COMPLETE, feature flag disabled)
+- ✅ Week 2: RatingsAgent → FinancialAnalyst (COMPLETE, feature flag disabled)
+- ✅ Week 3: ChartsAgent → FinancialAnalyst (COMPLETE, feature flag disabled)
+- ✅ Week 4: AlertsAgent → MacroHound (COMPLETE, feature flag disabled)
+- ✅ Week 5: ReportsAgent → DataHarvester (COMPLETE, feature flag disabled)
+- ⏳ Week 6: Cleanup - Remove old agents (PENDING)
+
+All consolidations tested and ready for gradual rollout via feature flags.
