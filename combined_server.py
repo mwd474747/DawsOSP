@@ -2745,16 +2745,12 @@ async def optimize_portfolio_endpoint(
         )
 
 @app.get("/api/alerts", response_model=SuccessResponse)
-async def get_alerts(request: Request):
-    """Get user alerts with proper error handling"""
+async def get_alerts(user: dict = Depends(require_auth)):
+    """
+    Get user alerts with proper error handling
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Get from database
         query = """
@@ -3146,16 +3142,12 @@ async def get_reports(user: dict = Depends(require_auth)):
         )
 
 @app.post("/api/ai-analysis", response_model=SuccessResponse)
-async def ai_analysis(request: Request, ai_request: AIAnalysisRequest):
-    """AI-powered portfolio analysis (placeholder)"""
+async def ai_analysis(ai_request: AIAnalysisRequest, user: dict = Depends(require_auth)):
+    """
+    AI-powered portfolio analysis (placeholder)
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Check if AI API is configured
         if not ANTHROPIC_API_KEY:
@@ -3881,15 +3873,12 @@ async def get_market_overview(request: Request):
 # ============================================================================
 
 @app.get("/api/settings", response_model=SuccessResponse)
-async def get_settings(request: Request):
-    """Get user settings"""
+async def get_settings(user: dict = Depends(require_auth)):
+    """
+    Get user settings
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         settings = {
             "user_id": user.get("user_id"),
@@ -3983,15 +3972,12 @@ async def update_settings(request: Request):
         )
 
 @app.get("/api/keys", response_model=SuccessResponse)
-async def get_api_keys(request: Request):
-    """Get API key configuration (masked)"""
+async def get_api_keys(user: dict = Depends(require_auth)):
+    """
+    Get API key configuration (masked)
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Return masked API key info
         api_keys = {
@@ -4392,17 +4378,14 @@ async def get_buffett_checklist(
 
 @app.post("/api/ai/chat", response_model=SuccessResponse)
 async def ai_chat(
-    request: Request,
-    ai_request: AIAnalysisRequest
+    ai_request: AIAnalysisRequest,
+    user: dict = Depends(require_auth)
 ):
-    """Send chat message to Claude AI"""
+    """
+    Send chat message to Claude AI
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # If Claude agent is available, use it
         if PATTERN_ORCHESTRATION_AVAILABLE and _agent_runtime:
@@ -4466,18 +4449,15 @@ async def ai_chat(
 
 @app.get("/api/ai/insights", response_model=SuccessResponse)
 async def get_ai_insights(
-    request: Request,
     portfolio_id: Optional[str] = Query(None),
-    insight_type: Optional[str] = Query("general")
+    insight_type: Optional[str] = Query("general"),
+    user: dict = Depends(require_auth)
 ):
-    """Get AI-generated insights for portfolio"""
+    """
+    Get AI-generated insights for portfolio
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Mock AI insights
         insights = {
@@ -4555,18 +4535,15 @@ async def get_ai_insights(
 
 @app.get("/api/corporate-actions", response_model=SuccessResponse)
 async def get_corporate_actions(
-    request: Request,
     portfolio_id: Optional[str] = Query(None),
-    days_ahead: int = Query(30, ge=1, le=365)
+    days_ahead: int = Query(30, ge=1, le=365),
+    user: dict = Depends(require_auth)
 ):
-    """Get upcoming corporate actions for portfolio holdings"""
+    """
+    Get upcoming corporate actions for portfolio holdings
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Mock corporate actions data
         actions = {
@@ -4651,22 +4628,21 @@ async def get_corporate_actions(
 # ============================================================================
 
 @app.get("/api/api-keys", response_model=SuccessResponse)
-async def get_api_keys_v2(request: Request):
-    """Get API keys configuration (v2 endpoint matching frontend expectation)"""
+async def get_api_keys_v2(user: dict = Depends(require_auth)):
+    """
+    Get API keys configuration (v2 endpoint matching frontend expectation)
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     # This is a duplicate of /api/keys but with the expected path
-    return await get_api_keys(request)
+    return await get_api_keys(user)
 
 @app.post("/api/api-keys", response_model=SuccessResponse)
-async def update_api_keys(request: Request):
-    """Update API keys configuration"""
+async def update_api_keys(request: Request, user: dict = Depends(require_auth)):
+    """
+    Update API keys configuration
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
-
         body = await request.json()
         provider = body.get("provider")
         api_key = body.get("api_key")
@@ -5662,16 +5638,12 @@ async def get_portfolio_transactions(
         )
 
 @app.get("/api/alerts/active", response_model=SuccessResponse)
-async def get_active_alerts(request: Request):
-    """Get only active alerts for the user"""
+async def get_active_alerts(user: dict = Depends(require_auth)):
+    """
+    Get only active alerts for the user
+    AUTH_STATUS: MIGRATED - Sprint 2
+    """
     try:
-        # Check authentication
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
 
         # Mock active alerts
         active_alerts = [
