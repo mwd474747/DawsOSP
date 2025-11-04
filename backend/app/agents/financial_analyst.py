@@ -42,7 +42,7 @@ Usage:
 import logging
 from datetime import date
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 import numpy as np
