@@ -2974,7 +2974,7 @@
                 macro_trend_monitor: {
                     category: 'macro',
                     name: 'Macro Trend Monitor',
-                    description: 'Track key economic indicators and trends',
+                    description: 'Track key economic indicators and trends with alert suggestions',
                     icon: '📈',
                     display: {
                         panels: [
@@ -2989,6 +2989,12 @@
                                 title: 'Key Indicators',
                                 type: 'line_chart',
                                 dataPath: 'factor_history'
+                            },
+                            {
+                                id: 'alert_suggestions',
+                                title: 'Suggested Alerts',
+                                type: 'action_cards',
+                                dataPath: 'alert_suggestions'
                             }
                         ]
                     }
@@ -3032,13 +3038,13 @@
                 news_impact_analysis: {
                     category: 'analysis',
                     name: 'News Impact Analysis',
-                    description: 'Analyze news impact on portfolio',
+                    description: 'Analyze news impact on portfolio with optional alerting',
                     icon: '📰',
                     display: {
                         panels: [
                             {
                                 id: 'news_summary',
-                                title: 'News Summary',
+                                title: 'Impact Summary',
                                 type: 'metrics_grid',
                                 dataPath: 'impact_analysis',
                                 config: {
@@ -3053,9 +3059,29 @@
                             },
                             {
                                 id: 'news_items',
-                                title: 'Recent News',
+                                title: 'Relevant News',
                                 type: 'news_list',
-                                dataPath: null
+                                dataPath: 'impact_analysis.news_with_impact'
+                            },
+                            {
+                                id: 'entity_mentions',
+                                title: 'Entity Mentions',
+                                type: 'bar_chart',
+                                dataPath: 'impact_analysis.entity_mentions'
+                            },
+                            {
+                                id: 'alert_result',
+                                title: 'Alert Status',
+                                type: 'metrics_grid',
+                                dataPath: 'alert_result',
+                                config: {
+                                    metrics: [
+                                        { key: 'status', label: 'Alert Status', format: 'text' },
+                                        { key: 'alert_id', label: 'Alert ID', format: 'text' },
+                                        { key: 'created_at', label: 'Created At', format: 'datetime' }
+                                    ],
+                                    columns: 3
+                                }
                             }
                         ]
                     }
@@ -3133,15 +3159,30 @@
                 export_portfolio_report: {
                     category: 'reports',
                     name: 'Export Portfolio Report',
-                    description: 'Generate comprehensive portfolio report',
+                    description: 'Generate comprehensive portfolio PDF report',
                     icon: '📄',
                     display: {
                         panels: [
                             {
+                                id: 'report_status',
+                                title: 'Export Status',
+                                type: 'metrics_grid',
+                                dataPath: 'pdf_result',
+                                config: {
+                                    metrics: [
+                                        { key: 'status', label: 'Status', format: 'text' },
+                                        { key: 'file_size', label: 'File Size', format: 'bytes' },
+                                        { key: 'download_url', label: 'Download URL', format: 'url' },
+                                        { key: 'generated_at', label: 'Generated At', format: 'datetime' }
+                                    ],
+                                    columns: 4
+                                }
+                            },
+                            {
                                 id: 'report_preview',
                                 title: 'Report Preview',
                                 type: 'report_viewer',
-                                dataPath: 'report'
+                                dataPath: 'pdf_result.download_url'
                             }
                         ]
                     }
