@@ -11049,6 +11049,17 @@
                     { id: 3, name: 'Q2 2024 Report', date: '2024-06-30', type: 'quarterly', size: '2.1 MB' }
                 ]);
                 
+                // Timeout protection: reset generatingType if pattern execution takes too long
+                useEffect(() => {
+                    if (generatingType) {
+                        const timeout = setTimeout(() => {
+                            setGeneratingType(null);
+                            setError('Report generation timed out. Please try again.');
+                        }, 90000); // 90 second timeout (PDF generation can take time)
+                        return () => clearTimeout(timeout);
+                    }
+                }, [generatingType]);
+                
                 const handleReportData = (reportType, data) => {
                     try {
                         // Extract PDF result from pattern response
@@ -11165,25 +11176,30 @@
                                     e('div', { style: { textAlign: 'center', padding: '1rem' } },
                                         e('div', { className: 'spinner-small', style: { margin: '0 auto 0.5rem' } }),
                                         e('div', { style: { fontSize: '0.9rem', color: 'var(--text-secondary)' } }, 'Generating report...'),
-                                        e(PatternRenderer, {
-                                            pattern: 'export_portfolio_report',
-                                            inputs: {
-                                                portfolio_id: getCurrentPortfolioId(),
-                                                include_holdings: true,
-                                                include_performance: true,
-                                                include_macro: false
-                                            },
-                                            onDataLoaded: (data) => {
-                                                if (data && data.pdf_result && data.pdf_result.pdf_base64) {
-                                                    handleReportData('quarterly', data);
-                                                } else if (data && data.error) {
-                                                    handleReportError(new Error(data.error));
-                                                } else {
-                                                    handleReportError(new Error('Invalid response from pattern'));
+                                        e('div', { style: { display: 'none' } },
+                                            e(PatternRenderer, {
+                                                pattern: 'export_portfolio_report',
+                                                inputs: {
+                                                    portfolio_id: getCurrentPortfolioId(),
+                                                    include_holdings: true,
+                                                    include_performance: true,
+                                                    include_macro: false
+                                                },
+                                                onDataLoaded: (data) => {
+                                                    try {
+                                                        if (data && data.pdf_result && data.pdf_result.pdf_base64) {
+                                                            handleReportData('quarterly', data);
+                                                        } else if (data && data.error) {
+                                                            handleReportError(new Error(data.error));
+                                                        } else {
+                                                            handleReportError(new Error('Invalid response from pattern'));
+                                                        }
+                                                    } catch (error) {
+                                                        handleReportError(error);
+                                                    }
                                                 }
-                                            },
-                                            config: { hidden: true }
-                                        })
+                                            })
+                                        )
                                     ) :
                                     e('button', { 
                                         className: 'btn btn-primary',
@@ -11213,25 +11229,30 @@
                                     e('div', { style: { textAlign: 'center', padding: '1rem' } },
                                         e('div', { className: 'spinner-small', style: { margin: '0 auto 0.5rem' } }),
                                         e('div', { style: { fontSize: '0.9rem', color: 'var(--text-secondary)' } }, 'Generating report...'),
-                                        e(PatternRenderer, {
-                                            pattern: 'export_portfolio_report',
-                                            inputs: {
-                                                portfolio_id: getCurrentPortfolioId(),
-                                                include_holdings: true,
-                                                include_performance: true,
-                                                include_macro: true
-                                            },
-                                            onDataLoaded: (data) => {
-                                                if (data && data.pdf_result && data.pdf_result.pdf_base64) {
-                                                    handleReportData('ytd', data);
-                                                } else if (data && data.error) {
-                                                    handleReportError(new Error(data.error));
-                                                } else {
-                                                    handleReportError(new Error('Invalid response from pattern'));
+                                        e('div', { style: { display: 'none' } },
+                                            e(PatternRenderer, {
+                                                pattern: 'export_portfolio_report',
+                                                inputs: {
+                                                    portfolio_id: getCurrentPortfolioId(),
+                                                    include_holdings: true,
+                                                    include_performance: true,
+                                                    include_macro: true
+                                                },
+                                                onDataLoaded: (data) => {
+                                                    try {
+                                                        if (data && data.pdf_result && data.pdf_result.pdf_base64) {
+                                                            handleReportData('ytd', data);
+                                                        } else if (data && data.error) {
+                                                            handleReportError(new Error(data.error));
+                                                        } else {
+                                                            handleReportError(new Error('Invalid response from pattern'));
+                                                        }
+                                                    } catch (error) {
+                                                        handleReportError(error);
+                                                    }
                                                 }
-                                            },
-                                            config: { hidden: true }
-                                        })
+                                            })
+                                        )
                                     ) :
                                     e('button', { 
                                         className: 'btn btn-primary',
