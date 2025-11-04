@@ -7245,6 +7245,20 @@
                     };
                 }, []);
                 
+                // Timeout protection - prevent stuck loading state
+                useEffect(() => {
+                    if (loading) {
+                        const timeout = setTimeout(() => {
+                            console.warn('MacroCyclesPage: Pattern loading timeout, using fallback data');
+                            setLoading(false);
+                            setError('Data loading timed out. Using fallback data.');
+                            setMacroData(getComprehensiveMockData());
+                        }, 30000); // 30 second timeout
+                        
+                        return () => clearTimeout(timeout);
+                    }
+                }, [loading]);
+                
                 // Re-render charts when data or tab changes
                 useEffect(() => {
                     if (macroData && !loading) {
@@ -7258,31 +7272,54 @@
                     try {
                         // Check for error first
                         if (data?.error) {
-                            console.error('Pattern execution failed:', data.error);
+                            console.error('MacroCyclesPage: Pattern execution failed:', data.error);
                             setError(data.error);
-                            // Use mock data as fallback
+                            // Always use mock data as fallback to keep page functional
                             setMacroData(getComprehensiveMockData());
                             setLoading(false);
                             return;
                         }
                         
-                        // PatternRenderer passes result.data || result
-                        const result = data?.data || data;
+                        // Handle multiple nested structures
+                        let result = data;
+                        if (data?.data) {
+                            result = data.data;
+                        } else if (data?.result) {
+                            result = data.result;
+                        } else if (data?.result?.data) {
+                            result = data.result.data;
+                        }
                         
-                        // Validate structure - pattern returns stdc, ltdc, empire, civil
-                        if (result && (result.stdc || result.ltdc || result.empire || result.civil)) {
-                            console.log('Valid macro cycles data received:', result);
-                            setMacroData(result);
+                        // More flexible validation - check for any cycle data
+                        const hasCycleData = result && (
+                            result.stdc || result.ltdc || result.empire || result.civil ||
+                            result.short_term_cycle || result.long_term_cycle || 
+                            result.empire_cycle || result.internal_order_cycle
+                        );
+                        
+                        if (hasCycleData) {
+                            // Normalize data structure to ensure consistent format
+                            const normalizedData = {
+                                stdc: result.stdc || result.short_term_cycle || {},
+                                ltdc: result.ltdc || result.long_term_cycle || {},
+                                empire: result.empire || result.empire_cycle || {},
+                                civil: result.civil || result.internal_order_cycle || {},
+                                dar: result.dar || {},
+                                regime_detection: result.regime_detection || {}
+                            };
+                            
+                            console.log('MacroCyclesPage: Valid macro cycles data received:', normalizedData);
+                            setMacroData(normalizedData);
                             setError(null);
                             setLoading(false);
                         } else {
                             // Fallback to mock data if structure is unexpected
-                            console.warn('Pattern data structure unexpected, using fallback. Received:', result);
+                            console.warn('MacroCyclesPage: Unexpected data structure, using fallback. Received:', result);
                             setMacroData(getComprehensiveMockData());
                             setLoading(false);
                         }
                     } catch (err) {
-                        console.error('Error processing pattern data:', err);
+                        console.error('MacroCyclesPage: Error processing pattern data:', err);
                         setError(err.message);
                         // Always use mock data on error so page is functional
                         setMacroData(getComprehensiveMockData());
