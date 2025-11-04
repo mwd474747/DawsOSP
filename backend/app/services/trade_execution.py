@@ -4,7 +4,7 @@ Trade Execution Service v2
 Schema-aligned version that matches the actual database schema.
 
 Database Schema (as of 2025-10-23):
-- lots: qty_original, qty_open, closed_date, quantity, is_open
+- lots: quantity_original, quantity_open, closed_date, quantity, is_open
 - transactions: transaction_date, quantity, amount, fee, narration
 
 Created: 2025-10-23
@@ -289,7 +289,7 @@ class TradeExecutionService:
         )
 
         # Check sufficient shares
-        total_available = sum(lot["qty_open"] for lot in open_lots)
+        total_available = sum(lot["quantity_open"] for lot in open_lots)
         if total_available < qty:
             raise InsufficientSharesError(
                 f"Insufficient shares to sell: need {qty}, have {total_available} {symbol}"
@@ -378,7 +378,7 @@ class TradeExecutionService:
             """
             INSERT INTO lots (
                 id, portfolio_id, security_id, symbol,
-                acquisition_date, qty_original, qty_open, quantity,
+                acquisition_date, quantity_original, quantity_open, quantity,
                 cost_basis, cost_basis_per_share, currency, is_open, created_at
             )
             VALUES ($1, $2, $3, $4, $5, $6, $6, $6, $7, $8, $9, true, NOW())
@@ -423,9 +423,9 @@ class TradeExecutionService:
             # Get specific lot
             row = await self.conn.fetchrow(
                 """
-                SELECT id, security_id, symbol, qty_open, cost_basis, acquisition_date, currency
+                SELECT id, security_id, symbol, quantity_open, cost_basis, acquisition_date, currency
                 FROM lots
-                WHERE portfolio_id = $1 AND id = $2 AND qty_open > 0
+                WHERE portfolio_id = $1 AND id = $2 AND quantity_open > 0
                 """,
                 portfolio_id, specific_lot_id
             )
@@ -442,16 +442,16 @@ class TradeExecutionService:
             order_by = "acquisition_date DESC, created_at DESC"
         elif lot_selection == LotSelectionMethod.HIFO:
             # Highest cost basis per share first (maximize tax loss harvesting)
-            order_by = "(cost_basis / qty_original) DESC, acquisition_date ASC"
+            order_by = "(cost_basis / quantity_original) DESC, acquisition_date ASC"
         else:
             raise InvalidTradeError(f"Unsupported lot selection method: {lot_selection}")
 
         # Get open lots sorted by selection method
         rows = await self.conn.fetch(
             f"""
-            SELECT id, security_id, symbol, qty_open, cost_basis, acquisition_date, currency, qty_original
+            SELECT id, security_id, symbol, quantity_open, cost_basis, acquisition_date, currency, quantity_original
             FROM lots
-            WHERE portfolio_id = $1 AND symbol = $2 AND qty_open > 0
+            WHERE portfolio_id = $1 AND symbol = $2 AND quantity_open > 0
             ORDER BY {order_by}
             """,
             portfolio_id, symbol
@@ -491,35 +491,35 @@ class TradeExecutionService:
                 break
 
             lot_id = lot["id"]
-            qty_open = lot["qty_open"]
+            quantity_open = lot["quantity_open"]
             cost_basis_total = lot["cost_basis"]
-            qty_original = lot["qty_original"]
+            quantity_original = lot["quantity_original"]
 
             # Determine how much to close from this lot
-            qty_to_close = min(remaining_qty, qty_open)
+            qty_to_close = min(remaining_qty, quantity_open)
 
             # Calculate proportional cost basis
-            cost_basis_per_share = cost_basis_total / qty_original
+            cost_basis_per_share = cost_basis_total / quantity_original
             cost_basis_closed = qty_to_close * cost_basis_per_share
 
             # Calculate realized P&L for this lot
             proceeds_closed = qty_to_close * proceeds_per_share
             realized_pnl = proceeds_closed - cost_basis_closed
 
-            # Update lot qty_open
-            new_qty_open = qty_open - qty_to_close
+            # Update lot quantity_open
+            new_quantity_open = quantity_open - qty_to_close
 
             await self.conn.execute(
                 """
                 UPDATE lots
-                SET qty_open = $1,
+                SET quantity_open = $1,
                     quantity = $1,
                     closed_date = CASE WHEN $1 = 0 THEN $2 ELSE NULL END,
                     is_open = CASE WHEN $1 = 0 THEN false ELSE true END,
                     updated_at = NOW()
                 WHERE id = $3
                 """,
-                new_qty_open, trade_date if new_qty_open == 0 else None, lot_id
+                new_quantity_open, trade_date if new_quantity_open == 0 else None, lot_id
             )
 
             logger.debug(
@@ -561,11 +561,11 @@ class TradeExecutionService:
             """
             SELECT
                 symbol,
-                SUM(qty_open) as qty,
-                SUM(cost_basis * qty_open / qty_original) as cost_basis,
+                SUM(quantity_open) as qty,
+                SUM(cost_basis * quantity_open / quantity_original) as cost_basis,
                 currency
             FROM lots
-            WHERE portfolio_id = $1 AND qty_open > 0
+            WHERE portfolio_id = $1 AND quantity_open > 0
             GROUP BY symbol, currency
             ORDER BY symbol
             """,

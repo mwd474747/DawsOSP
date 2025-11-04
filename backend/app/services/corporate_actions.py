@@ -269,43 +269,43 @@ class CorporateActionsService:
             # Adjust each lot
             for lot in open_lots:
                 lot_id = lot["id"]
-                old_qty_original = lot["qty_original"]
-                old_qty_open = lot["qty_open"]
+                old_quantity_original = lot["quantity_original"]
+                old_quantity_open = lot["quantity_open"]
                 old_cost_basis = lot["cost_basis"]
 
                 # Calculate new quantities (multiply by split ratio)
-                new_qty_original = old_qty_original * split_ratio
-                new_qty_open = old_qty_open * split_ratio
+                new_quantity_original = old_quantity_original * split_ratio
+                new_quantity_open = old_quantity_open * split_ratio
 
                 # Cost basis stays the same (total cost doesn't change)
                 # But cost per share changes
-                new_cost_basis_per_share = old_cost_basis / new_qty_original
+                new_cost_basis_per_share = old_cost_basis / new_quantity_original
 
                 await self.conn.execute(
                     """
                     UPDATE lots
-                    SET qty_original = $1,
-                        qty_open = $2,
+                    SET quantity_original = $1,
+                        quantity_open = $2,
                         quantity = $2,
                         cost_basis_per_share = $3,
                         updated_at = NOW()
                     WHERE id = $4
                     """,
-                    new_qty_original, new_qty_open, new_cost_basis_per_share, lot_id
+                    new_quantity_original, new_quantity_open, new_cost_basis_per_share, lot_id
                 )
 
                 logger.debug(
                     f"Adjusted lot: lot_id={lot_id}, "
-                    f"old_qty={old_qty_open}, new_qty={new_qty_open}, "
+                    f"old_qty={old_quantity_open}, new_qty={new_quantity_open}, "
                     f"split_ratio={split_ratio}"
                 )
 
                 lots_adjusted.append({
                     "lot_id": lot_id,
-                    "old_qty_original": old_qty_original,
-                    "old_qty_open": old_qty_open,
-                    "new_qty_original": new_qty_original,
-                    "new_qty_open": new_qty_open,
+                    "old_quantity_original": old_quantity_original,
+                    "old_quantity_open": old_quantity_open,
+                    "new_quantity_original": new_quantity_original,
+                    "new_quantity_open": new_quantity_open,
                     "cost_basis": old_cost_basis
                 })
 
@@ -439,9 +439,9 @@ class CorporateActionsService:
         """
         rows = await self.conn.fetch(
             """
-            SELECT id, security_id, symbol, qty_original, qty_open, cost_basis, acquisition_date, currency
+            SELECT id, security_id, symbol, quantity_original, quantity_open, cost_basis, acquisition_date, currency
             FROM lots
-            WHERE portfolio_id = $1 AND symbol = $2 AND qty_open > 0
+            WHERE portfolio_id = $1 AND symbol = $2 AND quantity_open > 0
             ORDER BY acquisition_date ASC, created_at ASC
             """,
             portfolio_id, symbol

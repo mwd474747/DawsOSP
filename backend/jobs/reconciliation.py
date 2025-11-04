@@ -441,17 +441,17 @@ class LedgerReconciliator:
         rows = await self.db.fetch("""
             SELECT
                 s.symbol,
-                l.qty_open as qty,
+                l.quantity_open as qty,
                 l.cost_per_unit_ccy as cost_per_unit,
                 p.close as price,
-                (l.qty_open * p.close * COALESCE(fx.rate, 1.0)) as market_value
+                (l.quantity_open * p.close * COALESCE(fx.rate, 1.0)) as market_value
             FROM lots l
             JOIN securities s ON l.security_id = s.id
             JOIN prices p ON l.security_id = p.security_id AND p.pricing_pack_id = $2
             LEFT JOIN fx_rates fx ON s.currency = fx.base_ccy
                 AND fx.quote_ccy = (SELECT base_ccy FROM portfolios WHERE id = $1)
                 AND fx.pricing_pack_id = $2
-            WHERE l.portfolio_id = $1 AND l.qty_open > 0
+            WHERE l.portfolio_id = $1 AND l.quantity_open > 0
         """, portfolio_id, pack_id)
 
         return [

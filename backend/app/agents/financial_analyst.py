@@ -165,7 +165,7 @@ class FinancialAnalyst(BaseAgent):
                     SELECT
                         l.security_id,
                         l.symbol,
-                        l.qty_open AS qty,
+                        l.quantity_open AS qty,
                         l.cost_basis,
                         l.currency,
                         p.base_currency
@@ -173,7 +173,7 @@ class FinancialAnalyst(BaseAgent):
                     JOIN portfolios p ON p.id = l.portfolio_id
                     WHERE l.portfolio_id = $1
                       AND l.is_open = true
-                      AND l.qty_open > 0
+                      AND l.quantity_open > 0
                     """,
                     portfolio_uuid,
                 )
@@ -1117,7 +1117,7 @@ class FinancialAnalyst(BaseAgent):
                 JOIN securities s ON l.security_id = s.id
                 WHERE l.portfolio_id = $1
                   AND l.security_id = $2
-                  AND l.qty_open > 0
+                  AND l.quantity_open > 0
                 ORDER BY l.open_date
                 """,
                 portfolio_uuid,
@@ -1128,9 +1128,9 @@ class FinancialAnalyst(BaseAgent):
                 raise ValueError(f"No open position found for security {security_id}")
 
             # Calculate aggregated position
-            total_qty = sum(Decimal(str(lot["qty_open"])) for lot in lots)
+            total_qty = sum(Decimal(str(lot["quantity_open"])) for lot in lots)
             weighted_cost = sum(
-                Decimal(str(lot["qty_open"])) * Decimal(str(lot["price"]))
+                Decimal(str(lot["quantity_open"])) * Decimal(str(lot["price"]))
                 for lot in lots
             )
             avg_cost = weighted_cost / total_qty if total_qty > 0 else Decimal("0")
@@ -1157,12 +1157,12 @@ class FinancialAnalyst(BaseAgent):
             # Get portfolio total value for weight calculation
             portfolio_value_row = await conn.fetchrow(
                 """
-                SELECT SUM(l.qty_open * p.price) as total_value
+                SELECT SUM(l.quantity_open * p.price) as total_value
                 FROM lots l
                 JOIN prices p ON l.security_id = p.security_id
                 WHERE l.portfolio_id = $1
                   AND p.pricing_pack_id = $2
-                  AND l.qty_open > 0
+                  AND l.quantity_open > 0
                 """,
                 portfolio_uuid,
                 pack,
@@ -1175,7 +1175,7 @@ class FinancialAnalyst(BaseAgent):
             "symbol": symbol,
             "security_id": str(security_uuid),
             "security_currency": security_currency,
-            "qty_open": float(total_qty),
+            "quantity_open": float(total_qty),
             "avg_cost": float(avg_cost),
             "current_price": float(current_price),
             "market_value": float(market_value),

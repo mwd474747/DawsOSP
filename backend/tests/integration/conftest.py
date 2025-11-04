@@ -307,7 +307,7 @@ async def test_trades(
     await db_transaction.execute("""
         INSERT INTO lots (
             id, portfolio_id, security_id, symbol, acquisition_date,
-            quantity, qty_original, qty_open, cost_basis, cost_basis_per_share,
+            quantity, quantity_original, quantity_open, cost_basis, cost_basis_per_share,
             currency, is_open
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
@@ -322,7 +322,7 @@ async def test_trades(
     })
 
     lots.append({
-        "id": lot1_id, "symbol": "AAPL", "qty_open": Decimal("100"),
+        "id": lot1_id, "symbol": "AAPL", "quantity_open": Decimal("100"),
         "cost_basis": Decimal("15000.00")
     })
 
@@ -344,7 +344,7 @@ async def test_trades(
     await db_transaction.execute("""
         INSERT INTO lots (
             id, portfolio_id, security_id, symbol, acquisition_date,
-            quantity, qty_original, qty_open, cost_basis, cost_basis_per_share,
+            quantity, quantity_original, quantity_open, cost_basis, cost_basis_per_share,
             currency, is_open
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
@@ -359,7 +359,7 @@ async def test_trades(
     })
 
     lots.append({
-        "id": lot2_id, "symbol": "GOOGL", "qty_open": Decimal("50"),
+        "id": lot2_id, "symbol": "GOOGL", "quantity_open": Decimal("50"),
         "cost_basis": Decimal("7000.00")
     })
 
@@ -377,10 +377,10 @@ async def test_trades(
         date(2024, 3, 1), date(2024, 3, 3), Decimal("-30"), Decimal("160.00"),
         Decimal("4800.00"), "USD", Decimal("0"), Decimal("0"), lot1_id, "manual")
 
-    # Update lot1 qty_open (100 - 30 = 70)
+    # Update lot1 quantity_open (100 - 30 = 70)
     await db_transaction.execute("""
         UPDATE lots
-        SET qty_open = $1, quantity = $2, updated_at = NOW()
+        SET quantity_open = $1, quantity = $2, updated_at = NOW()
         WHERE id = $3
     """, Decimal("70"), Decimal("70"), lot1_id)
 
@@ -391,7 +391,7 @@ async def test_trades(
     })
 
     # Update lots data
-    lots[0]["qty_open"] = Decimal("70")
+    lots[0]["quantity_open"] = Decimal("70")
 
     # Trade 4: Dividend AAPL $50
     trade4_id = uuid4()

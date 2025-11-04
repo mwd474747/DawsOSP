@@ -187,8 +187,8 @@ class SplitResponse(BaseModel):
                 "lots": [
                     {
                         "lot_id": "456e7890-e89b-12d3-a456-426614174001",
-                        "old_qty_open": 100,
-                        "new_qty_open": 300
+                        "old_quantity_open": 100,
+                        "new_quantity_open": 300
                     }
                 ]
             }
@@ -390,7 +390,7 @@ async def record_split(
     - 1-for-2 reverse split: split_ratio = 0.5 (2 shares become 1)
 
     **Lot Adjustments**:
-    - qty_original and qty_open are multiplied by split_ratio
+    - quantity_original and quantity_open are multiplied by split_ratio
     - cost_basis stays the same (total cost doesn't change)
     - cost_basis_per_share is adjusted (divided by split_ratio)
 

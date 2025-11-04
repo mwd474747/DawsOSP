@@ -330,7 +330,7 @@ class RiskMetrics:
             SELECT
                 s.symbol,
                 l.security_id,
-                l.qty_open,
+                l.quantity_open,
                 p.close,
                 COALESCE(fx.rate, 1.0) as fx_rate
             FROM lots l
@@ -339,7 +339,7 @@ class RiskMetrics:
             LEFT JOIN fx_rates fx ON s.currency = fx.base_ccy
                 AND fx.quote_ccy = (SELECT base_ccy FROM portfolios WHERE id = $1)
                 AND fx.pricing_pack_id = $2
-            WHERE l.portfolio_id = $1 AND l.qty_open > 0
+            WHERE l.portfolio_id = $1 AND l.quantity_open > 0
         """,
             portfolio_id,
             pack_id,
@@ -350,7 +350,7 @@ class RiskMetrics:
 
         # Get total portfolio value
         total_value = sum(
-            float(h["qty_open"]) * float(h["close"]) * float(h["fx_rate"])
+            float(h["quantity_open"]) * float(h["close"]) * float(h["fx_rate"])
             for h in holdings
         )
 
@@ -358,7 +358,7 @@ class RiskMetrics:
         positions = []
         for h in holdings:
             position_value = (
-                float(h["qty_open"]) * float(h["close"]) * float(h["fx_rate"])
+                float(h["quantity_open"]) * float(h["close"]) * float(h["fx_rate"])
             )
             weight = position_value / total_value if total_value > 0 else 0.0
 

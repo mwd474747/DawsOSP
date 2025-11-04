@@ -470,24 +470,24 @@ class PerformanceCalculator:
         """
         Get total portfolio value from pricing pack.
 
-        Sums: qty_open × price × fx_rate for all positions.
+        Sums: quantity_open × price × fx_rate for all positions.
         """
         positions = await self.db.fetch(
             """
-            SELECT l.qty_open, p.close, COALESCE(fx.rate, 1.0) as fx_rate
+            SELECT l.quantity_open, p.close, COALESCE(fx.rate, 1.0) as fx_rate
             FROM lots l
             JOIN prices p ON l.security_id = p.security_id AND p.pricing_pack_id = $2
             LEFT JOIN fx_rates fx ON p.currency = fx.base_ccy
                 AND fx.quote_ccy = (SELECT base_ccy FROM portfolios WHERE id = $1)
                 AND fx.pricing_pack_id = $2
-            WHERE l.portfolio_id = $1 AND l.qty_open > 0
+            WHERE l.portfolio_id = $1 AND l.quantity_open > 0
         """,
             portfolio_id,
             pack_id,
         )
 
         total = sum(
-            Decimal(str(pos["qty_open"]))
+            Decimal(str(pos["quantity_open"]))
             * Decimal(str(pos["close"]))
             * Decimal(str(pos["fx_rate"]))
             for pos in positions

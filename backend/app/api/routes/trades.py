@@ -164,8 +164,8 @@ class LotListItem(BaseModel):
     id: UUID
     portfolio_id: UUID
     symbol: str
-    qty_original: Decimal
-    qty_open: Decimal
+    quantity_original: Decimal
+    quantity_open: Decimal
     quantity: Decimal
     cost_basis: Decimal
     acquisition_date: date
@@ -512,7 +512,7 @@ async def list_lots(
 
             # Build query
             query = """
-                SELECT id, portfolio_id, symbol, qty_original, qty_open, quantity,
+                SELECT id, portfolio_id, symbol, quantity_original, quantity_open, quantity,
                        cost_basis, acquisition_date, closed_date, is_open, currency, created_at
                 FROM lots
                 WHERE portfolio_id = $1
@@ -521,7 +521,7 @@ async def list_lots(
             param_idx = 2
 
             if open_only:
-                query += " AND qty_open > 0"
+                query += " AND quantity_open > 0"
 
             if symbol:
                 query += f" AND symbol = ${param_idx}"
@@ -551,7 +551,7 @@ async def list_positions(
     List current positions for a portfolio (aggregated from open lots).
 
     **Position Calculation**:
-    - qty: Sum of qty_open across all open lots
+    - qty: Sum of quantity_open across all open lots
     - cost_basis: Weighted average cost basis
     - avg_cost: cost_basis / qty
 

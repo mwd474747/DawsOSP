@@ -126,7 +126,7 @@ class CurrencyAttributor:
                 l.security_id,
                 s.symbol,
                 l.currency as local_ccy,
-                l.qty_open,
+                l.quantity_open,
                 p_start.close as price_start_local,
                 p_end.close as price_end_local,
                 fx_start.rate as fx_start,
@@ -144,7 +144,7 @@ class CurrencyAttributor:
                 AND fx_end.quote_ccy = $4
                 AND fx_end.pricing_pack_id = $2
             WHERE l.portfolio_id = $1
-                AND l.qty_open > 0
+                AND l.quantity_open > 0
         """,
             portfolio_id,
             pack_id,
@@ -264,7 +264,7 @@ class CurrencyAttributor:
         price_end = Decimal(str(holding["price_end_local"])) if holding["price_end_local"] is not None else Decimal("0")
         fx_start = Decimal(str(holding["fx_start"])) if holding.get("fx_start") is not None else Decimal("1.0")
         fx_end = Decimal(str(holding["fx_end"])) if holding.get("fx_end") is not None else Decimal("1.0")
-        qty = Decimal(str(holding["qty_open"]))
+        qty = Decimal(str(holding["quantity_open"]))
 
         # Local return (price change in local currency)
         if price_start > 0 and price_end > 0:
@@ -341,14 +341,14 @@ class CurrencyAttributor:
             """
             SELECT
                 l.currency,
-                SUM(l.qty_open * p.close * COALESCE(fx.rate, 1.0)) as value_base
+                SUM(l.quantity_open * p.close * COALESCE(fx.rate, 1.0)) as value_base
             FROM lots l
             JOIN securities s ON l.security_id = s.id
             JOIN prices p ON l.security_id = p.security_id AND p.pricing_pack_id = $2
             LEFT JOIN fx_rates fx ON l.currency = fx.base_ccy
                 AND fx.quote_ccy = $3
                 AND fx.pricing_pack_id = $2
-            WHERE l.portfolio_id = $1 AND l.qty_open > 0
+            WHERE l.portfolio_id = $1 AND l.quantity_open > 0
             GROUP BY l.currency
         """,
             portfolio_id,
@@ -403,19 +403,19 @@ class CurrencyAttributor:
         """
         Get total portfolio value from pricing pack.
 
-        Sums: qty_open × price × fx_rate for all positions.
+        Sums: quantity_open × price × fx_rate for all positions.
         """
         base_ccy = await self._get_base_currency(portfolio_id)
 
         positions = await self.db.fetch(
             """
-            SELECT l.qty_open, p.close, COALESCE(fx.rate, 1.0) as fx_rate
+            SELECT l.quantity_open, p.close, COALESCE(fx.rate, 1.0) as fx_rate
             FROM lots l
             JOIN prices p ON l.security_id = p.security_id AND p.pricing_pack_id = $2
             LEFT JOIN fx_rates fx ON l.currency = fx.base_ccy
                 AND fx.quote_ccy = $3
                 AND fx.pricing_pack_id = $2
-            WHERE l.portfolio_id = $1 AND l.qty_open > 0
+            WHERE l.portfolio_id = $1 AND l.quantity_open > 0
         """,
             portfolio_id,
             pack_id,
@@ -423,7 +423,7 @@ class CurrencyAttributor:
         )
 
         total = sum(
-            Decimal(str(pos["qty_open"]))
+            Decimal(str(pos["quantity_open"]))
             * Decimal(str(pos["close"]))
             * Decimal(str(pos["fx_rate"]))
             for pos in positions
