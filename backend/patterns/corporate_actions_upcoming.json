@@ -1,0 +1,123 @@
+{
+  "id": "corporate_actions_upcoming",
+  "name": "Upcoming Corporate Actions",
+  "description": "Get upcoming corporate actions (dividends, splits, earnings) for portfolio holdings",
+  "version": "1.0.0",
+  "category": "corporate_actions",
+  "tags": ["corporate-actions", "dividends", "splits", "earnings", "holdings"],
+  "author": "DawsOS",
+  "created": "2025-11-03",
+  "inputs": {
+    "portfolio_id": {
+      "type": "uuid",
+      "required": true,
+      "description": "Portfolio UUID"
+    },
+    "days_ahead": {
+      "type": "integer",
+      "default": 90,
+      "description": "Number of days to look ahead (default 90)"
+    }
+  },
+  "outputs": {
+    "panels": [
+      {
+        "id": "actions_table",
+        "title": "Upcoming Corporate Actions",
+        "type": "table",
+        "dataPath": "actions_with_impact.actions"
+      },
+      {
+        "id": "summary_metrics",
+        "title": "Summary",
+        "type": "metrics_grid",
+        "dataPath": "actions_with_impact.summary"
+      },
+      {
+        "id": "notifications_list",
+        "title": "Notifications",
+        "type": "dual_list",
+        "dataPath": "actions_with_impact.notifications"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "capability": "ledger.positions",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}"
+      },
+      "as": "positions"
+    },
+    {
+      "capability": "corporate_actions.upcoming",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "symbols": "{{positions.positions[*].symbol}}",
+        "days_ahead": "{{inputs.days_ahead}}"
+      },
+      "as": "actions"
+    },
+    {
+      "capability": "corporate_actions.calculate_impact",
+      "args": {
+        "actions": "{{actions.actions}}",
+        "holdings": "{{positions.positions}}"
+      },
+      "as": "actions_with_impact"
+    }
+  ],
+  "presentation": {
+    "summary_metrics": {
+      "metrics": [
+        {
+          "label": "Total Actions",
+          "value": "{{actions_with_impact.summary.total_actions}}",
+          "format": "number"
+        },
+        {
+          "label": "Dividends Expected",
+          "value": "{{actions_with_impact.summary.dividends_expected}}",
+          "format": "currency"
+        },
+        {
+          "label": "Splits Pending",
+          "value": "{{actions_with_impact.summary.splits_pending}}",
+          "format": "number"
+        },
+        {
+          "label": "Earnings Releases",
+          "value": "{{actions_with_impact.summary.earnings_releases}}",
+          "format": "number"
+        }
+      ]
+    },
+    "actions_table": {
+      "columns": [
+        {"field": "date", "header": "Date", "width": 120},
+        {"field": "symbol", "header": "Symbol", "width": 100},
+        {"field": "type", "header": "Type", "width": 100},
+        {"field": "amount", "header": "Amount", "format": "currency", "width": 120},
+        {"field": "portfolio_quantity", "header": "Shares", "format": "number", "width": 100},
+        {"field": "portfolio_impact", "header": "Impact", "format": "currency", "width": 120}
+      ],
+      "data": "{{actions_with_impact.actions}}",
+      "sort_by": "date",
+      "sort_order": "asc"
+    }
+  },
+  "rights_required": ["portfolio_read"],
+  "export_allowed": {
+    "pdf": true,
+    "csv": true
+  },
+  "observability": {
+    "otel_span_name": "pattern.corporate_actions_upcoming",
+    "metrics": [
+      "pattern_execution_duration_seconds",
+      "corporate_actions_fetched_total",
+      "corporate_actions_impact_calculated_total"
+    ]
+  }
+}
+
