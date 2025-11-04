@@ -3347,20 +3347,26 @@
                         setLoading(true);
                         setError(null);
                         
-                        // Ensure we always have a valid portfolio ID
-                        let validPortfolioId = portfolioId || inputs.portfolio_id;
+                        // Patterns that don't require portfolio_id
+                        const nonPortfolioPatterns = ['macro_cycles_overview', 'macro_trend_monitor'];
+                        const needsPortfolioId = !nonPortfolioPatterns.includes(pattern);
                         
-                        // If still no portfolio ID, use the fallback
-                        if (!validPortfolioId) {
-                            validPortfolioId = getCurrentPortfolioId();
-                            console.warn('No portfolio ID in context or inputs, using fallback:', validPortfolioId);
+                        // Build final inputs - only add portfolio_id if pattern needs it
+                        const finalInputs = { ...inputs };
+                        
+                        if (needsPortfolioId) {
+                            // Ensure we always have a valid portfolio ID for portfolio patterns
+                            let validPortfolioId = portfolioId || inputs.portfolio_id;
+                            
+                            // If still no portfolio ID, use the fallback
+                            if (!validPortfolioId) {
+                                validPortfolioId = getCurrentPortfolioId();
+                                console.warn('No portfolio ID in context or inputs, using fallback:', validPortfolioId);
+                            }
+                            
+                            // Add portfolio ID to inputs, ensuring it's always present
+                            finalInputs.portfolio_id = validPortfolioId;
                         }
-                        
-                        // Add portfolio ID to inputs, ensuring it's always present
-                        const finalInputs = {
-                            ...inputs,
-                            portfolio_id: validPortfolioId  // Override any null/undefined value
-                        };
                         
                         console.log(`Executing pattern ${pattern} with inputs:`, finalInputs);
                         
@@ -3393,14 +3399,18 @@
                     }
                 };
                 
-                if (loading) {
+                // If hidden (via config.hidden), return null to avoid blocking
+                // The parent component will handle loading/error states
+                const isHidden = config.hidden || (config.showPanels && config.showPanels.length === 0);
+                
+                if (loading && !isHidden) {
                     return e('div', { className: 'loading-container' },
                         e('div', { className: 'loading-spinner' }),
                         e('p', null, `Loading ${patternRegistry[pattern]?.name || pattern}...`)
                     );
                 }
                 
-                if (error) {
+                if (error && !isHidden) {
                     return e('div', { className: 'error-container' },
                         e('h3', null, 'Error Loading Pattern'),
                         e('p', null, error),
@@ -3409,6 +3419,11 @@
                             onClick: loadPattern
                         }, 'Retry')
                     );
+                }
+                
+                // If hidden, return null to avoid rendering anything
+                if (isHidden) {
+                    return null;
                 }
                 
                 // Filter panels if config.showPanels is provided
@@ -7945,10 +7960,10 @@
                         pattern: 'macro_cycles_overview',
                         inputs: { asof_date: new Date().toISOString().split('T')[0] },
                         config: {
-                            showPanels: [] // Hide panels, we use custom rendering
+                            showPanels: [], // Hide panels, we use custom rendering
+                            hidden: true // Mark as hidden to avoid rendering
                         },
-                        onDataLoaded: handlePatternData,
-                        style: { display: 'none' } // Hide PatternRenderer
+                        onDataLoaded: handlePatternData
                     }),
                     
                     // Cycle Navigation Tabs
