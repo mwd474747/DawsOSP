@@ -8473,28 +8473,21 @@
             // Additional Page Components (continued from navigation)
             
             function HoldingsPage() {
-                const [loading, setLoading] = useState(true);
-                const [holdings, setHoldings] = useState([]);
+                const { portfolioId } = useUserContext();
                 
-                useEffect(() => {
-                    apiClient.getHoldings()
-                        .then(res => setHoldings(res.holdings || []))
-                        .catch((error) => {
-                            console.error('Failed to load holdings:', error);
-                            setHoldings([]);
-                            setError('Unable to load holdings data');
-                        })
-                        .finally(() => setLoading(false));
-                }, []);
-                
-                if (loading) return e('div', { className: 'loading' }, e('div', { className: 'spinner' }));
-                
-                return e('div', null,
+                return e('div', { className: 'holdings-page' },
                     e('div', { className: 'page-header' },
                         e('h1', { className: 'page-title' }, 'Holdings'),
-                        e('p', { className: 'page-description' }, 'All 9 portfolio positions')
+                        e('p', { className: 'page-description' }, 'Portfolio positions and allocations')
                     ),
-                    e(HoldingsTable, { holdings: holdings, showAll: true })
+                    e(PatternRenderer, {
+                        pattern: 'portfolio_overview',
+                        inputs: { portfolio_id: portfolioId, lookback_days: 252 },
+                        config: {
+                            // Show only holdings table panel
+                            showPanels: ['holdings_table']
+                        }
+                    })
                 );
             }
             
