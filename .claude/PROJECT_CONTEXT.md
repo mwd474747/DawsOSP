@@ -35,8 +35,8 @@
 - **Server**: `combined_server.py` - Single FastAPI application (6,043 lines, 53 functional endpoints)
 - **UI**: `full_ui.html` - React 18 SPA (11,594 lines, 18 pages including login, no build step)
 - **Database**: PostgreSQL 14+ with TimescaleDB
-- **Agents**: 9 specialized agents providing ~70 capabilities
-- **Patterns**: 12 JSON pattern definitions (NOT 13 - holdings_detail.json was a typo)
+- **Agents**: 4 specialized agents providing ~70 capabilities (Phase 3 consolidation complete, November 3, 2025)
+- **Patterns**: 13 JSON pattern definitions (including corporate_actions_upcoming)
 
 ### Key Entry Points
 - **Production**: `python combined_server.py` → http://localhost:8000
@@ -68,33 +68,38 @@ Database query via get_db_connection_with_rls()
 ✅ Pool accessible across all module instances (fixed Nov 2, 2025)
 ```
 
-### 9 Agents (All Registered in combined_server.py:239-304)
-1. **FinancialAnalyst** - ledger, pricing, metrics, attribution (25+ capabilities)
-2. **MacroHound** - macro cycles, scenarios, regime detection (15+ capabilities)
+### 4 Agents (All Registered in executor.py and combined_server.py)
+**Phase 3 Consolidation Complete (November 3, 2025):**
+
+1. **FinancialAnalyst** - Portfolio ledger, pricing, metrics, attribution, optimization, ratings, charts (~35+ capabilities)
+   - **Consolidated from:** OptimizerAgent, RatingsAgent, ChartsAgent (Phase 3 Weeks 1-3)
+   - Capabilities: `ledger.*`, `pricing.*`, `metrics.*`, `attribution.*`, `charts.*`, `risk.*`, `portfolio.*`, `optimizer.*`, `ratings.*`
+2. **MacroHound** - Macro economic cycles, scenarios, regime detection, alerts (~17+ capabilities)
+   - **Consolidated from:** AlertsAgent (Phase 3 Week 4)
    - Uses: IndicatorConfigManager for ~40 economic indicators
    - Configuration: backend/config/macro_indicators_defaults.json
-3. **DataHarvester** - external data fetching, news (8 capabilities) ✅ CONFIRMED EXISTS (1,981 lines)
-4. **ClaudeAgent** - AI-powered explanations (6 capabilities)
-5. **RatingsAgent** - Buffett ratings, dividend safety, moat (4 capabilities)
-6. **OptimizerAgent** - rebalancing, hedging (4 capabilities)
-7. **ChartsAgent** - chart formatting (3 capabilities)
-8. **ReportsAgent** - PDF, CSV, Excel export (3 capabilities)
-9. **AlertsAgent** - alert suggestions, thresholds (2 capabilities)
+   - Capabilities: `macro.*`, `scenarios.*`, `cycles.*`, `alerts.*`
+3. **DataHarvester** - External data fetching, news, reports, corporate actions (~8+ capabilities)
+   - **Consolidated from:** ReportsAgent (Phase 3 Week 5)
+   - Capabilities: `data.*`, `news.*`, `reports.*`, `corporate_actions.*`
+4. **ClaudeAgent** - AI-powered explanations and insights (~6 capabilities)
+   - Capabilities: `claude.*`, `ai.*`
 
-### 12 Patterns (All in backend/patterns/*.json)
+### 13 Patterns (All in backend/patterns/*.json)
 All patterns are valid and working:
 - portfolio_overview.json
-- portfolio_scenario_analysis.json
-- macro_cycles_overview.json
-- policy_rebalance.json
-- buffett_checklist.json
-- portfolio_cycle_risk.json
-- holding_deep_dive.json (NOT holdings_detail.json - that was a typo)
-- export_portfolio_report.json
-- macro_trend_monitor.json
-- news_impact_analysis.json
-- cycle_deleveraging_scenarios.json
+- holding_deep_dive.json
 - portfolio_macro_overview.json
+- portfolio_scenario_analysis.json
+- portfolio_cycle_risk.json
+- macro_cycles_overview.json
+- macro_trend_monitor.json
+- buffett_checklist.json
+- news_impact_analysis.json
+- export_portfolio_report.json
+- policy_rebalance.json
+- cycle_deleveraging_scenarios.json
+- corporate_actions_upcoming.json ✅ **NEW** (November 3, 2025)
 
 ---
 
@@ -103,7 +108,7 @@ All patterns are valid and working:
 ### Critical Files (DO NOT MODIFY without explicit approval)
 - ✅ `combined_server.py` - Production server (working perfectly)
 - ✅ `full_ui.html` - Production UI (working perfectly)
-- ✅ `backend/patterns/*.json` - All 12 patterns (validated)
+- ✅ `backend/patterns/*.json` - All 13 patterns (validated)
 - ✅ `backend/app/core/pattern_orchestrator.py` - Core architecture
 - ✅ `backend/app/core/agent_runtime.py` - Core architecture
 - ✅ `backend/app/agents/*.py` - All agent implementations

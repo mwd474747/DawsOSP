@@ -58,7 +58,7 @@ python combined_server.py
     - Week 4: AlertsAgent → MacroHound ✅ COMPLETE
     - Week 5: ReportsAgent → DataHarvester ✅ COMPLETE
     - Week 6: Legacy agent cleanup ✅ COMPLETE
-- **Patterns**: 12 pattern definitions for orchestration
+- **Patterns**: 13 pattern definitions for orchestration
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.
 
@@ -342,7 +342,7 @@ Response:
   "service": "DawsOS",
   "version": "2.0.0",
   "database": "connected",
-  "agents": 9,
+  "agents": 4,
   "patterns": "available"
 }
 ```

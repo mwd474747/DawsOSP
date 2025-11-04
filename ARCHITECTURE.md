@@ -12,9 +12,9 @@ DawsOS is an AI-powered portfolio management platform built on a **pattern-drive
 - **Server**: `combined_server.py` - Single FastAPI application (6,043 lines, 53 functional endpoints)
 - **UI**: `full_ui.html` - React 18 SPA (11,594 lines, 18 pages including login, no build step)
 - **Database**: PostgreSQL 14+ with TimescaleDB extension
-- **Agents**: 4 specialized agents providing 59+ capabilities
+- **Agents**: 4 specialized agents providing ~70 capabilities
   - **Note:** Phase 3 consolidation complete (November 3, 2025) - 9 agents → 4 agents
-- **Patterns**: 12 pattern definitions for business workflows
+- **Patterns**: 13 pattern definitions for business workflows
 
 ---
 
@@ -157,7 +157,7 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 **Authentication:**
 17. Login - JWT authentication
 
-**Pattern Registry:** 12 patterns defined in `full_ui.html` patternRegistry (lines 2784-3117)
+**Pattern Registry:** 13 patterns defined in `full_ui.html` patternRegistry (lines 2784-3117)
 
 **Technology**:
 - React 18.2.0 (UMD build)

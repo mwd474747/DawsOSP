@@ -49,13 +49,13 @@ DawsOSP/
 ├── full_ui.html                # ⭐ PRIMARY UI (React SPA, 18 pages)
 ├── backend/
 │   ├── app/
-│   │   ├── agents/             # 9 agents (financial_analyst, macro_hound, etc.)
-│   │   │                       # Phase 3 consolidation in progress (Weeks 1-3 complete)
+│   │   ├── agents/             # 4 agents (financial_analyst, macro_hound, data_harvester, claude_agent)
+│   │   │                       # Phase 3 consolidation complete (November 3, 2025) - 9 agents → 4 agents
 │   │   ├── core/               # AgentRuntime, PatternOrchestrator
 │   │   ├── services/           # Business logic
 │   │   ├── db/                 # Database layer
 │   │   └── auth/               # Authentication (JWT, RBAC)
-│   ├── patterns/               # 12 pattern definitions (JSON)
+│   ├── patterns/               # 13 pattern definitions (JSON)
 │   ├── db/
 │   │   ├── migrations/         # Sequential SQL migrations
 │   │   └── seeds/              # Seed data

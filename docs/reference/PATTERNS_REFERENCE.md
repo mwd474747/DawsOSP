@@ -21,7 +21,7 @@
 
 ---
 
-## Pattern Inventory (12 patterns)
+## Pattern Inventory (13 patterns)
 
 ### Portfolio Patterns (5 patterns)
 
@@ -93,7 +93,7 @@
 **Inputs:** portfolio_id (required), lookback_days (default: 7)
 **Outputs:** positions, valued_positions, news, impact_analysis, ai_explanation (optional)
 
-### Workflow Patterns (3 patterns)
+### Workflow Patterns (4 patterns)
 
 #### 10. export_portfolio_report.json
 **Steps:** 6
@@ -115,6 +115,14 @@
 **Capabilities:** ledger.positions, pricing.apply_pack, scenarios.deleveraging_austerity, scenarios.deleveraging_default, scenarios.deleveraging_money_printing, scenarios.macro_aware_apply, scenarios.macro_aware_rank
 **Inputs:** portfolio_id (required)
 **Outputs:** positions, valued_positions, austerity, default, money_printing, scenario_comparison, ranked_hedges
+
+#### 13. corporate_actions_upcoming.json
+**Steps:** 3
+**Purpose:** Get upcoming corporate actions (dividends, splits, earnings) for portfolio holdings
+**Capabilities:** ledger.positions, corporate_actions.upcoming, corporate_actions.calculate_impact
+**Inputs:** portfolio_id (required), days_ahead (default: 90)
+**Outputs:** positions, actions, actions_with_impact
+**Note:** Fetches upcoming corporate actions from FMP API and calculates portfolio impact
 
 ---
 
@@ -423,7 +431,7 @@ curl -X POST http://localhost:8000/api/patterns/execute \
 ## References
 
 **Code:**
-- [backend/patterns/](backend/patterns/) - Pattern JSON files (12 patterns)
+- [backend/patterns/](backend/patterns/) - Pattern JSON files (13 patterns)
 - [backend/app/core/pattern_orchestrator.py](backend/app/core/pattern_orchestrator.py) - Orchestrator implementation
 - [backend/app/core/agent_runtime.py](backend/app/core/agent_runtime.py) - Agent routing
 

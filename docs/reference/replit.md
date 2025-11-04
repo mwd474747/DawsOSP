@@ -79,7 +79,7 @@ Preferred communication style: Simple, everyday language.
 The core architectural pattern is **declarative workflow execution**:
 
 1. **Pattern Definitions** (JSON files in `backend/patterns/`)
-   - 12 patterns total: `portfolio_overview`, `buffett_checklist`, `macro_cycles_overview`, etc.
+   - 13 patterns total: `portfolio_overview`, `buffett_checklist`, `macro_cycles_overview`, `corporate_actions_upcoming`, etc.
    - Define multi-step workflows with template substitution
    - Use `{{inputs.x}}`, `{{state.y}}`, `{{ctx.z}}` syntax
 
@@ -91,31 +91,33 @@ The core architectural pattern is **declarative workflow execution**:
    - Returns structured results with execution traces
 
 3. **Agent Runtime** (`backend/app/core/agent_runtime.py`)
-   - Manages 9 specialized agents
+   - Manages 4 specialized agents (Phase 3 consolidation complete)
    - Routes capability strings like `"ledger.positions"` to agent methods
    - Provides immutable `RequestCtx` for reproducibility
 
 ### Agent Architecture
 
-**9 Specialized Agents** (registered in `combined_server.py:239-304`):
+**4 Specialized Agents** (registered in `executor.py` and `combined_server.py`):
 
-1. **FinancialAnalyst** - Portfolio positions, pricing, metrics, attribution
-2. **MacroHound** - Economic cycles, regime detection, scenarios
-3. **DataHarvester** - External data (FMP, FRED, NewsAPI, Polygon)
-4. **ClaudeAgent** - AI explanations and insights
-5. **RatingsAgent** - Quality ratings (moat, dividend safety, resilience)
-6. **OptimizerAgent** - Portfolio optimization and rebalancing
-7. **AlertAgent** - Monitoring and notifications
-8. **ReportAgent** - PDF generation
-9. **ComplianceAgent** - Access control and attribution
+1. **FinancialAnalyst** - Portfolio positions, pricing, metrics, attribution, optimization, ratings, charts (~35+ capabilities)
+   - **Consolidated from:** OptimizerAgent, RatingsAgent, ChartsAgent (Phase 3 Weeks 1-3, November 3, 2025)
+   - Capabilities: `ledger.*`, `pricing.*`, `metrics.*`, `attribution.*`, `charts.*`, `risk.*`, `portfolio.*`, `optimizer.*`, `ratings.*`
+2. **MacroHound** - Economic cycles, regime detection, scenarios, alerts (~17+ capabilities)
+   - **Consolidated from:** AlertsAgent (Phase 3 Week 4, November 3, 2025)
+   - Capabilities: `macro.*`, `scenarios.*`, `cycles.*`, `alerts.*`
+3. **DataHarvester** - External data (FMP, FRED, NewsAPI, Polygon), news, reports, corporate actions (~8+ capabilities)
+   - **Consolidated from:** ReportsAgent (Phase 3 Week 5, November 3, 2025)
+   - Capabilities: `data.*`, `news.*`, `reports.*`, `corporate_actions.*`
+4. **ClaudeAgent** - AI explanations and insights (~6 capabilities)
+   - Capabilities: `claude.*`, `ai.*`
 
 **Agent Capability Pattern:**
 ```python
 # Pattern calls capability by string
-{"capability": "ratings.aggregate", "args": {...}, "as": "ratings"}
+{"capability": "financial_analyst.aggregate_ratings", "args": {...}, "as": "ratings"}
 
-# Runtime routes to agent method
-RatingsAgent.aggregate(ctx, security_id) -> dict
+# Runtime routes to agent method (via capability routing with feature flags)
+FinancialAnalyst.aggregate_ratings(ctx, security_id) -> dict
 ```
 
 ### Database Schema
