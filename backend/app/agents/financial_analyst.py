@@ -189,7 +189,7 @@ class FinancialAnalyst(BaseAgent):
                     {
                         "security_id": str(row["security_id"]),
                         "symbol": row["symbol"] or "UNKNOWN",
-                        "qty": qty,
+                        "quantity": qty,
                         "cost_basis": cost_basis,
                         "currency": row["currency"] or portfolio_base_currency,
                         "base_currency": portfolio_base_currency,
@@ -206,7 +206,7 @@ class FinancialAnalyst(BaseAgent):
                 {
                     "security_id": "048a0b1e-5fa7-507a-9854-af6a9d7360e9",
                     "symbol": "AAPL",
-                    "qty": Decimal("100"),
+                    "quantity": Decimal("100"),
                     "cost_basis": Decimal("15000.00"),
                     "currency": "USD",
                     "base_currency": portfolio_base_currency,
@@ -359,7 +359,7 @@ class FinancialAnalyst(BaseAgent):
                 **pos,
                 "price": price,
                 "value_local": value_local,
-                "value": value_base,
+                "market_value": value_base,
                 "fx_rate": fx_rate,
                 "base_currency": base_currency,
             }
@@ -764,11 +764,11 @@ class FinancialAnalyst(BaseAgent):
             allocation_data = [
                 {
                     "symbol": pos.get("symbol", "UNKNOWN"),
-                    "value": float(pos.get("value", 0)),
+                    "market_value": float(pos.get("market_value", 0)),
                     "weight": float(pos.get("weight", 0)),
                 }
                 for pos in position_list
-                if float(pos.get("value", 0)) > 0
+                if float(pos.get("market_value", 0)) > 0
             ]
             charts.append({
                 "type": "pie",
@@ -2075,7 +2075,7 @@ class FinancialAnalyst(BaseAgent):
                     for row in rows:
                         historical_data.append({
                             "date": str(row["asof_date"]),
-                            "value": float(row["total_value_base"]),
+                            "nav_value": float(row["total_value_base"]),
                         })
                     logger.info(f"Retrieved {len(rows)} historical NAV points from database")
                     
@@ -3284,16 +3284,16 @@ class FinancialAnalyst(BaseAgent):
         waterfall_chart = {
             "type": "waterfall",
             "data": [
-                {"label": "Base Portfolio", "value": base_nav, "type": "start"},
+                {"label": "Base Portfolio", "nav_value": base_nav, "type": "start"},
                 *[
                     {
                         "label": d["symbol"],
-                        "value": d["delta_value"],
+                        "nav_value": d["delta_value"],
                         "type": "positive" if d["delta_value"] > 0 else "negative"
                     }
                     for d in position_deltas[:10]  # Top 10 contributors
                 ],
-                {"label": "Shocked Portfolio", "value": shocked_nav, "type": "end"}
+                {"label": "Shocked Portfolio", "nav_value": shocked_nav, "type": "end"}
             ],
             "chart_config": {
                 "colors": {
