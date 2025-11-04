@@ -17,6 +17,11 @@
 ### 2. Page Migrations
 - ✅ **PerformancePage** - Already migrated to PatternRenderer (confirmed)
 - ✅ Removed legacy `PerformancePageLegacy` function
+- ✅ **ReportsPage** - Migrated to use `export_portfolio_report` pattern
+  - Replaced direct API call with PatternRenderer
+  - Handles base64 PDF download from pattern result
+  - Added loading indicators during report generation
+  - Simplified code and uses consistent pattern-driven approach
 
 ---
 
@@ -36,7 +41,7 @@
 - Challenge: Pattern requires single `security_id`, but page shows ratings for all holdings
 - Solution: Keep current implementation OR use PatternRenderer for detailed view only
 
-**AIInsightsPage** - Needs migration
+**AIInsightsPage** - Needs assessment
 - Current: Direct API call to `/api/ai/chat` endpoint
 - Target: Use `news_impact_analysis` pattern
 - Challenge: Page is a chat interface, not a pattern-driven display
@@ -46,11 +51,6 @@
 - Current: Direct API calls to `/api/alerts/*`
 - Target: Use `macro_trend_monitor` pattern for alert presets
 - Solution: Add PatternRenderer for alert suggestions panel
-
-**ReportsPage** - Needs migration
-- Current: Direct API call to `/api/reports/generate`
-- Target: Use `export_portfolio_report` pattern
-- Solution: Replace direct API call with PatternRenderer
 
 ---
 
