@@ -116,6 +116,8 @@ class OptimizerAgent(BaseAgent):
         portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "optimizer.propose_trades")
 
         # Merge policies and constraints for pattern compatibility
+        # NOTE: This capability is routed to FinancialAnalyst via feature flags.
+        # If routing fails, use simple policy merging logic here.
         default_policy = {
             "min_quality_score": 0.0,
             "max_single_position_pct": 20.0,
@@ -124,7 +126,29 @@ class OptimizerAgent(BaseAgent):
             "max_tracking_error_pct": 3.0,
             "method": "mean_variance",
         }
-        policy_json = self._merge_policies_and_constraints(policies, constraints, default_policy) if (policies or constraints) else (policy_json or default_policy)
+        
+        # Simple policy merging (fallback if routing fails)
+        if policies or constraints:
+            merged_policy = default_policy.copy()
+            if isinstance(policies, dict):
+                merged_policy.update(policies)
+            elif isinstance(policies, list):
+                # Handle list format: [{type: 'min_quality_score', value: 5}, ...]
+                for policy in policies:
+                    if isinstance(policy, dict) and 'type' in policy:
+                        policy_type = policy['type']
+                        value = policy.get('value', 0.0)
+                        if policy_type == 'min_quality_score':
+                            merged_policy['min_quality_score'] = value
+                        elif policy_type == 'max_single_position':
+                            merged_policy['max_single_position_pct'] = value
+                        elif policy_type == 'max_sector':
+                            merged_policy['max_sector_pct'] = value
+            if isinstance(constraints, dict):
+                merged_policy.update(constraints)
+            policy_json = merged_policy
+        else:
+            policy_json = policy_json or default_policy
 
         # Get pricing_pack_id from context (SACRED for reproducibility)
         pricing_pack_id = self._require_pricing_pack_id(ctx, "optimizer.propose_trades")
