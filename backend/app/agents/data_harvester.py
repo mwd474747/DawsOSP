@@ -224,7 +224,7 @@ class DataHarvester(BaseAgent):
         metadata = self._create_metadata(
             source=f"provider:{provider}:quote",
             asof=ctx.asof_date,
-            ttl=300,  # Cache for 5 minutes
+            ttl=self.CACHE_TTL_5MIN,  # Cache for 5 minutes
         )
         result = self._attach_metadata(result, metadata)
 
@@ -321,7 +321,7 @@ class DataHarvester(BaseAgent):
         metadata = self._create_metadata(
             source="provider:fmp:fundamentals",
             asof=ctx.asof_date,
-            ttl=86400,  # Cache for 24 hours (fundamentals change slowly)
+            ttl=self.CACHE_TTL_DAY,  # Cache for 24 hours (fundamentals change slowly)
         )
         result = self._attach_metadata(result, metadata)
 
@@ -428,7 +428,7 @@ class DataHarvester(BaseAgent):
         metadata = self._create_metadata(
             source="provider:newsapi:articles",
             asof=ctx.asof_date,
-            ttl=1800,  # Cache for 30 minutes
+            ttl=self.CACHE_TTL_HOUR,  # Cache for 30 minutes
         )
         result = self._attach_metadata(result, metadata)
 
@@ -518,7 +518,7 @@ class DataHarvester(BaseAgent):
         metadata = self._create_metadata(
             source="provider:fred:series",
             asof=ctx.asof_date,
-            ttl=3600,  # Cache for 1 hour
+            ttl=self.CACHE_TTL_HOUR,  # Cache for 1 hour
         )
         result = self._attach_metadata(result, metadata)
 
@@ -607,7 +607,7 @@ class DataHarvester(BaseAgent):
         metadata = self._create_metadata(
             source="provider:fmp:ratios",
             asof=ctx.asof_date,
-            ttl=86400,  # Cache for 24 hours
+            ttl=self.CACHE_TTL_DAY,  # Cache for 24 hours
         )
         result = self._attach_metadata(result, metadata)
 
@@ -669,7 +669,7 @@ class DataHarvester(BaseAgent):
                 async with db_pool.acquire() as conn:
                     row = await conn.fetchrow(
                         "SELECT symbol FROM securities WHERE id = $1",
-                        UUID(security_id)
+                        self._to_uuid(security_id, "security_id")
                     )
                     if row:
                         symbol = row["symbol"]
@@ -751,7 +751,7 @@ class DataHarvester(BaseAgent):
         metadata = self._create_metadata(
             source=source,
             asof=ctx.asof_date,
-            ttl=86400,
+            ttl=self.CACHE_TTL_DAY,
         )
 
         return self._attach_metadata(result, metadata)
@@ -2143,7 +2143,7 @@ class DataHarvester(BaseAgent):
             metadata = self._create_metadata(
                 source=f"report_service:{ctx.pricing_pack_id}",
                 asof=ctx.asof_date,
-                ttl=0,  # PDF is point-in-time, no caching
+                ttl=self.CACHE_TTL_NONE,  # PDF is point-in-time, no caching
             )
             
             return self._attach_metadata(result, metadata)
@@ -2304,7 +2304,7 @@ class DataHarvester(BaseAgent):
             metadata = self._create_metadata(
                 source="report_service:csv",
                 asof=ctx.asof_date,
-                ttl=0,
+                ttl=self.CACHE_TTL_NONE,
             )
             
             return self._attach_metadata(result, metadata)

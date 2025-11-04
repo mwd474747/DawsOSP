@@ -173,7 +173,7 @@ class AlertsAgent(BaseAgent):
         metadata = self._create_metadata(
             source="alerts_service:suggest_presets",
             asof=ctx.asof_date,
-            ttl=3600
+            ttl=self.CACHE_TTL_HOUR
         )
 
         return self._attach_metadata(result, metadata)
@@ -274,7 +274,7 @@ class AlertsAgent(BaseAgent):
         metadata = self._create_metadata(
             source="alerts_service:create_if_threshold",
             asof=ctx.asof_date,
-            ttl=300  # 5 minutes
+            ttl=self.CACHE_TTL_5MIN  # 5 minutes
         )
 
         return self._attach_metadata(result, metadata)

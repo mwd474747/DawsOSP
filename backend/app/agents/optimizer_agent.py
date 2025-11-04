@@ -65,6 +65,74 @@ class OptimizerAgent(BaseAgent):
             "optimizer.suggest_deleveraging_hedges",
         ]
 
+    def _merge_policies_and_constraints(
+        self,
+        policies: Optional[Any],
+        constraints: Optional[Dict],
+        default_policy: Optional[Dict] = None
+    ) -> Dict[str, Any]:
+        """Merge policies and constraints into unified policy dict.
+
+        Used by: propose_trades capability (both old and new)
+
+        Handles:
+        - List format: [{type: 'min_quality_score', value: 5}, ...]
+        - Dict format: {min_quality_score: 5, ...}
+        - None: Uses default policy
+
+        NOTE: This is duplicated from FinancialAnalyst for legacy compatibility.
+        OptimizerAgent will be removed in Phase 3 Week 6 cleanup.
+        """
+        merged_policy = {}
+
+        # Handle policies
+        if policies:
+            if isinstance(policies, list):
+                # Convert list of policies to dict format
+                for policy in policies:
+                    if isinstance(policy, dict) and 'type' in policy:
+                        policy_type = policy['type']
+                        value = policy.get('value', 0.0)
+
+                        if policy_type == 'min_quality_score':
+                            merged_policy['min_quality_score'] = value
+                        elif policy_type == 'max_single_position':
+                            merged_policy['max_single_position_pct'] = value
+                        elif policy_type == 'max_sector':
+                            merged_policy['max_sector_pct'] = value
+                        elif policy_type == 'target_allocation':
+                            category = policy.get('category', '')
+                            merged_policy[f'target_{category}'] = value
+            else:
+                # Use policies as base if it's a dict
+                merged_policy = policies.copy() if isinstance(policies, dict) else {}
+
+        # Merge constraints if provided
+        if constraints and isinstance(constraints, dict):
+            if 'max_turnover_pct' in constraints:
+                merged_policy['max_turnover_pct'] = constraints['max_turnover_pct']
+            if 'max_te_pct' in constraints:
+                merged_policy['max_tracking_error_pct'] = constraints['max_te_pct']
+            if 'min_lot_value' in constraints:
+                merged_policy['min_lot_value'] = constraints['min_lot_value']
+
+        # Apply default policy if provided and no policies merged
+        if not merged_policy and default_policy:
+            merged_policy = default_policy.copy()
+
+        # Apply standard defaults if still empty
+        if not merged_policy:
+            merged_policy = {
+                "min_quality_score": 0.0,
+                "max_single_position_pct": 20.0,
+                "max_sector_pct": 30.0,
+                "max_turnover_pct": 20.0,
+                "max_tracking_error_pct": 3.0,
+                "method": "mean_variance",
+            }
+
+        return merged_policy
+
     async def optimizer_propose_trades(
         self,
         ctx: RequestCtx,
@@ -113,82 +181,24 @@ class OptimizerAgent(BaseAgent):
                 - _metadata: Metadata dict
         """
         # Resolve portfolio_id
-        if not portfolio_id:
-            portfolio_id = str(ctx.portfolio_id) if ctx.portfolio_id else None
-        if not portfolio_id:
-            raise ValueError("portfolio_id required for optimizer.propose_trades")
-
-        portfolio_uuid = UUID(portfolio_id)
+        portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "optimizer.propose_trades")
 
         # Merge policies and constraints for pattern compatibility
-        if policies or constraints:
-            # Handle both list and dict formats for policies
-            if isinstance(policies, list):
-                # Convert list of policies to a dict format for optimizer
-                merged_policy = {}
-                for policy in policies:
-                    # Check if policy is a dict before accessing keys
-                    if isinstance(policy, dict) and 'type' in policy:
-                        # Convert policy type to dict key
-                        if policy['type'] == 'min_quality_score':
-                            merged_policy['min_quality_score'] = policy.get('value', 0.0)
-                        elif policy['type'] == 'max_single_position':
-                            merged_policy['max_single_position_pct'] = policy.get('value', 20.0)
-                        elif policy['type'] == 'max_sector':
-                            merged_policy['max_sector_pct'] = policy.get('value', 30.0)
-                        elif policy['type'] == 'target_allocation':
-                            # Handle target allocations separately
-                            category = policy.get('category', '')
-                            value = policy.get('value', 0.0)
-                            merged_policy[f'target_{category}'] = value
-            else:
-                # Use policies as base if it's a dict
-                merged_policy = policies or {}
-            
-            # Merge constraints if provided
-            if constraints and isinstance(constraints, dict):
-                # Add constraints to the policy dict
-                if 'max_turnover_pct' in constraints:
-                    merged_policy['max_turnover_pct'] = constraints['max_turnover_pct']
-                if 'max_te_pct' in constraints:
-                    merged_policy['max_tracking_error_pct'] = constraints['max_te_pct']
-                if 'min_lot_value' in constraints:
-                    merged_policy['min_lot_value'] = constraints['min_lot_value']
-            
-            policy_json = merged_policy
-
-        # Default policy if not provided
-        if not policy_json:
-            policy_json = {
-                "min_quality_score": 0.0,
-                "max_single_position_pct": 20.0,
-                "max_sector_pct": 30.0,
-                "max_turnover_pct": 20.0,
-                "max_tracking_error_pct": 3.0,
-                "method": "mean_variance",
-            }
+        default_policy = {
+            "min_quality_score": 0.0,
+            "max_single_position_pct": 20.0,
+            "max_sector_pct": 30.0,
+            "max_turnover_pct": 20.0,
+            "max_tracking_error_pct": 3.0,
+            "method": "mean_variance",
+        }
+        policy_json = self._merge_policies_and_constraints(policies, constraints, default_policy) if (policies or constraints) else (policy_json or default_policy)
 
         # Get pricing_pack_id from context (SACRED for reproducibility)
-        pricing_pack_id = ctx.pricing_pack_id
-        if not pricing_pack_id:
-            raise ValueError("pricing_pack_id required in context for optimizer.propose_trades")
+        pricing_pack_id = self._require_pricing_pack_id(ctx, "optimizer.propose_trades")
 
         # Get ratings from state if not provided
-        if not ratings and state.get("ratings"):
-            # Extract quality scores from ratings result
-            ratings_result = state["ratings"]
-            if isinstance(ratings_result, dict) and "positions" in ratings_result:
-                # Portfolio ratings mode
-                ratings = {
-                    pos["symbol"]: pos.get("rating", 0.0)
-                    for pos in ratings_result["positions"]
-                    if pos.get("rating") is not None
-                }
-            elif isinstance(ratings_result, dict) and "overall_rating" in ratings_result:
-                # Single security ratings mode
-                symbol = ratings_result.get("symbol")
-                if symbol:
-                    ratings = {symbol: float(ratings_result["overall_rating"]) / 10.0}
+        ratings = self._extract_ratings_from_state(state, ratings)
 
         logger.info(
             f"optimizer.propose_trades: portfolio_id={portfolio_id}, "
@@ -212,8 +222,8 @@ class OptimizerAgent(BaseAgent):
             # Attach metadata
             metadata = self._create_metadata(
                 source=f"optimizer_service:{ctx.pricing_pack_id}",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,  # No caching for trade proposals (always fresh)
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,  # No caching for trade proposals (always fresh)
             )
 
             return self._attach_metadata(result, metadata)
@@ -233,8 +243,8 @@ class OptimizerAgent(BaseAgent):
             }
             metadata = self._create_metadata(
                 source=f"optimizer_service:error",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,
             )
             return self._attach_metadata(error_result, metadata)
 
@@ -287,12 +297,7 @@ class OptimizerAgent(BaseAgent):
                 - _metadata: Metadata dict
         """
         # Resolve portfolio_id
-        if not portfolio_id:
-            portfolio_id = str(ctx.portfolio_id) if ctx.portfolio_id else None
-        if not portfolio_id:
-            raise ValueError("portfolio_id required for optimizer.analyze_impact")
-
-        portfolio_uuid = UUID(portfolio_id)
+        portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "optimizer.analyze_impact")
 
         # Get proposed_trades from multiple possible locations for pattern compatibility
         if not proposed_trades:
@@ -310,9 +315,7 @@ class OptimizerAgent(BaseAgent):
             )
 
         # Get pricing_pack_id from context
-        pricing_pack_id = ctx.pricing_pack_id
-        if not pricing_pack_id:
-            raise ValueError("pricing_pack_id required in context for optimizer.analyze_impact")
+        pricing_pack_id = self._require_pricing_pack_id(ctx, "optimizer.analyze_impact")
 
         logger.info(
             f"optimizer.analyze_impact: portfolio_id={portfolio_id}, "
@@ -333,8 +336,8 @@ class OptimizerAgent(BaseAgent):
             # Attach metadata
             metadata = self._create_metadata(
                 source=f"optimizer_service:{ctx.pricing_pack_id}",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,  # No caching for impact analysis
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,  # No caching for impact analysis
             )
 
             return self._attach_metadata(result, metadata)
@@ -349,8 +352,8 @@ class OptimizerAgent(BaseAgent):
             }
             metadata = self._create_metadata(
                 source=f"optimizer_service:error",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,
             )
             return self._attach_metadata(error_result, metadata)
 
@@ -397,12 +400,7 @@ class OptimizerAgent(BaseAgent):
                 - _metadata: Metadata dict
         """
         # Resolve portfolio_id
-        if not portfolio_id:
-            portfolio_id = str(ctx.portfolio_id) if ctx.portfolio_id else None
-        if not portfolio_id:
-            raise ValueError("portfolio_id required for optimizer.suggest_hedges")
-
-        portfolio_uuid = UUID(portfolio_id)
+        portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "optimizer.suggest_hedges")
 
         # Handle scenario_result from pattern or scenario_id parameter
         if scenario_result:
@@ -416,9 +414,7 @@ class OptimizerAgent(BaseAgent):
             raise ValueError("Either scenario_id or scenario_result required for optimizer.suggest_hedges")
 
         # Get pricing_pack_id from context
-        pricing_pack_id = ctx.pricing_pack_id
-        if not pricing_pack_id:
-            raise ValueError("pricing_pack_id required in context for optimizer.suggest_hedges")
+        pricing_pack_id = self._require_pricing_pack_id(ctx, "optimizer.suggest_hedges")
 
         logger.info(
             f"optimizer.suggest_hedges: portfolio_id={portfolio_id}, "
@@ -439,8 +435,8 @@ class OptimizerAgent(BaseAgent):
             # Attach metadata
             metadata = self._create_metadata(
                 source=f"optimizer_service:hedges:{scenario_id}",
-                asof=ctx.asof_date or date.today(),
-                ttl=3600,  # Cache for 1 hour
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_HOUR,  # Cache for 1 hour
             )
 
             return self._attach_metadata(result, metadata)
@@ -456,8 +452,8 @@ class OptimizerAgent(BaseAgent):
             }
             metadata = self._create_metadata(
                 source=f"optimizer_service:error",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,
             )
             return self._attach_metadata(error_result, metadata)
 
@@ -506,12 +502,7 @@ class OptimizerAgent(BaseAgent):
                 - _metadata: Metadata dict
         """
         # Resolve portfolio_id
-        if not portfolio_id:
-            portfolio_id = str(ctx.portfolio_id) if ctx.portfolio_id else None
-        if not portfolio_id:
-            raise ValueError("portfolio_id required for optimizer.suggest_deleveraging_hedges")
-
-        portfolio_uuid = UUID(portfolio_id)
+        portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "optimizer.suggest_deleveraging_hedges")
 
         # Resolve regime from pattern parameters or state
         if ltdc_phase:
@@ -553,9 +544,7 @@ class OptimizerAgent(BaseAgent):
             )
 
         # Get pricing_pack_id from context
-        pricing_pack_id = ctx.pricing_pack_id
-        if not pricing_pack_id:
-            raise ValueError("pricing_pack_id required in context for optimizer.suggest_deleveraging_hedges")
+        pricing_pack_id = self._require_pricing_pack_id(ctx, "optimizer.suggest_deleveraging_hedges")
 
         logger.info(
             f"optimizer.suggest_deleveraging_hedges: portfolio_id={portfolio_id}, "
@@ -576,8 +565,8 @@ class OptimizerAgent(BaseAgent):
             # Attach metadata
             metadata = self._create_metadata(
                 source=f"optimizer_service:deleveraging:{regime}",
-                asof=ctx.asof_date or date.today(),
-                ttl=3600,  # Cache for 1 hour
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_HOUR,  # Cache for 1 hour
             )
 
             return self._attach_metadata(result, metadata)
@@ -593,7 +582,7 @@ class OptimizerAgent(BaseAgent):
             }
             metadata = self._create_metadata(
                 source=f"optimizer_service:error",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,
             )
             return self._attach_metadata(error_result, metadata)

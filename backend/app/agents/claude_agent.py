@@ -258,7 +258,7 @@ Provide a detailed explanation with 3-5 specific reasoning points based on the p
         metadata = self._create_metadata(
             source="claude_api:explain",
             asof=ctx.asof_date,
-            ttl=3600,  # Cache for 1 hour
+            ttl=self.CACHE_TTL_HOUR,  # Cache for 1 hour
         )
         result = self._attach_metadata(result, metadata)
 
@@ -394,7 +394,7 @@ Focus on the most important information, financial impacts, and actionable insig
         metadata = self._create_metadata(
             source="claude_api:summarize",
             asof=ctx.asof_date,
-            ttl=3600,
+            ttl=self.CACHE_TTL_HOUR,
         )
         result = self._attach_metadata(result, metadata)
 
@@ -568,7 +568,7 @@ Provide 3-5 specific insights and 2-3 actionable recommendations based on the da
         metadata = self._create_metadata(
             source="claude_api:analyze",
             asof=ctx.asof_date,
-            ttl=3600,
+            ttl=self.CACHE_TTL_HOUR,
         )
         result = self._attach_metadata(result, metadata)
 
@@ -631,7 +631,7 @@ Provide 3-5 specific insights and 2-3 actionable recommendations based on the da
         metadata = self._create_metadata(
             source="claude_api:portfolio_advice",
             asof=ctx.asof_date,
-            ttl=1800,  # Cache for 30 minutes
+            ttl=self.CACHE_TTL_30MIN,  # Cache for 30 minutes
         )
         result = self._attach_metadata(result, metadata)
         
@@ -681,7 +681,7 @@ Provide 3-5 specific insights and 2-3 actionable recommendations based on the da
         metadata = self._create_metadata(
             source="claude_api:financial_qa",
             asof=ctx.asof_date,
-            ttl=3600,  # Cache for 1 hour
+            ttl=self.CACHE_TTL_HOUR,  # Cache for 1 hour
         )
         result = self._attach_metadata(result, metadata)
         
@@ -737,7 +737,7 @@ Provide 3-5 specific insights and 2-3 actionable recommendations based on the da
         metadata = self._create_metadata(
             source="claude_api:scenario_analysis",
             asof=ctx.asof_date,
-            ttl=1800,  # Cache for 30 minutes
+            ttl=self.CACHE_TTL_30MIN,  # Cache for 30 minutes
         )
         result = self._attach_metadata(result, metadata)
         

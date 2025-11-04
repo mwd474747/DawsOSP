@@ -144,7 +144,7 @@ class ReportsAgent(BaseAgent):
             metadata = self._create_metadata(
                 source=f"report_service:{ctx.pricing_pack_id}",
                 asof=ctx.asof_date,
-                ttl=0,  # PDF is point-in-time, no caching
+                ttl=self.CACHE_TTL_NONE,  # PDF is point-in-time, no caching
             )
 
             return self._attach_metadata(result, metadata)
@@ -236,7 +236,7 @@ class ReportsAgent(BaseAgent):
             metadata = self._create_metadata(
                 source=f"report_service:csv",
                 asof=ctx.asof_date,
-                ttl=0,
+                ttl=self.CACHE_TTL_NONE,
             )
 
             return self._attach_metadata(result, metadata)

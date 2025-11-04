@@ -172,7 +172,7 @@ class ChartsAgent(BaseAgent):
         metadata = self._create_metadata(
             source="charts_agent:macro_overview",
             asof=ctx.asof_date,
-            ttl=3600
+            ttl=self.CACHE_TTL_HOUR
         )
 
         return self._attach_metadata(result, metadata)
@@ -293,7 +293,7 @@ class ChartsAgent(BaseAgent):
         metadata = self._create_metadata(
             source="charts_agent:scenario_deltas",
             asof=ctx.asof_date,
-            ttl=3600
+            ttl=self.CACHE_TTL_HOUR
         )
 
         return self._attach_metadata(result, metadata)

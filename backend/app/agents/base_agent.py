@@ -26,7 +26,9 @@ Usage:
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import date
 from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.types import RequestCtx
 
@@ -90,6 +92,13 @@ class BaseAgent(ABC):
         3. Metadata: attach AgentMetadata to results
         4. Naming: capability "foo.bar" → method foo_bar(ctx, state, **kwargs)
     """
+
+    # Cache TTL constants (in seconds)
+    CACHE_TTL_DAY = 86400
+    CACHE_TTL_HOUR = 3600
+    CACHE_TTL_30MIN = 1800
+    CACHE_TTL_5MIN = 300
+    CACHE_TTL_NONE = 0
 
     def __init__(self, name: str, services: Dict[str, Any]):
         """
@@ -228,6 +237,149 @@ class BaseAgent(ABC):
             }
 
         return result
+
+    def _resolve_asof_date(self, ctx: RequestCtx) -> date:
+        """
+        Resolve asof_date from context with fallback to today.
+
+        Args:
+            ctx: Request context
+
+        Returns:
+            As-of date from context or today if not specified
+        """
+        return ctx.asof_date or date.today()
+
+    def _to_uuid(self, value: Optional[str], param_name: str) -> Optional[UUID]:
+        """
+        Convert string to UUID with validation.
+
+        Args:
+            value: String value to convert to UUID
+            param_name: Parameter name for error messages
+
+        Returns:
+            UUID object or None if value is empty/None
+
+        Raises:
+            ValueError: If string is not a valid UUID format
+        """
+        if not value:
+            return None
+        try:
+            return UUID(value)
+        except ValueError as e:
+            raise ValueError(f"Invalid {param_name} format: {value}") from e
+
+    def _resolve_portfolio_id(
+        self,
+        portfolio_id: Optional[str],
+        ctx: RequestCtx,
+        capability_name: str
+    ) -> UUID:
+        """
+        Resolve and validate portfolio_id from parameter or context.
+
+        Args:
+            portfolio_id: Portfolio ID parameter (may be None)
+            ctx: Request context containing fallback portfolio_id
+            capability_name: Capability name for error messages
+
+        Returns:
+            Validated UUID of the portfolio
+
+        Raises:
+            ValueError: If portfolio_id cannot be resolved or is invalid
+        """
+        if not portfolio_id:
+            portfolio_id = str(ctx.portfolio_id) if ctx.portfolio_id else None
+        if not portfolio_id:
+            raise ValueError(f"portfolio_id required for {capability_name}")
+
+        return self._to_uuid(portfolio_id, "portfolio_id")
+
+    def _require_pricing_pack_id(self, ctx: RequestCtx, capability_name: str) -> str:
+        """
+        Get pricing_pack_id from context (SACRED - required for reproducibility).
+
+        This pattern is used for optimizer capabilities where pricing_pack_id
+        is SACRED and must be explicitly provided in the context for reproducibility.
+
+        Args:
+            ctx: Request context
+            capability_name: Name of capability requiring pricing_pack_id (for error message)
+
+        Returns:
+            Pricing pack ID from context
+
+        Raises:
+            ValueError: If pricing_pack_id is not in context
+        """
+        if not ctx.pricing_pack_id:
+            raise ValueError(f"pricing_pack_id required in context for {capability_name}")
+        return ctx.pricing_pack_id
+
+    def _resolve_pricing_pack_id(
+        self,
+        pack_id: Optional[str],
+        ctx: RequestCtx,
+        default: Optional[str] = None
+    ) -> str:
+        """
+        Resolve pricing_pack_id with fallback chain.
+
+        This pattern is used for non-optimizer capabilities that can fallback
+        to a default pricing pack if not explicitly provided.
+
+        Args:
+            pack_id: Explicit pricing pack ID (highest priority)
+            ctx: Request context (fallback to ctx.pricing_pack_id)
+            default: Default value if neither pack_id nor ctx.pricing_pack_id provided
+
+        Returns:
+            Resolved pricing pack ID (pack_id > ctx.pricing_pack_id > default > "PP_latest")
+        """
+        return pack_id or ctx.pricing_pack_id or default or "PP_latest"
+
+    def _extract_ratings_from_state(
+        self,
+        state: Dict[str, Any],
+        ratings: Optional[Dict[str, float]] = None
+    ) -> Optional[Dict[str, float]]:
+        """Extract ratings dict from state if not provided.
+
+        Handles two modes:
+        1. Portfolio Ratings Mode: ratings_result["positions"] - Array of position objects
+        2. Single Security Ratings Mode: ratings_result["overall_rating"] - Single rating value
+
+        Note:
+            - Portfolio mode: Extracts {symbol: rating} from positions array
+            - Single mode: Converts overall_rating (0-100) to 0-10 scale (divides by 10)
+        """
+        if ratings:
+            return ratings
+
+        if not state.get("ratings"):
+            return None
+
+        ratings_result = state["ratings"]
+
+        # Portfolio ratings mode
+        if isinstance(ratings_result, dict) and "positions" in ratings_result:
+            return {
+                pos["symbol"]: pos.get("rating", 0.0)
+                for pos in ratings_result["positions"]
+                if pos.get("rating") is not None
+            }
+
+        # Single security ratings mode
+        elif isinstance(ratings_result, dict) and "overall_rating" in ratings_result:
+            symbol = ratings_result.get("symbol")
+            if symbol:
+                # Convert 0-100 scale to 0-10 scale
+                return {symbol: float(ratings_result["overall_rating"]) / 10.0}
+
+        return None
 
 
 # ============================================================================

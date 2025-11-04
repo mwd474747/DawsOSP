@@ -144,12 +144,9 @@ class FinancialAnalyst(BaseAgent):
         Returns:
             Dict with positions list
         """
-        portfolio_id = portfolio_id or (str(ctx.portfolio_id) if ctx.portfolio_id else None)
+        portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "ledger.positions")
 
-        if not portfolio_id:
-            raise ValueError("portfolio_id required for ledger.positions")
-
-        logger.info(f"ledger.positions: portfolio_id={portfolio_id}, asof_date={ctx.asof_date}")
+        logger.info(f"ledger.positions: portfolio_id={portfolio_uuid}, asof_date={ctx.asof_date}")
 
         portfolio_base_currency = ctx.base_currency or "USD"
 
@@ -161,8 +158,6 @@ class FinancialAnalyst(BaseAgent):
         try:
             if not ctx.user_id:
                 raise ValueError("user_id missing from request context")
-
-            portfolio_uuid = UUID(str(portfolio_id))
 
             async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
                 rows = await conn.fetch(
@@ -232,7 +227,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source=f"ledger:{ctx.ledger_commit_hash[:8]}",
             asof=ctx.asof_date,
-            ttl=3600,  # Cache for 1 hour
+            ttl=self.CACHE_TTL_HOUR,  # Cache for 1 hour
         )
         result = self._attach_metadata(result, metadata)
         
@@ -269,7 +264,7 @@ class FinancialAnalyst(BaseAgent):
         Returns:
             Dict with valued positions
         """
-        pack_id = pack_id or ctx.pricing_pack_id
+        pack_id = self._resolve_pricing_pack_id(pack_id, ctx)
         if not pack_id:
             raise ValueError("pricing_pack_id is required to value positions")
 
@@ -286,7 +281,7 @@ class FinancialAnalyst(BaseAgent):
             if sec_id:
                 try:
                     # Validate and normalize to string
-                    security_ids.append(UUID(str(sec_id)))
+                    security_ids.append(self._to_uuid(sec_id, "security_id"))
                 except ValueError:
                     logger.warning("Invalid security_id on position: %s", sec_id)
 
@@ -389,7 +384,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source=f"pricing_pack:{pack_id}",
             asof=ctx.asof_date,
-            ttl=3600,  # Cache for 1 hour
+            ttl=self.CACHE_TTL_HOUR,  # Cache for 1 hour
         )
         result = self._attach_metadata(result, metadata)
         
@@ -441,11 +436,8 @@ class FinancialAnalyst(BaseAgent):
                 "__metadata__": {...}
             }
         """
-        portfolio_id_uuid = UUID(portfolio_id) if portfolio_id else ctx.portfolio_id
+        portfolio_id_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "metrics.compute_twr")
         asof = asof_date or ctx.asof_date
-
-        if not portfolio_id_uuid:
-            raise ValueError("portfolio_id required for metrics.compute_twr")
 
         logger.info(
             f"metrics.compute_twr: portfolio_id={portfolio_id_uuid}, asof_date={asof}, pack_id={pack_id}"
@@ -455,7 +447,7 @@ class FinancialAnalyst(BaseAgent):
         queries = get_metrics_queries()
 
         # Use pack_id from context if not provided
-        effective_pack_id = pack_id or ctx.pricing_pack_id
+        effective_pack_id = self._resolve_pricing_pack_id(pack_id, ctx)
 
         try:
             # Get metrics for this portfolio and pricing pack
@@ -528,7 +520,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source=f"metrics_database:{effective_pack_id}",
             asof=asof,
-            ttl=3600,  # Cache for 1 hour
+            ttl=self.CACHE_TTL_HOUR,  # Cache for 1 hour
         )
         result = self._attach_metadata(result, metadata)
 
@@ -566,11 +558,8 @@ class FinancialAnalyst(BaseAgent):
                 "__metadata__": {...}
             }
         """
-        portfolio_id_uuid = UUID(portfolio_id) if portfolio_id else ctx.portfolio_id
+        portfolio_id_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "metrics.compute_sharpe")
         asof = asof_date or ctx.asof_date
-
-        if not portfolio_id_uuid:
-            raise ValueError("portfolio_id required for metrics.compute_sharpe")
 
         logger.info(
             f"metrics.compute_sharpe: portfolio_id={portfolio_id_uuid}, asof_date={asof}"
@@ -623,7 +612,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source=f"metrics_database:{ctx.pricing_pack_id}",
             asof=asof,
-            ttl=3600,
+            ttl=self.CACHE_TTL_HOUR,
         )
         result = self._attach_metadata(result, metadata)
 
@@ -665,20 +654,19 @@ class FinancialAnalyst(BaseAgent):
                 "__metadata__": {...}
             }
         """
-        portfolio_id_str = portfolio_id or (str(ctx.portfolio_id) if ctx.portfolio_id else None)
+        portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "attribution.currency")
         asof = asof_date or ctx.asof_date
 
         logger.info(
             f"attribution.currency called with: portfolio_id={repr(portfolio_id)}, "
             f"ctx.portfolio_id={repr(ctx.portfolio_id)}, "
-            f"resolved={repr(portfolio_id_str)}"
+            f"resolved={repr(portfolio_uuid)}"
         )
 
-        if not portfolio_id_str or portfolio_id_str.strip() == "":
-            raise ValueError("portfolio_id required for attribution.currency")
+        portfolio_id_str = str(portfolio_uuid)
 
         # Use pack_id and lookback_days
-        pack_id = pack_id or ctx.pricing_pack_id
+        pack_id = self._resolve_pricing_pack_id(pack_id, ctx)
         days = lookback_days or 252
 
         logger.info(
@@ -733,7 +721,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source=f"currency_attribution:{ctx.pricing_pack_id}",
             asof=asof,
-            ttl=3600,
+            ttl=self.CACHE_TTL_HOUR,
         )
         result = self._attach_metadata(result, metadata)
 
@@ -852,7 +840,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source=f"chart_generator:{ctx.pricing_pack_id}",
             asof=ctx.asof_date,
-            ttl=3600,
+            ttl=self.CACHE_TTL_HOUR,
         )
         result = self._attach_metadata(result, metadata)
 
@@ -872,8 +860,8 @@ class FinancialAnalyst(BaseAgent):
 
         Returns factor betas (exposure to market, size, value, momentum factors)
         """
-        portfolio_id_uuid = UUID(portfolio_id) if portfolio_id else ctx.portfolio_id
-        pack = pack_id or ctx.pricing_pack_id
+        portfolio_id_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "risk.compute_factor_exposures")
+        pack = self._resolve_pricing_pack_id(pack_id, ctx)
 
         logger.info(f"risk.compute_factor_exposures: portfolio_id={portfolio_id_uuid}, pack={pack}")
 
@@ -921,7 +909,7 @@ class FinancialAnalyst(BaseAgent):
 
         Returns time series of factor betas over specified period
         """
-        portfolio_id_uuid = UUID(portfolio_id) if portfolio_id else ctx.portfolio_id
+        portfolio_id_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "risk.get_factor_exposure_history")
 
         logger.info(f"risk.get_factor_exposure_history: portfolio_id={portfolio_id_uuid}, lookback={lookback_days}")
 
@@ -944,7 +932,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source=f"factor_analysis_service:history",
             asof=ctx.asof_date,
-            ttl=3600
+            ttl=self.CACHE_TTL_HOUR
         )
 
         return self._attach_metadata(result, metadata)
@@ -967,8 +955,8 @@ class FinancialAnalyst(BaseAgent):
         Combines factor exposures with current macro cycle phases
         to show how portfolio positioning aligns with cycle
         """
-        portfolio_id_uuid = UUID(portfolio_id) if portfolio_id else ctx.portfolio_id
-        pack = pack_id or ctx.pricing_pack_id
+        portfolio_id_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "risk.overlay_cycle_phases")
+        pack = self._resolve_pricing_pack_id(pack_id, ctx)
 
         logger.info(f"risk.overlay_cycle_phases: portfolio_id={portfolio_id_uuid}, pack={pack}")
 
@@ -1109,9 +1097,9 @@ class FinancialAnalyst(BaseAgent):
 
         Returns position details including qty, cost basis, market value, unrealized P&L
         """
-        portfolio_uuid = UUID(portfolio_id)
-        security_uuid = UUID(security_id)
-        pack = pack_id or ctx.pricing_pack_id
+        portfolio_uuid = self._to_uuid(portfolio_id, "portfolio_id")
+        security_uuid = self._to_uuid(security_id, "security_id")
+        pack = self._resolve_pricing_pack_id(pack_id, ctx)
 
         logger.info(f"get_position_details: portfolio={portfolio_id}, security={security_id}, pack={pack}")
 
@@ -1200,7 +1188,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source=f"lots_table:{pack}",
             asof=ctx.asof_date,
-            ttl=300
+            ttl=self.CACHE_TTL_5MIN
         )
 
         return self._attach_metadata(result, metadata)
@@ -1221,8 +1209,8 @@ class FinancialAnalyst(BaseAgent):
 
         Returns total return, volatility, Sharpe ratio, max drawdown
         """
-        security_uuid = UUID(security_id)
-        pack = pack_id or ctx.pricing_pack_id
+        security_uuid = self._to_uuid(security_id, "security_id")
+        pack = self._resolve_pricing_pack_id(pack_id, ctx)
 
         logger.info(f"compute_position_return: security={security_id}, lookback={lookback_days}, pack={pack}")
 
@@ -1256,7 +1244,7 @@ class FinancialAnalyst(BaseAgent):
                         "data_points": len(prices),
                         "required_minimum": 2,
                     },
-                    self._create_metadata(source=f"position_returns:{security_id}", asof=ctx.asof_date, ttl=3600)
+                    self._create_metadata(source=f"position_returns:{security_id}", asof=ctx.asof_date, ttl=self.CACHE_TTL_HOUR)
                 )
 
             # Calculate daily returns
@@ -1274,7 +1262,7 @@ class FinancialAnalyst(BaseAgent):
             if not daily_returns:
                 return self._attach_metadata(
                     {"error": "No valid returns calculated", "data_points": len(prices)},
-                    self._create_metadata(source=f"position_returns:{security_id}", asof=ctx.asof_date, ttl=3600)
+                    self._create_metadata(source=f"position_returns:{security_id}", asof=ctx.asof_date, ttl=self.CACHE_TTL_HOUR)
                 )
 
             # Compute metrics
@@ -1323,7 +1311,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source=f"position_returns:{pack}",
             asof=ctx.asof_date,
-            ttl=3600
+            ttl=self.CACHE_TTL_HOUR
         )
 
         return self._attach_metadata(result, metadata)
@@ -1367,7 +1355,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source=f"contribution:{security_id}",
             asof=ctx.asof_date,
-            ttl=3600
+            ttl=self.CACHE_TTL_HOUR
         )
 
         return self._attach_metadata(result, metadata)
@@ -1391,8 +1379,8 @@ class FinancialAnalyst(BaseAgent):
         Formula:
             r_base = r_local + r_fx + (r_local × r_fx)
         """
-        security_uuid = UUID(security_id)
-        pack = pack_id or ctx.pricing_pack_id
+        security_uuid = self._to_uuid(security_id, "security_id")
+        pack = self._resolve_pricing_pack_id(pack_id, ctx)
 
         logger.info(f"compute_position_currency_attribution: security={security_id}, pack={pack}")
 
@@ -1416,7 +1404,7 @@ class FinancialAnalyst(BaseAgent):
             metadata = self._create_metadata(
                 source=f"currency_attr:{security_id}",
                 asof=ctx.asof_date,
-                ttl=3600
+                ttl=self.CACHE_TTL_HOUR
             )
             return self._attach_metadata(result, metadata)
 
@@ -1460,7 +1448,7 @@ class FinancialAnalyst(BaseAgent):
                 metadata = self._create_metadata(
                     source=f"currency_attr:{security_id}",
                     asof=ctx.asof_date,
-                    ttl=3600
+                    ttl=self.CACHE_TTL_HOUR
                 )
                 return self._attach_metadata(result, metadata)
 
@@ -1500,7 +1488,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source=f"currency_attr:{pack}",
             asof=ctx.asof_date,
-            ttl=3600
+            ttl=self.CACHE_TTL_HOUR
         )
 
         return self._attach_metadata(result, metadata)
@@ -1521,9 +1509,9 @@ class FinancialAnalyst(BaseAgent):
 
         Returns VaR, marginal VaR, beta, correlation, diversification benefit
         """
-        security_uuid = UUID(security_id)
-        portfolio_uuid = UUID(portfolio_id)
-        pack = pack_id or ctx.pricing_pack_id
+        security_uuid = self._to_uuid(security_id, "security_id")
+        portfolio_uuid = self._to_uuid(portfolio_id, "portfolio_id")
+        pack = self._resolve_pricing_pack_id(pack_id, ctx)
 
         logger.info(f"compute_position_risk: security={security_id}, portfolio={portfolio_id}, pack={pack}")
 
@@ -1579,7 +1567,7 @@ class FinancialAnalyst(BaseAgent):
                 metadata = self._create_metadata(
                     source=f"position_risk:{security_id}",
                     asof=ctx.asof_date,
-                    ttl=3600
+                    ttl=self.CACHE_TTL_HOUR
                 )
                 return self._attach_metadata(result, metadata)
 
@@ -1610,7 +1598,7 @@ class FinancialAnalyst(BaseAgent):
                 metadata = self._create_metadata(
                     source=f"position_risk:{security_id}",
                     asof=ctx.asof_date,
-                    ttl=3600
+                    ttl=self.CACHE_TTL_HOUR
                 )
                 return self._attach_metadata(result, metadata)
 
@@ -1660,7 +1648,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source=f"position_risk:{pack}",
             asof=ctx.asof_date,
-            ttl=3600
+            ttl=self.CACHE_TTL_HOUR
         )
 
         return self._attach_metadata(result, metadata)
@@ -1680,8 +1668,8 @@ class FinancialAnalyst(BaseAgent):
 
         Returns list of buy/sell transactions
         """
-        portfolio_uuid = UUID(portfolio_id)
-        security_uuid = UUID(security_id)
+        portfolio_uuid = self._to_uuid(portfolio_id, "portfolio_id")
+        security_uuid = self._to_uuid(security_id, "security_id")
 
         logger.info(f"get_transaction_history: portfolio={portfolio_id}, security={security_id}")
 
@@ -1748,7 +1736,7 @@ class FinancialAnalyst(BaseAgent):
 
         Returns market cap, P/E, dividend yield, sector (for equities)
         """
-        security_uuid = UUID(security_id)
+        security_uuid = self._to_uuid(security_id, "security_id")
 
         logger.info(f"get_security_fundamentals: security={security_id}")
 
@@ -1785,7 +1773,7 @@ class FinancialAnalyst(BaseAgent):
             metadata = self._create_metadata(
                 source="securities_table",
                 asof=ctx.asof_date,
-                ttl=86400
+                ttl=self.CACHE_TTL_DAY
             )
             return self._attach_metadata(result, metadata)
 
@@ -1853,7 +1841,7 @@ class FinancialAnalyst(BaseAgent):
             metadata = self._create_metadata(
                 source="FMP",
                 asof=ctx.asof_date,
-                ttl=86400  # Cache fundamentals for 24 hours
+                ttl=self.CACHE_TTL_DAY  # Cache fundamentals for 24 hours
             )
 
             return self._attach_metadata(result, metadata)
@@ -1874,7 +1862,7 @@ class FinancialAnalyst(BaseAgent):
             metadata = self._create_metadata(
                 source="securities_table_fallback",
                 asof=ctx.asof_date,
-                ttl=3600
+                ttl=self.CACHE_TTL_HOUR
             )
 
             return self._attach_metadata(result, metadata)
@@ -1909,7 +1897,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source=f"comparables:{security_id}",
             asof=ctx.asof_date,
-            ttl=86400
+            ttl=self.CACHE_TTL_DAY
         )
 
         return self._attach_metadata(result, metadata)
@@ -2029,7 +2017,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source="calculated_from_positions",
             asof=ctx.asof_date,
-            ttl=3600,  # Cache for 1 hour
+            ttl=self.CACHE_TTL_HOUR,  # Cache for 1 hour
         )
         
         logger.info(f"✅ portfolio.sector_allocation: {sector_allocation}")
@@ -2056,21 +2044,16 @@ class FinancialAnalyst(BaseAgent):
         Returns:
             Dict with historical NAV data points
         """
-        portfolio_id = portfolio_id or (str(ctx.portfolio_id) if ctx.portfolio_id else None)
-        
-        if not portfolio_id:
-            raise ValueError("portfolio_id required for portfolio.historical_nav")
-            
-        logger.info(f"portfolio.historical_nav: portfolio_id={portfolio_id}, lookback_days={lookback_days}")
-        
+        portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "portfolio.historical_nav")
+
+        logger.info(f"portfolio.historical_nav: portfolio_id={portfolio_uuid}, lookback_days={lookback_days}")
+
         # Try to get historical data from database
         historical_data = []
-        
+
         try:
             if not ctx.user_id:
                 raise ValueError("user_id missing from request context")
-                
-            portfolio_uuid = UUID(str(portfolio_id))
             
             # Query portfolio_daily_values table for historical NAV
             async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
@@ -2132,7 +2115,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source="portfolio_daily_values" if len(historical_data) > 0 else "simulated",
             asof=ctx.asof_date,
-            ttl=300,  # Cache for 5 minutes
+            ttl=self.CACHE_TTL_5MIN,  # Cache for 5 minutes
         )
         
         logger.info(f"✅ portfolio.historical_nav: {len(historical_data)} data points")
@@ -2191,82 +2174,24 @@ class FinancialAnalyst(BaseAgent):
                 - _metadata: Metadata dict
         """
         # Resolve portfolio_id
-        if not portfolio_id:
-            portfolio_id = str(ctx.portfolio_id) if ctx.portfolio_id else None
-        if not portfolio_id:
-            raise ValueError("portfolio_id required for financial_analyst.propose_trades")
-
-        portfolio_uuid = UUID(portfolio_id)
+        portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "financial_analyst.propose_trades")
 
         # Merge policies and constraints for pattern compatibility
-        if policies or constraints:
-            # Handle both list and dict formats for policies
-            if isinstance(policies, list):
-                # Convert list of policies to a dict format for optimizer
-                merged_policy = {}
-                for policy in policies:
-                    # Check if policy is a dict before accessing keys
-                    if isinstance(policy, dict) and 'type' in policy:
-                        # Convert policy type to dict key
-                        if policy['type'] == 'min_quality_score':
-                            merged_policy['min_quality_score'] = policy.get('value', 0.0)
-                        elif policy['type'] == 'max_single_position':
-                            merged_policy['max_single_position_pct'] = policy.get('value', 20.0)
-                        elif policy['type'] == 'max_sector':
-                            merged_policy['max_sector_pct'] = policy.get('value', 30.0)
-                        elif policy['type'] == 'target_allocation':
-                            # Handle target allocations separately
-                            category = policy.get('category', '')
-                            value = policy.get('value', 0.0)
-                            merged_policy[f'target_{category}'] = value
-            else:
-                # Use policies as base if it's a dict
-                merged_policy = policies or {}
-
-            # Merge constraints if provided
-            if constraints and isinstance(constraints, dict):
-                # Add constraints to the policy dict
-                if 'max_turnover_pct' in constraints:
-                    merged_policy['max_turnover_pct'] = constraints['max_turnover_pct']
-                if 'max_te_pct' in constraints:
-                    merged_policy['max_tracking_error_pct'] = constraints['max_te_pct']
-                if 'min_lot_value' in constraints:
-                    merged_policy['min_lot_value'] = constraints['min_lot_value']
-
-            policy_json = merged_policy
-
-        # Default policy if not provided
-        if not policy_json:
-            policy_json = {
-                "min_quality_score": 0.0,
-                "max_single_position_pct": 20.0,
-                "max_sector_pct": 30.0,
-                "max_turnover_pct": 20.0,
-                "max_tracking_error_pct": 3.0,
-                "method": "mean_variance",
-            }
+        default_policy = {
+            "min_quality_score": 0.0,
+            "max_single_position_pct": 20.0,
+            "max_sector_pct": 30.0,
+            "max_turnover_pct": 20.0,
+            "max_tracking_error_pct": 3.0,
+            "method": "mean_variance",
+        }
+        policy_json = self._merge_policies_and_constraints(policies, constraints, default_policy) if (policies or constraints) else (policy_json or default_policy)
 
         # Get pricing_pack_id from context (SACRED for reproducibility)
-        pricing_pack_id = ctx.pricing_pack_id
-        if not pricing_pack_id:
-            raise ValueError("pricing_pack_id required in context for financial_analyst.propose_trades")
+        pricing_pack_id = self._require_pricing_pack_id(ctx, "financial_analyst.propose_trades")
 
         # Get ratings from state if not provided
-        if not ratings and state.get("ratings"):
-            # Extract quality scores from ratings result
-            ratings_result = state["ratings"]
-            if isinstance(ratings_result, dict) and "positions" in ratings_result:
-                # Portfolio ratings mode
-                ratings = {
-                    pos["symbol"]: pos.get("rating", 0.0)
-                    for pos in ratings_result["positions"]
-                    if pos.get("rating") is not None
-                }
-            elif isinstance(ratings_result, dict) and "overall_rating" in ratings_result:
-                # Single security ratings mode
-                symbol = ratings_result.get("symbol")
-                if symbol:
-                    ratings = {symbol: float(ratings_result["overall_rating"]) / 10.0}
+        ratings = self._extract_ratings_from_state(state, ratings)
 
         logger.info(
             f"financial_analyst.propose_trades: portfolio_id={portfolio_id}, "
@@ -2290,8 +2215,8 @@ class FinancialAnalyst(BaseAgent):
             # Attach metadata
             metadata = self._create_metadata(
                 source=f"optimizer_service:{ctx.pricing_pack_id}",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,  # No caching for trade proposals (always fresh)
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,  # No caching for trade proposals (always fresh)
             )
 
             return self._attach_metadata(result, metadata)
@@ -2311,8 +2236,8 @@ class FinancialAnalyst(BaseAgent):
             }
             metadata = self._create_metadata(
                 source=f"optimizer_service:error",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,
             )
             return self._attach_metadata(error_result, metadata)
 
@@ -2348,7 +2273,7 @@ class FinancialAnalyst(BaseAgent):
             
             # Call service
             ratings_service = get_ratings_service()
-            security_uuid = UUID(security_id) if security_id else None
+            security_uuid = self._to_uuid(security_id, "security_id")
             
             result = await ratings_service.calculate_dividend_safety(
                 symbol=symbol,
@@ -2396,7 +2321,7 @@ class FinancialAnalyst(BaseAgent):
             
             # Call service
             ratings_service = get_ratings_service()
-            security_uuid = UUID(security_id) if security_id else None
+            security_uuid = self._to_uuid(security_id, "security_id")
             
             result = await ratings_service.calculate_moat_strength(
                 symbol=symbol,
@@ -2444,7 +2369,7 @@ class FinancialAnalyst(BaseAgent):
             
             # Call service
             ratings_service = get_ratings_service()
-            security_uuid = UUID(security_id) if security_id else None
+            security_uuid = self._to_uuid(security_id, "security_id")
             
             result = await ratings_service.calculate_resilience(
                 symbol=symbol,
@@ -2493,7 +2418,7 @@ class FinancialAnalyst(BaseAgent):
             
             # Call service
             ratings_service = get_ratings_service()
-            security_uuid = UUID(security_id) if security_id else None
+            security_uuid = self._to_uuid(security_id, "security_id")
             
             result = await ratings_service.aggregate(
                 symbol=symbol,
@@ -2537,7 +2462,7 @@ class FinancialAnalyst(BaseAgent):
                 
             try:
                 # Get aggregate rating for this position
-                security_uuid = UUID(security_id) if security_id else None
+                security_uuid = self._to_uuid(security_id, "security_id")
                 result = await ratings_service.aggregate(
                     symbol=symbol,
                     fundamentals={},  # Service will handle missing fundamentals
@@ -2613,7 +2538,7 @@ class FinancialAnalyst(BaseAgent):
                         FROM securities 
                         WHERE id = $1
                         """,
-                        UUID(security_id)
+                        self._to_uuid(security_id, "security_id")
                     )
                     if symbol:
                         logger.info(f"Resolved symbol {symbol} from security_id {security_id}")
@@ -2640,7 +2565,72 @@ class FinancialAnalyst(BaseAgent):
             "fundamentals required for ratings calculation. "
             "Run fundamentals.load or provider.fetch_fundamentals first."
         )
-    
+
+    def _merge_policies_and_constraints(
+        self,
+        policies: Optional[Union[Dict, List]],
+        constraints: Optional[Dict],
+        default_policy: Optional[Dict] = None
+    ) -> Dict[str, Any]:
+        """Merge policies and constraints into unified policy dict.
+
+        Used by: propose_trades capability (both old and new)
+
+        Handles:
+        - List format: [{type: 'min_quality_score', value: 5}, ...]
+        - Dict format: {min_quality_score: 5, ...}
+        - None: Uses default policy
+        """
+        merged_policy = {}
+
+        # Handle policies
+        if policies:
+            if isinstance(policies, list):
+                # Convert list of policies to dict format
+                for policy in policies:
+                    if isinstance(policy, dict) and 'type' in policy:
+                        policy_type = policy['type']
+                        value = policy.get('value', 0.0)
+
+                        if policy_type == 'min_quality_score':
+                            merged_policy['min_quality_score'] = value
+                        elif policy_type == 'max_single_position':
+                            merged_policy['max_single_position_pct'] = value
+                        elif policy_type == 'max_sector':
+                            merged_policy['max_sector_pct'] = value
+                        elif policy_type == 'target_allocation':
+                            category = policy.get('category', '')
+                            merged_policy[f'target_{category}'] = value
+            else:
+                # Use policies as base if it's a dict
+                merged_policy = policies.copy() if isinstance(policies, dict) else {}
+
+        # Merge constraints if provided
+        if constraints and isinstance(constraints, dict):
+            if 'max_turnover_pct' in constraints:
+                merged_policy['max_turnover_pct'] = constraints['max_turnover_pct']
+            if 'max_te_pct' in constraints:
+                merged_policy['max_tracking_error_pct'] = constraints['max_te_pct']
+            if 'min_lot_value' in constraints:
+                merged_policy['min_lot_value'] = constraints['min_lot_value']
+
+        # Apply default policy if provided and no policies merged
+        if not merged_policy and default_policy:
+            merged_policy = default_policy.copy()
+
+        # Apply standard defaults if still empty
+        if not merged_policy:
+            merged_policy = {
+                "min_quality_score": 0.0,
+                "max_single_position_pct": 20.0,
+                "max_sector_pct": 30.0,
+                "max_turnover_pct": 20.0,
+                "max_tracking_error_pct": 3.0,
+                "method": "mean_variance",
+            }
+
+        return merged_policy
+
     def _transform_rating_fundamentals(self, fundamentals: Dict[str, Any]) -> Dict[str, Any]:
         """Transform FMP format to ratings format if needed."""
         if "income_statement" in fundamentals and "balance_sheet" in fundamentals:
@@ -2671,9 +2661,9 @@ class FinancialAnalyst(BaseAgent):
     ) -> Dict[str, Any]:
         """Attach metadata for successful rating calculation."""
         metadata = self._create_metadata(
-            source=f"ratings_service:{rating_type}:{ctx.asof_date or date.today()}",
-            asof=ctx.asof_date or date.today(),
-            ttl=86400,  # Cache for 1 day
+            source=f"ratings_service:{rating_type}:{self._resolve_asof_date(ctx)}",
+            asof=self._resolve_asof_date(ctx),
+            ttl=self.CACHE_TTL_DAY,  # Cache for 1 day
         )
         return self._attach_metadata(result, metadata)
     
@@ -2697,8 +2687,8 @@ class FinancialAnalyst(BaseAgent):
             
         metadata = self._create_metadata(
             source=f"ratings_service:error",
-            asof=ctx.asof_date or date.today(),
-            ttl=0,  # Don't cache errors
+            asof=self._resolve_asof_date(ctx),
+            ttl=self.CACHE_TTL_NONE,  # Don't cache errors
         )
         return self._attach_metadata(error_result, metadata)
     
@@ -2779,12 +2769,7 @@ class FinancialAnalyst(BaseAgent):
                 - _metadata: Metadata dict
         """
         # Resolve portfolio_id
-        if not portfolio_id:
-            portfolio_id = str(ctx.portfolio_id) if ctx.portfolio_id else None
-        if not portfolio_id:
-            raise ValueError("portfolio_id required for financial_analyst.analyze_impact")
-
-        portfolio_uuid = UUID(portfolio_id)
+        portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "financial_analyst.analyze_impact")
 
         # Get proposed_trades from multiple possible locations for pattern compatibility
         if not proposed_trades:
@@ -2802,9 +2787,7 @@ class FinancialAnalyst(BaseAgent):
             )
 
         # Get pricing_pack_id from context
-        pricing_pack_id = ctx.pricing_pack_id
-        if not pricing_pack_id:
-            raise ValueError("pricing_pack_id required in context for financial_analyst.analyze_impact")
+        pricing_pack_id = self._require_pricing_pack_id(ctx, "financial_analyst.analyze_impact")
 
         logger.info(
             f"financial_analyst.analyze_impact: portfolio_id={portfolio_id}, "
@@ -2825,8 +2808,8 @@ class FinancialAnalyst(BaseAgent):
             # Attach metadata
             metadata = self._create_metadata(
                 source=f"optimizer_service:{ctx.pricing_pack_id}",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,  # No caching for impact analysis
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,  # No caching for impact analysis
             )
 
             return self._attach_metadata(result, metadata)
@@ -2841,8 +2824,8 @@ class FinancialAnalyst(BaseAgent):
             }
             metadata = self._create_metadata(
                 source=f"optimizer_service:error",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,
             )
             return self._attach_metadata(error_result, metadata)
 
@@ -2890,12 +2873,7 @@ class FinancialAnalyst(BaseAgent):
                 - _metadata: Metadata dict
         """
         # Resolve portfolio_id
-        if not portfolio_id:
-            portfolio_id = str(ctx.portfolio_id) if ctx.portfolio_id else None
-        if not portfolio_id:
-            raise ValueError("portfolio_id required for financial_analyst.suggest_hedges")
-
-        portfolio_uuid = UUID(portfolio_id)
+        portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "financial_analyst.suggest_hedges")
 
         # Handle scenario_result from pattern or scenario_id parameter
         if scenario_result:
@@ -2909,9 +2887,7 @@ class FinancialAnalyst(BaseAgent):
             raise ValueError("Either scenario_id or scenario_result required for financial_analyst.suggest_hedges")
 
         # Get pricing_pack_id from context
-        pricing_pack_id = ctx.pricing_pack_id
-        if not pricing_pack_id:
-            raise ValueError("pricing_pack_id required in context for financial_analyst.suggest_hedges")
+        pricing_pack_id = self._require_pricing_pack_id(ctx, "financial_analyst.suggest_hedges")
 
         logger.info(
             f"financial_analyst.suggest_hedges: portfolio_id={portfolio_id}, "
@@ -2932,8 +2908,8 @@ class FinancialAnalyst(BaseAgent):
             # Attach metadata
             metadata = self._create_metadata(
                 source=f"optimizer_service:hedges:{scenario_id}",
-                asof=ctx.asof_date or date.today(),
-                ttl=3600,  # Cache for 1 hour
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_HOUR,  # Cache for 1 hour
             )
 
             return self._attach_metadata(result, metadata)
@@ -2949,8 +2925,8 @@ class FinancialAnalyst(BaseAgent):
             }
             metadata = self._create_metadata(
                 source=f"optimizer_service:error",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,
             )
             return self._attach_metadata(error_result, metadata)
 
@@ -3000,12 +2976,7 @@ class FinancialAnalyst(BaseAgent):
                 - _metadata: Metadata dict
         """
         # Resolve portfolio_id
-        if not portfolio_id:
-            portfolio_id = str(ctx.portfolio_id) if ctx.portfolio_id else None
-        if not portfolio_id:
-            raise ValueError("portfolio_id required for financial_analyst.suggest_deleveraging_hedges")
-
-        portfolio_uuid = UUID(portfolio_id)
+        portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "financial_analyst.suggest_deleveraging_hedges")
 
         # Resolve regime from pattern parameters or state
         if ltdc_phase:
@@ -3047,9 +3018,7 @@ class FinancialAnalyst(BaseAgent):
             )
 
         # Get pricing_pack_id from context
-        pricing_pack_id = ctx.pricing_pack_id
-        if not pricing_pack_id:
-            raise ValueError("pricing_pack_id required in context for financial_analyst.suggest_deleveraging_hedges")
+        pricing_pack_id = self._require_pricing_pack_id(ctx, "financial_analyst.suggest_deleveraging_hedges")
 
         logger.info(
             f"financial_analyst.suggest_deleveraging_hedges: portfolio_id={portfolio_id}, "
@@ -3070,8 +3039,8 @@ class FinancialAnalyst(BaseAgent):
             # Attach metadata
             metadata = self._create_metadata(
                 source=f"optimizer_service:deleveraging:{regime}",
-                asof=ctx.asof_date or date.today(),
-                ttl=3600,  # Cache for 1 hour
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_HOUR,  # Cache for 1 hour
             )
 
             return self._attach_metadata(result, metadata)
@@ -3087,8 +3056,8 @@ class FinancialAnalyst(BaseAgent):
             }
             metadata = self._create_metadata(
                 source=f"optimizer_service:error",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,
             )
             return self._attach_metadata(error_result, metadata)
     
@@ -3226,7 +3195,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source="financial_analyst:macro_overview_charts",
             asof=ctx.asof_date,
-            ttl=3600
+            ttl=self.CACHE_TTL_HOUR
         )
 
         return self._attach_metadata(result, metadata)
@@ -3348,7 +3317,7 @@ class FinancialAnalyst(BaseAgent):
         metadata = self._create_metadata(
             source="financial_analyst:scenario_charts",
             asof=ctx.asof_date,
-            ttl=3600
+            ttl=self.CACHE_TTL_HOUR
         )
 
         return self._attach_metadata(result, metadata)

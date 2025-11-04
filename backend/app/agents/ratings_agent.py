@@ -136,7 +136,7 @@ class RatingsAgent(BaseAgent):
 
         # Call ratings service
         ratings_service = get_ratings_service()
-        security_uuid = UUID(security_id) if security_id else None
+        security_uuid = self._to_uuid(security_id, "security_id")
 
         try:
             result = await ratings_service.calculate_dividend_safety(
@@ -148,8 +148,8 @@ class RatingsAgent(BaseAgent):
             # Attach metadata
             metadata = self._create_metadata(
                 source=f"ratings_service:v1:{ctx.asof_date}",
-                asof=ctx.asof_date or date.today(),
-                ttl=86400,  # Cache for 1 day (ratings are stable)
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_DAY,  # Cache for 1 day (ratings are stable)
             )
 
             return self._attach_metadata(result, metadata)
@@ -165,8 +165,8 @@ class RatingsAgent(BaseAgent):
             }
             metadata = self._create_metadata(
                 source=f"ratings_service:error",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,
             )
             return self._attach_metadata(error_result, metadata)
 
@@ -238,7 +238,7 @@ class RatingsAgent(BaseAgent):
 
         # Call ratings service
         ratings_service = get_ratings_service()
-        security_uuid = UUID(security_id) if security_id else None
+        security_uuid = self._to_uuid(security_id, "security_id")
 
         try:
             result = await ratings_service.calculate_moat_strength(
@@ -250,8 +250,8 @@ class RatingsAgent(BaseAgent):
             # Attach metadata
             metadata = self._create_metadata(
                 source=f"ratings_service:v1:{ctx.asof_date}",
-                asof=ctx.asof_date or date.today(),
-                ttl=86400,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_DAY,
             )
 
             return self._attach_metadata(result, metadata)
@@ -266,8 +266,8 @@ class RatingsAgent(BaseAgent):
             }
             metadata = self._create_metadata(
                 source=f"ratings_service:error",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,
             )
             return self._attach_metadata(error_result, metadata)
 
@@ -339,7 +339,7 @@ class RatingsAgent(BaseAgent):
 
         # Call ratings service
         ratings_service = get_ratings_service()
-        security_uuid = UUID(security_id) if security_id else None
+        security_uuid = self._to_uuid(security_id, "security_id")
 
         try:
             result = await ratings_service.calculate_resilience(
@@ -351,8 +351,8 @@ class RatingsAgent(BaseAgent):
             # Attach metadata
             metadata = self._create_metadata(
                 source=f"ratings_service:v1:{ctx.asof_date}",
-                asof=ctx.asof_date or date.today(),
-                ttl=86400,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_DAY,
             )
 
             return self._attach_metadata(result, metadata)
@@ -367,8 +367,8 @@ class RatingsAgent(BaseAgent):
             }
             metadata = self._create_metadata(
                 source=f"ratings_service:error",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,
             )
             return self._attach_metadata(error_result, metadata)
 
@@ -479,7 +479,7 @@ class RatingsAgent(BaseAgent):
 
         # Call ratings service
         ratings_service = get_ratings_service()
-        security_uuid = UUID(security_id) if security_id else None
+        security_uuid = self._to_uuid(security_id, "security_id")
 
         try:
             result = await ratings_service.aggregate(
@@ -491,8 +491,8 @@ class RatingsAgent(BaseAgent):
             # Attach metadata
             metadata = self._create_metadata(
                 source=f"ratings_service:aggregate:v1:{ctx.asof_date}",
-                asof=ctx.asof_date or date.today(),
-                ttl=86400,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_DAY,
             )
 
             return self._attach_metadata(result, metadata)
@@ -508,8 +508,8 @@ class RatingsAgent(BaseAgent):
             }
             metadata = self._create_metadata(
                 source=f"ratings_service:error",
-                asof=ctx.asof_date or date.today(),
-                ttl=0,
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_NONE,
             )
             return self._attach_metadata(error_result, metadata)
 
@@ -556,7 +556,7 @@ class RatingsAgent(BaseAgent):
                 rating_result = await ratings_service.aggregate(
                     symbol=symbol,
                     fundamentals=fundamentals,
-                    security_id=UUID(security_id) if security_id else None,
+                    security_id=self._to_uuid(security_id, "security_id"),
                 )
 
                 overall_rating = rating_result["overall_rating"]
@@ -603,8 +603,8 @@ class RatingsAgent(BaseAgent):
         # Attach metadata
         metadata = self._create_metadata(
             source=f"ratings_service:portfolio:v1:{ctx.asof_date}",
-            asof=ctx.asof_date or date.today(),
-            ttl=86400,
+            asof=self._resolve_asof_date(ctx),
+            ttl=self.CACHE_TTL_DAY,
         )
 
         return self._attach_metadata(result, metadata)

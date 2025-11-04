@@ -172,7 +172,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source="macro_service:regime_detector",
             asof=asof,
-            ttl=3600,  # Cache for 1 hour
+            ttl=self.CACHE_TTL_HOUR,  # Cache for 1 hour
         )
         result = self._attach_metadata(result, metadata)
 
@@ -288,7 +288,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source="cycles_service:phase_detector",
             asof=asof,
-            ttl=3600,  # Cache for 1 hour
+            ttl=self.CACHE_TTL_HOUR,  # Cache for 1 hour
         )
         result = self._attach_metadata(result, metadata)
 
@@ -368,7 +368,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source="macro_service:indicators",
             asof=asof,
-            ttl=3600,
+            ttl=self.CACHE_TTL_HOUR,
         )
         result = self._attach_metadata(result, metadata)
 
@@ -436,14 +436,8 @@ class MacroHound(BaseAgent):
                 "__metadata__": {...}
             }
         """
-        portfolio_id_uuid = UUID(portfolio_id) if portfolio_id else ctx.portfolio_id
-
-        if not portfolio_id_uuid:
-            raise ValueError("portfolio_id required for macro.run_scenario")
-
-        pack_id_str = pack_id or ctx.pricing_pack_id
-        if not pack_id_str:
-            pack_id_str = "PP_latest"  # Fallback
+        portfolio_id_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "macro.run_scenario")
+        pack_id_str = self._resolve_pricing_pack_id(pack_id, ctx)
 
         logger.info(
             f"macro.run_scenario: portfolio_id={portfolio_id_uuid}, "
@@ -560,7 +554,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source=f"scenario_service:{pack_id_str}",
             asof=ctx.asof_date,
-            ttl=0,  # Don't cache scenario results (they're point-in-time stress tests)
+            ttl=self.CACHE_TTL_NONE,  # Don't cache scenario results (they're point-in-time stress tests)
         )
         result = self._attach_metadata(result, metadata)
 
@@ -582,14 +576,14 @@ class MacroHound(BaseAgent):
         """
         from app.services.scenarios import ShockType
 
-        portfolio_id = portfolio_id or str(ctx.portfolio_id)
-        pack_id = pack_id or ctx.pricing_pack_id
+        portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "scenarios.deleveraging_money_printing")
+        pack_id = self._resolve_pricing_pack_id(pack_id, ctx)
 
         # Use macro.run_scenario with money printing shock
         return await self.macro_run_scenario(
             ctx=ctx,
             state=state,
-            portfolio_id=portfolio_id,
+            portfolio_id=str(portfolio_uuid),
             scenario_id="dalio_money_printing_deleveraging",
             pack_id=pack_id,
         )
@@ -607,13 +601,13 @@ class MacroHound(BaseAgent):
 
         Simulates fiscal cuts: deflation risk, growth weak, spreads widen.
         """
-        portfolio_id = portfolio_id or str(ctx.portfolio_id)
-        pack_id = pack_id or ctx.pricing_pack_id
+        portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "scenarios.deleveraging_austerity")
+        pack_id = self._resolve_pricing_pack_id(pack_id, ctx)
 
         return await self.macro_run_scenario(
             ctx=ctx,
             state=state,
-            portfolio_id=portfolio_id,
+            portfolio_id=str(portfolio_uuid),
             scenario_id="dalio_austerity_deleveraging",
             pack_id=pack_id,
         )
@@ -631,13 +625,13 @@ class MacroHound(BaseAgent):
 
         Simulates debt defaults: severe deflation, credit crisis, massive spreads.
         """
-        portfolio_id = portfolio_id or str(ctx.portfolio_id)
-        pack_id = pack_id or ctx.pricing_pack_id
+        portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "scenarios.deleveraging_default")
+        pack_id = self._resolve_pricing_pack_id(pack_id, ctx)
 
         return await self.macro_run_scenario(
             ctx=ctx,
             state=state,
-            portfolio_id=portfolio_id,
+            portfolio_id=str(portfolio_uuid),
             scenario_id="dalio_default_deleveraging",
             pack_id=pack_id,
         )
@@ -699,13 +693,10 @@ class MacroHound(BaseAgent):
                 "__metadata__": {...}
             }
         """
-        portfolio_id_uuid = UUID(portfolio_id) if portfolio_id else ctx.portfolio_id
-
-        if not portfolio_id_uuid:
-            raise ValueError("portfolio_id required for macro.compute_dar")
+        portfolio_id_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "macro.compute_dar")
 
         # Use provided pack_id or fall back to context pack_id
-        pack_id_str = pack_id or ctx.pricing_pack_id or "PP_latest"
+        pack_id_str = self._resolve_pricing_pack_id(pack_id, ctx)
 
         logger.info(
             f"macro.compute_dar: portfolio_id={portfolio_id_uuid}, "
@@ -786,7 +777,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source=f"scenario_service:dar:{pack_id_str}",
             asof=ctx.asof_date,
-            ttl=3600,  # Cache for 1 hour (DaR is computationally expensive)
+            ttl=self.CACHE_TTL_HOUR,  # Cache for 1 hour (DaR is computationally expensive)
         )
         result = self._attach_metadata(result, metadata)
 
@@ -817,7 +808,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source=f"macro_service:regime_history",
             asof=ctx.asof_date,
-            ttl=3600
+            ttl=self.CACHE_TTL_HOUR
         )
 
         return self._attach_metadata({"history": history}, metadata)
@@ -885,7 +876,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source=f"macro_service:trend_shifts",
             asof=ctx.asof_date,
-            ttl=3600
+            ttl=self.CACHE_TTL_HOUR
         )
 
         return self._attach_metadata({"shifts": shifts}, metadata)
@@ -919,7 +910,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source=f"cycles_service:stdc:{ctx.pricing_pack_id}",
             asof=phase.date,
-            ttl=86400
+            ttl=self.CACHE_TTL_DAY
         )
 
         return self._attach_metadata(result, metadata)
@@ -953,7 +944,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source=f"cycles_service:ltdc:{ctx.pricing_pack_id}",
             asof=phase.date,
-            ttl=86400
+            ttl=self.CACHE_TTL_DAY
         )
 
         return self._attach_metadata(result, metadata)
@@ -987,7 +978,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source=f"cycles_service:empire:{ctx.pricing_pack_id}",
             asof=phase.date,
-            ttl=86400
+            ttl=self.CACHE_TTL_DAY
         )
 
         return self._attach_metadata(result, metadata)
@@ -1082,7 +1073,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source=f"cycles_service:civil:{ctx.pricing_pack_id}",
             asof=asof,
-            ttl=86400  # Cache for 24 hours (civil cycle changes slowly)
+            ttl=self.CACHE_TTL_DAY  # Cache for 24 hours (civil cycle changes slowly)
         )
 
         return self._attach_metadata(result, metadata)
@@ -1140,7 +1131,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source=f"cycles_service:aggregate:{ctx.pricing_pack_id}",
             asof=asof,
-            ttl=86400
+            ttl=self.CACHE_TTL_DAY
         )
 
         return self._attach_metadata(result, metadata)
@@ -1172,7 +1163,7 @@ class MacroHound(BaseAgent):
         }
 
         result = await scenarios_service.apply_scenario(
-            portfolio_id=UUID(portfolio_id),
+            portfolio_id=self._to_uuid(portfolio_id, "portfolio_id"),
             scenario_spec=scenario_spec,
             pack_id=pack_id
         )
@@ -1180,7 +1171,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source=f"scenarios_service:austerity:{pack_id}",
             asof=ctx.asof_date,
-            ttl=0  # No caching for scenarios
+            ttl=self.CACHE_TTL_NONE  # No caching for scenarios
         )
 
         return self._attach_metadata(result, metadata)
@@ -1212,7 +1203,7 @@ class MacroHound(BaseAgent):
         }
 
         result = await scenarios_service.apply_scenario(
-            portfolio_id=UUID(portfolio_id),
+            portfolio_id=self._to_uuid(portfolio_id, "portfolio_id"),
             scenario_spec=scenario_spec,
             pack_id=pack_id
         )
@@ -1220,7 +1211,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source=f"scenarios_service:default:{pack_id}",
             asof=ctx.asof_date,
-            ttl=0
+            ttl=self.CACHE_TTL_NONE
         )
 
         return self._attach_metadata(result, metadata)
@@ -1252,7 +1243,7 @@ class MacroHound(BaseAgent):
         }
 
         result = await scenarios_service.apply_scenario(
-            portfolio_id=UUID(portfolio_id),
+            portfolio_id=self._to_uuid(portfolio_id, "portfolio_id"),
             scenario_spec=scenario_spec,
             pack_id=pack_id
         )
@@ -1260,7 +1251,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source=f"scenarios_service:money_printing:{pack_id}",
             asof=ctx.asof_date,
-            ttl=0
+            ttl=self.CACHE_TTL_NONE
         )
 
         return self._attach_metadata(result, metadata)
@@ -1285,7 +1276,7 @@ class MacroHound(BaseAgent):
 
         # Apply the scenario with macro adjustments
         result = await macro_aware_service.apply_macro_aware_scenario(
-            portfolio_id=UUID(portfolio_id),
+            portfolio_id=self._to_uuid(portfolio_id, "portfolio_id"),
             scenario_name=scenario_name,
             pack_id=pack_id
         )
@@ -1293,7 +1284,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source=f"macro_aware_scenarios:{scenario_name}:{pack_id}",
             asof=ctx.asof_date,
-            ttl=3600  # Cache for 1 hour
+            ttl=self.CACHE_TTL_HOUR  # Cache for 1 hour
         )
 
         return self._attach_metadata(result, metadata)
@@ -1317,7 +1308,7 @@ class MacroHound(BaseAgent):
 
         # Get regime-weighted scenarios
         ranked_scenarios = await macro_aware_service.get_regime_weighted_scenarios(
-            portfolio_id=UUID(portfolio_id),
+            portfolio_id=self._to_uuid(portfolio_id, "portfolio_id"),
             pack_id=pack_id
         )
 
@@ -1336,7 +1327,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source=f"macro_aware_scenarios:ranking:{pack_id}",
             asof=ctx.asof_date,
-            ttl=3600  # Cache for 1 hour
+            ttl=self.CACHE_TTL_HOUR  # Cache for 1 hour
         )
 
         return self._attach_metadata(result, metadata)
@@ -1473,7 +1464,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source="alerts_service:suggest_presets",
             asof=ctx.asof_date,
-            ttl=3600
+            ttl=self.CACHE_TTL_HOUR
         )
 
         return self._attach_metadata(result, metadata)
@@ -1572,7 +1563,7 @@ class MacroHound(BaseAgent):
         metadata = self._create_metadata(
             source="alerts_service:create_if_threshold",
             asof=ctx.asof_date,
-            ttl=300  # 5 minutes
+            ttl=self.CACHE_TTL_5MIN  # 5 minutes
         )
 
         return self._attach_metadata(result, metadata)
