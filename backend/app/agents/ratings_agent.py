@@ -100,16 +100,24 @@ class RatingsAgent(BaseAgent):
                 - _metadata: Metadata dict
         """
         # Resolve symbol from state or arguments
+        # NOTE: This capability is routed to FinancialAnalyst via feature flags.
+        # FinancialAnalyst's _resolve_rating_symbol() helper properly queries database (fixes STUB bug).
+        # This is a fallback if routing fails.
         if not symbol and fundamentals:
             symbol = fundamentals.get("symbol")
         if not symbol and state.get("fundamentals"):
             symbol = state["fundamentals"].get("symbol")
         
-        # If we have security_id but no symbol, look it up
+        # If we have security_id but no symbol, raise error (no STUB fallback)
+        # FinancialAnalyst's implementation properly queries database for symbol
         if not symbol and security_id:
-            # Use a stub symbol for now (in production would query database)
-            symbol = "STUB"
-            logger.warning(f"Using stub symbol for security_id {security_id}")
+            # NOTE: This should not execute (routing goes to FinancialAnalyst)
+            # If it does, raise error instead of using STUB
+            raise ValueError(
+                f"symbol required for ratings.dividend_safety. "
+                f"Could not resolve from security_id {security_id}. "
+                f"Query database for symbol or provide symbol directly."
+            )
         
         if not symbol:
             raise ValueError("symbol required for ratings.dividend_safety")
@@ -202,16 +210,20 @@ class RatingsAgent(BaseAgent):
             Dict with overall score and component breakdown
         """
         # Resolve symbol
+        # NOTE: This capability is routed to FinancialAnalyst via feature flags.
+        # FinancialAnalyst's _resolve_rating_symbol() helper properly queries database (fixes STUB bug).
         if not symbol and fundamentals:
             symbol = fundamentals.get("symbol")
         if not symbol and state.get("fundamentals"):
             symbol = state["fundamentals"].get("symbol")
         
-        # If we have security_id but no symbol, look it up
+        # If we have security_id but no symbol, raise error (no STUB fallback)
         if not symbol and security_id:
-            # Use a stub symbol for now (in production would query database)
-            symbol = "STUB"
-            logger.warning(f"Using stub symbol for security_id {security_id}")
+            raise ValueError(
+                f"symbol required for ratings.moat_strength. "
+                f"Could not resolve from security_id {security_id}. "
+                f"Query database for symbol or provide symbol directly."
+            )
         
         if not symbol:
             raise ValueError("symbol required for ratings.moat_strength")
@@ -443,16 +455,20 @@ class RatingsAgent(BaseAgent):
     ) -> Dict[str, Any]:
         """Aggregate ratings for a single security."""
         # Resolve symbol
+        # NOTE: This capability is routed to FinancialAnalyst via feature flags.
+        # FinancialAnalyst's _resolve_rating_symbol() helper properly queries database (fixes STUB bug).
         if not symbol and fundamentals:
             symbol = fundamentals.get("symbol")
         if not symbol and state.get("fundamentals"):
             symbol = state["fundamentals"].get("symbol")
         
-        # If we have security_id but no symbol, look it up
+        # If we have security_id but no symbol, raise error (no STUB fallback)
         if not symbol and security_id:
-            # Use a stub symbol for now (in production would query database)
-            symbol = "STUB"
-            logger.warning(f"Using stub symbol for security_id {security_id}")
+            raise ValueError(
+                f"symbol required for ratings.aggregate. "
+                f"Could not resolve from security_id {security_id}. "
+                f"Query database for symbol or provide symbol directly."
+            )
         
         if not symbol:
             raise ValueError("symbol required for ratings.aggregate")
