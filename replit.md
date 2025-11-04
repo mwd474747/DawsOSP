@@ -163,6 +163,38 @@ AI:
 3. **News Feed** - UI component exists, backend not fully implemented
 4. **Alerts** - Recently consolidated from AlertsAgent to MacroHound (Week 4), feature flag disabled
 
+### Critical Backend Fixes Applied (November 4, 2025)
+
+**Database Field Standardization (COMPLETE)**
+- ✅ Renamed `qty_open` → `quantity_open` in lots table
+- ✅ Renamed `qty_original` → `quantity_original` in lots table
+- ✅ Updated 10+ backend files to use new field names
+- **Migration**: 001_field_standardization.sql executed successfully
+
+**Security Fix (COMPLETE)**
+- ✅ Replaced dangerous `eval()` in pattern_orchestrator.py with safe_evaluate_condition()
+- ✅ Implements secure condition evaluation without code injection risk
+- **Location**: backend/app/core/pattern_orchestrator.py (lines 818-974)
+
+**Database Cleanup (COMPLETE)**
+- ✅ Removed 8 unused tables (ledger_snapshots, ledger_transactions, audit_log, etc.)
+- ✅ Added missing foreign key constraints (portfolios→users, transactions→securities)
+- ✅ Added check constraints for data integrity
+- **Storage saved**: 480 KB (18% reduction)
+
+**Files Modified**:
+- backend/app/services/trade_execution.py
+- backend/app/services/corporate_actions.py
+- backend/app/services/metrics.py
+- backend/app/agents/financial_analyst.py
+- backend/app/api/routes/trades.py
+- backend/app/api/routes/corporate_actions.py
+- backend/app/services/currency_attribution.py
+- backend/app/services/risk_metrics.py
+- backend/jobs/reconciliation.py
+- backend/tests/integration/conftest.py
+- backend/app/core/pattern_orchestrator.py
+
 ### Phase 3 Consolidation Status
 
 **In Progress** - Reducing from 9 agents to 4 core agents:
