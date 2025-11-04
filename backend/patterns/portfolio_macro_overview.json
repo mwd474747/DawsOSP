@@ -81,7 +81,7 @@
       "as": "dar"
     },
     {
-      "capability": "charts.macro_overview",
+      "capability": "financial_analyst.macro_overview_charts",
       "args": {
         "regime": "{{regime}}",
         "indicators": "{{indicators}}",

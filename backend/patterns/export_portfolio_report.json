@@ -82,7 +82,7 @@
       "condition": "{{inputs.include_macro}}"
     },
     {
-      "capability": "reports.render_pdf",
+      "capability": "data_harvester.render_pdf",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
         "template_name": "portfolio_report",

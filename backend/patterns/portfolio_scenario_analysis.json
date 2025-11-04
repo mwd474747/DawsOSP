@@ -78,7 +78,7 @@
       "as": "scenario_result"
     },
     {
-      "capability": "optimizer.suggest_hedges",
+      "capability": "financial_analyst.suggest_hedges",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
         "scenario_result": "{{scenario_result}}",
@@ -87,7 +87,7 @@
       "as": "hedge_suggestions"
     },
     {
-      "capability": "charts.scenario_deltas",
+      "capability": "financial_analyst.scenario_charts",
       "args": {
         "base": "{{valued_base}}",
         "shocked": "{{scenario_result}}"

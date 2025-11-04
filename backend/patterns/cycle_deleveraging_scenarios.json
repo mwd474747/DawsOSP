@@ -82,7 +82,7 @@
       "as": "default"
     },
     {
-      "capability": "optimizer.suggest_deleveraging_hedges",
+      "capability": "financial_analyst.suggest_hedges",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
         "regime": "DELEVERAGING",

@@ -85,7 +85,7 @@
       "as": "impact_analysis"
     },
     {
-      "capability": "alerts.create_if_threshold",
+      "capability": "macro_hound.create_alert_if_threshold",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
         "news_impact": "{{impact_analysis}}",
