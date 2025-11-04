@@ -3395,8 +3395,13 @@
                     );
                 }
                 
+                // Filter panels if config.showPanels is provided
+                const filteredPanels = config.showPanels 
+                    ? panels.filter(panel => config.showPanels.includes(panel.id))
+                    : panels;
+                
                 return e('div', { className: 'pattern-content' },
-                    panels.map(panel => 
+                    filteredPanels.map(panel => 
                         e(PanelRenderer, {
                             key: panel.id,
                             panel: panel,
@@ -8575,79 +8580,6 @@
                 );
             }
             
-            // Legacy PerformancePage implementation (to be removed)
-            function PerformancePageLegacy() {
-                const [loading, setLoading] = useState(true);
-                const [performanceData, setPerformanceData] = useState(null);
-                
-                useEffect(() => {
-                    loadPerformance();
-                }, []);
-                
-                const loadPerformance = async () => {
-                    try {
-                        const result = await apiClient.executePattern('portfolio_overview', {
-                            portfolio_id: getCurrentPortfolioId(),
-                            lookback_days: 252
-                        });
-                        
-                        if (result.success && result.data) {
-                            setPerformanceData(result.data);
-                        } else {
-                            setPerformanceData(null);
-                            setError('Unable to load performance data');
-                        }
-                    } catch (error) {
-                        console.error('Failed to load performance data:', error);
-                        setPerformanceData(null);
-                        setError('Unable to load performance data');
-                    } finally {
-                        setLoading(false);
-                    }
-                };
-                
-                if (loading) return e('div', { className: 'loading' }, e('div', { className: 'spinner' }));
-                
-                return e('div', null,
-                    e('div', { className: 'page-header' },
-                        e('h1', { className: 'page-title' }, 'Performance Analytics'),
-                        e('p', { className: 'page-description' }, 'Comprehensive performance metrics')
-                    ),
-                    e('div', { className: 'stats-grid' },
-                        e('div', { className: 'stat-card' },
-                            e('div', { className: 'stat-label' }, 'YTD Return'),
-                            e('div', { className: 'stat-value positive' }, 
-                                formatPercentage((performanceData?.ytd_return || 14.5) / 100))
-                        ),
-                        e('div', { className: 'stat-card' },
-                            e('div', { className: 'stat-label' }, 'Sharpe Ratio'),
-                            e('div', { className: 'stat-value' }, 
-                                formatNumber(performanceData?.sharpe_ratio || 1.35))
-                        ),
-                        e('div', { className: 'stat-card' },
-                            e('div', { className: 'stat-label' }, 'Max Drawdown'),
-                            e('div', { className: 'stat-value negative' }, 
-                                formatPercentage((performanceData?.max_drawdown || -12.3) / 100))
-                        ),
-                        e('div', { className: 'stat-card' },
-                            e('div', { className: 'stat-label' }, 'Volatility'),
-                            e('div', { className: 'stat-value' }, 
-                                formatPercentage((performanceData?.volatility || 18.2) / 100))
-                        ),
-                        e('div', { className: 'stat-card' },
-                            e('div', { className: 'stat-label' }, 'Beta'),
-                            e('div', { className: 'stat-value' }, 
-                                formatNumber(performanceData?.beta || 1.15))
-                        ),
-                        e('div', { className: 'stat-card' },
-                            e('div', { className: 'stat-label' }, 'Alpha'),
-                            e('div', { className: 'stat-value positive' }, 
-                                formatPercentage((performanceData?.alpha || 3.2) / 100))
-                        )
-                    )
-                );
-            }
-            
             function ScenariosPage() {
                 const { portfolioId } = useUserContext();
                 const [selectedScenario, setSelectedScenario] = useState('late_cycle_rates_up');
@@ -8899,136 +8831,20 @@
             
             function AttributionPage() {
                 const { portfolioId } = useUserContext();
-                const [attributionData, setAttributionData] = useState(null);
-                const [currencyDetails, setCurrencyDetails] = useState(null);
-                
-                // Callback to extract and process currency attribution data when pattern loads
-                const handleDataLoaded = (data) => {
-                    // Extract currency attribution from the portfolio_overview response
-                    const currencyAttr = data?.currency_attr || data?.outputs?.currency_attr;
-                    
-                    if (currencyAttr) {
-                        setAttributionData({
-                            total_return: currencyAttr.total_return || 0,
-                            local_return: currencyAttr.local_return || 0,
-                            fx_return: currencyAttr.fx_return || 0,
-                            interaction: currencyAttr.interaction || 0
-                        });
-                        
-                        // Store currency details for detailed breakdown
-                        if (currencyAttr.by_currency) {
-                            setCurrencyDetails(currencyAttr.by_currency);
-                        }
-                    }
-                };
-                
-                const formatAttributionPercentage = (value) => {
-                    if (value === null || value === undefined) return '0.0%';
-                    const percentage = value * 100;
-                    const sign = percentage >= 0 ? '+' : '';
-                    return `${sign}${percentage.toFixed(1)}%`;
-                };
-                
-                const getValueClass = (value) => {
-                    if (value > 0) return 'positive';
-                    if (value < 0) return 'negative';
-                    return 'neutral';
-                };
                 
                 return e('div', { className: 'attribution-page' },
                     e('div', { className: 'page-header' },
                         e('h1', { className: 'page-title' }, 'Performance Attribution'),
                         e('p', { className: 'page-description' }, 'Sources of portfolio returns')
                     ),
-                    
-                    // Use PatternRenderer to load portfolio_overview pattern
-                    // But we'll only display the currency attribution data
-                    e('div', { style: { display: 'none' } },
-                        e(PatternRenderer, {
-                            pattern: 'portfolio_overview',
-                            inputs: { portfolio_id: portfolioId, lookback_days: 252 },
-                            onDataLoaded: handleDataLoaded
-                        })
-                    ),
-                    
-                    // Display the attribution data once loaded
-                    attributionData && e('div', null,
-                        // Main attribution metrics
-                        e('div', { className: 'stats-grid' },
-                            e('div', { className: 'stat-card' },
-                                e('div', { className: 'stat-label' }, 'Local Returns'),
-                                e('div', { className: `stat-value ${getValueClass(attributionData.local_return)}` }, 
-                                    formatAttributionPercentage(attributionData.local_return)),
-                                e('div', { className: 'stat-change' }, 'Price changes in local currency')
-                            ),
-                            e('div', { className: 'stat-card' },
-                                e('div', { className: 'stat-label' }, 'Currency Effect'),
-                                e('div', { className: `stat-value ${getValueClass(attributionData.fx_return)}` }, 
-                                    formatAttributionPercentage(attributionData.fx_return)),
-                                e('div', { className: 'stat-change' }, 'FX rate movements')
-                            ),
-                            e('div', { className: 'stat-card' },
-                                e('div', { className: 'stat-label' }, 'Interaction'),
-                                e('div', { className: `stat-value ${getValueClass(attributionData.interaction)}` }, 
-                                    formatAttributionPercentage(attributionData.interaction)),
-                                e('div', { className: 'stat-change' }, 'Local × FX cross-effect')
-                            ),
-                            e('div', { className: 'stat-card' },
-                                e('div', { className: 'stat-label' }, 'Total Return'),
-                                e('div', { className: `stat-value ${getValueClass(attributionData.total_return)}` }, 
-                                    formatAttributionPercentage(attributionData.total_return)),
-                                e('div', { className: 'stat-change' }, 'Overall portfolio return')
-                            )
-                        ),
-                        
-                        // Currency-level breakdown if available
-                        currencyDetails && Object.keys(currencyDetails).length > 0 && 
-                        e('div', { style: { marginTop: '2rem' } },
-                            e('div', { className: 'card' },
-                                e('div', { className: 'card-header' },
-                                    e('h3', { className: 'card-title' }, 'Currency Breakdown')
-                                ),
-                                e('div', { className: 'table-container' },
-                                    e('table', { className: 'table' },
-                                        e('thead', null,
-                                            e('tr', null,
-                                                e('th', null, 'Currency'),
-                                                e('th', null, 'Weight'),
-                                                e('th', null, 'Local Return'),
-                                                e('th', null, 'FX Return'),
-                                                e('th', null, 'Interaction'),
-                                                e('th', null, 'Total Contribution')
-                                            )
-                                        ),
-                                        e('tbody', null,
-                                            Object.entries(currencyDetails).map(([currency, details]) => {
-                                                const totalContribution = (details.local || 0) + (details.fx || 0) + (details.interaction || 0);
-                                                return e('tr', { key: currency },
-                                                    e('td', { className: 'mono' }, currency),
-                                                    e('td', null, formatPercentage(details.weight || 0)),
-                                                    e('td', { className: getValueClass(details.local) }, 
-                                                        formatAttributionPercentage(details.local || 0)),
-                                                    e('td', { className: getValueClass(details.fx) }, 
-                                                        formatAttributionPercentage(details.fx || 0)),
-                                                    e('td', { className: getValueClass(details.interaction) }, 
-                                                        formatAttributionPercentage(details.interaction || 0)),
-                                                    e('td', { className: getValueClass(totalContribution) }, 
-                                                        formatAttributionPercentage(totalContribution))
-                                                );
-                                            })
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                    ),
-                    
-                    // Show loading state if no data yet
-                    !attributionData && e('div', { className: 'loading' },
-                        e('div', { className: 'spinner' }),
-                        e('p', { style: { marginTop: '1rem', color: 'var(--text-secondary)' } }, 
-                            'Loading attribution analysis...')
-                    )
+                    e(PatternRenderer, {
+                        pattern: 'portfolio_overview',
+                        inputs: { portfolio_id: portfolioId, lookback_days: 252 },
+                        config: {
+                            // Show only currency attribution panel
+                            showPanels: ['currency_attr']
+                        }
+                    })
                 );
             }
             
@@ -10642,6 +10458,22 @@
                     // Success/Error Messages
                     success && e('div', { className: 'alert-success' }, success),
                     error && e('div', { className: 'alert-error' }, error),
+                    
+                    // Alert Presets from Macro Trend Monitor
+                    e('div', { className: 'card', style: { marginBottom: '2rem' } },
+                        e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, 'Suggested Alerts'),
+                            e('p', { className: 'card-subtitle' }, 'AI-recommended alerts based on macro trends')
+                        ),
+                        e(PatternRenderer, {
+                            pattern: 'macro_trend_monitor',
+                            inputs: { portfolio_id: getCurrentPortfolioId() },
+                            config: {
+                                // Show only alert suggestions panel
+                                showPanels: ['alert_suggestions']
+                            }
+                        })
+                    ),
                     
                     // Alert List
                     e('div', { className: 'card' },
