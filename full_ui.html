@@ -3347,6 +3347,19 @@
                         setLoading(true);
                         setError(null);
                         
+                        // Check if user is authenticated for patterns that require it
+                        const token = TokenManager.getToken();
+                        if (!token) {
+                            console.warn(`No authentication token for pattern ${pattern}, using mock data`);
+                            // For hidden patterns, still call onDataLoaded with error
+                            if (onDataLoaded) {
+                                onDataLoaded({ error: 'Not authenticated' });
+                            }
+                            setError('Authentication required');
+                            setLoading(false);
+                            return;
+                        }
+                        
                         // Patterns that don't require portfolio_id
                         const nonPortfolioPatterns = ['macro_cycles_overview', 'macro_trend_monitor'];
                         const needsPortfolioId = !nonPortfolioPatterns.includes(pattern);
@@ -3373,6 +3386,8 @@
                         // Execute pattern
                         const result = await apiClient.executePattern(pattern, finalInputs);
                         
+                        console.log(`Pattern ${pattern} execution result:`, result);
+                        
                         // Get pattern metadata
                         const metadata = patternRegistry[pattern];
                         if (!metadata) {
@@ -3390,11 +3405,12 @@
                         }
                     } catch (err) {
                         console.error(`Error loading pattern ${pattern}:`, err);
-                        setError(err.message || 'Failed to load pattern');
+                        const errorMessage = err.message || 'Failed to load pattern';
+                        setError(errorMessage);
                         setLoading(false);
                         // Call onDataLoaded with error data if callback exists
                         if (onDataLoaded) {
-                            onDataLoaded({ error: err.message || 'Failed to load pattern' });
+                            onDataLoaded({ error: errorMessage });
                         }
                     }
                 };
@@ -7238,11 +7254,13 @@
                 
                 // Handle pattern data from PatternRenderer
                 const handlePatternData = (data) => {
+                    console.log('MacroCyclesPage received pattern data:', data);
                     try {
                         // Check for error first
                         if (data?.error) {
                             console.error('Pattern execution failed:', data.error);
                             setError(data.error);
+                            // Use mock data as fallback
                             setMacroData(getComprehensiveMockData());
                             setLoading(false);
                             return;
@@ -7253,18 +7271,20 @@
                         
                         // Validate structure - pattern returns stdc, ltdc, empire, civil
                         if (result && (result.stdc || result.ltdc || result.empire || result.civil)) {
+                            console.log('Valid macro cycles data received:', result);
                             setMacroData(result);
                             setError(null);
                             setLoading(false);
                         } else {
                             // Fallback to mock data if structure is unexpected
-                            console.warn('Pattern data structure unexpected, using fallback');
+                            console.warn('Pattern data structure unexpected, using fallback. Received:', result);
                             setMacroData(getComprehensiveMockData());
                             setLoading(false);
                         }
                     } catch (err) {
                         console.error('Error processing pattern data:', err);
                         setError(err.message);
+                        // Always use mock data on error so page is functional
                         setMacroData(getComprehensiveMockData());
                         setLoading(false);
                     }
