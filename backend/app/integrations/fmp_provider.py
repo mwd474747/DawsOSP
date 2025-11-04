@@ -340,6 +340,125 @@ class FMPProvider(BaseProvider):
         response = await self._request("GET", url, params=params)
         return response if isinstance(response, list) else [response]
 
+    @rate_limit(requests_per_minute=120)
+    async def get_dividend_calendar(
+        self, from_date: date, to_date: date
+    ) -> List[Dict]:
+        """
+        Get dividend calendar for date range.
+
+        Args:
+            from_date: Start date (YYYY-MM-DD)
+            to_date: End date (YYYY-MM-DD)
+
+        Returns:
+            List of dividend announcements
+
+        Example:
+            [
+                {
+                    "date": "2025-11-07",
+                    "label": "November 07, 25",
+                    "adjDividend": 0.24,
+                    "symbol": "AAPL",
+                    "dividend": 0.24,
+                    "recordDate": "2025-11-10",
+                    "paymentDate": "2025-11-14",
+                    "declarationDate": "2025-10-28"
+                }
+            ]
+
+        Raises:
+            ProviderError: If API call fails
+        """
+        url = f"{self.config.base_url}/v3/stock_dividend_calendar"
+        params = {
+            "apikey": self.api_key,
+            "from": from_date.isoformat(),
+            "to": to_date.isoformat()
+        }
+
+        response = await self._request("GET", url, params=params)
+        return response if isinstance(response, list) else []
+
+    @rate_limit(requests_per_minute=120)
+    async def get_split_calendar(
+        self, from_date: date, to_date: date
+    ) -> List[Dict]:
+        """
+        Get stock split calendar for date range.
+
+        Args:
+            from_date: Start date (YYYY-MM-DD)
+            to_date: End date (YYYY-MM-DD)
+
+        Returns:
+            List of stock split announcements
+
+        Example:
+            [
+                {
+                    "date": "2025-11-07",
+                    "label": "November 07, 25",
+                    "symbol": "AAPL",
+                    "numerator": 4,
+                    "denominator": 1
+                }
+            ]
+
+        Raises:
+            ProviderError: If API call fails
+        """
+        url = f"{self.config.base_url}/v3/stock_split_calendar"
+        params = {
+            "apikey": self.api_key,
+            "from": from_date.isoformat(),
+            "to": to_date.isoformat()
+        }
+
+        response = await self._request("GET", url, params=params)
+        return response if isinstance(response, list) else []
+
+    @rate_limit(requests_per_minute=120)
+    async def get_earnings_calendar(
+        self, from_date: date, to_date: date
+    ) -> List[Dict]:
+        """
+        Get earnings calendar for date range.
+
+        Args:
+            from_date: Start date (YYYY-MM-DD)
+            to_date: End date (YYYY-MM-DD)
+
+        Returns:
+            List of earnings announcements
+
+        Example:
+            [
+                {
+                    "date": "2025-11-07",
+                    "symbol": "AAPL",
+                    "eps": 1.42,
+                    "epsEstimated": 1.38,
+                    "time": "amc",
+                    "revenue": 90000000000,
+                    "revenueEstimated": 89000000000
+                }
+            ]
+
+        Raises:
+            ProviderError: If API call fails
+        """
+        url = f"{self.config.base_url}/v3/earning_calendar"
+        params = {
+            "apikey": self.api_key,
+            "from": from_date.isoformat(),
+            "to": to_date.isoformat()
+        }
+
+        response = await self._request("GET", url, params=params)
+        return response if isinstance(response, list) else []
+
     async def _request(
         self, method: str, url: str, params: Optional[Dict] = None, json_body: Optional[Dict] = None
     ) -> Any:

@@ -97,6 +97,11 @@ class DataHarvester(BaseAgent):
             "data_harvester.render_pdf",  # Week 5: PDF export with safety features
             "data_harvester.export_csv",  # Week 5: CSV export with safety features
             "data_harvester.export_excel",  # Week 5: Excel export (not yet implemented)
+            "corporate_actions.dividends",  # FMP Pro: Dividend calendar
+            "corporate_actions.splits",  # FMP Pro: Stock split calendar
+            "corporate_actions.earnings",  # FMP Pro: Earnings calendar
+            "corporate_actions.upcoming",  # Main capability: All upcoming corporate actions
+            "corporate_actions.calculate_impact",  # Calculate portfolio impact
         ]
 
     async def provider_fetch_quote(
@@ -2441,6 +2446,563 @@ class DataHarvester(BaseAgent):
             "filename": filename,
             "excel_base64": None,
         }
+    
+    # Corporate Actions Methods (FMP Pro Integration)
+    # ========================================================================
+    
+    async def corporate_actions_dividends(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        symbols: Optional[List[str]] = None,
+        from_date: Optional[str] = None,
+        to_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Capability: corporate_actions.dividends
+        Fetch dividend calendar from FMP.
+        
+        Args:
+            symbols: Filter by symbols (optional)
+            from_date: Start date (YYYY-MM-DD, defaults to today)
+            to_date: End date (YYYY-MM-DD, defaults to today + 90 days)
+        
+        Returns:
+            {
+                "dividends": [...],
+                "count": 5,
+                "__metadata__": {...}
+            }
+        """
+        from datetime import date, timedelta
+        from app.integrations.fmp_provider import FMPProvider
+        
+        # Resolve dates using BaseAgent helper
+        asof_date = self._resolve_asof_date(ctx)
+        
+        if from_date:
+            from_date_obj = datetime.strptime(from_date, "%Y-%m-%d").date()
+        else:
+            from_date_obj = asof_date
+        
+        if to_date:
+            to_date_obj = datetime.strptime(to_date, "%Y-%m-%d").date()
+        else:
+            to_date_obj = from_date_obj + timedelta(days=90)
+        
+        # Get FMP provider
+        api_key = os.getenv("FMP_API_KEY")
+        if not api_key:
+            error_result = {
+                "dividends": [],
+                "count": 0,
+                "error": "FMP_API_KEY not configured"
+            }
+            metadata = self._create_metadata(
+                source="data_harvester:error",
+                asof=asof_date,
+                ttl=self.CACHE_TTL_NONE,
+                confidence=0.0
+            )
+            return self._attach_metadata(error_result, metadata)
+        
+        try:
+            provider = FMPProvider(api_key=api_key)
+            dividends = await provider.get_dividend_calendar(from_date_obj, to_date_obj)
+            
+            # Filter by symbols if provided
+            if symbols:
+                dividends = [d for d in dividends if d.get("symbol") in symbols]
+            
+            # Normalize format
+            normalized = []
+            for div in dividends:
+                normalized.append({
+                    "symbol": div.get("symbol"),
+                    "type": "dividend",
+                    "ex_date": div.get("date"),  # FMP uses "date" as ex-date
+                    "payment_date": div.get("paymentDate"),
+                    "record_date": div.get("recordDate"),
+                    "declaration_date": div.get("declarationDate"),
+                    "amount": float(div.get("dividend", 0)),
+                    "currency": "USD",  # FMP dividends typically USD
+                    "source": "fmp"
+                })
+            
+            result = {
+                "dividends": normalized,
+                "count": len(normalized),
+                "source": "fmp"
+            }
+            
+            # Attach metadata using BaseAgent helper
+            metadata = self._create_metadata(
+                source="fmp",
+                asof=asof_date,
+                ttl=self.CACHE_TTL_HOUR,  # Use BaseAgent constant
+                confidence=1.0
+            )
+            return self._attach_metadata(result, metadata)
+            
+        except Exception as e:
+            logger.error(f"Error fetching dividends from FMP: {e}", exc_info=True)
+            error_result = {
+                "dividends": [],
+                "count": 0,
+                "error": f"FMP error: {str(e)}"
+            }
+            metadata = self._create_metadata(
+                source="data_harvester:error",
+                asof=asof_date,
+                ttl=self.CACHE_TTL_NONE,  # Use BaseAgent constant
+                confidence=0.0
+            )
+            return self._attach_metadata(error_result, metadata)
+    
+    async def corporate_actions_splits(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        symbols: Optional[List[str]] = None,
+        from_date: Optional[str] = None,
+        to_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Capability: corporate_actions.splits
+        Fetch stock split calendar from FMP.
+        
+        Args:
+            symbols: Filter by symbols (optional)
+            from_date: Start date (YYYY-MM-DD, defaults to today)
+            to_date: End date (YYYY-MM-DD, defaults to today + 90 days)
+        
+        Returns:
+            {
+                "splits": [...],
+                "count": 2,
+                "__metadata__": {...}
+            }
+        """
+        from datetime import date, timedelta
+        from app.integrations.fmp_provider import FMPProvider
+        
+        # Resolve dates using BaseAgent helper
+        asof_date = self._resolve_asof_date(ctx)
+        
+        if from_date:
+            from_date_obj = datetime.strptime(from_date, "%Y-%m-%d").date()
+        else:
+            from_date_obj = asof_date
+        
+        if to_date:
+            to_date_obj = datetime.strptime(to_date, "%Y-%m-%d").date()
+        else:
+            to_date_obj = from_date_obj + timedelta(days=90)
+        
+        # Get FMP provider
+        api_key = os.getenv("FMP_API_KEY")
+        if not api_key:
+            error_result = {
+                "splits": [],
+                "count": 0,
+                "error": "FMP_API_KEY not configured"
+            }
+            metadata = self._create_metadata(
+                source="data_harvester:error",
+                asof=asof_date,
+                ttl=self.CACHE_TTL_NONE,
+                confidence=0.0
+            )
+            return self._attach_metadata(error_result, metadata)
+        
+        try:
+            provider = FMPProvider(api_key=api_key)
+            splits = await provider.get_split_calendar(from_date_obj, to_date_obj)
+            
+            # Filter by symbols if provided
+            if symbols:
+                splits = [s for s in splits if s.get("symbol") in symbols]
+            
+            # Normalize format
+            normalized = []
+            for split in splits:
+                normalized.append({
+                    "symbol": split.get("symbol"),
+                    "type": "split",
+                    "date": split.get("date"),
+                    "ratio": f"{split.get('numerator', 1)}:{split.get('denominator', 1)}",
+                    "numerator": split.get("numerator", 1),
+                    "denominator": split.get("denominator", 1),
+                    "source": "fmp"
+                })
+            
+            result = {
+                "splits": normalized,
+                "count": len(normalized),
+                "source": "fmp"
+            }
+            
+            # Attach metadata using BaseAgent helper
+            metadata = self._create_metadata(
+                source="fmp",
+                asof=asof_date,
+                ttl=self.CACHE_TTL_HOUR,  # Use BaseAgent constant
+                confidence=1.0
+            )
+            return self._attach_metadata(result, metadata)
+            
+        except Exception as e:
+            logger.error(f"Error fetching splits from FMP: {e}", exc_info=True)
+            error_result = {
+                "splits": [],
+                "count": 0,
+                "error": f"FMP error: {str(e)}"
+            }
+            metadata = self._create_metadata(
+                source="data_harvester:error",
+                asof=asof_date,
+                ttl=self.CACHE_TTL_NONE,  # Use BaseAgent constant
+                confidence=0.0
+            )
+            return self._attach_metadata(error_result, metadata)
+    
+    async def corporate_actions_earnings(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        symbols: Optional[List[str]] = None,
+        from_date: Optional[str] = None,
+        to_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Capability: corporate_actions.earnings
+        Fetch earnings calendar from FMP.
+        
+        Args:
+            symbols: Filter by symbols (optional)
+            from_date: Start date (YYYY-MM-DD, defaults to today)
+            to_date: End date (YYYY-MM-DD, defaults to today + 90 days)
+        
+        Returns:
+            {
+                "earnings": [...],
+                "count": 3,
+                "__metadata__": {...}
+            }
+        """
+        from datetime import date, timedelta
+        from app.integrations.fmp_provider import FMPProvider
+        
+        # Resolve dates using BaseAgent helper
+        asof_date = self._resolve_asof_date(ctx)
+        
+        if from_date:
+            from_date_obj = datetime.strptime(from_date, "%Y-%m-%d").date()
+        else:
+            from_date_obj = asof_date
+        
+        if to_date:
+            to_date_obj = datetime.strptime(to_date, "%Y-%m-%d").date()
+        else:
+            to_date_obj = from_date_obj + timedelta(days=90)
+        
+        # Get FMP provider
+        api_key = os.getenv("FMP_API_KEY")
+        if not api_key:
+            error_result = {
+                "earnings": [],
+                "count": 0,
+                "error": "FMP_API_KEY not configured"
+            }
+            metadata = self._create_metadata(
+                source="data_harvester:error",
+                asof=asof_date,
+                ttl=self.CACHE_TTL_NONE,
+                confidence=0.0
+            )
+            return self._attach_metadata(error_result, metadata)
+        
+        try:
+            provider = FMPProvider(api_key=api_key)
+            earnings = await provider.get_earnings_calendar(from_date_obj, to_date_obj)
+            
+            # Filter by symbols if provided
+            if symbols:
+                earnings = [e for e in earnings if e.get("symbol") in symbols]
+            
+            # Normalize format
+            normalized = []
+            for earning in earnings:
+                normalized.append({
+                    "symbol": earning.get("symbol"),
+                    "type": "earnings",
+                    "date": earning.get("date"),
+                    "eps": earning.get("eps"),
+                    "eps_estimated": earning.get("epsEstimated"),
+                    "revenue": earning.get("revenue"),
+                    "revenue_estimated": earning.get("revenueEstimated"),
+                    "time": earning.get("time"),  # "amc" (after market close) or "bmo" (before market open)
+                    "source": "fmp"
+                })
+            
+            result = {
+                "earnings": normalized,
+                "count": len(normalized),
+                "source": "fmp"
+            }
+            
+            # Attach metadata using BaseAgent helper
+            metadata = self._create_metadata(
+                source="fmp",
+                asof=asof_date,
+                ttl=self.CACHE_TTL_HOUR,  # Use BaseAgent constant
+                confidence=1.0
+            )
+            return self._attach_metadata(result, metadata)
+            
+        except Exception as e:
+            logger.error(f"Error fetching earnings from FMP: {e}", exc_info=True)
+            error_result = {
+                "earnings": [],
+                "count": 0,
+                "error": f"FMP error: {str(e)}"
+            }
+            metadata = self._create_metadata(
+                source="data_harvester:error",
+                asof=asof_date,
+                ttl=self.CACHE_TTL_NONE,  # Use BaseAgent constant
+                confidence=0.0
+            )
+            return self._attach_metadata(error_result, metadata)
+    
+    async def corporate_actions_upcoming(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: Optional[str] = None,
+        symbols: Optional[List[str]] = None,
+        days_ahead: int = 90
+    ) -> Dict[str, Any]:
+        """
+        Capability: corporate_actions.upcoming
+        Get all upcoming corporate actions for portfolio holdings.
+        
+        This is the main capability used by the pattern.
+        It orchestrates fetching dividends, splits, and earnings,
+        then filters by portfolio holdings.
+        
+        Args:
+            portfolio_id: Portfolio UUID (optional, can be resolved from context)
+            symbols: List of symbols (optional, will fetch from portfolio if not provided)
+            days_ahead: Number of days to look ahead (default 90)
+        
+        Returns:
+            {
+                "actions": [...],  # Combined list of all actions
+                "summary": {
+                    "total_actions": 5,
+                    "dividends_expected": 120.00,
+                    "splits_pending": 1,
+                    "earnings_releases": 2
+                },
+                "__metadata__": {...}
+            }
+        """
+        from datetime import date, timedelta, datetime
+        
+        # Use BaseAgent helper for portfolio ID resolution
+        if portfolio_id:
+            portfolio_uuid = self._to_uuid(portfolio_id, "portfolio_id")
+        else:
+            portfolio_uuid = None
+        
+        # Resolve symbols from portfolio if not provided
+        if not symbols:
+            # Get holdings from state (should be set by previous step: ledger.positions)
+            positions = state.get("positions", {}).get("positions", [])
+            symbols = [p.get("symbol") for p in positions if p.get("qty_open", 0) > 0]
+        
+        if not symbols:
+            result = {
+                "actions": [],
+                "summary": {
+                    "total_actions": 0,
+                    "dividends_expected": 0.00,
+                    "splits_pending": 0,
+                    "earnings_releases": 0
+                }
+            }
+            metadata = self._create_metadata(
+                source="data_harvester",
+                asof=self._resolve_asof_date(ctx),
+                ttl=self.CACHE_TTL_HOUR,  # Use BaseAgent constant
+                confidence=1.0
+            )
+            return self._attach_metadata(result, metadata)
+        
+        # Calculate date range
+        asof_date = self._resolve_asof_date(ctx)
+        from_date = asof_date
+        to_date = from_date + timedelta(days=days_ahead)
+        
+        # Fetch all corporate actions
+        all_actions = []
+        
+        # Fetch dividends
+        dividends_result = await self.corporate_actions_dividends(
+            ctx, state,
+            symbols=symbols,
+            from_date=from_date.isoformat(),
+            to_date=to_date.isoformat()
+        )
+        if dividends_result.get("dividends"):
+            all_actions.extend(dividends_result["dividends"])
+        
+        # Fetch splits
+        splits_result = await self.corporate_actions_splits(
+            ctx, state,
+            symbols=symbols,
+            from_date=from_date.isoformat(),
+            to_date=to_date.isoformat()
+        )
+        if splits_result.get("splits"):
+            all_actions.extend(splits_result["splits"])
+        
+        # Fetch earnings
+        earnings_result = await self.corporate_actions_earnings(
+            ctx, state,
+            symbols=symbols,
+            from_date=from_date.isoformat(),
+            to_date=to_date.isoformat()
+        )
+        if earnings_result.get("earnings"):
+            all_actions.extend(earnings_result["earnings"])
+        
+        # Sort by date
+        all_actions.sort(key=lambda x: x.get("ex_date") or x.get("date") or x.get("payment_date") or "")
+        
+        # Calculate summary
+        dividends_count = sum(1 for a in all_actions if a.get("type") == "dividend")
+        dividends_total = sum(
+            a.get("amount", 0) for a in all_actions
+            if a.get("type") == "dividend"
+        )
+        splits_count = sum(1 for a in all_actions if a.get("type") == "split")
+        earnings_count = sum(1 for a in all_actions if a.get("type") == "earnings")
+        
+        result = {
+            "actions": all_actions,
+            "summary": {
+                "total_actions": len(all_actions),
+                "dividends_expected": dividends_total,
+                "splits_pending": splits_count,
+                "earnings_releases": earnings_count
+            },
+            "source": "fmp"
+        }
+        
+        # Attach metadata using BaseAgent helper
+        metadata = self._create_metadata(
+            source="fmp",
+            asof=asof_date,
+            ttl=self.CACHE_TTL_30MIN,  # Use BaseAgent constant (shorter TTL for dynamic data)
+            confidence=1.0
+        )
+        return self._attach_metadata(result, metadata)
+    
+    async def corporate_actions_calculate_impact(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        actions: List[Dict],
+        holdings: Optional[Dict[str, float]] = None
+    ) -> Dict[str, Any]:
+        """
+        Capability: corporate_actions.calculate_impact
+        Calculate portfolio impact for corporate actions.
+        
+        Args:
+            actions: List of corporate actions
+            holdings: Dict of {symbol: quantity} (optional, will extract from state if not provided)
+        
+        Returns:
+            {
+                "actions": [...],  # Actions with impact calculations
+                "total_dividend_impact": 120.00,
+                "notifications": {
+                    "urgent": [...],  # Actions within 7 days
+                    "informational": [...]
+                },
+                "__metadata__": {...}
+            }
+        """
+        from datetime import date, timedelta
+        
+        # Extract holdings from state if not provided
+        if not holdings:
+            positions = state.get("positions", {}).get("positions", [])
+            holdings = {p.get("symbol"): float(p.get("qty_open", 0)) for p in positions}
+        
+        actions_with_impact = []
+        total_dividend_impact = 0.0
+        
+        for action in actions:
+            symbol = action.get("symbol")
+            quantity = holdings.get(symbol, 0)
+            
+            impact = 0.0
+            if action.get("type") == "dividend" and quantity > 0:
+                amount = action.get("amount", 0)
+                impact = amount * quantity
+                total_dividend_impact += impact
+            
+            action_with_impact = {
+                **action,
+                "portfolio_quantity": quantity,
+                "portfolio_impact": impact
+            }
+            actions_with_impact.append(action_with_impact)
+        
+        # Calculate notifications (urgent = within 7 days)
+        asof_date = self._resolve_asof_date(ctx)
+        cutoff_date = asof_date + timedelta(days=7)
+        urgent = []
+        informational = []
+        
+        for action in actions_with_impact:
+            action_date = action.get("ex_date") or action.get("date") or action.get("payment_date")
+            if action_date:
+                try:
+                    if isinstance(action_date, str):
+                        action_date_obj = datetime.strptime(action_date, "%Y-%m-%d").date()
+                    else:
+                        action_date_obj = action_date
+                    if action_date_obj <= cutoff_date:
+                        urgent.append(action)
+                    else:
+                        informational.append(action)
+                except:
+                    informational.append(action)
+            else:
+                informational.append(action)
+        
+        result = {
+            "actions": actions_with_impact,
+            "total_dividend_impact": total_dividend_impact,
+            "notifications": {
+                "urgent": urgent,
+                "informational": informational
+            }
+        }
+        
+        # Attach metadata using BaseAgent helper
+        metadata = self._create_metadata(
+            source="data_harvester",
+            asof=asof_date,
+            ttl=self.CACHE_TTL_30MIN,  # Use BaseAgent constant
+            confidence=1.0
+        )
+        return self._attach_metadata(result, metadata)
     
     def _get_environment(self) -> str:
         """
