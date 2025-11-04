@@ -11040,7 +11040,6 @@
             }
             
             function ReportsPage() {
-                const [loading, setLoading] = useState(false);
                 const [error, setError] = useState(null);
                 const [success, setSuccess] = useState(null);
                 const [generatingType, setGeneratingType] = useState(null);
@@ -11050,35 +11049,30 @@
                     { id: 3, name: 'Q2 2024 Report', date: '2024-06-30', type: 'quarterly', size: '2.1 MB' }
                 ]);
                 
-                const generateReport = async (reportType) => {
-                    setLoading(true);
-                    setError(null);
-                    setSuccess(null);
-                    setGeneratingType(reportType);
-                    
+                const handleReportData = (reportType, data) => {
                     try {
-                        const token = localStorage.getItem('access_token');
-                        const response = await fetch(`/api/reports/generate?report_type=${reportType}`, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Accept': 'application/pdf'
-                            }
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error('Failed to generate report');
+                        // Extract PDF result from pattern response
+                        const pdfResult = data?.pdf_result || data;
+                        if (!pdfResult || !pdfResult.pdf_base64) {
+                            throw new Error('No PDF data in response');
                         }
                         
-                        // Get the blob from response
-                        const blob = await response.blob();
+                        // Convert base64 to blob
+                        const base64Data = pdfResult.pdf_base64;
+                        const byteCharacters = atob(base64Data);
+                        const byteNumbers = new Array(byteCharacters.length);
+                        for (let i = 0; i < byteCharacters.length; i++) {
+                            byteNumbers[i] = byteCharacters.charCodeAt(i);
+                        }
+                        const byteArray = new Uint8Array(byteNumbers);
+                        const blob = new Blob([byteArray], { type: 'application/pdf' });
                         
                         // Create download link
                         const url = window.URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.style.display = 'none';
                         a.href = url;
-                        a.download = `${reportType}_report_${new Date().toISOString().split('T')[0]}.pdf`;
+                        a.download = pdfResult.download_filename || `${reportType}_report_${new Date().toISOString().split('T')[0]}.pdf`;
                         document.body.appendChild(a);
                         a.click();
                         window.URL.revokeObjectURL(url);
@@ -11087,21 +11081,24 @@
                         // Show success message
                         setSuccess(`${reportType === 'quarterly' ? 'Quarterly' : 'Year-to-Date'} report generated successfully!`);
                         
+                        // Calculate file size from bytes
+                        const sizeBytes = pdfResult.size_bytes || byteArray.length;
+                        const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(1);
+                        
                         // Add to history
                         const newReport = {
                             id: reportHistory.length + 1,
                             name: `${reportType === 'quarterly' ? 'Q4 2024' : 'YTD 2024'} Report`,
                             date: new Date().toISOString().split('T')[0],
                             type: reportType,
-                            size: '2.5 MB'
+                            size: `${sizeMB} MB`
                         };
                         setReportHistory([newReport, ...reportHistory.slice(0, 4)]);
                         
                     } catch (error) {
-                        console.error('Error generating report:', error);
-                        setError(`Failed to generate report: ${error.message}`);
+                        console.error('Error processing report:', error);
+                        setError(`Failed to process report: ${error.message}`);
                     } finally {
-                        setLoading(false);
                         setGeneratingType(null);
                         // Clear messages after 5 seconds
                         setTimeout(() => {
@@ -11109,6 +11106,21 @@
                             setSuccess(null);
                         }, 5000);
                     }
+                };
+                
+                const handleReportError = (error) => {
+                    console.error('Error generating report:', error);
+                    setError(`Failed to generate report: ${error.message || 'Unknown error'}`);
+                    setGeneratingType(null);
+                    setTimeout(() => {
+                        setError(null);
+                    }, 5000);
+                };
+                
+                const generateReport = (reportType) => {
+                    setGeneratingType(reportType);
+                    setError(null);
+                    setSuccess(null);
                 };
                 
                 return e('div', null,
@@ -11149,16 +11161,36 @@
                                         e('li', null, 'Market commentary')
                                     )
                                 ),
-                                e('button', { 
-                                    className: 'btn btn-primary',
-                                    onClick: () => generateReport('quarterly'),
-                                    disabled: loading,
-                                    style: { width: '100%' }
-                                }, 
-                                    loading && generatingType === 'quarterly' ? 
-                                        e('span', null, 'Generating...', e('span', { className: 'spinner-small', style: { marginLeft: '0.5rem' } })) :
-                                        'Generate Quarterly Report'
-                                )
+                                generatingType === 'quarterly' ? 
+                                    e('div', { style: { textAlign: 'center', padding: '1rem' } },
+                                        e('div', { className: 'spinner-small', style: { margin: '0 auto 0.5rem' } }),
+                                        e('div', { style: { fontSize: '0.9rem', color: 'var(--text-secondary)' } }, 'Generating report...'),
+                                        e(PatternRenderer, {
+                                            pattern: 'export_portfolio_report',
+                                            inputs: {
+                                                portfolio_id: getCurrentPortfolioId(),
+                                                include_holdings: true,
+                                                include_performance: true,
+                                                include_macro: false
+                                            },
+                                            onDataLoaded: (data) => {
+                                                if (data && data.pdf_result && data.pdf_result.pdf_base64) {
+                                                    handleReportData('quarterly', data);
+                                                } else if (data && data.error) {
+                                                    handleReportError(new Error(data.error));
+                                                } else {
+                                                    handleReportError(new Error('Invalid response from pattern'));
+                                                }
+                                            },
+                                            config: { hidden: true }
+                                        })
+                                    ) :
+                                    e('button', { 
+                                        className: 'btn btn-primary',
+                                        onClick: () => generateReport('quarterly'),
+                                        disabled: !!generatingType,
+                                        style: { width: '100%' }
+                                    }, 'Generate Quarterly Report')
                             )
                         ),
                         
@@ -11177,16 +11209,36 @@
                                         e('li', null, 'Annual risk metrics')
                                     )
                                 ),
-                                e('button', { 
-                                    className: 'btn btn-primary',
-                                    onClick: () => generateReport('ytd'),
-                                    disabled: loading,
-                                    style: { width: '100%' }
-                                }, 
-                                    loading && generatingType === 'ytd' ? 
-                                        e('span', null, 'Generating...', e('span', { className: 'spinner-small', style: { marginLeft: '0.5rem' } })) :
-                                        'Generate YTD Summary'
-                                )
+                                generatingType === 'ytd' ? 
+                                    e('div', { style: { textAlign: 'center', padding: '1rem' } },
+                                        e('div', { className: 'spinner-small', style: { margin: '0 auto 0.5rem' } }),
+                                        e('div', { style: { fontSize: '0.9rem', color: 'var(--text-secondary)' } }, 'Generating report...'),
+                                        e(PatternRenderer, {
+                                            pattern: 'export_portfolio_report',
+                                            inputs: {
+                                                portfolio_id: getCurrentPortfolioId(),
+                                                include_holdings: true,
+                                                include_performance: true,
+                                                include_macro: true
+                                            },
+                                            onDataLoaded: (data) => {
+                                                if (data && data.pdf_result && data.pdf_result.pdf_base64) {
+                                                    handleReportData('ytd', data);
+                                                } else if (data && data.error) {
+                                                    handleReportError(new Error(data.error));
+                                                } else {
+                                                    handleReportError(new Error('Invalid response from pattern'));
+                                                }
+                                            },
+                                            config: { hidden: true }
+                                        })
+                                    ) :
+                                    e('button', { 
+                                        className: 'btn btn-primary',
+                                        onClick: () => generateReport('ytd'),
+                                        disabled: !!generatingType,
+                                        style: { width: '100%' }
+                                    }, 'Generate YTD Summary')
                             )
                         )
                     ),
