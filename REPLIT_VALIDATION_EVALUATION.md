@@ -486,3 +486,343 @@ Week 3: System Fixes (needs pattern system stable)
 **Status:** ✅ **EVALUATION COMPLETE** - Ready to Update Sequencing Plan  
 **Next Step:** Revise `OPTIMAL_SEQUENCING_PLAN.md` with corrected assessment
 
+---
+
+## 📊 Expected Database Schema
+
+### Current State vs. Target State
+
+#### Current State: Inconsistent Field Names ❌
+
+**`lots` Table (Current):**
+```sql
+CREATE TABLE lots (
+    id UUID PRIMARY KEY,
+    portfolio_id UUID NOT NULL REFERENCES portfolios(id),
+    security_id UUID NOT NULL,  -- ❌ Missing FK constraint
+    symbol TEXT NOT NULL,
+    
+    -- Quantity Fields (INCONSISTENT)
+    quantity NUMERIC NOT NULL,  -- ✅ Base schema (full name)
+    qty_open NUMERIC,           -- ❌ Migration 007 adds abbreviation
+    qty_original NUMERIC,        -- ❌ Migration 007 adds abbreviation
+    
+    -- Date Fields (INCONSISTENT)
+    acquisition_date DATE NOT NULL,  -- ✅ Base schema
+    closed_date DATE,               -- ❌ Migration 007 adds
+    
+    -- Cost Basis
+    cost_basis NUMERIC NOT NULL,
+    cost_basis_per_share NUMERIC NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'USD',
+    
+    -- Status
+    is_open BOOLEAN DEFAULT TRUE,
+    
+    -- Timestamps
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+**Issues:**
+1. **Quantity Fields:** 3 different names (`quantity`, `qty_open`, `qty_original`)
+2. **Missing FK Constraint:** `security_id` has no FK to `securities(id)`
+3. **Inconsistent Naming:** Mix of full names (`quantity`) and abbreviations (`qty_open`)
+
+---
+
+#### Target State: Standardized Field Names ✅
+
+**`lots` Table (Target):**
+```sql
+CREATE TABLE lots (
+    id UUID PRIMARY KEY,
+    portfolio_id UUID NOT NULL REFERENCES portfolios(id),
+    security_id UUID NOT NULL REFERENCES securities(id),  -- ✅ FK constraint added
+    symbol TEXT NOT NULL,
+    
+    -- Quantity Fields (STANDARDIZED)
+    quantity NUMERIC NOT NULL,      -- ✅ Base quantity (for backwards compatibility)
+    quantity_open NUMERIC NOT NULL, -- ✅ Standardized name (renamed from qty_open)
+    quantity_original NUMERIC NOT NULL, -- ✅ Standardized name (renamed from qty_original)
+    
+    -- Date Fields (STANDARDIZED)
+    acquisition_date DATE NOT NULL,
+    closed_date DATE,
+    asof_date DATE,  -- ✅ Standardized date field name (for time-series queries)
+    
+    -- Cost Basis
+    cost_basis NUMERIC NOT NULL,
+    cost_basis_per_share NUMERIC NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'USD',
+    
+    -- Status
+    is_open BOOLEAN DEFAULT TRUE,
+    
+    -- Timestamps
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+**Standardization Rules:**
+1. **Quantity Fields:** Use full names (`quantity_open`, `quantity_original`, not `qty_open`, `qty_original`)
+2. **Date Fields:** Use `asof_date` for time-series queries (consistent across all tables)
+3. **FK Constraints:** All foreign keys must have explicit constraints
+4. **Naming Convention:** Use full, descriptive names (no abbreviations)
+
+---
+
+### Migration 014: Field Name Standardization
+
+**Purpose:** Rename `qty_open` → `quantity_open`, `qty_original` → `quantity_original`
+
+**Expected Schema After Migration:**
+```sql
+-- Migration 014: Standardize Quantity Fields
+BEGIN;
+
+-- Step 1: Add new standardized columns
+ALTER TABLE lots
+    ADD COLUMN IF NOT EXISTS quantity_open NUMERIC(18, 8),
+    ADD COLUMN IF NOT EXISTS quantity_original NUMERIC(18, 8);
+
+-- Step 2: Copy data from old columns
+UPDATE lots
+SET
+    quantity_open = qty_open,
+    quantity_original = qty_original
+WHERE qty_open IS NOT NULL OR qty_original IS NOT NULL;
+
+-- Step 3: Set NOT NULL (after data migration)
+ALTER TABLE lots
+    ALTER COLUMN quantity_open SET NOT NULL,
+    ALTER COLUMN quantity_original SET NOT NULL;
+
+-- Step 4: Update indexes
+DROP INDEX IF EXISTS idx_lots_qty_open;
+CREATE INDEX idx_lots_quantity_open ON lots(quantity_open) WHERE quantity_open > 0;
+
+-- Step 5: Update constraints
+ALTER TABLE lots
+    DROP CONSTRAINT IF EXISTS lots_qty_original_positive,
+    DROP CONSTRAINT IF EXISTS lots_qty_open_nonnegative,
+    DROP CONSTRAINT IF EXISTS lots_qty_open_lte_original;
+
+ALTER TABLE lots
+    ADD CONSTRAINT lots_quantity_original_positive CHECK (quantity_original > 0),
+    ADD CONSTRAINT lots_quantity_open_nonnegative CHECK (quantity_open >= 0),
+    ADD CONSTRAINT lots_quantity_open_lte_original CHECK (quantity_open <= quantity_original);
+
+-- Step 6: Drop old columns (after verification period)
+-- ALTER TABLE lots DROP COLUMN qty_open;
+-- ALTER TABLE lots DROP COLUMN qty_original;
+
+COMMIT;
+```
+
+**Rollback Script:**
+```sql
+-- Rollback Migration 014
+BEGIN;
+
+-- Restore old columns
+ALTER TABLE lots
+    ADD COLUMN IF NOT EXISTS qty_open NUMERIC(18, 8),
+    ADD COLUMN IF NOT EXISTS qty_original NUMERIC(18, 8);
+
+-- Copy data back
+UPDATE lots
+SET
+    qty_open = quantity_open,
+    qty_original = quantity_original
+WHERE quantity_open IS NOT NULL OR quantity_original IS NOT NULL;
+
+-- Restore indexes
+DROP INDEX IF EXISTS idx_lots_quantity_open;
+CREATE INDEX idx_lots_qty_open ON lots(qty_open) WHERE qty_open > 0;
+
+-- Restore constraints
+ALTER TABLE lots
+    DROP CONSTRAINT IF EXISTS lots_quantity_original_positive,
+    DROP CONSTRAINT IF EXISTS lots_quantity_open_nonnegative,
+    DROP CONSTRAINT IF EXISTS lots_quantity_open_lte_original;
+
+ALTER TABLE lots
+    ADD CONSTRAINT lots_qty_original_positive CHECK (qty_original > 0),
+    ADD CONSTRAINT lots_qty_open_nonnegative CHECK (qty_open >= 0),
+    ADD CONSTRAINT lots_qty_open_lte_original CHECK (qty_open <= qty_original);
+
+COMMIT;
+```
+
+---
+
+### Migration 015: FK Constraints & Integrity
+
+**Purpose:** Add missing FK constraints and fix duplicate table definitions
+
+**Expected Schema After Migration:**
+```sql
+-- Migration 015: Add Missing FK Constraints
+BEGIN;
+
+-- Step 1: Add FK constraint for lots.security_id
+ALTER TABLE lots
+    ADD CONSTRAINT fk_lots_security_id
+    FOREIGN KEY (security_id)
+    REFERENCES securities(id)
+    ON DELETE RESTRICT;
+
+-- Step 2: Add FK constraint for transactions.security_id
+ALTER TABLE transactions
+    ADD CONSTRAINT fk_transactions_security_id
+    FOREIGN KEY (security_id)
+    REFERENCES securities(id)
+    ON DELETE SET NULL;
+
+-- Step 3: Clean orphaned records (before adding FK)
+-- Delete lots with invalid security_id
+DELETE FROM lots
+WHERE security_id NOT IN (SELECT id FROM securities);
+
+-- Step 4: Fix duplicate table definitions
+-- Remove duplicate position_factor_betas from migration 009
+-- (Keep only schema/ version)
+
+COMMIT;
+```
+
+---
+
+## 🔍 Impact Areas Requiring Backend Refactoring
+
+### 1. Database Layer (51 Files)
+
+**Files Affected:**
+- `backend/db/schema/001_portfolios_lots_transactions.sql` - Base schema
+- `backend/db/migrations/007_add_lot_qty_tracking.sql` - Migration adds `qty_open`
+- `backend/db/migrations/009_add_scenario_dar_tables.sql` - Duplicate table definitions
+- All SQL queries that reference `qty_open`, `qty_original`, `qty`
+
+**Impact:**
+- **219 locations** in backend agents (e.g., `financial_analyst.py:168`)
+- **127 locations** in backend services (e.g., `trade_execution.py`, `risk.py`)
+- **25 locations** in pattern JSON files
+- **113 locations** in UI (`full_ui.html`)
+
+**Refactoring Required:**
+1. Update all SQL queries to use `quantity_open` instead of `qty_open`
+2. Update all SQL queries to use `quantity_original` instead of `qty_original`
+3. Remove field name transformations (e.g., `qty_open AS qty`)
+4. Update indexes to use standardized field names
+5. Update constraints to use standardized field names
+
+---
+
+### 2. Agent Layer (10 Files)
+
+**Files Affected:**
+- `backend/app/agents/financial_analyst.py` - Line 168: `SELECT l.qty_open AS qty`
+- `backend/app/agents/data_harvester.py` - May reference `qty_open`
+- `backend/app/agents/macro_hound.py` - May reference `qty_open`
+- All agent queries that reference quantity fields
+
+**Impact:**
+- **219 locations** across all agents
+- All agent capabilities that return holdings data
+- Pattern execution depends on agent return structures
+
+**Refactoring Required:**
+1. Update all SQL queries in agents to use `quantity_open`
+2. Update return structures to use standardized field names
+3. Remove field name transformations in agent code
+4. Update pattern JSON templates to use standardized names
+
+---
+
+### 3. Service Layer (15+ Files)
+
+**Files Affected:**
+- `backend/app/services/trade_execution.py` - 31 references to `qty_open`
+- `backend/app/services/corporate_actions.py` - 8 references to `qty_open`
+- `backend/app/services/risk.py` - May reference `qty_open`
+- `backend/app/services/optimizer.py` - May reference `qty_open`
+- All services that query holdings
+
+**Impact:**
+- **127 locations** across all services
+- All services that calculate positions, risk, optimization
+- Trade execution depends on quantity field names
+
+**Refactoring Required:**
+1. Update all SQL queries in services to use `quantity_open`
+2. Update all service methods to use standardized field names
+3. Remove field name transformations in service code
+4. Update service return structures to use standardized names
+
+---
+
+### 4. Pattern JSON Layer (13 Files)
+
+**Files Affected:**
+- `backend/patterns/portfolio_overview.json` - References `quantity`
+- `backend/patterns/holding_deep_dive.json` - May reference `qty_open`
+- All 13 pattern JSON files that reference holdings
+
+**Impact:**
+- **25 locations** across all patterns
+- Pattern execution depends on field names
+- UI rendering depends on pattern output structure
+
+**Refactoring Required:**
+1. Update all pattern JSON files to use standardized field names
+2. Update pattern templates to use standardized names
+3. Update pattern outputs to use standardized names
+4. Verify pattern execution with standardized names
+
+---
+
+### 5. API Layer (5+ Endpoints)
+
+**Files Affected:**
+- `backend/app/api/executor.py` - Pattern execution endpoint
+- `backend/app/api/combined_server.py` - Multiple endpoints
+- All API endpoints that return holdings data
+
+**Impact:**
+- All API responses that include holdings
+- Pattern execution responses
+- Frontend depends on API response structure
+
+**Refactoring Required:**
+1. Update API responses to use standardized field names
+2. Update API documentation to reflect standardized names
+3. Update API tests to use standardized names
+4. Verify API responses match frontend expectations
+
+---
+
+## 📊 Total Impact Summary
+
+**Files Affected:** 51+ files
+- Database: 2 files (schema + migrations)
+- Backend Agents: 10 files (219 locations)
+- Backend Services: 15+ files (127 locations)
+- Pattern JSON: 13 files (25 locations)
+- UI: 1 file (`full_ui.html`, 113 locations)
+
+**Locations Affected:** 685 total locations
+- Database: 201 locations
+- Backend Agents: 219 locations
+- Backend Services: 127 locations
+- Pattern JSON: 25 locations
+- UI: 113 locations
+
+**Refactoring Effort:** 2-3 days (database + code updates + testing)
+
+**Risk Level:** HIGH (affects all layers, breaks if not done correctly)
+
+---
+
