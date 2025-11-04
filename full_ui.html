@@ -3347,17 +3347,13 @@
                         setLoading(true);
                         setError(null);
                         
-                        // Check if user is authenticated for patterns that require it
+                        // Don't block execution - let backend handle authentication
+                        // Backend will return appropriate error if authentication required
                         const token = TokenManager.getToken();
                         if (!token) {
-                            console.warn(`No authentication token for pattern ${pattern}, using mock data`);
-                            // For hidden patterns, still call onDataLoaded with error
-                            if (onDataLoaded) {
-                                onDataLoaded({ error: 'Not authenticated' });
-                            }
-                            setError('Authentication required');
-                            setLoading(false);
-                            return;
+                            console.warn(`No authentication token for pattern ${pattern}`);
+                            // Don't block - let backend handle auth
+                            // Some patterns might not require auth
                         }
                         
                         // Patterns that don't require portfolio_id
