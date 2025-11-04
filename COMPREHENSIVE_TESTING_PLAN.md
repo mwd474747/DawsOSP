@@ -415,8 +415,11 @@
 **Status:**
 - ✅ **VERIFIED:** `CAPABILITY_CONSOLIDATION_MAP` includes `optimizer.suggest_hedges` → `financial_analyst.suggest_hedges`
 - ✅ **VERIFIED:** `feature_flags.json` has `optimizer_to_financial: enabled: true, rollout_percentage: 100`
-- ⚠️ **NEEDS TESTING:** Test routing in `AgentRuntime._get_capability_routing_override`
-- ⚠️ **NEEDS TESTING:** Test pattern execution with `optimizer.suggest_hedges` capability (e.g., `portfolio_scenario_analysis`)
+- ✅ **VERIFIED:** Routing logic in `AgentRuntime._get_capability_routing_override()` checks all conditions correctly
+- ✅ **VERIFIED:** Target method `financial_analyst_suggest_hedges()` exists and is implemented
+- ✅ **VERIFIED:** Pattern `portfolio_scenario_analysis.json` uses capability correctly
+- ⚠️ **NEEDS RUNTIME TESTING:** Execute pattern to verify routing works in runtime
+- 📋 **TEST SCRIPT:** `test_optimizer_routing.py` - Static validation complete, ready for runtime testing
 
 ---
 
