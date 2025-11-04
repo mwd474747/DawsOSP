@@ -3374,6 +3374,10 @@
                         console.error(`Error loading pattern ${pattern}:`, err);
                         setError(err.message || 'Failed to load pattern');
                         setLoading(false);
+                        // Call onDataLoaded with error data if callback exists
+                        if (onDataLoaded) {
+                            onDataLoaded({ error: err.message || 'Failed to load pattern' });
+                        }
                     }
                 };
                 
@@ -7170,7 +7174,6 @@
                 const [error, setError] = useState(null);
                 const [macroData, setMacroData] = useState(null);
                 const [activeTab, setActiveTab] = useState('short-term');
-                const [refreshInterval, setRefreshInterval] = useState(null);
                 
                 // Chart references for each cycle
                 const chartRefs = {
@@ -7182,15 +7185,9 @@
                 };
                 const chartInstances = useRef({});
                 
-                // Load data on mount and set up auto-refresh
+                // Clean up chart instances on unmount
                 useEffect(() => {
-                    fetchMacroData();
-                    // Auto-refresh every 60 seconds
-                    const interval = setInterval(fetchMacroData, 60000);
-                    setRefreshInterval(interval);
-                    
                     return () => {
-                        clearInterval(interval);
                         // Clean up all chart instances
                         Object.values(chartInstances.current).forEach(chart => {
                             if (chart) chart.destroy();
@@ -7205,25 +7202,36 @@
                     }
                 }, [macroData, activeTab, loading]);
                 
-                const fetchMacroData = async () => {
+                // Handle pattern data from PatternRenderer
+                const handlePatternData = (data) => {
                     try {
-                        setLoading(true);
-                        setError(null);
+                        // Check for error first
+                        if (data?.error) {
+                            console.error('Pattern execution failed:', data.error);
+                            setError(data.error);
+                            setMacroData(getComprehensiveMockData());
+                            setLoading(false);
+                            return;
+                        }
                         
-                        // Use cached API client for pattern execution
-                        const response = await cachedApiClient.executePattern('macro_cycles_overview', {
-                            asof_date: new Date().toISOString().split('T')[0]
-                        });
+                        // PatternRenderer passes result.data || result
+                        const result = data?.data || data;
                         
-                        // Process response data
-                        const result = response.result || response.data || response;
-                        setMacroData(result);
-                        
-                    } catch (error) {
-                        console.error('Pattern execution failed for macro_cycles_overview:', error);
-                        // Use comprehensive fallback data
+                        // Validate structure - pattern returns stdc, ltdc, empire, civil
+                        if (result && (result.stdc || result.ltdc || result.empire || result.civil)) {
+                            setMacroData(result);
+                            setError(null);
+                            setLoading(false);
+                        } else {
+                            // Fallback to mock data if structure is unexpected
+                            console.warn('Pattern data structure unexpected, using fallback');
+                            setMacroData(getComprehensiveMockData());
+                            setLoading(false);
+                        }
+                    } catch (err) {
+                        console.error('Error processing pattern data:', err);
+                        setError(err.message);
                         setMacroData(getComprehensiveMockData());
-                    } finally {
                         setLoading(false);
                     }
                 };
@@ -7912,6 +7920,17 @@
                         e('p', { className: 'page-description' }, 
                             'Comprehensive debt cycle and empire analysis based on Ray Dalio\'s framework')
                     ),
+                    
+                    // Hidden PatternRenderer for data fetching
+                    e(PatternRenderer, {
+                        pattern: 'macro_cycles_overview',
+                        inputs: { asof_date: new Date().toISOString().split('T')[0] },
+                        config: {
+                            showPanels: [] // Hide panels, we use custom rendering
+                        },
+                        onDataLoaded: handlePatternData,
+                        style: { display: 'none' } // Hide PatternRenderer
+                    }),
                     
                     // Cycle Navigation Tabs
                     e('div', { className: 'cycle-tabs' },
