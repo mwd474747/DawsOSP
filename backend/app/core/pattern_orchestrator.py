@@ -814,12 +814,14 @@ class PatternOrchestrator:
 
     def _eval_condition(self, condition: str, state: Dict[str, Any]) -> bool:
         """
-        Evaluate simple boolean conditions.
+        Safely evaluate simple boolean conditions without using eval().
 
         Supported conditions:
             - "positions.length > 0" (where positions is a step result key)
             - "inputs.include_charts == true"
             - "ctx.portfolio_id != null"
+            - "value >= 100"
+            - "status == 'active' and count > 0"
 
         Args:
             condition: Condition string
@@ -827,26 +829,146 @@ class PatternOrchestrator:
 
         Returns:
             True if condition met, False otherwise
-
-        Note:
-            For S1, we use simple eval(). In production, use a safe expression
-            evaluator like simpleeval or ast.literal_eval with restricted namespace.
         """
         try:
-            # Replace template syntax for eval
-            # {{foo}} → state["foo"] (where foo is a step result key)
-            safe_condition = re.sub(
-                r'\{\{(\w+)\.(\w+)\}\}',
-                r'\1["\2"]',
-                condition
-            )
-
-            # Simple eval (TODO: Replace with safe evaluator in production)
-            result = eval(safe_condition, {"__builtins__": {}}, state)
-            return bool(result)
+            # First handle template variables {{...}}
+            safe_condition = self._resolve_template_vars(condition, state)
+            
+            # Now evaluate the resolved condition safely
+            return self._safe_evaluate(safe_condition, state)
+            
         except Exception as e:
             logger.warning(f"Failed to evaluate condition '{condition}': {e}")
             return False
+    
+    def _safe_evaluate(self, condition: str, state: Dict[str, Any]) -> bool:
+        """
+        Safely evaluate conditions without using eval().
+        Supports: ==, !=, <, >, <=, >=, and, or, not, is, in
+        """
+        import operator
+        from ast import literal_eval
+        
+        # Handle simple boolean keywords
+        condition = condition.strip()
+        if condition.lower() == 'true':
+            return True
+        if condition.lower() == 'false':
+            return False
+        
+        # Handle 'and' and 'or' operators
+        if ' and ' in condition:
+            parts = condition.split(' and ')
+            return all(self._safe_evaluate(part.strip(), state) for part in parts)
+        
+        if ' or ' in condition:
+            parts = condition.split(' or ')
+            return any(self._safe_evaluate(part.strip(), state) for part in parts)
+        
+        # Handle 'not' operator
+        if condition.startswith('not '):
+            return not self._safe_evaluate(condition[4:].strip(), state)
+        
+        # Handle comparison operators
+        ops = {
+            '==': operator.eq,
+            '!=': operator.ne,
+            '<=': operator.le,
+            '>=': operator.ge,
+            '<': operator.lt,
+            '>': operator.gt,
+            ' is ': operator.is_,
+            ' in ': lambda x, y: x in y
+        }
+        
+        for op_str, op_func in ops.items():
+            if op_str in condition:
+                parts = condition.split(op_str, 1)
+                if len(parts) == 2:
+                    left = parts[0].strip()
+                    right = parts[1].strip()
+                    
+                    # Get values
+                    left_val = self._get_value(left, state)
+                    right_val = self._get_value(right, state)
+                    
+                    # Special handling for null/None comparisons
+                    if right_val == 'null' or right_val == 'None':
+                        right_val = None
+                    
+                    try:
+                        return op_func(left_val, right_val)
+                    except:
+                        return False
+        
+        # If no operator found, try to evaluate as a simple path
+        val = self._get_value(condition, state)
+        return bool(val)
+    
+    def _get_value(self, expr: str, state: Dict[str, Any]) -> Any:
+        """Get value from expression, handling paths and literals."""
+        expr = expr.strip()
+        
+        # Handle string literals
+        if (expr.startswith('"') and expr.endswith('"')) or \
+           (expr.startswith("'") and expr.endswith("'")):
+            return expr[1:-1]
+        
+        # Handle numeric literals
+        try:
+            if '.' in expr:
+                return float(expr)
+            return int(expr)
+        except ValueError:
+            pass
+        
+        # Handle boolean literals
+        if expr.lower() == 'true':
+            return True
+        if expr.lower() == 'false':
+            return False
+        if expr.lower() in ('null', 'none'):
+            return None
+        
+        # Handle paths like "positions.length" or "inputs.portfolio_id"
+        if '.' in expr:
+            parts = expr.split('.')
+            obj = state
+            for part in parts:
+                # Handle list length
+                if part == 'length' and isinstance(obj, list):
+                    return len(obj)
+                # Handle dictionary access
+                elif isinstance(obj, dict):
+                    obj = obj.get(part)
+                    if obj is None:
+                        return None
+                else:
+                    return None
+            return obj
+        
+        # Simple key lookup
+        return state.get(expr)
+    
+    def _resolve_template_vars(self, text: str, state: Dict[str, Any]) -> str:
+        """Replace {{var}} templates with actual values."""
+        import re
+        
+        def replace_template(match):
+            var_path = match.group(1)
+            val = self._get_value(var_path, state)
+            # Return the value as a string representation
+            if val is None:
+                return 'null'
+            elif isinstance(val, bool):
+                return 'true' if val else 'false'
+            elif isinstance(val, str):
+                return f'"{val}"'
+            else:
+                return str(val)
+        
+        # Replace {{path.to.value}} with resolved values
+        return re.sub(r'\{\{([\w.]+)\}\}', replace_template, text)
 
 
 # ============================================================================
