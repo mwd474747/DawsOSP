@@ -2820,7 +2820,7 @@ class DataHarvester(BaseAgent):
         if not symbols:
             # Get holdings from state (should be set by previous step: ledger.positions)
             positions = state.get("positions", {}).get("positions", [])
-            symbols = [p.get("symbol") for p in positions if p.get("qty_open", 0) > 0]
+            symbols = [p.get("symbol") for p in positions if p.get("qty", 0) > 0]
         
         if not symbols:
             result = {
@@ -2938,10 +2938,13 @@ class DataHarvester(BaseAgent):
         """
         from datetime import date, timedelta
         
-        # Extract holdings from state if not provided
+        # Extract holdings from state if not provided or if provided as list
         if not holdings:
             positions = state.get("positions", {}).get("positions", [])
-            holdings = {p.get("symbol"): float(p.get("qty_open", 0)) for p in positions}
+            holdings = {p.get("symbol"): float(p.get("qty", 0)) for p in positions}
+        elif isinstance(holdings, list):
+            # Convert list of positions to dictionary of {symbol: quantity}
+            holdings = {p.get("symbol"): float(p.get("qty", 0)) for p in holdings}
         
         actions_with_impact = []
         total_dividend_impact = 0.0

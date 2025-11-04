@@ -53,7 +53,6 @@
       "capability": "corporate_actions.upcoming",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
-        "symbols": "{{positions.positions[*].symbol}}",
         "days_ahead": "{{inputs.days_ahead}}"
       },
       "as": "actions"
