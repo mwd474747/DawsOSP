@@ -12,8 +12,8 @@ DawsOS is an AI-powered portfolio management platform built on a **pattern-drive
 - **Server**: `combined_server.py` - Single FastAPI application (6,043 lines, 53 functional endpoints)
 - **UI**: `full_ui.html` - React 18 SPA (11,594 lines, 18 pages including login, no build step)
 - **Database**: PostgreSQL 14+ with TimescaleDB extension
-- **Agents**: 9 specialized agents providing 59+ capabilities
-  - **Note:** Phase 3 consolidation in progress (Weeks 1-3 complete, awaiting rollout)
+- **Agents**: 4 specialized agents providing 59+ capabilities
+  - **Note:** Phase 3 consolidation complete (November 3, 2025) - 9 agents → 4 agents
 - **Patterns**: 12 pattern definitions for business workflows
 
 ---
@@ -60,34 +60,18 @@ Routes capability calls to the appropriate agent method:
 Capability Request ("ledger.positions") → Runtime Lookup → FinancialAnalyst.ledger_positions() → Response
 ```
 
-**Registered Agents** (9 total):
-1. **FinancialAnalyst** - Portfolio ledger, pricing, metrics, attribution (~25+ capabilities)
-   - Capabilities: `ledger.*`, `pricing.*`, `metrics.*`, `attribution.*`, `charts.*`, `risk.*`, `portfolio.*`
-2. **MacroHound** - Macro economic cycles, scenarios, regime detection (~15+ capabilities)
-   - Capabilities: `macro.*`, `scenarios.*`, `cycles.*`
-3. **DataHarvester** - External data fetching, news integration (~5+ capabilities)
-   - Capabilities: `data.*`, `news.*`
+**Registered Agents** (4 total - Phase 3 consolidation complete):
+1. **FinancialAnalyst** - Portfolio ledger, pricing, metrics, attribution, optimization, ratings, charts (~35+ capabilities)
+   - Capabilities: `ledger.*`, `pricing.*`, `metrics.*`, `attribution.*`, `charts.*`, `risk.*`, `portfolio.*`, `optimizer.*`, `ratings.*`
+   - **Consolidated from:** OptimizerAgent, RatingsAgent, ChartsAgent (Phase 3 Weeks 1-3, November 3, 2025)
+2. **MacroHound** - Macro economic cycles, scenarios, regime detection, alerts (~17+ capabilities)
+   - Capabilities: `macro.*`, `scenarios.*`, `cycles.*`, `alerts.*`
+   - **Consolidated from:** AlertsAgent (Phase 3 Week 4, November 3, 2025)
+3. **DataHarvester** - External data fetching, news integration, reports (~8+ capabilities)
+   - Capabilities: `data.*`, `news.*`, `reports.*`, `corporate_actions.*`
+   - **Consolidated from:** ReportsAgent (Phase 3 Week 5, November 3, 2025)
 4. **ClaudeAgent** - AI-powered explanations and insights (~6 capabilities)
    - Capabilities: `claude.*`, `ai.*`
-5. **RatingsAgent** - Buffett quality ratings, dividend safety, moat analysis (~4 capabilities)
-   - Capabilities: `ratings.*`, `buffett.*`
-   - **Note:** Capabilities consolidated into FinancialAnalyst (Phase 3 Week 2, November 3, 2025)
-   - Both agents registered (dual registration) for gradual migration via feature flags
-   - Capability routing handles `ratings.*` → `financial_analyst.*` mapping
-6. **OptimizerAgent** - Portfolio optimization and rebalancing (~4 capabilities)
-   - Capabilities: `optimizer.*`, `rebalance.*`
-   - **Note:** Capabilities consolidated into FinancialAnalyst (Phase 3 Week 1, November 3, 2025)
-   - Both agents registered (dual registration) for gradual migration via feature flags
-   - Capability routing handles `optimizer.*` → `financial_analyst.*` mapping
-7. **ChartsAgent** - Chart formatting and visualization (~3 capabilities)
-   - Capabilities: `charts.*`
-   - **Note:** Capabilities consolidated into FinancialAnalyst (Phase 3 Week 3, November 3, 2025)
-   - Both agents registered (dual registration) for gradual migration via feature flags
-   - Capability routing handles `charts.*` → `financial_analyst.*` mapping
-8. **ReportsAgent** - PDF, CSV, Excel export generation (~3 capabilities)
-   - Capabilities: `reports.*`, `export.*`
-9. **AlertsAgent** - Alert suggestions and threshold management (~2 capabilities)
-   - Capabilities: `alerts.*`
 
 **Agent Registration** (combined_server.py:261-300):
 ```python
@@ -103,9 +87,8 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
     macro_hound = MacroHound("macro_hound", services)
     _agent_runtime.register_agent(macro_hound)
     
-    # Register remaining 7 agents
-    # DataHarvester, ClaudeAgent, RatingsAgent, OptimizerAgent,
-    # ChartsAgent, ReportsAgent, AlertsAgent
+    # Register remaining 2 agents
+    # DataHarvester, ClaudeAgent
     
     return _agent_runtime
 ```

@@ -50,11 +50,14 @@ python combined_server.py
 - **UI**: `full_ui.html` - Single-page React application (11,594 lines, no build step)
 - **Server**: `combined_server.py` - FastAPI server (6,043 lines, 53 endpoints)
 - **Database**: PostgreSQL + TimescaleDB
-- **Agents**: 9 agents providing ~70 capabilities
-  - **Note:** Phase 3 consolidation in progress:
-    - Week 1: OptimizerAgent → FinancialAnalyst ✅ COMPLETE (awaiting rollout)
-    - Week 2: RatingsAgent → FinancialAnalyst ✅ COMPLETE (awaiting rollout)
-    - Week 3: ChartsAgent → FinancialAnalyst ✅ COMPLETE (awaiting rollout)
+- **Agents**: 4 agents providing ~70 capabilities
+  - **Note:** Phase 3 consolidation complete (November 3, 2025):
+    - Week 1: OptimizerAgent → FinancialAnalyst ✅ COMPLETE
+    - Week 2: RatingsAgent → FinancialAnalyst ✅ COMPLETE
+    - Week 3: ChartsAgent → FinancialAnalyst ✅ COMPLETE
+    - Week 4: AlertsAgent → MacroHound ✅ COMPLETE
+    - Week 5: ReportsAgent → DataHarvester ✅ COMPLETE
+    - Week 6: Legacy agent cleanup ✅ COMPLETE
 - **Patterns**: 12 pattern definitions for orchestration
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.

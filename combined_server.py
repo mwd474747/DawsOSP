@@ -340,37 +340,18 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
         _agent_runtime.register_agent(macro_hound)
 
         # Register other agents as needed
+        # Phase 3 consolidation complete (2025-11-03): 9 agents → 4 agents
+        # Legacy agents (OptimizerAgent, RatingsAgent, ChartsAgent, AlertsAgent, ReportsAgent) removed
+        # Capabilities consolidated into FinancialAnalyst, MacroHound, and DataHarvester
+        
         from backend.app.agents.data_harvester import DataHarvester
         from backend.app.agents.claude_agent import ClaudeAgent
-        from backend.app.agents.ratings_agent import RatingsAgent
-        from backend.app.agents.optimizer_agent import OptimizerAgent
-        from backend.app.agents.charts_agent import ChartsAgent
-        from backend.app.agents.reports_agent import ReportsAgent
 
         data_harvester = DataHarvester("data_harvester", services)
         _agent_runtime.register_agent(data_harvester)
 
         claude_agent = ClaudeAgent("claude_agent", services)
         _agent_runtime.register_agent(claude_agent)
-
-        ratings_agent = RatingsAgent("ratings_agent", services)
-        _agent_runtime.register_agent(ratings_agent)
-
-        optimizer_agent = OptimizerAgent("optimizer_agent", services)
-        _agent_runtime.register_agent(optimizer_agent)
-
-        # Register ChartsAgent for chart formatting and visualization
-        charts_agent = ChartsAgent("charts_agent", services)
-        _agent_runtime.register_agent(charts_agent)
-
-        # Register ReportsAgent for PDF/CSV export generation
-        reports_agent = ReportsAgent("reports_agent", services)
-        _agent_runtime.register_agent(reports_agent)
-        
-        # Register AlertsAgent for alert suggestions and threshold creation
-        from backend.app.agents.alerts_agent import AlertsAgent
-        alerts_agent = AlertsAgent("alerts_agent", services)
-        _agent_runtime.register_agent(alerts_agent)
 
         logger.info(f"Agent runtime initialized with {len(_agent_runtime.agents)} agents")
 

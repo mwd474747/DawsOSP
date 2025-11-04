@@ -134,19 +134,21 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
         # Create runtime
         _agent_runtime = AgentRuntime(services)
 
-        # Register agents (6 total - all agents registered)
-        # ✅ COMPLETE (2025-10-27): All agents registered (financial, macro, harvester, claude, ratings, optimizer)
+        # Register agents (4 total - Phase 3 consolidation complete)
+        # ✅ COMPLETE (2025-11-03): Phase 3 consolidation complete - 9 agents → 4 agents
+        # Legacy agents (OptimizerAgent, RatingsAgent, ChartsAgent, AlertsAgent, ReportsAgent) removed
+        # Capabilities consolidated into FinancialAnalyst, MacroHound, and DataHarvester
 
-        # 1. Financial Analyst - Portfolio analysis, metrics, pricing
+        # 1. Financial Analyst - Portfolio analysis, metrics, pricing, optimization, ratings, charts
         financial_analyst = FinancialAnalyst("financial_analyst", services)
         _agent_runtime.register_agent(financial_analyst)
 
-        # 2. Macro Hound - Macro regime, cycles, scenarios, DaR
+        # 2. Macro Hound - Macro regime, cycles, scenarios, DaR, alerts
         from app.agents.macro_hound import MacroHound
         macro_hound = MacroHound("macro_hound", services)
         _agent_runtime.register_agent(macro_hound)
 
-        # 3. Data Harvester - Provider integration (FMP, Polygon, FRED, NewsAPI)
+        # 3. Data Harvester - Provider integration (FMP, Polygon, FRED, NewsAPI), reports
         from app.agents.data_harvester import DataHarvester
         data_harvester = DataHarvester("data_harvester", services)
         _agent_runtime.register_agent(data_harvester)
@@ -156,34 +158,9 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
         claude_agent = ClaudeAgent("claude", services)
         _agent_runtime.register_agent(claude_agent)
 
-        # 5. Ratings Agent - Buffett-style quality ratings
-        from app.agents.ratings_agent import RatingsAgent
-        ratings_agent = RatingsAgent("ratings", services)
-        _agent_runtime.register_agent(ratings_agent)
-
-        # 6. Optimizer Agent - Portfolio optimization and rebalancing
-        from app.agents.optimizer_agent import OptimizerAgent
-        optimizer_agent = OptimizerAgent("optimizer", services)
-        _agent_runtime.register_agent(optimizer_agent)
-
-        # 7. Reports Agent - PDF/CSV export generation
-        from app.agents.reports_agent import ReportsAgent
-        reports_agent = ReportsAgent("reports", services)
-        _agent_runtime.register_agent(reports_agent)
-
-        # 8. Alerts Agent - Alert suggestions and threshold-based creation
-        from app.agents.alerts_agent import AlertsAgent
-        alerts_agent = AlertsAgent("alerts", services)
-        _agent_runtime.register_agent(alerts_agent)
-
-        # 9. Charts Agent - Chart formatting and visualization specs
-        from app.agents.charts_agent import ChartsAgent
-        charts_agent = ChartsAgent("charts", services)
-        _agent_runtime.register_agent(charts_agent)
-
         logger.info(
-            "Agent runtime initialized with 9 agents: "
-            "financial_analyst, macro_hound, data_harvester, claude, ratings, optimizer, reports, alerts, charts"
+            "Agent runtime initialized with 4 agents: "
+            "financial_analyst, macro_hound, data_harvester, claude"
         )
 
     return _agent_runtime
