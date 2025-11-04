@@ -37,6 +37,22 @@ except ImportError:
         """Fallback metrics function when observability not available"""
         return None
 
+# Optional import for pattern response validation (graceful degradation)
+try:
+    from app.schemas.pattern_responses import PatternResponseValidator
+except ImportError:
+    # Fallback if schemas not available
+    class PatternResponseValidator:
+        @classmethod
+        def validate(cls, pattern_id: str, result: Dict[str, Any]) -> Dict[str, Any]:
+            """Fallback validator when schemas not available"""
+            return result
+
+        @classmethod
+        def check_deprecated_fields(cls, data: Any, path: str = "root") -> List[str]:
+            """Fallback deprecated field checker"""
+            return []
+
 logger = logging.getLogger(__name__)
 
 
@@ -738,11 +754,35 @@ class PatternOrchestrator:
         # Cleanup request cache after pattern execution
         self.agent_runtime.clear_request_cache(ctx.request_id)
 
-        return {
+        # Build result
+        result = {
             "data": outputs,
             "charts": charts,
             "trace": trace_data,
         }
+
+        # Validate response (Phase 2: Pattern System Refactoring)
+        # Non-blocking validation - logs warnings but doesn't fail execution
+        try:
+            # Flatten outputs for validation (validator expects flat structure)
+            validation_data = {**outputs, "_metadata": {"pattern_id": pattern_id}, "_trace": trace_data}
+            validated = PatternResponseValidator.validate(pattern_id, validation_data)
+
+            # Check for deprecated field names
+            deprecated_warnings = PatternResponseValidator.check_deprecated_fields(outputs)
+            if deprecated_warnings:
+                logger.warning(
+                    f"Pattern {pattern_id} contains deprecated fields:",
+                    extra={"warnings": deprecated_warnings}
+                )
+                for warning in deprecated_warnings:
+                    logger.warning(f"  - {warning}")
+
+        except Exception as e:
+            # Validation itself should never break execution
+            logger.error(f"Pattern validation error (non-blocking): {e}", exc_info=True)
+
+        return result
 
     def _resolve_args(self, args: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]:
         """
