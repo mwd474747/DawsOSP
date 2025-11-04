@@ -9665,7 +9665,12 @@
                         
                         // Build ratings data object from results
                         for (const result of ratingResults) {
-                            ratingsData[result.symbol] = result.rating;
+                            // Include security_id in rating data for PatternRenderer
+                            const security = uniqueSecurities.find(s => s.symbol === result.symbol);
+                            ratingsData[result.symbol] = {
+                                ...result.rating,
+                                security_id: security?.security_id
+                            };
                         }
                         
                         setRatings(ratingsData);
