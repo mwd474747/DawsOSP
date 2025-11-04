@@ -182,6 +182,13 @@ AI:
 - ✅ Added check constraints for data integrity
 - **Storage saved**: 480 KB (18% reduction)
 
+**Additional Migrations from Claude (COMPLETE - November 4, 2025)**
+- ✅ **Migration 002b**: Renamed index `idx_lots_qty_open` → `idx_lots_quantity_open`
+- ✅ **Migration 002c**: Updated `reduce_lot()` function to use `quantity_open` field
+- ✅ **Migration 002d**: Added FK constraint `lots.security_id` → `securities.id`
+- **Purpose**: Fixes critical database issues blocking pattern system refactoring
+- **Impact**: Enables UI pattern system to correctly map to backend field names
+
 **Files Modified**:
 - backend/app/services/trade_execution.py
 - backend/app/services/corporate_actions.py
@@ -194,6 +201,11 @@ AI:
 - backend/jobs/reconciliation.py
 - backend/tests/integration/conftest.py
 - backend/app/core/pattern_orchestrator.py
+
+**Migration Files Created**:
+- migrations/002b_fix_qty_indexes.sql
+- migrations/002c_fix_reduce_lot_function.sql
+- migrations/002d_add_security_fk.sql
 
 ### Phase 3 Consolidation Status
 
