@@ -2874,7 +2874,19 @@
                                 id: 'holdings_table',
                                 title: 'Holdings',
                                 type: 'table',
-                                dataPath: 'valued_positions.positions'
+                                dataPath: 'valued_positions.positions',
+                                config: {
+                                    columns: [
+                                        { field: 'symbol', header: 'Symbol', format: 'text' },
+                                        { field: 'qty', header: 'Shares', format: 'number' },
+                                        { field: 'value', header: 'Market Value', format: 'currency' },
+                                        { field: 'cost_basis', header: 'Cost Basis', format: 'currency' },
+                                        { field: 'price', header: 'Price', format: 'currency' },
+                                        { field: 'weight', header: 'Weight (%)', format: 'percentage' },
+                                        { field: 'currency', header: 'Currency', format: 'text' }
+                                    ],
+                                    maxRows: 50
+                                }
                             }
                         ]
                     }
@@ -4009,17 +4021,24 @@
              * Helper functions for formatting values
              */
             function formatValue(value, format) {
-                if (value === null || value === undefined) return '-';
+                if (value === null || value === undefined || value === '') return '-';
+                
+                // Convert string values to numbers for numeric formats
+                let numValue = value;
+                if (typeof value === 'string' && (format === 'percentage' || format === 'currency' || format === 'number' || format === 'bps')) {
+                    numValue = parseFloat(value);
+                    if (isNaN(numValue)) return '-';
+                }
                 
                 switch (format) {
                     case 'percentage':
-                        return formatPercentage(value);
+                        return formatPercentage(numValue);
                     case 'currency':
-                        return formatCurrency(value);
+                        return formatCurrency(numValue);
                     case 'number':
-                        return formatNumber(value, 2);
+                        return formatNumber(numValue, 2);
                     case 'bps':
-                        return `${formatNumber(value, 0)} bps`;
+                        return `${formatNumber(numValue, 0)} bps`;
                     default:
                         return typeof value === 'number' ? formatNumber(value, 2) : String(value);
                 }
@@ -8493,18 +8512,80 @@
             
             function HoldingsPage() {
                 const { portfolioId } = useUserContext();
+                const [summaryData, setSummaryData] = useState(null);
+                
+                // Callback to capture data from PatternRenderer
+                const handleDataLoaded = (data) => {
+                    if (data && data.valued_positions) {
+                        const positions = data.valued_positions.positions || [];
+                        let totalValue = data.valued_positions.total_value || 0;
+                        
+                        // Convert string to number if needed
+                        if (typeof totalValue === 'string') {
+                            totalValue = parseFloat(totalValue) || 0;
+                        }
+                        
+                        // Calculate P&L from cost_basis and value
+                        let totalCostBasis = 0;
+                        let totalCurrentValue = 0;
+                        
+                        positions.forEach(p => {
+                            const cost = parseFloat(p.cost_basis) || 0;
+                            const value = parseFloat(p.value) || 0;
+                            totalCostBasis += cost;
+                            totalCurrentValue += value;
+                        });
+                        
+                        const totalPnL = totalCurrentValue - totalCostBasis;
+                        const totalPnLPct = totalCostBasis > 0 ? (totalPnL / totalCostBasis) * 100 : 0;
+                        
+                        setSummaryData({
+                            totalValue: totalValue,
+                            totalPnL: totalPnL,
+                            totalPnLPct: totalPnLPct,
+                            positionCount: positions.length
+                        });
+                    }
+                };
                 
                 return e('div', { className: 'holdings-page' },
                     e('div', { className: 'page-header' },
                         e('h1', { className: 'page-title' }, 'Holdings'),
                         e('p', { className: 'page-description' }, 'Portfolio positions and allocations')
                     ),
+                    
+                    // Summary Stats
+                    summaryData && e('div', { className: 'stats-grid' },
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-value' }, formatCurrency(summaryData.totalValue)),
+                            e('div', { className: 'stat-label' }, 'Total Market Value')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { 
+                                className: `stat-value ${summaryData.totalPnL >= 0 ? 'positive' : 'negative'}` 
+                            }, formatCurrency(summaryData.totalPnL)),
+                            e('div', { className: 'stat-label' }, 'Total P&L')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { 
+                                className: `stat-value ${summaryData.totalPnLPct >= 0 ? 'positive' : 'negative'}` 
+                            }, formatPercentage(summaryData.totalPnLPct / 100)),
+                            e('div', { className: 'stat-label' }, 'Total Return')
+                        ),
+                        e('div', { className: 'stat-card' },
+                            e('div', { className: 'stat-value' }, summaryData.positionCount),
+                            e('div', { className: 'stat-label' }, 'Positions')
+                        )
+                    ),
+                    
+                    // Holdings Table
                     e(PatternRenderer, {
                         pattern: 'portfolio_overview',
                         inputs: { portfolio_id: portfolioId, lookback_days: 252 },
                         config: {
                             // Show only holdings table panel
-                            showPanels: ['holdings_table']
+                            showPanels: ['holdings_table'],
+                            onDataLoaded: handleDataLoaded
                         }
                     })
                 );
