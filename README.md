@@ -340,7 +340,7 @@ Response:
 {
   "status": "healthy",
   "service": "DawsOS",
-  "version": "2.0.0",
+  "version": "6.0.1",
   "database": "connected",
   "agents": 4,
   "patterns": "available"
