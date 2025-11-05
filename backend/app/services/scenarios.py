@@ -749,11 +749,26 @@ class ScenarioService:
             as_of_date = date.today()
 
         if not pack_id:
-            pack_id = "PP_latest"
+            # Get latest pricing pack from pricing service
+            from app.services.pricing import get_pricing_service
+            pricing_service = get_pricing_service()
+            latest_pack = await pricing_service.get_latest_pack()
+            if latest_pack:
+                pack_id = latest_pack.id
+            else:
+                logger.error("No pricing pack available for DaR calculation")
+                return {
+                    "error": "No pricing pack available",
+                    "dar": None,
+                    "dar_pct": None,
+                    "confidence": confidence,
+                    "portfolio_id": portfolio_id,
+                    "regime": regime,
+                }
 
         logger.info(
             f"compute_dar: portfolio={portfolio_id}, regime={regime}, "
-            f"confidence={confidence}, horizon={horizon_days}d"
+            f"confidence={confidence}, horizon={horizon_days}d, pack={pack_id}"
         )
 
         # Get current portfolio NAV
