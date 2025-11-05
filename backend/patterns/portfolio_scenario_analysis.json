@@ -54,16 +54,9 @@
   },
   "steps": [
     {
-      "capability": "ledger.positions",
+      "capability": "portfolio.get_valued_positions",
       "args": {
-        "portfolio_id": "{{inputs.portfolio_id}}"
-      },
-      "as": "positions"
-    },
-    {
-      "capability": "pricing.apply_pack",
-      "args": {
-        "positions": "{{positions.positions}}",
+        "portfolio_id": "{{inputs.portfolio_id}}",
         "pack_id": "{{ctx.pricing_pack_id}}"
       },
       "as": "valued_base"
