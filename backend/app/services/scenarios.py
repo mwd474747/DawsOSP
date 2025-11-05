@@ -323,7 +323,7 @@ class ScenarioService:
                 s.sector,
                 -- Use computed factor betas if available, otherwise estimate from security type
                 COALESCE(
-                    pfb.beta,
+                    pfb.real_rate_beta,
                     CASE 
                         WHEN s.security_type = 'BOND' THEN -8.0  -- Bonds sensitive to rates
                         WHEN s.security_type = 'EQUITY' THEN -2.0  -- Growth stocks moderately sensitive
@@ -331,7 +331,7 @@ class ScenarioService:
                     END
                 ) AS beta_real_rates,
                 COALESCE(
-                    pfb_inflation.beta,
+                    pfb.inflation_beta,
                     CASE 
                         WHEN s.security_type = 'BOND' THEN -6.0  -- Bonds hurt by inflation
                         WHEN s.sector IN ('Energy', 'Materials') THEN 2.0  -- Commodities benefit
@@ -339,7 +339,7 @@ class ScenarioService:
                     END
                 ) AS beta_inflation,
                 COALESCE(
-                    pfb_credit.beta,
+                    pfb.credit_beta,
                     CASE 
                         WHEN s.security_type = 'BOND' THEN 5.0  -- Credit bonds sensitive to spreads
                         WHEN s.sector = 'Financial' THEN 1.5
@@ -347,7 +347,7 @@ class ScenarioService:
                     END
                 ) AS beta_credit,
                 COALESCE(
-                    pfb_usd.beta,
+                    pfb.usd_beta,
                     CASE 
                         WHEN l.currency != 'USD' THEN -0.5
                         WHEN s.sector IN ('Technology', 'Consumer') THEN -0.3  -- US exporters
@@ -355,7 +355,7 @@ class ScenarioService:
                     END
                 ) AS beta_usd,
                 COALESCE(
-                    pfb_equity.beta,
+                    pfb.equity_beta,
                     CASE 
                         WHEN s.security_type = 'EQUITY' AND s.sector = 'Technology' THEN 1.3
                         WHEN s.security_type = 'EQUITY' AND s.sector = 'Financial' THEN 1.1
@@ -369,27 +369,6 @@ class ScenarioService:
             LEFT JOIN position_factor_betas pfb ON (
                 pfb.portfolio_id = l.portfolio_id
                 AND pfb.security_id = s.id
-                AND pfb.factor_name = 'real_rates'
-            )
-            LEFT JOIN position_factor_betas pfb_inflation ON (
-                pfb_inflation.portfolio_id = l.portfolio_id
-                AND pfb_inflation.security_id = s.id
-                AND pfb_inflation.factor_name = 'inflation'
-            )
-            LEFT JOIN position_factor_betas pfb_credit ON (
-                pfb_credit.portfolio_id = l.portfolio_id
-                AND pfb_credit.security_id = s.id
-                AND pfb_credit.factor_name = 'credit_spreads'
-            )
-            LEFT JOIN position_factor_betas pfb_usd ON (
-                pfb_usd.portfolio_id = l.portfolio_id
-                AND pfb_usd.security_id = s.id
-                AND pfb_usd.factor_name = 'fx_usd'
-            )
-            LEFT JOIN position_factor_betas pfb_equity ON (
-                pfb_equity.portfolio_id = l.portfolio_id
-                AND pfb_equity.security_id = s.id
-                AND pfb_equity.factor_name = 'equity_market'
             )
             WHERE l.portfolio_id = $1
               AND l.is_open = true
