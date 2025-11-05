@@ -1539,13 +1539,23 @@ async def test_corporate_actions(current_user: dict = Depends(require_auth)):
             return {"error": "Database not available"}
         
         # Get portfolio directly from database
-        user_id = current_user.get("id")  # This is the user UUID
-        user_email = current_user.get("email") or user_id
+        # The auth returns 'user-001', but we need the real UUID from the database
+        user_email = current_user.get("email") or "michael@dawsos.com"
         
         async with db_pool.acquire() as conn:
+            # First get the real user UUID from email
+            user_row = await conn.fetchrow(
+                "SELECT id FROM users WHERE email = $1",
+                user_email
+            )
+            if not user_row:
+                return {"error": f"User not found: {user_email}"}
+                
+            real_user_id = user_row["id"]
+            
             portfolio_row = await conn.fetchrow(
                 "SELECT * FROM portfolios WHERE user_id = $1 LIMIT 1",
-                user_id
+                real_user_id
             )
             
             if not portfolio_row:
@@ -1576,12 +1586,17 @@ async def test_corporate_actions(current_user: dict = Depends(require_auth)):
             )
             pricing_pack_id = pack_row["id"] if pack_row else None
         
+        # Create a mock trace ID
+        import hashlib
+        trace_id = hashlib.md5(f"test-{datetime.now().timestamp()}".encode()).hexdigest()
+        
         ctx = RequestCtx(
             request_id=f"test-{datetime.now().timestamp()}",
-            user_id=user_email,
-            portfolio_id=str(portfolio_id),
-            pricing_pack_id=pricing_pack_id,
-            ledger_commit_hash=None,
+            trace_id=trace_id,
+            user_id=real_user_id,  # Use the real UUID from database
+            portfolio_id=portfolio_id,  # This is already a UUID
+            pricing_pack_id=pricing_pack_id or "PP_2025-11-05",
+            ledger_commit_hash="test-commit-001",
             asof_date=date.today()
         )
         
