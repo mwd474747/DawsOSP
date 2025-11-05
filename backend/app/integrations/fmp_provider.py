@@ -346,6 +346,7 @@ class FMPProvider(BaseProvider):
     ) -> List[Dict]:
         """
         Get dividend calendar for date range.
+        NOTE: FMP returns ALL dividends for the date range, not filtered by symbol.
 
         Args:
             from_date: Start date (YYYY-MM-DD)
@@ -377,8 +378,22 @@ class FMPProvider(BaseProvider):
             "from": from_date.isoformat(),
             "to": to_date.isoformat()
         }
+        
+        # Log the full request URL (without exposing API key)
+        logger.info(f"FMP get_dividend_calendar: Requesting URL={url}, from={from_date.isoformat()}, to={to_date.isoformat()}")
 
         response = await self._request("GET", url, params=params)
+        
+        # Log the response details
+        if isinstance(response, list):
+            logger.info(f"FMP get_dividend_calendar: Received {len(response)} dividend records for date range")
+            # Log sample of symbols returned (first 10 unique)
+            if response:
+                sample_symbols = list(set([r.get('symbol', 'unknown') for r in response[:20]]))[:10]
+                logger.debug(f"FMP get_dividend_calendar: Sample symbols in response: {sample_symbols}")
+        else:
+            logger.warning(f"FMP get_dividend_calendar: Unexpected response type: {type(response)}, response={response}")
+            
         return response if isinstance(response, list) else []
 
     @rate_limit(requests_per_minute=120)
@@ -387,6 +402,7 @@ class FMPProvider(BaseProvider):
     ) -> List[Dict]:
         """
         Get stock split calendar for date range.
+        NOTE: FMP returns ALL splits for the date range, not filtered by symbol.
 
         Args:
             from_date: Start date (YYYY-MM-DD)
@@ -415,8 +431,22 @@ class FMPProvider(BaseProvider):
             "from": from_date.isoformat(),
             "to": to_date.isoformat()
         }
+        
+        # Log the full request URL (without exposing API key)
+        logger.info(f"FMP get_split_calendar: Requesting URL={url}, from={from_date.isoformat()}, to={to_date.isoformat()}")
 
         response = await self._request("GET", url, params=params)
+        
+        # Log the response details
+        if isinstance(response, list):
+            logger.info(f"FMP get_split_calendar: Received {len(response)} split records for date range")
+            # Log sample of symbols returned 
+            if response:
+                sample_symbols = list(set([r.get('symbol', 'unknown') for r in response[:20]]))[:10]
+                logger.debug(f"FMP get_split_calendar: Sample symbols in response: {sample_symbols}")
+        else:
+            logger.warning(f"FMP get_split_calendar: Unexpected response type: {type(response)}, response={response}")
+            
         return response if isinstance(response, list) else []
 
     @rate_limit(requests_per_minute=120)
@@ -425,6 +455,7 @@ class FMPProvider(BaseProvider):
     ) -> List[Dict]:
         """
         Get earnings calendar for date range.
+        NOTE: FMP returns ALL earnings for the date range, not filtered by symbol.
 
         Args:
             from_date: Start date (YYYY-MM-DD)
@@ -455,8 +486,22 @@ class FMPProvider(BaseProvider):
             "from": from_date.isoformat(),
             "to": to_date.isoformat()
         }
+        
+        # Log the full request URL (without exposing API key)
+        logger.info(f"FMP get_earnings_calendar: Requesting URL={url}, from={from_date.isoformat()}, to={to_date.isoformat()}")
 
         response = await self._request("GET", url, params=params)
+        
+        # Log the response details
+        if isinstance(response, list):
+            logger.info(f"FMP get_earnings_calendar: Received {len(response)} earnings records for date range")
+            # Log sample of symbols returned
+            if response:
+                sample_symbols = list(set([r.get('symbol', 'unknown') for r in response[:20]]))[:10]
+                logger.debug(f"FMP get_earnings_calendar: Sample symbols in response: {sample_symbols}")
+        else:
+            logger.warning(f"FMP get_earnings_calendar: Unexpected response type: {type(response)}, response={response}")
+            
         return response if isinstance(response, list) else []
 
     async def _request(

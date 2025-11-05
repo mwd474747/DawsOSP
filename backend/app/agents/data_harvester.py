@@ -2508,15 +2508,21 @@ class DataHarvester(BaseAgent):
         
         try:
             provider = FMPProvider(api_key=api_key)
+            # FMP returns ALL dividends for date range - doesn't support symbol filtering
+            logger.info(f"Fetching dividends from FMP for date range {from_date_obj} to {to_date_obj}")
             dividends = await provider.get_dividend_calendar(from_date_obj, to_date_obj)
             
-            # Filter by symbols if provided
+            # Filter by symbols AFTER getting the results, since FMP returns all
             if symbols:
+                logger.debug(f"Filtering dividends for symbols: {symbols}")
                 dividends = [d for d in dividends if d.get("symbol") in symbols]
+                logger.info(f"Filtered dividends: {len(dividends)} records match portfolio symbols")
             
-            # Normalize format
+            # Normalize format - FMP returns adjDividend, not dividend
             normalized = []
             for div in dividends:
+                # Use adjDividend if available, fallback to dividend if not
+                dividend_amount = div.get("adjDividend") or div.get("dividend", 0)
                 normalized.append({
                     "symbol": div.get("symbol"),
                     "type": "dividend",
@@ -2524,7 +2530,7 @@ class DataHarvester(BaseAgent):
                     "payment_date": div.get("paymentDate"),
                     "record_date": div.get("recordDate"),
                     "declaration_date": div.get("declarationDate"),
-                    "amount": float(div.get("dividend", 0)),
+                    "amount": float(dividend_amount) if dividend_amount else 0.0,
                     "currency": "USD",  # FMP dividends typically USD
                     "source": "fmp"
                 })
@@ -2617,22 +2623,28 @@ class DataHarvester(BaseAgent):
         
         try:
             provider = FMPProvider(api_key=api_key)
+            # FMP returns ALL splits for date range - doesn't support symbol filtering
+            logger.info(f"Fetching splits from FMP for date range {from_date_obj} to {to_date_obj}")
             splits = await provider.get_split_calendar(from_date_obj, to_date_obj)
             
-            # Filter by symbols if provided
+            # Filter by symbols AFTER getting the results, since FMP returns all
             if symbols:
+                logger.debug(f"Filtering splits for symbols: {symbols}")
                 splits = [s for s in splits if s.get("symbol") in symbols]
+                logger.info(f"Filtered splits: {len(splits)} records match portfolio symbols")
             
-            # Normalize format
+            # Normalize format - FMP returns numerator/denominator for split ratio
             normalized = []
             for split in splits:
+                numerator = split.get("numerator", 1)
+                denominator = split.get("denominator", 1)
                 normalized.append({
                     "symbol": split.get("symbol"),
                     "type": "split",
                     "date": split.get("date"),
-                    "ratio": f"{split.get('numerator', 1)}:{split.get('denominator', 1)}",
-                    "numerator": split.get("numerator", 1),
-                    "denominator": split.get("denominator", 1),
+                    "ratio": f"{numerator}:{denominator}",
+                    "numerator": numerator,
+                    "denominator": denominator,
                     "source": "fmp"
                 })
             
@@ -2724,11 +2736,15 @@ class DataHarvester(BaseAgent):
         
         try:
             provider = FMPProvider(api_key=api_key)
+            # FMP returns ALL earnings for date range - doesn't support symbol filtering
+            logger.info(f"Fetching earnings from FMP for date range {from_date_obj} to {to_date_obj}")
             earnings = await provider.get_earnings_calendar(from_date_obj, to_date_obj)
             
-            # Filter by symbols if provided
+            # Filter by symbols AFTER getting the results, since FMP returns all
             if symbols:
+                logger.debug(f"Filtering earnings for symbols: {symbols}")
                 earnings = [e for e in earnings if e.get("symbol") in symbols]
+                logger.info(f"Filtered earnings: {len(earnings)} records match portfolio symbols")
             
             # Normalize format
             normalized = []
@@ -2845,38 +2861,63 @@ class DataHarvester(BaseAgent):
         from_date = asof_date
         to_date = from_date + timedelta(days=days_ahead)
         
+        logger.info(f"corporate_actions.upcoming: Fetching actions for {len(symbols)} symbols from {from_date} to {to_date}")
+        logger.debug(f"corporate_actions.upcoming: Symbols to filter: {symbols}")
+        
         # Fetch all corporate actions
         all_actions = []
+        errors = []
         
         # Fetch dividends
-        dividends_result = await self.corporate_actions_dividends(
-            ctx, state,
-            symbols=symbols,
-            from_date=from_date.isoformat(),
-            to_date=to_date.isoformat()
-        )
-        if dividends_result.get("dividends"):
-            all_actions.extend(dividends_result["dividends"])
+        try:
+            dividends_result = await self.corporate_actions_dividends(
+                ctx, state,
+                symbols=symbols,
+                from_date=from_date.isoformat(),
+                to_date=to_date.isoformat()
+            )
+            if dividends_result.get("error"):
+                errors.append(f"Dividends: {dividends_result.get('error')}")
+            elif dividends_result.get("dividends"):
+                all_actions.extend(dividends_result["dividends"])
+                logger.info(f"Added {len(dividends_result['dividends'])} dividend records")
+        except Exception as e:
+            logger.error(f"Error fetching dividends: {e}", exc_info=True)
+            errors.append(f"Dividends error: {str(e)}")
         
         # Fetch splits
-        splits_result = await self.corporate_actions_splits(
-            ctx, state,
-            symbols=symbols,
-            from_date=from_date.isoformat(),
-            to_date=to_date.isoformat()
-        )
-        if splits_result.get("splits"):
-            all_actions.extend(splits_result["splits"])
+        try:
+            splits_result = await self.corporate_actions_splits(
+                ctx, state,
+                symbols=symbols,
+                from_date=from_date.isoformat(),
+                to_date=to_date.isoformat()
+            )
+            if splits_result.get("error"):
+                errors.append(f"Splits: {splits_result.get('error')}")
+            elif splits_result.get("splits"):
+                all_actions.extend(splits_result["splits"])
+                logger.info(f"Added {len(splits_result['splits'])} split records")
+        except Exception as e:
+            logger.error(f"Error fetching splits: {e}", exc_info=True)
+            errors.append(f"Splits error: {str(e)}")
         
         # Fetch earnings
-        earnings_result = await self.corporate_actions_earnings(
-            ctx, state,
-            symbols=symbols,
-            from_date=from_date.isoformat(),
-            to_date=to_date.isoformat()
-        )
-        if earnings_result.get("earnings"):
-            all_actions.extend(earnings_result["earnings"])
+        try:
+            earnings_result = await self.corporate_actions_earnings(
+                ctx, state,
+                symbols=symbols,
+                from_date=from_date.isoformat(),
+                to_date=to_date.isoformat()
+            )
+            if earnings_result.get("error"):
+                errors.append(f"Earnings: {earnings_result.get('error')}")
+            elif earnings_result.get("earnings"):
+                all_actions.extend(earnings_result["earnings"])
+                logger.info(f"Added {len(earnings_result['earnings'])} earnings records")
+        except Exception as e:
+            logger.error(f"Error fetching earnings: {e}", exc_info=True)
+            errors.append(f"Earnings error: {str(e)}")
         
         # Sort by date
         all_actions.sort(key=lambda x: x.get("ex_date") or x.get("date") or x.get("payment_date") or "")
@@ -2890,6 +2931,9 @@ class DataHarvester(BaseAgent):
         splits_count = sum(1 for a in all_actions if a.get("type") == "split")
         earnings_count = sum(1 for a in all_actions if a.get("type") == "earnings")
         
+        logger.info(f"corporate_actions.upcoming: Found {len(all_actions)} total actions "
+                   f"({dividends_count} dividends, {splits_count} splits, {earnings_count} earnings)")
+        
         result = {
             "actions": all_actions,
             "summary": {
@@ -2900,6 +2944,11 @@ class DataHarvester(BaseAgent):
             },
             "source": "fmp"
         }
+        
+        # Add errors if any occurred
+        if errors:
+            result["errors"] = errors
+            logger.warning(f"corporate_actions.upcoming: Completed with errors: {errors}")
         
         # Attach metadata using BaseAgent helper
         metadata = self._create_metadata(

@@ -86,6 +86,7 @@ try:
     from app.services.scenarios import get_scenario_service, ShockType
     from app.agents.financial_analyst import FinancialAnalyst
     from app.agents.macro_hound import MacroHound
+    from app.agents.data_harvester import DataHarvester
 
     PATTERN_ORCHESTRATION_AVAILABLE = True
     logger.info("Pattern orchestration modules loaded successfully")
@@ -100,6 +101,7 @@ except ImportError as e:
     ShockType = None
     FinancialAnalyst = None
     MacroHound = None
+    DataHarvester = None
 
 # ============================================================================
 # Configuration and Constants
