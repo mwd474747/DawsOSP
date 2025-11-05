@@ -2090,8 +2090,8 @@ class FinancialAnalyst(BaseAgent):
         
         # Calculate performance metrics
         if len(historical_data) >= 2:
-            start_value = historical_data[0]["value"]
-            end_value = historical_data[-1]["value"]
+            start_value = historical_data[0]["nav_value"]
+            end_value = historical_data[-1]["nav_value"]
             total_return = ((end_value - start_value) / start_value) * 100 if start_value > 0 else 0
         else:
             total_return = 0
@@ -2102,7 +2102,7 @@ class FinancialAnalyst(BaseAgent):
         result = {
             "data": historical_data,  # Primary chart data array
             "labels": [d["date"] for d in historical_data] if historical_data else [],
-            "values": [d["value"] for d in historical_data] if historical_data else [],
+            "values": [d["nav_value"] for d in historical_data] if historical_data else [],
             # Additional metadata (preserved but not used by chart)
             "lookback_days": lookback_days,
             "start_date": historical_data[0]["date"] if historical_data else None,
