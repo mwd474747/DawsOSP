@@ -2,7 +2,7 @@
 
 AI-powered portfolio intelligence platform with macro economic analysis, risk assessment, and scenario testing.
 
-**Version**: 2.0.0 | **Status**: Production Ready ✅
+**Version**: 6.0.1 | **Status**: Production Ready ✅
 
 ---
 
