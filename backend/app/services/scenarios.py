@@ -626,7 +626,7 @@ class ScenarioService:
                 HedgeRecommendation(
                     hedge_type="USD/CAD Forward",
                     rationale="Buy USD/CAD forwards to hedge USD strength",
-                    notional=abs(total_loss),
+                    notional=Decimal(str(abs(total_loss))),
                     instruments=["FXC", "USD/CAD futures"],
                 )
             )
@@ -773,11 +773,11 @@ class ScenarioService:
 
         # Get current portfolio NAV
         nav_query = """
-            SELECT SUM(quantity * cost_basis_per_share) AS nav
+            SELECT SUM(quantity_open * cost_basis_per_share) AS nav
             FROM lots
             WHERE portfolio_id = $1
               AND is_open = true
-              AND quantity > 0
+              AND quantity_open > 0
         """
         nav_result = await execute_query_one(nav_query, portfolio_id)
         current_nav = Decimal(str(nav_result["nav"])) if nav_result and nav_result["nav"] else Decimal("0")
@@ -811,14 +811,14 @@ class ScenarioService:
                 drawdown_pct = scenario_result.total_delta_pl_pct
 
                 scenario_drawdowns.append({
-                    "scenario": shock_type.value if hasattr(shock_type, 'value') else str(shock_type),
+                    "scenario": shock_type.value,
                     "scenario_name": scenario_result.shock_name,
                     "drawdown_pct": drawdown_pct,
                     "delta_pl": float(scenario_result.total_delta_pl),
                 })
 
             except Exception as e:
-                logger.warning(f"Scenario {shock_type.value if hasattr(shock_type, 'value') else str(shock_type)} failed: {e}")
+                logger.warning(f"Scenario {shock_type.value} failed: {e}")
                 continue
 
         if not scenario_drawdowns:

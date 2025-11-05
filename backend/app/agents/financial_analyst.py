@@ -198,7 +198,7 @@ class FinancialAnalyst(BaseAgent):
                     SELECT
                         l.security_id,
                         l.symbol,
-                        l.quantity_open AS qty,
+                        l.quantity_open,
                         l.cost_basis,
                         l.currency,
                         p.base_currency
@@ -216,7 +216,7 @@ class FinancialAnalyst(BaseAgent):
 
             positions = []
             for row in rows:
-                qty = Decimal(str(row["qty"]))
+                qty = Decimal(str(row["quantity_open"]))
                 cost_basis = abs(Decimal(str(row["cost_basis"] or 0)))
                 positions.append(
                     {
