@@ -519,6 +519,31 @@ class PricingPackNotFoundError(CapabilityError):
         self.pricing_pack_id = pricing_pack_id
 
 
+class PricingPackValidationError(CapabilityError):
+    """Pricing pack ID format is invalid."""
+
+    def __init__(self, pricing_pack_id: str, reason: str):
+        super().__init__(
+            f"Invalid pricing pack ID format: {pricing_pack_id}. {reason}",
+            retryable=False,
+        )
+        self.pricing_pack_id = pricing_pack_id
+        self.reason = reason
+
+
+class PricingPackStaleError(CapabilityError):
+    """Pricing pack is not fresh (not ready for use)."""
+
+    def __init__(self, pricing_pack_id: str, status: str, is_fresh: bool):
+        super().__init__(
+            f"Pricing pack {pricing_pack_id} is not fresh (status={status}, is_fresh={is_fresh})",
+            retryable=True,  # Retryable because pack might become fresh later
+        )
+        self.pricing_pack_id = pricing_pack_id
+        self.status = status
+        self.is_fresh = is_fresh
+
+
 class LedgerReconciliationError(CapabilityError):
     """Ledger reconciliation failed (discrepancy > ±1bp)."""
 

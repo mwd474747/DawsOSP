@@ -36,7 +36,11 @@ from dataclasses import dataclass
 
 from app.db.pricing_pack_queries import get_pricing_pack_queries
 from app.db.connection import execute_query_one, execute_query
-from app.core.types import PricingPackNotFoundError
+from app.core.types import (
+    PricingPackNotFoundError,
+    PricingPackValidationError,
+    PricingPackStaleError,
+)
 
 logger = logging.getLogger("DawsOS.PricingService")
 
@@ -55,23 +59,23 @@ def validate_pack_id(pack_id: str) -> None:
         pack_id: Pricing pack ID to validate
         
     Raises:
-        ValueError: If pack_id format is invalid
+        PricingPackValidationError: If pack_id format is invalid
         
     Examples:
         validate_pack_id("PP_2025-10-21")  # Valid
-        validate_pack_id("PP_latest")      # Invalid - raises ValueError
-        validate_pack_id("")               # Invalid - raises ValueError
+        validate_pack_id("PP_latest")      # Invalid - raises PricingPackValidationError
+        validate_pack_id("")               # Invalid - raises PricingPackValidationError
     """
     if not pack_id:
-        raise ValueError(
-            f"pricing_pack_id cannot be empty. "
-            f"Expected format: 'PP_YYYY-MM-DD' (e.g., 'PP_2025-10-21') or UUID."
+        raise PricingPackValidationError(
+            pricing_pack_id=pack_id or "",
+            reason="pricing_pack_id cannot be empty. Expected format: 'PP_YYYY-MM-DD' (e.g., 'PP_2025-10-21') or UUID."
         )
     
     if not (PACK_ID_PATTERN.match(pack_id) or UUID_PATTERN.match(pack_id)):
-        raise ValueError(
-            f"Invalid pricing_pack_id format: '{pack_id}'. "
-            f"Expected format: 'PP_YYYY-MM-DD' (e.g., 'PP_2025-10-21') or UUID."
+        raise PricingPackValidationError(
+            pricing_pack_id=pack_id,
+            reason=f"Expected format: 'PP_YYYY-MM-DD' (e.g., 'PP_2025-10-21') or UUID."
         )
 
 
@@ -197,18 +201,20 @@ class PricingService:
             updated_at=pack_data["updated_at"],
         )
 
-    async def get_pack_by_id(self, pack_id: str) -> Optional[PricingPack]:
+    async def get_pack_by_id(self, pack_id: str, require_fresh: bool = False) -> Optional[PricingPack]:
         """
         Get pricing pack by ID.
 
         Args:
             pack_id: Pricing pack ID (e.g., "PP_2025-10-21")
+            require_fresh: If True, raise error if pack is not fresh (default: False)
 
         Returns:
             PricingPack object or None if not found
             
         Raises:
-            ValueError: If pack_id format is invalid
+            PricingPackValidationError: If pack_id format is invalid
+            PricingPackStaleError: If require_fresh=True and pack is not fresh
         """
         validate_pack_id(pack_id)
         
@@ -216,8 +222,8 @@ class PricingService:
 
         if not pack_data:
             return None
-
-        return PricingPack(
+        
+        pack = PricingPack(
             id=pack_data["id"],
             date=pack_data["date"],
             policy=pack_data["policy"],
@@ -229,6 +235,16 @@ class PricingService:
             created_at=pack_data["created_at"],
             updated_at=pack_data["updated_at"],
         )
+        
+        # Freshness gate enforcement
+        if require_fresh and not pack.is_fresh:
+            raise PricingPackStaleError(
+                pricing_pack_id=pack.id,
+                status=pack.status,
+                is_fresh=pack.is_fresh
+            )
+        
+        return pack
 
     async def is_pack_fresh(self, pack_id: str) -> bool:
         """
@@ -272,9 +288,8 @@ class PricingService:
             Returns None if price not found in pack.
 
         Raises:
-            ValueError: If security_id is invalid.
-            ValueError: If pack_id format is invalid.
-            DatabaseError: If database query fails.
+            PricingPackValidationError: If pack_id format is invalid
+            DatabaseError: If database query fails
             
         Note:
             - Returns stub data if use_db=False (mock price of 100.00 USD)
@@ -352,7 +367,7 @@ class PricingService:
             Dict mapping security_id to SecurityPrice (only for found securities)
             
         Raises:
-            ValueError: If pack_id format is invalid
+            PricingPackValidationError: If pack_id format is invalid
         """
         validate_pack_id(pack_id)
         
@@ -430,7 +445,7 @@ class PricingService:
             Dict mapping security_id (str) to close price (Decimal)
             
         Raises:
-            ValueError: If pack_id format is invalid
+            PricingPackValidationError: If pack_id format is invalid
 
         Example:
             prices = await pricing_service.get_prices_as_decimals([...], "PP_2025-10-21")
@@ -475,7 +490,7 @@ class PricingService:
             List of SecurityPrice objects
             
         Raises:
-            ValueError: If pack_id format is invalid
+            PricingPackValidationError: If pack_id format is invalid
         """
         validate_pack_id(pack_id)
         
@@ -549,7 +564,7 @@ class PricingService:
             FXRate object or None if not found
             
         Raises:
-            ValueError: If pack_id format is invalid
+            PricingPackValidationError: If pack_id format is invalid
         """
         validate_pack_id(pack_id)
         
@@ -610,7 +625,7 @@ class PricingService:
             List of FXRate objects
             
         Raises:
-            ValueError: If pack_id format is invalid
+            PricingPackValidationError: If pack_id format is invalid
         """
         validate_pack_id(pack_id)
         
@@ -677,8 +692,8 @@ class PricingService:
             Converted amount in target currency
 
         Raises:
-            ValueError: If pack_id format is invalid
-            ValueError: If FX rate not found
+            PricingPackValidationError: If pack_id format is invalid
+            ValueError: If FX rate not found (business logic error, not a validation error)
         """
         validate_pack_id(pack_id)
         
