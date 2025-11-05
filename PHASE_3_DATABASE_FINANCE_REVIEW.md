@@ -27,36 +27,47 @@
 ```sql
 CREATE TABLE IF NOT EXISTS portfolio_daily_values (
     portfolio_id UUID NOT NULL,
-    asof_date DATE NOT NULL,
-    nav DECIMAL(20, 2) NOT NULL,
-    return DECIMAL(10, 6),
+    valuation_date DATE NOT NULL,  -- ⚠️ CRITICAL: Schema uses valuation_date
+    total_value NUMERIC(20,2) NOT NULL,  -- ⚠️ CRITICAL: Schema uses total_value (not nav)
+    cash_balance NUMERIC(20,2) NOT NULL DEFAULT 0,
+    positions_value NUMERIC(20,2) NOT NULL DEFAULT 0,
     ...
-    PRIMARY KEY (portfolio_id, asof_date)
+    PRIMARY KEY (portfolio_id, valuation_date)
 );
 ```
 
 **Required Fields (from FactorAnalyzer usage):**
 - ✅ `portfolio_id` (UUID) - Portfolio identifier
-- ✅ `asof_date` (DATE) - Date of valuation
-- ✅ `nav` (DECIMAL) - Net Asset Value
-- ⚠️ `return` (DECIMAL) - Daily return (may be NULL, calculated on-the-fly)
+- 🔴 `asof_date` (DATE) - **BUG: FactorAnalyzer uses asof_date but schema uses valuation_date**
+- 🔴 `total_value` (NUMERIC) - **BUG: FactorAnalyzer uses total_value correctly but schema doesn't have nav**
+- ⚠️ `return` (DECIMAL) - Daily return (NOT in schema, calculated on-the-fly)
 
 **Factor Analysis Requirements:**
-- ✅ Need daily returns for regression (calculated from NAV)
+- ✅ Need daily returns for regression (calculated from total_value)
 - ✅ Need sufficient history (minimum 30 days, recommended 252 days = 1 year)
 - ✅ Need consistent date coverage
 
-**FactorAnalyzer Usage:**
-- Query: `SELECT asof_date, nav FROM portfolio_daily_values WHERE portfolio_id = $1 AND asof_date BETWEEN $2 AND $3`
-- Calculates returns: `(nav_t - nav_{t-1}) / nav_{t-1}`
+**FactorAnalyzer Usage (line 287-289):**
+```sql
+SELECT asof_date, total_value
+FROM portfolio_daily_values
+WHERE portfolio_id = $1 AND asof_date BETWEEN $2 AND $3
+```
+
+**🔴 CRITICAL BUG FOUND:**
+- **Schema uses:** `valuation_date`
+- **FactorAnalyzer uses:** `asof_date`
+- **This will cause SQL errors!**
 
 **Potential Issues:**
-- ⚠️ **Field name:** Uses `asof_date` (consistent with schema)
+- 🔴 **CRITICAL BUG:** Field name mismatch (`valuation_date` vs `asof_date`)
+- ✅ **Field name:** `total_value` matches schema
 - ⚠️ **Return calculation:** Returns calculated on-the-fly (not stored)
 - ⚠️ **Data coverage:** Need to verify data coverage (no missing days)
 
 **Recommendation:**
-- ✅ **Schema is correct** - Table structure matches FactorAnalyzer usage
+- 🔴 **MUST FIX:** Change FactorAnalyzer to use `valuation_date` instead of `asof_date`
+- ✅ **Schema is correct** - Table structure is correct, just field name mismatch
 - ⚠️ **Verify:** Data coverage and quality
 - ⚠️ **Verify:** Return calculation is correct
 
