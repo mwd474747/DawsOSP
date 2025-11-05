@@ -499,12 +499,9 @@ class PerformanceCalculator:
 
     async def _get_pack_date(self, pack_id: str) -> date:
         """Get as-of date for pricing pack."""
-        row = await self.db.fetchrow(
-            "SELECT date FROM pricing_packs WHERE id = $1", pack_id
-        )
-        if not row:
-            raise ValueError(f"Pricing pack not found: {pack_id}")
-        return row["date"]
+        pricing_service = get_pricing_service()
+        pack = await pricing_service.get_pack_by_id(pack_id, raise_if_not_found=True)
+        return pack.date
 
     async def _get_portfolio_value(self, portfolio_id: str, pack_id: str) -> Decimal:
         """

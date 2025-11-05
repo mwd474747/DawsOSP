@@ -31,6 +31,12 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Dict, List, Optional
 
+from app.core.types import (
+    PricingPackNotFoundError,
+    PricingPackValidationError,
+)
+from app.services.pricing import get_pricing_service
+
 logger = logging.getLogger(__name__)
 
 
@@ -112,7 +118,10 @@ class CurrencyAttributor:
         if not portfolio_id or not isinstance(portfolio_id, str) or portfolio_id.strip() == "":
             raise ValueError(f"portfolio_id is required and cannot be empty (got {repr(portfolio_id)})")
         if not pack_id or not isinstance(pack_id, str) or pack_id.strip() == "":
-            raise ValueError(f"pack_id is required and cannot be empty (got {repr(pack_id)})")
+            raise PricingPackValidationError(
+                pricing_pack_id=pack_id or "",
+                reason="pack_id is required and cannot be empty"
+            )
 
         # Get pack date and portfolio base currency
         end_date = await self._get_pack_date(pack_id)
@@ -400,12 +409,9 @@ class CurrencyAttributor:
 
     async def _get_pack_date(self, pack_id: str) -> date:
         """Get as-of date for pricing pack."""
-        row = await self.db.fetchrow(
-            "SELECT date FROM pricing_packs WHERE id = $1", pack_id
-        )
-        if not row:
-            raise ValueError(f"Pricing pack not found: {pack_id}")
-        return row["date"]
+        pricing_service = get_pricing_service()
+        pack = await pricing_service.get_pack_by_id(pack_id, raise_if_not_found=True)
+        return pack.date
 
     async def _get_base_currency(self, portfolio_id: str) -> str:
         """Get portfolio base currency."""

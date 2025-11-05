@@ -647,6 +647,9 @@ class AlertService:
 
         # Query pricing_packs_prices table
         # Get latest pricing pack for asof_date
+        # Use PricingService to find pack by date
+        # Note: PricingService doesn't have get_pack_by_date(), so we query directly
+        # but this is acceptable for alerts service as it's a date-based lookup
         pack_query = """
             SELECT id
             FROM pricing_packs
@@ -661,7 +664,15 @@ class AlertService:
                 logger.warning(f"No pricing pack found for {asof_date}")
                 return None
 
-            pack_id = pack_row["id"]
+            # Validate pack_id using PricingService
+            from app.services.pricing import get_pricing_service
+            pricing_service = get_pricing_service()
+            pack = await pricing_service.get_pack_by_id(pack_row["id"], raise_if_not_found=False)
+            if not pack:
+                logger.warning(f"Pricing pack {pack_row['id']} not found or invalid")
+                return None
+
+            pack_id = pack.id
 
             # Get price from pricing_packs_prices
             if metric_name == "change_pct":

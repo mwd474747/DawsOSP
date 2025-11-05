@@ -1537,13 +1537,16 @@ class OptimizerService:
 
     async def _get_pack_date(self, pricing_pack_id: str) -> date:
         """Get asof date from pricing pack."""
-        query = "SELECT date FROM pricing_packs WHERE id = $1"
-        row = await self.execute_query_one(query, pricing_pack_id)
-
-        if row:
-            return row["date"]
+        from app.services.pricing import get_pricing_service
+        
+        pricing_service = get_pricing_service()
+        pack = await pricing_service.get_pack_by_id(pricing_pack_id, raise_if_not_found=False)
+        
+        if pack:
+            return pack.date
         else:
             # Fallback to today
+            logger.warning(f"Pricing pack {pricing_pack_id} not found, using today's date")
             return date.today()
 
     def _dataclass_to_dict(self, obj: Any) -> Dict[str, Any]:
