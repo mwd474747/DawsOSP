@@ -301,9 +301,23 @@ class PatternOrchestrator:
                     )
                     continue
 
-                self.patterns[spec["id"]] = spec
+                pattern_id = spec["id"]
+                self.patterns[pattern_id] = spec
+                
+                # PHASE 2: Validate pattern dependencies during loading
+                validation_result = self.validate_pattern_dependencies(pattern_id)
+                if not validation_result["valid"]:
+                    logger.error(
+                        f"Pattern {pattern_id} failed dependency validation:\n"
+                        + "\n".join(validation_result["errors"])
+                    )
+                    # Still load pattern, but log error
+                elif validation_result["warnings"]:
+                    for warning in validation_result["warnings"]:
+                        logger.warning(f"Pattern {pattern_id}: {warning}")
+                
                 pattern_count += 1
-                logger.debug(f"Loaded pattern: {spec['id']} from {pattern_file}")
+                logger.debug(f"Loaded pattern: {pattern_id} from {pattern_file}")
 
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse pattern {pattern_file}: {e}")
