@@ -799,6 +799,9 @@ class PatternOrchestrator:
 
         Returns:
             Resolved arguments dict
+            
+        Raises:
+            ValueError: If required template variable (e.g., ctx.pricing_pack_id) resolves to None
 
         Example:
             args = {"positions": "{{positions.positions}}", "pack_id": "{{ctx.pricing_pack_id}}"}
@@ -807,7 +810,25 @@ class PatternOrchestrator:
         """
         resolved = {}
         for key, value in args.items():
-            resolved[key] = self._resolve_value(value, state)
+            resolved_value = self._resolve_value(value, state)
+            
+            # Validate required template variables (especially ctx.pricing_pack_id)
+            if resolved_value is None and isinstance(value, str) and value.startswith("{{") and value.endswith("}}"):
+                template_path = value[2:-2].strip()
+                
+                # Check if this is a required context variable
+                if template_path.startswith("ctx."):
+                    # Required context variables that cannot be None
+                    required_ctx_vars = ["ctx.pricing_pack_id", "ctx.ledger_commit_hash"]
+                    if template_path in required_ctx_vars:
+                        raise ValueError(
+                            f"Required template variable '{template_path}' resolved to None. "
+                            f"Context: pricing_pack_id={state.get('ctx', {}).get('pricing_pack_id')}, "
+                            f"ledger_commit_hash={state.get('ctx', {}).get('ledger_commit_hash')}. "
+                            f"Must be set in request context before pattern execution."
+                        )
+            
+            resolved[key] = resolved_value
         return resolved
 
     def _resolve_value(self, value: Any, state: Dict[str, Any]) -> Any:
