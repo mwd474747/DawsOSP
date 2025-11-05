@@ -660,4 +660,36 @@ For more details, see [DOCUMENTATION_MAINTENANCE_GUIDE.md](DOCUMENTATION_MAINTEN
 
 ---
 
-**Last Updated:** November 3, 2025
+## 📁 Project Structure
+
+### Root-Level Files
+- `combined_server.py` - Main FastAPI application server
+- `full_ui.html` - React 18 SPA (single file)
+- `requirements.txt` - Python dependencies
+- `pytest.ini` - Pytest configuration
+- `activate.sh` - Virtual environment activation script
+- `load_env.py` - Environment variable loading utility
+- `verify_ready.sh` - Setup verification script
+
+### Organized Directories
+- `scripts/data/` - Data population scripts
+  - `populate_portfolio_metrics_simple.py` - Populate portfolio metrics
+  - `populate_prices.py` - Populate security prices
+  - `update_metrics.py` - Update portfolio metrics
+- `scripts/validation/` - Validation scripts
+  - `verify_ui_data.py` - Verify UI data integrity
+  - `validate_pattern_ui_match.py` - Validate pattern UI matching
+- `tests/integration/` - Integration test files
+  - `test_dashboard.html` - Dashboard test page
+  - `test_login_and_macro.js` - Login and macro test
+  - `test_optimizer_routing.py` - Optimizer routing test
+  - `test_db_pool_config.py` - Database pool config test
+- `migrations/seeds/` - Database seed files
+  - `seed_portfolio_data.sql` - Seed portfolio data
+- `backend/` - Backend application code
+- `docs/` - Documentation
+- `.archive/` - Archived historical files
+
+---
+
+**Last Updated:** November 4, 2025
