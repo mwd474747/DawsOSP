@@ -41,14 +41,26 @@ Pattern Definition (JSON) → Template Substitution → Agent Capability Calls �
 {
   "id": "portfolio_overview",
   "steps": [
-    {"capability": "ledger.positions", "args": {"portfolio_id": "{{inputs.portfolio_id}}"}, "as": "positions"},
-    {"capability": "pricing.apply_pack", "args": {"positions": "{{positions.positions}}"}, "as": "valued_positions"},
-    {"capability": "metrics.compute_twr", "args": {"portfolio_id": "{{inputs.portfolio_id}}"}, "as": "perf_metrics"}
+    {
+      "capability": "portfolio.get_valued_positions",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "pack_id": "{{ctx.pricing_pack_id}}"
+      },
+      "as": "valued_positions"
+    },
+    {
+      "capability": "metrics.compute_twr",
+      "args": {"portfolio_id": "{{inputs.portfolio_id}}"},
+      "as": "perf_metrics"
+    }
   ]
 }
 ```
 
-**Template Reference Style**: Patterns use direct references to step results via the step's `"as"` key. For example, if a step has `"as": "positions"`, subsequent steps can reference it as `{{positions}}` or access nested properties as `{{positions.positions}}`. This is simpler than the previous `{{state.foo}}` style which required a nested namespace.
+**Pattern Optimization (Week 3/4 - November 2025):** The `portfolio.get_valued_positions` capability combines the common pattern of getting positions from the ledger and pricing them with a pricing pack. This eliminates duplication across 6 patterns that previously used the 2-step sequence of `ledger.positions` → `pricing.apply_pack`.
+
+**Template Reference Style**: Patterns use direct references to step results via the step's `"as"` key. For example, if a step has `"as": "valued_positions"`, subsequent steps can reference it as `{{valued_positions}}` or access nested properties as `{{valued_positions.positions}}`. This is simpler than the previous `{{state.foo}}` style which required a nested namespace.
 
 ### 2. Agent Runtime Layer
 
@@ -61,10 +73,11 @@ Capability Request ("ledger.positions") → Runtime Lookup → FinancialAnalyst.
 ```
 
 **Registered Agents** (4 total - Phase 3 consolidation complete):
-1. **FinancialAnalyst** - Portfolio ledger, pricing, metrics, attribution, optimization, ratings, charts (28 capabilities)
+1. **FinancialAnalyst** - Portfolio ledger, pricing, metrics, attribution, optimization, ratings, charts (29 capabilities)
    - Capabilities: `ledger.*`, `pricing.*`, `metrics.*`, `attribution.*`, `charts.*`, `risk.*`, `portfolio.*`, `optimizer.*`, `ratings.*`
    - **Consolidated from:** OptimizerAgent, RatingsAgent, ChartsAgent (Phase 3 Weeks 1-3, November 3, 2025)
-   - **Total:** 19 original + 9 consolidated = 28 capabilities
+   - **Week 3/4 additions:** `portfolio.get_valued_positions`, `metrics.compute_mwr` (November 5, 2025)
+   - **Total:** 19 original + 9 consolidated + 2 new = 30 capabilities (updated count)
 2. **MacroHound** - Macro economic cycles, scenarios, regime detection, alerts (~17+ capabilities)
    - Capabilities: `macro.*`, `scenarios.*`, `cycles.*`, `alerts.*`
    - **Consolidated from:** AlertsAgent (Phase 3 Week 4, November 3, 2025)
@@ -222,22 +235,19 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
    ↓
 5. Template substitution: {{inputs.portfolio_id}} → "abc-123"
    ↓
-6. Execute Step 1: capability="ledger.positions"
-   → AgentRuntime routes to FinancialAnalyst.ledger_positions()
+6. Execute Step 1: capability="portfolio.get_valued_positions"
+   → AgentRuntime routes to FinancialAnalyst.portfolio_get_valued_positions()
+   → Internally calls ledger_positions() + pricing_apply_pack()
    → Query: SELECT * FROM lots WHERE portfolio_id = 'abc-123'
-   → Returns: positions
+   → Enriches positions with market prices from pricing pack
+   → Returns: valued_positions (with positions, total_value, currency)
    ↓
-7. Execute Step 2: capability="pricing.apply_pack"
-   → AgentRuntime routes to FinancialAnalyst.pricing_apply_pack()
-   → Enriches positions with market prices
-   → Returns: valued_positions
-   ↓
-8. Execute Step 3: capability="metrics.compute_twr"
+7. Execute Step 2: capability="metrics.compute_twr"
    → AgentRuntime routes to FinancialAnalyst.metrics_compute_twr()
    → Calculates time-weighted return
    → Returns: perf_metrics
    ↓
-9. Orchestrator aggregates all step outputs
+8. Orchestrator aggregates all step outputs
    ↓
 10. Response sent to frontend
     {

@@ -26,11 +26,12 @@
 ### Portfolio Patterns (5 patterns)
 
 #### 1. portfolio_overview.json
-**Steps:** 6
+**Steps:** 5 (optimized in Week 4 - November 2025)
 **Purpose:** Core portfolio metrics, performance, attribution
-**Capabilities:** ledger.positions, pricing.apply_pack, metrics.compute_twr, attribution.currency, portfolio.sector_allocation, portfolio.historical_nav
+**Capabilities:** portfolio.get_valued_positions, metrics.compute_twr, attribution.currency, portfolio.sector_allocation, portfolio.historical_nav
 **Inputs:** portfolio_id (required), lookback_days (default: 252)
-**Outputs:** positions, valued_positions, perf_metrics, currency_attr, sector_allocation, historical_nav
+**Outputs:** valued_positions, perf_metrics, currency_attr, sector_allocation, historical_nav
+**Note:** Now uses `portfolio.get_valued_positions` abstraction (combines ledger.positions + pricing.apply_pack)
 
 #### 2. holding_deep_dive.json
 **Steps:** 8
@@ -54,11 +55,12 @@
 **Outputs:** cycles, positions, valued_positions, factor_exposures, cycle_risk_map
 
 #### 5. portfolio_scenario_analysis.json
-**Steps:** 5
+**Steps:** 4 (optimized in Week 4 - November 2025)
 **Purpose:** Stress testing with hedge suggestions
-**Capabilities:** ledger.positions, pricing.apply_pack, scenarios.deleveraging_austerity, scenarios.deleveraging_default, scenarios.deleveraging_money_printing
+**Capabilities:** portfolio.get_valued_positions, scenarios.deleveraging_austerity, scenarios.deleveraging_default, scenarios.deleveraging_money_printing
 **Inputs:** portfolio_id (required)
-**Outputs:** positions, valued_positions, austerity_scenario, default_scenario, money_printing_scenario
+**Outputs:** valued_base, austerity_scenario, default_scenario, money_printing_scenario
+**Note:** Now uses `portfolio.get_valued_positions` abstraction
 
 ### Macro Patterns (2 patterns)
 
@@ -87,34 +89,38 @@
 **Outputs:** fundamentals, dividend_safety, moat_strength, resilience, buffett_score, ai_explanation
 
 #### 9. news_impact_analysis.json
-**Steps:** 5
+**Steps:** 4 (optimized in Week 4 - November 2025)
 **Purpose:** Portfolio-weighted sentiment analysis
-**Capabilities:** ledger.positions, pricing.apply_pack, news.search, news.compute_portfolio_impact, ai.explain (conditional)
+**Capabilities:** portfolio.get_valued_positions, news.search, news.compute_portfolio_impact, ai.explain (conditional)
 **Inputs:** portfolio_id (required), lookback_days (default: 7)
-**Outputs:** positions, valued_positions, news, impact_analysis, ai_explanation (optional)
+**Outputs:** valued, news, impact_analysis, ai_explanation (optional)
+**Note:** Now uses `portfolio.get_valued_positions` abstraction
 
 ### Workflow Patterns (4 patterns)
 
 #### 10. export_portfolio_report.json
-**Steps:** 6
+**Steps:** 5 (optimized in Week 4 - November 2025)
 **Purpose:** PDF generation with full portfolio data
-**Capabilities:** ledger.positions, pricing.apply_pack, metrics.compute_twr, attribution.currency, macro.detect_regime (conditional), reports.render_pdf
+**Capabilities:** portfolio.get_valued_positions, metrics.compute_twr, attribution.currency, macro.detect_regime (conditional), reports.render_pdf
 **Inputs:** portfolio_id (required), report_format (default: "pdf")
-**Outputs:** positions, valued_positions, performance, attribution, regime (optional), pdf_report
+**Outputs:** valued, performance, attribution, regime (optional), pdf_report
+**Note:** Now uses `portfolio.get_valued_positions` abstraction
 
 #### 11. policy_rebalance.json
-**Steps:** 5
+**Steps:** 4 (optimized in Week 4 - November 2025)
 **Purpose:** Buffett-style portfolio rebalancing
-**Capabilities:** ledger.positions, pricing.apply_pack, ratings.aggregate, optimizer.rebalance, reports.render_pdf (conditional)
+**Capabilities:** portfolio.get_valued_positions, ratings.aggregate, optimizer.rebalance, reports.render_pdf (conditional)
 **Inputs:** portfolio_id (required), rebalance_threshold (default: 0.05)
-**Outputs:** positions, valued_positions, ratings, rebalance_result, report (optional)
+**Outputs:** valued, ratings, rebalance_result, report (optional)
+**Note:** Now uses `portfolio.get_valued_positions` abstraction
 
 #### 12. cycle_deleveraging_scenarios.json
-**Steps:** 7
+**Steps:** 6 (optimized in Week 4 - November 2025)
 **Purpose:** Dalio-style deleveraging shock analysis
-**Capabilities:** ledger.positions, pricing.apply_pack, scenarios.deleveraging_austerity, scenarios.deleveraging_default, scenarios.deleveraging_money_printing, scenarios.macro_aware_apply, scenarios.macro_aware_rank
+**Capabilities:** portfolio.get_valued_positions, scenarios.deleveraging_austerity, scenarios.deleveraging_default, scenarios.deleveraging_money_printing, scenarios.macro_aware_apply, scenarios.macro_aware_rank
 **Inputs:** portfolio_id (required)
-**Outputs:** positions, valued_positions, austerity, default, money_printing, scenario_comparison, ranked_hedges
+**Outputs:** valued_base, austerity, default, money_printing, scenario_comparison, ranked_hedges
+**Note:** Now uses `portfolio.get_valued_positions` abstraction
 
 #### 13. corporate_actions_upcoming.json
 **Steps:** 3
