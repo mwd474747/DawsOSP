@@ -362,10 +362,18 @@ class FinancialAnalyst(BaseAgent):
                     security_ids, pack_id
                 )
                 logger.info(f"Loaded {len(price_map)} prices from pack {pack_id}")
-            except Exception as exc:
+            except (PricingPackValidationError, PricingPackNotFoundError, PricingPackStaleError) as exc:
+                # Re-raise pricing pack errors - these are expected and should be handled upstream
                 logger.error(
-                    "Failed to load prices for pack %s: %s", pack_id, exc, exc_info=True
+                    "Pricing pack error for pack %s: %s", pack_id, exc, exc_info=True
                 )
+                raise
+            except Exception as exc:
+                # Unexpected errors - log and re-raise
+                logger.error(
+                    "Unexpected error loading prices for pack %s: %s", pack_id, exc, exc_info=True
+                )
+                raise
 
         base_currency = ctx.base_currency
         if not base_currency and positions:

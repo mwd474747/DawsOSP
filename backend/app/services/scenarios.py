@@ -43,6 +43,11 @@ from dataclasses import dataclass, field
 import json
 
 from app.db.connection import execute_query, execute_statement, execute_query_one
+from app.core.types import (
+    PricingPackNotFoundError,
+    PricingPackValidationError,
+    PricingPackStaleError,
+)
 
 logger = logging.getLogger("DawsOS.ScenarioService")
 
@@ -752,19 +757,14 @@ class ScenarioService:
             # Get latest pricing pack from pricing service
             from app.services.pricing import get_pricing_service
             pricing_service = get_pricing_service()
-            latest_pack = await pricing_service.get_latest_pack()
+            latest_pack = await pricing_service.get_latest_pack(require_fresh=True)
             if latest_pack:
                 pack_id = latest_pack.id
             else:
-                logger.error("No pricing pack available for DaR calculation")
-                return {
-                    "error": "No pricing pack available",
-                    "dar": None,
-                    "dar_pct": None,
-                    "confidence": confidence,
-                    "portfolio_id": portfolio_id,
-                    "regime": regime,
-                }
+                logger.error("No fresh pricing pack available for DaR calculation")
+                raise PricingPackNotFoundError(
+                    "No fresh pricing pack available. DaR calculation requires a fresh pricing pack."
+                )
 
         logger.info(
             f"compute_dar: portfolio={portfolio_id}, regime={regime}, "

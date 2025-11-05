@@ -201,19 +201,26 @@ class PricingService:
             updated_at=pack_data["updated_at"],
         )
 
-    async def get_pack_by_id(self, pack_id: str, require_fresh: bool = False) -> Optional[PricingPack]:
+    async def get_pack_by_id(
+        self, 
+        pack_id: str, 
+        require_fresh: bool = False,
+        raise_if_not_found: bool = False
+    ) -> Optional[PricingPack]:
         """
         Get pricing pack by ID.
 
         Args:
             pack_id: Pricing pack ID (e.g., "PP_2025-10-21")
             require_fresh: If True, raise error if pack is not fresh (default: False)
+            raise_if_not_found: If True, raise PricingPackNotFoundError if pack not found (default: False)
 
         Returns:
-            PricingPack object or None if not found
+            PricingPack object or None if not found (unless raise_if_not_found=True)
             
         Raises:
             PricingPackValidationError: If pack_id format is invalid
+            PricingPackNotFoundError: If raise_if_not_found=True and pack not found
             PricingPackStaleError: If require_fresh=True and pack is not fresh
         """
         validate_pack_id(pack_id)
@@ -221,6 +228,8 @@ class PricingService:
         pack_data = await self.pack_queries.get_pack_by_id(pack_id)
 
         if not pack_data:
+            if raise_if_not_found:
+                raise PricingPackNotFoundError(pack_id)
             return None
         
         pack = PricingPack(
