@@ -28,6 +28,7 @@ Usage:
 """
 
 import logging
+import re
 from datetime import date, datetime
 from typing import Optional, Dict, Any, List
 from decimal import Decimal
@@ -35,8 +36,43 @@ from dataclasses import dataclass
 
 from app.db.pricing_pack_queries import get_pricing_pack_queries
 from app.db.connection import execute_query_one, execute_query
+from app.core.types import PricingPackNotFoundError
 
 logger = logging.getLogger("DawsOS.PricingService")
+
+# Pack ID format validation pattern
+# Format: PP_YYYY-MM-DD (e.g., PP_2025-10-21)
+# Also supports UUID format for backward compatibility
+PACK_ID_PATTERN = re.compile(r'^PP_\d{4}-\d{2}-\d{2}$')
+UUID_PATTERN = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
+
+
+def validate_pack_id(pack_id: str) -> None:
+    """
+    Validate pricing pack ID format.
+    
+    Args:
+        pack_id: Pricing pack ID to validate
+        
+    Raises:
+        ValueError: If pack_id format is invalid
+        
+    Examples:
+        validate_pack_id("PP_2025-10-21")  # Valid
+        validate_pack_id("PP_latest")      # Invalid - raises ValueError
+        validate_pack_id("")               # Invalid - raises ValueError
+    """
+    if not pack_id:
+        raise ValueError(
+            f"pricing_pack_id cannot be empty. "
+            f"Expected format: 'PP_YYYY-MM-DD' (e.g., 'PP_2025-10-21') or UUID."
+        )
+    
+    if not (PACK_ID_PATTERN.match(pack_id) or UUID_PATTERN.match(pack_id)):
+        raise ValueError(
+            f"Invalid pricing_pack_id format: '{pack_id}'. "
+            f"Expected format: 'PP_YYYY-MM-DD' (e.g., 'PP_2025-10-21') or UUID."
+        )
 
 
 # ============================================================================
@@ -170,7 +206,12 @@ class PricingService:
 
         Returns:
             PricingPack object or None if not found
+            
+        Raises:
+            ValueError: If pack_id format is invalid
         """
+        validate_pack_id(pack_id)
+        
         pack_data = await self.pack_queries.get_pack_by_id(pack_id)
 
         if not pack_data:
@@ -232,7 +273,7 @@ class PricingService:
 
         Raises:
             ValueError: If security_id is invalid.
-            ValueError: If pack_id is invalid.
+            ValueError: If pack_id format is invalid.
             DatabaseError: If database query fails.
             
         Note:
@@ -241,6 +282,8 @@ class PricingService:
             - All prices are tied to pricing_pack_id for reproducibility
             - Missing prices are logged as warnings (does not raise exception)
         """
+        validate_pack_id(pack_id)
+        
         if not self.use_db:
             logger.warning(f"get_price({security_id}, {pack_id}): Using stub implementation")
             # Stub: Return mock price
@@ -307,7 +350,12 @@ class PricingService:
 
         Returns:
             Dict mapping security_id to SecurityPrice (only for found securities)
+            
+        Raises:
+            ValueError: If pack_id format is invalid
         """
+        validate_pack_id(pack_id)
+        
         if not self.use_db:
             logger.warning(f"get_prices_for_securities: Using stub implementation")
             return {
@@ -380,11 +428,16 @@ class PricingService:
 
         Returns:
             Dict mapping security_id (str) to close price (Decimal)
+            
+        Raises:
+            ValueError: If pack_id format is invalid
 
         Example:
             prices = await pricing_service.get_prices_as_decimals([...], "PP_2025-10-21")
             # {"uuid-1": Decimal("227.48"), "uuid-2": Decimal("115.23")}
         """
+        validate_pack_id(pack_id)
+        
         if not self.use_db:
             logger.warning(f"get_prices_as_decimals: Using stub implementation")
             return {sec_id: Decimal("100.00") for sec_id in security_ids}
@@ -420,7 +473,12 @@ class PricingService:
 
         Returns:
             List of SecurityPrice objects
+            
+        Raises:
+            ValueError: If pack_id format is invalid
         """
+        validate_pack_id(pack_id)
+        
         if not self.use_db:
             logger.warning(f"get_all_prices({pack_id}): Using stub implementation")
             return []
@@ -489,7 +547,12 @@ class PricingService:
 
         Returns:
             FXRate object or None if not found
+            
+        Raises:
+            ValueError: If pack_id format is invalid
         """
+        validate_pack_id(pack_id)
+        
         if not self.use_db:
             logger.warning(f"get_fx_rate({base_ccy}/{quote_ccy}, {pack_id}): Using stub")
             return FXRate(
@@ -545,7 +608,12 @@ class PricingService:
 
         Returns:
             List of FXRate objects
+            
+        Raises:
+            ValueError: If pack_id format is invalid
         """
+        validate_pack_id(pack_id)
+        
         if not self.use_db:
             logger.warning(f"get_all_fx_rates({pack_id}): Using stub implementation")
             return []
@@ -609,8 +677,11 @@ class PricingService:
             Converted amount in target currency
 
         Raises:
+            ValueError: If pack_id format is invalid
             ValueError: If FX rate not found
         """
+        validate_pack_id(pack_id)
+        
         # Same currency = no conversion
         if from_ccy == to_ccy:
             return amount
