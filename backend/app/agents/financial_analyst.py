@@ -468,6 +468,64 @@ class FinancialAnalyst(BaseAgent):
 
         return result
 
+    async def portfolio_get_valued_positions(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: Optional[str] = None,
+        pack_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Common abstraction: Get positions from ledger and value them with pricing pack.
+
+        This eliminates the most common 2-step pattern sequence used in 8 patterns:
+        1. ledger.positions
+        2. pricing.apply_pack
+
+        Args:
+            ctx: Request context (contains portfolio_id, pricing_pack_id)
+            state: Execution state
+            portfolio_id: Override portfolio ID (optional, uses ctx.portfolio_id)
+            pack_id: Override pricing pack ID (optional, uses ctx.pricing_pack_id)
+
+        Returns:
+            Dict with valued positions, total value, and metadata
+        """
+        # Resolve portfolio and pricing pack
+        portfolio_id_resolved = self._resolve_portfolio_id(portfolio_id, ctx, "portfolio.get_valued_positions")
+        pack_id_resolved = self._resolve_pricing_pack_id(pack_id, ctx)
+
+        logger.info(
+            f"portfolio.get_valued_positions: portfolio_id={portfolio_id_resolved}, "
+            f"pack_id={pack_id_resolved}"
+        )
+
+        # Step 1: Get positions from ledger
+        positions_result = await self.ledger_positions(
+            ctx,
+            state,
+            portfolio_id=str(portfolio_id_resolved)
+        )
+
+        if not positions_result.get("positions"):
+            logger.warning(f"No positions found for portfolio {portfolio_id_resolved}")
+            return {
+                "positions": [],
+                "total_value": 0.0,
+                "currency": "CAD",
+                "pricing_pack_id": pack_id_resolved,
+            }
+
+        # Step 2: Apply pricing pack to value positions
+        valued_result = await self.pricing_apply_pack(
+            ctx,
+            state,
+            positions=positions_result["positions"],
+            pack_id=pack_id_resolved
+        )
+
+        return valued_result
+
     async def metrics_compute_twr(
         self,
         ctx: RequestCtx,
@@ -594,6 +652,81 @@ class FinancialAnalyst(BaseAgent):
         result = self._attach_metadata(result, metadata)
 
         return result
+
+    async def metrics_compute_mwr(
+        self,
+        ctx: RequestCtx,
+        state: Dict[str, Any],
+        portfolio_id: Optional[str] = None,
+        pack_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Compute Money-Weighted Return (MWR/IRR) for portfolio.
+
+        MWR accounts for the timing and size of cash flows, measuring the
+        investor's actual experience (unlike TWR which measures manager skill).
+
+        Args:
+            ctx: Request context (contains portfolio_id)
+            state: Execution state
+            portfolio_id: Override portfolio ID (optional)
+            pack_id: Pricing pack ID for terminal valuation (optional)
+
+        Returns:
+            Dict with:
+                - mwr: Money-weighted return (IRR) as decimal
+                - ann_mwr: Annualized MWR
+                - lookback_days: Period analyzed (365 days)
+                - pricing_pack_id: Pack used for terminal valuation
+                - __metadata__: Provenance tracking
+
+        Example:
+            {
+                "mwr": 0.1450,          # 14.5% IRR
+                "ann_mwr": 0.1520,      # 15.2% annualized
+                "pricing_pack_id": "PP_2025-10-21",
+                "__metadata__": {...}
+            }
+        """
+        portfolio_id_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "metrics.compute_mwr")
+        effective_pack_id = self._resolve_pricing_pack_id(pack_id, ctx)
+
+        logger.info(
+            f"metrics.compute_mwr: portfolio_id={portfolio_id_uuid}, pack_id={effective_pack_id}"
+        )
+
+        # Use metrics calculator to compute MWR
+        from app.services.metrics import PerformanceCalculator
+
+        calc = PerformanceCalculator(db=None)  # Uses get_db_pool() internally
+
+        try:
+            result = await calc.compute_mwr(
+                portfolio_id=str(portfolio_id_uuid),
+                pack_id=effective_pack_id
+            )
+
+            # Add metadata for reproducibility
+            result["__metadata__"] = {
+                "capability": "metrics.compute_mwr",
+                "pricing_pack_id": effective_pack_id,
+                "computed_at": datetime.now().isoformat(),
+            }
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Failed to compute MWR: {e}", exc_info=True)
+            return {
+                "mwr": 0.0,
+                "ann_mwr": 0.0,
+                "error": str(e),
+                "__metadata__": {
+                    "capability": "metrics.compute_mwr",
+                    "pricing_pack_id": effective_pack_id,
+                    "error": str(e),
+                }
+            }
 
     async def metrics_compute_sharpe(
         self,

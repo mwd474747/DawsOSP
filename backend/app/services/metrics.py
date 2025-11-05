@@ -24,6 +24,7 @@ Usage:
 """
 
 import logging
+import os
 import numpy as np
 import pandas as pd
 from datetime import date, timedelta
@@ -138,10 +139,15 @@ class PerformanceCalculator:
             v_curr = Decimal(str(values[i]["total_value"]))
             cf = Decimal(str(values[i].get("cash_flows", 0)))
 
-            # r = (V_i - V_{i-1} - CF) / (V_{i-1} + CF)
-            denominator = v_prev + cf
+            # Time-Weighted Return (TWR) formula
+            # Standard approach: Remove cash flow impact from ending value, divide by starting value
+            # r = (V_curr - CF - V_prev) / V_prev
+            #
+            # This measures portfolio manager performance independent of cash flow timing.
+            # Cash flows are assumed to occur at end-of-day (EOD).
+            denominator = v_prev
             if denominator > 0:
-                r = (v_curr - v_prev - cf) / denominator
+                r = (v_curr - cf - v_prev) / denominator
                 returns.append(float(r))
 
         if not returns:
@@ -165,8 +171,10 @@ class PerformanceCalculator:
         # Volatility (annualized standard deviation of daily returns)
         vol = float(np.std(returns) * np.sqrt(252)) if len(returns) > 1 else 0.0
 
-        # Sharpe ratio (assume 4% risk-free rate)
-        rf_rate = 0.04
+        # Sharpe ratio
+        # Default risk-free rate: 4% (approximate long-term T-bill rate)
+        # TODO: Make configurable via environment variable or database setting
+        rf_rate = float(os.getenv("RISK_FREE_RATE", "0.04"))
         sharpe = (ann_twr - rf_rate) / vol if vol > 0 else 0.0
 
         # Sortino ratio (downside deviation only)
