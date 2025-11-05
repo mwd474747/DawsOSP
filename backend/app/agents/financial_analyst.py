@@ -41,7 +41,7 @@ Usage:
 """
 
 import logging
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
@@ -84,6 +84,7 @@ class FinancialAnalyst(BaseAgent):
             "pricing.apply_pack",
             "metrics.compute",  # Generic metrics computation (wrapper)
             "metrics.compute_twr",
+            "metrics.compute_mwr",  # NEW: Money-Weighted Return (IRR) - Week 2
             "metrics.compute_sharpe",
             "attribution.currency",
             "charts.overview",
@@ -100,6 +101,7 @@ class FinancialAnalyst(BaseAgent):
             "get_comparable_positions",
             "portfolio.sector_allocation",  # New capability for sector allocation
             "portfolio.historical_nav",  # New capability for historical NAV
+            "portfolio.get_valued_positions",  # NEW: Abstraction (get positions + price) - Week 3
         ]
         
         # Optimization capabilities
