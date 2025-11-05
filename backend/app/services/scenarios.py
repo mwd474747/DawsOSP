@@ -757,14 +757,11 @@ class ScenarioService:
             # Get latest pricing pack from pricing service
             from app.services.pricing import get_pricing_service
             pricing_service = get_pricing_service()
-            latest_pack = await pricing_service.get_latest_pack(require_fresh=True)
-            if latest_pack:
-                pack_id = latest_pack.id
-            else:
-                logger.error("No fresh pricing pack available for DaR calculation")
-                raise PricingPackNotFoundError(
-                    "No fresh pricing pack available. DaR calculation requires a fresh pricing pack."
-                )
+            latest_pack = await pricing_service.get_latest_pack(
+                require_fresh=True,
+                raise_if_not_found=True
+            )
+            pack_id = latest_pack.id
 
         logger.info(
             f"compute_dar: portfolio={portfolio_id}, regime={regime}, "
