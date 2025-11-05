@@ -200,11 +200,31 @@ class PricingService:
         Get price for a security from pricing pack.
 
         Args:
-            security_id: Security UUID
-            pack_id: Pricing pack ID
+            security_id: Security UUID. Required.
+            pack_id: Pricing pack ID. Format: "PP_YYYY-MM-DD". Required.
 
         Returns:
-            SecurityPrice object or None if not found
+            SecurityPrice object containing:
+            - security_id: Security UUID
+            - pricing_pack_id: Pricing pack ID
+            - asof_date: Date of price
+            - close: Closing price (Decimal)
+            - currency: Currency code
+            - source: Data source identifier
+            - open, high, low, volume: Optional OHLCV data
+            
+            Returns None if price not found in pack.
+
+        Raises:
+            ValueError: If security_id is invalid.
+            ValueError: If pack_id is invalid.
+            DatabaseError: If database query fails.
+            
+        Note:
+            - Returns stub data if use_db=False (mock price of 100.00 USD)
+            - Pricing packs are immutable once created
+            - All prices are tied to pricing_pack_id for reproducibility
+            - Missing prices are logged as warnings (does not raise exception)
         """
         if not self.use_db:
             logger.warning(f"get_price({security_id}, {pack_id}): Using stub implementation")

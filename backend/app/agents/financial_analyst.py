@@ -139,13 +139,41 @@ class FinancialAnalyst(BaseAgent):
         """
         Get portfolio positions from database.
 
+        Data Source: lots table (source of truth for open positions)
+        - Filters for is_open = true and quantity_open > 0
+        - Joins with portfolios table for base currency
+        - Falls back to stub data if database query fails
+
         Args:
-            ctx: Request context
-            state: Execution state
-            portfolio_id: Portfolio ID (optional, uses ctx.portfolio_id if not provided)
+            ctx: Request context containing user_id, portfolio_id, base_currency, etc.
+            state: Execution state from pattern orchestrator
+            portfolio_id: Portfolio UUID. Optional, uses ctx.portfolio_id if not provided.
 
         Returns:
-            Dict with positions list
+            Dict containing:
+            - positions: List of position dictionaries, each with:
+                - security_id: Security UUID
+                - symbol: Security symbol
+                - quantity: Number of shares (Decimal)
+                - cost_basis: Total cost basis (Decimal)
+                - currency: Position currency code
+                - base_currency: Portfolio base currency
+            - _provenance: Dict containing:
+                - type: "real" if from database, "stub" if fallback data
+                - source: Data source identifier
+                - warnings: List of warnings (if any)
+                - confidence: Data confidence score (1.0 for real, 0.5 for stub)
+
+        Raises:
+            ValueError: If portfolio_id is invalid or not found.
+            ValueError: If user_id is missing from request context.
+            DatabaseError: If database query fails (falls back to stub data).
+            
+        Note:
+            - Falls back to stub data if database query fails (does not raise)
+            - Stub data includes sample AAPL position for testing
+            - Provenance tracking indicates data source for auditability
+            - All positions are from lots table (source of truth)
         """
         portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "ledger.positions")
 

@@ -363,22 +363,54 @@ class OptimizerService:
         Generate rebalance trade proposals based on policy constraints.
 
         Args:
-            portfolio_id: Portfolio UUID
-            policy_json: Policy constraints (min_quality_score, max_turnover_pct, etc.)
-            pricing_pack_id: Pricing pack ID for reproducibility
-            ratings: Optional dict of {symbol: quality_score} from ratings service
+            portfolio_id: Portfolio UUID. Required.
+            policy_json: Policy constraints dictionary. Must include:
+                - min_quality_score: Minimum aggregate quality rating (0-10, default 0.0)
+                - max_single_position_pct: Maximum weight per position (%, default 20.0)
+                - max_sector_pct: Maximum sector concentration (%, default 30.0)
+                - max_turnover_pct: Maximum turnover per rebalance (%, default 30.0)
+                - max_tracking_error_pct: Maximum tracking error vs benchmark (%, default 5.0)
+                - method: Optimization method - "mean_variance", "risk_parity", "max_sharpe", or "cvar" (default "mean_variance")
+                - lookback_days: Historical period for covariance estimation (default 252)
+            pricing_pack_id: Pricing pack ID for reproducibility. Format: "PP_YYYY-MM-DD". Required.
+            ratings: Optional dict of {symbol: quality_score} from ratings service. If provided, filters positions by min_quality_score.
+            positions: Optional caller-supplied positions list. If provided and use_db=False, uses these instead of fetching from database.
+            use_db: If True, fetches positions from database. If False, uses caller-supplied positions.
 
         Returns:
-            RebalanceResult as dict with trades, metrics, and metadata
+            RebalanceResult as dict containing:
+            - trades: List of trade proposals (symbol, action, quantity, trade_value, etc.)
+            - trade_count: Number of trades proposed
+            - total_turnover: Total dollar value traded
+            - turnover_pct: Turnover as % of portfolio value
+            - estimated_costs: Total estimated costs (commissions + market impact)
+            - cost_bps: Costs in basis points
+            - current_value: Portfolio value before rebalance
+            - post_rebalance_value: Portfolio value after rebalance (minus costs)
+            - method: Optimization method used
+            - constraints_met: Whether all constraints were met
+            - warnings: List of warnings (e.g., trades scaled down to meet turnover limit)
 
         Process:
-            1. Load current positions from lots table
+            1. Load current positions from lots table (or use caller-supplied)
             2. Filter by quality rating (if ratings provided)
             3. Fetch historical prices for covariance estimation
             4. Run Riskfolio-Lib optimization
             5. Generate trade proposals
             6. Calculate turnover and costs
-            7. Verify constraints are met
+            7. Verify constraints are met (scale trades if turnover exceeds limit)
+
+        Raises:
+            ValueError: If portfolio_id is invalid or not found.
+            ValueError: If pricing_pack_id is invalid or not found.
+            DatabaseError: If database query fails.
+            OptimizationError: If optimization fails (insufficient data, invalid constraints, etc.).
+            
+        Note:
+            - Returns stub data if Riskfolio-Lib not available or use_db=False
+            - Returns empty result if no positions found
+            - Trades are automatically scaled down if turnover exceeds max_turnover_pct
+            - All optimizations use pricing_pack_id for reproducibility
         """
         logger.info(f"propose_trades: portfolio_id={portfolio_id}, pack_id={pricing_pack_id}")
 
@@ -509,18 +541,41 @@ class OptimizerService:
         Analyze impact of proposed trades on portfolio metrics.
 
         Args:
-            portfolio_id: Portfolio UUID
-            proposed_trades: List of trade proposals from propose_trades
-            pricing_pack_id: Pricing pack ID
+            portfolio_id: Portfolio UUID. Required.
+            proposed_trades: List of trade proposals from propose_trades(). Each trade must include:
+                - symbol: Security symbol
+                - action: "BUY", "SELL", or "HOLD"
+                - quantity: Number of shares (positive for BUY, negative for SELL)
+                - trade_value: Dollar value of trade
+                - estimated_cost: Estimated cost (commission + market impact)
+            pricing_pack_id: Pricing pack ID for valuation. Format: "PP_YYYY-MM-DD". Required.
 
         Returns:
-            ImpactAnalysis as dict with before/after metrics
+            ImpactAnalysis as dict containing:
+            - current_value: Portfolio value before trades
+            - post_rebalance_value: Portfolio value after trades (minus costs)
+            - value_delta: Change in portfolio value
+            - current_concentration_top10: Top 10 holdings concentration before (%)
+            - post_concentration_top10: Top 10 holdings concentration after (%)
+            - delta_concentration: Change in concentration (%)
 
         Process:
-            1. Load current positions
+            1. Load current positions from database
             2. Simulate trades to get post-rebalance positions
             3. Calculate metrics for both portfolios
             4. Return delta analysis
+
+        Raises:
+            ValueError: If portfolio_id is invalid or not found.
+            ValueError: If pricing_pack_id is invalid or not found.
+            ValueError: If proposed_trades is empty or invalid.
+            DatabaseError: If database query fails.
+            
+        Note:
+            - Returns stub data if use_db=False
+            - Returns empty analysis if no positions found
+            - Currently calculates concentration metrics only
+            - TODO: Add expected return, volatility, Sharpe, max DD calculations (requires historical returns)
         """
         logger.info(f"analyze_impact: portfolio_id={portfolio_id}, trades={len(proposed_trades)}")
 
@@ -598,33 +653,52 @@ class OptimizerService:
         Suggest hedge instruments for a scenario stress test.
 
         Args:
-            portfolio_id: Portfolio UUID
-            scenario_id: Scenario ID (e.g., "rates_up", "equity_selloff")
-            pricing_pack_id: Pricing pack ID
+            portfolio_id: Portfolio UUID. Required.
+            scenario_id: Scenario ID string. Supported scenarios:
+                - "rates_up": Rising interest rates
+                - "rates_down": Falling interest rates
+                - "usd_up": Strengthening USD
+                - "usd_down": Weakening USD
+                - "inflation" or "cpi_surprise": Inflation surprise
+                - "credit_spread_widening": Credit spread widening
+                - "equity_selloff": Equity market selloff
+                - "equity_rally": Equity market rally
+                - "late_cycle_rates_up": Late cycle rate increases
+                - "recession_mild": Mild recession scenario
+            pricing_pack_id: Pricing pack ID for scenario valuation. Format: "PP_YYYY-MM-DD". Required.
 
         Returns:
-            {
-                "scenario_id": "rates_up",
-                "hedges": [
-                    {
-                        "instrument": "TLT",
-                        "instrument_type": "etf",
-                        "action": "BUY",
-                        "notional": 10000.00,
-                        "hedge_ratio": 0.25,
-                        "rationale": "Long-duration treasuries hedge rate risk",
-                        "expected_offset_pct": 40.0
-                    },
-                    ...
-                ],
-                "total_notional": 25000.00,
-                "expected_offset_pct": 60.0
-            }
+            Dict containing:
+            - scenario_id: Scenario ID used
+            - hedges: List of hedge recommendations, each with:
+                - instrument: Symbol or instrument name
+                - instrument_type: "etf", "option", or "futures"
+                - action: "BUY" (always BUY for hedges)
+                - notional: Dollar notional value
+                - hedge_ratio: Hedge ratio (0-1)
+                - rationale: Explanation of hedge recommendation
+                - expected_offset_pct: Expected % of loss offset by hedge
+            - total_notional: Total notional value of all hedges
+            - expected_offset_pct: Overall expected offset percentage
+            - suggestions_count: Number of hedge recommendations
 
         Process:
-            1. Run scenario to get losers
-            2. Use ScenarioService.suggest_hedges to get recommendations
-            3. Format for pattern consumption
+            1. Map scenario_id to ShockType enum
+            2. Run scenario stress test to identify losers
+            3. Use ScenarioService.suggest_hedges to get recommendations
+            4. Format for pattern consumption
+
+        Raises:
+            ValueError: If portfolio_id is invalid or not found.
+            ValueError: If pricing_pack_id is invalid or not found.
+            ValueError: If scenario_id is not recognized.
+            ServiceError: If scenario service fails.
+            DatabaseError: If database query fails.
+            
+        Note:
+            - Returns empty hedges list on error (does not raise)
+            - Hedge recommendations are estimates based on historical correlations
+            - Actual hedge effectiveness may vary
         """
         logger.info(f"suggest_hedges: portfolio_id={portfolio_id}, scenario={scenario_id}")
         
@@ -758,35 +832,53 @@ class OptimizerService:
         """
         Suggest deleveraging hedges based on macro regime.
 
+        Implements Dalio deleveraging playbook for regime-specific risk management.
+
         Args:
-            portfolio_id: Portfolio UUID
-            regime: Macro regime (e.g., "LATE_EXPANSION", "DELEVERAGING")
-            pricing_pack_id: Pricing pack ID
+            portfolio_id: Portfolio UUID. Required.
+            regime: Macro regime string. Supported regimes:
+                - "LATE_EXPANSION": Late expansion phase recommendations
+                - "DELEVERAGING" or "DEPRESSION": Deleveraging phase recommendations
+                - "EARLY_EXPANSION": Early expansion phase recommendations
+                - "RECESSION": Recession phase recommendations
+            pricing_pack_id: Pricing pack ID for current valuation. Format: "PP_YYYY-MM-DD". Required.
 
         Returns:
-            {
-                "regime": "DELEVERAGING",
-                "recommendations": [
-                    {
-                        "action": "reduce_equity_exposure",
-                        "instruments": ["SPY", "QQQ"],
-                        "target_reduction_pct": 30.0,
-                        "rationale": "Reduce equity beta in deleveraging regime"
-                    },
-                    {
-                        "action": "increase_safe_havens",
-                        "instruments": ["GLD", "TLT"],
-                        "target_allocation_pct": 20.0,
-                        "rationale": "Increase gold and long-duration bonds"
-                    },
-                    ...
-                ]
-            }
+            Dict containing:
+            - regime: Regime string used
+            - recommendations: List of deleveraging recommendations, each with:
+                - action: Action type (e.g., "reduce_equity_exposure", "increase_safe_havens")
+                - instruments: List of instrument symbols
+                - target_reduction_pct: Target reduction percentage (for reduce actions)
+                - target_allocation_pct: Target allocation percentage (for increase actions)
+                - rationale: Explanation of recommendation
 
-        Uses Dalio deleveraging playbook:
-            - Reduce debt/equity exposure
-            - Increase cash, gold, long-duration bonds
-            - Avoid credit-sensitive assets
+        Uses Dalio Deleveraging Playbook:
+            - DELEVERAGING/DEPRESSION: Aggressive deleveraging
+                - Reduce equity exposure 30-40%
+                - Increase safe havens (GLD, TLT, CASH) to 20-30%
+                - Exit credit-sensitive assets
+            - LATE_EXPANSION: Moderate deleveraging
+                - Reduce equity exposure 15-20%
+                - Increase defensive sectors (XLU, XLP, VNQ) to 10-15%
+            - EARLY_EXPANSION: Growth positioning
+                - Maintain equity exposure
+                - Reduce safe havens
+            - RECESSION: Defensive positioning
+                - Reduce equity exposure 20-25%
+                - Increase cash and bonds
+
+        Raises:
+            ValueError: If portfolio_id is invalid or not found.
+            ValueError: If pricing_pack_id is invalid or not found.
+            ValueError: If regime is not recognized.
+            DatabaseError: If database query fails.
+            
+        Note:
+            - Returns stub data if use_db=False
+            - Returns empty recommendations if no positions found
+            - Recommendations are based on Dalio's deleveraging framework
+            - Actual implementation may vary based on portfolio composition
         """
         logger.info(f"suggest_deleveraging_hedges: portfolio_id={portfolio_id}, regime={regime}")
 

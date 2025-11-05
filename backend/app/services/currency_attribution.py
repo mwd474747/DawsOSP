@@ -55,37 +55,56 @@ class CurrencyAttributor:
         self, portfolio_id: str, pack_id: str, lookback_days: int = 252
     ) -> Dict:
         """
-        Compute currency attribution for portfolio.
+        Compute currency attribution for multi-currency portfolio.
 
-        Breaks down total return into:
-        1. Local returns (price changes in local currencies)
-        2. FX returns (currency moves)
-        3. Interaction term (r_local × r_fx)
+        Breaks down total return into three components using the currency identity:
+            r_base = r_local + r_fx + (r_local × r_fx)
+
+        Where:
+            r_base = Return in portfolio base currency
+            r_local = Return in security's local currency (price change only)
+            r_fx = FX rate change (local currency → base currency)
+            r_local × r_fx = Interaction term (cross-product of local and FX returns)
+
+        Formula Reference:
+            r_base = (P_end × FX_end - P_start × FX_start) / (P_start × FX_start)
+            r_local = (P_end - P_start) / P_start
+            r_fx = (FX_end - FX_start) / FX_start
+            interaction = r_local × r_fx
 
         Args:
-            portfolio_id: Portfolio UUID
-            pack_id: Pricing pack UUID
-            lookback_days: Historical period (default 252 = 1 year)
+            portfolio_id: Portfolio UUID. Required.
+            pack_id: Pricing pack UUID for end date. Format: "PP_YYYY-MM-DD". Required.
+            lookback_days: Historical period in days. Must be between 1 and 3650. Default 252 (1 trading year).
 
         Returns:
-            {
-                "total_return": 0.15,  # Total return in base currency
-                "local_return": 0.12,  # Sum of local returns
-                "fx_return": 0.02,  # Sum of FX returns
-                "interaction": 0.01,  # Interaction term
-                "by_currency": {
-                    "USD": {"local": 0.08, "fx": 0.0, "interaction": 0.0, "weight": 0.60},
-                    "EUR": {"local": 0.03, "fx": 0.015, "interaction": 0.0005, "weight": 0.25},
-                    "GBP": {"local": 0.01, "fx": 0.005, "interaction": 0.00005, "weight": 0.15}
-                },
-                "verification": {
-                    "identity_holds": True,
-                    "error_bps": 0.05  # Error in basis points
-                }
-            }
+            Dict containing:
+            - total_return: Total return in base currency (decimal)
+            - local_return: Sum of local returns weighted by position weights
+            - fx_return: Sum of FX returns weighted by position weights
+            - interaction: Sum of interaction terms weighted by position weights
+            - by_currency: Dict keyed by currency code, each containing:
+                - local: Local return contribution
+                - fx: FX return contribution
+                - interaction: Interaction term contribution
+                - weight: Portfolio weight in this currency
+            - verification: Dict containing:
+                - identity_holds: True if r_base = r_local + r_fx + interaction (within 1bp)
+                - error_bps: Error in basis points (should be < 1.0)
 
         Raises:
-            ValueError: If insufficient data for calculation
+            ValueError: If portfolio_id is invalid or not found.
+            ValueError: If pack_id is invalid or not found.
+            ValueError: If lookback_days is outside valid range (1-3650).
+            ValueError: If insufficient data for calculation (no holdings).
+            DatabaseError: If database query fails.
+            
+        Note:
+            - Reconciliation guarantee: Currency identity holds within ±1 basis point
+            - FX rates are expressed as local_ccy per 1 base_ccy
+            - For base currency holdings, FX return = 0 and interaction = 0
+            - Returns empty result with error message if no holdings found
+            - All calculations reference pricing_pack_id for reproducibility
         """
         # Validate inputs
         logger.info(f"compute_attribution called with: portfolio_id={repr(portfolio_id)}, pack_id={repr(pack_id)}")

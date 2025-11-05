@@ -54,7 +54,7 @@ class PerformanceCalculator:
         self, portfolio_id: str, pack_id: str, lookback_days: int = 252
     ) -> Dict:
         """
-        Compute Time-Weighted Return (TWR).
+        Compute Time-Weighted Return (TWR) with geometric linking.
 
         Formula:
             TWR = [(1+r1)(1+r2)...(1+rn)] - 1
@@ -64,24 +64,37 @@ class PerformanceCalculator:
             V_i = Portfolio value at time i
             CF_i = Cash flows at time i (contributions/withdrawals)
 
+        Uses geometric linking to eliminate impact of cash flows, making TWR
+        suitable for comparing portfolio performance independent of contribution timing.
+
         Args:
-            portfolio_id: Portfolio UUID
-            pack_id: Pricing pack UUID
-            lookback_days: Historical period (default 252 = 1 year)
+            portfolio_id: Portfolio UUID. Required.
+            pack_id: Pricing pack UUID for end date. Format: "PP_YYYY-MM-DD". Required.
+            lookback_days: Historical period in days. Must be between 1 and 3650. Default 252 (1 trading year).
 
         Returns:
-            {
-                "twr": 0.15,  # 15% total return
-                "ann_twr": 0.152,  # Annualized return
-                "vol": 0.18,  # Annualized volatility
-                "sharpe": 0.85,  # Sharpe ratio
-                "sortino": 1.12,  # Sortino ratio
-                "days": 252,
-                "data_points": 252
-            }
+            Dict containing:
+            - twr: Total return over period (decimal, e.g., 0.15 = 15%)
+            - ann_twr: Annualized return (decimal)
+            - vol: Annualized volatility (standard deviation of daily returns × sqrt(252))
+            - sharpe: Sharpe ratio ((ann_twr - risk_free_rate) / vol). Assumes 4% risk-free rate.
+            - sortino: Sortino ratio (uses downside deviation only)
+            - days: Number of days in period
+            - data_points: Number of daily valuations used
 
         Raises:
-            ValueError: If insufficient data for calculation
+            ValueError: If portfolio_id is invalid or not found.
+            ValueError: If pack_id is invalid or not found.
+            ValueError: If lookback_days is outside valid range (1-3650).
+            ValueError: If insufficient data for calculation (< 2 data points).
+            DatabaseError: If database query fails.
+            
+        Note:
+            - Returns empty result with error message if insufficient data
+            - Uses portfolio_daily_values hypertable for daily valuations
+            - Gracefully handles missing portfolio_daily_values table (returns empty result)
+            - Reconciliation guarantee: ±1 basis point accuracy when data available
+            - Annualization assumes 365 days per year
         """
         # Get pack date
         end_date = await self._get_pack_date(pack_id)
@@ -184,23 +197,42 @@ class PerformanceCalculator:
         """
         Compute Money-Weighted Return (MWR) via Internal Rate of Return (IRR).
 
+        MWR accounts for the timing and size of cash flows, making it suitable
+        for measuring investor-specific returns. Higher cash flows during periods
+        of high returns increase MWR relative to TWR.
+
         Formula:
             0 = sum(CF_i / (1+IRR)^t_i) + V_n / (1+IRR)^t_n
 
-        Solves for IRR using Newton-Raphson method.
+        Where:
+            CF_i = Cash flow at time i (positive for contributions, negative for withdrawals)
+            t_i = Days from start / 365
+            V_n = Terminal portfolio value (as negative cash flow)
+
+        Solves for IRR using Newton-Raphson method with convergence tolerance 1e-6.
 
         Args:
-            portfolio_id: Portfolio UUID
-            pack_id: Pricing pack UUID
+            portfolio_id: Portfolio UUID. Required.
+            pack_id: Pricing pack UUID for terminal valuation. Format: "PP_YYYY-MM-DD". Required.
 
         Returns:
-            {
-                "mwr": 0.14,  # 14% IRR
-                "ann_mwr": 0.142  # Annualized (if period < 1 year)
-            }
+            Dict containing:
+            - mwr: Money-weighted return (IRR) as decimal (e.g., 0.14 = 14%)
+            - ann_mwr: Annualized MWR (if period < 1 year, annualized to 1 year)
 
         Raises:
-            ValueError: If no cash flows or IRR doesn't converge
+            ValueError: If portfolio_id is invalid or not found.
+            ValueError: If pack_id is invalid or not found.
+            ValueError: If no cash flows found in period.
+            ValueError: If IRR calculation doesn't converge after 100 iterations.
+            DatabaseError: If database query fails.
+            
+        Note:
+            - Uses 1 year lookback period (365 days from pack date)
+            - Returns empty result with error message if no cash flows
+            - IRR must be > -100% (bounded at -0.99)
+            - Terminal value is included as negative cash flow
+            - Annualization: (1 + mwr)^(365/days) - 1
         """
         # Get date range (1 year lookback)
         end_date = await self._get_pack_date(pack_id)
