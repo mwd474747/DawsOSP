@@ -48,6 +48,20 @@ from uuid import UUID
 
 import numpy as np
 
+# Import capability contract decorator (optional - graceful degradation)
+try:
+    from app.core.capability_contract import capability
+    CAPABILITY_CONTRACT_AVAILABLE = True
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.warning("Capability contract module not available - contracts disabled")
+    # Fallback: no-op decorator
+    def capability(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    CAPABILITY_CONTRACT_AVAILABLE = False
+
 from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 from app.core.provenance import ProvenanceWrapper, DataProvenance

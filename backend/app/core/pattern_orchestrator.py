@@ -612,6 +612,17 @@ class PatternOrchestrator:
         inputs = self._apply_pattern_defaults(spec, inputs)
         logger.info(f"Inputs after applying defaults: {inputs}")
 
+        # PHASE 2: Validate pattern dependencies before execution
+        validation_result = self.validate_pattern_dependencies(pattern_id)
+        if not validation_result["valid"]:
+            error_msg = "Pattern dependency validation failed:\n" + "\n".join(validation_result["errors"])
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        if validation_result["warnings"]:
+            for warning in validation_result["warnings"]:
+                logger.warning(f"Pattern {pattern_id} validation warning: {warning}")
+
         # Get metrics registry for pattern-level tracking
         metrics = get_metrics()
 
@@ -1063,6 +1074,121 @@ class PatternOrchestrator:
         
         # Simple key lookup
         return state.get(expr)
+    
+    def _extract_template_references(self, text: str) -> List[str]:
+        """
+        Extract template references from text.
+        
+        Args:
+            text: Text containing template variables in {{...}} format
+        
+        Returns:
+            List of template reference paths (e.g., ["ctx.portfolio_id", "positions.positions"])
+        """
+        import re
+        pattern = r'\{\{([^}]+)\}\}'
+        matches = re.findall(pattern, text)
+        return [match.strip() for match in matches]
+    
+    def _validate_template_reference(self, ref: str, defined_outputs: set) -> bool:
+        """
+        Validate template reference exists in defined outputs.
+        
+        Args:
+            ref: Template reference (e.g., "positions.positions" or "ctx.portfolio_id")
+            defined_outputs: Set of defined output keys (e.g., {"ctx", "inputs", "positions"})
+        
+        Returns:
+            True if reference is valid, False otherwise
+        """
+        # Handle nested references (e.g., "positions.positions")
+        parts = ref.split(".")
+        first_part = parts[0]
+        
+        # Special cases: ctx and inputs are always available
+        if first_part in ["ctx", "inputs"]:
+            return True
+        
+        # Check if first part exists in defined outputs
+        if first_part not in defined_outputs:
+            return False
+        
+        # If nested, basic validation (full validation would require actual state)
+        # For now, we just check if the first part exists
+        return True
+    
+    def validate_pattern_dependencies(self, pattern_id: str) -> Dict[str, Any]:
+        """
+        Validate pattern step dependencies.
+        
+        Validates that:
+        1. All referenced steps exist
+        2. No forward references (steps can only reference previous steps)
+        3. Template variables resolve correctly
+        
+        Args:
+            pattern_id: Pattern ID to validate
+        
+        Returns:
+            Dict with validation results:
+            {
+                "valid": bool,
+                "errors": List[str],
+                "warnings": List[str]
+            }
+        """
+        spec = self.patterns.get(pattern_id)
+        if not spec:
+            return {
+                "valid": False,
+                "errors": [f"Pattern '{pattern_id}' not found"],
+                "warnings": []
+            }
+        
+        errors = []
+        warnings = []
+        steps = spec.get("steps", [])
+        defined_outputs = set(["ctx", "inputs"])  # Always available
+        
+        for i, step in enumerate(steps):
+            step_name = step.get("as", f"step_{i}")
+            capability = step.get("capability", "unknown")
+            
+            # Track defined outputs (step "as" keys)
+            defined_outputs.add(step_name)
+            
+            # Check template references in args
+            args = step.get("args", {})
+            for key, value in args.items():
+                if isinstance(value, str) and "{{" in value:
+                    # Extract template references
+                    template_refs = self._extract_template_references(value)
+                    for ref in template_refs:
+                        # Check if reference exists
+                        if not self._validate_template_reference(ref, defined_outputs):
+                            errors.append(
+                                f"Step {i} ({capability}): "
+                                f"Template reference '{{{{ {ref} }}}}' not found. "
+                                f"Available: {sorted(list(defined_outputs))}"
+                            )
+            
+            # Check condition template references
+            if "condition" in step:
+                condition = step["condition"]
+                template_refs = self._extract_template_references(condition)
+                for ref in template_refs:
+                    if not self._validate_template_reference(ref, defined_outputs):
+                        errors.append(
+                            f"Step {i} condition ({capability}): "
+                            f"Template reference '{{{{ {ref} }}}}' not found. "
+                            f"Available: {sorted(list(defined_outputs))}"
+                        )
+        
+        return {
+            "valid": len(errors) == 0,
+            "errors": errors,
+            "warnings": warnings
+        }
     
     def _resolve_template_vars(self, text: str, state: Dict[str, Any]) -> str:
         """

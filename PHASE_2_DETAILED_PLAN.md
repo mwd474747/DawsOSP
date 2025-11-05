@@ -1,985 +1,945 @@
-# Phase 2 Detailed Plan: Foundation & Code Quality
+# Phase 2 Detailed Implementation Plan: Foundation & Validation
 
 **Date:** January 14, 2025  
-**Status:** 📋 **PLANNING**  
-**Purpose:** Comprehensive Phase 2 plan incorporating Phase 1 learnings, integration patterns, anti-patterns, and duplication analysis
+**Status:** ✅ **READY FOR EXECUTION**  
+**Purpose:** Detailed implementation plan for Phase 2 that prevents future issues and improves developer experience
 
 ---
 
-## 📊 Executive Summary
+## Executive Summary
 
-**Phase 2 Goal:** Prevent future issues, improve developer experience, eliminate duplication, and establish patterns for maintainability
+**Goal:** Prevent future issues, improve developer experience, enable confident development
 
-**Key Differences from Phase 1:**
-- Phase 1 focused on **user-facing critical fixes** (provenance warnings, pattern output extraction)
-- Phase 2 focuses on **developer experience and code quality** (validation, contracts, helper functions)
-- Phase 1 was reactive (fixing broken things)
-- Phase 2 is proactive (preventing future issues)
+**Root Issues:**
+1. **No Validation** - Patterns can reference undefined steps, errors discovered at runtime
+2. **No Capability Contracts** - No clear interfaces for capabilities, unclear expectations
+3. **No Pattern Linter** - No automated validation, issues discovered at runtime
 
-**Integration Considerations:**
-- Phase 1 output extraction fixes affect how patterns are validated
-- Phase 1 pattern format standardization enables better validation
-- Phase 1 provenance warnings establish pattern for capability contracts
+**Total Time:** 32 hours (Weeks 2-3)
 
-**Timeline:** 3-4 weeks (60-80 hours)
-
----
-
-## 🔍 Phase 1 Learnings & Impact on Phase 2
-
-### Phase 1 Completed Work
-
-1. **Provenance Warnings** ✅
-   - Added `_provenance` field to stub data
-   - Established pattern for capability metadata
-   - **Impact on Phase 2:** Can extend this pattern to capability contracts
-
-2. **Pattern Output Extraction** ✅
-   - Fixed orchestrator to handle 3 output formats
-   - Updated 6 patterns to standard list format
-   - **Impact on Phase 2:** Validation can assume standard format, simplifies contract definition
-
-3. **Scenario Analysis Fixes** ✅
-   - Migration 009 applied (scenario tables created)
-   - SQL query fixes (correct column names)
-   - AttributeError fixes (shock_type handling)
-   - **Impact on Phase 2:** No blocking issues, can focus on duplication cleanup
-
-4. **Field Naming Standardization** ✅
-   - Agent layer standardized to `quantity`
-   - Database layer uses `quantity_open`, `quantity_original`
-   - **Impact on Phase 2:** Helper functions can use standardized field names
-
-### Phase 1 Discoveries Relevant to Phase 2
-
-1. **Pattern Output Format Standardization**
-   - **Discovery:** 3 incompatible formats existed, causing silent failures
-   - **Phase 1 Fix:** Standardized to list format
-   - **Phase 2 Impact:** Validation can enforce standard format, contracts can document expected outputs
-
-2. **Pattern Orchestrator Complexity**
-   - **Discovery:** Orchestrator had to handle multiple formats, causing complexity
-   - **Phase 1 Fix:** Enhanced to handle all formats correctly
-   - **Phase 2 Impact:** Can simplify orchestrator by enforcing standard format through validation
-
-3. **Stub Data Pattern**
-   - **Discovery:** Silent stub data without warnings
-   - **Phase 1 Fix:** Added `_provenance` field with warnings
-   - **Phase 2 Impact:** Capability contracts can document `implementation_status` and prevent silent stubs
+**Success Criteria:**
+- ✅ Capability contracts documented for all 70 capabilities
+- ✅ Step dependency validation catches undefined references
+- ✅ Pattern linter CLI validates all patterns automatically
 
 ---
 
-## 📋 Phase 2 Detailed Plan
+## Task 2.1: Create Capability Contracts (16 hours)
 
-### Phase 2A: Helper Functions & Duplication Elimination (Week 1 - 20 hours)
+### Root Issue
 
-**Goal:** Eliminate duplicate SQL queries and position extraction patterns
+**Problem:** No clear interfaces for capabilities, unclear expectations, hard to identify stub vs real implementations.
 
-#### Task 2A.1: Create Position Extraction Helper Functions (8 hours)
+**Current State:**
+- Capabilities have no documented contracts
+- No way to know if capability is stub or real
+- No way to validate inputs/outputs
+- Developer confusion about what each capability does
 
-**Problem Analysis:**
-- **7 files** query `FROM lots` directly:
-  - `backend/app/services/scenarios.py` - `get_position_betas()` (lines 315-377)
-  - `backend/app/services/currency_attribution.py` - Position queries
-  - `backend/app/services/risk_metrics.py` - Position queries
-  - `backend/app/services/portfolio_helpers.py` - Position queries
-  - `backend/app/services/optimizer.py` - Position queries
-  - `backend/app/services/risk.py` - Position queries
-  - `backend/app/agents/financial_analyst.py` - `ledger_positions()` (lines 145-219)
+**Root Cause:** Lack of documentation and validation system for capabilities.
 
-**Duplication Identified:**
-1. **Position Query Pattern** (repeated 7+ times):
-   ```sql
-   SELECT
-       l.symbol,
-       l.quantity_open AS quantity,
-       l.cost_basis_per_share,
-       l.currency,
-       l.quantity_open * l.cost_basis_per_share AS market_value,
-       s.security_type,
-       s.sector,
-       -- ... additional fields
-   FROM lots l
-   LEFT JOIN securities s ON l.symbol = s.symbol
-   WHERE l.portfolio_id = $1
-     AND l.is_open = true
-     AND l.quantity_open > 0
-   ```
+### Implementation Plan
 
-2. **Position with Pricing Pattern** (repeated 6+ times):
-   - Get positions from ledger
-   - Apply pricing pack
-   - Convert currencies
-   - Calculate values
+#### Step 2.1.1: Design Capability Contract System (2 hours)
 
-**Solution:**
-Create helper functions in `backend/app/services/portfolio_helpers.py`:
+**Goal:** Design a system for documenting capability contracts.
 
+**Design Requirements:**
+1. **Self-documenting** - Contracts visible in code
+2. **Compile-time validation** - Catch issues early
+3. **Clear expectations** - Inputs, outputs, behavior documented
+4. **Stub identification** - Mark stub vs real implementations
+
+**Design Options:**
+
+**Option A: Decorator-based (RECOMMENDED)**
 ```python
-async def get_portfolio_positions(
+@capability(
+    name="risk.compute_factor_exposures",
+    inputs={"portfolio_id": str, "pack_id": str},
+    outputs={"factors": dict, "r_squared": float, "_provenance": dict},
+    fetches_positions=True,  # Documents internal behavior
+    implementation_status="stub"  # BE HONEST
+)
+async def risk_compute_factor_exposures(...):
+    ...
+```
+
+**Option B: Type hints + docstring**
+```python
+async def risk_compute_factor_exposures(
+    ctx: RequestCtx,
+    state: Dict[str, Any],
     portfolio_id: str,
-    include_fields: Optional[List[str]] = None,
-    include_security_metadata: bool = True,
-    include_factor_betas: bool = False,
-) -> List[Dict[str, Any]]:
+    pack_id: str
+) -> Dict[str, Any]:
     """
-    Get portfolio positions from database.
+    Capability: risk.compute_factor_exposures
     
-    Standardized position extraction that all services should use.
-    
-    Args:
+    Inputs:
         portfolio_id: Portfolio UUID
-        include_fields: Optional list of additional fields to include
-        include_security_metadata: Include security type, sector, etc.
-        include_factor_betas: Include factor betas from position_factor_betas table
+        pack_id: Pricing pack UUID
     
-    Returns:
-        List of position dicts with standardized fields:
-        - symbol: str
-        - quantity: Decimal (standardized from quantity_open)
-        - cost_basis_per_share: Decimal
-        - currency: str
-        - market_value: Decimal (quantity * cost_basis_per_share)
-        - security_type: str (if include_security_metadata)
-        - sector: str (if include_security_metadata)
-        - real_rate_beta: Decimal (if include_factor_betas)
-        - inflation_beta: Decimal (if include_factor_betas)
-        - ... other factor betas
+    Outputs:
+        factors: Dict of factor exposures
+        r_squared: R-squared value
+        _provenance: Provenance metadata
+    
+    Implementation Status: stub
     """
-    # Implementation uses standardized query pattern
-    # All services use this instead of duplicating SQL
+    ...
 ```
 
-**Integration Points:**
-- Replace `get_position_betas()` in `scenarios.py` to use helper
-- Replace `ledger_positions()` in `financial_analyst.py` to use helper
-- Replace position queries in `currency_attribution.py`, `risk_metrics.py`, `optimizer.py`, `risk.py`
-- Update `portfolio.get_valued_positions` capability to use helper internally
+**Recommendation:** Option A (Decorator-based) - More explicit, easier to validate
 
-**Validation:**
-- All existing functionality preserved
-- Field names standardized (`quantity` in results, `quantity_open` in database)
-- No regression in pattern execution
-
-**Files to Modify:**
-1. `backend/app/services/portfolio_helpers.py` - Create helper functions
-2. `backend/app/services/scenarios.py` - Replace `get_position_betas()` with helper
-3. `backend/app/agents/financial_analyst.py` - Replace `ledger_positions()` with helper
-4. `backend/app/services/currency_attribution.py` - Replace position queries
-5. `backend/app/services/risk_metrics.py` - Replace position queries
-6. `backend/app/services/optimizer.py` - Replace position queries
-7. `backend/app/services/risk.py` - Replace position queries
-
-**Estimated Time:** 8 hours
-- 2 hours: Design helper function interface
-- 4 hours: Implement helper function
-- 2 hours: Refactor all 7 files to use helper
-- 2 hours: Testing and validation
+**Implementation:**
+1. Create `capability` decorator
+2. Store contract metadata in function `__capability_contract__` attribute
+3. Generate capability documentation automatically
+4. Validate contracts at runtime (optional)
 
 ---
 
-#### Task 2A.2: Create Pricing Pack Helper Functions (4 hours)
+#### Step 2.1.2: Create Capability Decorator (2 hours)
 
-**Problem Analysis:**
-- **5 services** duplicate `_get_pack_date()` logic:
-  - `backend/app/services/pricing.py`
-  - `backend/app/services/scenarios.py`
-  - `backend/app/services/metrics.py`
-  - `backend/app/services/currency_attribution.py`
-  - `backend/app/services/optimizer.py`
+**File:** `backend/app/core/capability_contract.py` (new file)
 
-**Duplication Identified:**
+**Implementation:**
 ```python
-# Pattern repeated 5 times:
-def _get_pack_date(pack: Dict) -> date:
-    """Extract date from pricing pack."""
-    # Inconsistent field names: "date" vs "asof_date" vs "as_of_date"
-    # Causes bugs when field name changes
-```
+"""
+Capability Contract System
 
-**Solution:**
-Create standardized helper in `backend/app/services/pricing.py`:
+Purpose: Document and validate capability contracts
+"""
 
-```python
-def extract_pack_date(pack: Dict[str, Any]) -> date:
-    """
-    Extract date from pricing pack.
-    
-    Standardized date extraction that handles all field name variations.
-    
-    Args:
-        pack: Pricing pack dict
-    
-    Returns:
-        date object
-    
-    Raises:
-        ValueError: If date cannot be extracted
-    """
-    # Try multiple field names (date, asof_date, as_of_date)
-    # Handle both string and date types
-    # Provide clear error messages
-```
-
-**Integration Points:**
-- All services use `extract_pack_date()` instead of custom logic
-- Pricing service becomes single source of truth for pack date extraction
-- Field name changes only need to be updated in one place
-
-**Files to Modify:**
-1. `backend/app/services/pricing.py` - Create `extract_pack_date()` helper
-2. `backend/app/services/scenarios.py` - Use helper
-3. `backend/app/services/metrics.py` - Use helper
-4. `backend/app/services/currency_attribution.py` - Use helper
-5. `backend/app/services/optimizer.py` - Use helper
-
-**Estimated Time:** 4 hours
-- 1 hour: Design helper function interface
-- 1 hour: Implement helper function
-- 2 hours: Refactor all 5 files to use helper
-
----
-
-#### Task 2A.3: Create Portfolio Value Helper Functions (4 hours)
-
-**Problem Analysis:**
-- **3+ services** duplicate portfolio NAV calculation:
-  - `backend/app/services/scenarios.py` - `SUM(quantity_open * cost_basis_per_share)`
-  - `backend/app/services/metrics.py` - Portfolio value calculations
-  - `backend/app/services/currency_attribution.py` - Portfolio value calculations
-
-**Duplication Identified:**
-```sql
--- Pattern repeated 3+ times:
-SELECT SUM(quantity_open * cost_basis_per_share) AS nav
-FROM lots
-WHERE portfolio_id = $1
-  AND is_open = true
-  AND quantity_open > 0
-```
-
-**Solution:**
-Create helper function in `backend/app/services/portfolio_helpers.py`:
-
-```python
-async def get_portfolio_nav(
-    portfolio_id: str,
-    pack_id: Optional[str] = None,
-    base_currency: Optional[str] = None,
-) -> Decimal:
-    """
-    Get portfolio NAV (Net Asset Value).
-    
-    Standardized NAV calculation that all services should use.
-    
-    Args:
-        portfolio_id: Portfolio UUID
-        pack_id: Optional pricing pack ID (uses current prices if provided)
-        base_currency: Optional base currency for conversion
-    
-    Returns:
-        Decimal NAV value
-    """
-    # Implementation:
-    # - If pack_id provided: Use current prices from pack
-    # - If base_currency provided: Convert to base currency
-    # - Otherwise: Use cost basis (quantity_open * cost_basis_per_share)
-```
-
-**Integration Points:**
-- Replace NAV calculations in `scenarios.py`
-- Replace NAV calculations in `metrics.py`
-- Replace NAV calculations in `currency_attribution.py`
-- Update `portfolio.get_valued_positions` to use helper for total value
-
-**Files to Modify:**
-1. `backend/app/services/portfolio_helpers.py` - Create `get_portfolio_nav()` helper
-2. `backend/app/services/scenarios.py` - Use helper
-3. `backend/app/services/metrics.py` - Use helper
-4. `backend/app/services/currency_attribution.py` - Use helper
-
-**Estimated Time:** 4 hours
-- 1 hour: Design helper function interface
-- 1 hour: Implement helper function
-- 2 hours: Refactor all 3 files to use helper
-
----
-
-#### Task 2A.4: Consolidate Pattern Position Extraction (4 hours)
-
-**Problem Analysis:**
-- **6 patterns** use 2-step sequence: `ledger.positions` → `pricing.apply_pack`
-- **1 pattern** uses optimized capability: `portfolio.get_valued_positions`
-- **Pattern:** Created in Phase 3 Week 3/4 (November 5, 2025) but not used consistently
-
-**Duplication Identified:**
-```json
-// Pattern repeated 6 times:
-{
-  "steps": [
-    {"capability": "ledger.positions", "as": "positions"},
-    {"capability": "pricing.apply_pack", "args": {"positions": "{{positions}}"}, "as": "valued_positions"}
-  ]
-}
-```
-
-**Solution:**
-Update all 6 patterns to use `portfolio.get_valued_positions`:
-
-```json
-// Optimized single step:
-{
-  "steps": [
-    {"capability": "portfolio.get_valued_positions", "as": "valued_positions"}
-  ]
-}
-```
-
-**Integration Points:**
-- Patterns become simpler (1 step instead of 2)
-- Consistent with optimized pattern introduced in Phase 3
-- Reduces pattern execution time
-- Easier to maintain
-
-**Patterns to Update:**
-1. `backend/patterns/portfolio_overview.json` - Already uses optimized pattern ✅
-2. `backend/patterns/portfolio_scenario_analysis.json` - Update to use optimized pattern
-3. `backend/patterns/cycle_deleveraging_scenarios.json` - Update to use optimized pattern
-4. `backend/patterns/portfolio_cycle_risk.json` - Update to use optimized pattern
-5. `backend/patterns/portfolio_macro_overview.json` - Update to use optimized pattern
-6. `backend/patterns/holding_deep_dive.json` - Update to use optimized pattern
-
-**Files to Modify:**
-1. `backend/patterns/portfolio_scenario_analysis.json`
-2. `backend/patterns/cycle_deleveraging_scenarios.json`
-3. `backend/patterns/portfolio_cycle_risk.json`
-4. `backend/patterns/portfolio_macro_overview.json`
-5. `backend/patterns/holding_deep_dive.json`
-
-**Estimated Time:** 4 hours
-- 1 hour: Review all patterns for position extraction
-- 2 hours: Update 5 patterns to use optimized capability
-- 1 hour: Testing and validation
-
----
-
-### Phase 2B: Capability Contracts & Validation (Week 2 - 24 hours)
-
-**Goal:** Prevent future issues through compile-time validation and self-documenting code
-
-#### Task 2B.1: Create Capability Contract System (12 hours)
-
-**Problem Analysis:**
-- No clear interface definition for capabilities
-- Stub vs real implementation not documented
-- Input/output types not defined
-- Errors discovered at runtime
-
-**Solution:**
-Create capability contract decorator system:
-
-```python
-# backend/app/core/capability_contract.py
-
-from typing import Dict, Any, Callable, Optional
-from dataclasses import dataclass
-from enum import Enum
-
-class ImplementationStatus(Enum):
-    REAL = "real"
-    STUB = "stub"
-    PARTIAL = "partial"
-
-@dataclass
-class CapabilityContract:
-    """Contract definition for a capability."""
-    name: str
-    inputs: Dict[str, type]  # Input parameter types
-    outputs: Dict[str, type]  # Output field types
-    implementation_status: ImplementationStatus
-    description: str
-    warnings: Optional[List[str]] = None
-    fetches_positions: bool = False  # Documents internal behavior
-    requires_pricing_pack: bool = False
-    requires_ledger: bool = False
+from typing import Dict, Any, Optional, Callable
+from functools import wraps
+import inspect
 
 def capability(
     name: str,
     inputs: Dict[str, type],
     outputs: Dict[str, type],
-    implementation_status: ImplementationStatus = ImplementationStatus.REAL,
-    description: str = "",
-    warnings: Optional[List[str]] = None,
     fetches_positions: bool = False,
-    requires_pricing_pack: bool = False,
-    requires_ledger: bool = False,
+    implementation_status: str = "real",  # "real" | "stub" | "partial"
+    description: Optional[str] = None,
+    dependencies: Optional[list] = None,
 ):
     """
-    Decorator to define capability contract.
+    Decorator to document capability contracts.
     
-    Example:
-        @capability(
-            name="risk.compute_factor_exposures",
-            inputs={"portfolio_id": str, "pack_id": str},
-            outputs={"factors": dict, "r_squared": float, "_provenance": dict},
-            implementation_status=ImplementationStatus.STUB,
-            description="Compute factor exposures via regression",
-            warnings=["Feature not implemented - using fallback data"],
-            fetches_positions=True,
-            requires_pricing_pack=True,
-        )
-        async def risk_compute_factor_exposures(...):
-            ...
+    Args:
+        name: Capability name (e.g., "risk.compute_factor_exposures")
+        inputs: Dict of input parameter names and types
+        outputs: Dict of output field names and types
+        fetches_positions: Whether capability fetches positions internally
+        implementation_status: "real" | "stub" | "partial"
+        description: Human-readable description
+        dependencies: List of capability dependencies
     """
     def decorator(func: Callable) -> Callable:
-        # Attach contract to function
-        func._capability_contract = CapabilityContract(
-            name=name,
-            inputs=inputs,
-            outputs=outputs,
-            implementation_status=implementation_status,
-            description=description,
-            warnings=warnings or [],
-            fetches_positions=fetches_positions,
-            requires_pricing_pack=requires_pricing_pack,
-            requires_ledger=requires_ledger,
-        )
-        return func
+        # Store contract metadata
+        contract = {
+            "name": name,
+            "inputs": inputs,
+            "outputs": outputs,
+            "fetches_positions": fetches_positions,
+            "implementation_status": implementation_status,
+            "description": description,
+            "dependencies": dependencies or [],
+        }
+        
+        # Attach to function
+        func.__capability_contract__ = contract
+        
+        # Preserve original function metadata
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            return await func(*args, **kwargs)
+        
+        wrapper.__capability_contract__ = contract
+        return wrapper
+    
     return decorator
 ```
 
-**Integration Points:**
-- Agent capabilities use `@capability` decorator
-- Pattern orchestrator validates contracts at runtime
-- Pattern linter validates contracts at development time
-- Documentation generated from contracts
-
-**Files to Create:**
-1. `backend/app/core/capability_contract.py` - Contract system
-
-**Files to Modify:**
-1. `backend/app/agents/financial_analyst.py` - Add contracts to all 30 capabilities
-2. `backend/app/agents/macro_hound.py` - Add contracts to all 17+ capabilities
-3. `backend/app/agents/data_harvester.py` - Add contracts to all 8+ capabilities
-4. `backend/app/agents/claude_agent.py` - Add contracts to all 6 capabilities
-
-**Estimated Time:** 12 hours
-- 2 hours: Design contract system
-- 2 hours: Implement contract decorator
-- 6 hours: Add contracts to all 60+ capabilities
-- 2 hours: Testing and validation
+**Testing:**
+1. Test decorator on a capability
+2. Verify contract metadata attached
+3. Verify function still works correctly
 
 ---
 
-#### Task 2B.2: Add Step Dependency Validation (8 hours)
+#### Step 2.1.3: Document All 70 Capabilities (10 hours)
 
-**Problem Analysis:**
-- Patterns can reference undefined steps
-- Errors discovered at runtime with cryptic messages
-- No validation before pattern execution
+**Goal:** Add capability contracts to all 70 capabilities.
 
-**Solution:**
-Enhance pattern validation to check step dependencies:
+**Prioritization:**
+1. **High Priority (8 hours):** Stub capabilities (need provenance warnings)
+   - `risk.compute_factor_exposures` (stub)
+   - `macro.compute_dar` (partial - error cases are stub)
+   - Any other stub capabilities
 
+2. **Medium Priority (2 hours):** Critical capabilities (used by many patterns)
+   - `ledger.positions`
+   - `pricing.apply_pack`
+   - `portfolio.get_valued_positions`
+   - `metrics.compute_twr`
+   - `attribution.currency`
+
+3. **Low Priority (deferred):** Other capabilities (document as needed)
+
+**Implementation for Each Capability:**
+
+**Example: `risk.compute_factor_exposures`**
 ```python
-# backend/app/core/pattern_orchestrator.py
-
-def validate_pattern(
+@capability(
+    name="risk.compute_factor_exposures",
+    inputs={
+        "portfolio_id": str,
+        "pack_id": str,
+    },
+    outputs={
+        "factors": dict,
+        "portfolio_volatility": float,
+        "market_beta": float,
+        "r_squared": float,
+        "_provenance": dict,
+    },
+    fetches_positions=False,  # Uses portfolio_id directly
+    implementation_status="stub",  # BE HONEST
+    description="Compute portfolio factor exposures (currently stub implementation)",
+    dependencies=["ledger.positions", "pricing.apply_pack"],
+)
+async def risk_compute_factor_exposures(
     self,
-    pattern_id: str,
-    inputs: Dict[str, Any] = None
+    ctx: RequestCtx,
+    state: Dict[str, Any],
+    portfolio_id: str,
+    pack_id: str,
 ) -> Dict[str, Any]:
-    """
-    Validate pattern before execution.
+    ...
+```
+
+**Steps:**
+1. Identify all capabilities in each agent
+2. Add capability decorator to each
+3. Document inputs, outputs, implementation status
+4. Test each capability still works
+
+**Files to Update:**
+- `backend/app/agents/financial_analyst.py` (~30 capabilities)
+- `backend/app/agents/macro_hound.py` (~17 capabilities)
+- `backend/app/agents/data_harvester.py` (~8 capabilities)
+- `backend/app/agents/claude_agent.py` (~6 capabilities)
+
+**Time Allocation:**
+- High priority (stub): 8 hours
+- Medium priority (critical): 2 hours
+- Total: 10 hours
+
+---
+
+#### Step 2.1.4: Generate Capability Documentation (2 hours)
+
+**Goal:** Automatically generate capability documentation from contracts.
+
+**Implementation:**
+1. Create script to extract all capability contracts
+2. Generate markdown documentation
+3. Include in `ARCHITECTURE.md` or separate `CAPABILITY_CONTRACTS.md`
+
+**Script:** `scripts/generate_capability_docs.py`
+```python
+"""
+Generate capability documentation from contracts.
+"""
+
+import inspect
+from pathlib import Path
+import json
+
+def extract_capability_contracts():
+    """Extract all capability contracts from agents."""
+    contracts = {}
     
-    Enhanced validation that checks:
-    - All referenced steps exist
-    - All capabilities are registered
-    - All inputs have correct types
-    - Step dependency order is correct
-    - Template variables are valid
+    # Import all agents
+    from app.agents.financial_analyst import FinancialAnalyst
+    from app.agents.macro_hound import MacroHound
+    from app.agents.data_harvester import DataHarvester
+    from app.agents.claude_agent import ClaudeAgent
+    
+    agents = [FinancialAnalyst, MacroHound, DataHarvester, ClaudeAgent]
+    
+    for agent_class in agents:
+        for name, method in inspect.getmembers(agent_class, inspect.isfunction):
+            if hasattr(method, '__capability_contract__'):
+                contract = method.__capability_contract__
+                contracts[contract['name']] = contract
+    
+    return contracts
+
+def generate_docs(contracts):
+    """Generate markdown documentation."""
+    md = "# Capability Contracts\n\n"
+    md += "Auto-generated from capability decorators.\n\n"
+    
+    for name, contract in sorted(contracts.items()):
+        md += f"## {name}\n\n"
+        md += f"**Status:** {contract['implementation_status']}\n\n"
+        if contract.get('description'):
+            md += f"{contract['description']}\n\n"
+        
+        md += "### Inputs\n\n"
+        for param, param_type in contract['inputs'].items():
+            md += f"- `{param}`: `{param_type.__name__}`\n"
+        
+        md += "\n### Outputs\n\n"
+        for field, field_type in contract['outputs'].items():
+            md += f"- `{field}`: `{field_type.__name__}`\n"
+        
+        if contract.get('dependencies'):
+            md += "\n### Dependencies\n\n"
+            for dep in contract['dependencies']:
+                md += f"- `{dep}`\n"
+        
+        md += "\n---\n\n"
+    
+    return md
+
+if __name__ == "__main__":
+    contracts = extract_capability_contracts()
+    docs = generate_docs(contracts)
+    
+    output_path = Path("CAPABILITY_CONTRACTS.md")
+    output_path.write_text(docs)
+    print(f"Generated {len(contracts)} capability contracts in {output_path}")
+```
+
+**Output:** `CAPABILITY_CONTRACTS.md` - Auto-generated documentation
+
+---
+
+### Task 2.1 Summary
+
+**Time:** 16 hours  
+**Files Changed:** 4 agent files + 1 new file
+- `backend/app/core/capability_contract.py` (new)
+- `backend/app/agents/financial_analyst.py`
+- `backend/app/agents/macro_hound.py`
+- `backend/app/agents/data_harvester.py`
+- `backend/app/agents/claude_agent.py`
+- `CAPABILITY_CONTRACTS.md` (generated)
+
+**Result:** All capabilities have documented contracts, self-documenting code
+
+---
+
+## Task 2.2: Add Step Dependency Validation (8 hours)
+
+### Root Issue
+
+**Problem:** Patterns can reference undefined steps, errors discovered at runtime with cryptic messages.
+
+**Current State:**
+- Patterns validated at runtime only
+- Undefined step references cause runtime errors
+- Cryptic error messages
+- Forward references not caught
+
+**Root Cause:** No compile-time validation for pattern step dependencies.
+
+### Implementation Plan
+
+#### Step 2.2.1: Design Validation System (1 hour)
+
+**Goal:** Design a system to validate pattern step dependencies.
+
+**Validation Requirements:**
+1. **Catch undefined references** - Step references must exist
+2. **Prevent forward references** - Steps can only reference previous steps
+3. **Clear error messages** - Show what's wrong and what's available
+4. **Template validation** - Validate template references ({{foo.bar}})
+
+**Validation Checks:**
+1. All referenced steps exist
+2. No forward references (step references only previous steps)
+3. Template variables resolve correctly
+4. Required inputs provided
+
+---
+
+#### Step 2.2.2: Implement Validation Function (3 hours)
+
+**File:** `backend/app/core/pattern_orchestrator.py`
+
+**Location:** Add validation method to `PatternOrchestrator` class
+
+**Implementation:**
+```python
+def validate_pattern_dependencies(self, pattern_id: str) -> Dict[str, Any]:
     """
+    Validate pattern step dependencies.
+    
+    Returns:
+        Dict with validation results:
+        {
+            "valid": bool,
+            "errors": List[str],
+            "warnings": List[str]
+        }
+    """
+    spec = self.patterns.get(pattern_id)
+    if not spec:
+        return {
+            "valid": False,
+            "errors": [f"Pattern '{pattern_id}' not found"],
+            "warnings": []
+        }
+    
     errors = []
     warnings = []
+    steps = spec.get("steps", [])
+    defined_outputs = set(["ctx", "inputs"])  # Always available
     
-    # ... existing validation ...
-    
-    # NEW: Step dependency validation
-    step_results = {}
-    for step_idx, step in enumerate(spec["steps"]):
-        step_key = step.get("as", f"step_{step_idx}")
-        step_results[step_key] = True
+    for i, step in enumerate(steps):
+        step_name = step.get("as", f"step_{i}")
+        defined_outputs.add(step_name)
         
         # Check template references in args
         args = step.get("args", {})
-        for arg_value in args.values():
-            if isinstance(arg_value, str) and "{{" in arg_value:
-                # Extract template variables
-                template_vars = self._extract_template_vars(arg_value)
-                for var in template_vars:
-                    # Check if variable is defined
-                    if not self._is_template_var_defined(var, step_results, inputs):
+        for key, value in args.items():
+            if isinstance(value, str) and "{{" in value:
+                # Extract template references
+                template_refs = self._extract_template_references(value)
+                for ref in template_refs:
+                    # Check if reference exists
+                    if not self._validate_template_reference(ref, defined_outputs):
                         errors.append(
-                            f"Step {step_idx} references undefined variable: {var}\n"
-                            f"  Available: {list(step_results.keys()) + ['inputs', 'ctx']}"
+                            f"Step {i} ({step.get('capability', 'unknown')}): "
+                            f"Template reference '{{{{ {ref} }}}}' not found. "
+                            f"Available: {sorted(list(defined_outputs))}"
                         )
-    
-    # NEW: Capability registration validation
-    for step in spec["steps"]:
-        capability = step["capability"]
-        if not self.agent_runtime.has_capability(capability):
-            errors.append(
-                f"Capability '{capability}' is not registered\n"
-                f"  Available: {self.agent_runtime.list_capabilities()}"
-            )
+        
+        # Check condition template references
+        if "condition" in step:
+            condition = step["condition"]
+            template_refs = self._extract_template_references(condition)
+            for ref in template_refs:
+                if not self._validate_template_reference(ref, defined_outputs):
+                    errors.append(
+                        f"Step {i} condition: "
+                        f"Template reference '{{{{ {ref} }}}}' not found. "
+                        f"Available: {sorted(list(defined_outputs))}"
+                    )
     
     return {
         "valid": len(errors) == 0,
         "errors": errors,
-        "warnings": warnings,
+        "warnings": warnings
     }
+
+def _extract_template_references(self, text: str) -> List[str]:
+    """Extract template references from text."""
+    import re
+    pattern = r'\{\{([^}]+)\}\}'
+    matches = re.findall(pattern, text)
+    return [match.strip() for match in matches]
+
+def _validate_template_reference(self, ref: str, defined_outputs: set) -> bool:
+    """Validate template reference exists."""
+    # Handle nested references (e.g., "positions.positions")
+    parts = ref.split(".")
+    first_part = parts[0]
+    
+    # Check if first part exists
+    if first_part not in defined_outputs:
+        return False
+    
+    # If nested, validate path exists (basic check)
+    # Full validation would require actual state, so we just check first part
+    return True
 ```
 
-**Integration Points:**
-- Pattern orchestrator validates before execution
-- Pattern linter validates at development time
-- Clear error messages guide developers
-
-**Files to Modify:**
-1. `backend/app/core/pattern_orchestrator.py` - Enhance `validate_pattern()` method
-
-**Estimated Time:** 8 hours
-- 2 hours: Design validation logic
-- 4 hours: Implement step dependency validation
-- 2 hours: Testing and validation
+**Testing:**
+1. Test with valid patterns
+2. Test with invalid patterns (undefined references)
+3. Test with forward references
+4. Verify error messages are clear
 
 ---
 
-#### Task 2B.3: Build Pattern Linter CLI (4 hours)
+#### Step 2.2.3: Integrate Validation into Pattern Execution (2 hours)
 
-**Problem Analysis:**
-- No automated validation before deployment
-- Errors discovered at runtime
+**File:** `backend/app/core/pattern_orchestrator.py`
+
+**Location:** Add validation call in `run_pattern` method
+
+**Implementation:**
+```python
+async def run_pattern(
+    self,
+    pattern_id: str,
+    ctx: RequestCtx,
+    inputs: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Run pattern with dependency validation."""
+    
+    # Validate pattern dependencies
+    validation_result = self.validate_pattern_dependencies(pattern_id)
+    if not validation_result["valid"]:
+        error_msg = "Pattern validation failed:\n" + "\n".join(validation_result["errors"])
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+    
+    if validation_result["warnings"]:
+        for warning in validation_result["warnings"]:
+            logger.warning(f"Pattern validation warning: {warning}")
+    
+    # Continue with existing pattern execution...
+    ...
+```
+
+**Testing:**
+1. Test with valid patterns (should work)
+2. Test with invalid patterns (should fail with clear error)
+3. Verify error messages are helpful
+
+---
+
+#### Step 2.2.4: Add Validation to Pattern Loading (2 hours)
+
+**File:** `backend/app/core/pattern_orchestrator.py`
+
+**Location:** Add validation call in `_load_patterns` method
+
+**Implementation:**
+```python
+def _load_patterns(self):
+    """Load all patterns and validate dependencies."""
+    patterns_dir = Path(__file__).parent.parent.parent / "patterns"
+    if not patterns_dir.exists():
+        logger.warning(f"Patterns directory not found: {patterns_dir}")
+        return
+
+    pattern_count = 0
+    for pattern_file in patterns_dir.rglob("*.json"):
+        try:
+            spec = json.loads(pattern_file.read_text())
+            
+            # Validate required fields
+            required = ["id", "name", "steps", "outputs"]
+            missing = [f for f in required if f not in spec]
+            if missing:
+                logger.error(
+                    f"Pattern {pattern_file.name} missing required fields: {missing}"
+                )
+                continue
+            
+            pattern_id = spec["id"]
+            self.patterns[pattern_id] = spec
+            
+            # Validate pattern dependencies
+            validation_result = self.validate_pattern_dependencies(pattern_id)
+            if not validation_result["valid"]:
+                logger.error(
+                    f"Pattern {pattern_id} failed validation:\n"
+                    + "\n".join(validation_result["errors"])
+                )
+                # Still load pattern, but log error
+            elif validation_result["warnings"]:
+                for warning in validation_result["warnings"]:
+                    logger.warning(f"Pattern {pattern_id}: {warning}")
+            
+            pattern_count += 1
+            
+        except Exception as e:
+            logger.error(f"Error loading pattern {pattern_file}: {e}")
+    
+    logger.info(f"Loaded {pattern_count} patterns")
+```
+
+**Testing:**
+1. Test pattern loading with valid patterns
+2. Test pattern loading with invalid patterns
+3. Verify errors are logged but don't crash
+
+---
+
+### Task 2.2 Summary
+
+**Time:** 8 hours  
+**Files Changed:** 1 file
+- `backend/app/core/pattern_orchestrator.py`
+
+**Result:** Pattern dependencies validated, clear error messages
+
+---
+
+## Task 2.3: Build Pattern Linter CLI (8 hours)
+
+### Root Issue
+
+**Problem:** No automated validation, issues discovered at runtime.
+
+**Current State:**
+- Patterns validated only at runtime
+- No way to validate all patterns before deployment
 - No CI/CD integration
 
-**Solution:**
-Create CLI tool to validate all patterns:
+**Root Cause:** Lack of automated validation tool.
 
+### Implementation Plan
+
+#### Step 2.3.1: Design CLI Tool (1 hour)
+
+**Goal:** Design a CLI tool to validate all patterns.
+
+**Requirements:**
+1. Validate single pattern or all patterns
+2. Check dependencies, contracts, formats
+3. Output clear errors and warnings
+4. CI/CD friendly (exit codes)
+
+**CLI Interface:**
+```bash
+# Validate single pattern
+python -m app.core.pattern_linter --pattern portfolio_cycle_risk
+
+# Validate all patterns
+python -m app.core.pattern_linter --all
+
+# Validate and output JSON
+python -m app.core.pattern_linter --all --json
+
+# Exit with error code if validation fails
+python -m app.core.pattern_linter --all --strict
+```
+
+---
+
+#### Step 2.3.2: Implement CLI Tool (5 hours)
+
+**File:** `backend/app/core/pattern_linter.py` (new file)
+
+**Implementation:**
 ```python
-# backend/scripts/pattern_linter.py
+"""
+Pattern Linter CLI Tool
 
+Purpose: Validate all patterns before deployment
+"""
+
+import argparse
 import json
 import sys
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Dict, List, Any
 
-def lint_patterns(pattern_dir: str = "backend/patterns") -> int:
-    """
-    Lint all patterns and report errors.
+from app.core.pattern_orchestrator import PatternOrchestrator
+from app.core.agent_runtime import AgentRuntime
+
+
+class PatternLinter:
+    """Pattern linter for validation."""
     
-    Returns:
-        Exit code (0 = success, 1 = errors found)
-    """
-    errors = []
-    pattern_files = Path(pattern_dir).glob("*.json")
+    def __init__(self, orchestrator: PatternOrchestrator):
+        self.orchestrator = orchestrator
     
-    for pattern_file in pattern_files:
-        # Load pattern
-        with open(pattern_file) as f:
-            pattern = json.load(f)
+    def lint_pattern(self, pattern_id: str) -> Dict[str, Any]:
+        """Lint a single pattern."""
+        results = {
+            "pattern_id": pattern_id,
+            "valid": True,
+            "errors": [],
+            "warnings": [],
+            "checks": {}
+        }
         
-        # Validate pattern structure
-        errors.extend(validate_pattern_structure(pattern, pattern_file))
+        # Check if pattern exists
+        if pattern_id not in self.orchestrator.patterns:
+            results["valid"] = False
+            results["errors"].append(f"Pattern '{pattern_id}' not found")
+            return results
         
-        # Validate step dependencies
-        errors.extend(validate_step_dependencies(pattern, pattern_file))
+        spec = self.orchestrator.patterns[pattern_id]
         
-        # Validate capability contracts
-        errors.extend(validate_capability_contracts(pattern, pattern_file))
+        # Check 1: Dependency validation
+        validation_result = self.orchestrator.validate_pattern_dependencies(pattern_id)
+        results["checks"]["dependencies"] = validation_result
+        if not validation_result["valid"]:
+            results["valid"] = False
+            results["errors"].extend(validation_result["errors"])
+        results["warnings"].extend(validation_result["warnings"])
+        
+        # Check 2: Output format validation
+        outputs = spec.get("outputs", [])
+        if not isinstance(outputs, list):
+            results["valid"] = False
+            results["errors"].append(
+                f"Outputs must be a list, got {type(outputs).__name__}"
+            )
+        else:
+            results["checks"]["output_format"] = {"valid": True, "format": "list"}
+        
+        # Check 3: Step "as" keys match output keys
+        steps = spec.get("steps", [])
+        step_keys = {step.get("as") for step in steps if step.get("as")}
+        output_keys = set(outputs)
+        
+        missing_in_outputs = step_keys - output_keys
+        missing_in_steps = output_keys - step_keys
+        
+        if missing_in_outputs:
+            results["valid"] = False
+            results["errors"].append(
+                f"Step 'as' keys not in outputs: {sorted(missing_in_outputs)}"
+            )
+        
+        if missing_in_steps:
+            results["warnings"].append(
+                f"Output keys not in step 'as' keys: {sorted(missing_in_steps)}"
+            )
+        
+        results["checks"]["step_output_match"] = {
+            "valid": len(missing_in_outputs) == 0,
+            "missing_in_outputs": list(missing_in_outputs),
+            "missing_in_steps": list(missing_in_steps),
+        }
+        
+        # Check 4: Capability validation
+        capabilities = [step.get("capability") for step in steps if step.get("capability")]
+        missing_capabilities = []
+        for capability in capabilities:
+            if capability not in self.orchestrator.agent_runtime.capability_map:
+                missing_capabilities.append(capability)
+        
+        if missing_capabilities:
+            results["valid"] = False
+            results["errors"].append(
+                f"Capabilities not found: {missing_capabilities}"
+            )
+        
+        results["checks"]["capabilities"] = {
+            "valid": len(missing_capabilities) == 0,
+            "missing": missing_capabilities,
+        }
+        
+        return results
     
-    # Report errors
-    if errors:
-        print(f"❌ Found {len(errors)} errors:")
-        for error in errors:
-            print(f"  {error}")
-        return 1
+    def lint_all(self) -> Dict[str, Any]:
+        """Lint all patterns."""
+        all_results = {
+            "valid": True,
+            "patterns": {},
+            "summary": {
+                "total": 0,
+                "valid": 0,
+                "invalid": 0,
+                "errors": 0,
+                "warnings": 0,
+            }
+        }
+        
+        for pattern_id in self.orchestrator.patterns.keys():
+            result = self.lint_pattern(pattern_id)
+            all_results["patterns"][pattern_id] = result
+            
+            all_results["summary"]["total"] += 1
+            if result["valid"]:
+                all_results["summary"]["valid"] += 1
+            else:
+                all_results["summary"]["invalid"] += 1
+                all_results["valid"] = False
+            
+            all_results["summary"]["errors"] += len(result["errors"])
+            all_results["summary"]["warnings"] += len(result["warnings"])
+        
+        return all_results
+
+
+def main():
+    """CLI entry point."""
+    parser = argparse.ArgumentParser(description="Pattern linter")
+    parser.add_argument("--pattern", help="Pattern ID to validate")
+    parser.add_argument("--all", action="store_true", help="Validate all patterns")
+    parser.add_argument("--json", action="store_true", help="Output JSON")
+    parser.add_argument("--strict", action="store_true", help="Exit with error code if validation fails")
+    
+    args = parser.parse_args()
+    
+    # Initialize orchestrator (requires agent runtime)
+    # This is a simplified version - real implementation would need proper initialization
+    from app.db.connection import get_db_pool
+    from combined_server import get_agent_runtime
+    
+    agent_runtime = get_agent_runtime()
+    db_pool = get_db_pool()
+    
+    orchestrator = PatternOrchestrator(agent_runtime, db_pool)
+    linter = PatternLinter(orchestrator)
+    
+    if args.pattern:
+        result = linter.lint_pattern(args.pattern)
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print(f"Pattern: {result['pattern_id']}")
+            print(f"Valid: {result['valid']}")
+            if result['errors']:
+                print("\nErrors:")
+                for error in result['errors']:
+                    print(f"  - {error}")
+            if result['warnings']:
+                print("\nWarnings:")
+                for warning in result['warnings']:
+                    print(f"  - {warning}")
+        
+        if args.strict and not result['valid']:
+            sys.exit(1)
+    
+    elif args.all:
+        results = linter.lint_all()
+        if args.json:
+            print(json.dumps(results, indent=2))
+        else:
+            print(f"Total patterns: {results['summary']['total']}")
+            print(f"Valid: {results['summary']['valid']}")
+            print(f"Invalid: {results['summary']['invalid']}")
+            print(f"Errors: {results['summary']['errors']}")
+            print(f"Warnings: {results['summary']['warnings']}")
+            
+            for pattern_id, result in results['patterns'].items():
+                if not result['valid']:
+                    print(f"\n{pattern_id}:")
+                    for error in result['errors']:
+                        print(f"  ERROR: {error}")
+        
+        if args.strict and not results['valid']:
+            sys.exit(1)
+    
     else:
-        print("✅ All patterns valid")
-        return 0
+        parser.print_help()
+
 
 if __name__ == "__main__":
-    sys.exit(lint_patterns())
+    main()
 ```
 
-**Integration Points:**
-- Run in CI/CD before deployment
-- Run locally before committing
-- IDE integration for real-time validation
+**Testing:**
+1. Test with single pattern
+2. Test with all patterns
+3. Test JSON output
+4. Test strict mode (exit codes)
+
+---
+
+#### Step 2.3.3: Add CI/CD Integration Documentation (2 hours)
+
+**Goal:** Document how to use pattern linter in CI/CD.
 
 **Files to Create:**
-1. `backend/scripts/pattern_linter.py` - Pattern linter CLI
+1. `scripts/lint_patterns.sh` - Shell script wrapper
+2. `docs/PATTERN_LINTER.md` - Documentation
 
-**Estimated Time:** 4 hours
-- 2 hours: Implement linter
-- 1 hour: Add CI/CD integration
-- 1 hour: Testing and validation
-
----
-
-### Phase 2C: Documentation & Cleanup (Week 3 - 16 hours)
-
-**Goal:** Document patterns, clean up unused code, improve maintainability
-
-#### Task 2C.1: Document Service Layer Patterns (4 hours)
-
-**Problem Analysis:**
-- No clear guidelines on when to use direct DB vs service layer
-- Mixed patterns confuse developers
-- Unused cache tables create confusion
-
-**Solution:**
-Create comprehensive documentation in `DATA_ARCHITECTURE.md`:
-
+**Content:**
 ```markdown
-## Service Layer Patterns
+# Pattern Linter
 
-### When to Use Direct Database Access
+## Usage
 
-**Use direct DB access when:**
-- Simple CRUD operations
-- No complex business logic
-- Performance-critical (avoid service overhead)
-- Example: `ledger.positions` capability
+```bash
+# Validate all patterns
+python -m app.core.pattern_linter --all
 
-### When to Use Service Layer
+# Validate single pattern
+python -m app.core.pattern_linter --pattern portfolio_cycle_risk
 
-**Use service layer when:**
-- Complex business logic
-- Multiple data sources
-- Caching required
-- Example: `metrics.compute_twr` uses `PerformanceCalculator`
-
-### Compute vs Storage Pattern
-
-**Compute On-Demand:**
-- Services compute fresh every time
-- No cache tables
-- Example: `CurrencyAttributionService.compute_attribution()`
-
-**Store and Query:**
-- Services write to cache tables
-- Subsequent queries read from cache
-- Example: `portfolio_daily_values` hypertable
-
-### Helper Functions
-
-**Use helper functions for:**
-- Common SQL queries (position extraction)
-- Common calculations (portfolio NAV)
-- Standardized field name handling
+# CI/CD mode (exit with error if validation fails)
+python -m app.core.pattern_linter --all --strict
 ```
 
-**Files to Modify:**
-1. `DATA_ARCHITECTURE.md` - Add service layer patterns section
+## CI/CD Integration
 
-**Estimated Time:** 4 hours
-- 2 hours: Document patterns
-- 1 hour: Add examples
-- 1 hour: Review and refine
+Add to `.github/workflows/` (if restored) or run manually before deployment:
 
----
-
-#### Task 2C.2: Remove Unused Cache Tables (4 hours)
-
-**Problem Analysis:**
-- `currency_attribution` table exists but not used
-- `factor_exposures` table exists but not used
-- Services compute fresh every time
-- Wasted database resources
-
-**Solution:**
-Create migration to remove unused tables:
-
-```sql
--- Migration 015: Remove Unused Cache Tables
-
-BEGIN;
-
--- Remove currency_attribution table (services compute on-demand)
-DROP TABLE IF EXISTS currency_attribution CASCADE;
-
--- Remove factor_exposures table (services compute on-demand)
-DROP TABLE IF EXISTS factor_exposures CASCADE;
-
-COMMIT;
+```yaml
+- name: Validate Patterns
+  run: python -m app.core.pattern_linter --all --strict
+```
 ```
 
-**Integration Points:**
-- Document why tables were removed
-- Update `DATA_ARCHITECTURE.md` to reflect compute-on-demand pattern
-- No code changes needed (tables not used)
+---
 
-**Files to Create:**
-1. `backend/db/migrations/015_remove_unused_cache_tables.sql`
+### Task 2.3 Summary
 
-**Files to Modify:**
-1. `DATABASE.md` - Document Migration 015
-2. `DATA_ARCHITECTURE.md` - Update compute vs storage section
+**Time:** 8 hours  
+**Files Changed:** 2 new files
+- `backend/app/core/pattern_linter.py` (new)
+- `docs/PATTERN_LINTER.md` (new)
 
-**Estimated Time:** 4 hours
-- 1 hour: Create migration
-- 1 hour: Test migration
-- 1 hour: Update documentation
-- 1 hour: Validation
+**Result:** Automated pattern validation, CI/CD ready
 
 ---
 
-#### Task 2C.3: Update Development Guide (4 hours)
+## Phase 2 Complete Validation
 
-**Problem Analysis:**
-- No guidelines for creating new capabilities
-- No guidelines for creating new patterns
-- No guidelines for helper functions
+### Success Criteria
 
-**Solution:**
-Update `DEVELOPMENT_GUIDE.md` with comprehensive guidelines:
+**Task 2.1: Capability Contracts**
+- ✅ Capability decorator created
+- ✅ All 70 capabilities documented
+- ✅ Capability documentation generated
 
-```markdown
-## Creating New Capabilities
+**Task 2.2: Step Dependency Validation**
+- ✅ Pattern dependency validation implemented
+- ✅ Clear error messages for undefined references
+- ✅ Forward references prevented
 
-1. **Add capability contract:**
-   ```python
-   @capability(
-       name="your.capability",
-       inputs={"param1": str, "param2": int},
-       outputs={"result": dict},
-       implementation_status=ImplementationStatus.REAL,
-       description="What this capability does",
-   )
-   async def your_capability(...):
-       ...
-   ```
+**Task 2.3: Pattern Linter CLI**
+- ✅ Pattern linter CLI tool created
+- ✅ Validates all patterns automatically
+- ✅ CI/CD integration documented
 
-2. **Use helper functions:**
-   - Use `get_portfolio_positions()` instead of duplicating SQL
-   - Use `extract_pack_date()` instead of custom date extraction
-   - Use `get_portfolio_nav()` instead of duplicating NAV calculation
+### End-to-End Testing
 
-3. **Follow field naming standards:**
-   - Database: `quantity_open`, `quantity_original`
-   - Agent returns: `quantity`
-   - Service internal: `qty` (acceptable)
-
-## Creating New Patterns
-
-1. **Use optimized capabilities:**
-   - Use `portfolio.get_valued_positions` instead of `ledger.positions` + `pricing.apply_pack`
-
-2. **Use standard output format:**
-   ```json
-   {
-     "outputs": ["output1", "output2", "output3"]
-   }
-   ```
-
-3. **Validate before committing:**
-   ```bash
-   python backend/scripts/pattern_linter.py
-   ```
-```
-
-**Files to Modify:**
-1. `DEVELOPMENT_GUIDE.md` - Add comprehensive guidelines
-
-**Estimated Time:** 4 hours
-- 2 hours: Write guidelines
-- 1 hour: Add examples
-- 1 hour: Review and refine
+**Test Scenarios:**
+1. Run pattern linter on all patterns
+2. Verify capability contracts are documented
+3. Test pattern dependency validation
+4. Verify CI/CD integration works
 
 ---
 
-#### Task 2C.4: Code Review & Anti-Pattern Cleanup (4 hours)
+## Phase 2 Summary
 
-**Problem Analysis:**
-- Inconsistent singleton patterns
-- Mixed dependency injection patterns
-- Exception handling inconsistencies
+**Total Time:** 32 hours (Weeks 2-3)  
+**Files Changed:** 7 files (4 agent files + 3 new files)
+- `backend/app/core/capability_contract.py` (new)
+- `backend/app/agents/financial_analyst.py`
+- `backend/app/agents/macro_hound.py`
+- `backend/app/agents/data_harvester.py`
+- `backend/app/agents/claude_agent.py`
+- `backend/app/core/pattern_orchestrator.py`
+- `backend/app/core/pattern_linter.py` (new)
+- `CAPABILITY_CONTRACTS.md` (generated)
+- `docs/PATTERN_LINTER.md` (new)
 
-**Solution:**
-Review and standardize patterns:
-
-1. **Singleton Pattern Standardization:**
-   - Review all service singletons
-   - Standardize on `get_service()` / `init_service()` pattern
-   - Document pattern in `DEVELOPMENT_GUIDE.md`
-
-2. **Exception Handling Standardization:**
-   - Review all exception handling
-   - Use custom exceptions consistently
-   - Document exception hierarchy
-
-3. **Dependency Injection Standardization:**
-   - Review all dependency injection patterns
-   - Standardize on constructor injection for agents
-   - Document pattern in `DEVELOPMENT_GUIDE.md`
-
-**Files to Review:**
-1. All service files (28 files)
-2. All agent files (4 files)
-
-**Files to Modify:**
-1. `DEVELOPMENT_GUIDE.md` - Add pattern guidelines
-2. Service files - Standardize patterns (as needed)
-
-**Estimated Time:** 4 hours
-- 2 hours: Code review
-- 1 hour: Standardize patterns
-- 1 hour: Update documentation
+**Result:**
+- ✅ All capabilities have documented contracts
+- ✅ Pattern dependencies validated
+- ✅ Automated pattern validation
+- ✅ No bad patterns can be deployed
 
 ---
 
-## 🎯 Integration Points & Dependencies
+## Next Steps
 
-### Phase 2A Dependencies
-
-**Depends on Phase 1:**
-- ✅ Field naming standardization (enables helper functions)
-- ✅ Pattern output format standardization (enables pattern consolidation)
-
-**Enables Phase 2B:**
-- Helper functions establish patterns for capability contracts
-- Pattern consolidation simplifies validation
-
-### Phase 2B Dependencies
-
-**Depends on Phase 2A:**
-- Helper functions provide examples for capability contracts
-- Pattern consolidation enables better validation
-
-**Enables Phase 2C:**
-- Capability contracts provide documentation source
-- Validation enables pattern linter
-
-### Phase 2C Dependencies
-
-**Depends on Phase 2A & 2B:**
-- Helper functions documented
-- Capability contracts documented
-- Validation patterns documented
+**After Phase 2:**
+1. **Phase 3:** Feature implementation (48 hours)
+2. **Phase 4:** Technical debt cleanup (conditional)
+3. **Phase 5:** Quality & testing (24 hours)
 
 ---
 
-## 📊 Success Criteria
-
-### Phase 2A Success Criteria
-
-- [ ] All 7 files use `get_portfolio_positions()` helper
-- [ ] All 5 files use `extract_pack_date()` helper
-- [ ] All 3 files use `get_portfolio_nav()` helper
-- [ ] All 5 patterns use `portfolio.get_valued_positions` capability
-- [ ] No duplicate SQL queries remain
-- [ ] All existing functionality preserved
-- [ ] No regression in pattern execution
-
-### Phase 2B Success Criteria
-
-- [ ] All 60+ capabilities have contracts
-- [ ] Pattern validation catches undefined step references
-- [ ] Pattern linter runs in CI/CD
-- [ ] Clear error messages for validation failures
-- [ ] Documentation generated from contracts
-
-### Phase 2C Success Criteria
-
-- [ ] Service layer patterns documented
-- [ ] Unused cache tables removed
-- [ ] Development guide updated with comprehensive guidelines
-- [ ] Code patterns standardized
-- [ ] Documentation reflects current state
-
----
-
-## ⚠️ Risks & Mitigations
-
-### Risk 1: Breaking Changes in Helper Functions
-
-**Risk:** Helper functions may not match all use cases
-
-**Mitigation:**
-- Comprehensive parameter design (include_fields, include_security_metadata, etc.)
-- Extensive testing before refactoring
-- Gradual rollout (one file at a time)
-
-### Risk 2: Capability Contracts Too Restrictive
-
-**Risk:** Contracts may prevent valid use cases
-
-**Mitigation:**
-- Contracts are documentation, not strict type checking
-- Runtime validation is informative, not blocking
-- Contracts can be updated as patterns evolve
-
-### Risk 3: Pattern Linter Too Strict
-
-**Risk:** Linter may flag valid patterns
-
-**Mitigation:**
-- Start with warnings, not errors
-- Gradual enforcement (warnings → errors)
-- Allow exceptions for legacy patterns
-
----
-
-## 📋 Execution Order
-
-### Week 1: Helper Functions (20 hours)
-
-**Monday (4 hours):** Task 2A.1 - Position extraction helper
-**Tuesday (4 hours):** Task 2A.1 - Continue position extraction helper
-**Wednesday (4 hours):** Task 2A.2 - Pricing pack helper
-**Thursday (4 hours):** Task 2A.3 - Portfolio NAV helper
-**Friday (4 hours):** Task 2A.4 - Pattern consolidation
-
-### Week 2: Validation (24 hours)
-
-**Monday (4 hours):** Task 2B.1 - Capability contract system design
-**Tuesday (4 hours):** Task 2B.1 - Capability contract implementation
-**Wednesday (4 hours):** Task 2B.1 - Add contracts to capabilities
-**Thursday (4 hours):** Task 2B.2 - Step dependency validation
-**Friday (8 hours):** Task 2B.3 - Pattern linter CLI
-
-### Week 3: Documentation (16 hours)
-
-**Monday (4 hours):** Task 2C.1 - Document service layer patterns
-**Tuesday (4 hours):** Task 2C.2 - Remove unused cache tables
-**Wednesday (4 hours):** Task 2C.3 - Update development guide
-**Thursday (4 hours):** Task 2C.4 - Code review & cleanup
-
----
-
-## ✅ Summary
-
-**Phase 2 Goal:** Prevent future issues, improve developer experience, eliminate duplication
-
-**Key Deliverables:**
-1. Helper functions eliminate duplicate SQL queries
-2. Capability contracts provide self-documenting code
-3. Pattern validation catches errors before runtime
-4. Pattern linter enables CI/CD validation
-5. Comprehensive documentation guides developers
-
-**Timeline:** 3-4 weeks (60-80 hours)
-
-**Integration:** Builds on Phase 1 learnings, enables Phase 3 features
-
-**Success Metrics:**
-- Zero duplicate SQL queries
-- All capabilities documented
-- All patterns validated
-- Clear developer guidelines
-
----
-
-**Report Generated:** January 14, 2025  
-**Status:** 📋 **PLANNING COMPLETE - READY FOR EXECUTION**
-
+**Status:** Ready for execution
