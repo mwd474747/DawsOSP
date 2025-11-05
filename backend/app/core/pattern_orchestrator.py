@@ -497,7 +497,7 @@ class PatternOrchestrator:
                                             warnings.append(
                                                 f"Step {step_idx} ({capability}): "
                                                 f"parameter '{param_name}' not explicitly provided "
-                                                "(may use ctx.portfolio_id or inputs.portfolio_id)"
+                                                "(uses ctx.portfolio_id or inputs.portfolio_id if available)"
                                             )
                                     else:
                                         capability_detail["missing_params"].append(param_name)
@@ -815,7 +815,7 @@ class PatternOrchestrator:
         Recursively resolve a single value (supports nested dicts/lists).
 
         Args:
-            value: Value to resolve (may contain templates)
+            value: Value to resolve (supports template variables {{...}})
             state: Current execution state
 
         Returns:
@@ -883,8 +883,25 @@ class PatternOrchestrator:
     
     def _safe_evaluate(self, condition: str, state: Dict[str, Any]) -> bool:
         """
-        Safely evaluate conditions without using eval().
-        Supports: ==, !=, <, >, <=, >=, and, or, not, is, in
+        Safely evaluate boolean conditions without using eval().
+        
+        Supports operators: ==, !=, <, >, <=, >=, and, or, not, is, in
+        Supports literals: true, false, null, numeric values, quoted strings
+        Supports path access: positions.length, inputs.portfolio_id, ctx.asof_date
+        
+        Args:
+            condition: Condition string to evaluate
+            state: Current execution state containing step results and context
+            
+        Returns:
+            True if condition evaluates to true, False otherwise
+            
+        Example:
+            >>> state = {"positions": [1, 2, 3], "inputs": {"include_charts": True}}
+            >>> _safe_evaluate("positions.length > 0", state)
+            True
+            >>> _safe_evaluate("inputs.include_charts == true", state)
+            True
         """
         import operator
         from ast import literal_eval

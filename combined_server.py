@@ -339,10 +339,8 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
         macro_hound = MacroHound("macro_hound", services)
         _agent_runtime.register_agent(macro_hound)
 
-        # Register other agents as needed
-        # Phase 3 consolidation complete (2025-11-03): 9 agents → 4 agents
-        # Legacy agents (OptimizerAgent, RatingsAgent, ChartsAgent, AlertsAgent, ReportsAgent) removed
-        # Capabilities consolidated into FinancialAnalyst, MacroHound, and DataHarvester
+        # Register remaining agents
+        # Current architecture: 4 agents providing all capabilities
         
         from backend.app.agents.data_harvester import DataHarvester
         from backend.app.agents.claude_agent import ClaudeAgent

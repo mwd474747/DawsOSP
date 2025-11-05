@@ -1,33 +1,34 @@
 """
 DawsOS Financial Analyst Agent
 
-Purpose: Portfolio analysis, pricing, metrics computation, and consolidated capabilities
-Updated: 2025-11-03
+Purpose: Portfolio analysis, pricing, metrics computation, optimization, ratings, and charting.
 
-Core Capabilities:
-    - ledger.positions: Get portfolio positions from database
-    - pricing.apply_pack: Apply pricing pack to positions
-    - metrics.compute_twr: Compute Time-Weighted Return
-    - metrics.compute_sharpe: Compute Sharpe Ratio
-    - attribution.currency: Compute currency attribution
-    - charts.overview: Generate overview charts
-    - portfolio.sector_allocation: Sector allocation analysis
-    - portfolio.historical_nav: Historical NAV tracking
-
-Consolidated Capabilities (Phase 3):
-    Week 1 (OptimizerAgent):
+Provides 28 capabilities across portfolio management:
+    Core Portfolio Management:
+        - ledger.positions: Get portfolio positions from database
+        - pricing.apply_pack: Apply pricing pack to positions for valuation
+        - portfolio.sector_allocation: Sector allocation analysis
+        - portfolio.historical_nav: Historical NAV tracking
+    
+    Performance Metrics:
+        - metrics.compute_twr: Compute Time-Weighted Return
+        - metrics.compute_sharpe: Compute Sharpe Ratio
+        - attribution.currency: Compute currency attribution
+    
+    Portfolio Optimization:
         - financial_analyst.propose_trades: Portfolio rebalancing proposals
         - financial_analyst.analyze_impact: Trade impact analysis
         - financial_analyst.suggest_hedges: Hedge recommendations
         - financial_analyst.suggest_deleveraging_hedges: Deleveraging strategies
     
-    Week 2 (RatingsAgent):
+    Security Ratings:
         - financial_analyst.dividend_safety: Dividend safety ratings
         - financial_analyst.moat_strength: Competitive moat assessment
         - financial_analyst.resilience: Financial resilience scoring
         - financial_analyst.aggregate_ratings: Combined ratings aggregation
     
-    Week 3 (ChartsAgent):
+    Visualization:
+        - charts.overview: Generate overview charts
         - financial_analyst.macro_overview_charts: Macro overview visualizations
         - financial_analyst.scenario_charts: Scenario analysis charts
 
@@ -101,29 +102,31 @@ class FinancialAnalyst(BaseAgent):
             "portfolio.historical_nav",  # New capability for historical NAV
         ]
         
-        # Add consolidated capabilities from OptimizerAgent
-        # These are only exposed when agent consolidation is enabled via feature flags
-        consolidated_capabilities = [
-            # From OptimizerAgent
-            "financial_analyst.propose_trades",  # optimizer.propose_trades
-            "financial_analyst.analyze_impact",  # optimizer.analyze_impact  
-            "financial_analyst.suggest_hedges",  # optimizer.suggest_hedges
-            "financial_analyst.suggest_deleveraging_hedges",  # optimizer.suggest_deleveraging_hedges
-            
-            # From RatingsAgent  
-            "financial_analyst.dividend_safety",  # ratings.dividend_safety
-            "financial_analyst.moat_strength",  # ratings.moat_strength
-            "financial_analyst.resilience",  # ratings.resilience
-            "financial_analyst.aggregate_ratings",  # ratings.aggregate
-            
-            # From ChartsAgent
-            "financial_analyst.macro_overview_charts",  # charts.macro_overview
-            "financial_analyst.scenario_charts",  # charts.scenario_deltas
+        # Optimization capabilities
+        optimization_capabilities = [
+            "financial_analyst.propose_trades",
+            "financial_analyst.analyze_impact",
+            "financial_analyst.suggest_hedges",
+            "financial_analyst.suggest_deleveraging_hedges",
         ]
         
-        # Add consolidated capabilities for dual registration support
-        # This allows both old and new capability names to work during transition
-        capabilities.extend(consolidated_capabilities)
+        # Security ratings capabilities
+        ratings_capabilities = [
+            "financial_analyst.dividend_safety",
+            "financial_analyst.moat_strength",
+            "financial_analyst.resilience",
+            "financial_analyst.aggregate_ratings",
+        ]
+        
+        # Charting capabilities
+        charting_capabilities = [
+            "financial_analyst.macro_overview_charts",
+            "financial_analyst.scenario_charts",
+        ]
+        
+        capabilities.extend(optimization_capabilities)
+        capabilities.extend(ratings_capabilities)
+        capabilities.extend(charting_capabilities)
         
         return capabilities
 
@@ -393,7 +396,7 @@ class FinancialAnalyst(BaseAgent):
         result["_provenance"] = {
             "type": provenance.value,
             "source": f"pricing_pack:{pack_id}" if provenance == DataProvenance.REAL else "stub:default_prices",
-            "warnings": [] if provenance == DataProvenance.REAL else ["Some prices may be missing or defaulted to zero"],
+            "warnings": [] if provenance == DataProvenance.REAL else ["Some prices are missing or defaulted to zero"],
             "confidence": 1.0 if len(price_map) == len(security_ids) else 0.5
         }
 
@@ -2082,7 +2085,7 @@ class FinancialAnalyst(BaseAgent):
         except Exception as e:
             logger.warning(f"Could not retrieve historical NAV from database: {e}")
         
-        # If no historical data, return empty result (Phase 3.1 - Remove simulation)
+        # If no historical data, return empty result
         if not historical_data:
             logger.info("No historical NAV data available yet - portfolio_daily_values needs to be populated")
             # Return empty dataset - UI should show "No historical data" message
@@ -2122,7 +2125,8 @@ class FinancialAnalyst(BaseAgent):
         return self._attach_metadata(result, metadata)
 
     # ============================================================================
-    # CONSOLIDATED CAPABILITIES FROM OPTIMIZER AGENT (Phase 3, Week 1)
+    # ============================================================================
+    # Portfolio Optimization Capabilities
     # ============================================================================
 
     async def financial_analyst_propose_trades(
@@ -2141,7 +2145,6 @@ class FinancialAnalyst(BaseAgent):
         Generate rebalance trade proposals based on policy constraints.
 
         Capability: financial_analyst.propose_trades
-        (Consolidated from optimizer.propose_trades)
 
         Policy Constraints (policy_json):
             - min_quality_score: Minimum aggregate quality rating (0-10)
@@ -2242,7 +2245,7 @@ class FinancialAnalyst(BaseAgent):
             return self._attach_metadata(error_result, metadata)
 
     # ========================================================================
-    # CONSOLIDATED RATING METHODS FROM RATINGSAGENT  
+    # Security Ratings Capabilities
     # ========================================================================
 
     async def financial_analyst_dividend_safety(
@@ -2257,7 +2260,6 @@ class FinancialAnalyst(BaseAgent):
         """Calculate dividend safety rating (0-10 scale).
         
         Capability: financial_analyst.dividend_safety
-        (Consolidated from ratings.dividend_safety)
         """
         try:
             # Resolve symbol and fundamentals
@@ -2732,7 +2734,6 @@ class FinancialAnalyst(BaseAgent):
         Analyze impact of proposed trades on portfolio metrics.
 
         Capability: financial_analyst.analyze_impact
-        (Consolidated from optimizer.analyze_impact)
 
         Analyzes before/after:
             - Portfolio value
@@ -2944,7 +2945,6 @@ class FinancialAnalyst(BaseAgent):
         Suggest deleveraging hedges based on macro regime.
 
         Capability: financial_analyst.suggest_deleveraging_hedges
-        (Consolidated from optimizer.suggest_deleveraging_hedges)
 
         Dalio Deleveraging Playbook:
             - DELEVERAGING / DEPRESSION: Aggressive deleveraging
@@ -3062,7 +3062,7 @@ class FinancialAnalyst(BaseAgent):
             return self._attach_metadata(error_result, metadata)
     
     # ============================================================================
-    # Consolidated Charts Methods (from ChartsAgent)
+    # Charting and Visualization Capabilities
     # ============================================================================
     
     async def financial_analyst_macro_overview_charts(
@@ -3078,7 +3078,6 @@ class FinancialAnalyst(BaseAgent):
         Format macro data for visualization.
 
         Capability: financial_analyst.macro_overview_charts
-        (Consolidated from charts.macro_overview)
         Pattern: portfolio_macro_overview.json
 
         Args:
@@ -3211,7 +3210,6 @@ class FinancialAnalyst(BaseAgent):
         Format scenario delta comparison tables.
 
         Capability: financial_analyst.scenario_charts
-        (Consolidated from charts.scenario_deltas)
         Pattern: portfolio_scenario_analysis.json
 
         Args:

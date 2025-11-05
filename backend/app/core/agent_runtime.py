@@ -34,8 +34,8 @@ from typing import Any, Dict, List, Optional
 from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 
-# Compliance modules archived - not used in Replit deployment
-# These modules were archived as part of the transition to Replit-first deployment
+# Compliance modules not used in current deployment
+# Attribution and rights management are handled by the pattern orchestrator
 get_attribution_manager = None
 get_rights_registry = None
 
