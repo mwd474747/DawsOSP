@@ -315,7 +315,7 @@ class ScenarioService:
         query = """
             SELECT
                 l.symbol,
-                l.quantity_open,
+                l.quantity_open AS quantity,
                 l.cost_basis_per_share,
                 l.currency,
                 l.quantity_open * l.cost_basis_per_share AS market_value,
