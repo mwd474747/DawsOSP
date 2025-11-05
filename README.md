@@ -423,4 +423,4 @@ For issues or questions:
 
 ---
 
-**DawsOS** - Portfolio Intelligence Platform | Version 2.0.0 | 2025
+**DawsOS** - Portfolio Intelligence Platform | Version 6.0.1 | 2025

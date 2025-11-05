@@ -61,9 +61,10 @@ Capability Request ("ledger.positions") → Runtime Lookup → FinancialAnalyst.
 ```
 
 **Registered Agents** (4 total - Phase 3 consolidation complete):
-1. **FinancialAnalyst** - Portfolio ledger, pricing, metrics, attribution, optimization, ratings, charts (~35+ capabilities)
+1. **FinancialAnalyst** - Portfolio ledger, pricing, metrics, attribution, optimization, ratings, charts (28 capabilities)
    - Capabilities: `ledger.*`, `pricing.*`, `metrics.*`, `attribution.*`, `charts.*`, `risk.*`, `portfolio.*`, `optimizer.*`, `ratings.*`
    - **Consolidated from:** OptimizerAgent, RatingsAgent, ChartsAgent (Phase 3 Weeks 1-3, November 3, 2025)
+   - **Total:** 19 original + 9 consolidated = 28 capabilities
 2. **MacroHound** - Macro economic cycles, scenarios, regime detection, alerts (~17+ capabilities)
    - Capabilities: `macro.*`, `scenarios.*`, `cycles.*`, `alerts.*`
    - **Consolidated from:** AlertsAgent (Phase 3 Week 4, November 3, 2025)
@@ -107,11 +108,16 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 - `GET /` - Serves full_ui.html
 - `POST /api/patterns/execute` - Execute pattern (main endpoint)
 - `POST /api/auth/login` - JWT authentication
+- `POST /api/auth/refresh` - Refresh token
 - `GET /api/portfolios` - List portfolios
+- `GET /api/portfolio` - Get portfolio details
 - `GET /api/metrics/{portfolio_id}` - Performance metrics
 - `GET /api/macro` - Macro economic data
 - `GET /api/buffett-ratings` - Quality ratings
 - `GET /api/docs` - OpenAPI documentation
+- `GET /health` - Health check
+
+**Note:** Complete API documentation available at `/docs` endpoint when server is running. This list shows key endpoints only.
 
 **Alternative Entry Point**: [backend/app/api/executor.py](backend/app/api/executor.py) (922 lines)
 - Modular backend structure (not used in production)
@@ -132,10 +138,10 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 
 **Portfolio Section (5 pages):**
 1. Dashboard (`/dashboard`) - Portfolio overview using `portfolio_overview` pattern
-2. Holdings (`/holdings`) - Position details using `holding_deep_dive` pattern
+2. Holdings (`/holdings`) - Position details using `portfolio_overview` pattern (shows holdings table)
 3. Transactions (`/transactions`) - Complete audit trail with pagination
 4. Performance (`/performance`) - Time-weighted returns using `portfolio_overview` pattern
-5. Corporate Actions (`/corporate-actions`) - Dividends, splits, corporate actions
+5. Corporate Actions (`/corporate-actions`) - Dividends, splits, corporate actions using `corporate_actions_upcoming` pattern
 
 **Analysis Section (4 pages):**
 6. Macro Cycles (`/macro-cycles`) - 4 economic cycles (STDC, LTDC, Empire, Civil) using `macro_cycles_overview` and `macro_trend_monitor` patterns
@@ -144,15 +150,20 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 9. Attribution (`/attribution`) - Currency and sector breakdown
 
 **Intelligence Section (4 pages):**
-10. Optimizer (`/optimizer`) - Portfolio optimization using `policy_rebalance` and `cycle_deleveraging_scenarios` patterns
+10. Optimizer (`/optimizer`) - Portfolio optimization using `policy_rebalance` pattern
 11. Ratings (`/ratings`) - Buffett quality assessment (A-F grades) using `buffett_checklist` pattern
 12. AI Insights (`/ai-insights`) - Claude-powered analysis using `news_impact_analysis` pattern
 13. Market Data (`/market-data`) - Economic indicators and market data
 
 **Operations Section (3 pages):**
 14. Alerts (`/alerts`) - Real-time monitoring and alert management
-15. Reports (`/reports`) - PDF generation using `export_portfolio_report` and `portfolio_macro_overview` patterns
+15. Reports (`/reports`) - PDF generation using `export_portfolio_report` pattern
 16. Settings (`/settings`) - User preferences and configuration
+
+**Note:** Some patterns are defined in the registry but not currently used in UI pages:
+- `holding_deep_dive` - Defined but not used (may be used in future)
+- `cycle_deleveraging_scenarios` - Defined but not used (may be used in future)
+- `portfolio_macro_overview` - Defined but not used (may be used in future)
 
 **Authentication:**
 17. Login - JWT authentication
@@ -174,8 +185,9 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 - `002_pricing.sql` - Market data
 - `003_metrics.sql` - Performance calculations
 - `004_auth.sql` - User authentication
-- `005_audit.sql` - Audit logging
 - `006_alerts.sql` - Alert system
+
+**Note:** Schema file `005_audit.sql` was removed as part of Migration 003 (November 4, 2025) along with the `audit_log` table.
 
 **Core Tables**:
 - `portfolios` - Portfolio metadata
@@ -183,7 +195,8 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 - `transactions` - Trade history
 - `pricing_packs` - Market data snapshots
 - `users` - Authentication
-- `audit_log` - Full audit trail
+
+**Note:** The `audit_log` table was removed in Migration 003 (November 4, 2025) as it was never implemented.
 
 **Design Principles**:
 - UUID primary keys
