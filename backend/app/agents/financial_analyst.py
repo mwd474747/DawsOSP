@@ -300,7 +300,8 @@ class FinancialAnalyst(BaseAgent):
                 - quantity: Number of shares
                 - currency: Position currency code
             pack_id: Pricing pack ID. Optional, uses ctx.pricing_pack_id if not provided.
-                Format: "PP_YYYY-MM-DD". Falls back to "PP_latest" if not specified.
+                Format: "PP_YYYY-MM-DD" (e.g., "PP_2025-11-03") or valid UUID.
+                Must be provided either directly or via context - no automatic fallback.
 
         Returns:
             Dict containing:
