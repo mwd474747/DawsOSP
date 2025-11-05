@@ -752,6 +752,18 @@ class MacroHound(BaseAgent):
                     "worst_scenario_drawdown": None,
                     "error": dar_result["error"],
                     "_is_stub": True,
+                    # PHASE 1 FIX: Add provenance warning to prevent user trust issues
+                    "_provenance": {
+                        "type": "stub",
+                        "warnings": [
+                            "DaR computation failed - using fallback data",
+                            "Values may not be accurate for investment decisions"
+                        ],
+                        "confidence": 0.0,
+                        "implementation_status": "stub",
+                        "recommendation": "Do not use for investment decisions",
+                        "source": "error_fallback_stub_data"
+                    }
                 }
             else:
                 # Success - return DaR result
@@ -771,6 +783,18 @@ class MacroHound(BaseAgent):
                 "worst_scenario_drawdown": None,
                 "error": f"DaR computation error: {str(e)}",
                 "_is_stub": True,
+                # PHASE 1 FIX: Add provenance warning to prevent user trust issues
+                "_provenance": {
+                    "type": "stub",
+                    "warnings": [
+                        "DaR computation error - using fallback data",
+                        "Values may not be accurate for investment decisions"
+                    ],
+                    "confidence": 0.0,
+                    "implementation_status": "stub",
+                    "recommendation": "Do not use for investment decisions",
+                    "source": "exception_fallback_stub_data"
+                }
             }
 
         # Attach metadata

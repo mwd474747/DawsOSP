@@ -775,6 +775,9 @@ class PatternOrchestrator:
                     f"Output {output_key} not found in state for pattern {pattern_id}, "
                     f"available keys: {list(state.keys())}"
                 )
+                # PHASE 1 FIX: Set missing output to None instead of skipping
+                # This prevents "No data" errors in UI
+                outputs[output_key] = None
 
         # Special handling for charts (common output key)
         charts = state.get("charts", [])
