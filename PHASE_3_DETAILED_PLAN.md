@@ -25,7 +25,7 @@
 
 ---
 
-## Task 3.1: Implement Real Factor Analysis (8-10 hours) ⚠️ **ADJUSTED TIMELINE**
+## Task 3.1: Implement Real Factor Analysis (12-16 hours) ⚠️ **ADJUSTED TIMELINE**
 
 ### Root Issue
 
@@ -36,30 +36,71 @@
 - Has `_provenance` field marking it as stub
 - No actual factor analysis performed
 - **CRITICAL DISCOVERY:** `FactorAnalyzer` service EXISTS but is not integrated!
+- **CRITICAL BUGS:** Multiple blocking bugs prevent integration
 
-**Root Cause:** `FactorAnalyzer` exists in `backend/app/services/factor_analysis.py` but `risk_compute_factor_exposures` doesn't use it. Inconsistency: `risk_get_factor_exposure_history` uses `FactorAnalyzer`, but `risk_compute_factor_exposures` uses stub data.
+**Root Cause:** `FactorAnalyzer` exists in `backend/app/services/factor_analysis.py` but:
+1. `risk_compute_factor_exposures` doesn't use it (uses stub data)
+2. `risk_get_factor_exposure_history` uses wrong import (`FactorAnalysisService` vs `FactorAnalyzer`)
+3. Field name mismatch (`valuation_date` vs `asof_date`)
+4. Missing `economic_indicators` table
+
+**Blocking Issues (from Replit Agent findings):**
+- 🔴 Field name mismatch: `valuation_date` (schema) vs `asof_date` (code)
+- 🔴 Import bug: `FactorAnalysisService` (import) vs `FactorAnalyzer` (actual class)
+- 🔴 Missing table: `economic_indicators` table doesn't exist
+- 🔴 Constructor mismatch: `FactorAnalyzer(db)` requires db parameter
 
 ### Implementation Plan
 
+#### Step 3.1.0: Fix Critical Bugs (4-6 hours) 🔴 **NEW - BLOCKING**
+
+**Goal:** Fix all blocking bugs before integration.
+
+**Critical Bugs (from Replit Agent findings):**
+1. 🔴 **Field name mismatch:** `valuation_date` (schema) vs `asof_date` (code)
+2. 🔴 **Import bug:** `FactorAnalysisService` (import) vs `FactorAnalyzer` (actual class)
+3. 🔴 **Missing table:** `economic_indicators` table doesn't exist
+4. 🔴 **Constructor mismatch:** `FactorAnalyzer(db)` requires db parameter
+
+**Tasks:**
+1. Fix FactorAnalyzer field name bug (1-2h)
+   - Change `asof_date` → `valuation_date` in queries
+   - Add alias: `valuation_date as asof_date`
+2. Fix import/class name bug (1h)
+   - Change import: `FactorAnalysisService` → `FactorAnalyzer`
+   - Fix instantiation: `FactorAnalyzer(db)` with db connection
+3. Create economic_indicators table (2-3h)
+   - Create schema file
+   - Create migration
+   - Add indexes
+
+**Deliverables:**
+- Fixed FactorAnalyzer service
+- Fixed import/instantiation in financial_analyst.py
+- Created economic_indicators table
+- All blocking bugs resolved
+
+---
+
 #### Step 3.1.1: Review FactorAnalyzer Service (1 hour) ✅ **REDUCED**
 
-**Goal:** Understand existing `FactorAnalyzer` implementation.
+**Goal:** Understand existing `FactorAnalyzer` implementation after bug fixes.
 
 **CRITICAL DISCOVERY:**
 - ✅ `FactorAnalyzer` exists in `backend/app/services/factor_analysis.py` (438 lines)
 - ✅ Real regression-based implementation using sklearn
 - ✅ Uses `portfolio_daily_values` and `economic_indicators` tables
-- ✅ Already used by `risk_get_factor_exposure_history` (line 1235)
+- ✅ Already used by `risk_get_factor_exposure_history` (line 1235) - but has bugs
 - ❌ NOT used by `risk_compute_factor_exposures` (uses stub, line 1172)
 
 **Tasks:**
-1. Review `FactorAnalyzer.compute_factor_exposure()` method
+1. Review `FactorAnalyzer.compute_factor_exposure()` method (after fixes)
 2. Understand input/output format
-3. Identify any bugs or issues
+3. Verify all bugs are fixed
 4. Determine integration approach
 
 **Deliverables:**
-- Review of existing service
+- Review of fixed service
 - Integration plan (wiring only, not implementation)
 
 ---
@@ -186,17 +227,25 @@ async def risk_compute_factor_exposures(
 
 ### Task 3.1 Summary ✅ **ADJUSTED**
 
-**Time:** 8-10 hours (reduced from 16 hours)  
-**Files Changed:** 2 files
-- `backend/app/services/factor_analysis.py` (fix bugs)
-- `backend/app/agents/financial_analyst.py` (integrate existing service)
+**Time:** 12-16 hours (increased from 8-10h due to critical bugs)  
+**Files Changed:** 4 files
+- `backend/app/services/factor_analysis.py` (fix field name bug)
+- `backend/app/agents/financial_analyst.py` (fix import bug, integrate service)
+- `backend/db/schema/economic_indicators.sql` (create new schema)
+- `backend/db/migrations/015_add_economic_indicators.sql` (create new migration)
 
 **Result:** Real factor analysis integrated, no stub data
 
 **Key Changes:**
-- ✅ Service exists, just needs integration (not implementation from scratch)
-- ✅ Timeline reduced: 16h → 8-10h
-- ✅ Focus: Fix bugs and wire existing service
+- ✅ Service exists, but has critical bugs that must be fixed first
+- ✅ Timeline increased: 8-10h → 12-16h (adds 4-6h for bug fixes)
+- ✅ Focus: Fix critical bugs first, then wire existing service
+
+**Prerequisites:**
+- 🔴 Must fix field name bug (`valuation_date` vs `asof_date`)
+- 🔴 Must fix import bug (`FactorAnalysisService` → `FactorAnalyzer`)
+- 🔴 Must create `economic_indicators` table
+- 🔴 Must fix constructor usage (requires db connection)
 
 ---
 
@@ -462,16 +511,22 @@ async def macro_compute_dar(
 
 ## Phase 3 Summary ✅ **ADJUSTED**
 
-**Total Time:** 40-42 hours (Weeks 4-6) - **Reduced from 48 hours**  
+**Total Time:** 44-48 hours (Weeks 4-6) - **Increased from 40-42h due to critical bugs**  
 **Files Changed:** Multiple files (depends on capabilities)
 
 **Key Adjustments:**
-- ✅ Task 3.1: 16h → 8-10h (FactorAnalyzer exists, just needs integration)
+- ⚠️ Task 3.1: 8-10h → 12-16h (adds 4-6h for critical bug fixes)
 - ✅ Task 3.2: 12h → 12h (no change)
 - ✅ Task 3.3: 20h → 20h (no change)
 
+**Critical Bugs (Phase 1 Prerequisites):**
+- 🔴 Field name mismatch: `valuation_date` vs `asof_date` (1-2h)
+- 🔴 Import bug: `FactorAnalysisService` vs `FactorAnalyzer` (1h)
+- 🔴 Missing table: `economic_indicators` (2-3h)
+- 🔴 Constructor mismatch: requires db parameter (1h)
+
 **Result:**
-- ✅ Real factor analysis integrated (not implemented from scratch)
+- ✅ Real factor analysis integrated (after fixing critical bugs)
 - ✅ DaR computation hardened
 - ✅ Critical capabilities implemented
 - ✅ No stub data in production features

@@ -369,23 +369,34 @@ async def macro_compute_dar(...):
 
 ### Before Execution
 
-**MUST DO:**
-1. ✅ **Investigate FactorAnalysisService** (2h)
-   - Search codebase for service
-   - Check if factor analysis exists elsewhere
-   - Verify factor data availability
+**MUST DO (CRITICAL BUGS):**
+1. 🔴 **Fix FactorAnalyzer Field Name Bug** (1-2h) - **BLOCKING**
+   - Change `asof_date` → `valuation_date` in queries
+   - Add alias: `valuation_date as asof_date`
+   - Location: `backend/app/services/factor_analysis.py` (line 287, 289)
 
-2. ✅ **Audit Capabilities** (4h)
+2. 🔴 **Fix Import/Class Name Bug** (1h) - **BLOCKING**
+   - Change import: `FactorAnalysisService` → `FactorAnalyzer`
+   - Fix instantiation: `FactorAnalyzer(db)` with db connection
+   - Location: `backend/app/agents/financial_analyst.py` (line 1235-1236)
+
+3. 🔴 **Create economic_indicators Table** (2-3h) - **BLOCKING**
+   - Create schema file
+   - Create migration
+   - Add indexes
+   - Location: `backend/db/schema/economic_indicators.sql` (new)
+
+4. ✅ **Audit Capabilities** (4h)
    - Use capability contract system
    - Identify all stub capabilities
    - Prioritize by user impact
 
 **SHOULD DO:**
-3. ⚠️ **Review DaR Dependencies** (1h)
+5. ⚠️ **Review DaR Dependencies** (1h)
    - Check if DaR depends on factor betas
    - Determine execution order
 
-4. ⚠️ **Verify Data Availability** (1h)
+6. ⚠️ **Verify Data Availability** (1h)
    - Check factor data sources
    - Verify historical returns data
    - Confirm pricing data availability
