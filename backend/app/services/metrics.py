@@ -31,6 +31,13 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Dict, List, Optional
 
+from app.core.types import (
+    PricingPackNotFoundError,
+    PricingPackValidationError,
+)
+from app.services.pricing import get_pricing_service
+from app.services.portfolio_helpers import get_portfolio_value
+
 logger = logging.getLogger(__name__)
 
 
@@ -509,25 +516,4 @@ class PerformanceCalculator:
 
         Sums: quantity_open × price × fx_rate for all positions.
         """
-        positions = await self.db.fetch(
-            """
-            SELECT l.quantity_open, p.close, COALESCE(fx.rate, 1.0) as fx_rate
-            FROM lots l
-            JOIN prices p ON l.security_id = p.security_id AND p.pricing_pack_id = $2
-            LEFT JOIN fx_rates fx ON p.currency = fx.base_ccy
-                AND fx.quote_ccy = (SELECT base_ccy FROM portfolios WHERE id = $1)
-                AND fx.pricing_pack_id = $2
-            WHERE l.portfolio_id = $1 AND l.quantity_open > 0
-        """,
-            portfolio_id,
-            pack_id,
-        )
-
-        total = sum(
-            Decimal(str(pos["quantity_open"]))
-            * Decimal(str(pos["close"]))
-            * Decimal(str(pos["fx_rate"]))
-            for pos in positions
-        )
-
-        return total
+        return await get_portfolio_value(self.db, portfolio_id, pack_id)
