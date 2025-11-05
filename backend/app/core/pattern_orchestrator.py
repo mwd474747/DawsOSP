@@ -1008,7 +1008,31 @@ class PatternOrchestrator:
         return state.get(expr)
     
     def _resolve_template_vars(self, text: str, state: Dict[str, Any]) -> str:
-        """Replace {{var}} templates with actual values."""
+        """
+        Replace template variables {{var}} with actual values from execution state.
+        
+        Supports template syntax: {{path.to.value}}
+        - Paths can reference step results: {{positions.positions}}
+        - Paths can reference context: {{ctx.portfolio_id}}
+        - Paths can reference inputs: {{inputs.asof_date}}
+        - Paths can reference nested structures: {{valued_positions.positions[0].symbol}}
+        
+        Args:
+            text: Text containing template variables in {{...}} format
+            state: Current execution state containing step results, context, and inputs
+            
+        Returns:
+            Text with template variables replaced by their actual values
+            
+        Example:
+            >>> state = {
+            ...     "positions": {"positions": [{"symbol": "AAPL"}]},
+            ...     "ctx": {"portfolio_id": "abc-123"},
+            ...     "inputs": {"asof_date": "2025-01-01"}
+            ... }
+            >>> _resolve_template_vars("Portfolio {{ctx.portfolio_id}} on {{inputs.asof_date}}", state)
+            'Portfolio abc-123 on 2025-01-01'
+        """
         import re
         
         def replace_template(match):
