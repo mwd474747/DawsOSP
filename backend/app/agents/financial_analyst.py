@@ -371,7 +371,7 @@ class FinancialAnalyst(BaseAgent):
 
         if total_value_base > 0:
             for vp in valued_positions:
-                vp["weight"] = vp["value"] / total_value_base
+                vp["weight"] = vp["market_value"] / total_value_base
         else:
             for vp in valued_positions:
                 vp["weight"] = Decimal("0")

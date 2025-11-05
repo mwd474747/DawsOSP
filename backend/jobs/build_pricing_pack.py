@@ -1,8 +1,8 @@
 """
-Build Pricing Pack - Production implementation with real provider data
+Build Pricing Pack - Production implementation with Polygon provider data
 
-Purpose: Build pricing pack with real data from Polygon (prices) and WM Reuters (FX)
-Updated: 2025-10-23
+Purpose: Build pricing pack with Polygon data (prices + FX rates)
+Updated: 2025-11-04
 Priority: P0 (Critical for production)
 
 Usage:
@@ -15,22 +15,40 @@ Usage:
     # Build pack and mark as fresh immediately
     python backend/jobs/build_pricing_pack.py --date 2025-10-21 --mark-fresh
 
+    # Use stub data for testing
+    python backend/jobs/build_pricing_pack.py --use-stubs
+
 Sacred Invariants:
-    1. Prices sourced from Polygon (real-time data)
-    2. FX rates use WM 4PM London fixing
+    1. Prices sourced from Polygon (split-adjusted daily OHLCV)
+    2. FX rates sourced from Polygon FX endpoint (EOD rates)
     3. Pack ID format: PP_YYYY-MM-DD
-    4. Pack hash computed from all data
+    4. Pack hash computed from all data (SHA-256)
     5. Status starts as 'warming', marked 'fresh' after pre-warm
     6. Graceful fallback to stubs if providers unavailable
 
 Provider Attribution:
-    - Prices: Polygon.io
-    - FX Rates: WM Reuters 4PM fixing (via Polygon)
-    - Fallback: Stub data (for testing)
+    - Prices: Polygon.io (split-adjusted, NOT dividend-adjusted)
+    - FX Rates: Polygon FX endpoint (EOD rates, approximates WM 4PM)
+    - Fallback: Stub data (for testing/development)
+
+    ⚠️ NOTE: Currently using Polygon FX data as proxy for WM 4PM fix.
+    For institutional compliance requiring official WM/Reuters data:
+    - Option 1: Integrate FRED provider (app/integrations/fred_provider.py)
+    - Option 2: Direct WM Reuters API subscription
+    - See: .archive/pricing-pack-consolidation-20251104/ for original
+      implementation with FRED integration
+
+Rationale for Current Approach:
+    - Simpler: Single provider (Polygon) for all data
+    - Cost-effective: No additional API subscriptions required
+    - Sufficient: Polygon FX data adequate for most portfolios
+    - Upgradeable: Schema supports any FX data source (policy field)
 
 References:
-    - PRODUCT_SPEC.md §5 (Provider Integration)
-    - backend/app/integrations/polygon_provider.py
+    - Architecture: /PRICING_PACK_ARCHITECTURE.md
+    - Audit: /PRICING_PACK_AUDIT_FINDINGS.md
+    - Integration: /PRICING_PACK_INTEGRATION_FIX_PLAN.md
+    - Provider: backend/app/integrations/polygon_provider.py
 """
 
 import asyncio
