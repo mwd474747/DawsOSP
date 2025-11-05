@@ -1,8 +1,13 @@
 # DawsOS Deployment Guide
 
+**Last Updated:** January 14, 2025  
+**CI/CD:** Handled by Replit (GitHub Actions workflows archived - see `.archive/ci-cd/`)
+
 ## Replit Deployment
 
 DawsOS is deployed on Replit. This guide covers deployment on Replit.
+
+**Note:** GitHub Actions workflows have been archived (January 14, 2025) as they were incompatible with the current application structure. CI/CD is handled by Replit's deployment system. Workflows can be restored/updated from `.archive/ci-cd/github-workflows/` if needed in the future.
 
 ### Prerequisites
 - Replit account
