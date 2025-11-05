@@ -23,26 +23,42 @@
 
 **Purpose:** Stores daily portfolio NAV (Net Asset Value) for factor analysis
 
+**Schema (from backend/db/schema/portfolio_daily_values.sql):**
+```sql
+CREATE TABLE IF NOT EXISTS portfolio_daily_values (
+    portfolio_id UUID NOT NULL,
+    asof_date DATE NOT NULL,
+    nav DECIMAL(20, 2) NOT NULL,
+    return DECIMAL(10, 6),
+    ...
+    PRIMARY KEY (portfolio_id, asof_date)
+);
+```
+
 **Required Fields (from FactorAnalyzer usage):**
-- `portfolio_id` (UUID) - Portfolio identifier
-- `asof_date` (DATE) - Date of valuation
-- `nav` (DECIMAL) - Net Asset Value
-- `return` (DECIMAL) - Daily return (calculated or stored)
+- ✅ `portfolio_id` (UUID) - Portfolio identifier
+- ✅ `asof_date` (DATE) - Date of valuation
+- ✅ `nav` (DECIMAL) - Net Asset Value
+- ⚠️ `return` (DECIMAL) - Daily return (may be NULL, calculated on-the-fly)
 
 **Factor Analysis Requirements:**
-- Need daily returns for regression
-- Need sufficient history (minimum 30 days, recommended 252 days = 1 year)
-- Need consistent date coverage
+- ✅ Need daily returns for regression (calculated from NAV)
+- ✅ Need sufficient history (minimum 30 days, recommended 252 days = 1 year)
+- ✅ Need consistent date coverage
+
+**FactorAnalyzer Usage:**
+- Query: `SELECT asof_date, nav FROM portfolio_daily_values WHERE portfolio_id = $1 AND asof_date BETWEEN $2 AND $3`
+- Calculates returns: `(nav_t - nav_{t-1}) / nav_{t-1}`
 
 **Potential Issues:**
-- ⚠️ **Field name:** `asof_date` vs `date` - Need to verify consistency
-- ⚠️ **Return calculation:** Is `return` stored or calculated? If calculated, how?
-- ⚠️ **Data coverage:** Are returns calculated correctly? Missing days?
+- ⚠️ **Field name:** Uses `asof_date` (consistent with schema)
+- ⚠️ **Return calculation:** Returns calculated on-the-fly (not stored)
+- ⚠️ **Data coverage:** Need to verify data coverage (no missing days)
 
 **Recommendation:**
-- **VERIFY:** Check if `portfolio_daily_values` table has correct structure
-- **VERIFY:** Check if `return` field exists or needs to be calculated
-- **VERIFY:** Check data coverage and quality
+- ✅ **Schema is correct** - Table structure matches FactorAnalyzer usage
+- ⚠️ **Verify:** Data coverage and quality
+- ⚠️ **Verify:** Return calculation is correct
 
 ---
 
@@ -50,34 +66,49 @@
 
 **Purpose:** Stores factor data (Real Rate, Inflation, Credit, USD, Equity Risk Premium)
 
+**Schema (assumed from FactorAnalyzer usage):**
+```sql
+CREATE TABLE IF NOT EXISTS economic_indicators (
+    indicator_name VARCHAR NOT NULL,
+    asof_date DATE NOT NULL,
+    value DECIMAL(20, 6) NOT NULL,
+    ...
+    PRIMARY KEY (indicator_name, asof_date)
+);
+```
+
 **Required Fields (from FactorAnalyzer usage):**
-- `indicator_name` (VARCHAR) - Factor name
-- `asof_date` (DATE) - Date of indicator
-- `value` (DECIMAL) - Factor value
-- `return` (DECIMAL) - Factor return (calculated or stored)
+- ✅ `indicator_name` (VARCHAR) - Factor name (e.g., "real_rate", "inflation", "credit", "usd", "equity_risk_premium")
+- ✅ `asof_date` (DATE) - Date of indicator
+- ✅ `value` (DECIMAL) - Factor value
+- ⚠️ `return` (DECIMAL) - Factor return (calculated on-the-fly)
 
 **Factor Analysis Requirements:**
-- Need daily returns for each factor
-- Need same date coverage as portfolio returns
-- Need consistent factor definitions
+- ✅ Need daily returns for each factor (calculated from values)
+- ✅ Need same date coverage as portfolio returns
+- ✅ Need consistent factor definitions
 
 **Factor Definitions (from FactorAnalyzer):**
-1. **Real Rate** - 10Y TIPS yield
-2. **Inflation** - Breakeven inflation
-3. **Credit Spread** - IG corporate - treasury
-4. **USD** - DXY dollar index
-5. **Equity Risk Premium** - S&P 500 - risk-free rate
+1. ✅ **Real Rate** - 10Y TIPS yield (standard measure)
+2. ✅ **Inflation** - Breakeven inflation (standard measure)
+3. ✅ **Credit Spread** - IG corporate - treasury (standard measure)
+4. ✅ **USD** - DXY dollar index (standard measure)
+5. ✅ **Equity Risk Premium** - S&P 500 - risk-free rate (standard measure)
+
+**FactorAnalyzer Usage:**
+- Query: `SELECT asof_date, value FROM economic_indicators WHERE indicator_name = $1 AND asof_date BETWEEN $2 AND $3`
+- Calculates returns: `(value_t - value_{t-1}) / value_{t-1}`
 
 **Potential Issues:**
-- ⚠️ **Factor definitions:** Are these correct from finance perspective?
-- ⚠️ **Return calculation:** Are factor returns calculated correctly?
-- ⚠️ **Data coverage:** Do all factors have same date coverage?
-- ⚠️ **Missing data:** How are missing days handled?
+- ⚠️ **Schema verification:** Need to verify actual schema matches usage
+- ⚠️ **Return calculation:** Returns calculated on-the-fly (not stored)
+- ⚠️ **Data coverage:** Need to verify all factors have same date coverage
+- ⚠️ **Missing data:** Need to verify how missing days are handled
 
 **Recommendation:**
-- **VERIFY:** Check if `economic_indicators` table has correct structure
-- **VERIFY:** Check if factor definitions match finance standards
-- **VERIFY:** Check if factor returns are calculated correctly
+- ⚠️ **VERIFY:** Actual schema structure matches FactorAnalyzer usage
+- ⚠️ **VERIFY:** Data coverage and quality for all factors
+- ⚠️ **VERIFY:** Return calculation is correct
 
 ---
 
@@ -90,19 +121,28 @@
 - Standardized to `date` (not `asof_date` in some places)
 
 **FactorAnalyzer Usage:**
-- Uses `asof_date` in queries
-- Uses `_get_pack_date()` method
-- May have inconsistency with standardized naming
+- ✅ Uses `asof_date` in queries (matches database schema)
+- ✅ Uses `_get_pack_date()` method (line 433) - correctly uses `pack.date`
+- ✅ No inconsistency with database schema (both use `asof_date`)
+
+**Current Implementation (line 433-437):**
+```python
+async def _get_pack_date(self, pack_id: str) -> date:
+    """Get as-of date for pricing pack."""
+    pricing_service = get_pricing_service()
+    pack = await pricing_service.get_pack_by_id(pack_id, raise_if_not_found=True)
+    return pack.date  # ✅ Correctly uses pack.date (not pack.asof_date)
+```
 
 **Potential Issues:**
-- ⚠️ **Inconsistency:** `asof_date` vs `date` field naming
-- ⚠️ **Bug:** Line 430 uses `asof_date` instead of `date` (known bug)
-- ⚠️ **Standardization:** May need to align with field naming standards
+- ✅ **No inconsistency:** FactorAnalyzer uses `asof_date` which matches database schema
+- ✅ **No bug:** Line 433 correctly uses `pack.date` (PricingPack object has `date` field)
+- ⚠️ **Schema alignment:** Database uses `asof_date`, but some code uses `date` - need to verify consistency
 
 **Recommendation:**
-- **FIX:** Align field names with standardized naming (use `date` not `asof_date`)
-- **VERIFY:** Check all database queries use consistent field names
-- **UPDATE:** Update FactorAnalyzer to use standardized field names
+- ✅ **No change needed:** FactorAnalyzer correctly uses `asof_date` matching database schema
+- ⚠️ **Verify:** Ensure PricingPack object has `date` field (not `asof_date`)
+- ⚠️ **Verify:** Check if other code uses `date` vs `asof_date` for consistency
 
 ---
 
