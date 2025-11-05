@@ -1526,49 +1526,77 @@ async def test_corporate_actions(current_user: dict = Depends(require_auth)):
     logger.info("Testing corporate actions functionality")
     
     try:
-        # Get services
-        services = get_service_container()
-        portfolio_service = services["portfolio_service"]
-        ledger_service = services["ledger_service"]
+        # Get services from runtime
+        runtime = get_agent_runtime()
+        # Get services from financial analyst
+        financial_analyst = runtime.get_agent("financial_analyst")
+        if not financial_analyst:
+            return {"error": "Financial analyst not available"}
         
-        # Get portfolio  
-        user_email = current_user.get("email") or current_user.get("id")
-        portfolio = await portfolio_service.get_default_portfolio(user_email)
-        if not portfolio:
-            return {"error": "No portfolio found"}
+        # Get services from the agent
+        db_pool = financial_analyst.services.get("db")
+        if not db_pool:
+            return {"error": "Database not available"}
         
-        # Get holdings
-        positions = await ledger_service.get_positions(
-            portfolio_id=portfolio.id,
-            as_of_date=date.today()
-        )
-        symbols = [pos["symbol"] for pos in positions if pos.get("quantity", 0) > 0]
+        # Get portfolio directly from database
+        user_id = current_user.get("id")  # This is the user UUID
+        user_email = current_user.get("email") or user_id
         
-        logger.info(f"Testing with portfolio {portfolio.id} having {len(symbols)} holdings: {symbols[:5]}")
+        async with db_pool.acquire() as conn:
+            portfolio_row = await conn.fetchrow(
+                "SELECT * FROM portfolios WHERE user_id = $1 LIMIT 1",
+                user_id
+            )
+            
+            if not portfolio_row:
+                return {"error": "No portfolio found"}
+            
+            portfolio_id = portfolio_row["id"]
+            
+            # Get holdings from lots table
+            positions = await conn.fetch(
+                """
+                SELECT l.security_id, l.symbol, SUM(l.quantity_open) as quantity
+                FROM lots l
+                WHERE l.portfolio_id = $1 
+                  AND l.quantity_open > 0
+                GROUP BY l.security_id, l.symbol
+                """,
+                portfolio_id
+            )
+        symbols = [pos["symbol"] for pos in positions]
         
-        # Create context
-        pricing_service = services["pricing_service"]
-        latest_pack = await pricing_service.get_latest_pack()
+        logger.info(f"Testing with portfolio {portfolio_id} having {len(symbols)} holdings: {symbols[:5]}")
+        
+        # Create context with proper pricing pack
+        # Get latest pricing pack from database
+        async with db_pool.acquire() as conn:
+            pack_row = await conn.fetchrow(
+                "SELECT id FROM pricing_packs ORDER BY created_at DESC LIMIT 1"
+            )
+            pricing_pack_id = pack_row["id"] if pack_row else None
         
         ctx = RequestCtx(
             request_id=f"test-{datetime.now().timestamp()}",
             user_id=user_email,
-            portfolio_id=str(portfolio.id),
-            pricing_pack_id=latest_pack["id"] if latest_pack else None,
+            portfolio_id=str(portfolio_id),
+            pricing_pack_id=pricing_pack_id,
             ledger_commit_hash=None,
             asof_date=date.today()
         )
         
         # Test DataHarvester directly
         logger.info("Testing DataHarvester agent directly...")
-        from backend.app.agents.data_harvester import DataHarvester
-        data_harvester = DataHarvester("data_harvester", services)
+        # Get DataHarvester from runtime
+        data_harvester = runtime.get_agent("data_harvester")
+        if not data_harvester:
+            return {"error": "DataHarvester not available"}
         
         # Call corporate_actions_upcoming directly
         result = await data_harvester.corporate_actions_upcoming(
             ctx=ctx,
             state={},
-            portfolio_id=str(portfolio.id)
+            portfolio_id=str(portfolio_id)
         )
         
         # Extract key info
@@ -1579,7 +1607,7 @@ async def test_corporate_actions(current_user: dict = Depends(require_auth)):
         logger.info(f"DataHarvester returned {len(actions)} actions")
         
         return {
-            "portfolio_id": str(portfolio.id),
+            "portfolio_id": str(portfolio_id),
             "holdings_count": len(symbols),
             "symbols_sample": symbols[:10],
             "corporate_actions": {
