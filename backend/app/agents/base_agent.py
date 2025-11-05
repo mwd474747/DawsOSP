@@ -337,9 +337,35 @@ class BaseAgent(ABC):
             default: Default value if neither pack_id nor ctx.pricing_pack_id provided
 
         Returns:
-            Resolved pricing pack ID (pack_id > ctx.pricing_pack_id > default > "PP_latest")
+            Resolved pricing pack ID (pack_id > ctx.pricing_pack_id > default)
+
+        Raises:
+            ValueError: If pricing_pack_id is required but not provided
+            ValueError: If pricing_pack_id format is invalid
         """
-        return pack_id or ctx.pricing_pack_id or default or "PP_latest"
+        import re
+        
+        # Resolve from multiple sources (no fallback to "PP_latest")
+        resolved = pack_id or ctx.pricing_pack_id or default
+        
+        if not resolved:
+            raise ValueError(
+                "pricing_pack_id is required but not provided. "
+                "Must be set in request context (ctx.pricing_pack_id) or provided as parameter. "
+                "Use get_pricing_service().get_latest_pack() to fetch current pack."
+            )
+        
+        # Validate format (should be "PP_YYYY-MM-DD" or UUID)
+        PACK_ID_PATTERN = re.compile(r'^PP_\d{4}-\d{2}-\d{2}$')
+        UUID_PATTERN = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
+        
+        if not (PACK_ID_PATTERN.match(resolved) or UUID_PATTERN.match(resolved)):
+            raise ValueError(
+                f"Invalid pricing_pack_id format: '{resolved}'. "
+                f"Expected format: 'PP_YYYY-MM-DD' (e.g., 'PP_2025-11-04') or UUID."
+            )
+        
+        return resolved
 
     def _extract_ratings_from_state(
         self,

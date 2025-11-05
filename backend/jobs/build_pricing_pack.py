@@ -188,11 +188,29 @@ class PricingPackBuilder:
         # Validate data completeness
         if not self._validate_data_completeness(securities, prices_data, fx_data):
             logger.error("Data validation failed, pack incomplete")
-            if not self.use_stubs:
-                logger.info("Falling back to stub data")
+            
+            # Production guard: never fall back to stubs in production
+            if os.getenv("ENVIRONMENT") == "production":
+                raise ValueError(
+                    f"Data validation failed for pricing pack asof {asof_date}. "
+                    f"Cannot build pack in production with incomplete data. "
+                    f"Stub fallback is only available in development/testing."
+                )
+            
+            # Development mode: allow stub fallback with warning
+            if self.use_stubs:
+                logger.warning("⚠️ DEVELOPMENT MODE: Falling back to stub data")
                 prices_data = self._build_stub_prices(asof_date, securities)
                 fx_data = self._build_stub_fx_rates(asof_date)
                 source = "stub_fallback"
+                # Mark pack as 'warming' not 'fresh' when using stub data
+                status = "warming"
+            else:
+                raise ValueError(
+                    f"Data validation failed for pricing pack asof {asof_date}. "
+                    f"Cannot build pack with incomplete data. "
+                    f"Set use_stubs=True for development/testing stub fallback."
+                )
 
         # Compute hash
         pack_hash = self._compute_hash(prices_data, fx_data)

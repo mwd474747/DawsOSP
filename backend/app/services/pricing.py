@@ -104,9 +104,24 @@ class PricingService:
 
         Args:
             use_db: Use database connection (default: True, False for testing)
+
+        Raises:
+            ValueError: If use_db=False in production environment
         """
+        import os
+        
+        # Production guard: prevent stub mode in production
+        if not use_db and os.getenv("ENVIRONMENT") == "production":
+            raise ValueError(
+                "Cannot use stub mode (use_db=False) in production environment. "
+                "Stub mode is only available for development and testing."
+            )
+        
         self.use_db = use_db
         self.pack_queries = get_pricing_pack_queries(use_db=use_db)
+        
+        if not use_db:
+            logger.warning("⚠️ STUB MODE ACTIVE - Using fake pricing data (development/testing only)")
 
     # ========================================================================
     # Pack Queries
