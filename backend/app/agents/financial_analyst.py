@@ -284,16 +284,53 @@ class FinancialAnalyst(BaseAgent):
         pack_id: str = None,
     ) -> Dict[str, Any]:
         """
-        Apply pricing pack to positions.
+        Apply pricing pack to positions for valuation.
+
+        Data Source: prices table via PricingService
+        - Fetches prices from specified pricing pack
+        - Falls back to stub prices if pricing pack unavailable
+        - Uses FX rates for multi-currency positions
 
         Args:
-            ctx: Request context
-            state: Execution state
-            positions: List of positions to price
-            pack_id: Pricing pack ID (optional, uses ctx.pricing_pack_id if not provided)
+            ctx: Request context containing pricing_pack_id, base_currency, etc.
+            state: Execution state from pattern orchestrator
+            positions: List of positions from ledger.positions step. Each position must include:
+                - security_id: Security UUID
+                - symbol: Security symbol
+                - quantity: Number of shares
+                - currency: Position currency code
+            pack_id: Pricing pack ID. Optional, uses ctx.pricing_pack_id if not provided.
+                Format: "PP_YYYY-MM-DD". Falls back to "PP_latest" if not specified.
 
         Returns:
-            Dict with valued positions
+            Dict containing:
+            - positions: List of valued positions, each with:
+                - security_id: Security UUID
+                - symbol: Security symbol
+                - quantity: Number of shares
+                - cost_basis: Total cost basis
+                - price: Current price from pricing pack
+                - market_value: quantity × price
+                - unrealized_pnl: market_value - cost_basis
+                - currency: Position currency
+                - base_currency: Portfolio base currency
+            - _provenance: Dict containing:
+                - type: "real" if from pricing pack, "stub" if fallback
+                - source: Pricing pack ID or "stub:default_prices"
+                - warnings: List of warnings (e.g., missing prices)
+                - confidence: Data confidence score
+
+        Raises:
+            ValueError: If positions is empty or invalid.
+            ValueError: If pack_id is invalid (if explicitly provided).
+            ValueError: If pricing_pack_id is not available in context and not provided.
+            ServiceError: If pricing service fails.
+            
+        Note:
+            - Falls back to stub prices if pricing pack unavailable (does not raise)
+            - Missing prices for some securities result in warnings (not errors)
+            - All valuations reference pricing_pack_id for reproducibility
+            - FX rates are applied for non-base currency positions
         """
         pack_id = self._resolve_pricing_pack_id(pack_id, ctx)
         if not pack_id:
