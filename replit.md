@@ -165,14 +165,33 @@ AI:
 
 ### Recent Remote Sync Fixes (November 5, 2025)
 
-**Critical Security Fixes Applied:**
-- ✅ Removed dangerous `PP_latest` fallback that caused silent failures
-- ✅ Added pricing pack ID format validation (must be `PP_YYYY-MM-DD` or valid UUID)
-- ✅ Fixed scenario analysis service to dynamically fetch latest pricing pack
-- ✅ Updated FinancialAnalyst documentation to reflect no automatic fallback
-- ✅ Added production guards to prevent stub pricing in production environment
+**Context for Claude Agent - Breaking Changes Fixed by Replit Agent:**
 
-**Impact**: All patterns now require explicit pricing pack IDs, preventing data corruption from invalid pack references
+**What Broke**: The remote sync on Nov 4 introduced critical security fixes that removed the `PP_latest` fallback mechanism. However, the scenario analysis service (`backend/app/services/scenarios.py` line 752) was still hardcoding `pack_id = "PP_latest"`, causing all scenario analysis patterns to crash with validation errors.
+
+**What I Fixed**:
+1. **Scenario Service** (`backend/app/services/scenarios.py` lines 751-770):
+   - Replaced hardcoded `"PP_latest"` with dynamic pricing pack lookup
+   - Now calls `get_pricing_service().get_latest_pack()` when no pack_id provided
+   - Returns clear error message if no pricing pack available
+   
+2. **Documentation** (`backend/app/agents/financial_analyst.py` lines 302-307):
+   - Removed misleading "Falls back to PP_latest" documentation
+   - Updated to clarify pricing pack must be explicit (no automatic fallback)
+
+**Why These Changes Were Critical**:
+- The `PP_latest` identifier never existed in the database - it was a placeholder
+- Security fix correctly removed this dangerous fallback to prevent silent failures
+- But scenario analysis code wasn't updated, causing complete feature breakage
+- All scenario-based risk analysis would fail without these fixes
+
+**Current State**: 
+- ✅ All patterns tested and working (portfolio_overview, portfolio_summary, portfolio_holdings, portfolio_scenario_analysis)
+- ✅ Pricing pack validation enforces `PP_YYYY-MM-DD` or UUID format
+- ✅ No more silent failures - clear errors when pricing pack missing
+- ✅ Production guards prevent accidental stub data usage
+
+**Note for Claude Agent**: Do NOT reintroduce `PP_latest` anywhere - it was intentionally removed. Always use `get_pricing_service().get_latest_pack()` for dynamic pack lookup.
 
 ### Critical Backend Fixes Applied (November 4, 2025)
 
