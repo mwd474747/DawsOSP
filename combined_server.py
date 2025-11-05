@@ -1520,6 +1520,87 @@ async def refresh_token(request: Request):
             detail="Token refresh service error"
         )
 
+@app.get("/api/test-corporate-actions")
+async def test_corporate_actions(current_user: dict = Depends(require_auth)):
+    """Test corporate actions functionality with actual portfolio data."""
+    logger.info("Testing corporate actions functionality")
+    
+    try:
+        # Get services
+        services = get_service_container()
+        portfolio_service = services["portfolio_service"]
+        ledger_service = services["ledger_service"]
+        
+        # Get portfolio  
+        user_email = current_user.get("email") or current_user.get("id")
+        portfolio = await portfolio_service.get_default_portfolio(user_email)
+        if not portfolio:
+            return {"error": "No portfolio found"}
+        
+        # Get holdings
+        positions = await ledger_service.get_positions(
+            portfolio_id=portfolio.id,
+            as_of_date=date.today()
+        )
+        symbols = [pos["symbol"] for pos in positions if pos.get("quantity", 0) > 0]
+        
+        logger.info(f"Testing with portfolio {portfolio.id} having {len(symbols)} holdings: {symbols[:5]}")
+        
+        # Create context
+        pricing_service = services["pricing_service"]
+        latest_pack = await pricing_service.get_latest_pack()
+        
+        ctx = RequestCtx(
+            request_id=f"test-{datetime.now().timestamp()}",
+            user_id=user_email,
+            portfolio_id=str(portfolio.id),
+            pricing_pack_id=latest_pack["id"] if latest_pack else None,
+            ledger_commit_hash=None,
+            asof_date=date.today()
+        )
+        
+        # Test DataHarvester directly
+        logger.info("Testing DataHarvester agent directly...")
+        from backend.app.agents.data_harvester import DataHarvester
+        data_harvester = DataHarvester("data_harvester", services)
+        
+        # Call corporate_actions_upcoming directly
+        result = await data_harvester.corporate_actions_upcoming(
+            ctx=ctx,
+            state={},
+            portfolio_id=str(portfolio.id)
+        )
+        
+        # Extract key info
+        actions = result.get("actions", [])
+        summary = result.get("summary", {})
+        errors = result.get("errors", [])
+        
+        logger.info(f"DataHarvester returned {len(actions)} actions")
+        
+        return {
+            "portfolio_id": str(portfolio.id),
+            "holdings_count": len(symbols),
+            "symbols_sample": symbols[:10],
+            "corporate_actions": {
+                "total": summary.get("total_actions", 0),
+                "dividends": summary.get("dividends_expected", 0),
+                "splits": summary.get("splits_pending", 0),
+                "earnings": summary.get("earnings_releases", 0),
+                "actions_sample": actions[:5] if actions else [],
+                "errors": errors
+            },
+            "fmp_api_key_exists": bool(os.environ.get("FMP_API_KEY")),
+            "test_status": "success" if actions else "no_actions_found"
+        }
+        
+    except Exception as e:
+        logger.error(f"Test failed: {e}", exc_info=True)
+        return {
+            "error": str(e),
+            "test_status": "failed"
+        }
+
 @app.get("/api/metrics/{portfolio_id}")
 async def get_portfolio_metrics(portfolio_id: str):
     """
