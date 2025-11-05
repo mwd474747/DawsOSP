@@ -25,7 +25,7 @@
 
 ---
 
-## Task 3.1: Implement Real Factor Analysis (16 hours)
+## Task 3.1: Implement Real Factor Analysis (8-10 hours) ⚠️ **ADJUSTED TIMELINE**
 
 ### Root Issue
 
@@ -35,46 +35,54 @@
 - Returns hardcoded factor betas
 - Has `_provenance` field marking it as stub
 - No actual factor analysis performed
+- **CRITICAL DISCOVERY:** `FactorAnalyzer` service EXISTS but is not integrated!
 
-**Root Cause:** `FactorAnalysisService` not fully implemented or not integrated.
+**Root Cause:** `FactorAnalyzer` exists in `backend/app/services/factor_analysis.py` but `risk_compute_factor_exposures` doesn't use it. Inconsistency: `risk_get_factor_exposure_history` uses `FactorAnalyzer`, but `risk_compute_factor_exposures` uses stub data.
 
 ### Implementation Plan
 
-#### Step 3.1.1: Investigate Factor Analysis Service (2 hours)
+#### Step 3.1.1: Review FactorAnalyzer Service (1 hour) ✅ **REDUCED**
 
-**Goal:** Understand current state of factor analysis implementation.
+**Goal:** Understand existing `FactorAnalyzer` implementation.
+
+**CRITICAL DISCOVERY:**
+- ✅ `FactorAnalyzer` exists in `backend/app/services/factor_analysis.py` (438 lines)
+- ✅ Real regression-based implementation using sklearn
+- ✅ Uses `portfolio_daily_values` and `economic_indicators` tables
+- ✅ Already used by `risk_get_factor_exposure_history` (line 1235)
+- ❌ NOT used by `risk_compute_factor_exposures` (uses stub, line 1172)
 
 **Tasks:**
-1. Find `FactorAnalysisService` or equivalent
-2. Understand what data it needs (positions, prices, market data)
-3. Identify gaps in implementation
-4. Determine integration points
+1. Review `FactorAnalyzer.compute_factor_exposure()` method
+2. Understand input/output format
+3. Identify any bugs or issues
+4. Determine integration approach
 
 **Deliverables:**
-- Investigation report on factor analysis service
-- Gap analysis
-- Integration plan
+- Review of existing service
+- Integration plan (wiring only, not implementation)
 
 ---
 
-#### Step 3.1.2: Implement or Fix Factor Analysis Service (8 hours)
+#### Step 3.1.2: Fix FactorAnalyzer Bugs (2-4 hours) ✅ **ADJUSTED**
 
-**Goal:** Create working factor analysis service.
+**Goal:** Fix any bugs in existing `FactorAnalyzer` service.
 
-**Implementation Options:**
+**Known Issues (from codebase review):**
+1. 🔴 **CRITICAL BUG:** Uses `asof_date` instead of `date` (line 430) - **WILL FAIL AT RUNTIME**
+2. 🔴 Direct database query: `SELECT asof_date FROM pricing_packs WHERE id = $1` (line 430)
+3. 🔴 Raises `ValueError` instead of `PricingPackNotFoundError` (line 433)
+4. 🔴 Duplicated `_get_pack_date()` method (line 427)
 
-**Option A: Use Existing Service**
-- If `FactorAnalysisService` exists but not integrated:
-  - Fix any bugs
-  - Integrate into `risk.compute_factor_exposures`
-  - Test with real data
+**Tasks:**
+1. Fix `asof_date` → `date` bug
+2. Use `PricingService.get_pack_by_id()` instead of direct query
+3. Use `PricingPackNotFoundError` instead of `ValueError`
+4. Remove duplicated `_get_pack_date()` method
+5. Test with real data
 
-**Option B: Implement New Service**
-- If service doesn't exist:
-  - Create `FactorAnalysisService` class
-  - Implement factor exposure calculation
-  - Use historical returns and factor data
-  - Calculate betas, volatility, R-squared
+**Files to Update:**
+- `backend/app/services/factor_analysis.py` (fix bugs)
 
 **Factor Analysis Requirements:**
 1. **Input Data:**
@@ -100,16 +108,21 @@
 
 ---
 
-#### Step 3.1.3: Integrate into Capability (4 hours)
+#### Step 3.1.3: Integrate into Capability (4-5 hours) ✅ **ADJUSTED**
 
-**Goal:** Wire real factor analysis into `risk.compute_factor_exposures`.
+**Goal:** Wire `FactorAnalyzer` into `risk.compute_factor_exposures`.
+
+**Current Inconsistency:**
+- `risk_get_factor_exposure_history` uses `FactorAnalyzer` (line 1235)
+- `risk_compute_factor_exposures` uses stub data (line 1172)
 
 **Tasks:**
-1. Update `risk_compute_factor_exposures` to use real service
+1. Update `risk_compute_factor_exposures` to use `FactorAnalyzer` (similar to `risk_get_factor_exposure_history`)
 2. Remove stub data fallback
 3. Update `_provenance` to indicate real data
 4. Add error handling (don't fall back to stub)
 5. Test with real portfolios
+6. Update capability contract `implementation_status` from "stub" to "real"
 
 **Implementation:**
 ```python
@@ -158,26 +171,32 @@ async def risk_compute_factor_exposures(
 
 ---
 
-#### Step 3.1.4: Testing & Validation (2 hours)
+#### Step 3.1.4: Testing & Validation (1-2 hours) ✅ **ADJUSTED**
 
 **Goal:** Ensure factor analysis works correctly.
 
 **Tests:**
 1. Test with real portfolio
-2. Verify factor exposures are reasonable
-3. Verify provenance indicates real data
+2. Verify factor exposures are reasonable (not hardcoded)
+3. Verify provenance indicates real data (not stub)
 4. Test error handling (no stub fallback)
+5. Compare with `risk_get_factor_exposure_history` output (should be consistent)
 
 ---
 
-### Task 3.1 Summary
+### Task 3.1 Summary ✅ **ADJUSTED**
 
-**Time:** 16 hours  
+**Time:** 8-10 hours (reduced from 16 hours)  
 **Files Changed:** 2 files
-- `backend/app/services/factor_analysis.py` (create or update)
-- `backend/app/agents/financial_analyst.py` (update)
+- `backend/app/services/factor_analysis.py` (fix bugs)
+- `backend/app/agents/financial_analyst.py` (integrate existing service)
 
-**Result:** Real factor analysis implemented, no stub data
+**Result:** Real factor analysis integrated, no stub data
+
+**Key Changes:**
+- ✅ Service exists, just needs integration (not implementation from scratch)
+- ✅ Timeline reduced: 16h → 8-10h
+- ✅ Focus: Fix bugs and wire existing service
 
 ---
 
@@ -441,13 +460,18 @@ async def macro_compute_dar(
 
 ---
 
-## Phase 3 Summary
+## Phase 3 Summary ✅ **ADJUSTED**
 
-**Total Time:** 48 hours (Weeks 4-6)  
+**Total Time:** 40-42 hours (Weeks 4-6) - **Reduced from 48 hours**  
 **Files Changed:** Multiple files (depends on capabilities)
 
+**Key Adjustments:**
+- ✅ Task 3.1: 16h → 8-10h (FactorAnalyzer exists, just needs integration)
+- ✅ Task 3.2: 12h → 12h (no change)
+- ✅ Task 3.3: 20h → 20h (no change)
+
 **Result:**
-- ✅ Real factor analysis implemented
+- ✅ Real factor analysis integrated (not implemented from scratch)
 - ✅ DaR computation hardened
 - ✅ Critical capabilities implemented
 - ✅ No stub data in production features
