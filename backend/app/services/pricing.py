@@ -167,28 +167,34 @@ class PricingService:
     # Pack Queries
     # ========================================================================
 
-    async def get_latest_pack(self, require_fresh: bool = True) -> Optional[PricingPack]:
+    async def get_latest_pack(
+        self, 
+        require_fresh: bool = True,
+        raise_if_not_found: bool = False
+    ) -> Optional[PricingPack]:
         """
         Get the most recent pricing pack.
 
         Args:
             require_fresh: If True, only return fresh packs (default: True)
+            raise_if_not_found: If True, raise PricingPackNotFoundError if no pack found (default: False)
 
         Returns:
-            PricingPack object or None if no pack found
+            PricingPack object or None if no pack found (unless raise_if_not_found=True)
+            
+        Raises:
+            PricingPackNotFoundError: If raise_if_not_found=True and no pack found
+            PricingPackStaleError: If require_fresh=True and pack is not fresh
         """
         pack_data = await self.pack_queries.get_latest_pack()
 
         if not pack_data:
+            if raise_if_not_found:
+                raise PricingPackNotFoundError("No pricing pack found in database")
             logger.warning("No pricing pack found")
             return None
 
-        # Filter by freshness if required
-        if require_fresh and not pack_data.get("is_fresh"):
-            logger.warning(f"Latest pack {pack_data['id']} is not fresh (status={pack_data['status']})")
-            return None
-
-        return PricingPack(
+        pack = PricingPack(
             id=pack_data["id"],
             date=pack_data["date"],
             policy=pack_data["policy"],
@@ -200,6 +206,19 @@ class PricingService:
             created_at=pack_data["created_at"],
             updated_at=pack_data["updated_at"],
         )
+
+        # Filter by freshness if required
+        if require_fresh and not pack.is_fresh:
+            if raise_if_not_found:
+                raise PricingPackStaleError(
+                    pricing_pack_id=pack.id,
+                    status=pack.status,
+                    is_fresh=pack.is_fresh
+                )
+            logger.warning(f"Latest pack {pack.id} is not fresh (status={pack.status})")
+            return None
+
+        return pack
 
     async def get_pack_by_id(
         self, 
