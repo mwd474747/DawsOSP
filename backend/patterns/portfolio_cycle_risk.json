@@ -14,28 +14,7 @@
       "description": "Portfolio UUID"
     }
   },
-  "outputs": {
-    "panels": [
-      {
-        "id": "risk_map",
-        "title": "Cycle-Aware Risk Map",
-        "type": "heatmap",
-        "refresh_ttl": 3600
-      },
-      {
-        "id": "amplified_factors",
-        "title": "Amplified Factors",
-        "type": "bar_chart",
-        "refresh_ttl": 3600
-      },
-      {
-        "id": "risk_summary",
-        "title": "Risk Summary",
-        "type": "metrics_grid",
-        "refresh_ttl": 3600
-      }
-    ]
-  },
+  "outputs": ["stdc", "ltdc", "factor_exposures", "cycle_risk_map", "dar"],
   "steps": [
     {
       "capability": "cycles.compute_short_term",

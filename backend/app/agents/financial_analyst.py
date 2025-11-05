@@ -389,7 +389,7 @@ class FinancialAnalyst(BaseAgent):
 
         for pos in positions:
             security_id = str(pos.get("security_id", ""))
-            qty = pos.get("quantity", pos.get("qty", Decimal("0")))  # Support both field names
+            qty = pos.get("quantity", Decimal("0"))  # Use standardized quantity field
             if not security_id or qty == 0:
                 logger.warning(
                     "Skipping position with missing security_id or zero quantity: %s",
@@ -1106,7 +1106,20 @@ class FinancialAnalyst(BaseAgent):
             "equity_beta": 1.15,
             "r_squared": 0.82,
             "tracking_error": 0.045,
-            "information_ratio": 0.67
+            "information_ratio": 0.67,
+            # PHASE 1 FIX: Add provenance warning to prevent user trust issues
+            "_provenance": {
+                "type": "stub",
+                "warnings": [
+                    "Feature not implemented - using fallback data",
+                    "Factor exposures are hardcoded and not based on actual portfolio analysis",
+                    "Do not use for investment decisions"
+                ],
+                "confidence": 0.0,
+                "implementation_status": "stub",
+                "recommendation": "Do not use for investment decisions",
+                "source": "fallback_stub_data"
+            }
         }
 
         # Return result directly without metadata wrapping to avoid orchestrator resolution issues
@@ -1392,7 +1405,7 @@ class FinancialAnalyst(BaseAgent):
             "symbol": symbol,
             "security_id": str(security_uuid),
             "security_currency": security_currency,
-            "quantity_open": float(total_qty),
+            "quantity": float(total_qty),  # Changed from quantity_open to quantity for consistency
             "avg_cost": float(avg_cost),
             "current_price": float(current_price),
             "market_value": float(market_value),

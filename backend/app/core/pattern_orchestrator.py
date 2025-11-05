@@ -720,27 +720,60 @@ class PatternOrchestrator:
 
         # Extract outputs
         outputs = {}
-        # Handle outputs as either dict (keys) or list (backward compatibility)
+        # PHASE 1 FIX: Handle multiple output formats
+        # Format 1: List of keys ["perf_metrics", "currency_attr", ...]
+        # Format 2: Dict with keys {"perf_metrics": {...}, ...}
+        # Format 3: Dict with panels {"panels": [...]} - extract panel IDs and map to step results
         outputs_spec = spec.get("outputs", {})
-        if isinstance(outputs_spec, dict):
-            output_keys = list(outputs_spec.keys())
-        else:
-            output_keys = outputs_spec
         
-        # Debug logging for macro pattern issue
-        if pattern_id == "macro_cycles_overview":
-            logger.info(f"DEBUG: outputs_spec type: {type(outputs_spec)}, value: {outputs_spec}")
-            logger.info(f"DEBUG: output_keys: {output_keys}")
-            logger.info(f"DEBUG: state keys: {list(state.keys())}")
-            
+        if isinstance(outputs_spec, list):
+            # Format 1: List of keys
+            output_keys = outputs_spec
+        elif isinstance(outputs_spec, dict):
+            if "panels" in outputs_spec:
+                # Format 3: Dict with panels - extract panel IDs and map to step results
+                # Panels are UI metadata, actual data comes from step results
+                # Map panel IDs to step result keys (e.g., "risk_map" -> "cycle_risk_map")
+                panels = outputs_spec["panels"]
+                output_keys = []
+                # Extract panel IDs and try to find corresponding step results
+                for panel in panels:
+                    panel_id = panel.get("id") if isinstance(panel, dict) else panel
+                    if panel_id:
+                        # Try panel_id first, then try common variations
+                        if panel_id in state:
+                            output_keys.append(panel_id)
+                        else:
+                            # Try to find step result that matches panel
+                            # Common pattern: panel_id might be a prefix or suffix of step result
+                            for state_key in state.keys():
+                                if state_key == panel_id or state_key.endswith(f"_{panel_id}") or state_key.startswith(f"{panel_id}_"):
+                                    output_keys.append(state_key)
+                                    break
+                            else:
+                                logger.warning(
+                                    f"Panel {panel_id} not found in state for pattern {pattern_id}, "
+                                    f"available keys: {list(state.keys())}"
+                                )
+            else:
+                # Format 2: Dict with keys
+                output_keys = list(outputs_spec.keys())
+        else:
+            # Fallback: empty list
+            output_keys = []
+            logger.warning(
+                f"Unexpected outputs format for pattern {pattern_id}: {type(outputs_spec)}"
+            )
+        
+        # Extract outputs from state
         for output_key in output_keys:
             if output_key in state:
                 outputs[output_key] = state[output_key]
-                if pattern_id == "macro_cycles_overview":
-                    logger.info(f"DEBUG: Added {output_key} to outputs")
+                logger.debug(f"Added {output_key} to outputs for pattern {pattern_id}")
             else:
                 logger.warning(
-                    f"Output {output_key} not found in state for pattern {pattern_id}"
+                    f"Output {output_key} not found in state for pattern {pattern_id}, "
+                    f"available keys: {list(state.keys())}"
                 )
 
         # Special handling for charts (common output key)

@@ -98,5 +98,18 @@ Historical documentation has been archived to `.archive/` directory:
 
 ---
 
-**Last Updated:** November 4, 2025
+## 📝 Recent Updates (January 14, 2025)
+
+### Field Naming Standardization
+- **Phase 1 Complete:** Field naming standardized across agent layer
+- **Standard:** Agent capabilities return `quantity` (not `qty` or `quantity_open`)
+- **Database:** Uses `quantity_open`, `quantity_original` (columns)
+- **See:** [ARCHITECTURE.md](ARCHITECTURE.md#field-naming-standards), [DATABASE.md](DATABASE.md#field-naming-standards)
+
+### Corporate Actions Improvements
+- **Enhanced:** Diagnostic logging and robust quantity handling
+- **Fixed:** Symbol extraction from portfolio holdings
+- **See:** [docs/guides/CORPORATE_ACTIONS_GUIDE.md](docs/guides/CORPORATE_ACTIONS_GUIDE.md)
+
+**Last Updated:** January 14, 2025
 

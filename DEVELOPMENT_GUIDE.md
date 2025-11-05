@@ -95,6 +95,33 @@ Results flow back: Agent → Orchestrator → Endpoint → UI
 
 **Key Concept:** Patterns are declarative JSON workflows. The orchestrator handles execution.
 
+### Field Naming Standards (January 14, 2025)
+
+**Important:** Field naming is standardized across layers for consistency:
+
+**Database Layer:**
+- Use `quantity_open` and `quantity_original` in SQL queries
+- Legacy `quantity` field is deprecated (see Migration 014)
+
+**Agent Layer:**
+- All agent capabilities return `quantity` (not `quantity_open` or `qty`)
+- This is the standard field name for position quantities in agent responses
+- Example: `ledger.positions` returns `{"quantity": Decimal("100")}`
+
+**Service Layer:**
+- Service layer can use `qty` internally (acceptable for service-to-service communication)
+- When interfacing with agents, use `quantity`
+
+**Rationale:**
+- Database columns use verbose names (`quantity_open`) for clarity
+- Agent API uses standardized `quantity` for consistency
+- Service layer can use abbreviations (`qty`) for internal APIs
+
+**See Also:**
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Field naming standards section
+- [DATABASE.md](DATABASE.md) - Database field naming and migrations
+- `FIELD_NAMING_SYSTEM_ANALYSIS.md` - Detailed analysis
+
 ---
 
 ## Backend Development

@@ -14,28 +14,7 @@
       "description": "Portfolio UUID"
     }
   },
-  "outputs": {
-    "panels": [
-      {
-        "id": "scenario_comparison",
-        "title": "Deleveraging Scenario Comparison",
-        "type": "comparison_table",
-        "refresh_ttl": 0
-      },
-      {
-        "id": "scenario_details",
-        "title": "Scenario Impact Details",
-        "type": "tabbed_content",
-        "refresh_ttl": 0
-      },
-      {
-        "id": "hedge_suggestions",
-        "title": "Hedge Strategies",
-        "type": "action_cards",
-        "refresh_ttl": 0
-      }
-    ]
-  },
+  "outputs": ["valued_base", "ltdc", "money_printing", "austerity", "default", "hedge_suggestions"],
   "steps": [
     {
       "capability": "portfolio.get_valued_positions",

@@ -24,34 +24,7 @@
       "description": "Custom scenario shocks (rates_bps, usd_vs_cad_pct, cpi_surprise_pct)"
     }
   },
-  "outputs": {
-    "panels": [
-      {
-        "id": "scenario_summary",
-        "title": "Scenario Impact",
-        "type": "metrics_grid",
-        "refresh_ttl": 0
-      },
-      {
-        "id": "delta_table",
-        "title": "Position Deltas",
-        "type": "table",
-        "refresh_ttl": 0
-      },
-      {
-        "id": "winners_losers",
-        "title": "Winners & Losers",
-        "type": "dual_list",
-        "refresh_ttl": 0
-      },
-      {
-        "id": "hedge_suggestions",
-        "title": "Hedge Ideas",
-        "type": "action_cards",
-        "refresh_ttl": 0
-      }
-    ]
-  },
+  "outputs": ["valued_base", "scenario_result", "hedge_suggestions", "charts"],
   "steps": [
     {
       "capability": "portfolio.get_valued_positions",

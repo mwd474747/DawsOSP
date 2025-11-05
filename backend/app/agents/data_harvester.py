@@ -2835,8 +2835,30 @@ class DataHarvester(BaseAgent):
         # Resolve symbols from portfolio if not provided
         if not symbols:
             # Get holdings from state (should be set by previous step: ledger.positions)
-            positions = state.get("positions", {}).get("positions", [])
-            symbols = [p.get("symbol") for p in positions if p.get("qty", 0) > 0]
+            positions_data = state.get("positions", {})
+            logger.info(f"corporate_actions.upcoming: state['positions'] keys: {list(positions_data.keys()) if isinstance(positions_data, dict) else 'not a dict'}")
+            positions = positions_data.get("positions", []) if isinstance(positions_data, dict) else []
+            logger.info(f"corporate_actions.upcoming: Found {len(positions)} positions from state")
+            
+            # Extract symbols with better handling of quantity (supports Decimal, int, float)
+            symbols = []
+            for p in positions:
+                symbol = p.get("symbol")
+                quantity = p.get("quantity", 0)
+                # Handle Decimal, int, float, or string
+                if isinstance(quantity, (str, Decimal)):
+                    try:
+                        quantity = float(quantity)
+                    except (ValueError, TypeError):
+                        quantity = 0
+                elif quantity is None:
+                    quantity = 0
+                
+                if symbol and quantity > 0:
+                    symbols.append(symbol)
+                    logger.debug(f"corporate_actions.upcoming: Added symbol {symbol} with quantity {quantity}")
+            
+            logger.info(f"corporate_actions.upcoming: Extracted {len(symbols)} symbols: {symbols}")
         
         if not symbols:
             result = {
@@ -2990,10 +3012,10 @@ class DataHarvester(BaseAgent):
         # Extract holdings from state if not provided or if provided as list
         if not holdings:
             positions = state.get("positions", {}).get("positions", [])
-            holdings = {p.get("symbol"): float(p.get("qty", 0)) for p in positions}
+            holdings = {p.get("symbol"): float(p.get("quantity", 0)) for p in positions}
         elif isinstance(holdings, list):
             # Convert list of positions to dictionary of {symbol: quantity}
-            holdings = {p.get("symbol"): float(p.get("qty", 0)) for p in holdings}
+            holdings = {p.get("symbol"): float(p.get("quantity", 0)) for p in holdings}
         
         actions_with_impact = []
         total_dividend_impact = 0.0

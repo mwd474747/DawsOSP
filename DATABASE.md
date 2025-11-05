@@ -40,6 +40,11 @@
    - Reduced database size by 18% (480 KB saved)
    - Cleaned up legacy/unimplemented features
 
+7. **Migration 014: Add Deprecation Comment** ✅ (January 14, 2025)
+   - Added deprecation comment to `lots.quantity` field
+   - Documents that field is deprecated and should not be used
+   - References Migration 007 for context
+
 ### Architecture Stability Achieved
 - ✅ 22 active tables (down from 30)
 - ✅ All field names standardized
@@ -70,6 +75,11 @@ DawsOS uses PostgreSQL with TimescaleDB for time-series data optimization. The d
 ---
 
 ## 🗄️ Complete Table Inventory (Verified via SQL Inspection)
+
+**Field Naming Standards (January 14, 2025):**
+- **Database Columns:** `quantity_open`, `quantity_original` (standardized from `qty_open`, `qty_original` in Migration 001)
+- **Legacy Field:** `lots.quantity` is deprecated (see Migration 014 deprecation comment)
+- **Agent Layer:** Returns `quantity` (not `quantity_open`) - see [ARCHITECTURE.md](ARCHITECTURE.md) for agent layer standards
 
 ### Core Portfolio Management Tables
 

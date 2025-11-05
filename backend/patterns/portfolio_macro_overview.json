@@ -19,28 +19,7 @@
       "description": "Confidence level for DaR (default 95%)"
     }
   },
-  "outputs": {
-    "panels": [
-      {
-        "id": "regime_card",
-        "title": "Current Regime",
-        "type": "regime_widget",
-        "refresh_ttl": 3600
-      },
-      {
-        "id": "factor_exposures",
-        "title": "Factor Exposures",
-        "type": "bar_chart",
-        "refresh_ttl": 3600
-      },
-      {
-        "id": "dar_widget",
-        "title": "Drawdown at Risk",
-        "type": "gauge_with_waterfall",
-        "refresh_ttl": 3600
-      }
-    ]
-  },
+  "outputs": ["positions", "regime", "indicators", "factor_exposures", "dar", "charts"],
   "steps": [
     {
       "capability": "ledger.positions",

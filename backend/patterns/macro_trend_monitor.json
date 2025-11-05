@@ -19,28 +19,7 @@
       "description": "Weeks to analyze for trends (default 4)"
     }
   },
-  "outputs": {
-    "panels": [
-      {
-        "id": "regime_trend",
-        "title": "Regime Probability Trends",
-        "type": "line_chart",
-        "refresh_ttl": 3600
-      },
-      {
-        "id": "factor_trends",
-        "title": "Factor Exposure Trends",
-        "type": "multi_line_chart",
-        "refresh_ttl": 3600
-      },
-      {
-        "id": "alert_suggestions",
-        "title": "Suggested Alerts",
-        "type": "action_cards",
-        "refresh_ttl": 3600
-      }
-    ]
-  },
+  "outputs": ["regime_history", "factor_history", "trend_analysis", "alert_suggestions"],
   "steps": [
     {
       "capability": "macro.get_regime_history",

@@ -173,6 +173,13 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 15. Reports (`/reports`) - PDF generation using `export_portfolio_report` pattern
 16. Settings (`/settings`) - User preferences and configuration
 
+**Corporate Actions Feature (January 14, 2025):**
+- Uses `corporate_actions_upcoming` pattern with FMP Pro API integration
+- Fetches dividends, splits, and earnings calendars
+- Filters by portfolio holdings automatically
+- Calculates portfolio impact (dividend amounts, split ratios)
+- **Implementation:** Enhanced diagnostic logging and robust quantity handling for symbol extraction
+
 **Note:** Some patterns are defined in the registry but not currently used in UI pages:
 - `holding_deep_dive` - Defined but not used (may be used in future)
 - `cycle_deleveraging_scenarios` - Defined but not used (may be used in future)
@@ -201,6 +208,12 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 - `006_alerts.sql` - Alert system
 
 **Note:** Schema file `005_audit.sql` was removed as part of Migration 003 (November 4, 2025) along with the `audit_log` table.
+
+**Field Naming Standards (January 14, 2025):**
+- **Database Columns:** `quantity_open`, `quantity_original` (standardized from `qty_open`, `qty_original`)
+- **Agent Return Fields:** `quantity` (standardized across all agent capabilities)
+- **Service Layer:** `qty` (internal API, acceptable for service-to-service communication)
+- **Rationale:** Clear separation between database schema (verbose names) and agent API (standardized `quantity`)
 
 **Core Tables**:
 - `portfolios` - Portfolio metadata

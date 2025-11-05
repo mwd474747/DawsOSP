@@ -24,40 +24,7 @@
       "description": "Historical period in days (default 1 year)"
     }
   },
-  "outputs": {
-    "panels": [
-      {
-        "id": "position_summary",
-        "title": "Position Summary",
-        "type": "metrics_grid",
-        "refresh_ttl": 60
-      },
-      {
-        "id": "performance",
-        "title": "Performance vs Portfolio",
-        "type": "chart_with_metrics",
-        "refresh_ttl": 300
-      },
-      {
-        "id": "contribution",
-        "title": "Portfolio Contribution",
-        "type": "metrics_grid",
-        "refresh_ttl": 300
-      },
-      {
-        "id": "risk_analysis",
-        "title": "Risk Analysis",
-        "type": "metrics_grid",
-        "refresh_ttl": 300
-      },
-      {
-        "id": "transactions",
-        "title": "Transaction History",
-        "type": "table",
-        "refresh_ttl": 60
-      }
-    ]
-  },
+  "outputs": ["position", "position_perf", "contribution", "currency_attr", "risk", "transactions", "fundamentals", "comparables"],
   "steps": [
     {
       "capability": "get_position_details",

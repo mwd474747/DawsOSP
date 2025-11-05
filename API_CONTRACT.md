@@ -7,12 +7,16 @@ This document defines the contract between the DawsOS backend (Replit) and front
 
 ## Field Naming Convention
 
-### Current State
+### Current State (Updated January 14, 2025)
 - **Backend (Python/Database)**: snake_case ✅
 - **Frontend (JavaScript/React)**: camelCase ⚠️
+- **Agent Layer**: Standardized to `quantity` (not `qty` or `quantity_open`) ✅
+- **Database Layer**: Uses `quantity_open`, `quantity_original` (columns) ✅
 
 ### Target State  
 - **Both**: snake_case everywhere
+- **Agent Layer**: Continue using `quantity` (standardized)
+- **Database Layer**: Continue using `quantity_open`, `quantity_original` (columns)
 
 ### Transition Strategy
 Using a compatibility layer controlled by environment variable:
