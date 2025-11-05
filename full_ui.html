@@ -2843,12 +2843,18 @@
                                 type: 'metrics_grid',
                                 dataPath: 'perf_metrics',
                                 config: {
-                                    columns: 4,
+                                    columns: 5,
                                     metrics: [
+                                        { key: 'twr_1y', label: 'TWR (1Y)', format: 'percentage' },
                                         { key: 'twr_ytd', label: 'YTD Return', format: 'percentage' },
+                                        { key: 'mwr_1y', label: 'MWR (1Y)', format: 'percentage' },
                                         { key: 'volatility', label: 'Volatility', format: 'percentage' },
-                                        { key: 'sharpe', label: 'Sharpe Ratio', format: 'number' },
-                                        { key: 'max_drawdown', label: 'Max Drawdown', format: 'percentage' }
+                                        { key: 'sharpe_ratio', label: 'Sharpe Ratio', format: 'number' },
+                                        { key: 'max_drawdown', label: 'Max Drawdown', format: 'percentage' },
+                                        { key: 'twr_1d', label: '1 Day', format: 'percentage' },
+                                        { key: 'twr_mtd', label: 'MTD', format: 'percentage' },
+                                        { key: 'current_drawdown', label: 'Current DD', format: 'percentage' },
+                                        { key: 'sortino_ratio', label: 'Sortino Ratio', format: 'number' }
                                     ]
                                 }
                             },
