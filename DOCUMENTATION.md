@@ -1,7 +1,7 @@
 # DawsOS Documentation
 
 **Version:** 6.0.1  
-**Last Updated:** November 4, 2025  
+**Last Updated:** January 14, 2025  
 **Status:** ✅ Production Ready
 
 ---
@@ -28,6 +28,9 @@
 
 ### Agent Coordination
 - **[AGENT_CONVERSATION_MEMORY.md](AGENT_CONVERSATION_MEMORY.md)** - Shared memory for agent coordination
+
+### Phase 1 Completion
+- **[PHASE_1_COMPLETE.md](PHASE_1_COMPLETE.md)** - Comprehensive Phase 1 completion summary (January 14, 2025)
 
 ---
 
@@ -59,6 +62,7 @@
 
 Historical documentation has been archived to `.archive/` directory:
 
+- **Phase 1 Validation** - `.archive/phase1-validation/` - Phase 1 validation reports
 - **Phase 3 Consolidation** - `.archive/phase3/`
 - **UI Integration** - `.archive/ui-integration/`
 - **Code Reviews** - `.archive/code-reviews/`
@@ -66,10 +70,11 @@ Historical documentation has been archived to `.archive/` directory:
 - **Database Analysis** - `.archive/database/`
 - **Refactoring** - `.archive/refactoring/`
 - **Replit Coordination** - `.archive/replit/`
-- **Testing** - `.archive/testing/`
+- **Testing** - `.archive/testing-docs/` - Testing prompts and validation reports
+- **Analysis Documents** - `.archive/analysis-docs/` - Code reviews, pattern analysis, field naming analysis
+- **Completed Work** - `.archive/completed-work/` - Status summaries and completion reports
 - **Field Naming** - `.archive/field-naming/`
 - **Macro Cycles** - `.archive/macro-cycles/`
-- **Completed Work** - `.archive/completed/`
 
 ---
 
@@ -100,13 +105,23 @@ Historical documentation has been archived to `.archive/` directory:
 
 ## 📝 Recent Updates (January 14, 2025)
 
-### Field Naming Standardization
+### Phase 1 Complete: Provenance Warnings & Pattern Output Extraction ✅
+- **Provenance Warnings:** Stub data now explicitly marked with `_provenance` field
+  - UI displays warning banner when stub data detected
+  - Prevents user trust issues from silent fake data
+- **Pattern Output Extraction:** Fixed orchestrator to handle 3 output formats
+  - All 6 updated patterns return correct data
+  - Scenario analysis working correctly (12 scenarios)
+- **Migration 009:** Applied successfully - scenario analysis tables created
+- **See:** [ARCHITECTURE.md](ARCHITECTURE.md) for details, [CHANGELOG.md](CHANGELOG.md) for complete changes
+
+### Field Naming Standardization ✅
 - **Phase 1 Complete:** Field naming standardized across agent layer
 - **Standard:** Agent capabilities return `quantity` (not `qty` or `quantity_open`)
 - **Database:** Uses `quantity_open`, `quantity_original` (columns)
 - **See:** [ARCHITECTURE.md](ARCHITECTURE.md#field-naming-standards), [DATABASE.md](DATABASE.md#field-naming-standards)
 
-### Corporate Actions Improvements
+### Corporate Actions Improvements ✅
 - **Enhanced:** Diagnostic logging and robust quantity handling
 - **Fixed:** Symbol extraction from portfolio holdings
 - **See:** [docs/guides/CORPORATE_ACTIONS_GUIDE.md](docs/guides/CORPORATE_ACTIONS_GUIDE.md)

@@ -215,6 +215,17 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 - **Service Layer:** `qty` (internal API, acceptable for service-to-service communication)
 - **Rationale:** Clear separation between database schema (verbose names) and agent API (standardized `quantity`)
 
+**Phase 1 Completion (January 14, 2025):**
+- **Provenance Warnings:** Added `_provenance` field to stub data in `risk.compute_factor_exposures` and `macro.compute_dar`
+  - Stub data now explicitly marked with `type: "stub"`, `confidence: 0.0`, and warnings
+  - UI displays warning banner when stub data is detected (see `full_ui.html` ProvenanceWarningBanner component)
+- **Pattern Output Extraction:** Fixed orchestrator to handle 3 output formats (list, dict, dict with panels)
+  - Updated 6 patterns to use standard list format: `["output1", "output2", ...]`
+  - All patterns now return correct data instead of falling back to `portfolio_overview`
+- **Scenario Analysis:** Fixed SQL queries and AttributeError handling
+  - Migration 009 applied: `position_factor_betas` table created
+  - All 12 scenarios execute successfully with DaR calculations
+
 **Core Tables**:
 - `portfolios` - Portfolio metadata
 - `lots` - Position holdings
