@@ -419,7 +419,7 @@ Proprietary - All rights reserved
 
 For issues or questions:
 - **Issues**: https://github.com/mwd474747/DawsOSP/issues
-- **Documentation**: See repository docs
+- **Documentation**: See [DOCUMENTATION.md](DOCUMENTATION.md) for complete documentation index
 
 ---
 
