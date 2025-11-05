@@ -315,10 +315,10 @@ class ScenarioService:
         query = """
             SELECT
                 l.symbol,
-                l.quantity,
+                l.quantity_open,
                 l.cost_basis_per_share,
                 l.currency,
-                l.quantity * l.cost_basis_per_share AS market_value,
+                l.quantity_open * l.cost_basis_per_share AS market_value,
                 s.security_type,
                 s.sector,
                 -- Use computed factor betas if available, otherwise estimate from security type
@@ -393,7 +393,7 @@ class ScenarioService:
             )
             WHERE l.portfolio_id = $1
               AND l.is_open = true
-              AND l.quantity > 0
+              AND l.quantity_open > 0
         """
         positions = await execute_query(query, portfolio_id)
 
@@ -761,7 +761,10 @@ class ScenarioService:
                 require_fresh=True,
                 raise_if_not_found=True
             )
-            pack_id = latest_pack.id
+            if latest_pack:
+                pack_id = latest_pack.id
+            else:
+                raise ValueError("No pricing pack available")
 
         logger.info(
             f"compute_dar: portfolio={portfolio_id}, regime={regime}, "
@@ -808,14 +811,14 @@ class ScenarioService:
                 drawdown_pct = scenario_result.total_delta_pl_pct
 
                 scenario_drawdowns.append({
-                    "scenario": shock_type.value,
+                    "scenario": shock_type.value if hasattr(shock_type, 'value') else str(shock_type),
                     "scenario_name": scenario_result.shock_name,
                     "drawdown_pct": drawdown_pct,
                     "delta_pl": float(scenario_result.total_delta_pl),
                 })
 
             except Exception as e:
-                logger.warning(f"Scenario {shock_type.value} failed: {e}")
+                logger.warning(f"Scenario {shock_type.value if hasattr(shock_type, 'value') else str(shock_type)} failed: {e}")
                 continue
 
         if not scenario_drawdowns:
