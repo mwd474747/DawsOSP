@@ -433,12 +433,17 @@ class FinancialAnalyst(BaseAgent):
                     )
 
             value_base = value_local * fx_rate
+            
+            # Calculate unrealized P&L
+            cost_basis = pos.get("cost_basis", Decimal("0"))
+            unrealized_pnl = value_base - cost_basis if cost_basis else Decimal("0")
 
             valued_position = {
                 **pos,
                 "price": price,
                 "value_local": value_local,
                 "market_value": value_base,
+                "unrealized_pnl": unrealized_pnl,
                 "fx_rate": fx_rate,
                 "base_currency": base_currency,
             }
@@ -910,7 +915,7 @@ class FinancialAnalyst(BaseAgent):
                 # Attribution components
                 "local_return": attribution.get("local_return"),
                 "fx_return": attribution.get("fx_return"),
-                "interaction_return": attribution.get("interaction"),
+                "interaction": attribution.get("interaction"),
                 "total_return": attribution.get("total_return"),
                 # Validation
                 "error_bps": attribution.get("verification", {}).get("error_bps"),
@@ -995,7 +1000,7 @@ class FinancialAnalyst(BaseAgent):
             attr_data = [
                 {"label": "Local Return", "value": float(currency_attr.get("local_return", 0))},
                 {"label": "FX Return", "value": float(currency_attr.get("fx_return", 0))},
-                {"label": "Interaction", "value": float(currency_attr.get("interaction_return", 0))},
+                {"label": "Interaction", "value": float(currency_attr.get("interaction", 0))},
             ]
             charts.append({
                 "type": "donut",
@@ -2309,11 +2314,11 @@ class FinancialAnalyst(BaseAgent):
             total_return = 0
         
         # Phase 1: Fix data nesting - Return flattened structure for chart compatibility
-        # Chart expects: {data: [{date, value}], labels: [...], values: [...]}
+        # Chart expects: {data: [{date, value}], dates: [...], values: [...]}
         # OR: Direct array of {date, value} objects
         result = {
             "data": historical_data,  # Primary chart data array
-            "labels": [d["date"] for d in historical_data] if historical_data else [],
+            "dates": [d["date"] for d in historical_data] if historical_data else [],
             "values": [d["nav_value"] for d in historical_data] if historical_data else [],
             # Additional metadata (preserved but not used by chart)
             "lookback_days": lookback_days,
