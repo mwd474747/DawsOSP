@@ -3424,18 +3424,38 @@
                 if (loading && !isHidden) {
                     return e('div', { className: 'loading-container' },
                         e('div', { className: 'loading-spinner' }),
-                        e('p', null, `Loading ${patternRegistry[pattern]?.name || pattern}...`)
+                        e('p', null, `Loading ${patternRegistry[pattern]?.name || pattern.replace(/_/g, ' ')}...`)
                     );
                 }
                 
                 if (error && !isHidden) {
+                    // Provide more helpful error messages based on pattern type
+                    let errorMessage = String(error);
+                    let helpfulTip = '';
+                    
+                    if (pattern.includes('corporate_actions')) {
+                        if (errorMessage.includes('FMP') || errorMessage.includes('API')) {
+                            helpfulTip = 'The corporate actions data provider may be temporarily unavailable. Please try again in a few moments.';
+                        } else if (errorMessage.includes('portfolio')) {
+                            helpfulTip = 'Please ensure you have selected a valid portfolio with holdings.';
+                        } else {
+                            helpfulTip = 'Corporate actions data is fetched from external providers. If your portfolio has no holdings, no actions will be shown.';
+                        }
+                    } else if (errorMessage.includes('401') || errorMessage.includes('authentication')) {
+                        helpfulTip = 'Your session may have expired. Please refresh the page and log in again.';
+                    } else if (errorMessage.includes('404')) {
+                        helpfulTip = 'The requested data could not be found. Please verify your portfolio selection.';
+                    }
+                    
                     return e('div', { className: 'error-container' },
-                        e('h3', null, 'Error Loading Pattern'),
-                        e('p', null, error),
+                        e('h3', null, '⚠️ Unable to Load Data'),
+                        e('p', { style: { marginBottom: '1rem' } }, errorMessage),
+                        helpfulTip && e('p', { style: { fontSize: '0.9rem', opacity: 0.8 } }, `💡 ${helpfulTip}`),
                         e('button', { 
                             className: 'btn btn-primary',
-                            onClick: loadPattern
-                        }, 'Retry')
+                            onClick: loadPattern,
+                            style: { marginTop: '1rem' }
+                        }, '🔄 Retry')
                     );
                 }
                 
@@ -3539,10 +3559,34 @@
              * Table Panel Component
              */
             function TablePanel({ title, data, config = {} }) {
-                if (!data || !Array.isArray(data)) return null;
-                
                 const columns = config.columns || [];
                 const maxRows = config.maxRows || 20;
+                
+                // Show empty state message for corporate actions or other patterns
+                if (!data || !Array.isArray(data) || data.length === 0) {
+                    const emptyMessage = config.emptyMessage || 
+                        (title?.includes('Corporate Actions') 
+                            ? 'No upcoming corporate actions found for your portfolio holdings. This could mean no events are scheduled in the selected time range, or your portfolio has no holdings.'
+                            : 'No data available');
+                    
+                    return e('div', { className: 'card' },
+                        title && e('div', { className: 'card-header' },
+                            e('h3', { className: 'card-title' }, title)
+                        ),
+                        e('div', { style: { padding: '2rem', textAlign: 'center', color: '#94a3b8' } },
+                            e('p', { style: { fontSize: '0.95rem', marginBottom: '1rem' } }, emptyMessage),
+                            title?.includes('Corporate Actions') && e('div', { style: { fontSize: '0.875rem', color: '#64748b' } },
+                                e('p', null, '💡 Corporate actions include:'),
+                                e('ul', { style: { listStyle: 'none', padding: 0, marginTop: '0.5rem' } },
+                                    e('li', null, '• Dividends - Cash or stock distributions'),
+                                    e('li', null, '• Stock Splits - Share quantity adjustments'),
+                                    e('li', null, '• Earnings Announcements - Quarterly results')
+                                )
+                            )
+                        )
+                    );
+                }
+                
                 const displayData = data.slice(0, maxRows);
                 
                 return e('div', { className: 'card' },
@@ -3578,7 +3622,16 @@
                                     )
                                 )
                             )
-                        )
+                        ),
+                        data.length > maxRows && e('div', { 
+                            style: { 
+                                padding: '0.5rem', 
+                                textAlign: 'center', 
+                                fontSize: '0.875rem', 
+                                color: '#64748b',
+                                borderTop: '1px solid rgba(255,255,255,0.1)'
+                            }
+                        }, `Showing ${maxRows} of ${data.length} items`)
                     )
                 );
             }
