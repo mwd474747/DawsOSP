@@ -42,8 +42,12 @@ from app.core.types import (
     ExecError,
     ErrorCode,
     PackStatus,
+    PricingPackNotFoundError,
+    PricingPackStaleError,
+    PricingPackValidationError,
 )
 from app.db.pricing_pack_queries import get_pricing_pack_queries
+from app.services.pricing import get_pricing_service
 from app.core.pattern_orchestrator import PatternOrchestrator
 from app.core.agent_runtime import AgentRuntime
 from app.agents.financial_analyst import FinancialAnalyst
@@ -513,16 +517,51 @@ async def _execute_pattern_internal(
         # STEP 1: Get Latest Pricing Pack
         # ========================================
 
-        pack_queries = get_pricing_pack_queries()
-        pack = await pack_queries.get_latest_pack()
-
-        if not pack:
-            logger.error("No pricing pack found")
+        pricing_service = get_pricing_service()
+        try:
+            pack_obj = await pricing_service.get_latest_pack(
+                require_fresh=False,  # Check freshness separately in Step 2
+                raise_if_not_found=True
+            )
+            
+            # Convert PricingPack object to dict format for compatibility
+            pack = {
+                "id": pack_obj.id,
+                "date": pack_obj.date,
+                "status": pack_obj.status,
+                "is_fresh": pack_obj.is_fresh,
+                "prewarm_done": pack_obj.prewarm_done,
+                "reconciliation_passed": pack_obj.reconciliation_passed,
+                "reconciliation_failed": not pack_obj.reconciliation_passed,
+                "updated_at": pack_obj.updated_at,
+            }
+        except PricingPackNotFoundError as e:
+            logger.error(f"No pricing pack found: {e}")
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,  # Changed from 500 to 503
                 detail=ExecError(
                     code=ErrorCode.PACK_NOT_FOUND,
                     message="No pricing pack found. Nightly job may not have run yet.",
+                    request_id=request_id,
+                ).to_dict(),
+            )
+        except PricingPackStaleError as e:
+            # This should be handled in freshness gate check, but catch it here too
+            logger.warning(f"Pricing pack is stale: {e}")
+            from datetime import timedelta
+            # Use default estimate since pack_obj wasn't successfully retrieved
+            estimated_ready = datetime.now() + timedelta(minutes=15)
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=ExecError(
+                    code=ErrorCode.PACK_WARMING,
+                    message="Pricing pack is not ready. Try again in a few minutes.",
+                    details={
+                        "pack_id": e.pricing_pack_id,
+                        "status": e.status,
+                        "is_fresh": e.is_fresh,
+                        "estimated_ready": estimated_ready.isoformat(),
+                    },
                     request_id=request_id,
                 ).to_dict(),
             )
@@ -791,6 +830,48 @@ async def _execute_pattern_internal(
             trace_id=request_id,
         )
 
+    except PricingPackValidationError as e:
+        logger.error(f"Invalid pricing pack ID: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ExecError(
+                code=ErrorCode.PATTERN_INVALID,
+                message=f"Invalid pricing pack ID: {e.reason}",
+                details={
+                    "pricing_pack_id": e.pricing_pack_id,
+                    "reason": e.reason,
+                },
+                request_id=request_id,
+            ).to_dict(),
+        )
+    except PricingPackNotFoundError as e:
+        logger.error(f"Pricing pack not found: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=ExecError(
+                code=ErrorCode.PACK_NOT_FOUND,
+                message="No pricing pack found. Nightly job may not have run yet.",
+                request_id=request_id,
+            ).to_dict(),
+        )
+    except PricingPackStaleError as e:
+        logger.warning(f"Pricing pack is stale: {e}")
+        from datetime import timedelta
+        estimated_ready = datetime.now() + timedelta(minutes=15)  # Default estimate
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=ExecError(
+                code=ErrorCode.PACK_WARMING,
+                message="Pricing pack is not ready. Try again in a few minutes.",
+                details={
+                    "pack_id": e.pricing_pack_id,
+                    "status": e.status,
+                    "is_fresh": e.is_fresh,
+                    "estimated_ready": estimated_ready.isoformat(),
+                },
+                request_id=request_id,
+            ).to_dict(),
+        )
     except HTTPException:
         # Re-raise HTTP exceptions (already formatted)
         raise
@@ -855,16 +936,35 @@ async def health_pack():
         - 500: Pack error or not found
     """
     try:
-        from app.db.pricing_pack_queries import get_pricing_pack_queries
-
-        pack_queries = get_pricing_pack_queries()
-
-        # Get latest pack
-        pack = await pack_queries.get_latest_pack()
-
-        if not pack:
+        pricing_service = get_pricing_service()
+        try:
+            pack_obj = await pricing_service.get_latest_pack(
+                require_fresh=False,  # Don't require fresh for health check
+                raise_if_not_found=False  # Return None instead of raising
+            )
+            
+            if not pack_obj:
+                return JSONResponse(
+                    status_code=503,  # Changed from 500 to 503
+                    content={
+                        "status": "error",
+                        "message": "No pricing packs found",
+                        "pack_id": None,
+                        "is_fresh": False,
+                        "prewarm_done": False,
+                    }
+                )
+            
+            # Extract pack data from PricingPack object
+            pack_id = pack_obj.id
+            status = pack_obj.status
+            is_fresh = pack_obj.is_fresh
+            prewarm_done = pack_obj.prewarm_done
+            updated_at = pack_obj.updated_at
+            error_message = None  # PricingPack object doesn't have error_message field
+        except PricingPackNotFoundError as e:
             return JSONResponse(
-                status_code=500,
+                status_code=503,  # Changed from 500 to 503
                 content={
                     "status": "error",
                     "message": "No pricing packs found",
@@ -873,13 +973,25 @@ async def health_pack():
                     "prewarm_done": False,
                 }
             )
-
-        pack_id = pack["id"]
-        status = pack.get("status", "unknown")
-        is_fresh = pack.get("is_fresh", False)
-        prewarm_done = pack.get("prewarm_done", False)
-        updated_at = pack.get("updated_at")
-        error_message = pack.get("error_message")
+        except PricingPackStaleError as e:
+            # Pack exists but is stale
+            pack_id = e.pricing_pack_id
+            status = e.status
+            is_fresh = e.is_fresh
+            prewarm_done = False  # Default if stale
+            updated_at = datetime.now()  # Default timestamp
+            error_message = None
+        except PricingPackValidationError as e:
+            logger.error(f"Invalid pricing pack ID in health check: {e}")
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error",
+                    "message": f"Invalid pricing pack ID: {e.reason}",
+                    "pack_id": e.pricing_pack_id,
+                    "is_fresh": False,
+                }
+            )
 
         # Determine HTTP status code
         if status == "fresh" and is_fresh:
