@@ -163,6 +163,17 @@ AI:
 3. **News Feed** - UI component exists, backend not fully implemented
 4. **Alerts** - Recently consolidated from AlertsAgent to MacroHound (Week 4), feature flag disabled
 
+### Recent Remote Sync Fixes (November 5, 2025)
+
+**Critical Security Fixes Applied:**
+- ✅ Removed dangerous `PP_latest` fallback that caused silent failures
+- ✅ Added pricing pack ID format validation (must be `PP_YYYY-MM-DD` or valid UUID)
+- ✅ Fixed scenario analysis service to dynamically fetch latest pricing pack
+- ✅ Updated FinancialAnalyst documentation to reflect no automatic fallback
+- ✅ Added production guards to prevent stub pricing in production environment
+
+**Impact**: All patterns now require explicit pricing pack IDs, preventing data corruption from invalid pack references
+
 ### Critical Backend Fixes Applied (November 4, 2025)
 
 **Database Field Standardization (COMPLETE)**
