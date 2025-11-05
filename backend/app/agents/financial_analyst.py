@@ -310,7 +310,7 @@ class FinancialAnalyst(BaseAgent):
 
         for pos in positions:
             security_id = str(pos.get("security_id", ""))
-            qty = pos.get("qty", Decimal("0"))
+            qty = pos.get("quantity", pos.get("qty", Decimal("0")))  # Support both field names
             if not security_id or qty == 0:
                 logger.warning(
                     "Skipping position with missing security_id or zero quantity: %s",
