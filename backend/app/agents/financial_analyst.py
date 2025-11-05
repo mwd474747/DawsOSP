@@ -1135,6 +1135,21 @@ class FinancialAnalyst(BaseAgent):
 
         return result
 
+    @capability(
+        name="risk.compute_factor_exposures",
+        inputs={"portfolio_id": str, "pack_id": str},
+        outputs={
+            "factors": dict,
+            "portfolio_volatility": float,
+            "market_beta": float,
+            "r_squared": float,
+            "_provenance": dict,
+        },
+        fetches_positions=False,
+        implementation_status="stub",
+        description="Compute portfolio factor exposures (currently stub implementation - uses hardcoded data)",
+        dependencies=["ledger.positions", "pricing.apply_pack"],
+    )
     async def risk_compute_factor_exposures(
         self,
         ctx: RequestCtx,
