@@ -36,6 +36,7 @@ from app.core.types import (
     PricingPackValidationError,
 )
 from app.services.pricing import get_pricing_service
+from app.services.portfolio_helpers import get_portfolio_value
 
 logger = logging.getLogger(__name__)
 
@@ -430,28 +431,4 @@ class CurrencyAttributor:
 
         Sums: quantity_open × price × fx_rate for all positions.
         """
-        base_ccy = await self._get_base_currency(portfolio_id)
-
-        positions = await self.db.fetch(
-            """
-            SELECT l.quantity_open, p.close, COALESCE(fx.rate, 1.0) as fx_rate
-            FROM lots l
-            JOIN prices p ON l.security_id = p.security_id AND p.pricing_pack_id = $2
-            LEFT JOIN fx_rates fx ON l.currency = fx.base_ccy
-                AND fx.quote_ccy = $3
-                AND fx.pricing_pack_id = $2
-            WHERE l.portfolio_id = $1 AND l.quantity_open > 0
-        """,
-            portfolio_id,
-            pack_id,
-            base_ccy,
-        )
-
-        total = sum(
-            Decimal(str(pos["quantity_open"]))
-            * Decimal(str(pos["close"]))
-            * Decimal(str(pos["fx_rate"]))
-            for pos in positions
-        )
-
-        return Decimal(total) if total else Decimal(0)
+        return await get_portfolio_value(self.db, portfolio_id, pack_id)
