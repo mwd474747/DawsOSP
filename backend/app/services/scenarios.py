@@ -811,14 +811,15 @@ class ScenarioService:
                 drawdown_pct = scenario_result.total_delta_pl_pct
 
                 scenario_drawdowns.append({
-                    "scenario": shock_type.value,
+                    "scenario": shock_type.value if hasattr(shock_type, 'value') else str(shock_type),
                     "scenario_name": scenario_result.shock_name,
                     "drawdown_pct": drawdown_pct,
                     "delta_pl": float(scenario_result.total_delta_pl),
                 })
 
             except Exception as e:
-                logger.warning(f"Scenario {shock_type.value} failed: {e}")
+                scenario_name = shock_type.value if hasattr(shock_type, 'value') else str(shock_type)
+                logger.warning(f"Scenario {scenario_name} failed: {e}")
                 continue
 
         if not scenario_drawdowns:
