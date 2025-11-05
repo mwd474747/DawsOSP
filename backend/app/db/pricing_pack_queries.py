@@ -53,10 +53,14 @@ class PricingPackQueries:
 
     async def get_latest_pack(self) -> Optional[Dict[str, Any]]:
         """
-        Get the most recent pricing pack.
+        Get the most recent fresh pricing pack.
 
         Returns:
-            Pack row as dict, or None if no packs exist
+            Pack row as dict, or None if no fresh packs exist
+            
+        Note:
+            Only returns packs with status='fresh' and is_fresh=true.
+            Excludes packs with status='error' or 'warming'.
 
         Example:
             {
@@ -107,6 +111,7 @@ class PricingPackQueries:
                 created_at,
                 updated_at
             FROM pricing_packs
+            WHERE status = 'fresh' AND is_fresh = true
             ORDER BY date DESC, created_at DESC
             LIMIT 1
         """
