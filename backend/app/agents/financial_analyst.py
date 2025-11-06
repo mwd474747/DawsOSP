@@ -1283,25 +1283,122 @@ class FinancialAnalyst(BaseAgent):
 
         logger.info(f"risk.get_factor_exposure_history: portfolio_id={portfolio_id_uuid}, lookback={lookback_days}")
 
-        # Get factor exposures from database for historical packs
-        # TODO: Implement historical query - for now return current only
+        # PHASE 3 TASK 3.3: Implement historical lookback
         from app.services.factor_analysis import FactorAnalyzer
         from app.db import get_db_pool
+        from datetime import date, timedelta
         
         pool = await get_db_pool()
         async with pool.acquire() as db:
             factor_service = FactorAnalyzer(db)
-
-            current = await factor_service.compute_factor_exposure(
-                portfolio_id=portfolio_id_uuid,
-                pack_id=ctx.pricing_pack_id
+            
+            # Get current pack date
+            if ctx.pricing_pack_id:
+                pack_date = await db.fetchval(
+                    "SELECT date FROM pricing_packs WHERE id = $1",
+                    ctx.pricing_pack_id
+                )
+                if not pack_date:
+                    logger.error(f"Pricing pack not found: {ctx.pricing_pack_id}")
+                    return {
+                        "history": [],
+                        "lookback_days": lookback_days,
+                        "error": f"Pricing pack not found: {ctx.pricing_pack_id}",
+                        "_provenance": {
+                            "type": "error",
+                            "source": "factor_analysis_service",
+                            "error": "Pricing pack not found",
+                        }
+                    }
+            else:
+                # Use current date if no pack specified
+                pack_date = ctx.asof_date or date.today()
+            
+            # Calculate date range
+            end_date = pack_date if isinstance(pack_date, date) else pack_date.date()
+            start_date = end_date - timedelta(days=lookback_days)
+            
+            # Query historical pricing packs
+            packs = await db.fetch(
+                """
+                SELECT id, date
+                FROM pricing_packs
+                WHERE date BETWEEN $1 AND $2
+                  AND superseded_by IS NULL
+                  AND is_fresh = true
+                ORDER BY date DESC
+                LIMIT 252  -- Max 1 year of trading days
+                """,
+                start_date,
+                end_date
             )
-
-        result = {
-            "history": [current],  # TODO: Add historical lookback
-            "lookback_days": lookback_days,
-            "note": "Historical factor exposure tracking - currently showing latest only"
-        }
+            
+            if not packs:
+                logger.warning(f"No pricing packs found for date range {start_date} to {end_date}")
+                # Fall back to current pack only
+                current = await factor_service.compute_factor_exposure(
+                    portfolio_id=str(portfolio_id_uuid),
+                    pack_id=ctx.pricing_pack_id or str(packs[0]["id"]) if packs else None,
+                    lookback_days=252
+                )
+                result = {
+                    "history": [current] if "error" not in current else [],
+                    "lookback_days": lookback_days,
+                    "note": "Historical packs not available - using current only",
+                    "_provenance": {
+                        "type": "partial",
+                        "source": "factor_analysis_service",
+                        "warnings": ["Historical packs not available"],
+                    }
+                }
+            else:
+                # Compute factor exposures for each historical pack
+                history = []
+                for pack in packs:
+                    try:
+                        exposure = await factor_service.compute_factor_exposure(
+                            portfolio_id=str(portfolio_id_uuid),
+                            pack_id=pack["id"],
+                            lookback_days=252  # Use 1 year lookback for each historical point
+                        )
+                        if "error" not in exposure:
+                            # Add date to exposure result
+                            exposure["asof_date"] = str(pack["date"])
+                            history.append(exposure)
+                        else:
+                            logger.warning(f"Factor exposure computation failed for pack {pack['id']}: {exposure.get('error')}")
+                    except Exception as e:
+                        logger.error(f"Error computing factor exposure for pack {pack['id']}: {e}", exc_info=True)
+                        # Continue with other packs
+                        continue
+                
+                if not history:
+                    logger.error("No successful factor exposures computed")
+                    result = {
+                        "history": [],
+                        "lookback_days": lookback_days,
+                        "error": "Failed to compute factor exposures for any historical packs",
+                        "_provenance": {
+                            "type": "error",
+                            "source": "factor_analysis_service",
+                            "error": "No successful computations",
+                        }
+                    }
+                else:
+                    # Sort by date (most recent first)
+                    history.sort(key=lambda x: x.get("asof_date", ""), reverse=True)
+                    result = {
+                        "history": history,
+                        "lookback_days": lookback_days,
+                        "pack_count": len(packs),
+                        "exposure_count": len(history),
+                        "_provenance": {
+                            "type": "real",
+                            "source": "factor_analysis_service",
+                            "confidence": 0.9,
+                            "implementation_status": "complete",
+                        }
+                    }
 
         metadata = self._create_metadata(
             source=f"factor_analysis_service:history",
