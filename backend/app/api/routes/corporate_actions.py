@@ -39,6 +39,14 @@ router = APIRouter(prefix="/v1/corporate-actions", tags=["corporate-actions"])
 # Pydantic Models
 # ============================================================================
 
+class SyncRequest(BaseModel):
+    """Request model for syncing corporate actions from FMP."""
+    
+    portfolio_id: UUID = Field(..., description="Portfolio UUID")
+    from_date: Optional[date] = Field(None, description="Start date (default: 30 days ago)")
+    to_date: Optional[date] = Field(None, description="End date (default: 30 days future)")
+    dry_run: bool = Field(False, description="If true, preview changes without recording")
+
 class DividendRequest(BaseModel):
     """Request model for recording a dividend."""
 
@@ -579,4 +587,76 @@ async def list_dividends(
 
     except Exception as e:
         logger.error(f"Error listing dividends: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/sync-fmp")
+async def sync_corporate_actions_from_fmp(
+    request: SyncRequest,
+    claims: dict = Depends(verify_token)
+) -> Dict[str, Any]:
+    """
+    Sync corporate actions (dividends & splits) from FMP API.
+    
+    Automatically fetches and records corporate actions for portfolio holdings
+    from the Financial Modeling Prep API.
+    
+    **Features**:
+    - Fetches dividends for all holdings in date range
+    - Fetches stock splits for all holdings in date range
+    - Avoids duplicate entries
+    - Handles multi-currency portfolios
+    - Supports dry-run mode for preview
+    
+    **Parameters**:
+    - portfolio_id: Portfolio to sync
+    - from_date: Start date (default: 30 days ago)
+    - to_date: End date (default: 30 days future)
+    - dry_run: If true, preview changes without recording
+    
+    **Returns**: Sync results with processed/skipped counts
+    """
+    from app.services.corporate_actions_sync import CorporateActionsSyncService
+    
+    user_id = get_user_id_from_claims(claims)
+    logger.info(
+        f"Sync corporate actions: user_id={user_id}, portfolio_id={request.portfolio_id}, "
+        f"date_range={request.from_date} to {request.to_date}, dry_run={request.dry_run}"
+    )
+    
+    try:
+        async with get_db_connection_with_rls(str(user_id)) as conn:
+            # Verify portfolio exists (RLS enforced)
+            portfolio = await conn.fetchrow(
+                "SELECT id FROM portfolios WHERE id = $1",
+                request.portfolio_id
+            )
+            
+            if not portfolio:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Portfolio {request.portfolio_id} not found"
+                )
+            
+            # Perform sync
+            sync_service = CorporateActionsSyncService(conn)
+            result = await sync_service.sync_all(
+                portfolio_id=request.portfolio_id,
+                from_date=request.from_date,
+                to_date=request.to_date,
+                dry_run=request.dry_run
+            )
+            
+            logger.info(
+                f"Sync complete: dividends_processed={result['dividends']['dividends_processed']}, "
+                f"splits_processed={result['splits']['splits_processed']}"
+            )
+            
+            return result
+    
+    except HTTPException:
+        raise
+    
+    except Exception as e:
+        logger.error(f"Error syncing corporate actions: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
