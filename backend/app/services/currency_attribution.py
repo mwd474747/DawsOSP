@@ -34,6 +34,7 @@ from typing import Dict, List, Optional
 from app.core.types import (
     PricingPackNotFoundError,
     PricingPackValidationError,
+    PortfolioNotFoundError,
 )
 from app.services.pricing import get_pricing_service
 from app.services.portfolio_helpers import get_portfolio_value
@@ -117,7 +118,10 @@ class CurrencyAttributor:
         logger.info(f"compute_attribution called with: portfolio_id={repr(portfolio_id)}, pack_id={repr(pack_id)}")
 
         if not portfolio_id or not isinstance(portfolio_id, str) or portfolio_id.strip() == "":
-            raise ValueError(f"portfolio_id is required and cannot be empty (got {repr(portfolio_id)})")
+            raise PricingPackValidationError(
+                pricing_pack_id=pack_id,
+                reason=f"portfolio_id is required and cannot be empty (got {repr(portfolio_id)})"
+            )
         if not pack_id or not isinstance(pack_id, str) or pack_id.strip() == "":
             raise PricingPackValidationError(
                 pricing_pack_id=pack_id or "",
@@ -420,7 +424,7 @@ class CurrencyAttributor:
             "SELECT base_currency FROM portfolios WHERE id = $1", portfolio_id
         )
         if not row:
-            raise ValueError(f"Portfolio not found: {portfolio_id}")
+            raise PortfolioNotFoundError(portfolio_id=portfolio_id)
         return row["base_currency"]
 
     async def _get_portfolio_value(

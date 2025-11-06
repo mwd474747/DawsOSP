@@ -997,9 +997,16 @@ class OptimizerService:
         rows = await self.execute_query(query, portfolio_id, pricing_pack_id)
 
         positions = []
+        excluded_positions = []
         for row in rows:
             if row["price"] is None:
                 logger.warning(f"No price found for {row['symbol']} in pack {pricing_pack_id}")
+                excluded_positions.append({
+                    "symbol": row["symbol"],
+                    "security_id": str(row["security_id"]),
+                    "quantity": float(row["quantity"]),
+                    "reason": "No price available in pricing pack"
+                })
                 continue
 
             positions.append({
@@ -1010,6 +1017,20 @@ class OptimizerService:
                 "value": float(row["value"]),
                 "currency": row["currency"],
             })
+        
+        # Log summary of excluded positions
+        if excluded_positions:
+            logger.error(
+                f"Excluded {len(excluded_positions)} positions from optimization due to missing prices: "
+                f"{[p['symbol'] for p in excluded_positions]}"
+            )
+        
+        # Raise an error if all positions are excluded
+        if not positions and excluded_positions:
+            raise ValueError(
+                f"No positions with valid prices found in pricing pack {pricing_pack_id}. "
+                f"Excluded: {[p['symbol'] for p in excluded_positions]}"
+            )
 
         return positions
 

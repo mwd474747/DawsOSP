@@ -295,6 +295,7 @@ class PricingService:
         self,
         security_id: str,
         pack_id: str,
+        raise_if_not_found: bool = False,
     ) -> Optional[SecurityPrice]:
         """
         Get price for a security from pricing pack.
@@ -302,6 +303,7 @@ class PricingService:
         Args:
             security_id: Security UUID. Required.
             pack_id: Pricing pack ID. Format: "PP_YYYY-MM-DD". Required.
+            raise_if_not_found: If True, raises exception instead of returning None when price not found.
 
         Returns:
             SecurityPrice object containing:
@@ -313,10 +315,11 @@ class PricingService:
             - source: Data source identifier
             - open, high, low, volume: Optional OHLCV data
             
-            Returns None if price not found in pack.
+            Returns None if price not found and raise_if_not_found=False.
 
         Raises:
             PricingPackValidationError: If pack_id format is invalid
+            PricingPackNotFoundError: If price not found and raise_if_not_found=True
             DatabaseError: If database query fails
             
         Note:
@@ -360,6 +363,8 @@ class PricingService:
 
             if not row:
                 logger.warning(f"No price found for security {security_id} in pack {pack_id}")
+                if raise_if_not_found:
+                    raise PricingPackNotFoundError(pricing_pack_id=pack_id)
                 return None
 
             return SecurityPrice(
@@ -576,6 +581,7 @@ class PricingService:
         base_ccy: str,
         quote_ccy: str,
         pack_id: str,
+        raise_if_not_found: bool = False,
     ) -> Optional[FXRate]:
         """
         Get FX rate from pricing pack.
@@ -587,12 +593,14 @@ class PricingService:
             base_ccy: Base currency (e.g., "USD")
             quote_ccy: Quote currency (e.g., "CAD")
             pack_id: Pricing pack ID
+            raise_if_not_found: If True, raises exception instead of returning None when rate not found.
 
         Returns:
-            FXRate object or None if not found
+            FXRate object or None if not found and raise_if_not_found=False
             
         Raises:
             PricingPackValidationError: If pack_id format is invalid
+            PricingPackNotFoundError: If rate not found and raise_if_not_found=True
         """
         validate_pack_id(pack_id)
         
@@ -626,6 +634,8 @@ class PricingService:
 
             if not row:
                 logger.warning(f"No FX rate found for {base_ccy}/{quote_ccy} in pack {pack_id}")
+                if raise_if_not_found:
+                    raise PricingPackNotFoundError(pricing_pack_id=pack_id)
                 return None
 
             return FXRate(
@@ -739,7 +749,7 @@ class PricingService:
                 # Invert the rate
                 rate = Decimal("1") / inverse_rate.rate
             else:
-                raise ValueError(f"No FX rate found for {from_ccy}/{to_ccy} in pack {pack_id}")
+                raise PricingPackNotFoundError(pricing_pack_id=pack_id)
         else:
             rate = fx_rate.rate
 

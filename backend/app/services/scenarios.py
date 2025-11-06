@@ -904,8 +904,10 @@ class ScenarioService:
                 logger.info(f"Persisted DaR to dar_history: {dar_pct*100:.2f}% at {confidence*100:.0f}% confidence")
 
         except Exception as e:
+            # Log error but continue - DaR calculation should not fail due to persistence issues
             logger.error(f"Failed to persist DaR to dar_history: {e}", exc_info=True)
-            # Continue - don't fail DaR calculation if persistence fails
+            # Add warning to result to indicate persistence failed
+            result.setdefault("warnings", []).append(f"DaR history persistence failed: {str(e)}")
 
         # Return DaR result
         result = {

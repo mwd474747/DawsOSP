@@ -519,6 +519,17 @@ class PricingPackNotFoundError(CapabilityError):
         self.pricing_pack_id = pricing_pack_id
 
 
+class PortfolioNotFoundError(CapabilityError):
+    """Portfolio does not exist."""
+
+    def __init__(self, portfolio_id: str):
+        super().__init__(
+            f"Portfolio not found: {portfolio_id}",
+            retryable=False,
+        )
+        self.portfolio_id = portfolio_id
+
+
 class PricingPackValidationError(CapabilityError):
     """Pricing pack ID format is invalid."""
 
