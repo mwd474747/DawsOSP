@@ -731,27 +731,87 @@ class DataHarvester(BaseAgent):
                         source = f"fundamentals:fmp:{symbol}"
                         logger.info(f"✅ Successfully transformed real FMP fundamentals for {symbol}")
                     except (ValueError, KeyError, TypeError) as e:
-                        logger.warning(f"FMP transformation failed for {symbol}: {e}, using stubs", exc_info=True)
-                        result = self._stub_fundamentals_for_symbol(symbol)
-                        source = "fundamentals:stub"
+                        logger.error(f"FMP transformation failed for {symbol}: {e}", exc_info=True)
+                        # PHASE 3 FIX: Return error instead of stub data
+                        result = {
+                            "security_id": security_id,
+                            "symbol": symbol,
+                            "error": f"FMP transformation failed: {str(e)}",
+                            "_provenance": {
+                                "type": "error",
+                                "source": "fundamentals_transformer",
+                                "error": str(e),
+                            }
+                        }
+                        source = "fundamentals:error"
                 else:
                     # Provider returned error or empty data
                     error_msg = fundamentals_data.get("error") or ratios_data.get("error")
                     if error_msg:
-                        logger.warning(f"Provider error for {symbol}: {error_msg}, using stubs")
+                        logger.error(f"Provider error for {symbol}: {error_msg}")
+                        result = {
+                            "security_id": security_id,
+                            "symbol": symbol,
+                            "error": f"Provider error: {error_msg}",
+                            "_provenance": {
+                                "type": "error",
+                                "source": "fmp_provider",
+                                "error": error_msg,
+                            }
+                        }
                     else:
-                        logger.warning(f"Provider returned empty data for {symbol} "
-                                     f"(fundamentals={has_fundamentals}, ratios={has_ratios}), using stubs")
-                    result = self._stub_fundamentals_for_symbol(symbol)
-                    source = "fundamentals:stub"
+                        logger.error(f"Provider returned empty data for {symbol} "
+                                   f"(fundamentals={has_fundamentals}, ratios={has_ratios})")
+                        result = {
+                            "security_id": security_id,
+                            "symbol": symbol,
+                            "error": "Provider returned empty data",
+                            "_provenance": {
+                                "type": "error",
+                                "source": "fmp_provider",
+                                "error": "Empty data returned",
+                            }
+                        }
+                    source = "fundamentals:error"
             else:
                 if not symbol:
-                    logger.warning(f"Could not lookup symbol for security_id={security_id}, using stubs")
-                result = self._stub_fundamentals_for_symbol(None)
+                    logger.error(f"Could not lookup symbol for security_id={security_id}")
+                    result = {
+                        "security_id": security_id,
+                        "symbol": None,
+                        "error": "Could not lookup symbol from security_id",
+                        "_provenance": {
+                            "type": "error",
+                            "source": "securities_lookup",
+                            "error": "Symbol lookup failed",
+                        }
+                    }
+                else:
+                    # No provider specified or provider != "fmp"
+                    result = {
+                        "security_id": security_id,
+                        "symbol": symbol,
+                        "error": f"Provider '{provider}' not supported or not specified",
+                        "_provenance": {
+                            "type": "error",
+                            "source": "fundamentals_loader",
+                            "error": f"Unsupported provider: {provider}",
+                        }
+                    }
 
         except Exception as e:
-            logger.warning(f"fundamentals.load failed, falling back to stubs: {e}")
-            result = self._stub_fundamentals_for_symbol(symbol)
+            logger.error(f"fundamentals.load failed: {e}", exc_info=True)
+            # PHASE 3 FIX: Return error instead of stub data
+            result = {
+                "security_id": security_id,
+                "symbol": symbol if 'symbol' in locals() else None,
+                "error": f"Fundamentals load failed: {str(e)}",
+                "_provenance": {
+                    "type": "error",
+                    "source": "fundamentals_loader",
+                    "error": str(e),
+                }
+            }
 
         metadata = self._create_metadata(
             source=source,

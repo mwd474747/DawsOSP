@@ -619,3 +619,29 @@ grep "register_agent" combined_server.py
 ---
 
 **Remember:** This is a working production application. Preserve functionality first, optimize second. Always test changes on port 8001 before touching port 8000.
+
+---
+
+## 🤖 Claude Code IDE Agent Configuration
+
+**Current Configuration:**
+- ✅ Context files: PROJECT_CONTEXT.md (this file) - accurate as of Nov 5, 2025
+- ✅ Permission settings: settings.local.json - Bash command allowlist
+- ❌ Slash commands: None configured
+- ❌ Hooks: None configured
+- ❌ MCP servers: None configured
+
+**Recommendations Available:**
+See [CLAUDE_IDE_AGENTS_RECOMMENDATION.md](CLAUDE_IDE_AGENTS_RECOMMENDATION.md) for detailed recommendations on:
+- 8 custom slash commands for common workflows
+- 2 hooks for quality assurance
+- Optional MCP server for database inspection
+- Implementation priority and ROI analysis
+
+**Quick Wins (1-2 hours):**
+- `/test-factor-analyzer` - Test FactorAnalyzer service (Phase 0 critical decision)
+- `/phase-status` - Check refactoring phase progress
+- `/verify-setup` - Verify development environment
+- `/check-stub-data` - Find stub data locations
+
+**Status:** Recommendations documented, implementation optional
