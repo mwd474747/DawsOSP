@@ -31,6 +31,10 @@ The system uses JWT-based authentication with bcrypt hashing. Role-based access 
 
 The data layer uses **PostgreSQL 14+** with the **TimescaleDB** extension for time-series data optimization. Key hypertables include `portfolio_daily_values` and `portfolio_metrics`. Core tables manage portfolios, tax lots, transactions, securities, prices, FX rates, and pricing packs. The system adheres to a "compute-first" design, where many analytical tables serve as potential caching targets for future optimization.
 
+**Critical Field Names**: The `lots` table uses standardized field names `quantity_open` and `quantity_original` (not abbreviated forms). This was implemented in Migration 001 and is enforced throughout the codebase.
+
+**Migration Tracking**: A `migration_history` table tracks all executed database migrations with checksums and audit trail, preventing confusion about which migrations have been applied.
+
 ### UI/UX Decisions
 
 The frontend is a React 18 Single Page Application served from a single `full_ui.html` file, eliminating a build step. It provides 18 UI pages (e.g., Dashboard, Holdings, Risk Analysis) and features a `PatternRenderer` component for dynamic display of pattern-driven content.
@@ -51,3 +55,21 @@ The primary interface for complex workflows is the `/api/patterns/execute` endpo
     *   *Note: These are configured but currently provide mock/fallback data; full integration is pending.*
 4.  **Python Libraries**: FastAPI, Uvicorn, asyncpg, pydantic, python-jose, bcrypt, passlib, pandas, numpy, scikit-learn, anthropic, instructor.
 5.  **Replit**: The primary deployment platform, configured via `.replit` and utilizing environment variables from Replit Secrets.
+
+## Recent Changes (November 6, 2025)
+
+- Fixed critical documentation errors in DATABASE.md regarding field names
+- Created database schema validation script (`backend/scripts/validate_database_schema.py`)
+- Removed unnecessary SQL aliases throughout codebase - now using direct field names matching database schema
+- Added migration tracking table (Migration 019) with complete audit trail of all 19 executed migrations
+- Enhanced FMP API integration with circuit breaker pattern, exponential backoff, and resilient error handling
+- Confirmed database has 32+ tables (not 29 as previously documented)
+
+## Development Status
+
+- Production-ready platform with portfolio simulation for high-net-worth investor (michael@dawsos.com)
+- Database schema fully aligned with code implementation
+- All critical field naming issues resolved
+- Corporate actions tracking with FMP API integration in place
+- Multi-currency support (USD, CAD, EUR) fully functional
+- Tax compliance tracking with IRS-compliant lot selection methods implemented
