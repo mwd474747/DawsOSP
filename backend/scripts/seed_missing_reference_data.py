@@ -58,13 +58,9 @@ class ReferenceDataSeeder:
         """
         logger.info("Seeding FX rates...")
         
-        # Get recent pricing packs (last 30 days only to avoid timeout)
-        packs = await self.conn.fetch("""
-            SELECT id, date FROM pricing_packs 
-            WHERE date >= CURRENT_DATE - INTERVAL '30 days'
-            ORDER BY date
-        """)
-        logger.info(f"Found {len(packs)} recent pricing packs to populate with FX rates")
+        # Get all pricing packs
+        packs = await self.conn.fetch("SELECT id, date FROM pricing_packs ORDER BY date")
+        logger.info(f"Found {len(packs)} pricing packs to populate with FX rates")
         
         # Base FX rates with realistic variations
         base_rates = {
@@ -98,24 +94,38 @@ class ReferenceDataSeeder:
         
         # Insert FX rates using batch insert for efficiency
         if fx_records:
-            # Use COPY for bulk insert (much faster)
-            columns = ['base_ccy', 'quote_ccy', 'pricing_pack_id', 'asof_ts', 'rate', 'source', 'policy']
+            # First, clear existing FX rates to avoid conflicts
+            await self.conn.execute("DELETE FROM fx_rates WHERE source = 'FMP'")
             
-            # Prepare records for COPY
-            records = [
-                (r['base_ccy'], r['quote_ccy'], r['pricing_pack_id'], 
-                 r['asof_ts'], r['rate'], r['source'], r['policy'])
-                for r in fx_records
-            ]
+            # Prepare batch insert query
+            query = """
+                INSERT INTO fx_rates (base_ccy, quote_ccy, pricing_pack_id, asof_ts, rate, source, policy)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                ON CONFLICT (base_ccy, quote_ccy, pricing_pack_id) 
+                DO UPDATE SET 
+                    rate = EXCLUDED.rate, 
+                    asof_ts = EXCLUDED.asof_ts,
+                    source = EXCLUDED.source,
+                    policy = EXCLUDED.policy
+            """
             
-            # Use COPY for bulk insert
-            await self.conn.copy_records_to_table(
-                'fx_rates',
-                records=records,
-                columns=columns
-            )
+            # Insert in batches to avoid memory issues
+            batch_size = 500
+            for i in range(0, len(fx_records), batch_size):
+                batch = fx_records[i:i+batch_size]
+                
+                # Use executemany for batch insert
+                await self.conn.executemany(
+                    query,
+                    [(r['base_ccy'], r['quote_ccy'], r['pricing_pack_id'], 
+                      r['asof_ts'], r['rate'], r['source'], r['policy'])
+                     for r in batch]
+                )
+                
+                if (i + batch_size) % 2000 == 0:
+                    logger.info(f"  Inserted {min(i + batch_size, len(fx_records))}/{len(fx_records)} FX rates...")
             
-            logger.info(f"✅ Bulk inserted {len(fx_records)} FX rates across {len(packs)} pricing packs")
+            logger.info(f"✅ Inserted {len(fx_records)} FX rates across {len(packs)} pricing packs")
     
     async def seed_security_sectors(self):
         """
@@ -218,12 +228,18 @@ class ReferenceDataSeeder:
             )
         """)
         
-        # Get portfolio and securities
+        # Get portfolio and securities - use the known portfolio ID from our seed data
         portfolio = await self.conn.fetchrow(
-            "SELECT id FROM portfolios WHERE name = 'Diversified Growth Portfolio'"
+            "SELECT id FROM portfolios WHERE id = '64ff3be6-0ed1-4990-a32b-4ded17f0320c'"
         )
         if not portfolio:
-            logger.warning("Portfolio not found, skipping corporate actions")
+            # Try by name as backup
+            portfolio = await self.conn.fetchrow(
+                "SELECT id FROM portfolios LIMIT 1"
+            )
+        
+        if not portfolio:
+            logger.warning("No portfolios found, skipping corporate actions")
             return
             
         portfolio_id = portfolio['id']
