@@ -216,7 +216,7 @@ class TradeExecutionService:
         currency: str,
         trade_date: date,
         settlement_date: Optional[date] = None,
-        lot_selection: LotSelectionMethod = LotSelectionMethod.FIFO,
+        lot_selection: Optional[LotSelectionMethod] = None,
         specific_lot_id: Optional[UUID] = None,
         base_currency: Optional[str] = None,
         fx_rate: Optional[Decimal] = None,
@@ -234,7 +234,7 @@ class TradeExecutionService:
             currency: Trade currency
             trade_date: Trade execution date
             settlement_date: Settlement date (defaults to trade_date)
-            lot_selection: Method for selecting lots (FIFO, LIFO, HIFO, SPECIFIC)
+            lot_selection: Method for selecting lots (None=use portfolio default, FIFO, LIFO, HIFO, SPECIFIC)
             specific_lot_id: Specific lot ID (if lot_selection=SPECIFIC)
             base_currency: Portfolio base currency
             fx_rate: FX rate from trade currency to base currency
@@ -253,6 +253,27 @@ class TradeExecutionService:
             raise InvalidTradeError(f"Sell quantity must be positive, got {qty}")
         if price < 0:
             raise InvalidTradeError(f"Price cannot be negative, got {price}")
+        
+        # Get portfolio's cost basis method if not specified
+        if lot_selection is None:
+            portfolio_row = await self.conn.fetchrow(
+                "SELECT cost_basis_method FROM portfolios WHERE id = $1",
+                portfolio_id
+            )
+            if portfolio_row:
+                method_str = portfolio_row["cost_basis_method"]
+                # Map database value to enum
+                method_mapping = {
+                    "FIFO": LotSelectionMethod.FIFO,
+                    "LIFO": LotSelectionMethod.LIFO,
+                    "HIFO": LotSelectionMethod.HIFO,
+                    "SPECIFIC_LOT": LotSelectionMethod.SPECIFIC,
+                    "AVERAGE_COST": LotSelectionMethod.FIFO  # Fallback to FIFO for average cost
+                }
+                lot_selection = method_mapping.get(method_str, LotSelectionMethod.FIFO)
+                logger.info(f"Using portfolio cost_basis_method: {method_str} -> {lot_selection}")
+            else:
+                lot_selection = LotSelectionMethod.FIFO
 
         # Default settlement date
         if settlement_date is None:
@@ -322,6 +343,16 @@ class TradeExecutionService:
                 proceeds_per_share=proceeds_base_currency / qty,
                 trade_date=trade_date,
                 transaction_id=trade_id
+            )
+            
+            # Update transaction with realized P&L for tax reporting (IRS compliance)
+            await self.conn.execute(
+                """
+                UPDATE transactions
+                SET realized_pl = $1
+                WHERE id = $2
+                """,
+                realized_pnl, trade_id
             )
 
         logger.info(
