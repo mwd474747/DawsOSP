@@ -1,11 +1,12 @@
 {
-  "metadata": {
-    "name": "Portfolio Tax Report",
-    "description": "Generate comprehensive tax reporting including realized gains, wash sales, and lot selection methods",
-    "version": "1.0.0",
-    "category": "tax_compliance",
-    "output_format": "report"
-  },
+  "id": "portfolio_tax_report",
+  "name": "Portfolio Tax Report",
+  "description": "Generate comprehensive tax reporting including realized gains, wash sales, and lot selection methods",
+  "version": "1.0.0",
+  "category": "tax_compliance",
+  "tags": ["tax", "compliance", "reporting"],
+  "author": "DawsOS",
+  "created": "2025-11-06",
   "inputs": {
     "portfolio_id": {
       "type": "string",
@@ -32,50 +33,40 @@
       "description": "Include wash sale analysis"
     }
   },
+  "outputs": ["realized_gains", "wash_sales", "tax_lots", "tax_summary"],
   "steps": [
     {
-      "name": "get_realized_gains",
       "capability": "tax.realized_gains",
-      "inputs": {
+      "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
         "tax_year": "{{inputs.tax_year}}",
         "lot_method": "{{inputs.lot_selection_method}}"
       },
-      "store_as": "realized_gains"
+      "as": "realized_gains"
     },
     {
-      "name": "analyze_wash_sales",
       "capability": "tax.wash_sales",
-      "inputs": {
+      "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
         "tax_year": "{{inputs.tax_year}}"
       },
-      "store_as": "wash_sales",
-      "condition": "{{inputs.include_wash_sales}}"
+      "as": "wash_sales"
     },
     {
-      "name": "get_tax_lots",
       "capability": "tax.lot_details",
-      "inputs": {
+      "args": {
         "portfolio_id": "{{inputs.portfolio_id}}"
       },
-      "store_as": "tax_lots"
+      "as": "tax_lots"
     },
     {
-      "name": "calculate_summary",
       "capability": "tax.summary",
-      "inputs": {
+      "args": {
         "realized_gains": "{{realized_gains}}",
         "wash_sales": "{{wash_sales}}",
         "tax_year": "{{inputs.tax_year}}"
       },
-      "store_as": "tax_summary"
+      "as": "tax_summary"
     }
-  ],
-  "outputs": {
-    "realized_gains": "{{realized_gains}}",
-    "wash_sales": "{{wash_sales}}",
-    "tax_lots": "{{tax_lots}}",
-    "summary": "{{tax_summary}}"
-  }
+  ]
 }
