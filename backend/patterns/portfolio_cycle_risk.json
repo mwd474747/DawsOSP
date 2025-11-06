@@ -124,12 +124,5 @@
   "export_allowed": {
     "pdf": true,
     "csv": true
-  },
-  "observability": {
-    "otel_span_name": "pattern.portfolio_cycle_risk",
-    "metrics": [
-      "pattern_execution_duration_seconds",
-      "cycle_risk_computation_duration_seconds"
-    ]
   }
 }

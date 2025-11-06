@@ -33,10 +33,7 @@ if [ -z "$DATABASE_URL" ]; then
     echo "Please set DATABASE_URL environment variable:"
     echo "  export DATABASE_URL='postgresql://user:pass@localhost:5432/dawsos'"
     echo ""
-    echo "Or use the docker-compose setup:"
-    echo "  cd backend/db"
-    echo "  docker-compose up -d"
-    echo "  export DATABASE_URL='postgresql://dawsos:dawsos@localhost:5432/dawsos'"
+    echo "See README.md for database setup instructions."
     exit 1
 fi
 
@@ -50,9 +47,7 @@ if psql "$DATABASE_URL" -c "SELECT version();" > /dev/null 2>&1; then
 else
     echo -e "${RED}ERROR: Cannot connect to database${NC}"
     echo ""
-    echo "Make sure the database is running:"
-    echo "  cd backend/db"
-    echo "  docker-compose up -d"
+    echo "Make sure the database is running and DATABASE_URL is set correctly."
     exit 1
 fi
 echo ""

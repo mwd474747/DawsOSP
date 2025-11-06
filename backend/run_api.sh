@@ -51,18 +51,9 @@ echo -e "${GREEN}Checking database connection...${NC}"
 if ! docker ps --format '{{.Names}}' | grep -q '^dawsos-postgres$' && \
    ! docker ps --format '{{.Names}}' | grep -q '^dawsos-dev-postgres$'; then
     echo -e "${YELLOW}Warning: PostgreSQL container not running${NC}"
-    echo "Starting Docker services..."
-
-    if [ -f "docker-compose.simple.yml" ]; then
-        docker-compose -f docker-compose.simple.yml up -d
-        echo "Waiting for database to be ready..."
-        sleep 5
-    else
-        echo -e "${RED}Error: docker-compose.simple.yml not found${NC}"
-        echo "Please start the database manually:"
-        echo "  docker-compose -f docker-compose.simple.yml up -d"
-        exit 1
-    fi
+    echo "Database not running. Please start the database manually."
+    echo "See backend/db/init_database.sh for setup instructions."
+    exit 1
 fi
 
 # Set environment variables
@@ -153,7 +144,7 @@ echo -e "${YELLOW}Available endpoints:${NC}"
 echo "  POST http://localhost:8000/v1/execute     - Execute patterns"
 echo "  GET  http://localhost:8000/health         - Health check"
 echo "  GET  http://localhost:8000/patterns       - List patterns"
-echo "  GET  http://localhost:8000/metrics        - Prometheus metrics"
+echo "  GET  http://localhost:8000/metrics        - Health metrics"
 echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop the server${NC}"
 echo ""

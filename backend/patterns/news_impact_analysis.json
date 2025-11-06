@@ -148,13 +148,5 @@
   "export_allowed": {
     "pdf": true,
     "csv": true
-  },
-  "observability": {
-    "otel_span_name": "pattern.news_impact_analysis",
-    "metrics": [
-      "pattern_execution_duration_seconds",
-      "news_fetch_duration_seconds",
-      "news_items_processed_total"
-    ]
   }
 }

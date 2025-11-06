@@ -177,12 +177,5 @@
     "pdf": true,
     "csv": true,
     "excel": true
-  },
-  "observability": {
-    "otel_span_name": "pattern.portfolio_overview",
-    "metrics": [
-      "pattern_execution_duration_seconds",
-      "pattern_steps_total"
-    ]
   }
 }

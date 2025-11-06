@@ -212,12 +212,5 @@
   "export_allowed": {
     "pdf": true,
     "csv": false
-  },
-  "observability": {
-    "otel_span_name": "pattern.buffett_checklist",
-    "metrics": [
-      "pattern_execution_duration_seconds",
-      "fundamentals_fetch_duration_seconds"
-    ]
   }
 }

@@ -136,12 +136,5 @@
   "export_allowed": {
     "pdf": true,
     "csv": true
-  },
-  "observability": {
-    "otel_span_name": "pattern.portfolio_scenario_analysis",
-    "metrics": [
-      "pattern_execution_duration_seconds",
-      "scenario_computation_duration_seconds"
-    ]
   }
 }

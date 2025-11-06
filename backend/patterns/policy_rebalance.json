@@ -176,13 +176,5 @@
     "pdf": true,
     "csv": true,
     "excel": true
-  },
-  "observability": {
-    "otel_span_name": "pattern.policy_rebalance",
-    "metrics": [
-      "pattern_execution_duration_seconds",
-      "optimizer_computation_duration_seconds",
-      "trades_proposed_total"
-    ]
   }
 }

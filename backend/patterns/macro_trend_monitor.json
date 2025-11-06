@@ -147,12 +147,5 @@
   "export_allowed": {
     "pdf": true,
     "csv": true
-  },
-  "observability": {
-    "otel_span_name": "pattern.macro_trend_monitor",
-    "metrics": [
-      "pattern_execution_duration_seconds",
-      "trend_analysis_duration_seconds"
-    ]
   }
 }

@@ -368,13 +368,5 @@
     "pdf": true,
     "csv": true,
     "excel": true
-  },
-  "observability": {
-    "otel_span_name": "pattern.holding_deep_dive",
-    "metrics": [
-      "pattern_execution_duration_seconds",
-      "pattern_steps_total",
-      "pattern_capability_calls_total"
-    ]
   }
 }

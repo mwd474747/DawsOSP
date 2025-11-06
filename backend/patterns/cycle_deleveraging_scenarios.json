@@ -183,12 +183,5 @@
   "export_allowed": {
     "pdf": true,
     "csv": true
-  },
-  "observability": {
-    "otel_span_name": "pattern.cycle_deleveraging_scenarios",
-    "metrics": [
-      "pattern_execution_duration_seconds",
-      "scenario_computation_duration_seconds"
-    ]
   }
 }

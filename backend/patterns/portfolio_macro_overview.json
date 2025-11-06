@@ -120,12 +120,5 @@
   "export_allowed": {
     "pdf": true,
     "csv": true
-  },
-  "observability": {
-    "otel_span_name": "pattern.portfolio_macro_overview",
-    "metrics": [
-      "pattern_execution_duration_seconds",
-      "dar_computation_duration_seconds"
-    ]
   }
 }
