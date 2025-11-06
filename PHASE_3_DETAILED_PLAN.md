@@ -105,7 +105,11 @@
 
 ---
 
-#### Step 3.1.2: Fix FactorAnalyzer Bugs (2-4 hours) ✅ **ADJUSTED**
+#### Step 3.1.2: Fix FactorAnalyzer Bugs (2-4 hours) ✅ **DELEGATED TO REPLIT**
+
+**Note:** This step is now handled by Replit agent. See `REPLIT_BACKEND_TASKS.md` for details.
+
+**Status:** ✅ **DELEGATED**
 
 **Goal:** Fix any bugs in existing `FactorAnalyzer` service.
 
