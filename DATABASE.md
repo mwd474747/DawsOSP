@@ -54,22 +54,22 @@ Migration 001 was **NEVER EXECUTED**. The database uses `qty_open` and `qty_orig
    - Added economic indicators table
    - Support for CPI, GDP, and other macro indicators
 
-### Pending Migrations (Ready for Execution)
+### Recently Executed Migrations (November 6, 2025)
 
-9. **Migration 016: Standardize asof_date Field** ⏳ **READY**
-   - Rename `valuation_date` → `asof_date` for consistency
+9. **Migration 016: Standardize asof_date Field** ✅ **COMPLETED**
+   - Renamed `valuation_date` → `asof_date` for consistency
    - Impacts: holdings, portfolio_values, dar_results tables
-   - Includes rollback-safe checks
+   - Successfully executed with rollback-safe checks
 
-10. **Migration 017: Add Realized P&L Tracking** ⏳ **READY**
-    - Add `realized_pl` field to transactions table
+10. **Migration 017: Add Realized P&L Tracking** ✅ **COMPLETED**
+    - Added `realized_pl` field to transactions table
     - Enables IRS Form 1099-B compliance and tax reporting
-    - Includes backfill strategy for existing SELL transactions
+    - Backfilled existing SELL transactions with realized P&L calculations
 
-11. **Migration 018: Add Cost Basis Method Tracking** ⏳ **READY**
-    - Add `cost_basis_method` field to portfolios table
-    - Prevents illegal LIFO for stocks (regulatory compliance)
-    - Includes audit log table and validation triggers
+11. **Migration 018: Add Cost Basis Method Tracking** ✅ **COMPLETED**
+    - Added `cost_basis_method` field to portfolios table  
+    - Created audit_log table for tracking cost basis changes
+    - Added triggers to prevent illegal LIFO for stocks
     - Default: FIFO (IRS standard)
 
 ### Architecture Stability Achieved
@@ -92,8 +92,8 @@ DawsOS uses PostgreSQL with TimescaleDB for time-series data optimization. The d
 - **Core Domain Tables:** 17
 - **System/Support Tables:** 12
 - **Connection Method:** Cross-module pool using `sys.modules` storage
-- **Migrations Executed:** 002, 002b, 002c, 002d, 003, 005, 007, 008, 009, 010, 011, 012, 013, 014, 015
-- **Pending Migrations:** 016 (asof_date), 017 (realized_pl), 018 (cost_basis_method) - Ready for execution
+- **Migrations Executed:** 002, 002b, 002c, 002d, 003, 005, 007, 008, 009, 010, 011, 012, 013, 014, 015, 016, 017, 018
+- **Pending Migrations:** None - All migrations complete as of November 6, 2025
 
 ### Architecture Pattern
 - **Compute-First:** Services calculate data on-demand by default
