@@ -113,7 +113,7 @@ class PerformanceCalculator:
         try:
             values = await self.db.fetch(
                 """
-                SELECT valuation_date as asof_date, total_value, cash_flows
+                SELECT valuation_date AS asof_date, total_value, cash_flows
                 FROM portfolio_daily_values
                 WHERE portfolio_id = $1 AND valuation_date BETWEEN $2 AND $3
                 ORDER BY valuation_date
@@ -379,7 +379,7 @@ class PerformanceCalculator:
         try:
             values = await self.db.fetch(
                 """
-                SELECT valuation_date as asof_date, total_value
+                SELECT valuation_date AS asof_date, total_value
                 FROM portfolio_daily_values
                 WHERE portfolio_id = $1 AND valuation_date BETWEEN $2 AND $3
                 ORDER BY valuation_date
@@ -472,7 +472,7 @@ class PerformanceCalculator:
         try:
             values = await self.db.fetch(
                 """
-                SELECT valuation_date as asof_date, total_value
+                SELECT valuation_date AS asof_date, total_value
                 FROM portfolio_daily_values
                 WHERE portfolio_id = $1 AND valuation_date BETWEEN $2 AND $3
                 ORDER BY valuation_date

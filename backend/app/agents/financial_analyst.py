@@ -2635,8 +2635,8 @@ class FinancialAnalyst(BaseAgent):
                 rows = await conn.fetch(
                     """
                     SELECT 
-                        valuation_date as asof_date,
-                        total_value as total_value_base
+                        valuation_date AS asof_date,
+                        total_value AS total_value_base
                     FROM portfolio_daily_values
                     WHERE portfolio_id = $1
                       AND valuation_date >= CURRENT_DATE - INTERVAL '%s days'
