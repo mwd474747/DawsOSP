@@ -166,137 +166,16 @@ class PolygonProvider(BaseProvider):
 
         return prices
 
-    @rate_limit(requests_per_minute=100)
-    async def get_splits(
-        self, symbol: Optional[str] = None, execution_date: Optional[date] = None, limit: int = 1000
-    ) -> List[Dict]:
-        """
-        Get stock splits.
-
-        Args:
-            symbol: Stock ticker symbol (optional, returns all if None)
-            execution_date: Filter by execution date (optional)
-            limit: Max results (default 1000)
-
-        Returns:
-            [
-                {
-                    "ticker": "AAPL",
-                    "execution_date": "2020-08-31",
-                    "split_from": 1,
-                    "split_to": 4,
-                    "split_ratio": 0.25
-                },
-                ...
-            ]
-
-        Note:
-            - execution_date is when split takes effect (same as ex-date)
-            - split_ratio = split_from / split_to (e.g., 4:1 split = 0.25)
-            - Adjust share quantities: new_qty = old_qty / split_ratio
-            - Adjust prices: new_price = old_price * split_ratio
-        """
-        url = f"{self.config.base_url}/v3/reference/splits"
-        params = {"apiKey": self.api_key, "limit": limit}
-
-        if symbol:
-            params["ticker"] = symbol
-        if execution_date:
-            params["execution_date"] = execution_date.isoformat()
-
-        response = await self._request("GET", url, params=params)
-
-        if response.get("status") != "OK":
-            raise ProviderError(f"Polygon splits error: {response.get('error', 'Unknown error')}")
-
-        results = response.get("results", [])
-
-        # Normalize response
-        splits = []
-        for split in results:
-            splits.append({
-                "ticker": split["ticker"],
-                "execution_date": split["execution_date"],
-                "split_from": split["split_from"],
-                "split_to": split["split_to"],
-                "split_ratio": split["split_from"] / split["split_to"],
-            })
-
-        return splits
-
-    @rate_limit(requests_per_minute=100)
-    async def get_dividends(
-        self,
-        symbol: Optional[str] = None,
-        ex_dividend_date: Optional[date] = None,
-        declaration_date: Optional[date] = None,
-        limit: int = 1000,
-    ) -> List[Dict]:
-        """
-        Get dividends with ex-date and pay-date (CRITICAL for ADR accuracy).
-
-        Args:
-            symbol: Stock ticker symbol (optional, returns all if None)
-            ex_dividend_date: Filter by ex-dividend date (optional)
-            declaration_date: Filter by declaration date (optional)
-            limit: Max results (default 1000)
-
-        Returns:
-            [
-                {
-                    "ticker": "AAPL",
-                    "ex_dividend_date": "2024-08-09",
-                    "pay_date": "2024-08-15",  # CRITICAL: Use this for FX conversion
-                    "declaration_date": "2024-08-01",
-                    "record_date": "2024-08-12",
-                    "cash_amount": 0.24,
-                    "currency": "USD",
-                    "dividend_type": "CD",  # Cash Dividend
-                    "frequency": 4  # Quarterly
-                },
-                ...
-            ]
-
-        Note:
-            - CRITICAL: For ADR dividends, use pay_date FX rate, not ex_date FX
-            - This prevents 42¢ per transaction accuracy errors
-            - ex_dividend_date: Stock trades without dividend after this date
-            - pay_date: When dividend is actually paid (use this FX rate)
-            - record_date: Shareholder must own shares by this date
-        """
-        url = f"{self.config.base_url}/v3/reference/dividends"
-        params = {"apiKey": self.api_key, "limit": limit}
-
-        if symbol:
-            params["ticker"] = symbol
-        if ex_dividend_date:
-            params["ex_dividend_date"] = ex_dividend_date.isoformat()
-        if declaration_date:
-            params["declaration_date"] = declaration_date.isoformat()
-
-        response = await self._request("GET", url, params=params)
-
-        if response.get("status") != "OK":
-            raise ProviderError(f"Polygon dividends error: {response.get('error', 'Unknown error')}")
-
-        results = response.get("results", [])
-
-        # Normalize response
-        dividends = []
-        for div in results:
-            dividends.append({
-                "ticker": div["ticker"],
-                "ex_dividend_date": div["ex_dividend_date"],
-                "pay_date": div["pay_date"],  # CRITICAL for ADR FX accuracy
-                "declaration_date": div.get("declaration_date"),
-                "record_date": div.get("record_date"),
-                "cash_amount": div["cash_amount"],
-                "currency": div.get("currency", "USD"),
-                "dividend_type": div.get("dividend_type", "CD"),
-                "frequency": div.get("frequency", 4),
-            })
-
-        return dividends
+    # NOTE: Corporate actions methods (get_splits, get_dividends) were removed
+    # in favor of FMP Premium as the primary source. FMP provides:
+    # - Dividends, splits, AND earnings (Polygon lacks earnings)
+    # - Already implemented and tested in DataHarvester agent
+    # - No quality issues reported
+    # If you need corporate actions data, use FMP via DataHarvester:
+    #   - corporate_actions.dividends
+    #   - corporate_actions.splits
+    #   - corporate_actions.earnings
+    # See: PROVIDER_API_AUDIT.md for full analysis
 
     @rate_limit(requests_per_minute=100)
     async def get_last_quote(self, symbol: str) -> Dict:

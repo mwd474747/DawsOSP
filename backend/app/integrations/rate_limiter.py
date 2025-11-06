@@ -2,7 +2,7 @@
 DawsOS Rate Limiter
 
 Purpose: Token bucket rate limiting with jittered backoff
-Updated: 2025-10-21
+Updated: 2025-11-05
 Priority: P0 (Critical for API compliance)
 
 Features:
@@ -10,7 +10,6 @@ Features:
     - Per-provider rate limits
     - Jittered exponential backoff on 429 errors
     - Bandwidth budget tracking (for FMP)
-    - Prometheus metrics
 
 Usage:
     @rate_limit(requests_per_minute=120)
@@ -27,37 +26,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from typing import Callable, Dict
 
-from prometheus_client import Counter, Gauge
-
 logger = logging.getLogger(__name__)
-
-# ============================================================================
-# Prometheus Metrics
-# ============================================================================
-
-rate_limit_hits_total = Counter(
-    "rate_limit_hits_total",
-    "Total rate limit hits (requests delayed)",
-    labelnames=["provider"],
-)
-
-rate_limit_429_total = Counter(
-    "rate_limit_429_total",
-    "Total 429 responses from provider",
-    labelnames=["provider"],
-)
-
-bandwidth_used_bytes = Counter(
-    "bandwidth_used_bytes",
-    "Total bandwidth used (bytes)",
-    labelnames=["provider"],
-)
-
-bandwidth_remaining_pct = Gauge(
-    "bandwidth_remaining_pct",
-    "Bandwidth budget remaining (percentage)",
-    labelnames=["provider"],
-)
 
 
 # ============================================================================
@@ -206,7 +175,6 @@ def rate_limit(requests_per_minute: int):
             delay = await bucket.acquire(tokens=1)
 
             if delay > 0:
-                rate_limit_hits_total.labels(provider=provider_name).inc()
                 logger.debug(
                     f"Rate limit enforced for {provider_name}: delayed {delay:.2f}s"
                 )
@@ -251,8 +219,6 @@ async def backoff_on_429(
         except Exception as e:
             # Check if 429 error
             if hasattr(e, "status_code") and e.status_code == 429:
-                rate_limit_429_total.labels(provider=provider_name).inc()
-
                 if attempt < max_retries - 1:
                     delay = delays[attempt]
                     # Add jitter (±20%)
@@ -315,12 +281,6 @@ class BandwidthBudget:
             )
             self.current_usage_gb = 0.0
             self.month_start = now.replace(day=1)
-
-        # Update metrics
-        remaining_pct = (
-            (self.monthly_limit_gb - self.current_usage_gb) / self.monthly_limit_gb * 100
-        )
-        bandwidth_remaining_pct.labels(provider="fmp").set(remaining_pct)
 
         # Check thresholds
         usage_pct = self.current_usage_gb / self.monthly_limit_gb * 100
