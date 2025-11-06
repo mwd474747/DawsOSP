@@ -2506,8 +2506,10 @@ class FinancialAnalyst(BaseAgent):
         total_value = Decimal("0")
         
         for position in valued_positions:
-            # Get position value
-            value = position.get("value", Decimal("0"))
+            # Get position value - check both 'value' and 'market_value' fields
+            value = position.get("market_value") or position.get("value") or Decimal("0")
+            if isinstance(value, str):
+                value = Decimal(value)
             if value <= 0:
                 continue
                 
