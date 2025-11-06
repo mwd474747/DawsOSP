@@ -307,7 +307,7 @@ async def test_trades(
     await db_transaction.execute("""
         INSERT INTO lots (
             id, portfolio_id, security_id, symbol, acquisition_date,
-            quantity, quantity_original, quantity_open, cost_basis, cost_basis_per_share,
+            quantity, qty_original, qty_open, cost_basis, cost_basis_per_share,
             currency, is_open
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
@@ -344,7 +344,7 @@ async def test_trades(
     await db_transaction.execute("""
         INSERT INTO lots (
             id, portfolio_id, security_id, symbol, acquisition_date,
-            quantity, quantity_original, quantity_open, cost_basis, cost_basis_per_share,
+            quantity, qty_original, qty_open, cost_basis, cost_basis_per_share,
             currency, is_open
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
@@ -380,7 +380,7 @@ async def test_trades(
     # Update lot1 quantity_open (100 - 30 = 70)
     await db_transaction.execute("""
         UPDATE lots
-        SET quantity_open = $1, quantity = $2, updated_at = NOW()
+        SET qty_open = $1, quantity = $2, updated_at = NOW()
         WHERE id = $3
     """, Decimal("70"), Decimal("70"), lot1_id)
 

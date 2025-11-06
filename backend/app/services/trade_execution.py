@@ -423,9 +423,9 @@ class TradeExecutionService:
             # Get specific lot
             row = await self.conn.fetchrow(
                 """
-                SELECT id, security_id, symbol, quantity_open, cost_basis, acquisition_date, currency
+                SELECT id, security_id, symbol, qty_open AS quantity_open, cost_basis, acquisition_date, currency
                 FROM lots
-                WHERE portfolio_id = $1 AND id = $2 AND quantity_open > 0
+                WHERE portfolio_id = $1 AND id = $2 AND qty_open > 0
                 """,
                 portfolio_id, specific_lot_id
             )
@@ -442,16 +442,16 @@ class TradeExecutionService:
             order_by = "acquisition_date DESC, created_at DESC"
         elif lot_selection == LotSelectionMethod.HIFO:
             # Highest cost basis per share first (maximize tax loss harvesting)
-            order_by = "(cost_basis / quantity_original) DESC, acquisition_date ASC"
+            order_by = "(cost_basis / qty_original) DESC, acquisition_date ASC"
         else:
             raise InvalidTradeError(f"Unsupported lot selection method: {lot_selection}")
 
         # Get open lots sorted by selection method
         rows = await self.conn.fetch(
             f"""
-            SELECT id, security_id, symbol, quantity_open, cost_basis, acquisition_date, currency, quantity_original
+            SELECT id, security_id, symbol, qty_open AS quantity_open, cost_basis, acquisition_date, currency, qty_original AS quantity_original
             FROM lots
-            WHERE portfolio_id = $1 AND symbol = $2 AND quantity_open > 0
+            WHERE portfolio_id = $1 AND symbol = $2 AND qty_open > 0
             ORDER BY {order_by}
             """,
             portfolio_id, symbol
@@ -512,7 +512,7 @@ class TradeExecutionService:
             await self.conn.execute(
                 """
                 UPDATE lots
-                SET quantity_open = $1,
+                SET qty_open = $1,
                     quantity = $1,
                     closed_date = CASE WHEN $1 = 0 THEN $2 ELSE NULL END,
                     is_open = CASE WHEN $1 = 0 THEN false ELSE true END,
@@ -561,11 +561,11 @@ class TradeExecutionService:
             """
             SELECT
                 symbol,
-                SUM(quantity_open) as qty,
-                SUM(cost_basis * quantity_open / quantity_original) as cost_basis,
+                SUM(qty_open) as qty,
+                SUM(cost_basis * qty_open / qty_original) as cost_basis,
                 currency
             FROM lots
-            WHERE portfolio_id = $1 AND quantity_open > 0
+            WHERE portfolio_id = $1 AND qty_open > 0
             GROUP BY symbol, currency
             ORDER BY symbol
             """,

@@ -10,10 +10,15 @@
 ## 🚀 Recent Database Improvements (November 4, 2025)
 
 ### Completed Migrations
-1. **Migration 001: Field Standardization** ✅
-   - Renamed `qty_open` → `quantity_open`
-   - Renamed `qty_original` → `quantity_original`
-   - Standardized field names across database
+
+**⚠️ CRITICAL CORRECTION (January 14, 2025):**
+Migration 001 was **NEVER EXECUTED**. The database uses `qty_open` and `qty_original`, NOT `quantity_open` and `quantity_original`. Previous documentation incorrectly claimed Migration 001 was completed. This has been corrected below.
+
+1. **Migration 001: Field Standardization** ❌ **NEVER EXECUTED**
+   - **Planned** to rename `qty_open` → `quantity_open`
+   - **Planned** to rename `qty_original` → `quantity_original`
+   - **Status:** Never executed, database still uses abbreviated forms
+   - **Note:** Migration 007 added `qty_open` and `qty_original` fields
 
 2. **Migration 002: Constraints & Indexes** ✅
    - Added FK constraint: `portfolios.user_id` → `users.id`
@@ -77,9 +82,10 @@ DawsOS uses PostgreSQL with TimescaleDB for time-series data optimization. The d
 ## 🗄️ Complete Table Inventory (Verified via SQL Inspection)
 
 **Field Naming Standards (January 14, 2025):**
-- **Database Columns:** `quantity_open`, `quantity_original` (standardized from `qty_open`, `qty_original` in Migration 001)
+- **Database Columns:** `qty_open`, `qty_original` (actual field names from Migration 007)
+- **Code Layer:** Use SQL aliases `qty_open AS quantity_open` for Python compatibility
 - **Legacy Field:** `lots.quantity` is deprecated (see Migration 014 deprecation comment)
-- **Agent Layer:** Returns `quantity` (not `quantity_open`) - see [ARCHITECTURE.md](ARCHITECTURE.md) for agent layer standards
+- **Important:** Previous documentation incorrectly claimed `quantity_open` and `quantity_original` exist in database. They do NOT exist.
 
 ### Core Portfolio Management Tables
 

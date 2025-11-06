@@ -308,8 +308,8 @@ class CorporateActionsService:
                 await self.conn.execute(
                     """
                     UPDATE lots
-                    SET quantity_original = $1,
-                        quantity_open = $2,
+                    SET qty_original = $1,
+                        qty_open = $2,
                         quantity = $2,
                         cost_basis_per_share = $3,
                         updated_at = NOW()
@@ -463,9 +463,9 @@ class CorporateActionsService:
         """
         rows = await self.conn.fetch(
             """
-            SELECT id, security_id, symbol, quantity_original, quantity_open, cost_basis, acquisition_date, currency
+            SELECT id, security_id, symbol, qty_original AS quantity_original, qty_open AS quantity_open, cost_basis, acquisition_date, currency
             FROM lots
-            WHERE portfolio_id = $1 AND symbol = $2 AND quantity_open > 0
+            WHERE portfolio_id = $1 AND symbol = $2 AND qty_open > 0
             ORDER BY acquisition_date ASC, created_at ASC
             """,
             portfolio_id, symbol

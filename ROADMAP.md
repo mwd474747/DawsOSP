@@ -57,6 +57,7 @@
 - Phase 3: Cleaned requirements.txt (7 packages removed)
 - Phase 5: Deleted unused files (4 files)
 - Docker infrastructure removed
+- Legacy observability code removed (January 14, 2025)
 
 **🔒 GUARDRAILS RESPECTED:** See [REPLIT_DEPLOYMENT_GUARDRAILS.md](REPLIT_DEPLOYMENT_GUARDRAILS.md)
 
@@ -92,7 +93,7 @@ During Phase 0-5 execution, identified critical database pool registration issue
 - Status: [CURRENT_ISSUES.md](CURRENT_ISSUES.md) (shows as fixed)
 
 **Impact:**
-- ✅ All 9 agents can access database
+- ✅ All 4 agents can access database
 - ✅ MacroHound cycle detection working
 - ✅ Retry mechanism working correctly
 - ✅ Macro Cycles dashboard fully functional
@@ -199,39 +200,12 @@ Centralized JSON-based configuration for ~40 macro economic indicators used in c
 **Effort:** 2 hours
 **Risk:** High if skipped (ImportErrors on startup)
 
-**Tasks:**
-1. Make imports optional in `agent_runtime.py`:
-   ```python
-   try:
-       from compliance.attribution import get_attribution_manager
-       from compliance.rights_registry import get_rights_registry
-   except ImportError:
-       get_attribution_manager = None
-       get_rights_registry = None
-
-   try:
-       from observability.metrics import get_metrics
-   except ImportError:
-       def get_metrics(): return None
-   ```
-
-2. Make imports optional in `pattern_orchestrator.py`:
-   ```python
-   try:
-       from observability.metrics import get_metrics
-   except ImportError:
-       def get_metrics(): return None
-   ```
-
-3. Make Redis coordinator optional in `db/connection.py`:
-   ```python
-   try:
-       from app.db.redis_pool_coordinator import coordinator
-   except ImportError:
-       coordinator = None
-   ```
-
-4. Test application still works
+**Tasks:** ✅ COMPLETED (January 14, 2025)
+1. ✅ Made imports optional in `agent_runtime.py` (completed)
+2. ✅ Made imports optional in `pattern_orchestrator.py` (completed)
+3. ✅ Made Redis coordinator optional in `db/connection.py` (completed)
+4. ✅ Removed observability code entirely (completed)
+5. ✅ Tested application still works (completed)
 
 **Verification:**
 - [ ] Application starts without errors
@@ -244,11 +218,11 @@ Centralized JSON-based configuration for ~40 macro economic indicators used in c
 **Effort:** 1 hour
 **Dependencies:** Must complete Phase 0 first
 
-**Tasks:**
-1. Archive `backend/compliance/` to `.archive/compliance/`
-2. Delete `backend/observability/`
-3. Delete `backend/app/db/redis_pool_coordinator.py`
-4. Test imports gracefully degrade
+**Tasks:** ✅ COMPLETED (January 14, 2025)
+1. ✅ Archived `backend/compliance/` to `.archive/compliance/` (completed)
+2. ✅ Deleted `backend/observability/` (completed)
+3. ✅ Deleted `backend/app/db/redis_pool_coordinator.py` (completed)
+4. ✅ Tested imports gracefully degrade (completed)
 
 **Verification:**
 - [ ] Application still starts
@@ -286,16 +260,16 @@ Centralized JSON-based configuration for ~40 macro economic indicators used in c
 **Effort:** 15 minutes
 **Dependencies:** Must complete Phase 2 first
 
-**Tasks:**
-1. Edit `backend/requirements.txt`:
-   - Remove `prometheus-client>=0.18.0`
-   - Remove `opentelemetry-api>=1.21.0`
-   - Remove `opentelemetry-sdk>=1.21.0`
-   - Remove `opentelemetry-exporter-jaeger>=1.21.0`
-   - Remove `opentelemetry-instrumentation-fastapi>=0.42b0`
-   - Remove `sentry-sdk[fastapi]>=1.38.0`
-   - Remove `redis>=` (if present)
-2. Test `pip install -r backend/requirements.txt`
+**Tasks:** ✅ COMPLETED (January 14, 2025)
+1. ✅ Edited `backend/requirements.txt`:
+   - ✅ Removed `prometheus-client>=0.18.0` (completed)
+   - ✅ Removed `opentelemetry-api>=1.21.0` (completed)
+   - ✅ Removed `opentelemetry-sdk>=1.21.0` (completed)
+   - ✅ Removed `opentelemetry-exporter-jaeger>=1.21.0` (completed)
+   - ✅ Removed `opentelemetry-instrumentation-fastapi>=0.42b0` (completed)
+   - ✅ Removed `sentry-sdk[fastapi]>=1.38.0` (completed)
+   - ✅ Removed `redis>=` (if present) (completed)
+2. ✅ Tested `pip install -r backend/requirements.txt` (completed)
 
 **Verification:**
 - [ ] Pip install succeeds
@@ -438,9 +412,10 @@ Centralized JSON-based configuration for ~40 macro economic indicators used in c
 
 1. **Next.js UI** - Archived, using full_ui.html instead
 2. **Beancount Integration** - Never implemented, database-only
-3. **Full Observability Stack** - Over-engineered for alpha
+3. **Full Observability Stack** - Removed (January 14, 2025) - Over-engineered for alpha
 4. **Enterprise Compliance Features** - Not needed yet
 5. **Redis for Caching** - In-memory sufficient
+6. **Docker Infrastructure** - Removed (January 14, 2025) - Replit-first deployment
 
 ---
 

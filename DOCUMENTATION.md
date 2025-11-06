@@ -22,7 +22,6 @@
 - **[API_CONTRACT.md](API_CONTRACT.md)** - API endpoint documentation
 
 ### Technical Documentation
-- **[FEATURE_FLAGS_EXPLANATION.md](FEATURE_FLAGS_EXPLANATION.md)** - Feature flags guide
 - **[MIGRATION_HISTORY.md](MIGRATION_HISTORY.md)** - Database migration history
 - **[PRICING_PACK_ARCHITECTURE.md](PRICING_PACK_ARCHITECTURE.md)** - Pricing pack architecture
 
@@ -102,13 +101,21 @@ Historical documentation has been archived to `.archive/` directory:
 - Endpoints: See [ARCHITECTURE.md](ARCHITECTURE.md#api-endpoints)
 
 **Features:**
-- Feature Flags: [FEATURE_FLAGS_EXPLANATION.md](FEATURE_FLAGS_EXPLANATION.md)
 - Pricing Packs: [PRICING_PACK_ARCHITECTURE.md](PRICING_PACK_ARCHITECTURE.md)
 - Corporate Actions: [docs/guides/CORPORATE_ACTIONS_GUIDE.md](docs/guides/CORPORATE_ACTIONS_GUIDE.md)
 
 ---
 
 ## 📝 Recent Updates (January 14, 2025)
+
+### Legacy Cleanup Complete ✅
+- **Observability Removal:** Removed Prometheus, Docker, and OpenTelemetry legacy code
+  - Deleted `observability/` directory (13 configuration files)
+  - Removed observability sections from all 12 pattern JSON files
+  - Removed observability imports from Python code (7 files)
+  - Removed legacy packages from requirements.txt (prometheus-client, opentelemetry-api, opentelemetry-sdk)
+  - Removed Docker references from shell scripts
+  - Total: 22 files modified, 13 files deleted, ~200 lines of dead code removed
 
 ### Phase 0-3 Complete: Refactoring Complete ✅
 - **Phase 0:** Zombie code removal (1,197 lines removed) ✅ COMPLETE

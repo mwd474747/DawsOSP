@@ -172,7 +172,7 @@ class CorporateActionsSyncService:
                     -- If lot was purchased after target date, it doesn't count
                     WHEN l.acquisition_date > $3 THEN 0
                     -- If lot has no close date or closed after target date, use full original quantity
-                    WHEN l.closed_date IS NULL OR l.closed_date > $3 THEN l.quantity_original
+                    WHEN l.closed_date IS NULL OR l.closed_date > $3 THEN l.qty_original
                     -- If lot was closed before target date, it doesn't count
                     WHEN l.closed_date <= $3 THEN 0
                     -- Default case (shouldn't happen)
