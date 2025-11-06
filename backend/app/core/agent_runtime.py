@@ -48,33 +48,10 @@ except ImportError:
         """Fallback metrics function when observability not available"""
         return None
 
-# Import feature flags for capability routing
-try:
-    from app.core.feature_flags import get_feature_flags
-    FEATURE_FLAGS_AVAILABLE = True
-except ImportError:
-    logger = logging.getLogger(__name__)
-    logger.warning("Feature flags module not available - using default routing")
-    get_feature_flags = None
-    FEATURE_FLAGS_AVAILABLE = False
-
-# Import capability mapping for consolidation routing
-try:
-    from app.core.capability_mapping import (
-        get_consolidated_capability,
-        get_target_agent,
-        get_consolidation_info,
-        AGENT_CONSOLIDATION_MAP
-    )
-    CAPABILITY_MAPPING_AVAILABLE = True
-except ImportError:
-    logger = logging.getLogger(__name__)
-    logger.warning("Capability mapping module not available - using direct routing")
-    get_consolidated_capability = None
-    get_target_agent = None
-    get_consolidation_info = None
-    AGENT_CONSOLIDATION_MAP = {}
-    CAPABILITY_MAPPING_AVAILABLE = False
+# Phase 0: Removed zombie code - feature flags and capability mapping
+# All patterns use new capability names (financial_analyst.*, macro_hound.*, data_harvester.*)
+# No old capability names (optimizer.*, ratings.*, etc.) exist in patterns
+# Capability mapping and feature flags were never triggered - dead code removed
 
 logger = logging.getLogger(__name__)
 
@@ -379,101 +356,9 @@ class AgentRuntime:
         """
         return self._routing_decisions[-limit:]
 
-    def _get_capability_routing_override(
-        self, 
-        capability: str, 
-        original_agent: str,
-        context: Optional[Dict[str, Any]] = None
-    ) -> Optional[str]:
-        """
-        Check if capability routing should be overridden by feature flags and capability mapping.
-        
-        Uses both feature flags and capability mapping for intelligent routing during consolidation.
-        
-        Args:
-            capability: Capability name (e.g., "optimizer.propose_trades")
-            original_agent: Original agent that handles this capability
-            context: Context for percentage rollout decisions (user_id, request_id, etc.)
-            
-        Returns:
-            Override agent name or None to use original routing
-        """
-        routing_decision = {
-            "capability": capability,
-            "original_agent": original_agent,
-            "override_agent": None,
-            "reason": None,
-            "context": context
-        }
-        
-        # First check capability mapping if available
-        if CAPABILITY_MAPPING_AVAILABLE and get_target_agent is not None:
-            # Get consolidation info for this capability
-            consolidation_info = get_consolidation_info(capability) if get_consolidation_info else {}
-            target_agent = consolidation_info.get("target_agent")
-            
-            if target_agent and target_agent != original_agent:
-                # This capability should be consolidated
-                # Now check if feature flags allow it
-                if FEATURE_FLAGS_AVAILABLE and get_feature_flags is not None:
-                    try:
-                        flags = get_feature_flags()
-                        
-                        # Build flag name from agent consolidation
-                        # e.g., "optimizer" → "agent_consolidation.optimizer_to_financial"
-                        agent_prefix = capability.split(".")[0] if "." in capability else original_agent
-                        
-                        # Check consolidation flags
-                        flag_mappings = {
-                            "optimizer": "agent_consolidation.optimizer_to_financial",
-                            "ratings": "agent_consolidation.ratings_to_financial",
-                            "charts": "agent_consolidation.charts_to_financial",
-                            "reports": "agent_consolidation.reports_to_financial",
-                            "alerts": "agent_consolidation.alerts_to_macro",
-                        }
-                        
-                        flag_name = flag_mappings.get(agent_prefix)
-                        
-                        # Check unified consolidation flag first
-                        if flags.is_enabled("agent_consolidation.unified_consolidation", context):
-                            # Unified consolidation enabled - check if target agent exists
-                            if target_agent in self.agents:
-                                # Check if agent can handle this (priority-based)
-                                agents_for_cap = self.capability_registry.get(capability, [])
-                                if any(a[0] == target_agent for a in agents_for_cap):
-                                    routing_decision["override_agent"] = target_agent
-                                    routing_decision["reason"] = "unified_consolidation_flag"
-                                    logger.info(
-                                        f"Routing {capability}: {original_agent} → {target_agent} "
-                                        f"(unified consolidation, priority={consolidation_info.get('priority', 'unknown')})"
-                                    )
-                                    self._log_routing_decision(routing_decision)
-                                    return target_agent
-                        
-                        # Check specific consolidation flag
-                        elif flag_name and flags.is_enabled(flag_name, context):
-                            # Specific consolidation enabled
-                            if target_agent in self.agents:
-                                # Check if agent can handle this
-                                agents_for_cap = self.capability_registry.get(capability, [])
-                                if any(a[0] == target_agent for a in agents_for_cap):
-                                    routing_decision["override_agent"] = target_agent
-                                    routing_decision["reason"] = f"flag:{flag_name}"
-                                    logger.info(
-                                        f"Routing {capability}: {original_agent} → {target_agent} "
-                                        f"(flag: {flag_name}, risk: {consolidation_info.get('risk_level', 'unknown')})"
-                                    )
-                                    self._log_routing_decision(routing_decision)
-                                    return target_agent
-                    
-                    except Exception as e:
-                        logger.error(f"Error checking feature flags for {capability}: {e}")
-                        routing_decision["reason"] = f"error:{str(e)}"
-        
-        # No override - use original routing
-        routing_decision["reason"] = "no_override"
-        self._log_routing_decision(routing_decision)
-        return None
+    # Phase 0: Removed _get_capability_routing_override - dead code
+    # All patterns use new capability names, so override logic never triggered
+    # Method removed because it referenced deleted feature_flags and capability_mapping modules
 
     async def execute_capability(
         self,
@@ -511,24 +396,8 @@ class AgentRuntime:
                 f"Available: {available}"
             )
 
-        # Check for feature flag routing overrides
-        # Build context for feature flag decisions
-        flag_context = {
-            "request_id": ctx.request_id,
-            "portfolio_id": getattr(ctx, "portfolio_id", None),
-            "user_id": getattr(ctx, "user_id", None),
-        }
-        
-        # Check if routing should be overridden
-        override_agent = self._get_capability_routing_override(
-            capability, agent_name, flag_context
-        )
-        
-        if override_agent:
-            logger.info(
-                f"Feature flag override: Routing {capability} from {agent_name} to {override_agent}"
-            )
-            agent_name = override_agent
+        # Phase 0: Removed feature flag and capability mapping override logic
+        # All patterns use new capability names, so routing is direct (no override needed)
         
         agent = self.agents[agent_name]
 
