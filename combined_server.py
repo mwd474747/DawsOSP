@@ -49,9 +49,10 @@ except ImportError:
     anthropic = None
 
 # Import authentication utilities from centralized module
+import bcrypt
 from backend.app.auth.dependencies import (
     hash_password, 
-    verify_password, 
+    # verify_password,  # We'll override this with bcrypt version
     create_jwt_token, 
     get_current_user, 
     require_auth,
@@ -60,6 +61,20 @@ from backend.app.auth.dependencies import (
     JWT_ALGORITHM,
     JWT_EXPIRATION_HOURS
 )
+
+# Override verify_password to use bcrypt
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify password against bcrypt hash"""
+    try:
+        # Handle bcrypt hashes
+        if hashed_password.startswith("$2b$"):
+            return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+        # Fallback to SHA256 for legacy passwords
+        else:
+            return hash_password(plain_password) == hashed_password
+    except Exception as e:
+        logger.error(f"Password verification error: {e}")
+        return False
 
 # Import backend services for pattern orchestration
 from backend.app.services.macro_data_agent import enhance_macro_data
@@ -527,8 +542,14 @@ USERS_DB = {
     "michael@dawsos.com": {
         "id": "user-001",
         "email": "michael@dawsos.com",
-        "password": hash_password("admin123"),
+        "password": "$2b$12$6IAZ62SU9pdg/UzJ5PAzSuq0dWvJ3xDa7rR978PwTdqJ.dGLh6WmO",  # password123
         "role": "ADMIN"
+    },
+    "test@dawsos.com": {
+        "id": "user-002",
+        "email": "test@dawsos.com",
+        "password": "$2b$12$6IAZ62SU9pdg/UzJ5PAzSuq0dWvJ3xDa7rR978PwTdqJ.dGLh6WmO",  # password123
+        "role": "USER"
     }
 }
 
