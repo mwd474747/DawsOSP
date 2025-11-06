@@ -735,6 +735,7 @@ class ScenarioService:
         if not pack_id:
             # Get latest pricing pack from pricing service
             from app.services.pricing import get_pricing_service
+            from app.core.types import PricingPackNotFoundError
             pricing_service = get_pricing_service()
             latest_pack = await pricing_service.get_latest_pack(
                 require_fresh=True,
@@ -743,7 +744,8 @@ class ScenarioService:
             if latest_pack:
                 pack_id = latest_pack.id
             else:
-                raise ValueError("No pricing pack available")
+                # This should not happen if raise_if_not_found=True, but handle it anyway
+                raise PricingPackNotFoundError("latest")
 
         logger.info(
             f"compute_dar: portfolio={portfolio_id}, regime={regime}, "

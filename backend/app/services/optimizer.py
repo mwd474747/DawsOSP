@@ -361,6 +361,8 @@ class OptimizerService:
     ) -> Dict[str, Any]:
         """
         Generate rebalance trade proposals based on policy constraints.
+        
+        PHASE 4 FIX: Validates pack_id format at entry point for early failure.
 
         Args:
             portfolio_id: Portfolio UUID. Required.
@@ -666,6 +668,8 @@ class OptimizerService:
                 - "late_cycle_rates_up": Late cycle rate increases
                 - "recession_mild": Mild recession scenario
             pricing_pack_id: Pricing pack ID for scenario valuation. Format: "PP_YYYY-MM-DD". Required.
+        
+        PHASE 4 FIX: Validates pack_id format at entry point for early failure.
 
         Returns:
             Dict containing:
@@ -1031,6 +1035,10 @@ class OptimizerService:
         Returns:
             DataFrame with dates as index and symbols as columns
         """
+        # PHASE 4 FIX: Validate pack_id format at entry point for early failure
+        from app.services.pricing import validate_pack_id
+        validate_pack_id(pricing_pack_id)
+        
         # Get asof date from pricing pack
         asof_date = await self._get_pack_date(pricing_pack_id)
         start_date = asof_date - timedelta(days=lookback_days * 2)  # Extra buffer for weekends
@@ -1538,16 +1546,15 @@ class OptimizerService:
     async def _get_pack_date(self, pricing_pack_id: str) -> date:
         """Get asof date from pricing pack."""
         from app.services.pricing import get_pricing_service
+        from app.core.types import PricingPackNotFoundError
         
         pricing_service = get_pricing_service()
-        pack = await pricing_service.get_pack_by_id(pricing_pack_id, raise_if_not_found=False)
+        pack = await pricing_service.get_pack_by_id(pricing_pack_id, raise_if_not_found=True)
         
-        if pack:
-            return pack.date
-        else:
-            # Fallback to today
-            logger.warning(f"Pricing pack {pricing_pack_id} not found, using today's date")
-            return date.today()
+        # Should not reach here if raise_if_not_found=True, but return for type safety
+        if not pack:
+            raise PricingPackNotFoundError(pricing_pack_id)
+        return pack.date
 
     def _dataclass_to_dict(self, obj: Any) -> Dict[str, Any]:
         """Convert dataclass to dict, handling nested objects and Decimals."""

@@ -261,20 +261,38 @@ class FinancialAnalyst(BaseAgent):
             provenance = DataProvenance.REAL
 
         except Exception as e:
-            logger.error(f"Error querying positions from database: {e}", exc_info=True)
-            # Fall back to stub data
-            positions = [
-                {
-                    "security_id": "048a0b1e-5fa7-507a-9854-af6a9d7360e9",
-                    "symbol": "AAPL",
-                    "quantity": Decimal("100"),
-                    "cost_basis": Decimal("15000.00"),
-                    "currency": "USD",
-                    "base_currency": portfolio_base_currency,
-                },
-            ]
-            provenance = DataProvenance.STUB
-            warnings.append("Using demo data - database connection failed")
+            # PHASE 4 FIX: Catch only database errors, not all exceptions
+            # This prevents masking programming errors (TypeError, KeyError, etc.)
+            import asyncpg
+            import os
+            
+            if isinstance(e, asyncpg.PostgresError):
+                # Database-specific error - log and handle appropriately
+                logger.error(f"Database error querying positions: {e}", exc_info=True)
+                
+                # Only fall back to stub data in development mode
+                if os.getenv("ENVIRONMENT") == "development":
+                    logger.warning("Falling back to stub positions (development mode)")
+                    positions = [
+                        {
+                            "security_id": "048a0b1e-5fa7-507a-9854-af6a9d7360e9",
+                            "symbol": "AAPL",
+                            "quantity": Decimal("100"),
+                            "cost_basis": Decimal("15000.00"),
+                            "currency": "USD",
+                            "base_currency": portfolio_base_currency,
+                        },
+                    ]
+                    provenance = DataProvenance.STUB
+                    warnings.append("Using demo data - database connection failed")
+                else:
+                    # In production, re-raise the error instead of falling back to stubs
+                    raise
+            else:
+                # Programming errors (TypeError, KeyError, AttributeError, etc.) - re-raise
+                # This helps catch bugs early instead of masking them with stub data
+                logger.error(f"Programming error in ledger_positions: {e}", exc_info=True)
+                raise
 
         result = {
             "portfolio_id": portfolio_id,
