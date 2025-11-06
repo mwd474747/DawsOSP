@@ -289,7 +289,7 @@
         // Get macro data with enhanced error handling
         getMacro: async () => {
             try {
-                const response = await axios.get(`${API_BASE}/api/macro`);
+                const response = await axios.get(`${API_BASE}/api/v1/macro/indicators`);
                 return response.data;
             } catch (error) {
                 return apiClient.handleApiCallError('Fetch macro data', error);
