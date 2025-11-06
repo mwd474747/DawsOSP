@@ -1145,13 +1145,17 @@ class FinancialAnalyst(BaseAgent):
 
         # Get factor exposures from database for historical packs
         # TODO: Implement historical query - for now return current only
-        from app.services.factor_analysis import FactorAnalysisService
-        factor_service = FactorAnalysisService()
+        from app.services.factor_analysis import FactorAnalyzer
+        from app.db import get_db_pool
+        
+        pool = await get_db_pool()
+        async with pool.acquire() as db:
+            factor_service = FactorAnalyzer(db)
 
-        current = await factor_service.compute_factor_exposure(
-            portfolio_id=portfolio_id_uuid,
-            pack_id=ctx.pricing_pack_id
-        )
+            current = await factor_service.compute_factor_exposure(
+                portfolio_id=portfolio_id_uuid,
+                pack_id=ctx.pricing_pack_id
+            )
 
         result = {
             "history": [current],  # TODO: Add historical lookback
