@@ -163,13 +163,14 @@ AI:
 3. **News Feed** - UI component exists, backend not fully implemented
 4. **Alerts** - Recently consolidated from AlertsAgent to MacroHound (Week 4), feature flag disabled
 
-### Recent Remote Sync Fixes (November 5, 2025)
+### Recent Remote Sync Fixes (November 5-6, 2025)
 
 **Context for Claude Agent - Breaking Changes Fixed by Replit Agent:**
 
-**What Broke**: The remote sync on Nov 4 introduced critical security fixes that removed the `PP_latest` fallback mechanism. However, the scenario analysis service (`backend/app/services/scenarios.py` line 752) was still hardcoding `pack_id = "PP_latest"`, causing all scenario analysis patterns to crash with validation errors.
+**What Broke**: The remote sync on Nov 4 introduced critical security fixes that removed the `PP_latest` fallback mechanism. However, several dependent components were not updated, causing multiple failures.
 
 **What I Fixed**:
+
 1. **Scenario Service** (`backend/app/services/scenarios.py` lines 751-770):
    - Replaced hardcoded `"PP_latest"` with dynamic pricing pack lookup
    - Now calls `get_pricing_service().get_latest_pack()` when no pack_id provided
@@ -179,10 +180,20 @@ AI:
    - Removed misleading "Falls back to PP_latest" documentation
    - Updated to clarify pricing pack must be explicit (no automatic fallback)
 
+3. **Risk Metrics SQL Fix** (`backend/app/services/risk_metrics.py`):
+   - Fixed SQL queries using wrong field name `asof_date` instead of `valuation_date`
+   - Corrected queries for `portfolio_daily_values` table access
+   - Enables proper beta calculations and tracking error analysis
+
+4. **Frontend State Management** (`full_ui.html` line 3348):
+   - Added missing `provenanceWarnings` state declaration in PatternRenderer component
+   - Fixed JavaScript runtime error "setProvenanceWarnings is not defined"
+   - Component now properly tracks stub data warnings
+
 **Why These Changes Were Critical**:
 - The `PP_latest` identifier never existed in the database - it was a placeholder
-- Security fix correctly removed this dangerous fallback to prevent silent failures
-- But scenario analysis code wasn't updated, causing complete feature breakage
+- SQL field name mismatch prevented risk metrics from querying historical data
+- Missing React state variable caused frontend errors on all pattern pages
 - All scenario-based risk analysis would fail without these fixes
 
 **Current State**: 
@@ -190,8 +201,10 @@ AI:
 - ✅ Pricing pack validation enforces `PP_YYYY-MM-DD` or UUID format
 - ✅ No more silent failures - clear errors when pricing pack missing
 - ✅ Production guards prevent accidental stub data usage
+- ✅ Frontend loads without JavaScript errors
+- ✅ Risk metrics can query historical portfolio values
 
-**Note for Claude Agent**: Do NOT reintroduce `PP_latest` anywhere - it was intentionally removed. Always use `get_pricing_service().get_latest_pack()` for dynamic pack lookup.
+**Note for Claude Agent**: Do NOT reintroduce `PP_latest` anywhere - it was intentionally removed. Always use `get_pricing_service().get_latest_pack()` for dynamic pack lookup. The `valuation_date` field is the correct field name for `portfolio_daily_values` table queries.
 
 ### Critical Backend Fixes Applied (November 4, 2025)
 
