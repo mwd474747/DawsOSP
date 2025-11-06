@@ -763,7 +763,20 @@ def get_pricing_service(use_db: bool = True) -> PricingService:
 
     Returns:
         PricingService instance
+        
+    Raises:
+        ValueError: If use_db=False in production environment
     """
+    import os
+    
+    # Production guard: prevent stub mode in production (extra safety check)
+    if not use_db and os.getenv("ENVIRONMENT") == "production":
+        raise ValueError(
+            "Cannot use stub mode (use_db=False) in production environment. "
+            "Stub mode is only available for development and testing. "
+            "This check is in addition to the guard in PricingService.__init__()"
+        )
+    
     global _pricing_service
     if _pricing_service is None:
         _pricing_service = PricingService(use_db=use_db)
