@@ -672,8 +672,8 @@ class MacroHound(BaseAgent):
             "_provenance": dict,  # Added when computation fails (stub)
         },
         fetches_positions=False,
-        implementation_status="partial",  # Real implementation, but falls back to stub on errors
-        description="Compute Drawdown at Risk (DaR) using scenario analysis. Falls back to stub data on errors.",
+        implementation_status="real",  # Real implementation with error handling
+        description="Compute Drawdown at Risk (DaR) using scenario analysis. Returns errors instead of stub data.",
         dependencies=["scenarios.compute_dar", "macro.detect_regime"],
     )
     async def macro_compute_dar(
@@ -780,6 +780,7 @@ class MacroHound(BaseAgent):
             # Check for errors
             if "error" in dar_result:
                 logger.error(f"DaR computation failed: {dar_result['error']}")
+                # PHASE 3 FIX: Return error instead of stub data
                 result = {
                     "dar_value": None,
                     "dar_amount": None,
@@ -791,26 +792,26 @@ class MacroHound(BaseAgent):
                     "worst_scenario": None,
                     "worst_scenario_drawdown": None,
                     "error": dar_result["error"],
-                    "_is_stub": True,
-                    # PHASE 1 FIX: Add provenance warning to prevent user trust issues
                     "_provenance": {
-                        "type": "stub",
-                        "warnings": [
-                            "DaR computation failed - using fallback data",
-                            "Values may not be accurate for investment decisions"
-                        ],
-                        "confidence": 0.0,
-                        "implementation_status": "stub",
-                        "recommendation": "Do not use for investment decisions",
-                        "source": "error_fallback_stub_data"
+                        "type": "error",
+                        "source": "scenario_analysis_service",
+                        "error": dar_result["error"],
                     }
                 }
             else:
-                # Success - return DaR result
+                # Success - return DaR result with real provenance
                 result = dar_result
+                if "_provenance" not in result:
+                    result["_provenance"] = {
+                        "type": "real",
+                        "source": "scenario_analysis_service",
+                        "confidence": 0.9,
+                        "implementation_status": "complete",
+                    }
 
         except Exception as e:
             logger.error(f"Error computing DaR: {e}", exc_info=True)
+            # PHASE 3 FIX: Return error instead of stub data
             result = {
                 "dar_value": None,
                 "dar_amount": None,
@@ -822,18 +823,10 @@ class MacroHound(BaseAgent):
                 "worst_scenario": None,
                 "worst_scenario_drawdown": None,
                 "error": f"DaR computation error: {str(e)}",
-                "_is_stub": True,
-                # PHASE 1 FIX: Add provenance warning to prevent user trust issues
                 "_provenance": {
-                    "type": "stub",
-                    "warnings": [
-                        "DaR computation error - using fallback data",
-                        "Values may not be accurate for investment decisions"
-                    ],
-                    "confidence": 0.0,
-                    "implementation_status": "stub",
-                    "recommendation": "Do not use for investment decisions",
-                    "source": "exception_fallback_stub_data"
+                    "type": "error",
+                    "source": "scenario_analysis_service",
+                    "error": str(e),
                 }
             }
 
