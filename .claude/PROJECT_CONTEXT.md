@@ -1,6 +1,6 @@
 # DawsOS Project Context for Claude IDE
 
-**Last Updated:** November 3, 2025
+**Last Updated:** November 5, 2025
 **Purpose:** Help Claude Code understand the current application state and development priorities
 
 ---
@@ -45,6 +45,24 @@
 
 ---
 
+## ⚠️ Known Technical Debt (Identified Nov 5, 2025)
+
+### Zombie Consolidation Code
+- Phase 3 consolidation (Nov 3) left 2,345 lines of scaffolding code
+- Feature flags at 100% rollout (no gradual deployment happening)
+- Capability mapping maps deleted agents (old agents gone)
+- Must be removed before other refactoring (blocks work)
+- See: [ZOMBIE_CODE_VERIFICATION_REPORT.md](../ZOMBIE_CODE_VERIFICATION_REPORT.md)
+
+### Critical Discovery: FactorAnalyzer EXISTS!
+- `backend/app/services/factor_analysis.py` (438 lines) EXISTS with real implementation
+- `risk_compute_factor_exposures` uses stub data instead of calling this service
+- Inconsistency: `risk_get_factor_exposure_history` DOES use the real service
+- Could save 40 hours if service works (needs testing)
+- See: [COMPREHENSIVE_REFACTORING_PLAN.md](../COMPREHENSIVE_REFACTORING_PLAN.md) Phase 0 Task 0.5
+
+---
+
 ## 📐 Architecture Understanding
 
 ### Pattern-Driven Orchestration
@@ -86,20 +104,25 @@ Database query via get_db_connection_with_rls()
    - Capabilities: `claude.*`, `ai.*`
 
 ### 13 Patterns (All in backend/patterns/*.json)
-All patterns are valid and working:
-- portfolio_overview.json
-- holding_deep_dive.json
-- portfolio_macro_overview.json
-- portfolio_scenario_analysis.json
-- portfolio_cycle_risk.json
-- macro_cycles_overview.json
-- macro_trend_monitor.json
-- buffett_checklist.json
-- news_impact_analysis.json
-- export_portfolio_report.json
-- policy_rebalance.json
-- cycle_deleveraging_scenarios.json
-- corporate_actions_upcoming.json ✅ **NEW** (November 3, 2025)
+
+**Used in UI (9 patterns):**
+- ✅ portfolio_overview.json - Dashboard page
+- ✅ portfolio_cycle_risk.json - Risk Analytics page
+- ✅ portfolio_scenario_analysis.json - Scenarios page
+- ✅ macro_cycles_overview.json - Cycles page
+- ✅ buffett_checklist.json - Buffett page
+- ✅ news_impact_analysis.json - News page
+- ✅ export_portfolio_report.json - Export feature
+- ✅ policy_rebalance.json - Rebalancing
+- ✅ corporate_actions_upcoming.json - Corporate actions ✅ **NEW** (November 3, 2025)
+
+**Unused (4 patterns - Decision Needed):**
+- ⚠️ holding_deep_dive.json - Could implement UI page (16h)
+- ⚠️ portfolio_macro_overview.json - Redundant with portfolio_cycle_risk
+- ⚠️ cycle_deleveraging_scenarios.json - Could merge into scenarios
+- ⚠️ macro_trend_monitor.json - Implement alerts or delete?
+
+**See [REFACTORING_MASTER_PLAN.md](../REFACTORING_MASTER_PLAN.md) Decision Point 1 for recommendations**
 
 ---
 
@@ -183,55 +206,62 @@ All previously blocking issues have been resolved:
 
 ## 🚀 Development Priorities
 
-### Immediate (Do NOT pursue unless user requests)
-1. **DO NOT** start refactoring without explicit approval
-2. **DO NOT** modify working code preemptively
-3. **DO NOT** remove complexity without user confirmation
-4. **DO NOT** skip Phase 0 (making imports optional) - will cause ImportErrors
+### Current Status: Refactoring Analysis Complete ✅
 
-### When Cleanup is Requested (CRITICAL: Follow Correct Order)
+**Recently Completed (Nov 5, 2025):**
+- ✅ Comprehensive codebase review (3+ documents)
+- ✅ Zombie code verification (confirmed exists)
+- ✅ Refactoring plan creation (88-134 hour roadmap)
+- ✅ FactorAnalyzer discovery (potential 40h savings)
 
-**⚠️ WARNING: MUST follow Phase 0 → 1 → 2 → 3 → 4 → 5 order or will break application**
+### Immediate Next Steps (Awaiting User Approval)
 
-**Phase 0: Make Code Resilient** (MUST DO FIRST)
-1. Make imports optional in `agent_runtime.py`:
-   ```python
-   try:
-       from compliance.attribution import get_attribution_manager
-   except ImportError:
-       get_attribution_manager = None
-   ```
-2. Make imports optional in `pattern_orchestrator.py`
-3. Make Redis coordinator optional in `db/connection.py`
-4. Test that application still works
+**Quick Win Opportunity (30 min):**
+- Test FactorAnalyzer to see if it works with real portfolio data
+- Location: `backend/app/services/factor_analysis.py`
+- If YES: Wire up in Phase 1, skip Phase 3 implementation (save 40h)
+- If NO: Document what data is missing (populate in Phase 3)
 
-**Phase 1: Remove Modules** (After Phase 0 only)
-1. Archive `backend/compliance/` to `.archive/compliance/`
-2. Delete `backend/observability/`
-3. Delete `backend/app/db/redis_pool_coordinator.py`
-4. Test that imports gracefully degrade
+**Phase 0: Zombie Code Removal (14 hours)**
+Must execute BEFORE Phase 1-4 to unblock refactoring:
+1. Remove feature flags (feature_flags.py, feature_flags.json)
+2. Remove capability mapping (capability_mapping.py)
+3. Simplify agent runtime routing (~80 lines → ~10 lines)
+4. Remove duplicate service (macro_aware_scenarios.py - unused)
+5. Test FactorAnalyzer (critical decision point)
+6. Update documentation
 
-**Phase 2: Update Scripts and Documentation** (After Phase 1 only)
-1. Update `backend/run_api.sh` - remove REDIS_URL and Docker references
-2. Mark Docker issues as RESOLVED in SANITY_CHECK_REPORT.md
-3. Update UNNECESSARY_COMPLEXITY_REVIEW.md status
-4. Test script execution (or document as optional for Replit)
+**Phase 1-4: Follow Comprehensive Plan**
+- See [COMPREHENSIVE_REFACTORING_PLAN.md](../COMPREHENSIVE_REFACTORING_PLAN.md) for complete details
+- Each phase delivers independent value
+- Can pause between phases to evaluate
 
-**Phase 3: Clean Requirements** (After Phase 2 only)
-1. Remove observability packages from `requirements.txt`
-2. Test pip install
+### When Cleanup is Requested (UPDATED Nov 5, 2025)
 
-**Phase 5: Delete Safe Files** (Low risk, anytime)
-1. Delete `backend/app/core/database.py`
-2. Delete `backend/api_server.py`
-3. Delete `backend/simple_api.py`
-4. Delete `backend/app/services/trade_execution_old.py`
-5. Delete duplicate `/execute` endpoint in combined_server.py (line 1960)
+**⚠️ IMPORTANT: Zombie code cleanup is NOW PRIORITY 1**
 
-### When Backend Refactoring is Requested
-1. **Conservative approach**: Build new structure alongside existing (port 8001)
-2. **Test in parallel** before migrating
-3. **Keep combined_server.py** as fallback
+Old context said "make imports optional first" (Phase 0 - already complete).
+New context says "remove zombie code first" (Phase 0 - new focus).
+
+**Correct Order:**
+1. Phase 0: Remove zombie code (14h) - UNBLOCKS everything
+2. Phase 1: Emergency fixes (16h) - Preserve user trust
+3. Phase 2: Foundation (32h) - Prevent future bugs
+4. Phase 3: Features (2-48h) - Real implementations
+5. Phase 4: Quality (24h) - Tests and monitoring
+
+### When User Asks About Refactoring
+
+**DO:**
+- ✅ Reference [COMPREHENSIVE_REFACTORING_PLAN.md](../COMPREHENSIVE_REFACTORING_PLAN.md) for details
+- ✅ Start with Phase 0 Task 0.5 (test FactorAnalyzer) - quick win
+- ✅ Follow decision tree based on test results
+- ✅ Execute phases sequentially (0 → 1 → 2 → 3 → 4)
+
+**DON'T:**
+- ❌ Skip Phase 0 (zombie code blocks other work)
+- ❌ Implement factor analysis from scratch without testing existing service
+- ❌ Modify working code without Phase 0 cleanup first
 
 ---
 
@@ -259,6 +289,48 @@ All previously blocking issues have been resolved:
 ### Active Analysis Documents (Keep in Root)
 - 📝 `UNNECESSARY_COMPLEXITY_REVIEW.md` - Recent complexity audit
 - 📝 `CLEANUP_DEPENDENCY_AUDIT.md` - Recent dependency analysis
+
+---
+
+## 🗺️ Active Refactoring Plans (Nov 5, 2025)
+
+### Comprehensive Refactoring Analysis Complete
+Following extensive code review, 4 major planning documents created:
+
+1. **[ZOMBIE_CODE_VERIFICATION_REPORT.md](../ZOMBIE_CODE_VERIFICATION_REPORT.md)** (500+ lines)
+   - Verified zombie consolidation code exists (2,345 lines)
+   - Identified duplicate services (MacroAwareScenarioService unused)
+   - Discovered FactorAnalyzer exists but unused
+   - Status: ✅ Analysis complete, Phase 0 ready to execute
+
+2. **[COMPREHENSIVE_REFACTORING_PLAN.md](../COMPREHENSIVE_REFACTORING_PLAN.md)** (2,800+ lines)
+   - Complete 88-134 hour execution plan
+   - Phase 0: Zombie code removal (14h)
+   - Phase 1: Emergency fixes (16h)
+   - Phase 2: Foundation (32h)
+   - Phase 3: Features (2-48h depending on test results)
+   - Phase 4: Quality (24h)
+   - Status: 🎯 Ready for execution
+
+3. **[REFACTORING_MASTER_PLAN.md](../REFACTORING_MASTER_PLAN.md)** (540 lines)
+   - User-centric, feature-driven approach
+   - 11 of 18 UI pages work correctly
+   - 1 UI page shows fake data (Risk Analytics - critical trust issue)
+   - 4 patterns unused (holding_deep_dive, portfolio_macro_overview, etc.)
+   - Status: ✅ Analysis complete
+
+4. **[INTEGRATED_REFACTORING_ANALYSIS.md](../INTEGRATED_REFACTORING_ANALYSIS.md)**
+   - Synthesis of all review findings
+   - Combines codebase review, pattern analysis, Replit analysis
+   - Status: ✅ Complete
+
+### Next Steps (Awaiting User Decision)
+- **Immediate:** Execute Phase 0 Task 0.5 - Test FactorAnalyzer (2 hours)
+  - If works: Save 40 hours
+  - If needs data: Add 8 hours to populate tables
+  - If broken: Proceed with library/scratch implementation
+- **Then:** Execute Phase 0 zombie code removal (14 hours)
+- **Then:** Execute Phase 1-4 per comprehensive plan
 
 ---
 
@@ -486,10 +558,10 @@ grep "register_agent" combined_server.py
 - **Code Removed**: ~150KB (Phase 1-5 cleanup)
 
 ### Pattern/Agent Coverage
-- **Patterns**: 12 defined, 12 working (100%)
-- **Agents**: 9 registered, 9 working (100%)
+- **Patterns**: 13 defined, 9 used in UI (69%), 4 unused
+- **Agents**: 4 registered, 4 working (100%) ← Phase 3 consolidation complete
 - **Auth Coverage**: 44/53 endpoints use Depends(require_auth) (83%)
-- **Capabilities**: 73 total methods, 46 used in patterns (63% utilization)
+- **Capabilities**: ~80 total methods (per COMPREHENSIVE_REFACTORING_PLAN.md Task 2.1)
 
 ---
 

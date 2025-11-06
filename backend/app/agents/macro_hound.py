@@ -26,6 +26,20 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
+# Import capability contract decorator (optional - graceful degradation)
+try:
+    from app.core.capability_contract import capability
+    CAPABILITY_CONTRACT_AVAILABLE = True
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.warning("Capability contract module not available - contracts disabled")
+    # Fallback: no-op decorator
+    def capability(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    CAPABILITY_CONTRACT_AVAILABLE = False
+
 from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 from app.core.provenance import ProvenanceWrapper, DataProvenance
@@ -636,6 +650,32 @@ class MacroHound(BaseAgent):
             pack_id=pack_id,
         )
 
+    @capability(
+        name="macro.compute_dar",
+        inputs={
+            "portfolio_id": str,
+            "pack_id": str,
+            "confidence": float,
+            "horizon_days": int,
+            "cycle_adjusted": bool,
+        },
+        outputs={
+            "dar_value": float,
+            "dar_amount": float,
+            "confidence": float,
+            "portfolio_id": str,
+            "regime": str,
+            "horizon_days": int,
+            "scenarios_run": int,
+            "worst_scenario": str,
+            "worst_scenario_drawdown": float,
+            "_provenance": dict,  # Added when computation fails (stub)
+        },
+        fetches_positions=False,
+        implementation_status="partial",  # Real implementation, but falls back to stub on errors
+        description="Compute Drawdown at Risk (DaR) using scenario analysis. Falls back to stub data on errors.",
+        dependencies=["scenarios.compute_dar", "macro.detect_regime"],
+    )
     async def macro_compute_dar(
         self,
         ctx: RequestCtx,
@@ -752,6 +792,18 @@ class MacroHound(BaseAgent):
                     "worst_scenario_drawdown": None,
                     "error": dar_result["error"],
                     "_is_stub": True,
+                    # PHASE 1 FIX: Add provenance warning to prevent user trust issues
+                    "_provenance": {
+                        "type": "stub",
+                        "warnings": [
+                            "DaR computation failed - using fallback data",
+                            "Values may not be accurate for investment decisions"
+                        ],
+                        "confidence": 0.0,
+                        "implementation_status": "stub",
+                        "recommendation": "Do not use for investment decisions",
+                        "source": "error_fallback_stub_data"
+                    }
                 }
             else:
                 # Success - return DaR result
@@ -771,6 +823,18 @@ class MacroHound(BaseAgent):
                 "worst_scenario_drawdown": None,
                 "error": f"DaR computation error: {str(e)}",
                 "_is_stub": True,
+                # PHASE 1 FIX: Add provenance warning to prevent user trust issues
+                "_provenance": {
+                    "type": "stub",
+                    "warnings": [
+                        "DaR computation error - using fallback data",
+                        "Values may not be accurate for investment decisions"
+                    ],
+                    "confidence": 0.0,
+                    "implementation_status": "stub",
+                    "recommendation": "Do not use for investment decisions",
+                    "source": "exception_fallback_stub_data"
+                }
             }
 
         # Attach metadata

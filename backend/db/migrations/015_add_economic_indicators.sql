@@ -1,6 +1,6 @@
 -- Migration 015: Add economic_indicators table
 -- Created: January 14, 2025
--- Purpose: Support factor analysis with economic indicator data
+-- Purpose: Support factor analysis with economic indicator data from FRED
 
 -- Create table
 CREATE TABLE IF NOT EXISTS economic_indicators (

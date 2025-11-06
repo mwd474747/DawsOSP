@@ -48,6 +48,20 @@ from uuid import UUID
 
 import numpy as np
 
+# Import capability contract decorator (optional - graceful degradation)
+try:
+    from app.core.capability_contract import capability
+    CAPABILITY_CONTRACT_AVAILABLE = True
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.warning("Capability contract module not available - contracts disabled")
+    # Fallback: no-op decorator
+    def capability(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    CAPABILITY_CONTRACT_AVAILABLE = False
+
 from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 from app.core.provenance import ProvenanceWrapper, DataProvenance
@@ -132,6 +146,20 @@ class FinancialAnalyst(BaseAgent):
         
         return capabilities
 
+    @capability(
+        name="ledger.positions",
+        inputs={"portfolio_id": str},
+        outputs={
+            "positions": list,
+            "total_count": int,
+            "portfolio_id": str,
+            "_provenance": dict,
+        },
+        fetches_positions=False,  # Uses portfolio_id directly
+        implementation_status="real",
+        description="Get portfolio positions from ledger",
+        dependencies=[],
+    )
     async def ledger_positions(
         self,
         ctx: RequestCtx,
@@ -278,6 +306,21 @@ class FinancialAnalyst(BaseAgent):
         return result
 
 
+    @capability(
+        name="pricing.apply_pack",
+        inputs={"positions": list, "pack_id": str},
+        outputs={
+            "valued_positions": list,
+            "total_value": float,
+            "pack_id": str,
+            "pack_asof": str,
+            "_provenance": dict,
+        },
+        fetches_positions=False,  # Receives positions as input
+        implementation_status="real",
+        description="Apply pricing pack to positions for valuation",
+        dependencies=["ledger.positions"],
+    )
     async def pricing_apply_pack(
         self,
         ctx: RequestCtx,
@@ -541,6 +584,21 @@ class FinancialAnalyst(BaseAgent):
 
         return valued_result
 
+    @capability(
+        name="metrics.compute_twr",
+        inputs={"portfolio_id": str, "pack_id": str, "start_date": date, "end_date": date},
+        outputs={
+            "twr": float,
+            "periods": list,
+            "start_date": str,
+            "end_date": str,
+            "_provenance": dict,
+        },
+        fetches_positions=False,
+        implementation_status="real",
+        description="Compute Time-Weighted Return (TWR) for portfolio",
+        dependencies=["ledger.positions", "pricing.apply_pack"],
+    )
     async def metrics_compute_twr(
         self,
         ctx: RequestCtx,
@@ -835,6 +893,20 @@ class FinancialAnalyst(BaseAgent):
 
         return result
 
+    @capability(
+        name="attribution.currency",
+        inputs={"portfolio_id": str, "pack_id": str, "start_date": date, "end_date": date},
+        outputs={
+            "total_currency_attribution": float,
+            "by_currency": dict,
+            "by_position": list,
+            "_provenance": dict,
+        },
+        fetches_positions=False,
+        implementation_status="real",
+        description="Compute currency attribution for portfolio",
+        dependencies=["ledger.positions", "pricing.apply_pack"],
+    )
     async def attribution_currency(
         self,
         ctx: RequestCtx,
@@ -1063,6 +1135,21 @@ class FinancialAnalyst(BaseAgent):
 
         return result
 
+    @capability(
+        name="risk.compute_factor_exposures",
+        inputs={"portfolio_id": str, "pack_id": str},
+        outputs={
+            "factors": dict,
+            "portfolio_volatility": float,
+            "market_beta": float,
+            "r_squared": float,
+            "_provenance": dict,
+        },
+        fetches_positions=False,
+        implementation_status="stub",
+        description="Compute portfolio factor exposures (currently stub implementation - uses hardcoded data)",
+        dependencies=["ledger.positions", "pricing.apply_pack"],
+    )
     async def risk_compute_factor_exposures(
         self,
         ctx: RequestCtx,
