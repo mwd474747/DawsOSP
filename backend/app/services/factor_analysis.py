@@ -120,10 +120,13 @@ class FactorAnalyzer:
             }
 
         # Align dates
-        df = pd.DataFrame(portfolio_returns)
+        # Convert asyncpg Records to dicts for pandas
+        portfolio_returns_dict = [dict(r) for r in portfolio_returns] if portfolio_returns and hasattr(portfolio_returns[0], 'keys') else portfolio_returns
+        df = pd.DataFrame(portfolio_returns_dict)
         df = df.set_index("asof_date")
 
-        factor_df = pd.DataFrame(factor_returns)
+        factor_returns_dict = [dict(r) for r in factor_returns] if factor_returns and hasattr(factor_returns[0], 'keys') else factor_returns
+        factor_df = pd.DataFrame(factor_returns_dict)
         factor_df = factor_df.set_index("asof_date")
 
         # Merge on date
@@ -376,7 +379,7 @@ class FactorAnalyzer:
             sp500_ret = self._safe_return(
                 prev["sp500_level"], curr["sp500_level"]
             )
-            erp_ret = sp500_ret - (0.04 / 252)  # Daily risk-free rate
+            erp_ret = float(sp500_ret) - (0.04 / 252)  # Daily risk-free rate
 
             returns.append(
                 {
@@ -397,7 +400,10 @@ class FactorAnalyzer:
         """Safely compute return, handling None values."""
         if prev_value is None or curr_value is None or prev_value == 0:
             return 0.0
-        return (curr_value - prev_value) / prev_value
+        # Convert to float to handle Decimal types from database
+        prev_val = float(prev_value)
+        curr_val = float(curr_value)
+        return (curr_val - prev_val) / prev_val
 
     async def _get_factor_covariance(self, pack_id: str) -> np.ndarray:
         """
