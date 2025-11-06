@@ -280,14 +280,22 @@ The server will start on `http://localhost:8000/`
 
 ## 📚 Documentation
 
+### Essential Guides
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and design
-- **[PRODUCT_SPEC.md](PRODUCT_SPEC.md)** - Product specifications
+- **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** - Development guide and patterns
+- **[BEST_PRACTICES.md](BEST_PRACTICES.md)** - Development best practices
 - **[DATABASE.md](DATABASE.md)** - Database reference and operations
-- **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** - Development guide
-- **[PATTERNS_REFERENCE.md](docs/reference/PATTERNS_REFERENCE.md)** - Pattern system reference
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deployment instructions
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Comprehensive troubleshooting guide
+
+### Reference Documentation
+- **[PATTERNS_REFERENCE.md](docs/reference/PATTERNS_REFERENCE.md)** - Pattern system reference
+- **[API_CONTRACT.md](API_CONTRACT.md)** - API endpoint documentation
+- **[PRODUCT_SPEC.md](PRODUCT_SPEC.md)** - Product specifications
 - **API Docs**: http://localhost:8000/docs (when running)
+
+### Complete Documentation Index
+- **[DOCUMENTATION.md](DOCUMENTATION.md)** - Complete documentation index
 
 ---
 
@@ -310,10 +318,34 @@ uvicorn app.api.executor:executor_app --reload --port 8001
 
 ### Adding New Features
 
-1. **Backend API**: Add route to `backend/app/api/routes/` or `combined_server.py`
-2. **Business Logic**: Add to appropriate agent in `backend/app/agents/`
-3. **UI**: Update `full_ui.html` (React components)
-4. **Pattern**: Define new pattern in `backend/patterns/` if needed
+**Recommended Flow:**
+1. **Create Pattern** (if needed) - Define JSON pattern in `backend/patterns/`
+2. **Add Capability** - Add capability to appropriate agent in `backend/app/agents/`
+3. **Register Agent** - Ensure agent is registered in `combined_server.py`
+4. **Update UI** - Update `full_ui.html` to use new pattern (if needed)
+5. **Test** - Test pattern execution and UI integration
+
+**Example: Adding a New Capability**
+```python
+# 1. Add capability to agent
+@capability(inputs={"portfolio_id": "uuid"}, outputs={"result": "dict"})
+async def my_new_capability(self, ctx: RequestCtx, state: Dict, portfolio_id: str, **kwargs):
+    # Implementation
+    return {"result": "data"}
+
+# 2. Update get_capabilities()
+def get_capabilities(self) -> List[str]:
+    return [..., "my.new_capability"]
+
+# 3. Use in pattern
+{
+  "capability": "my.new_capability",
+  "args": {"portfolio_id": "{{inputs.portfolio_id}}"},
+  "as": "my_result"
+}
+```
+
+**For detailed development guide, see [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)**
 
 ### Code Style
 
@@ -325,7 +357,19 @@ isort backend/
 # Lint
 flake8 backend/
 pylint backend/
+
+# Type checking (if using mypy)
+mypy backend/
 ```
+
+**Best Practices:**
+- ✅ Use type hints for all functions
+- ✅ Use specific exceptions (not broad `Exception`)
+- ✅ Use parameterized database queries
+- ✅ Use structured logging (not `print()`)
+- ✅ Follow naming conventions (see [BEST_PRACTICES.md](BEST_PRACTICES.md))
+
+**For comprehensive best practices, see [BEST_PRACTICES.md](BEST_PRACTICES.md)**
 
 ---
 
@@ -364,30 +408,43 @@ Response:
 
 ## 🐛 Troubleshooting
 
-### "UI not found" error
+**Quick Fixes:**
 
-**Solution**: Ensure `full_ui.html` is in repository root
+| Issue | Quick Fix |
+|-------|-----------|
+| "UI not found" | Ensure `full_ui.html` is in repository root |
+| "Database connection failed" | Check `DATABASE_URL` environment variable |
+| "Pattern execution failed" | Check agent registration in `combined_server.py` |
+| "Invalid credentials" | Verify user exists: `psql $DATABASE_URL -c "SELECT * FROM users;"` |
+| "Application won't start" | Check Python version: `python --version` (should be 3.11+) |
 
-### "Database connection failed"
+**Common Solutions:**
 
-**Solution**: Check `DATABASE_URL` environment variable
-
+### Database Connection Issues
 ```bash
-export DATABASE_URL="postgresql://user:pass@localhost/dawsos"
+# Check DATABASE_URL
+echo $DATABASE_URL
+
+# Test connection
+psql $DATABASE_URL -c "SELECT version();"
+
+# Verify PostgreSQL is running
+pg_isready -h localhost -p 5432
 ```
 
-### "Pattern execution failed"
-
-**Solution**: Check agent registration in `combined_server.py`
-
-### Application won't start
-
-**Solution**: Check Python version and dependencies
-
+### Pattern Execution Issues
 ```bash
-python --version  # Should be 3.11+
-pip install -r backend/requirements.txt
+# Check pattern JSON is valid
+python3 -m json.tool backend/patterns/portfolio_overview.json
+
+# Test pattern execution
+curl -X POST http://localhost:8000/api/patterns/execute \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"pattern_name":"portfolio_overview","inputs":{"portfolio_id":"..."}}'
 ```
+
+**For comprehensive troubleshooting, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md)**
 
 ---
 

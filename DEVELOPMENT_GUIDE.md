@@ -131,36 +131,123 @@ Results flow back: Agent → Orchestrator → Endpoint → UI
 **1. Create Agent File:**
 ```python
 # backend/app/agents/my_agent.py
+from typing import Dict, List
 from app.agents.base_agent import BaseAgent
+from app.core.types import RequestCtx
+from app.core.capability_contract import capability
 
 class MyAgent(BaseAgent):
+    """My Agent - Provides custom capabilities."""
+    
     def get_capabilities(self) -> List[str]:
-        return ["my.capability1", "my.capability2"]
-
-    async def my_capability1(self, ctx: RequestCtx, state: Dict, **kwargs):
+        """Return list of capabilities this agent provides."""
+        return [
+            "my.capability1",
+            "my.capability2"
+        ]
+    
+    @capability(
+        inputs={"portfolio_id": "uuid", "lookback_days": "integer"},
+        outputs={"result": "dict"},
+        status="production",
+        dependencies=["pricing.apply_pack"]
+    )
+    async def my_capability1(
+        self, 
+        ctx: RequestCtx, 
+        state: Dict, 
+        portfolio_id: str,
+        lookback_days: int = 252,
+        **kwargs
+    ) -> Dict:
+        """
+        My capability implementation.
+        
+        Args:
+            ctx: Request context (pricing_pack_id, ledger_commit_hash, trace_id)
+            state: Execution state from previous steps
+            portfolio_id: Portfolio UUID
+            lookback_days: Historical period in days (default: 252)
+        
+        Returns:
+            Dict with result data
+        
+        Raises:
+            ValueError: If portfolio_id is invalid
+            PricingPackNotFoundError: If pricing pack not found
+        """
+        # Validate inputs
+        if not portfolio_id:
+            raise ValueError("portfolio_id is required")
+        
+        # Get database pool
+        pool = self.services.get("db")
+        if not pool:
+            raise RuntimeError("Database pool not available")
+        
+        # Example: Query database
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM portfolios WHERE id = $1",
+                portfolio_id
+            )
+        
+        # Process results
+        result = {
+            "portfolio_id": portfolio_id,
+            "data": [dict(row) for row in rows],
+            "lookback_days": lookback_days
+        }
+        
+        return result
+    
+    async def my_capability2(self, ctx: RequestCtx, state: Dict, **kwargs) -> Dict:
+        """Another capability."""
         # Implementation
         return {"result": "data"}
 ```
 
 **2. Register Agent:**
 ```python
-# combined_server.py (in get_agent_runtime function)
-my_agent = MyAgent("my_agent", services)
-_agent_runtime.register_agent(my_agent)
+# combined_server.py (in get_agent_runtime function, around line 261-300)
+def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
+    services = {"db": db_pool, "redis": None}
+    _agent_runtime = AgentRuntime(services)
+    
+    # ... existing agents ...
+    
+    # Register My Agent
+    my_agent = MyAgent("my_agent", services)
+    _agent_runtime.register_agent(my_agent)
+    
+    return _agent_runtime
 ```
 
 **3. Use in Pattern:**
 ```json
 {
+  "id": "my_pattern",
   "steps": [
     {
       "capability": "my.capability1",
-      "args": {},
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "lookback_days": "{{inputs.lookback_days}}"
+      },
       "as": "my_result"
     }
   ]
 }
 ```
+
+**Best Practices:**
+- ✅ Use `@capability` decorator for contract definition
+- ✅ Validate inputs at method entry
+- ✅ Use database pool from `self.services["db"]`
+- ✅ Handle errors with specific exceptions
+- ✅ Return structured data (dict with clear keys)
+- ✅ Document method with docstring
+- ✅ Use type hints for all parameters
 
 ### Adding a New Endpoint
 
@@ -438,6 +525,89 @@ curl -X POST http://localhost:8000/api/patterns/execute \
 
 ---
 
+## Best Practices
+
+### Code Organization
+
+**1. Agent Capabilities:**
+- ✅ Use `@capability` decorator for contract definition
+- ✅ Follow naming convention: `category.operation` (e.g., `ledger.positions`)
+- ✅ Method name: `category_operation` (e.g., `ledger_positions`)
+- ✅ Always validate inputs at method entry
+- ✅ Use specific exceptions (not generic `Exception`)
+- ✅ Return structured data (dict with clear keys)
+
+**2. Error Handling:**
+```python
+# ✅ GOOD: Specific exception handling
+try:
+    result = await service.method()
+except PricingPackNotFoundError as e:
+    logger.error(f"Pricing pack not found: {e}")
+    raise
+except asyncpg.PostgresError as e:
+    logger.warning(f"Database error: {e}")
+    return {"error": "Database error", "provenance": "error"}
+except (ValueError, TypeError, KeyError) as e:
+    # Programming errors - re-raise to surface bugs
+    logger.error(f"Programming error: {e}", exc_info=True)
+    raise
+
+# ❌ BAD: Broad exception catch
+try:
+    result = await service.method()
+except Exception as e:
+    logger.warning(f"Error: {e}")
+    return {"error": "Unknown error"}  # Masks bugs!
+```
+
+**3. Database Queries:**
+```python
+# ✅ GOOD: Parameterized queries
+async with pool.acquire() as conn:
+    rows = await conn.fetch(
+        "SELECT * FROM lots WHERE portfolio_id = $1 AND qty_open > $2",
+        portfolio_id,
+        Decimal("0")
+    )
+
+# ❌ BAD: String formatting (SQL injection risk!)
+query = f"SELECT * FROM lots WHERE portfolio_id = '{portfolio_id}'"
+```
+
+**4. Type Hints:**
+```python
+# ✅ GOOD: Type hints for all parameters
+async def my_capability(
+    self,
+    ctx: RequestCtx,
+    state: Dict,
+    portfolio_id: str,
+    lookback_days: int = 252,
+    **kwargs
+) -> Dict[str, Any]:
+    """Method with type hints."""
+    pass
+
+# ❌ BAD: No type hints
+async def my_capability(self, ctx, state, portfolio_id, lookback_days=252):
+    pass
+```
+
+**5. Logging:**
+```python
+# ✅ GOOD: Structured logging
+logger.info(f"Processing portfolio {portfolio_id}", extra={
+    "portfolio_id": portfolio_id,
+    "trace_id": ctx.trace_id
+})
+
+# ❌ BAD: Print statements
+print(f"Processing portfolio {portfolio_id}")  # Don't use print()!
+```
+
+---
+
 ## Code Review Checklist
 
 ### Before Committing
@@ -446,8 +616,11 @@ curl -X POST http://localhost:8000/api/patterns/execute \
 - [ ] All tests pass (`pytest`)
 - [ ] No print() or console.log() debugging statements
 - [ ] Docstrings added/updated for new functions
+- [ ] Type hints added for all parameters
 - [ ] Authentication using `Depends(require_auth)` pattern
 - [ ] No hardcoded secrets or API keys
+- [ ] Exception handling is specific (not broad `Exception`)
+- [ ] Database queries use parameterized queries (not string formatting)
 - [ ] Git commit message is descriptive
 
 ### Before Pull Request
@@ -455,9 +628,12 @@ curl -X POST http://localhost:8000/api/patterns/execute \
 - [ ] All endpoints tested manually
 - [ ] UI pages tested in browser
 - [ ] Database migrations tested
+- [ ] Pattern execution tested
+- [ ] Error handling tested (both success and failure cases)
 - [ ] README.md updated if needed
 - [ ] No breaking changes to existing patterns
 - [ ] Follows existing code style
+- [ ] Code review checklist completed
 
 ---
 
@@ -466,6 +642,7 @@ curl -X POST http://localhost:8000/api/patterns/execute \
 ### Add New Security to Database
 
 ```sql
+-- Insert new security
 INSERT INTO securities (id, symbol, name, currency, security_type, sector)
 VALUES (
     gen_random_uuid(),
@@ -475,13 +652,16 @@ VALUES (
     'EQUITY',
     'Technology'
 );
+
+-- Verify insertion
+SELECT id, symbol, name FROM securities WHERE symbol = 'AAPL';
 ```
 
 ### Create Test Portfolio
 
 ```sql
 -- Create portfolio
-INSERT INTO portfolios (id, user_id, name, currency)
+INSERT INTO portfolios (id, user_id, name, base_currency)
 VALUES (
     '11111111-1111-1111-1111-111111111111',
     (SELECT id FROM users WHERE email = 'michael@dawsos.com'),
@@ -489,39 +669,287 @@ VALUES (
     'USD'
 );
 
--- Add position
-INSERT INTO lots (id, portfolio_id, security_id, quantity, acquisition_cost, acquisition_date)
+-- Add position (use qty_open, not quantity - see DATABASE.md)
+INSERT INTO lots (
+    id, 
+    portfolio_id, 
+    security_id, 
+    qty_open, 
+    qty_original,
+    cost_basis, 
+    cost_basis_per_share,
+    acquisition_date,
+    currency
+)
 VALUES (
     gen_random_uuid(),
     '11111111-1111-1111-1111-111111111111',
     (SELECT id FROM securities WHERE symbol = 'AAPL'),
-    100,
-    15000.00,
-    '2024-01-01'
+    100,      -- qty_open
+    100,      -- qty_original
+    15000.00, -- cost_basis
+    150.00,   -- cost_basis_per_share
+    '2024-01-01',
+    'USD'
 );
+
+-- Verify portfolio
+SELECT p.name, l.qty_open, s.symbol, s.name
+FROM portfolios p
+JOIN lots l ON l.portfolio_id = p.id
+JOIN securities s ON s.id = l.security_id
+WHERE p.id = '11111111-1111-1111-1111-111111111111';
+```
+
+### Add New Capability to Existing Agent
+
+**Example: Adding a new capability to FinancialAnalyst**
+
+```python
+# In backend/app/agents/financial_analyst.py
+
+@capability(
+    inputs={"portfolio_id": "uuid", "metric_type": "string"},
+    outputs={"metrics": "dict"},
+    status="production"
+)
+async def metrics_compute_custom(
+    self,
+    ctx: RequestCtx,
+    state: Dict,
+    portfolio_id: str,
+    metric_type: str = "custom",
+    **kwargs
+) -> Dict:
+    """
+    Compute custom portfolio metric.
+    
+    Args:
+        ctx: Request context
+        state: Execution state
+        portfolio_id: Portfolio UUID
+        metric_type: Type of metric to compute
+    
+    Returns:
+        Dict with metric results
+    """
+    # Get database pool
+    pool = self.services.get("db")
+    if not pool:
+        raise RuntimeError("Database pool not available")
+    
+    # Implementation
+    async with pool.acquire() as conn:
+        # Query database
+        rows = await conn.fetch(
+            "SELECT * FROM portfolio_metrics WHERE portfolio_id = $1 AND metric_type = $2",
+            portfolio_id,
+            metric_type
+        )
+    
+    # Process and return
+    return {
+        "portfolio_id": portfolio_id,
+        "metric_type": metric_type,
+        "metrics": [dict(row) for row in rows]
+    }
+
+# Update get_capabilities() method
+def get_capabilities(self) -> List[str]:
+    capabilities = [
+        # ... existing capabilities ...
+        "metrics.compute_custom",  # Add new capability
+    ]
+    return capabilities
+```
+
+### Test New Capability
+
+```bash
+# Test capability directly
+curl -X POST http://localhost:8000/api/patterns/execute \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pattern_name": "test_pattern",
+    "inputs": {
+      "portfolio_id": "...",
+      "metric_type": "custom"
+    }
+  }'
+
+# Or create test pattern
+cat > backend/patterns/test_custom_metric.json << EOF
+{
+  "id": "test_custom_metric",
+  "steps": [
+    {
+      "capability": "metrics.compute_custom",
+      "args": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "metric_type": "{{inputs.metric_type}}"
+      },
+      "as": "custom_metrics"
+    }
+  ],
+  "outputs": ["custom_metrics"]
+}
+EOF
+```
+
+### Debug Database Query
+
+```python
+# Enable query logging
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
+# In your code
+async with pool.acquire() as conn:
+    # Log query before execution
+    logger.debug(f"Executing query: SELECT * FROM lots WHERE portfolio_id = {portfolio_id}")
+    
+    rows = await conn.fetch(
+        "SELECT * FROM lots WHERE portfolio_id = $1",
+        portfolio_id
+    )
+    
+    logger.debug(f"Query returned {len(rows)} rows")
+```
+
+### Performance Optimization
+
+**1. Database Query Optimization:**
+```python
+# ✅ GOOD: Use indexes, limit results
+async with pool.acquire() as conn:
+    rows = await conn.fetch(
+        """
+        SELECT * FROM lots 
+        WHERE portfolio_id = $1 
+          AND qty_open > 0
+        ORDER BY acquisition_date DESC
+        LIMIT 100
+        """,
+        portfolio_id
+    )
+
+# ❌ BAD: Full table scan
+rows = await conn.fetch("SELECT * FROM lots")  # No WHERE clause!
+```
+
+**2. Caching:**
+```python
+# Use @cache_capability decorator for expensive operations
+from app.agents.base_agent import cache_capability
+
+@cache_capability(ttl=300)  # Cache for 5 minutes
+async def expensive_computation(self, ctx, state, **kwargs):
+    # Expensive computation here
+    return result
+```
+
+**3. Batch Operations:**
+```python
+# ✅ GOOD: Batch database operations
+async with pool.acquire() as conn:
+    async with conn.transaction():
+        await conn.executemany(
+            "INSERT INTO portfolio_metrics (portfolio_id, date, metric_type, value) VALUES ($1, $2, $3, $4)",
+            [(portfolio_id, date, metric_type, value) for ...]
+        )
+
+# ❌ BAD: Individual inserts in loop
+for item in items:
+    await conn.execute("INSERT INTO ...")  # N queries instead of 1!
 ```
 
 ### Debug Pattern Execution
 
-**Enable debug logging:**
+**Enable Debug Logging:**
 ```python
+# In combined_server.py or environment
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# Or set via environment variable
+export LOG_LEVEL=DEBUG
 ```
 
-**Check execution trace:**
+**Check Execution Trace:**
 ```bash
 # Pattern response includes trace
+curl -X POST http://localhost:8000/api/patterns/execute \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"pattern_name":"portfolio_overview","inputs":{"portfolio_id":"..."}}' \
+  | jq '.trace'
+
+# Expected trace structure:
 {
-  "data": { ... },
-  "trace": {
-    "pattern_id": "portfolio_overview",
-    "steps": [...],
-    "agents_used": ["financial_analyst"],
-    "capabilities_used": ["ledger.positions", "pricing.apply_pack"]
-  }
+  "pattern_id": "portfolio_overview",
+  "steps": [
+    {
+      "step": 1,
+      "capability": "portfolio.get_valued_positions",
+      "status": "success",
+      "duration_ms": 45
+    },
+    {
+      "step": 2,
+      "capability": "metrics.compute_twr",
+      "status": "success",
+      "duration_ms": 120
+    }
+  ],
+  "agents_used": ["financial_analyst"],
+  "capabilities_used": ["portfolio.get_valued_positions", "metrics.compute_twr"],
+  "total_duration_ms": 165
 }
 ```
+
+**Debug Steps:**
+1. **Check pattern JSON is valid:**
+   ```bash
+   python3 -m json.tool backend/patterns/portfolio_overview.json
+   ```
+
+2. **Verify all required inputs are provided:**
+   ```python
+   # Check pattern inputs definition
+   pattern = json.load(open("backend/patterns/portfolio_overview.json"))
+   required_inputs = [k for k, v in pattern["inputs"].items() if v.get("required")]
+   print(f"Required inputs: {required_inputs}")
+   ```
+
+3. **Check template substitution works:**
+   ```python
+   # In PatternOrchestrator, enable debug logging
+   logger.debug(f"Template substitution: {template} -> {resolved_value}")
+   ```
+
+4. **Verify each step executes successfully:**
+   - Check step status in trace
+   - Look for error messages in logs
+   - Verify step outputs are correct
+
+5. **Check agent routing works:**
+   ```python
+   # Test capability routing
+   from backend.app.core.agent_runtime import get_agent_runtime
+   runtime = get_agent_runtime()
+   agent = runtime.get_agent_for_capability("ledger.positions")
+   print(f"Agent: {agent.name if agent else None}")
+   ```
+
+**Common Debugging Issues:**
+- **Template substitution fails:** Check variable names match exactly
+- **Capability not found:** Verify agent is registered and capability exists
+- **Database errors:** Check pool registration and connection
+- **Type errors:** Verify input types match pattern definition
 
 ---
 
