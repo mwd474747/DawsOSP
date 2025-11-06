@@ -258,7 +258,12 @@ class OptimizerService:
                 self.execute_query_one = execute_query_one
                 self.execute_statement = execute_statement
                 logger.info("OptimizerService initialized with database integration")
+            except (ImportError, AttributeError, ModuleNotFoundError) as e:
+                # Programming errors - re-raise to surface bugs immediately
+                logger.error(f"Programming error initializing database connections: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # Connection/configuration errors - log and fall back to stub mode
                 logger.warning(f"Failed to initialize database connections: {e}. Falling back to stub mode.")
                 self.use_db = False
         else:
@@ -768,8 +773,13 @@ class OptimizerService:
                 "suggestions_count": len(hedges),
             }
             
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in hedge suggestion: {e}", exc_info=True)
+            raise
         except Exception as e:
-            logger.error(f"Hedge suggestion failed: {e}", exc_info=True)
+            # Service/database errors - return error response
+            logger.error(f"Hedge suggestion failed (service error): {e}", exc_info=True)
             return {
                 "scenario_id": scenario_id,
                 "hedges": [],

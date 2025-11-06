@@ -798,9 +798,15 @@ class ScenarioService:
                     "delta_pl": float(scenario_result.total_delta_pl),
                 })
 
-            except Exception as e:
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - re-raise to surface bugs immediately
                 scenario_name = shock_type.value if hasattr(shock_type, 'value') else str(shock_type)
-                logger.warning(f"Scenario {scenario_name} failed: {e}")
+                logger.error(f"Programming error in scenario {scenario_name}: {e}", exc_info=True)
+                raise
+            except Exception as e:
+                # Service/database errors - log and continue with other scenarios
+                scenario_name = shock_type.value if hasattr(shock_type, 'value') else str(shock_type)
+                logger.warning(f"Scenario {scenario_name} failed (service error): {e}")
                 continue
 
         if not scenario_drawdowns:
