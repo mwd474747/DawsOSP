@@ -71,9 +71,9 @@ class CorporateActionsSyncService:
             JOIN securities s ON l.security_id = s.id
             WHERE l.portfolio_id = $1
                 -- Include if purchased before the end of our range
-                AND l.purchase_date <= $3
+                AND l.acquisition_date <= $3
                 -- Include if still open OR closed after the start of our range
-                AND (l.close_date IS NULL OR l.close_date >= $2)
+                AND (l.closed_date IS NULL OR l.closed_date >= $2)
         """, portfolio_id, from_date or date.today(), to_date or date.today())
         
         return [row["symbol"] for row in rows]
@@ -170,11 +170,11 @@ class CorporateActionsSyncService:
             SELECT SUM(
                 CASE
                     -- If lot was purchased after target date, it doesn't count
-                    WHEN l.purchase_date > $3 THEN 0
+                    WHEN l.acquisition_date > $3 THEN 0
                     -- If lot has no close date or closed after target date, use full original quantity
-                    WHEN l.close_date IS NULL OR l.close_date > $3 THEN l.quantity_original
+                    WHEN l.closed_date IS NULL OR l.closed_date > $3 THEN l.quantity_original
                     -- If lot was closed before target date, it doesn't count
-                    WHEN l.close_date <= $3 THEN 0
+                    WHEN l.closed_date <= $3 THEN 0
                     -- Default case (shouldn't happen)
                     ELSE 0
                 END
@@ -267,7 +267,8 @@ class CorporateActionsSyncService:
                 continue  # Skip if we don't hold this stock
                 
             # Extract dividend details
-            ex_date = datetime.strptime(dividend["exDividendDate"], "%Y-%m-%d").date()
+            # FMP uses "date" field for ex-dividend date
+            ex_date = datetime.strptime(dividend["date"], "%Y-%m-%d").date()
             pay_date = datetime.strptime(dividend["paymentDate"], "%Y-%m-%d").date() if dividend.get("paymentDate") else ex_date + timedelta(days=3)
             amount = Decimal(str(dividend["dividend"]))
             currency = dividend.get("currency", "USD")
@@ -408,16 +409,14 @@ class CorporateActionsSyncService:
                 continue  # Skip if we don't hold this stock
                 
             # Extract split details
-            split_date = datetime.strptime(split["effectiveDate"], "%Y-%m-%d").date()
+            # FMP uses "date" field for split date
+            split_date = datetime.strptime(split["date"], "%Y-%m-%d").date()
             
-            # Parse ratio (e.g., "2:1" -> 2.0)
-            ratio_str = split.get("ratio", "1:1")
-            try:
-                new_shares, old_shares = ratio_str.split(":")
-                ratio = Decimal(new_shares) / Decimal(old_shares)
-            except:
-                logger.warning(f"Invalid split ratio format: {ratio_str}")
-                continue
+            # Parse ratio from FMP numerator/denominator fields
+            numerator = split.get("numerator", 1)
+            denominator = split.get("denominator", 1)
+            ratio = Decimal(str(numerator)) / Decimal(str(denominator))
+            ratio_str = f"{numerator}:{denominator}"
             
             # Check if split already recorded
             if await self._check_split_exists(portfolio_id, symbol, split_date, ratio):

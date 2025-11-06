@@ -28,7 +28,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-from fastapi import FastAPI, HTTPException, Request, Depends, status, Query
+from fastapi import FastAPI, HTTPException, Request, Depends, status, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -4802,6 +4802,87 @@ async def get_corporate_actions(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get corporate actions"
+        )
+
+# ============================================================================
+# Corporate Actions Sync Endpoint
+# ============================================================================
+
+@app.post("/v1/corporate-actions/sync-fmp", response_model=SuccessResponse)
+async def sync_corporate_actions_from_fmp(
+    portfolio_id: str = Body(..., description="Portfolio ID"),
+    from_date: Optional[str] = Body(None, description="Start date (YYYY-MM-DD)"),
+    to_date: Optional[str] = Body(None, description="End date (YYYY-MM-DD)"),
+    dry_run: bool = Body(False, description="Preview without recording"),
+    user: dict = Depends(require_auth)
+):
+    """
+    Sync corporate actions (dividends & splits) from FMP API.
+    
+    Automatically fetches and records corporate actions for portfolio holdings
+    from the Financial Modeling Prep API.
+    """
+    try:
+        from app.services.corporate_actions_sync import CorporateActionsSyncService
+        from datetime import datetime, date, timedelta
+        import uuid
+        
+        # Parse dates
+        from_dt = datetime.strptime(from_date, "%Y-%m-%d").date() if from_date else date.today() - timedelta(days=30)
+        to_dt = datetime.strptime(to_date, "%Y-%m-%d").date() if to_date else date.today() + timedelta(days=30)
+        
+        # Parse portfolio ID
+        portfolio_uuid = uuid.UUID(portfolio_id)
+        
+        # Get database connection
+        async with get_db_connection() as conn:
+            sync_service = CorporateActionsSyncService(conn)
+            
+            # Sync dividends
+            dividend_result = await sync_service.sync_dividends(
+                portfolio_id=portfolio_uuid,
+                from_date=from_dt,
+                to_date=to_dt,
+                dry_run=dry_run
+            )
+            
+            # Sync splits
+            split_result = await sync_service.sync_splits(
+                portfolio_id=portfolio_uuid,
+                from_date=from_dt,
+                to_date=to_dt,
+                dry_run=dry_run
+            )
+            
+            response = {
+                "status": "success",
+                "portfolio_id": str(portfolio_id),
+                "from_date": str(from_dt),
+                "to_date": str(to_dt),
+                "dry_run": dry_run,
+                "dividends": dividend_result,
+                "splits": split_result,
+                "summary": {
+                    "total_dividends": len(dividend_result.get("dividends", [])),
+                    "total_splits": len(split_result.get("splits", [])),
+                    "dividends_recorded": dividend_result.get("recorded", 0) if not dry_run else 0,
+                    "splits_recorded": split_result.get("recorded", 0) if not dry_run else 0
+                },
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+            return SuccessResponse(data=response)
+            
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error syncing corporate actions from FMP: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to sync corporate actions: {str(e)}"
         )
 
 # ============================================================================
