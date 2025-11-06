@@ -28,18 +28,45 @@ This agent is a specialized expert in:
 ### Current Data Sources
 
 **1. External Data Sources:**
+- **FMP (Financial Modeling Prep) - Premium Plan:** Primary stock data provider
+  - Real-time quotes (bulk up to 100 symbols)
+  - Company fundamentals (income, balance sheet, cash flow, ratios)
+  - Corporate actions (dividends, splits, earnings calendars)
+  - Rate limit: 120 req/min
+  - **Restrictions:** NO PDF/CSV export, requires attribution
+  - See: `.claude/knowledge/provider-api-documentation.md` (FMP section)
+
 - **FRED (Federal Reserve Economic Data):** Macro economic indicators
   - ~40 indicators configured in `backend/config/macro_indicators_defaults.json`
+  - Factor analysis series: DFII10, T10YIE, BAMLC0A0CM, DTWEXBGS, DGS10
+  - Regime indicators: T10Y2Y, CPIAUCSL, UNRATE, BAA10Y
+  - Rate limit: 60 req/min
+  - **Rights:** Export allowed with attribution
   - Fetched by DataHarvester agent
   - Stored in `economic_indicators` table (TimescaleDB)
+  - See: `.claude/knowledge/provider-api-documentation.md` (FRED section)
 
-- **Market Data Providers:** Security prices, corporate actions
-  - Stored in `pricing_packs` table (snapshot approach)
-  - Historical prices for portfolio valuation
+- **Polygon.io:** High-quality prices and corporate actions
+  - Historical OHLCV prices (split-adjusted only, NOT dividend-adjusted)
+  - **PRIMARY SOURCE** for corporate actions (dividends, splits)
+  - CRITICAL for ADR pay-date FX conversion
+  - Rate limit: 100 req/min
+  - **Restrictions:** NO export, requires attribution
+  - See: `.claude/knowledge/provider-api-documentation.md` (Polygon section)
 
-- **News APIs:** Financial news, sentiment analysis
+- **NewsAPI (Dev Tier):** Financial news metadata
+  - **Metadata only** (no article content on dev tier)
+  - Rate limit: 30 req/min (100/day)
+  - **Restrictions:** NO export, watermark required
   - Fetched on-demand by DataHarvester
   - Not persisted (ephemeral)
+  - See: `.claude/knowledge/provider-api-documentation.md` (NewsAPI section)
+
+**Complete Provider Documentation:**
+- API Reference: `.claude/knowledge/provider-api-documentation.md`
+- Database Mapping: `.claude/knowledge/provider-database-mapping.md`
+- Data Contracts: `.claude/knowledge/data-contracts.md`
+- Data Lineage: `.claude/knowledge/data-lineage.md`
 
 **2. User-Generated Data:**
 - **Portfolio Holdings:** Lots table (position-level data)
