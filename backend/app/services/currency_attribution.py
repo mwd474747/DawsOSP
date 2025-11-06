@@ -200,13 +200,28 @@ class CurrencyAttributor:
         # Compute attribution for each holding
         attributions = []
         by_currency = {}
-
+        
+        # First pass: compute returns and position values
+        total_portfolio_value = 0.0
         for holding in holdings:
             attr = self._compute_holding_attribution(holding, base_ccy)
             attributions.append(attr)
-
+            total_portfolio_value += attr["position_value"]
+        
+        # Second pass: compute weights and contributions
+        for attr in attributions:
+            if total_portfolio_value > 0:
+                attr["weight"] = attr["position_value"] / total_portfolio_value
+            else:
+                attr["weight"] = 0.0
+                
+            # Now compute weighted contributions
+            attr["local_contribution"] = attr["local_return"] * attr["weight"]
+            attr["fx_contribution"] = attr["fx_return"] * attr["weight"]
+            attr["interaction_contribution"] = attr["interaction"] * attr["weight"]
+            
             # Aggregate by currency
-            ccy = holding["local_ccy"]
+            ccy = attr["local_ccy"]
             if ccy not in by_currency:
                 by_currency[ccy] = {
                     "local": 0.0,
