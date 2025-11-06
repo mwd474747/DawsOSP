@@ -46,12 +46,13 @@ This agent is a specialized expert in:
   - Stored in `economic_indicators` table (TimescaleDB)
   - See: `.claude/knowledge/provider-api-documentation.md` (FRED section)
 
-- **Polygon.io:** High-quality prices and corporate actions
+- **Polygon.io:** Historical prices and FX rates
   - Historical OHLCV prices (split-adjusted only, NOT dividend-adjusted)
-  - **PRIMARY SOURCE** for corporate actions (dividends, splits)
-  - CRITICAL for ADR pay-date FX conversion
+  - Daily FX rates for multi-currency portfolios
+  - Used by build_pricing_pack.py for pricing pipeline
   - Rate limit: 100 req/min
   - **Restrictions:** NO export, requires attribution
+  - **Note:** Has corporate actions methods but NOT currently used (FMP is primary)
   - See: `.claude/knowledge/provider-api-documentation.md` (Polygon section)
 
 - **NewsAPI (Dev Tier):** Financial news metadata

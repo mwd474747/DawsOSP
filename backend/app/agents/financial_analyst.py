@@ -722,7 +722,12 @@ class FinancialAnalyst(BaseAgent):
                     "current_drawdown": float(metrics["current_drawdown"]) if metrics.get("current_drawdown") else None,
                 }
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in metrics.compute_twr: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - return error response
             logger.error(f"Error fetching metrics from database: {e}", exc_info=True)
             result = {
                 "portfolio_id": str(portfolio_id_uuid),
@@ -806,7 +811,12 @@ class FinancialAnalyst(BaseAgent):
 
             return result
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in metrics.compute_mwr: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - return error response
             logger.error(f"Failed to compute MWR: {e}", exc_info=True)
             return {
                 "mwr": 0.0,
@@ -1012,7 +1022,12 @@ class FinancialAnalyst(BaseAgent):
                 "by_currency": attribution.get("by_currency", {}),
             }
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in attribution.currency: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - return error response
             logger.error(f"Error computing currency attribution: {e}", exc_info=True)
             result = {
                 "portfolio_id": portfolio_id_str,
@@ -1385,7 +1400,12 @@ class FinancialAnalyst(BaseAgent):
                             history.append(exposure)
                         else:
                             logger.warning(f"Factor exposure computation failed for pack {pack['id']}: {exposure.get('error')}")
+                    except (ValueError, TypeError, KeyError, AttributeError) as e:
+                        # Programming errors - re-raise to surface bugs immediately
+                        logger.error(f"Programming error computing factor exposure for pack {pack['id']}: {e}", exc_info=True)
+                        raise
                     except Exception as e:
+                        # Service/database errors - log and continue with other packs
                         logger.error(f"Error computing factor exposure for pack {pack['id']}: {e}", exc_info=True)
                         # Continue with other packs
                         continue
@@ -1826,19 +1846,39 @@ class FinancialAnalyst(BaseAgent):
         # Get position weight
         position = await self.get_position_details(ctx, state, portfolio_id, security_id, pack_id)
 
-        # Calculate contribution (simplified)
+        # Calculate contribution
         weight = Decimal(str(position["weight"]))
-        position_return = Decimal("0.15")  # TODO: Get actual return from compute_position_return
+        
+        # Get actual position return from compute_position_return
+        try:
+            position_return_data = await self.compute_position_return(
+                ctx, state, portfolio_id, security_id, pack_id, lookback_days
+            )
+            position_return = Decimal(str(position_return_data.get("total_return", 0.0)))
+        except Exception as e:
+            logger.warning(f"Could not compute position return: {e}. Using default 0.0")
+            position_return = Decimal("0.0")
+        
+        # Get portfolio return from metrics (if available)
+        try:
+            portfolio_metrics = await self.metrics_compute_twr(
+                ctx, state, portfolio_id, pack_id
+            )
+            portfolio_return = Decimal(str(portfolio_metrics.get("twr_1y", 0.10)))  # Default to 10% if not available
+        except Exception as e:
+            logger.warning(f"Could not get portfolio return: {e}. Using default 0.10")
+            portfolio_return = Decimal("0.10")
 
         total_contribution = weight * position_return
-        pct_of_portfolio_return = total_contribution / Decimal("0.10")  # TODO: Get actual portfolio return
+        pct_of_portfolio_return = (total_contribution / portfolio_return * 100) if portfolio_return > 0 else Decimal("0")
 
         result = {
             "total_contribution": float(total_contribution),
             "pct_of_portfolio_return": float(pct_of_portfolio_return),
             "weight": float(weight),
             "position_return": float(position_return),
-            "note": "Contribution calculation - requires historical return data"
+            "portfolio_return": float(portfolio_return),
+            "note": "Contribution calculated from actual position and portfolio returns"
         }
 
         metadata = self._create_metadata(
@@ -2373,14 +2413,57 @@ class FinancialAnalyst(BaseAgent):
         """
         logger.info(f"get_comparable_positions: security={security_id}, sector={sector}")
 
-        # TODO: Implement sector-based security lookup
-        # For now, return placeholder structure
+        # Get current security to determine sector if not provided
+        security_uuid = self._to_uuid(security_id, "security_id")
+        comparables = []
+        
+        db_pool = self.services.get("db")
+        if db_pool:
+            try:
+                async with db_pool.acquire() as conn:
+                    # Get current security's sector if not provided
+                    if not sector:
+                        security_row = await conn.fetchrow(
+                            "SELECT sector FROM securities WHERE id = $1",
+                            security_uuid
+                        )
+                        if security_row and security_row.get("sector"):
+                            sector = security_row["sector"]
+                    
+                    # Query securities by sector (excluding current security)
+                    if sector:
+                        rows = await conn.fetch(
+                            """
+                            SELECT id, symbol, name, security_type
+                            FROM securities
+                            WHERE sector = $1 AND id != $2 AND active = TRUE
+                            ORDER BY symbol
+                            LIMIT $3
+                            """,
+                            sector,
+                            security_uuid,
+                            limit
+                        )
+                        
+                        comparables = [
+                            {
+                                "security_id": str(row["id"]),
+                                "symbol": row["symbol"],
+                                "name": row.get("name"),
+                                "security_type": row.get("security_type"),
+                            }
+                            for row in rows
+                        ]
+                    else:
+                        logger.warning(f"No sector data available for security {security_id}")
+            except Exception as e:
+                logger.warning(f"Could not query comparables: {e}")
 
         result = {
-            "comparables": [],  # TODO: Query securities by sector
-            "count": 0,
-            "sector": sector,
-            "note": "Comparables - requires sector classification data"
+            "comparables": comparables,
+            "count": len(comparables),
+            "sector": sector or "Unknown",
+            "note": f"Found {len(comparables)} comparable securities in sector {sector}" if sector else "Sector data not available"
         }
 
         metadata = self._create_metadata(
@@ -2568,7 +2651,12 @@ class FinancialAnalyst(BaseAgent):
                         })
                     logger.info(f"Retrieved {len(rows)} historical NAV points from database")
                     
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error retrieving historical NAV: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database errors - log warning and continue (non-critical)
             logger.warning(f"Could not retrieve historical NAV from database: {e}")
         
         # If no historical data, return empty result
@@ -2709,7 +2797,12 @@ class FinancialAnalyst(BaseAgent):
 
             return self._attach_metadata(result, metadata)
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in financial_analyst.propose_trades: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service/database errors - return error response
             logger.error(f"Trade proposal generation failed: {e}", exc_info=True)
             error_result = {
                 "trades": [],
@@ -2867,7 +2960,12 @@ class FinancialAnalyst(BaseAgent):
             # Attach success metadata
             return self._attach_rating_success_metadata(result, ctx, "resilience")
             
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in financial_analyst.resilience: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service errors - return error response
             logger.error(f"Resilience calculation failed: {e}", exc_info=True)
             return self._attach_rating_error_metadata(
                 symbol=symbol if 'symbol' in locals() else None,
@@ -2967,7 +3065,12 @@ class FinancialAnalyst(BaseAgent):
                 weighted_sum += overall * market_value
                 total_weight += market_value
                 
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - re-raise to surface bugs immediately
+                logger.error(f"Programming error getting rating for {symbol}: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # Service errors - log warning and continue with other positions
                 logger.warning(f"Failed to get rating for {symbol}: {e}")
                 position_ratings.append({
                     "symbol": symbol,

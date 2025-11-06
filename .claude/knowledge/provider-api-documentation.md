@@ -45,10 +45,12 @@ Database (prices, economic_indicators, securities, etc.)
 
 | Provider | Purpose | Rate Limit | Plan | Rights | Status |
 |----------|---------|------------|------|--------|--------|
-| **FMP** | Stock data, fundamentals, corporate actions | 120 req/min | **Premium** | Restricted export | ✅ Active |
+| **FMP** | Stock data, fundamentals, **corporate actions (PRIMARY)** | 120 req/min | **Premium** | Restricted export | ✅ Active |
 | **FRED** | Economic indicators (inflation, rates, GDP) | 60 req/min | Free | Export allowed | ✅ Active |
-| **Polygon** | Prices, splits, dividends (ADR accuracy) | 100 req/min | Paid | Restricted export | ✅ Active |
+| **Polygon** | Historical prices, FX rates | 100 req/min | Paid | Restricted export | ✅ Active |
 | **NewsAPI** | News articles, sentiment analysis | 30 req/min | Dev (free) | **NO export** | ✅ Active |
+
+**Note:** Polygon has corporate actions methods (get_dividends, get_splits) but these are NOT currently used. FMP is the active source for all corporate actions.
 
 ### Base Provider Features
 

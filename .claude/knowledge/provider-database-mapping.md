@@ -12,12 +12,12 @@
 |----------|-------------|----------------|-----------|-----------|
 | **FMP** | `/v3/quote` | `prices` | close, volume, open, high, low | Daily |
 | **FMP** | `/v3/profile` | `securities` | symbol, name, currency, sector, industry | On-demand |
-| **FMP** | `/v3/stock_dividend_calendar` | `corporate_actions` | type='DIVIDEND', ex_date, amount, pay_date | Daily |
-| **FMP** | `/v3/stock_split_calendar` | `corporate_actions` | type='SPLIT', ex_date, split_ratio | Daily |
-| **FRED** | `/series/observations` | `economic_indicators` | series_id, asof_date, value | Daily |
-| **Polygon** | `/v2/aggs/ticker` | `prices` | close, open, high, low, volume | Historical backfill |
-| **Polygon** | `/v3/reference/dividends` | `corporate_actions` | type='DIVIDEND' | Daily |
-| **Polygon** | `/v3/reference/splits` | `corporate_actions` | type='SPLIT' | Daily |
+| **FMP** | `/v3/stock_dividend_calendar` | `corporate_actions` | type='DIVIDEND', ex_date, amount, pay_date | Daily ✅ **ACTIVE** |
+| **FMP** | `/v3/stock_split_calendar` | `corporate_actions` | type='SPLIT', ex_date, split_ratio | Daily ✅ **ACTIVE** |
+| **FRED** | `/series/observations` | `economic_indicators` | series_id, asof_date, value | Daily ✅ **ACTIVE** |
+| **Polygon** | `/v2/aggs/ticker` | `prices` | close, open, high, low, volume | Historical backfill ✅ **ACTIVE** |
+| **Polygon** | `/v3/reference/dividends` | `corporate_actions` | type='DIVIDEND' | ⚠️ **NOT USED** (methods exist, no callers) |
+| **Polygon** | `/v3/reference/splits` | `corporate_actions` | type='SPLIT' | ⚠️ **NOT USED** (methods exist, no callers) |
 | **NewsAPI** | `/v2/everything` | (not stored) | Metadata only (dev tier) | On-demand |
 
 ---
@@ -453,9 +453,9 @@ When multiple providers offer the same data, use this priority order:
 3. **Fallback:** Cached data from previous pack
 
 ### Corporate Actions
-1. **Primary:** Polygon (highest quality, comprehensive)
-2. **Secondary:** FMP (good coverage, Premium plan)
-3. **Validation:** Cross-check between both sources
+1. **Primary (ACTIVE):** FMP Premium (dividends, splits, earnings)
+2. **Backup (NOT IMPLEMENTED):** Polygon (methods exist but unused)
+3. **Note:** Despite documentation claims, Polygon is NOT used for corporate actions in production
 
 ### Economic Indicators
 1. **Only source:** FRED (official government data)
