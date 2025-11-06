@@ -1,0 +1,4420 @@
+{
+  "generated_at": "2025-11-06T13:52:14.322250",
+  "total_tables": 30,
+  "tables": {
+    "alert_deliveries": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "alert_id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": 255,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "content_hash",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": 64,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "delivery_methods",
+          "data_type": "jsonb",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "delivered_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "alert_deliveries_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "alert_deliveries_pkey",
+          "definition": "CREATE UNIQUE INDEX alert_deliveries_pkey ON public.alert_deliveries USING btree (id)"
+        },
+        {
+          "name": "idx_alert_deliveries_alert_id",
+          "definition": "CREATE INDEX idx_alert_deliveries_alert_id ON public.alert_deliveries USING btree (alert_id)"
+        },
+        {
+          "name": "idx_alert_deliveries_content_hash",
+          "definition": "CREATE INDEX idx_alert_deliveries_content_hash ON public.alert_deliveries USING btree (content_hash)"
+        },
+        {
+          "name": "idx_alert_deliveries_delivered_at",
+          "definition": "CREATE INDEX idx_alert_deliveries_delivered_at ON public.alert_deliveries USING btree (delivered_at)"
+        }
+      ]
+    },
+    "alert_dlq": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "alert_id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": 255,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "alert_data",
+          "data_type": "jsonb",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "error_message",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "retry_count",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "last_retry_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "alert_dlq_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "alert_dlq_pkey",
+          "definition": "CREATE UNIQUE INDEX alert_dlq_pkey ON public.alert_dlq USING btree (id)"
+        },
+        {
+          "name": "idx_alert_dlq_alert_id",
+          "definition": "CREATE INDEX idx_alert_dlq_alert_id ON public.alert_dlq USING btree (alert_id)"
+        },
+        {
+          "name": "idx_alert_dlq_created_at",
+          "definition": "CREATE INDEX idx_alert_dlq_created_at ON public.alert_dlq USING btree (created_at)"
+        },
+        {
+          "name": "idx_alert_dlq_retry_count",
+          "definition": "CREATE INDEX idx_alert_dlq_retry_count ON public.alert_dlq USING btree (retry_count)"
+        }
+      ]
+    },
+    "alert_retries": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "alert_id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": 255,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "alert_data",
+          "data_type": "jsonb",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "delivery_methods",
+          "data_type": "jsonb",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "retry_count",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "scheduled_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'pending'::character varying",
+          "character_maximum_length": 50,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "alert_retries_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "alert_retries_pkey",
+          "definition": "CREATE UNIQUE INDEX alert_retries_pkey ON public.alert_retries USING btree (id)"
+        },
+        {
+          "name": "idx_alert_retries_alert_id",
+          "definition": "CREATE INDEX idx_alert_retries_alert_id ON public.alert_retries USING btree (alert_id)"
+        },
+        {
+          "name": "idx_alert_retries_scheduled_at",
+          "definition": "CREATE INDEX idx_alert_retries_scheduled_at ON public.alert_retries USING btree (scheduled_at)"
+        },
+        {
+          "name": "idx_alert_retries_status",
+          "definition": "CREATE INDEX idx_alert_retries_status ON public.alert_retries USING btree (status)"
+        }
+      ]
+    },
+    "alerts": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "user_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "condition_json",
+          "data_type": "jsonb",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "notify_email",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "false",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "notify_inapp",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "true",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "cooldown_hours",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": "24",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "last_fired_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "is_active",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "true",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "channels",
+          "data_type": "jsonb",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "alerts_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "alerts_pkey",
+          "definition": "CREATE UNIQUE INDEX alerts_pkey ON public.alerts USING btree (id)"
+        },
+        {
+          "name": "idx_alerts_channels",
+          "definition": "CREATE INDEX idx_alerts_channels ON public.alerts USING gin (channels)"
+        },
+        {
+          "name": "idx_alerts_is_active",
+          "definition": "CREATE INDEX idx_alerts_is_active ON public.alerts USING btree (is_active) WHERE (is_active = true)"
+        },
+        {
+          "name": "idx_alerts_last_fired",
+          "definition": "CREATE INDEX idx_alerts_last_fired ON public.alerts USING btree (last_fired_at)"
+        },
+        {
+          "name": "idx_alerts_user_id",
+          "definition": "CREATE INDEX idx_alerts_user_id ON public.alerts USING btree (user_id)"
+        }
+      ]
+    },
+    "corporate_actions": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "security_id",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "portfolio_id",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "action_type",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": 50,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "ex_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "record_date",
+          "data_type": "date",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "pay_date",
+          "data_type": "date",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "amount",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "currency",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": 3,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "ratio",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": 20,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "description",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'pending'::character varying",
+          "character_maximum_length": 20,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "YES",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "YES",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "corporate_actions_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "corporate_actions_portfolio_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (portfolio_id) REFERENCES portfolios(id)"
+        },
+        {
+          "name": "corporate_actions_security_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (security_id) REFERENCES securities(id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "corporate_actions_pkey",
+          "definition": "CREATE UNIQUE INDEX corporate_actions_pkey ON public.corporate_actions USING btree (id)"
+        }
+      ]
+    },
+    "cost_basis_method_audit": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "portfolio_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "old_method",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": 20,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "new_method",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": 20,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "changed_by",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "changed_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "reason",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "cost_basis_method_audit_changed_by_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (changed_by) REFERENCES users(id)"
+        },
+        {
+          "name": "cost_basis_method_audit_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "cost_basis_method_audit_portfolio_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "cost_basis_method_audit_pkey",
+          "definition": "CREATE UNIQUE INDEX cost_basis_method_audit_pkey ON public.cost_basis_method_audit USING btree (id)"
+        },
+        {
+          "name": "idx_cost_basis_audit_portfolio",
+          "definition": "CREATE INDEX idx_cost_basis_audit_portfolio ON public.cost_basis_method_audit USING btree (portfolio_id, changed_at DESC)"
+        }
+      ]
+    },
+    "currency_attribution": {
+      "columns": [
+        {
+          "column_name": "portfolio_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "asof_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "pricing_pack_id",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "local_return",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "fx_return",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "interaction_return",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "total_return",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "base_return_actual",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "error_bps",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 10,
+          "numeric_scale": 4
+        },
+        {
+          "column_name": "attribution_by_currency",
+          "data_type": "jsonb",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "base_currency",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_currency_attribution_identity",
+          "type": "b'c'",
+          "definition": "CHECK (((error_bps IS NULL) OR (error_bps <= 0.1)))"
+        },
+        {
+          "name": "currency_attribution_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (portfolio_id, asof_date, pricing_pack_id)"
+        },
+        {
+          "name": "currency_attribution_pricing_pack_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (pricing_pack_id) REFERENCES pricing_packs(id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "currency_attribution_asof_date_idx",
+          "definition": "CREATE INDEX currency_attribution_asof_date_idx ON public.currency_attribution USING btree (asof_date DESC)"
+        },
+        {
+          "name": "currency_attribution_pkey",
+          "definition": "CREATE UNIQUE INDEX currency_attribution_pkey ON public.currency_attribution USING btree (portfolio_id, asof_date, pricing_pack_id)"
+        },
+        {
+          "name": "idx_currency_attribution_pack",
+          "definition": "CREATE INDEX idx_currency_attribution_pack ON public.currency_attribution USING btree (pricing_pack_id)"
+        },
+        {
+          "name": "idx_currency_attribution_portfolio",
+          "definition": "CREATE INDEX idx_currency_attribution_portfolio ON public.currency_attribution USING btree (portfolio_id, asof_date DESC)"
+        }
+      ]
+    },
+    "cycle_phases": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "cycle_type",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "phase",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "phase_number",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "composite_score",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "indicators_json",
+          "data_type": "jsonb",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "cycle_phases_cycle_type_check",
+          "type": "b'c'",
+          "definition": "CHECK ((cycle_type = ANY (ARRAY['STDC'::text, 'LTDC'::text, 'EMPIRE'::text])))"
+        },
+        {
+          "name": "cycle_phases_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "cycle_phases_pkey",
+          "definition": "CREATE UNIQUE INDEX cycle_phases_pkey ON public.cycle_phases USING btree (id)"
+        },
+        {
+          "name": "idx_cycle_phases_cycle_date",
+          "definition": "CREATE INDEX idx_cycle_phases_cycle_date ON public.cycle_phases USING btree (cycle_type, date DESC)"
+        },
+        {
+          "name": "idx_cycle_phases_cycle_type",
+          "definition": "CREATE INDEX idx_cycle_phases_cycle_type ON public.cycle_phases USING btree (cycle_type)"
+        },
+        {
+          "name": "idx_cycle_phases_date",
+          "definition": "CREATE INDEX idx_cycle_phases_date ON public.cycle_phases USING btree (date DESC)"
+        },
+        {
+          "name": "uq_cycle_phases_cycle_date",
+          "definition": "CREATE UNIQUE INDEX uq_cycle_phases_cycle_date ON public.cycle_phases USING btree (cycle_type, date)"
+        }
+      ]
+    },
+    "dar_history": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "portfolio_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "user_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "asof_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "regime",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "confidence",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "horizon_days",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "num_simulations",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "dar",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "dar_pct",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "mean_drawdown",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "median_drawdown",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "max_drawdown",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "current_nav",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "pricing_pack_id",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "dar_history_confidence_check",
+          "type": "b'c'",
+          "definition": "CHECK (((confidence >= (0)::numeric) AND (confidence <= (1)::numeric)))"
+        },
+        {
+          "name": "dar_history_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "dar_history_portfolio_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "dar_history_regime_check",
+          "type": "b'c'",
+          "definition": "CHECK ((regime = ANY (ARRAY['EARLY_EXPANSION'::text, 'MID_EXPANSION'::text, 'LATE_EXPANSION'::text, 'EARLY_CONTRACTION'::text, 'DEEP_CONTRACTION'::text])))"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "dar_history_pkey",
+          "definition": "CREATE UNIQUE INDEX dar_history_pkey ON public.dar_history USING btree (id)"
+        },
+        {
+          "name": "idx_dar_history_asof_date",
+          "definition": "CREATE INDEX idx_dar_history_asof_date ON public.dar_history USING btree (asof_date DESC)"
+        },
+        {
+          "name": "idx_dar_history_portfolio_date",
+          "definition": "CREATE INDEX idx_dar_history_portfolio_date ON public.dar_history USING btree (portfolio_id, asof_date DESC)"
+        },
+        {
+          "name": "idx_dar_history_portfolio_id",
+          "definition": "CREATE INDEX idx_dar_history_portfolio_id ON public.dar_history USING btree (portfolio_id)"
+        },
+        {
+          "name": "idx_dar_history_regime",
+          "definition": "CREATE INDEX idx_dar_history_regime ON public.dar_history USING btree (regime)"
+        },
+        {
+          "name": "idx_dar_history_user_id",
+          "definition": "CREATE INDEX idx_dar_history_user_id ON public.dar_history USING btree (user_id)"
+        },
+        {
+          "name": "uq_dar_history_portfolio_date_regime",
+          "definition": "CREATE UNIQUE INDEX uq_dar_history_portfolio_date_regime ON public.dar_history USING btree (portfolio_id, asof_date, regime)"
+        }
+      ]
+    },
+    "dlq": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "alert_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "user_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "payload",
+          "data_type": "jsonb",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "error_message",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "retry_count",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "status",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": "'pending'::text",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "last_retry_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "delivered_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "dlq_alert_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (alert_id) REFERENCES alerts(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "dlq_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "dlq_status_check",
+          "type": "b'c'",
+          "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'retrying'::text, 'failed'::text, 'delivered'::text])))"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "dlq_pkey",
+          "definition": "CREATE UNIQUE INDEX dlq_pkey ON public.dlq USING btree (id)"
+        },
+        {
+          "name": "idx_dlq_alert_id",
+          "definition": "CREATE INDEX idx_dlq_alert_id ON public.dlq USING btree (alert_id)"
+        },
+        {
+          "name": "idx_dlq_created_at",
+          "definition": "CREATE INDEX idx_dlq_created_at ON public.dlq USING btree (created_at)"
+        },
+        {
+          "name": "idx_dlq_retry_count",
+          "definition": "CREATE INDEX idx_dlq_retry_count ON public.dlq USING btree (retry_count) WHERE (retry_count < 5)"
+        },
+        {
+          "name": "idx_dlq_status",
+          "definition": "CREATE INDEX idx_dlq_status ON public.dlq USING btree (status) WHERE (status = 'pending'::text)"
+        }
+      ]
+    },
+    "economic_indicators": {
+      "columns": [
+        {
+          "column_name": "series_id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": 20,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "asof_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "value",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "unit",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": 20,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "source",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'FRED'::character varying",
+          "character_maximum_length": 50,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "economic_indicators_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (series_id, asof_date)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "economic_indicators_pkey",
+          "definition": "CREATE UNIQUE INDEX economic_indicators_pkey ON public.economic_indicators USING btree (series_id, asof_date)"
+        },
+        {
+          "name": "idx_economic_indicators_date",
+          "definition": "CREATE INDEX idx_economic_indicators_date ON public.economic_indicators USING btree (asof_date DESC)"
+        },
+        {
+          "name": "idx_economic_indicators_series",
+          "definition": "CREATE INDEX idx_economic_indicators_series ON public.economic_indicators USING btree (series_id, asof_date DESC)"
+        }
+      ]
+    },
+    "factor_exposures": {
+      "columns": [
+        {
+          "column_name": "portfolio_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "asof_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "pricing_pack_id",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "beta_real_rate",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "beta_inflation",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "beta_credit",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "beta_fx",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "beta_market",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "beta_size",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "beta_value",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "beta_momentum",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "var_factor",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "var_idiosyncratic",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "r_squared",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 5,
+          "numeric_scale": 4
+        },
+        {
+          "column_name": "factor_contributions",
+          "data_type": "jsonb",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "estimation_window_days",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "benchmark_id",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "factor_exposures_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (portfolio_id, asof_date, pricing_pack_id)"
+        },
+        {
+          "name": "factor_exposures_pricing_pack_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (pricing_pack_id) REFERENCES pricing_packs(id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "factor_exposures_asof_date_idx",
+          "definition": "CREATE INDEX factor_exposures_asof_date_idx ON public.factor_exposures USING btree (asof_date DESC)"
+        },
+        {
+          "name": "factor_exposures_pkey",
+          "definition": "CREATE UNIQUE INDEX factor_exposures_pkey ON public.factor_exposures USING btree (portfolio_id, asof_date, pricing_pack_id)"
+        },
+        {
+          "name": "idx_factor_exposures_pack",
+          "definition": "CREATE INDEX idx_factor_exposures_pack ON public.factor_exposures USING btree (pricing_pack_id)"
+        },
+        {
+          "name": "idx_factor_exposures_portfolio",
+          "definition": "CREATE INDEX idx_factor_exposures_portfolio ON public.factor_exposures USING btree (portfolio_id, asof_date DESC)"
+        }
+      ]
+    },
+    "fx_rates": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "pricing_pack_id",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "base_ccy",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "quote_ccy",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "asof_ts",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "rate",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 10
+        },
+        {
+          "column_name": "source",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "policy",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fx_rates_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "fx_rates_pricing_pack_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (pricing_pack_id) REFERENCES pricing_packs(id) ON DELETE CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "fx_rates_pkey",
+          "definition": "CREATE UNIQUE INDEX fx_rates_pkey ON public.fx_rates USING btree (id)"
+        },
+        {
+          "name": "idx_fx_rates_pack",
+          "definition": "CREATE INDEX idx_fx_rates_pack ON public.fx_rates USING btree (pricing_pack_id)"
+        },
+        {
+          "name": "idx_fx_rates_pair",
+          "definition": "CREATE INDEX idx_fx_rates_pair ON public.fx_rates USING btree (base_ccy, quote_ccy, asof_ts DESC)"
+        },
+        {
+          "name": "idx_fx_rates_unique",
+          "definition": "CREATE UNIQUE INDEX idx_fx_rates_unique ON public.fx_rates USING btree (base_ccy, quote_ccy, pricing_pack_id)"
+        }
+      ]
+    },
+    "holdings": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "portfolio_id",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "symbol",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": 20,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "quantity",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "cost_basis",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "current_price",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "market_value",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "YES",
+          "column_default": "CURRENT_TIMESTAMP",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "holdings_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "holdings_portfolio_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (portfolio_id) REFERENCES portfolios(id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "holdings_pkey",
+          "definition": "CREATE UNIQUE INDEX holdings_pkey ON public.holdings USING btree (id)"
+        }
+      ]
+    },
+    "lots": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "portfolio_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "security_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "symbol",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "acquisition_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "quantity",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "cost_basis",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "cost_basis_per_share",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "currency",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'USD'::text",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "is_open",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "true",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "quantity_original",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "quantity_open",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "closed_date",
+          "data_type": "date",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_lots_security",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (security_id) REFERENCES securities(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "lots_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "lots_portfolio_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "lots_qty_open_lte_original",
+          "type": "b'c'",
+          "definition": "CHECK ((quantity_open <= quantity_original))"
+        },
+        {
+          "name": "lots_qty_open_nonnegative",
+          "type": "b'c'",
+          "definition": "CHECK ((quantity_open >= (0)::numeric))"
+        },
+        {
+          "name": "lots_quantity_check",
+          "type": "b'c'",
+          "definition": "CHECK ((quantity > (0)::numeric))"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_lots_acquisition_date",
+          "definition": "CREATE INDEX idx_lots_acquisition_date ON public.lots USING btree (acquisition_date)"
+        },
+        {
+          "name": "idx_lots_is_open",
+          "definition": "CREATE INDEX idx_lots_is_open ON public.lots USING btree (is_open) WHERE (is_open = true)"
+        },
+        {
+          "name": "idx_lots_portfolio_id",
+          "definition": "CREATE INDEX idx_lots_portfolio_id ON public.lots USING btree (portfolio_id)"
+        },
+        {
+          "name": "idx_lots_quantity_open",
+          "definition": "CREATE INDEX idx_lots_quantity_open ON public.lots USING btree (quantity_open) WHERE (quantity_open > (0)::numeric)"
+        },
+        {
+          "name": "idx_lots_security_id",
+          "definition": "CREATE INDEX idx_lots_security_id ON public.lots USING btree (security_id)"
+        },
+        {
+          "name": "idx_lots_symbol",
+          "definition": "CREATE INDEX idx_lots_symbol ON public.lots USING btree (symbol)"
+        },
+        {
+          "name": "lots_pkey",
+          "definition": "CREATE UNIQUE INDEX lots_pkey ON public.lots USING btree (id)"
+        }
+      ]
+    },
+    "macro_indicators": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "indicator_id",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "indicator_name",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "value",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "units",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "frequency",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "source",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": "'FRED'::text",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "last_updated",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": "CURRENT_TIMESTAMP",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "macro_indicators_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_macro_indicators_date",
+          "definition": "CREATE INDEX idx_macro_indicators_date ON public.macro_indicators USING btree (date DESC)"
+        },
+        {
+          "name": "idx_macro_indicators_indicator_date",
+          "definition": "CREATE INDEX idx_macro_indicators_indicator_date ON public.macro_indicators USING btree (indicator_id, date DESC)"
+        },
+        {
+          "name": "idx_macro_indicators_indicator_id",
+          "definition": "CREATE INDEX idx_macro_indicators_indicator_id ON public.macro_indicators USING btree (indicator_id)"
+        },
+        {
+          "name": "idx_macro_indicators_updated_at",
+          "definition": "CREATE INDEX idx_macro_indicators_updated_at ON public.macro_indicators USING btree (updated_at)"
+        },
+        {
+          "name": "macro_indicators_pkey",
+          "definition": "CREATE UNIQUE INDEX macro_indicators_pkey ON public.macro_indicators USING btree (id)"
+        },
+        {
+          "name": "uq_macro_indicators_indicator_date",
+          "definition": "CREATE UNIQUE INDEX uq_macro_indicators_indicator_date ON public.macro_indicators USING btree (indicator_id, date)"
+        }
+      ]
+    },
+    "portfolio_cash_flows": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "portfolio_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "flow_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "flow_type",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": 20,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "amount",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "currency",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'USD'::character varying",
+          "character_maximum_length": 3,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "transaction_id",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "description",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": "CURRENT_TIMESTAMP",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "portfolio_cash_flows_flow_type_check",
+          "type": "b'c'",
+          "definition": "CHECK (((flow_type)::text = ANY ((ARRAY['DEPOSIT'::character varying, 'WITHDRAWAL'::character varying, 'DIVIDEND'::character varying, 'INTEREST'::character varying, 'FEE'::character varying])::text[])))"
+        },
+        {
+          "name": "portfolio_cash_flows_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "portfolio_cash_flows_transaction_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (transaction_id) REFERENCES transactions(id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_portfolio_cash_flows_date",
+          "definition": "CREATE INDEX idx_portfolio_cash_flows_date ON public.portfolio_cash_flows USING btree (flow_date DESC)"
+        },
+        {
+          "name": "idx_portfolio_cash_flows_portfolio",
+          "definition": "CREATE INDEX idx_portfolio_cash_flows_portfolio ON public.portfolio_cash_flows USING btree (portfolio_id, flow_date DESC)"
+        },
+        {
+          "name": "idx_portfolio_cash_flows_type",
+          "definition": "CREATE INDEX idx_portfolio_cash_flows_type ON public.portfolio_cash_flows USING btree (flow_type)"
+        },
+        {
+          "name": "portfolio_cash_flows_pkey",
+          "definition": "CREATE UNIQUE INDEX portfolio_cash_flows_pkey ON public.portfolio_cash_flows USING btree (id)"
+        }
+      ]
+    },
+    "portfolio_daily_values": {
+      "columns": [
+        {
+          "column_name": "portfolio_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "valuation_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "total_value",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "cash_balance",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "positions_value",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "cash_flows",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "currency",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'USD'::character varying",
+          "character_maximum_length": 3,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "computed_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": "CURRENT_TIMESTAMP",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "portfolio_daily_values_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (portfolio_id, valuation_date)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_portfolio_daily_values_date",
+          "definition": "CREATE INDEX idx_portfolio_daily_values_date ON public.portfolio_daily_values USING btree (valuation_date DESC)"
+        },
+        {
+          "name": "portfolio_daily_values_pkey",
+          "definition": "CREATE UNIQUE INDEX portfolio_daily_values_pkey ON public.portfolio_daily_values USING btree (portfolio_id, valuation_date)"
+        }
+      ]
+    },
+    "portfolio_metrics": {
+      "columns": [
+        {
+          "column_name": "portfolio_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "asof_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "pricing_pack_id",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "twr_1d",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "twr_1d_base",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "twr_mtd",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "twr_qtd",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "twr_ytd",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "twr_1y",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "twr_3y_ann",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "twr_5y_ann",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "twr_inception_ann",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "mwr_ytd",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "mwr_1y",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "mwr_3y_ann",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "mwr_inception_ann",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "volatility_30d",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "volatility_60d",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "volatility_90d",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "volatility_1y",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "sharpe_30d",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "sharpe_60d",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "sharpe_90d",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "sharpe_1y",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "max_drawdown_1y",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "max_drawdown_3y",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "current_drawdown",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "alpha_1y",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "alpha_3y_ann",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "beta_1y",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "beta_3y",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "tracking_error_1y",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "information_ratio_1y",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "win_rate_1y",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 5,
+          "numeric_scale": 4
+        },
+        {
+          "column_name": "avg_win",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "avg_loss",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 12,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "portfolio_value_base",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "portfolio_value_local",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "cash_balance",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "base_currency",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "benchmark_id",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "reconciliation_error_bps",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 10,
+          "numeric_scale": 4
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "portfolio_metrics_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (portfolio_id, asof_date, pricing_pack_id)"
+        },
+        {
+          "name": "portfolio_metrics_pricing_pack_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (pricing_pack_id) REFERENCES pricing_packs(id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_portfolio_metrics_date",
+          "definition": "CREATE INDEX idx_portfolio_metrics_date ON public.portfolio_metrics USING btree (asof_date DESC)"
+        },
+        {
+          "name": "idx_portfolio_metrics_pack",
+          "definition": "CREATE INDEX idx_portfolio_metrics_pack ON public.portfolio_metrics USING btree (pricing_pack_id)"
+        },
+        {
+          "name": "idx_portfolio_metrics_portfolio",
+          "definition": "CREATE INDEX idx_portfolio_metrics_portfolio ON public.portfolio_metrics USING btree (portfolio_id, asof_date DESC)"
+        },
+        {
+          "name": "portfolio_metrics_asof_date_idx",
+          "definition": "CREATE INDEX portfolio_metrics_asof_date_idx ON public.portfolio_metrics USING btree (asof_date DESC)"
+        },
+        {
+          "name": "portfolio_metrics_pkey",
+          "definition": "CREATE UNIQUE INDEX portfolio_metrics_pkey ON public.portfolio_metrics USING btree (portfolio_id, asof_date, pricing_pack_id)"
+        }
+      ]
+    },
+    "portfolios": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "user_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "name",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "description",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "base_currency",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'USD'::text",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "benchmark_id",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "is_active",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "true",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "cost_basis_method",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'FIFO'::character varying",
+          "character_maximum_length": 20,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "cost_basis_method_changed_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_portfolios_user_id",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "portfolios_cost_basis_method_check",
+          "type": "b'c'",
+          "definition": "CHECK (((cost_basis_method)::text = ANY ((ARRAY['FIFO'::character varying, 'LIFO'::character varying, 'HIFO'::character varying, 'SPECIFIC_LOT'::character varying, 'AVERAGE_COST'::character varying])::text[])))"
+        },
+        {
+          "name": "portfolios_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_portfolios_benchmark_id",
+          "definition": "CREATE INDEX idx_portfolios_benchmark_id ON public.portfolios USING btree (benchmark_id)"
+        },
+        {
+          "name": "idx_portfolios_is_active",
+          "definition": "CREATE INDEX idx_portfolios_is_active ON public.portfolios USING btree (is_active) WHERE (is_active = true)"
+        },
+        {
+          "name": "idx_portfolios_user_id",
+          "definition": "CREATE INDEX idx_portfolios_user_id ON public.portfolios USING btree (user_id)"
+        },
+        {
+          "name": "portfolios_pkey",
+          "definition": "CREATE UNIQUE INDEX portfolios_pkey ON public.portfolios USING btree (id)"
+        }
+      ]
+    },
+    "position_factor_betas": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "portfolio_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "symbol",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "security_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "asof_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "real_rate_beta",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "inflation_beta",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "credit_beta",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "usd_beta",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "equity_beta",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "commodity_beta",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "volatility_beta",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "methodology",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "r_squared",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "position_factor_betas_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "position_factor_betas_portfolio_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_position_factor_betas_asof_date",
+          "definition": "CREATE INDEX idx_position_factor_betas_asof_date ON public.position_factor_betas USING btree (asof_date DESC)"
+        },
+        {
+          "name": "idx_position_factor_betas_portfolio_date",
+          "definition": "CREATE INDEX idx_position_factor_betas_portfolio_date ON public.position_factor_betas USING btree (portfolio_id, asof_date DESC)"
+        },
+        {
+          "name": "idx_position_factor_betas_portfolio_id",
+          "definition": "CREATE INDEX idx_position_factor_betas_portfolio_id ON public.position_factor_betas USING btree (portfolio_id)"
+        },
+        {
+          "name": "idx_position_factor_betas_symbol",
+          "definition": "CREATE INDEX idx_position_factor_betas_symbol ON public.position_factor_betas USING btree (symbol)"
+        },
+        {
+          "name": "position_factor_betas_pkey",
+          "definition": "CREATE UNIQUE INDEX position_factor_betas_pkey ON public.position_factor_betas USING btree (id)"
+        },
+        {
+          "name": "uq_position_factor_betas_portfolio_symbol_date",
+          "definition": "CREATE UNIQUE INDEX uq_position_factor_betas_portfolio_symbol_date ON public.position_factor_betas USING btree (portfolio_id, symbol, asof_date)"
+        }
+      ]
+    },
+    "prices": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "security_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "pricing_pack_id",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "asof_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "close",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "open",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "high",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "low",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 8
+        },
+        {
+          "column_name": "volume",
+          "data_type": "bigint",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 64,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "currency",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "source",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "adjusted_for_splits",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "true",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "adjusted_for_dividends",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "false",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "prices_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "prices_pricing_pack_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (pricing_pack_id) REFERENCES pricing_packs(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "prices_security_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (security_id) REFERENCES securities(id) ON DELETE CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_prices_asof_date",
+          "definition": "CREATE INDEX idx_prices_asof_date ON public.prices USING btree (asof_date DESC)"
+        },
+        {
+          "name": "idx_prices_pack",
+          "definition": "CREATE INDEX idx_prices_pack ON public.prices USING btree (pricing_pack_id)"
+        },
+        {
+          "name": "idx_prices_security",
+          "definition": "CREATE INDEX idx_prices_security ON public.prices USING btree (security_id, asof_date DESC)"
+        },
+        {
+          "name": "idx_prices_unique",
+          "definition": "CREATE UNIQUE INDEX idx_prices_unique ON public.prices USING btree (security_id, pricing_pack_id)"
+        },
+        {
+          "name": "prices_pkey",
+          "definition": "CREATE UNIQUE INDEX prices_pkey ON public.prices USING btree (id)"
+        }
+      ]
+    },
+    "pricing_packs": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "policy",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'WM4PM_CAD'::text",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "hash",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "superseded_by",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "sources_json",
+          "data_type": "jsonb",
+          "is_nullable": "NO",
+          "column_default": "'{}'::jsonb",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'warming'::text",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "is_fresh",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "prewarm_done",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "reconciliation_passed",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "reconciliation_failed",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "reconciliation_error_bps",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 10,
+          "numeric_scale": 4
+        },
+        {
+          "column_name": "error_message",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_pricing_packs_reconciliation",
+          "type": "b'c'",
+          "definition": "CHECK ((((reconciliation_passed = true) AND ((reconciliation_error_bps IS NULL) OR (reconciliation_error_bps <= 1.0))) OR ((reconciliation_failed = true) AND ((reconciliation_error_bps IS NULL) OR (reconciliation_error_bps > 1.0))) OR ((reconciliation_passed = false) AND (reconciliation_failed = false))))"
+        },
+        {
+          "name": "chk_pricing_packs_status",
+          "type": "b'c'",
+          "definition": "CHECK ((status = ANY (ARRAY['warming'::text, 'fresh'::text, 'error'::text])))"
+        },
+        {
+          "name": "pricing_packs_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "pricing_packs_superseded_by_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (superseded_by) REFERENCES pricing_packs(id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_pricing_packs_date",
+          "definition": "CREATE INDEX idx_pricing_packs_date ON public.pricing_packs USING btree (date DESC)"
+        },
+        {
+          "name": "idx_pricing_packs_is_fresh",
+          "definition": "CREATE INDEX idx_pricing_packs_is_fresh ON public.pricing_packs USING btree (is_fresh) WHERE (is_fresh = true)"
+        },
+        {
+          "name": "idx_pricing_packs_status",
+          "definition": "CREATE INDEX idx_pricing_packs_status ON public.pricing_packs USING btree (status)"
+        },
+        {
+          "name": "idx_pricing_packs_superseded_by",
+          "definition": "CREATE INDEX idx_pricing_packs_superseded_by ON public.pricing_packs USING btree (superseded_by) WHERE (superseded_by IS NOT NULL)"
+        },
+        {
+          "name": "pricing_packs_pkey",
+          "definition": "CREATE UNIQUE INDEX pricing_packs_pkey ON public.pricing_packs USING btree (id)"
+        },
+        {
+          "name": "uq_pricing_packs_date_policy",
+          "definition": "CREATE UNIQUE INDEX uq_pricing_packs_date_policy ON public.pricing_packs USING btree (date, policy) WHERE (superseded_by IS NULL)"
+        }
+      ]
+    },
+    "regime_history": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "regime",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "confidence",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "indicators_json",
+          "data_type": "jsonb",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "zscores_json",
+          "data_type": "jsonb",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "regime_scores_json",
+          "data_type": "jsonb",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "regime_history_confidence_check",
+          "type": "b'c'",
+          "definition": "CHECK (((confidence >= (0)::numeric) AND (confidence <= (1)::numeric)))"
+        },
+        {
+          "name": "regime_history_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "regime_history_regime_check",
+          "type": "b'c'",
+          "definition": "CHECK ((regime = ANY (ARRAY['EARLY_EXPANSION'::text, 'MID_EXPANSION'::text, 'LATE_EXPANSION'::text, 'EARLY_CONTRACTION'::text, 'DEEP_CONTRACTION'::text])))"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_regime_history_date",
+          "definition": "CREATE INDEX idx_regime_history_date ON public.regime_history USING btree (date DESC)"
+        },
+        {
+          "name": "idx_regime_history_regime",
+          "definition": "CREATE INDEX idx_regime_history_regime ON public.regime_history USING btree (regime)"
+        },
+        {
+          "name": "regime_history_pkey",
+          "definition": "CREATE UNIQUE INDEX regime_history_pkey ON public.regime_history USING btree (id)"
+        },
+        {
+          "name": "uq_regime_history_date",
+          "definition": "CREATE UNIQUE INDEX uq_regime_history_date ON public.regime_history USING btree (date)"
+        }
+      ]
+    },
+    "scenario_results": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "portfolio_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "user_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "shock_type",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "asof_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "total_delta_pnl",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "total_delta_pnl_pct",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "winners_json",
+          "data_type": "jsonb",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "losers_json",
+          "data_type": "jsonb",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "suggested_hedges_json",
+          "data_type": "jsonb",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "shock_definition_json",
+          "data_type": "jsonb",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "pricing_pack_id",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "scenario_results_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "scenario_results_portfolio_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_scenario_results_asof_date",
+          "definition": "CREATE INDEX idx_scenario_results_asof_date ON public.scenario_results USING btree (asof_date DESC)"
+        },
+        {
+          "name": "idx_scenario_results_portfolio_date",
+          "definition": "CREATE INDEX idx_scenario_results_portfolio_date ON public.scenario_results USING btree (portfolio_id, asof_date DESC)"
+        },
+        {
+          "name": "idx_scenario_results_portfolio_id",
+          "definition": "CREATE INDEX idx_scenario_results_portfolio_id ON public.scenario_results USING btree (portfolio_id)"
+        },
+        {
+          "name": "idx_scenario_results_shock_type",
+          "definition": "CREATE INDEX idx_scenario_results_shock_type ON public.scenario_results USING btree (shock_type)"
+        },
+        {
+          "name": "idx_scenario_results_user_id",
+          "definition": "CREATE INDEX idx_scenario_results_user_id ON public.scenario_results USING btree (user_id)"
+        },
+        {
+          "name": "scenario_results_pkey",
+          "definition": "CREATE UNIQUE INDEX scenario_results_pkey ON public.scenario_results USING btree (id)"
+        },
+        {
+          "name": "uq_scenario_results_portfolio_shock_date",
+          "definition": "CREATE UNIQUE INDEX uq_scenario_results_portfolio_shock_date ON public.scenario_results USING btree (portfolio_id, shock_type, asof_date)"
+        }
+      ]
+    },
+    "scenario_shocks": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "shock_type",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "shock_name",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "shock_description",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "real_rates_bps",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "inflation_bps",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "credit_spread_bps",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "usd_pct",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "equity_pct",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "commodity_pct",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "volatility_pct",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "is_custom",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "false",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_by",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "scenario_shocks_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "scenario_shocks_shock_type_key",
+          "type": "b'u'",
+          "definition": "UNIQUE (shock_type)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_scenario_shocks_is_custom",
+          "definition": "CREATE INDEX idx_scenario_shocks_is_custom ON public.scenario_shocks USING btree (is_custom)"
+        },
+        {
+          "name": "idx_scenario_shocks_shock_type",
+          "definition": "CREATE INDEX idx_scenario_shocks_shock_type ON public.scenario_shocks USING btree (shock_type)"
+        },
+        {
+          "name": "scenario_shocks_pkey",
+          "definition": "CREATE UNIQUE INDEX scenario_shocks_pkey ON public.scenario_shocks USING btree (id)"
+        },
+        {
+          "name": "scenario_shocks_shock_type_key",
+          "definition": "CREATE UNIQUE INDEX scenario_shocks_shock_type_key ON public.scenario_shocks USING btree (shock_type)"
+        }
+      ]
+    },
+    "securities": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "symbol",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "name",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "security_type",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'equity'::text",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "exchange",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "trading_currency",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'USD'::text",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "dividend_currency",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "domicile_country",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "active",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "true",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "sector",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": 100,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "securities_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_securities_active",
+          "definition": "CREATE INDEX idx_securities_active ON public.securities USING btree (active) WHERE (active = true)"
+        },
+        {
+          "name": "idx_securities_exchange",
+          "definition": "CREATE INDEX idx_securities_exchange ON public.securities USING btree (exchange)"
+        },
+        {
+          "name": "idx_securities_symbol",
+          "definition": "CREATE UNIQUE INDEX idx_securities_symbol ON public.securities USING btree (symbol)"
+        },
+        {
+          "name": "securities_pkey",
+          "definition": "CREATE UNIQUE INDEX securities_pkey ON public.securities USING btree (id)"
+        }
+      ]
+    },
+    "security_classifications": {
+      "columns": [
+        {
+          "column_name": "security_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "sector",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": 100,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "industry",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": 100,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "gics_code",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": 10,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "classification_date",
+          "data_type": "date",
+          "is_nullable": "YES",
+          "column_default": "CURRENT_DATE",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "source",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'Manual'::character varying",
+          "character_maximum_length": 50,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "YES",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "YES",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "security_classifications_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (security_id)"
+        },
+        {
+          "name": "security_classifications_security_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (security_id) REFERENCES securities(id)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "security_classifications_pkey",
+          "definition": "CREATE UNIQUE INDEX security_classifications_pkey ON public.security_classifications USING btree (security_id)"
+        }
+      ]
+    },
+    "transactions": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "portfolio_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "transaction_type",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "security_id",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "symbol",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "transaction_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "settlement_date",
+          "data_type": "date",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "quantity",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "price",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "amount",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "currency",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'USD'::text",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "fee",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "commission",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "lot_id",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "narration",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "source",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": "'manual'::text",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "ledger_commit_hash",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "realized_pl",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": "NULL::numeric",
+          "character_maximum_length": null,
+          "numeric_precision": 20,
+          "numeric_scale": 2
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_transactions_quantity_positive",
+          "type": "b'c'",
+          "definition": "CHECK ((quantity > (0)::numeric))"
+        },
+        {
+          "name": "fk_transactions_security_id",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (security_id) REFERENCES securities(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "transactions_lot_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (lot_id) REFERENCES lots(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "transactions_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "transactions_portfolio_id_fkey",
+          "type": "b'f'",
+          "definition": "FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "transactions_source_check",
+          "type": "b'c'",
+          "definition": "CHECK ((source = ANY (ARRAY['ledger'::text, 'manual'::text, 'import'::text])))"
+        },
+        {
+          "name": "transactions_transaction_type_check",
+          "type": "b'c'",
+          "definition": "CHECK ((transaction_type = ANY (ARRAY['BUY'::text, 'SELL'::text, 'DIVIDEND'::text, 'SPLIT'::text, 'TRANSFER_IN'::text, 'TRANSFER_OUT'::text, 'FEE'::text])))"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_transactions_ledger_commit_hash",
+          "definition": "CREATE INDEX idx_transactions_ledger_commit_hash ON public.transactions USING btree (ledger_commit_hash)"
+        },
+        {
+          "name": "idx_transactions_lot_id",
+          "definition": "CREATE INDEX idx_transactions_lot_id ON public.transactions USING btree (lot_id)"
+        },
+        {
+          "name": "idx_transactions_portfolio_id",
+          "definition": "CREATE INDEX idx_transactions_portfolio_id ON public.transactions USING btree (portfolio_id)"
+        },
+        {
+          "name": "idx_transactions_realized_pl",
+          "definition": "CREATE INDEX idx_transactions_realized_pl ON public.transactions USING btree (realized_pl) WHERE (realized_pl IS NOT NULL)"
+        },
+        {
+          "name": "idx_transactions_security_id",
+          "definition": "CREATE INDEX idx_transactions_security_id ON public.transactions USING btree (security_id)"
+        },
+        {
+          "name": "idx_transactions_symbol",
+          "definition": "CREATE INDEX idx_transactions_symbol ON public.transactions USING btree (symbol)"
+        },
+        {
+          "name": "idx_transactions_tax_year",
+          "definition": "CREATE INDEX idx_transactions_tax_year ON public.transactions USING btree (portfolio_id, EXTRACT(year FROM transaction_date), realized_pl) WHERE (realized_pl IS NOT NULL)"
+        },
+        {
+          "name": "idx_transactions_transaction_date",
+          "definition": "CREATE INDEX idx_transactions_transaction_date ON public.transactions USING btree (transaction_date DESC)"
+        },
+        {
+          "name": "idx_transactions_transaction_type",
+          "definition": "CREATE INDEX idx_transactions_transaction_type ON public.transactions USING btree (transaction_type)"
+        },
+        {
+          "name": "transactions_pkey",
+          "definition": "CREATE UNIQUE INDEX transactions_pkey ON public.transactions USING btree (id)"
+        }
+      ]
+    },
+    "users": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "email",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "password_hash",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "role",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'USER'::text",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "last_login_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "is_active",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "true",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "users_email_format",
+          "type": "b'c'",
+          "definition": "CHECK ((email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'::text))"
+        },
+        {
+          "name": "users_email_key",
+          "type": "b'u'",
+          "definition": "UNIQUE (email)"
+        },
+        {
+          "name": "users_pkey",
+          "type": "b'p'",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "users_role_valid",
+          "type": "b'c'",
+          "definition": "CHECK ((role = ANY (ARRAY['VIEWER'::text, 'USER'::text, 'MANAGER'::text, 'ADMIN'::text])))"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_users_active",
+          "definition": "CREATE INDEX idx_users_active ON public.users USING btree (is_active) WHERE (is_active = true)"
+        },
+        {
+          "name": "idx_users_email",
+          "definition": "CREATE INDEX idx_users_email ON public.users USING btree (email)"
+        },
+        {
+          "name": "idx_users_role",
+          "definition": "CREATE INDEX idx_users_role ON public.users USING btree (role)"
+        },
+        {
+          "name": "users_email_key",
+          "definition": "CREATE UNIQUE INDEX users_email_key ON public.users USING btree (email)"
+        },
+        {
+          "name": "users_pkey",
+          "definition": "CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)"
+        }
+      ]
+    }
+  }
+}
