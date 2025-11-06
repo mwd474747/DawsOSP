@@ -51,13 +51,15 @@ python combined_server.py
 - **Server**: `combined_server.py` - FastAPI server (6,043 lines, 53 endpoints)
 - **Database**: PostgreSQL + TimescaleDB
 - **Agents**: 4 agents providing ~70 capabilities
-  - **Note:** Phase 3 consolidation complete (November 3, 2025):
-    - Week 1: OptimizerAgent → FinancialAnalyst ✅ COMPLETE
-    - Week 2: RatingsAgent → FinancialAnalyst ✅ COMPLETE
-    - Week 3: ChartsAgent → FinancialAnalyst ✅ COMPLETE
-    - Week 4: AlertsAgent → MacroHound ✅ COMPLETE
-    - Week 5: ReportsAgent → DataHarvester ✅ COMPLETE
-    - Week 6: Legacy agent cleanup ✅ COMPLETE
+  - **FinancialAnalyst**: Portfolio management, pricing, metrics, ratings, charts
+  - **MacroHound**: Macro economic cycles, scenarios, alerts
+  - **DataHarvester**: External data, news, reports
+  - **PortfolioAgent**: Core portfolio operations
+  - **Note:** Phase 0-3 refactoring complete (January 14, 2025):
+    - Phase 0: Zombie code removal (1,197 lines) ✅ COMPLETE
+    - Phase 1: Emergency fixes (provenance warnings) ✅ COMPLETE
+    - Phase 2: Foundation (capability contracts, validation) ✅ COMPLETE
+    - Phase 3: Real features (factor analysis, DaR hardening) ✅ COMPLETE
 - **Patterns**: 13 pattern definitions for orchestration
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.
@@ -188,7 +190,7 @@ DawsOSP/
 ├── test_ratings_parse.html       # Buffett ratings testing utility
 ├── backend/
 │   ├── app/
-│   │   ├── agents/               # 9 agents (financial_analyst, macro_hound, etc.)
+│   │   ├── agents/               # 4 agents (financial_analyst, macro_hound, data_harvester, portfolio)
 │   │   ├── api/
 │   │   │   ├── executor.py       # Alternative entry point (not used in production)
 │   │   │   └── routes/           # Modular API routes (imported by combined_server)

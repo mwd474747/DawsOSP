@@ -29,8 +29,8 @@
 ### Agent Coordination
 - **[AGENT_CONVERSATION_MEMORY.md](AGENT_CONVERSATION_MEMORY.md)** - Shared memory for agent coordination
 
-### Phase 1 Completion
-- **[PHASE_1_COMPLETE.md](PHASE_1_COMPLETE.md)** - Comprehensive Phase 1 completion summary (January 14, 2025)
+### Refactoring Status
+- **[REFACTOR_STATUS.md](REFACTOR_STATUS.md)** - Current refactoring status (Phases 0-3 Complete, Phase 4 Pending)
 
 ---
 
@@ -62,6 +62,11 @@
 
 Historical documentation has been archived to `.archive/` directory:
 
+- **Phase Completion** - `.archive/phase-completion/` - Phase completion reports and validation
+- **Planning Documents** - `.archive/planning/` - Phase planning documents
+- **Critical Fixes** - `.archive/critical-fixes/` - Critical fixes documentation
+- **Git/Replit Fixes** - `.archive/git-replit-fixes/` - Git and Replit fix guides
+- **Status Consolidation** - `.archive/status-consolidation/` - Consolidated status documents
 - **Phase 1 Validation** - `.archive/phase1-validation/` - Phase 1 validation reports
 - **Phase 3 Consolidation** - `.archive/phase3/`
 - **UI Integration** - `.archive/ui-integration/`
@@ -104,6 +109,13 @@ Historical documentation has been archived to `.archive/` directory:
 ---
 
 ## 📝 Recent Updates (January 14, 2025)
+
+### Phase 0-3 Complete: Refactoring Complete ✅
+- **Phase 0:** Zombie code removal (1,197 lines removed) ✅ COMPLETE
+- **Phase 1:** Emergency fixes (provenance warnings, pattern fixes) ✅ COMPLETE
+- **Phase 2:** Foundation (capability contracts, validation) ✅ COMPLETE
+- **Phase 3:** Real features (factor analysis, DaR hardening) ✅ COMPLETE
+- **Phase 4:** Production readiness (pending) ⏳ PENDING
 
 ### Phase 1 Complete: Provenance Warnings & Pattern Output Extraction ✅
 - **Provenance Warnings:** Stub data now explicitly marked with `_provenance` field
