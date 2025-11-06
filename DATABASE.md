@@ -1,9 +1,9 @@
 # DawsOS Database Documentation
 
-**Version:** 3.0 (Post-Refactoring State)  
-**Last Updated:** November 4, 2025  
+**Version:** 3.1 (Accurate Schema Documentation)  
+**Last Updated:** January 14, 2025  
 **Database:** PostgreSQL 14+ with TimescaleDB Extension  
-**Status:** ✅ PRODUCTION READY (22 Active Tables, All Migrations Complete)
+**Status:** ✅ PRODUCTION READY (29 Active Tables, All Migrations Complete)
 
 ---
 
@@ -36,8 +36,8 @@
    - Added validation to prevent orphaned records
 
 6. **Migration 003: Cleanup Unused Tables** ✅
-   - Removed 8 unused tables (ledger_snapshots, ledger_transactions, audit_log, etc.)
-   - Reduced database size by 18% (480 KB saved)
+   - Removed unused tables (ledger_snapshots, ledger_transactions, audit_log, etc.)
+   - Note: Some tables like audit_log were removed in this migration
    - Cleaned up legacy/unimplemented features
 
 7. **Migration 014: Add Deprecation Comment** ✅ (January 14, 2025)
@@ -60,12 +60,12 @@
 DawsOS uses PostgreSQL with TimescaleDB for time-series data optimization. The database employs a hybrid pattern of real-time computation and cached storage for optimal performance.
 
 ### Key Statistics
-- **Total Tables:** 22 active (down from 30, Migration 003 removed 8 unused tables)
-- **Total Views:** 3 (latest_ledger_snapshot, portfolio_currency_attributions, v_derived_indicators)
-- **Core Domain Tables:** 15
-- **System/Support Tables:** 7
+- **Total Tables:** 29 active (verified January 14, 2025)
+- **Total Views:** 2 (portfolio_currency_attributions, v_derived_indicators)
+- **Core Domain Tables:** 17
+- **System/Support Tables:** 12
 - **Connection Method:** Cross-module pool using `sys.modules` storage
-- **Migrations Executed:** 001, 002, 002b, 002c, 002d, 003 (all complete)
+- **Migrations Executed:** 001, 002, 002b, 002c, 002d, 003, 014 (all complete)
 
 ### Architecture Pattern
 - **Compute-First:** Services calculate data on-demand by default
@@ -202,16 +202,17 @@ PRIMARY KEY (pricing_pack_id, base_ccy, quote_ccy)
 Daily portfolio NAV tracking (TimescaleDB hypertable).
 ```sql
 - portfolio_id: UUID
-- date: DATE
-- nav: NUMERIC(20,2) -- Net Asset Value
-- cash: NUMERIC(20,2)
-- securities_value: NUMERIC(20,2)
-- total_pl: NUMERIC(20,2)
-- daily_pl: NUMERIC(20,2)
-- created_at: TIMESTAMP WITH TIME ZONE
-PRIMARY KEY (portfolio_id, date)
--- Hypertable on 'date' column
+- valuation_date: DATE  -- Note: Uses valuation_date, not asof_date (inconsistent with other time-series tables)
+- total_value: NUMERIC(20,2) -- Total portfolio NAV
+- cash_balance: NUMERIC(20,2) -- Default: 0
+- positions_value: NUMERIC(20,2) -- Default: 0
+- cash_flows: NUMERIC(20,2) -- Default: 0
+- currency: VARCHAR(3) -- Default: 'USD'
+- computed_at: TIMESTAMP WITH TIME ZONE -- Default: CURRENT_TIMESTAMP
+PRIMARY KEY (portfolio_id, valuation_date)
+-- Hypertable on 'valuation_date' column
 ```
+**⚠️ Field Name Inconsistency:** Uses `valuation_date` instead of `asof_date` (other time-series tables use `asof_date`)
 
 #### 9. **portfolio_metrics** 🕐
 Performance metrics time-series (TimescaleDB hypertable).
@@ -371,26 +372,65 @@ Application user accounts.
 - last_login: TIMESTAMP WITH TIME ZONE
 ```
 
-#### 19. **audit_log**
-Comprehensive audit trail.
+#### 19. **corporate_actions**
+Tracks dividends, splits, and other corporate actions.
 ```sql
-- id: SERIAL (Primary Key)
-- user_id: UUID REFERENCES users(id)
-- action: TEXT
-- entity_type: TEXT
-- entity_id: UUID
-- changes: JSONB
-- ip_address: INET
-- user_agent: TEXT
+- id: UUID (Primary Key)
+- portfolio_id: UUID REFERENCES portfolios(id)
+- security_id: UUID REFERENCES securities(id)
+- action_type: TEXT -- 'DIVIDEND', 'SPLIT', 'MERGER'
+- ex_date: DATE
+- record_date: DATE
+- pay_date: DATE
+- amount: NUMERIC(20,8)
+- currency: TEXT
+- split_ratio: NUMERIC
+- status: TEXT -- 'PENDING', 'COMPLETED', 'CANCELLED'
 - created_at: TIMESTAMP WITH TIME ZONE
 ```
 
-#### 20-23. **Alert System Tables**
+#### 20. **alerts**
+Alert definitions and rules.
 ```sql
-alerts               -- Alert definitions
-alert_deliveries     -- Delivery tracking
-alert_retries       -- Retry management  
-alert_dlq           -- Alert dead letter queue
+- id: UUID (Primary Key)
+- portfolio_id: UUID REFERENCES portfolios(id)
+- alert_type: TEXT -- 'PRICE_THRESHOLD', 'VOLATILITY', 'DRAWDOWN', etc.
+- criteria: JSONB -- Alert trigger conditions
+- enabled: BOOLEAN
+- created_at: TIMESTAMP WITH TIME ZONE
+- updated_at: TIMESTAMP WITH TIME ZONE
+```
+
+#### 21. **alert_deliveries**
+Alert delivery tracking.
+```sql
+- id: UUID (Primary Key)
+- alert_id: UUID REFERENCES alerts(id)
+- delivery_status: TEXT -- 'PENDING', 'DELIVERED', 'FAILED'
+- delivery_channel: TEXT -- 'EMAIL', 'SMS', 'WEBHOOK'
+- delivered_at: TIMESTAMP WITH TIME ZONE
+- created_at: TIMESTAMP WITH TIME ZONE
+```
+
+#### 22. **alert_retries**
+Alert retry management.
+```sql
+- id: UUID (Primary Key)
+- alert_id: UUID REFERENCES alerts(id)
+- retry_count: INTEGER
+- last_retry_at: TIMESTAMP WITH TIME ZONE
+- next_retry_at: TIMESTAMP WITH TIME ZONE
+- error_message: TEXT
+```
+
+#### 23. **alert_dlq**
+Alert dead letter queue for failed alerts.
+```sql
+- id: UUID (Primary Key)
+- alert_id: UUID REFERENCES alerts(id)
+- failure_reason: TEXT
+- payload: JSONB
+- failed_at: TIMESTAMP WITH TIME ZONE
 ```
 
 #### 24. **dlq**
@@ -416,30 +456,85 @@ Quality rating criteria definitions.
 -- ⚠️ Currently empty - service uses hardcoded fallback weights
 ```
 
-#### 26-27. **Operational Tables**
+#### 26. **dar_history**
+Drawdown at Risk (DaR) historical calculations.
 ```sql
-rebalance_suggestions    -- Portfolio rebalancing recommendations
-reconciliation_results   -- Data reconciliation audit
+- id: UUID (Primary Key)
+- portfolio_id: UUID REFERENCES portfolios(id)
+- calculation_date: DATE
+- dar_value: NUMERIC(20,8)
+- dar_pct: NUMERIC(12,8)
+- confidence: NUMERIC(5,4)
+- regime: TEXT
+- horizon_days: INTEGER
+- created_at: TIMESTAMP WITH TIME ZONE
 ```
 
-#### 28-30. **Ledger System Tables**
+#### 27. **scenario_results**
+Scenario analysis results.
 ```sql
-holdings                 -- Current holdings snapshot
-ledger_snapshots        -- Point-in-time ledger state
-ledger_transactions     -- Detailed ledger records
+- id: UUID (Primary Key)
+- portfolio_id: UUID REFERENCES portfolios(id)
+- scenario_id: TEXT
+- run_date: DATE
+- shock_type: TEXT
+- portfolio_value_before: NUMERIC(20,2)
+- portfolio_value_after: NUMERIC(20,2)
+- delta_pl: NUMERIC(20,2)
+- delta_pl_pct: NUMERIC(12,8)
+- position_impacts: JSONB
+- created_at: TIMESTAMP WITH TIME ZONE
+```
+
+#### 28. **holdings**
+Current holdings snapshot view.
+```sql
+- portfolio_id: UUID REFERENCES portfolios(id)
+- security_id: UUID REFERENCES securities(id)
+- symbol: TEXT
+- quantity: NUMERIC(20,8)
+- cost_basis: NUMERIC(20,2)
+- market_value: NUMERIC(20,2)
+- unrealized_pl: NUMERIC(20,2)
+- weight: NUMERIC(12,8)
+- asof_date: DATE
+```
+
+#### 29. **security_classifications**
+Security classification metadata.
+```sql
+- security_id: UUID REFERENCES securities(id) PRIMARY KEY
+- sector: TEXT
+- industry: TEXT
+- sub_industry: TEXT
+- country: TEXT
+- market_cap_category: TEXT -- 'LARGE', 'MID', 'SMALL'
+- asset_class: TEXT -- 'EQUITY', 'FIXED_INCOME', 'COMMODITY'
+- created_at: TIMESTAMP WITH TIME ZONE
+- updated_at: TIMESTAMP WITH TIME ZONE
+```
+
+#### 30. **economic_indicators**
+Economic indicator time-series data.
+```sql
+- id: UUID (Primary Key)
+- indicator_code: TEXT -- 'GDP', 'CPI', 'UNEMPLOYMENT'
+- asof_date: DATE
+- value: NUMERIC(20,8)
+- unit: TEXT
+- frequency: TEXT -- 'DAILY', 'MONTHLY', 'QUARTERLY'
+- source: TEXT -- 'FRED', 'BLS', 'IMF'
+- created_at: TIMESTAMP WITH TIME ZONE
 ```
 
 ---
 
 ## 📐 Database Views
 
-#### 1. **latest_ledger_snapshot**
-Current ledger state per portfolio.
-
-#### 2. **portfolio_currency_attributions**
+#### 1. **portfolio_currency_attributions**
 Aggregated currency attribution across portfolios.
 
-#### 3. **v_derived_indicators**
+#### 2. **v_derived_indicators**
 Computed macro indicators (real interest rate, term spread, etc.)
 
 ---
