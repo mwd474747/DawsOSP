@@ -314,27 +314,13 @@ async def shutdown_event():
 
 
 # ============================================================================
-# Observability Setup
+# Observability Setup (Graceful Degradation)
 # ============================================================================
 
-# Initialize metrics (always enabled)
-setup_metrics(service_name="dawsos_executor")
-
-# Setup observability (tracing/errors optional, based on config)
-# ✅ ENABLED (2025-10-23): Load from environment variables
-import os
-
-# Only enable if explicitly configured (opt-in for production)
-if os.getenv("ENABLE_OBSERVABILITY", "false").lower() == "true":
-    setup_observability(
-        service_name="dawsos-executor",
-        environment=os.getenv("ENVIRONMENT", "development"),
-        jaeger_endpoint=os.getenv("JAEGER_ENDPOINT"),
-        sentry_dsn=os.getenv("SENTRY_DSN"),
-    )
-    logger.info("Observability enabled: Jaeger tracing and Sentry error tracking")
-else:
-    logger.info("Observability disabled (set ENABLE_OBSERVABILITY=true to enable)")
+# Observability setup removed - observability modules not available
+# Metrics and tracing are handled via graceful degradation patterns
+# (try/except ImportError blocks throughout the codebase)
+logger.info("Observability: Using graceful degradation (modules not available)")
 
 
 # ============================================================================
@@ -386,14 +372,24 @@ class ErrorResponse(BaseModel):
 @executor_app.get("/metrics")
 async def metrics_endpoint():
     """
-    Prometheus metrics endpoint.
+    Health metrics endpoint.
 
-    Returns metrics in Prometheus text format for scraping.
+    Returns basic health status (observability metrics not available).
     """
-    from observability.metrics import generate_metrics, METRICS_CONTENT_TYPE
     from fastapi import Response
+    import json
 
-    return Response(content=generate_metrics(), media_type=METRICS_CONTENT_TYPE)
+    # Basic health status when observability not available
+    health_status = {
+        "status": "healthy",
+        "service": "dawsos_executor",
+        "observability": "not_available"
+    }
+
+    return Response(
+        content=json.dumps(health_status, indent=2),
+        media_type="application/json"
+    )
 
 
 # ============================================================================

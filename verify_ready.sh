@@ -71,37 +71,19 @@ for script in backend/run_api.sh frontend/run_ui.sh activate.sh; do
 done
 echo ""
 
-# Check 6: Observability Configuration
-echo "6. Observability Stack:"
-if [ -f "observability/prometheus/prometheus.yml" ]; then
-    echo "   ✅ Prometheus configuration"
-fi
-
-if [ -f "observability/grafana/provisioning/datasources/prometheus.yml" ]; then
-    echo "   ✅ Grafana datasources"
-fi
-
-DASHBOARD_COUNT=$(ls -1 observability/grafana/dashboards/*.json 2>/dev/null | wc -l | tr -d ' ')
-echo "   ✅ $DASHBOARD_COUNT Grafana dashboards"
-
-if [ -f "observability/otel/otel-collector-config.yml" ]; then
-    echo "   ✅ OpenTelemetry Collector config"
-fi
-echo ""
-
-# Check 7: Documentation
-echo "7. Documentation:"
+# Check 6: Documentation
+echo "6. Documentation:"
 DOC_COUNT=0
-for doc in READY_TO_LAUNCH.md LAUNCH_GUIDE.md ENVIRONMENT_SETUP_COMPLETE.md API_KEYS_CONFIGURED.md OBSERVABILITY_QUICKSTART.md; do
+for doc in README.md ARCHITECTURE.md DEVELOPMENT_GUIDE.md DEPLOYMENT.md TROUBLESHOOTING.md; do
     if [ -f "$doc" ]; then
         DOC_COUNT=$((DOC_COUNT + 1))
     fi
 done
-echo "   ✅ $DOC_COUNT documentation files"
+echo "   ✅ $DOC_COUNT core documentation files"
 echo ""
 
-# Check 8: Tests
-echo "8. Tests:"
+# Check 7: Tests
+echo "7. Tests:"
 TEST_COUNT=$(find backend/tests -name "test_*.py" | wc -l | tr -d ' ')
 echo "   ✅ $TEST_COUNT test files"
 echo ""

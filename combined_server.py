@@ -75,8 +75,8 @@ try:
     if backend_dir not in sys.path:
         sys.path.insert(0, backend_dir)
 
-    # Set environment variables to disable observability if not available
-    os.environ['ENABLE_OBSERVABILITY'] = 'false'
+    # Observability disabled (modules not available)
+    # Graceful degradation patterns handle missing observability modules
 
     # Now import the modules
     from app.core.agent_runtime import AgentRuntime
