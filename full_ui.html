@@ -3698,17 +3698,17 @@
                         chartLabels = data.labels;
                         chartValues = data.values;
                     } else if (data.data && Array.isArray(data.data)) {
-                        // Array of {date, value} or {x, y}
+                        // Array of {date, nav_value} or {date, value} or {x, y}
                         chartLabels = data.data.map(d => d.date || d.x);
-                        chartValues = data.data.map(d => d.value || d.y);
+                        chartValues = data.data.map(d => d.nav_value || d.value || d.y);
                     } else if (Array.isArray(data)) {
-                        // Direct array of {date, value}
+                        // Direct array of {date, nav_value} or {date, value}
                         chartLabels = data.map(d => d.date || d.x);
-                        chartValues = data.map(d => d.value || d.y);
+                        chartValues = data.map(d => d.nav_value || d.value || d.y);
                     } else if (data.historical_nav && Array.isArray(data.historical_nav)) {
-                        // Nested structure from agent: {historical_nav: [{date, value}], ...}
+                        // Nested structure from agent: {historical_nav: [{date, nav_value}], ...}
                         chartLabels = data.historical_nav.map(d => d.date || d.x);
-                        chartValues = data.historical_nav.map(d => d.value || d.y);
+                        chartValues = data.historical_nav.map(d => d.nav_value || d.value || d.y);
                     }
                     
                     // Prepare chart data
