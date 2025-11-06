@@ -64,6 +64,30 @@ class CorporateActionsService:
         """
         self.conn = conn
 
+    async def _get_security_id(self, symbol: str) -> UUID:
+        """
+        Lookup security_id from symbol.
+
+        Args:
+            symbol: Stock ticker symbol (e.g., "AAPL")
+
+        Returns:
+            security_id UUID
+
+        Raises:
+            InvalidCorporateActionError: If security not found
+        """
+        row = await self.conn.fetchrow(
+            "SELECT id FROM securities WHERE symbol = $1",
+            symbol
+        )
+        if not row:
+            raise InvalidCorporateActionError(
+                f"Security not found: {symbol}. "
+                f"Please add security to database before recording corporate action."
+            )
+        return row["id"]
+
     async def record_dividend(
         self,
         portfolio_id: UUID,
@@ -159,7 +183,7 @@ class CorporateActionsService:
 
         # Create transaction record
         transaction_id = uuid4()
-        security_id = uuid4()  # TODO: Lookup from securities table
+        security_id = await self._get_security_id(symbol)
 
         async with self.conn.transaction():
             await self.conn.execute(
@@ -391,7 +415,7 @@ class CorporateActionsService:
 
         # Create transaction record (negative amount = outflow)
         transaction_id = uuid4()
-        security_id = uuid4()  # TODO: Lookup from securities table
+        security_id = await self._get_security_id(symbol)
 
         async with self.conn.transaction():
             await self.conn.execute(

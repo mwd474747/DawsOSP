@@ -91,13 +91,37 @@ class NewsAPIProvider(BaseProvider):
     async def call(self, request: ProviderRequest) -> ProviderResponse:
         """
         Execute provider call (required by BaseProvider).
-        
-        This method is not used directly by NewsAPIProvider methods,
-        but is required by the abstract base class.
+
+        Args:
+            request: Provider request with endpoint and params
+
+        Returns:
+            ProviderResponse with NewsAPI data
         """
-        # NewsAPIProvider uses direct HTTP calls in its methods
-        # This is a placeholder implementation
-        raise NotImplementedError("NewsAPIProvider uses direct HTTP calls, not the call() method")
+        import httpx
+        import time
+
+        start_time = time.time()
+
+        async with httpx.AsyncClient(timeout=request.timeout) as client:
+            response = await client.get(
+                request.endpoint,
+                params=request.params
+            )
+            response.raise_for_status()
+
+            latency_ms = (time.time() - start_time) * 1000
+
+            from app.integrations.base_provider import ProviderResponse
+            return ProviderResponse(
+                data=response.json(),
+                provider=self.config.name,
+                endpoint=request.endpoint,
+                status_code=response.status_code,
+                latency_ms=latency_ms,
+                cached=False,
+                stale=False
+            )
 
     async def search(
         self,
