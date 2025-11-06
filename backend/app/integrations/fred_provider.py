@@ -149,15 +149,9 @@ class FREDProvider(BaseProvider):
                 cached=False,
                 stale=False
             )
-    
-    async def _request(self, method: str, url: str, params: dict = None) -> dict:
-        """Internal helper for making HTTP requests."""
-        import httpx
-        
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.request(method, url, params=params)
-            response.raise_for_status()
-            return response.json()
+
+    # Note: FRED uses shorter 10s timeout (government API is fast)
+    # Call: await self._request("GET", url, params=params, timeout=10.0)
 
     @rate_limit(requests_per_minute=60)
     async def get_series(
@@ -212,7 +206,7 @@ class FREDProvider(BaseProvider):
         if aggregation_method:
             params["aggregation_method"] = aggregation_method
 
-        response = await self._request("GET", url, params=params)
+        response = await self._request("GET", url, params=params, timeout=10.0)
 
         # Check for errors
         if "error_code" in response:
@@ -269,7 +263,7 @@ class FREDProvider(BaseProvider):
             "series_id": series_id,
         }
 
-        response = await self._request("GET", url, params=params)
+        response = await self._request("GET", url, params=params, timeout=10.0)
 
         if "error_code" in response:
             raise ProviderError(f"FRED API error: {response.get('error_message', 'Unknown error')}")

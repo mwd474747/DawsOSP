@@ -262,29 +262,5 @@ class PolygonProvider(BaseProvider):
             raise ProviderError(f"Polygon snapshot error: {response.get('error', 'Unknown error')}")
 
         return response.get("tickers", [])
-    
-    async def _request(
-        self, method: str, url: str, params: Optional[Dict] = None, json_body: Optional[Dict] = None
-    ) -> Any:
-        """
-        Make HTTP request with error handling.
-        
-        Args:
-            method: HTTP method (GET, POST, etc.)
-            url: Request URL
-            params: Query parameters
-            json_body: JSON request body
-            
-        Returns:
-            Response JSON data
-        """
-        async with httpx.AsyncClient() as client:
-            response = await client.request(
-                method=method,
-                url=url,
-                params=params,
-                json=json_body,
-                timeout=30.0
-            )
-            response.raise_for_status()
-            return response.json()
+
+    # _request() method inherited from BaseProvider

@@ -269,3 +269,39 @@ class BaseProvider(ABC):
         cache_key = f"{request.endpoint}:{request.params}"
         self._cache[cache_key] = response
 
+    async def _request(
+        self,
+        method: str,
+        url: str,
+        params: Optional[Dict] = None,
+        json_body: Optional[Dict] = None,
+        timeout: float = 30.0
+    ) -> Any:
+        """
+        Make HTTP request with error handling.
+
+        Shared implementation for all providers to reduce code duplication.
+
+        Args:
+            method: HTTP method (GET, POST, etc.)
+            url: Request URL
+            params: Query parameters
+            json_body: JSON request body
+            timeout: Request timeout in seconds (default: 30.0)
+
+        Returns:
+            Response JSON data
+
+        Raises:
+            httpx.HTTPStatusError: If HTTP error occurs
+        """
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.request(
+                method=method,
+                url=url,
+                params=params,
+                json=json_body
+            )
+            response.raise_for_status()
+            return response.json()
+
