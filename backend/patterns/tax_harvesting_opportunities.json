@@ -1,0 +1,97 @@
+{
+  "metadata": {
+    "name": "Tax Harvesting Opportunities",
+    "description": "Identify tax loss harvesting opportunities and optimize tax efficiency",
+    "version": "1.0.0",
+    "category": "tax_compliance",
+    "output_format": "opportunities"
+  },
+  "inputs": {
+    "portfolio_id": {
+      "type": "string",
+      "required": true,
+      "description": "Portfolio UUID"
+    },
+    "min_loss_threshold": {
+      "type": "number",
+      "required": false,
+      "default": 1000,
+      "description": "Minimum loss amount to consider for harvesting"
+    },
+    "avoid_wash_sales": {
+      "type": "boolean",
+      "required": false,
+      "default": true,
+      "description": "Filter out positions that would create wash sales"
+    },
+    "tax_rate": {
+      "type": "number",
+      "required": false,
+      "default": 0.32,
+      "description": "Marginal tax rate for benefit calculations"
+    }
+  },
+  "steps": [
+    {
+      "name": "get_positions",
+      "capability": "ledger.positions",
+      "inputs": {
+        "portfolio_id": "{{inputs.portfolio_id}}"
+      },
+      "store_as": "current_positions"
+    },
+    {
+      "name": "calculate_unrealized_pl",
+      "capability": "metrics.unrealized_pl",
+      "inputs": {
+        "positions": "{{current_positions}}"
+      },
+      "store_as": "unrealized_pl"
+    },
+    {
+      "name": "identify_losses",
+      "capability": "tax.identify_losses",
+      "inputs": {
+        "positions": "{{current_positions}}",
+        "unrealized_pl": "{{unrealized_pl}}",
+        "min_loss": "{{inputs.min_loss_threshold}}"
+      },
+      "store_as": "loss_positions"
+    },
+    {
+      "name": "check_wash_sale_risk",
+      "capability": "tax.wash_sale_check",
+      "inputs": {
+        "portfolio_id": "{{inputs.portfolio_id}}",
+        "positions": "{{loss_positions}}"
+      },
+      "store_as": "wash_sale_risks",
+      "condition": "{{inputs.avoid_wash_sales}}"
+    },
+    {
+      "name": "calculate_tax_benefit",
+      "capability": "tax.calculate_benefit",
+      "inputs": {
+        "loss_positions": "{{loss_positions}}",
+        "tax_rate": "{{inputs.tax_rate}}",
+        "wash_sale_risks": "{{wash_sale_risks}}"
+      },
+      "store_as": "tax_benefits"
+    },
+    {
+      "name": "rank_opportunities",
+      "capability": "tax.rank_opportunities",
+      "inputs": {
+        "positions": "{{loss_positions}}",
+        "benefits": "{{tax_benefits}}"
+      },
+      "store_as": "ranked_opportunities"
+    }
+  ],
+  "outputs": {
+    "opportunities": "{{ranked_opportunities}}",
+    "total_potential_benefit": "{{tax_benefits.total}}",
+    "positions_with_losses": "{{loss_positions}}",
+    "wash_sale_warnings": "{{wash_sale_risks}}"
+  }
+}
