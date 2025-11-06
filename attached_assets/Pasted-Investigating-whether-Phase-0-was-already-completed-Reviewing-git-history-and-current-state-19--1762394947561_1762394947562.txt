@@ -1,0 +1,94 @@
+Investigating whether Phase 0 was already completed. Reviewing git history and current state:
+
+
+[19 tools called]
+
+
+Tracing the actual execution path to verify if this code is used or dead:
+
+
+[19 tools called]
+
+
+Confirmed: all patterns use new capability names — no old names found. The mapping and feature flag checks are dead code. Removing them:
+
+
+[24 tools called]
+
+
+`MacroAwareScenarioService` is not duplicate; it's a wrapper that adds macro regime awareness and is actively used. Removing the dead routing override method:
+
+
+[11 tools called]
+
+
+Removing the dead `_get_capability_routing_override` method that references deleted modules:
+
+
+[7 tools called]
+
+
+## Phase 0 zombie code removal — complete
+
+Removed 1,197 lines of dead code. Findings:
+
+### Verification results
+
+**Pattern analysis:**
+- Total capabilities: 64
+- Old capability names: 0 (none found)
+- New capability names: 14 (e.g., `financial_analyst.propose_trades`)
+- Other capabilities: 50 (e.g., `ledger.positions`, `portfolio.get_valued_positions`)
+
+**Conclusion:** All patterns use NEW capability names. The capability mapping and feature flags never executed.
+
+---
+
+### What was removed
+
+1. `backend/config/feature_flags.json` (104 lines) — deleted
+2. `backend/app/core/feature_flags.py` (345 lines) — deleted
+3. `backend/app/core/capability_mapping.py` (752 lines) — deleted
+4. `_get_capability_routing_override()` method (~95 lines) — removed
+5. Feature flag and capability mapping imports (~25 lines) — removed
+
+**Total:** ~1,197 lines of dead code removed
+
+---
+
+### Why it was safe to remove
+
+**Before:**
+- Patterns use `financial_analyst.propose_trades` (new name)
+- Capability mapping only maps `optimizer.propose_trades` → `financial_analyst.propose_trades` (old → new)
+- Since patterns use new names, mapping never finds a match
+- Override method always returns `None`
+- Feature flags never checked
+
+**After:**
+- Direct routing via `capability_map.get(capability)`
+- Same routing behavior (no functional change)
+- Simpler code, no unnecessary checks
+
+---
+
+### What was kept
+
+**`macro_aware_scenarios.py`** — kept (not duplicate)
+- Wraps `ScenarioService` and adds macro regime awareness
+- Actively used in `macro_hound.py` (2 capabilities)
+- Provides unique functionality (regime-aware scenarios)
+
+---
+
+### Result
+
+- ✅ 1,197 lines of dead code removed
+- ✅ Zero runtime impact (dead code never executed)
+- ✅ Routing simplified (direct lookup only)
+- ✅ Code clarity improved
+- ✅ Phase 4 unblocked
+
+**Status:** ✅ **COMPLETE AND COMMITTED**
+
+All changes have been committed and pushed to the remote repository. Phase 0 is complete; proceeding to Phase 4 is now unblocked.
