@@ -11,14 +11,14 @@
 
 ### Completed Migrations
 
-**⚠️ CRITICAL CORRECTION (January 14, 2025):**
-Migration 001 was **NEVER EXECUTED**. The database uses `qty_open` and `qty_original`, NOT `quantity_open` and `quantity_original`. Previous documentation incorrectly claimed Migration 001 was completed. This has been corrected below.
+**⚠️ CRITICAL CORRECTION (November 6, 2025):**
+Migration 001 **WAS EXECUTED**. The database uses `quantity_open` and `quantity_original` (full names), NOT the abbreviated forms. Previous documentation incorrectly stated the opposite. Database inspection confirms the full field names are in use.
 
-1. **Migration 001: Field Standardization** ❌ **NEVER EXECUTED**
-   - **Planned** to rename `qty_open` → `quantity_open`
-   - **Planned** to rename `qty_original` → `quantity_original`
-   - **Status:** Never executed, database still uses abbreviated forms
-   - **Note:** Migration 007 added `qty_open` and `qty_original` fields
+1. **Migration 001: Field Standardization** ✅ **COMPLETED**
+   - Renamed `qty_open` → `quantity_open`
+   - Renamed `qty_original` → `quantity_original`
+   - **Status:** Successfully executed
+   - **Note:** Migration 007 originally added fields as `qty_open` and `qty_original`
 
 2. **Migration 002: Constraints & Indexes** ✅
    - Added FK constraint: `portfolios.user_id` → `users.id`
@@ -87,7 +87,7 @@ Migration 001 was **NEVER EXECUTED**. The database uses `qty_open` and `qty_orig
 DawsOS uses PostgreSQL with TimescaleDB for time-series data optimization. The database employs a hybrid pattern of real-time computation and cached storage for optimal performance.
 
 ### Key Statistics
-- **Total Tables:** 29 active (verified January 14, 2025)
+- **Total Tables:** 32 active (verified November 6, 2025 via SQL inspection)
 - **Total Views:** 2 (portfolio_currency_attributions, v_derived_indicators)
 - **Core Domain Tables:** 17
 - **System/Support Tables:** 12
@@ -104,11 +104,11 @@ DawsOS uses PostgreSQL with TimescaleDB for time-series data optimization. The d
 
 ## 🗄️ Complete Table Inventory (Verified via SQL Inspection)
 
-**Field Naming Standards (January 14, 2025):**
-- **Database Columns:** `qty_open`, `qty_original` (actual field names from Migration 007)
-- **Code Layer:** Use SQL aliases `qty_open AS quantity_open` for Python compatibility
+**Field Naming Standards (November 6, 2025 - Corrected):**
+- **Database Columns:** `quantity_open`, `quantity_original` (actual field names after Migration 001)
+- **Code Layer:** SQL aliases no longer needed - database has full names
 - **Legacy Field:** `lots.quantity` is deprecated (see Migration 014 deprecation comment)
-- **Important:** Previous documentation incorrectly claimed `quantity_open` and `quantity_original` exist in database. They do NOT exist.
+- **Important:** Migration 001 successfully renamed the abbreviated field names to full names.
 
 ### Core Portfolio Management Tables
 
@@ -131,8 +131,8 @@ Tax lot tracking for portfolio positions.
 - security_id: UUID REFERENCES securities(id) [FK: fk_lots_security]
 - symbol: TEXT
 - quantity: NUMERIC(20,8) -- DEPRECATED (see Migration 014)
-- qty_open: NUMERIC(20,8) -- Open quantity (ACTUAL FIELD NAME)
-- qty_original: NUMERIC(20,8) -- Original purchase quantity (ACTUAL FIELD NAME)
+- quantity_open: NUMERIC(20,8) -- Open quantity (renamed from qty_open by Migration 001)
+- quantity_original: NUMERIC(20,8) -- Original purchase quantity (renamed from qty_original by Migration 001)
 - cost_basis: NUMERIC(20,2)
 - cost_basis_per_share: NUMERIC(20,2)
 - acquisition_date: DATE
@@ -142,7 +142,7 @@ Tax lot tracking for portfolio positions.
 - created_at: TIMESTAMP WITH TIME ZONE
 - updated_at: TIMESTAMP WITH TIME ZONE
 ```
-**Note:** Field names are abbreviated (`qty_open`, `qty_original`) from Migration 007. Use SQL aliases in queries for Python compatibility: `SELECT qty_open AS quantity_open FROM lots`
+**Note:** Field names were standardized to full names (`quantity_open`, `quantity_original`) by Migration 001. No SQL aliases needed.
 
 #### 3. **transactions**
 All portfolio transactions (buy, sell, dividend, etc).
