@@ -627,21 +627,20 @@ grep "register_agent" combined_server.py
 **Current Configuration:**
 - ✅ Context files: PROJECT_CONTEXT.md (this file) - accurate as of Nov 5, 2025
 - ✅ Permission settings: settings.local.json - Bash command allowlist
-- ❌ Slash commands: None configured
+- ✅ Slash commands: 4 Phase 1 commands implemented ← **NEW**
 - ❌ Hooks: None configured
 - ❌ MCP servers: None configured
 
-**Recommendations Available:**
-See [CLAUDE_IDE_AGENTS_RECOMMENDATION.md](CLAUDE_IDE_AGENTS_RECOMMENDATION.md) for detailed recommendations on:
-- 8 custom slash commands for common workflows
+**Implemented Slash Commands (Phase 1):**
+- ✅ `/verify-setup` - Verify development environment
+- ✅ `/test-factor-analyzer` - Test FactorAnalyzer service (CRITICAL: saves 40h if works)
+- ✅ `/phase-status` - Check refactoring phase progress
+- ✅ `/check-stub-data` - Find stub data locations (user trust issues)
+
+**Available for Implementation:**
+See [CLAUDE_IDE_AGENTS_RECOMMENDATION.md](CLAUDE_IDE_AGENTS_RECOMMENDATION.md) for:
+- 4 additional Phase 2/3 slash commands (validate-pattern, fix-field-bug, db-schema, run-migration)
 - 2 hooks for quality assurance
 - Optional MCP server for database inspection
-- Implementation priority and ROI analysis
 
-**Quick Wins (1-2 hours):**
-- `/test-factor-analyzer` - Test FactorAnalyzer service (Phase 0 critical decision)
-- `/phase-status` - Check refactoring phase progress
-- `/verify-setup` - Verify development environment
-- `/check-stub-data` - Find stub data locations
-
-**Status:** Recommendations documented, implementation optional
+**Status:** ✅ Phase 1 complete (4 commands), Phase 2/3 optional
