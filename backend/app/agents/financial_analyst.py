@@ -1146,8 +1146,8 @@ class FinancialAnalyst(BaseAgent):
             "_provenance": dict,
         },
         fetches_positions=False,
-        implementation_status="stub",
-        description="Compute portfolio factor exposures (currently stub implementation - uses hardcoded data)",
+        implementation_status="real",
+        description="Compute portfolio factor exposures using real regression-based factor analysis",
         dependencies=["ledger.positions", "pricing.apply_pack"],
     )
     async def risk_compute_factor_exposures(
