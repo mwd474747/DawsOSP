@@ -50,6 +50,28 @@ Migration 001 was **NEVER EXECUTED**. The database uses `qty_open` and `qty_orig
    - Documents that field is deprecated and should not be used
    - References Migration 007 for context
 
+8. **Migration 015: Add Economic Indicators** ✅ (January 14, 2025)
+   - Added economic indicators table
+   - Support for CPI, GDP, and other macro indicators
+
+### Pending Migrations (Ready for Execution)
+
+9. **Migration 016: Standardize asof_date Field** ⏳ **READY**
+   - Rename `valuation_date` → `asof_date` for consistency
+   - Impacts: holdings, portfolio_values, dar_results tables
+   - Includes rollback-safe checks
+
+10. **Migration 017: Add Realized P&L Tracking** ⏳ **READY**
+    - Add `realized_pl` field to transactions table
+    - Enables IRS Form 1099-B compliance and tax reporting
+    - Includes backfill strategy for existing SELL transactions
+
+11. **Migration 018: Add Cost Basis Method Tracking** ⏳ **READY**
+    - Add `cost_basis_method` field to portfolios table
+    - Prevents illegal LIFO for stocks (regulatory compliance)
+    - Includes audit log table and validation triggers
+    - Default: FIFO (IRS standard)
+
 ### Architecture Stability Achieved
 - ✅ 22 active tables (down from 30)
 - ✅ All field names standardized
@@ -70,7 +92,8 @@ DawsOS uses PostgreSQL with TimescaleDB for time-series data optimization. The d
 - **Core Domain Tables:** 17
 - **System/Support Tables:** 12
 - **Connection Method:** Cross-module pool using `sys.modules` storage
-- **Migrations Executed:** 001, 002, 002b, 002c, 002d, 003, 014 (all complete)
+- **Migrations Executed:** 002, 002b, 002c, 002d, 003, 005, 007, 008, 009, 010, 011, 012, 013, 014, 015
+- **Pending Migrations:** 016 (asof_date), 017 (realized_pl), 018 (cost_basis_method) - Ready for execution
 
 ### Architecture Pattern
 - **Compute-First:** Services calculate data on-demand by default
@@ -100,16 +123,16 @@ Primary portfolio definition table.
 - updated_at: TIMESTAMP WITH TIME ZONE
 ```
 
-#### 2. **lots** 
+#### 2. **lots**
 Tax lot tracking for portfolio positions.
 ```sql
 - id: UUID (Primary Key)
 - portfolio_id: UUID REFERENCES portfolios(id)
 - security_id: UUID REFERENCES securities(id) [FK: fk_lots_security]
 - symbol: TEXT
-- quantity: NUMERIC(20,8) -- Total quantity
-- quantity_open: NUMERIC(20,8) -- Open quantity (renamed from qty_open)
-- quantity_original: NUMERIC(20,8) -- Original purchase quantity (renamed from qty_original)
+- quantity: NUMERIC(20,8) -- DEPRECATED (see Migration 014)
+- qty_open: NUMERIC(20,8) -- Open quantity (ACTUAL FIELD NAME)
+- qty_original: NUMERIC(20,8) -- Original purchase quantity (ACTUAL FIELD NAME)
 - cost_basis: NUMERIC(20,2)
 - cost_basis_per_share: NUMERIC(20,2)
 - acquisition_date: DATE
@@ -119,7 +142,7 @@ Tax lot tracking for portfolio positions.
 - created_at: TIMESTAMP WITH TIME ZONE
 - updated_at: TIMESTAMP WITH TIME ZONE
 ```
-**Note:** Field names standardized (Migration 001) - `qty_open` → `quantity_open`, `qty_original` → `quantity_original`
+**Note:** Field names are abbreviated (`qty_open`, `qty_original`) from Migration 007. Use SQL aliases in queries for Python compatibility: `SELECT qty_open AS quantity_open FROM lots`
 
 #### 3. **transactions**
 All portfolio transactions (buy, sell, dividend, etc).
