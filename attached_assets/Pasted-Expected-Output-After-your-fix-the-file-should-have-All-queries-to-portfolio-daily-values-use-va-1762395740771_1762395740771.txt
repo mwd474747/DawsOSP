@@ -1,0 +1,61 @@
+Expected Output
+After your fix, the file should have:
+✅ All queries to portfolio_daily_values use valuation_date field
+✅ All queries use alias pattern: valuation_date as asof_date
+✅ No SQL errors when running risk analysis
+Verification Steps
+After making the fix, verify:
+Code compiles:
+cd backend
+python -m py_compile app/services/risk_metrics.py
+Search for remaining issues:
+grep -n "asof_date" backend/app/services/risk_metrics.py | grep "portfolio_daily_values"
+Should return NO results (all fixed).
+Check the fix matches correct pattern:
+grep -A2 "portfolio_daily_values" backend/app/services/risk_metrics.py
+Should show valuation_date as asof_date pattern.
+Success Criteria
+✅ No SQL errors when querying portfolio_daily_values
+✅ Risk analysis features work (beta, tracking error, drawdown)
+✅ Code follows same pattern as metrics.py and factor_analysis.py
+✅ All tests pass (if any)
+Time Estimate
+Total: 30 minutes
+Find and fix bug: 15 min
+Search for other instances: 10 min
+Verify fix: 5 min
+Reference Files
+Files to MODIFY:
+backend/app/services/risk_metrics.py (line 414+ - fix queries)
+Files to REFERENCE (correct pattern):
+backend/app/services/metrics.py (lines 116, 382, 475)
+backend/app/services/factor_analysis.py (line 290)
+DO NOT MODIFY:
+backend/db/schema/portfolio_daily_values.sql (schema is correct)
+Other service files (they are fine)
+Additional Notes
+This bug was introduced during Phase 3 field name standardization
+factor_analysis.py was already fixed with the same pattern
+metrics.py was already using the correct pattern
+Only risk_metrics.py was missed and needs fixing
+Quick Reference Summary
+What to change:
+# WRONG (current)
+SELECT asof_date FROM portfolio_daily_values WHERE asof_date BETWEEN ...
+
+# RIGHT (fix)
+SELECT valuation_date as asof_date FROM portfolio_daily_values WHERE valuation_date BETWEEN ...
+File: backend/app/services/risk_metrics.py
+Lines: ~414-416 (possibly more - search entire file)
+Pattern: Use valuation_date as asof_date alias
+Time: 30 minutes total
+Priority: P0 (Critical - Production Blocker)
+Ready to Execute: ✅ Yes - All information provided
+Questions: None - Instructions are complete
+Copy this entire prompt and paste it into the Replit agent. The prompt is structured to:
+Provide complete context
+Show exact code changes needed
+Include verification steps
+Reference correct patterns from other files
+Prevent accidental changes to correct code
+Estimate time accurately (30 minutes)

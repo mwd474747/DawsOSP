@@ -411,10 +411,10 @@ class RiskMetrics:
         """
         values = await self.db.fetch(
             """
-            SELECT asof_date, total_value
+            SELECT valuation_date as asof_date, total_value
             FROM portfolio_daily_values
-            WHERE portfolio_id = $1 AND asof_date BETWEEN $2 AND $3
-            ORDER BY asof_date
+            WHERE portfolio_id = $1 AND valuation_date BETWEEN $2 AND $3
+            ORDER BY valuation_date
         """,
             portfolio_id,
             start_date,
