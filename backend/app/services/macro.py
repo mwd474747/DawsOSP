@@ -606,10 +606,10 @@ class MacroService:
         for indicator_id, indicator_name in all_indicators.items():
             try:
                 # Fetch from FRED
-                observations = await self.fred_client.get_series_observations(
+                observations = await self.fred_client.get_series(
                     series_id=indicator_id,
-                    start_date=start_date.isoformat(),
-                    end_date=asof_date.isoformat(),
+                    start_date=start_date,
+                    end_date=asof_date,
                 )
 
                 # Convert to MacroIndicator objects
