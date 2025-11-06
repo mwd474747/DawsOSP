@@ -1,0 +1,221 @@
+## Task 1: Fix FactorAnalyzer Field Name Bug (1-2 hours)
+
+### File: `backend/app/services/factor_analysis.py`
+
+### Issue
+- **Schema uses:** `valuation_date` (from `portfolio_daily_values` table)
+- **Code uses:** `asof_date` (will cause SQL errors)
+
+### Changes Required
+
+**Location 1: Line 287-290** - Portfolio returns query
+```python
+# CURRENT (WRONG):
+values = await self.db.fetch(
+    """
+    SELECT asof_date, total_value
+    FROM portfolio_daily_values
+    WHERE portfolio_id = $1 AND asof_date BETWEEN $2 AND $3
+    ORDER BY asof_date
+    """,
+    portfolio_id,
+    start_date,
+    end_date,
+)
+
+# FIXED:
+values = await self.db.fetch(
+    """
+    SELECT valuation_date as asof_date, total_value
+    FROM portfolio_daily_values
+    WHERE portfolio_id = $1 AND valuation_date BETWEEN $2 AND $3
+    ORDER BY valuation_date
+    """,
+    portfolio_id,
+    start_date,
+    end_date,
+)
+```
+
+**Location 2: Line 309** - Result dictionary key (no change needed, uses alias)
+
+**Note:** The alias `valuation_date as asof_date` allows the rest of the code to continue using `asof_date` as the key name, which is correct.
+
+---
+
+## Task 2: Fix Import/Class Name Bug (1 hour)
+
+### File: `backend/app/agents/financial_analyst.py`
+
+### Issue
+- **Import:** `FactorAnalysisService` (doesn't exist)
+- **Actual class:** `FactorAnalyzer` (in `app.services.factor_analysis`)
+- **Constructor:** Requires `db` parameter
+
+### Changes Required
+
+**Location 1: Line 1235-1242** - Import and instantiation
+```python
+# CURRENT (WRONG):
+from app.services.factor_analysis import FactorAnalysisService
+factor_service = FactorAnalysisService()
+
+current = await factor_service.compute_factor_exposure(
+    portfolio_id=portfolio_id_uuid,
+    pack_id=ctx.pricing_pack_id
+)
+
+# FIXED:
+from app.services.factor_analysis import FactorAnalyzer
+from app.db import get_db_connection_with_rls
+
+async with get_db_connection_with_rls(ctx) as db:
+    factor_service = FactorAnalyzer(db)
+    current = await factor_service.compute_factor_exposure(
+        portfolio_id=portfolio_id_uuid,
+        pack_id=ctx.pricing_pack_id
+    )
+```
+
+**Note:** The method is async, so use `async with get_db_connection_with_rls(ctx) as db:` pattern. This matches the pattern used elsewhere in the file (e.g., line 218).
+
+---
+
+## Task 3: Create economic_indicators Table (2-3 hours)
+
+### File 1: `backend/db/schema/economic_indicators.sql` (NEW FILE)
+
+Create new schema file with the following content:
+
+```sql
+CREATE TABLE IF NOT EXISTS economic_indicators (
+    series_id VARCHAR(20) NOT NULL,
+    asof_date DATE NOT NULL,
+    value NUMERIC(20, 8) NOT NULL,
+    unit VARCHAR(20),
+    source VARCHAR(50) DEFAULT 'FRED',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    
+    PRIMARY KEY (series_id, asof_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_economic_indicators_date 
+    ON economic_indicators(asof_date DESC);
+
+CREATE INDEX IF NOT EXISTS idx_economic_indicators_series 
+    ON economic_indicators(series_id, asof_date DESC);
+
+-- Convert to hypertable (TimescaleDB)
+SELECT create_hypertable(
+    'economic_indicators',
+    'asof_date',
+    if_not_exists => TRUE,
+    chunk_time_interval => INTERVAL '1 month'
+);
+
+COMMENT ON TABLE economic_indicators IS 
+'Economic indicators from FRED for factor analysis. Series IDs: DFII10 (Real Rate), T10YIE (Inflation), BAMLC0A0CM (Credit), DTWEXBGS (USD), SP500 (Equity).';
+```
+
+### File 2: `backend/db/migrations/015_add_economic_indicators.sql` (NEW FILE)
+
+Create new migration file with the following content:
+
+```sql
+-- Migration 015: Add economic_indicators table
+-- Created: January 14, 2025
+-- Purpose: Support factor analysis with economic indicator data
+
+-- Create table
+CREATE TABLE IF NOT EXISTS economic_indicators (
+    series_id VARCHAR(20) NOT NULL,
+    asof_date DATE NOT NULL,
+    value NUMERIC(20, 8) NOT NULL,
+    unit VARCHAR(20),
+    source VARCHAR(50) DEFAULT 'FRED',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    
+    PRIMARY KEY (series_id, asof_date)
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_economic_indicators_date 
+    ON economic_indicators(asof_date DESC);
+
+CREATE INDEX IF NOT EXISTS idx_economic_indicators_series 
+    ON economic_indicators(series_id, asof_date DESC);
+
+-- Convert to hypertable (TimescaleDB) - if available
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable(
+            'economic_indicators',
+            'asof_date',
+            if_not_exists => TRUE,
+            chunk_time_interval => INTERVAL '1 month'
+        );
+    END IF;
+END $$;
+
+-- Add comment
+COMMENT ON TABLE economic_indicators IS 
+'Economic indicators from FRED for factor analysis. Series IDs: DFII10 (Real Rate), T10YIE (Inflation), BAMLC0A0CM (Credit), DTWEXBGS (USD), SP500 (Equity).';
+
+-- Note: Data will be populated by data harvester agent
+-- No seed data required for initial migration
+```
+
+**Note:** Migration uses direct SQL (not `\i` command) to match the project's migration pattern.
+
+---
+
+## Testing Checklist
+
+After completing all tasks:
+
+1. ✅ **FactorAnalyzer field name fix:**
+   - Run a query that uses `FactorAnalyzer.compute_factor_exposure()`
+   - Verify no SQL errors about `asof_date` column
+   - Verify results are returned correctly
+
+2. ✅ **Import/class name fix:**
+   - Import `FactorAnalyzer` in Python shell: `from app.services.factor_analysis import FactorAnalyzer`
+   - Verify no ImportError
+   - Instantiate with db connection: `FactorAnalyzer(db)` (verify db access pattern)
+
+3. ✅ **economic_indicators table:**
+   - Run migration: Verify table is created
+   - Verify indexes are created
+   - Verify hypertable conversion (if TimescaleDB is available)
+   - Test query: `SELECT * FROM economic_indicators LIMIT 1;`
+
+---
+
+## Summary
+
+**Files to Modify:**
+1. `backend/app/services/factor_analysis.py` - Fix field name (1 change)
+2. `backend/app/agents/financial_analyst.py` - Fix import/instantiation (1 change)
+
+**Files to Create:**
+3. `backend/db/schema/economic_indicators.sql` - New schema file
+4. `backend/db/migrations/015_add_economic_indicators.sql` - New migration file
+
+**Total Time:** 4-6 hours  
+**Priority:** 🔴 **CRITICAL - BLOCKING**
+
+---
+
+## Verification
+
+After completing tasks, verify:
+- ✅ No SQL errors when running factor analysis
+- ✅ No ImportError when importing FactorAnalyzer
+- ✅ Table exists and is accessible
+- ✅ All tests pass (if applicable)
+
+---
+
+**Status:** ✅ **READY FOR REplit AGENT**
+
