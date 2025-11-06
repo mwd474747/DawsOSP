@@ -918,6 +918,175 @@
             to { transform: rotate(360deg); }
         }
         
+        /* Portfolio Selector Styles */
+        .portfolio-selector {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .portfolio-selector-trigger {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+        
+        .portfolio-selector-trigger:hover {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: var(--color-info);
+        }
+        
+        .portfolio-selector-trigger.open {
+            background: rgba(30, 41, 59, 0.9);
+            border-color: var(--color-info);
+        }
+        
+        .portfolio-label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .portfolio-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .portfolio-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+        
+        .portfolio-value {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .portfolio-arrow {
+            margin-left: 0.5rem;
+            transition: transform 0.2s;
+            color: var(--text-secondary);
+        }
+        
+        .portfolio-arrow.open {
+            transform: rotate(180deg);
+        }
+        
+        .portfolio-dropdown {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            min-width: 280px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1000;
+            animation: slideDown 0.2s ease;
+        }
+        
+        .portfolio-dropdown-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-primary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        .portfolio-list {
+            padding: 0.5rem;
+        }
+        
+        .portfolio-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.25rem;
+        }
+        
+        .portfolio-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .portfolio-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        
+        .portfolio-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .portfolio-item-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+        
+        .portfolio-item-value {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .portfolio-item-performance {
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .portfolio-item-performance.positive {
+            color: var(--color-success);
+        }
+        
+        .portfolio-item-performance.negative {
+            color: var(--color-error);
+        }
+        
+        .portfolio-item-check {
+            color: var(--color-success);
+            font-size: 1rem;
+        }
+        
+        .portfolio-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+        
+        .portfolio-empty {
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
         /* Error States */
         .error-message {
             background: rgba(239, 68, 68, 0.1);
@@ -2777,46 +2946,174 @@
              * This ensures we always have a valid portfolio ID
              */
             function getCurrentPortfolioId() {
-                // Check if user has a portfolio ID in token storage
+                // 1. Check localStorage first for persisted selection
+                const savedPortfolioId = localStorage.getItem('selectedPortfolioId');
+                if (savedPortfolioId) {
+                    console.log('Using saved portfolio ID from localStorage:', savedPortfolioId);
+                    return savedPortfolioId;
+                }
+                
+                // 2. Check if user has a portfolio ID in token storage
                 const storedUser = TokenManager.getUser();
                 if (storedUser && storedUser.default_portfolio_id) {
                     console.log('Using user portfolio ID:', storedUser.default_portfolio_id);
                     return storedUser.default_portfolio_id;
                 }
                 
-                // Use hardcoded fallback portfolio ID
+                // 3. Use hardcoded fallback portfolio ID
                 const fallbackPortfolioId = '64ff3be6-0ed1-4990-a32b-4ded17f0320c';
                 console.log('Using fallback portfolio ID:', fallbackPortfolioId);
                 return fallbackPortfolioId;
             }
             
             /**
-             * User Context for managing portfolio ID dynamically
+             * Enhanced Portfolio Context Manager for centralized portfolio management
              */
             const UserContext = React.createContext();
             
-            // User Context Provider
+            // Portfolio Context Manager Provider
             function UserContextProvider({ children }) {
-                const [portfolioId, setPortfolioId] = useState(null);
+                const [portfolioId, setPortfolioIdState] = useState(null);
                 const [user, setUser] = useState(null);
+                const [portfolios, setPortfolios] = useState([]);
+                const [currentPortfolioData, setCurrentPortfolioData] = useState(null);
+                const [loadingPortfolios, setLoadingPortfolios] = useState(false);
                 
+                // Enhanced setPortfolioId that persists to localStorage and broadcasts changes
+                const setPortfolioId = React.useCallback((newPortfolioId) => {
+                    if (newPortfolioId && newPortfolioId !== portfolioId) {
+                        // Save to localStorage
+                        localStorage.setItem('selectedPortfolioId', newPortfolioId);
+                        
+                        // Update state
+                        setPortfolioIdState(newPortfolioId);
+                        
+                        // Broadcast portfolio change event for components that need to react
+                        window.dispatchEvent(new CustomEvent('portfolioChanged', {
+                            detail: { portfolioId: newPortfolioId }
+                        }));
+                        
+                        console.log('Portfolio changed to:', newPortfolioId);
+                    }
+                }, [portfolioId]);
+                
+                // Load user portfolios
+                const loadPortfolios = React.useCallback(async () => {
+                    if (!user) return;
+                    
+                    setLoadingPortfolios(true);
+                    try {
+                        // For now, we'll use a single portfolio structure
+                        // In the future, this can be expanded to fetch multiple portfolios
+                        const portfolio = await apiClient.getPortfolio();
+                        const metrics = await apiClient.getMetrics(portfolioId);
+                        
+                        // Create portfolio array from available data
+                        const portfolioData = {
+                            id: portfolioId,
+                            name: user.email ? `${user.email.split('@')[0]}'s Portfolio` : 'Main Portfolio',
+                            value: metrics?.current_value || portfolio?.total_value || 0,
+                            performance: {
+                                ytd: metrics?.ytd_return || 0,
+                                oneYear: metrics?.one_year_return || 0
+                            }
+                        };
+                        
+                        setPortfolios([portfolioData]);
+                        console.log('Loaded portfolio:', portfolioData);
+                    } catch (error) {
+                        console.error('Failed to load portfolios:', error);
+                        // Set a default portfolio structure if API fails
+                        setPortfolios([{
+                            id: portfolioId,
+                            name: 'Default Portfolio',
+                            value: 0
+                        }]);
+                    } finally {
+                        setLoadingPortfolios(false);
+                    }
+                }, [user, portfolioId]);
+                
+                // Load current portfolio data
+                const loadCurrentPortfolioData = React.useCallback(async () => {
+                    if (!portfolioId) return;
+                    
+                    try {
+                        // Fetch current portfolio details using available API methods
+                        const [portfolio, metrics] = await Promise.all([
+                            apiClient.getPortfolio(),
+                            apiClient.getMetrics(portfolioId)
+                        ]);
+                        
+                        if (portfolio || metrics) {
+                            setCurrentPortfolioData({
+                                id: portfolioId,
+                                name: user?.email ? `${user.email.split('@')[0]}'s Portfolio` : 'Main Portfolio',
+                                value: metrics?.current_value || portfolio?.total_value || 0,
+                                performance: {
+                                    ytd: metrics?.ytd_return || 0,
+                                    oneYear: metrics?.one_year_return || 0
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Failed to load portfolio data:', error);
+                    }
+                }, [portfolioId, user]);
+                
+                // Initialize on mount
                 useEffect(() => {
                     // Get user from token manager
                     const storedUser = TokenManager.getUser();
                     if (storedUser) {
                         setUser(storedUser);
-                        // Use the user's default portfolio or fallback to hardcoded one
-                        setPortfolioId(storedUser.default_portfolio_id || getCurrentPortfolioId());
-                    } else {
-                        // Fallback to default portfolio ID
-                        setPortfolioId(getCurrentPortfolioId());
                     }
+                    
+                    // Initialize portfolio ID using enhanced function
+                    const initialPortfolioId = getCurrentPortfolioId();
+                    setPortfolioIdState(initialPortfolioId);
                 }, []);
                 
-                return e(UserContext.Provider, 
-                    { value: { portfolioId, setPortfolioId, user } }, 
-                    children
-                );
+                // Load portfolios when user changes
+                useEffect(() => {
+                    if (user) {
+                        loadPortfolios();
+                    }
+                }, [user, loadPortfolios]);
+                
+                // Load portfolio data when portfolio changes
+                useEffect(() => {
+                    if (portfolioId) {
+                        loadCurrentPortfolioData();
+                    }
+                }, [portfolioId, loadCurrentPortfolioData]);
+                
+                // Method to switch portfolios
+                const switchPortfolio = React.useCallback((newPortfolioId) => {
+                    setPortfolioId(newPortfolioId);
+                }, [setPortfolioId]);
+                
+                // Clear portfolio selection (useful for logout)
+                const clearPortfolioSelection = React.useCallback(() => {
+                    localStorage.removeItem('selectedPortfolioId');
+                    setPortfolioIdState(null);
+                    setCurrentPortfolioData(null);
+                }, []);
+                
+                const contextValue = {
+                    portfolioId,
+                    setPortfolioId,
+                    user,
+                    portfolios,
+                    currentPortfolioData,
+                    loadingPortfolios,
+                    switchPortfolio,
+                    clearPortfolioSelection,
+                    refreshPortfolios: loadPortfolios,
+                    refreshCurrentPortfolio: loadCurrentPortfolioData
+                };
+                
+                return e(UserContext.Provider, { value: contextValue }, children);
             }
             
             // Custom hook to use user context
@@ -2826,6 +3123,126 @@
                     throw new Error('useUserContext must be used within UserContextProvider');
                 }
                 return context;
+            }
+            
+            /**
+             * Portfolio Selector Component
+             * Allows users to switch between portfolios with a dropdown interface
+             */
+            function PortfolioSelector() {
+                const { e, useState, useEffect, useRef } = React;
+                const {
+                    portfolioId,
+                    portfolios,
+                    currentPortfolioData,
+                    loadingPortfolios,
+                    switchPortfolio,
+                    refreshPortfolios
+                } = useUserContext();
+                
+                const [isOpen, setIsOpen] = useState(false);
+                const dropdownRef = useRef(null);
+                
+                // Close dropdown when clicking outside
+                useEffect(() => {
+                    function handleClickOutside(event) {
+                        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                            setIsOpen(false);
+                        }
+                    }
+                    
+                    document.addEventListener('mousedown', handleClickOutside);
+                    return () => {
+                        document.removeEventListener('mousedown', handleClickOutside);
+                    };
+                }, []);
+                
+                // Refresh portfolios on mount
+                useEffect(() => {
+                    if (!portfolios || portfolios.length === 0) {
+                        refreshPortfolios();
+                    }
+                }, []);
+                
+                const handlePortfolioSelect = (portfolio) => {
+                    if (portfolio.id !== portfolioId) {
+                        switchPortfolio(portfolio.id);
+                        setIsOpen(false);
+                    }
+                };
+                
+                const formatValue = (value) => {
+                    if (!value) return '$0';
+                    return new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                    }).format(value);
+                };
+                
+                const formatPerformance = (performance) => {
+                    if (!performance || !performance.ytd) return null;
+                    const ytd = performance.ytd;
+                    const sign = ytd >= 0 ? '+' : '';
+                    return `${sign}${(ytd * 100).toFixed(2)}%`;
+                };
+                
+                // Determine current portfolio display info
+                const currentDisplay = currentPortfolioData || {
+                    name: portfolios?.find(p => p.id === portfolioId)?.name || 'Portfolio',
+                    value: portfolios?.find(p => p.id === portfolioId)?.value || 0
+                };
+                
+                return e('div', { className: 'portfolio-selector', ref: dropdownRef },
+                    e('div', {
+                        className: `portfolio-selector-trigger ${isOpen ? 'open' : ''}`,
+                        onClick: () => setIsOpen(!isOpen)
+                    },
+                        e('div', { className: 'portfolio-info' },
+                            e('div', { className: 'portfolio-name' }, currentDisplay.name),
+                            e('div', { className: 'portfolio-value' }, formatValue(currentDisplay.value))
+                        ),
+                        e('span', { className: `portfolio-arrow ${isOpen ? 'open' : ''}` }, '▼')
+                    ),
+                    
+                    isOpen && e('div', { className: 'portfolio-dropdown' },
+                        e('div', { className: 'portfolio-dropdown-header' }, 'Select Portfolio'),
+                        
+                        loadingPortfolios
+                            ? e('div', { className: 'portfolio-loading' },
+                                e('div', { className: 'spinner-small' })
+                            )
+                            : portfolios && portfolios.length > 0
+                                ? e('div', { className: 'portfolio-list' },
+                                    portfolios.map(portfolio => 
+                                        e('div', {
+                                            key: portfolio.id,
+                                            className: `portfolio-item ${portfolio.id === portfolioId ? 'active' : ''}`,
+                                            onClick: () => handlePortfolioSelect(portfolio)
+                                        },
+                                            e('div', { className: 'portfolio-item-info' },
+                                                e('div', { className: 'portfolio-item-name' }, portfolio.name),
+                                                e('div', { className: 'portfolio-item-value' }, 
+                                                    formatValue(portfolio.value || portfolio.total_value)
+                                                )
+                                            ),
+                                            portfolio.performance && formatPerformance(portfolio.performance) &&
+                                                e('div', {
+                                                    className: `portfolio-item-performance ${
+                                                        portfolio.performance.ytd >= 0 ? 'positive' : 'negative'
+                                                    }`
+                                                }, formatPerformance(portfolio.performance)),
+                                            portfolio.id === portfolioId && 
+                                                e('span', { className: 'portfolio-item-check' }, '✓')
+                                        )
+                                    )
+                                )
+                                : e('div', { className: 'portfolio-empty' }, 
+                                    'No portfolios available'
+                                )
+                    )
+                );
             }
             
             // Pattern Registry with metadata for all 13 patterns
@@ -3347,7 +3764,21 @@
                 
                 useEffect(() => {
                     loadPattern();
-                }, [pattern, JSON.stringify(inputs)]);
+                }, [pattern, portfolioId, JSON.stringify(inputs)]);
+                
+                // Listen for portfolio changes from the portfolio selector
+                useEffect(() => {
+                    const handlePortfolioChange = (event) => {
+                        console.log('Portfolio changed, reloading pattern:', pattern);
+                        loadPattern();
+                    };
+                    
+                    window.addEventListener('portfolioChanged', handlePortfolioChange);
+                    
+                    return () => {
+                        window.removeEventListener('portfolioChanged', handlePortfolioChange);
+                    };
+                }, [pattern, inputs]);
                 
                 const loadPattern = async () => {
                     try {
@@ -8621,6 +9052,8 @@
                 const handleLogout = () => {
                     TokenManager.removeToken();
                     TokenManager.removeUser();
+                    // Clear portfolio selection from localStorage
+                    localStorage.removeItem('selectedPortfolioId');
                     setIsAuthenticated(false);
                     setUser(null);
                     setCurrentPage('dashboard');
@@ -8719,6 +9152,7 @@
                                 )
                             ),
                             e('div', { className: 'header-right' },
+                                e(PortfolioSelector),
                                 e('div', { className: 'user-info' }, user?.email || 'User'),
                                 e('button', { 
                                     className: 'btn-logout',
