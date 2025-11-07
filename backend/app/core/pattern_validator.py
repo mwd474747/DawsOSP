@@ -283,7 +283,11 @@ def validate_all_patterns(patterns_dir: str = "backend/patterns") -> Dict[str, L
             if warnings:
                 results[pattern_id] = warnings
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and record
+            results[pattern_id] = [f"Programming error loading pattern: {str(e)}"]
         except Exception as e:
+            # Pattern loading errors - record
             results[pattern_id] = [f"Failed to load pattern: {str(e)}"]
 
     return results

@@ -122,7 +122,12 @@ class PerformanceCalculator:
                 start_date,
                 end_date,
             )
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error querying portfolio_daily_values for TWR: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - log and use empty dataset (graceful degradation)
             logger.warning(f"Could not query portfolio_daily_values: {e}. Using empty dataset.")
             values = []
 

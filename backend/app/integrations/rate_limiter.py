@@ -216,6 +216,10 @@ async def backoff_on_429(
     for attempt in range(max_retries):
         try:
             return await func()
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - don't retry, re-raise immediately
+            logger.error(f"Programming error in {provider_name}: {e}", exc_info=True)
+            raise
         except Exception as e:
             # Check if 429 error
             if hasattr(e, "status_code") and e.status_code == 429:
