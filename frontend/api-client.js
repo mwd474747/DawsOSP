@@ -389,8 +389,12 @@
         TokenManager: {
             getToken: TokenManager.getToken,
             setToken: TokenManager.setToken,
-            clearToken: TokenManager.clearToken,
-            isTokenExpired: TokenManager.isTokenExpired
+            removeToken: TokenManager.removeToken,
+            getUser: TokenManager.getUser,
+            setUser: TokenManager.setUser,
+            removeUser: TokenManager.removeUser,
+            refreshToken: TokenManager.refreshToken.bind(TokenManager),
+            isTokenExpired: TokenManager.isTokenExpired.bind(TokenManager)
         },
 
         // Retry configuration
@@ -407,41 +411,6 @@
         handleApiError: handleApiError
     };
 
-    // ============================================
-    // DEPRECATED: Backward compatibility aliases
-    // Remove in Phase 3
-    // ============================================
-
-    // Legacy global exports (with deprecation warnings)
-    Object.defineProperty(global, 'apiClient', {
-        get: function() {
-            console.warn('[DEPRECATED] global.apiClient is deprecated. Use DawsOS.Core.API instead.');
-            return global.DawsOS.Core.API;
-        }
-    });
-
-    Object.defineProperty(global, 'TokenManager', {
-        get: function() {
-            console.warn('[DEPRECATED] global.TokenManager is deprecated. Use DawsOS.Core.API.TokenManager instead.');
-            return global.DawsOS.Core.API.TokenManager;
-        }
-    });
-
-    Object.defineProperty(global, 'getCurrentPortfolioId', {
-        get: function() {
-            console.warn('[DEPRECATED] global.getCurrentPortfolioId is deprecated. Use DawsOS.Core.Auth.getCurrentPortfolioId instead.');
-            return global.DawsOS.Core.Auth.getCurrentPortfolioId;
-        }
-    });
-
-    Object.defineProperty(global, 'handleApiError', {
-        get: function() {
-            console.warn('[DEPRECATED] global.handleApiError is deprecated. Use DawsOS.Core.Errors.handleApiError instead.');
-            return global.DawsOS.Core.Errors.handleApiError;
-        }
-    });
-
-    // For debugging purposes
-    console.log('✅ API Client module loaded successfully (DawsOS.Core.API)');
+    console.log('✅ API Client module loaded successfully (DawsOS.Core.*)');
     
 })(window);

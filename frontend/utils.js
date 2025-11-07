@@ -678,31 +678,6 @@
         NetworkStatusIndicator: Utils.NetworkStatusIndicator
     };
 
-    // ============================================
-    // DEPRECATED: Backward compatibility aliases
-    // Remove in Phase 3
-    // ============================================
-
-    // Keep old Utils namespace with deprecation warnings
-    global.DawsOS.Utils.formatCurrency = Utils.formatCurrency;
-    global.DawsOS.Utils.formatPercentage = Utils.formatPercentage;
-    global.DawsOS.Utils.formatNumber = Utils.formatNumber;
-    global.DawsOS.Utils.formatDate = Utils.formatDate;
-    global.DawsOS.Utils.formatValue = Utils.formatValue;
-    global.DawsOS.Utils.getColorClass = Utils.getColorClass;
-    global.DawsOS.Utils.LoadingSpinner = Utils.LoadingSpinner;
-    global.DawsOS.Utils.ErrorMessage = Utils.ErrorMessage;
-    global.DawsOS.Utils.EmptyState = Utils.EmptyState;
-    global.DawsOS.Utils.RetryableError = Utils.RetryableError;
-    global.DawsOS.Utils.DataBadge = Utils.DataBadge;
-    global.DawsOS.Utils.FormField = Utils.FormField;
-    global.DawsOS.Utils.NetworkStatusIndicator = Utils.NetworkStatusIndicator;
-    global.DawsOS.Utils.useCachedQuery = Utils.useCachedQuery;
-    global.DawsOS.Utils.useCachedMutation = Utils.useCachedMutation;
-    global.DawsOS.Utils.getDataSourceFromResponse = Utils.getDataSourceFromResponse;
-    global.DawsOS.Utils.withDataProvenance = Utils.withDataProvenance;
-    global.DawsOS.Utils.ProvenanceWarningBanner = Utils.ProvenanceWarningBanner;
-
     console.log('✅ Utils module loaded successfully (DawsOS.Utils.*, DawsOS.UI.Primitives)');
 
 })(typeof window !== 'undefined' ? window : global);

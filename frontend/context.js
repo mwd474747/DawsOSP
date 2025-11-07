@@ -356,13 +356,5 @@
         PortfolioSelector
     };
 
-    // DEPRECATED: getCurrentPortfolioId moved to DawsOS.Core.Auth (Phase 2.1)
-    // This is kept for backward compatibility but will be removed in Phase 3
-    Object.defineProperty(global.DawsOS.Context, 'getCurrentPortfolioId', {
-        get: function() {
-            console.warn('[DEPRECATED] DawsOS.Context.getCurrentPortfolioId is deprecated. Use DawsOS.Core.Auth.getCurrentPortfolioId instead.');
-            return global.DawsOS.Core.Auth.getCurrentPortfolioId;
-        }
-    });
 
 })(window);

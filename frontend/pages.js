@@ -63,15 +63,27 @@
     const e = React.createElement;
 
     // ============================================
-    // PHASE 2 IMPORTS - New Namespace Structure
+    // SAFE IMPORTS - Check namespaces exist first
     // ============================================
 
-    // Core Infrastructure (Phase 2.1)
+    // Verify all required namespaces are loaded
+    if (!DawsOS.Core || !DawsOS.Core.API || !DawsOS.Utils || !DawsOS.Patterns || !DawsOS.UI) {
+        console.error('[pages.js] Required namespaces not loaded!', {
+            'DawsOS.Core': !!DawsOS.Core,
+            'DawsOS.Core.API': !!DawsOS.Core?.API,
+            'DawsOS.Utils': !!DawsOS.Utils,
+            'DawsOS.Patterns': !!DawsOS.Patterns,
+            'DawsOS.UI': !!DawsOS.UI
+        });
+        throw new Error('Required namespaces not loaded. Check script load order and module errors.');
+    }
+
+    // Core Infrastructure
     const API = DawsOS.Core.API;
     const Auth = DawsOS.Core.Auth;
     const CoreErrors = DawsOS.Core.Errors;
 
-    // Formatting Utilities (Phase 2.2)
+    // Formatting Utilities
     const Formatting = DawsOS.Utils.Formatting;
     const formatCurrency = Formatting.currency;
     const formatPercentage = Formatting.percentage;
@@ -79,7 +91,7 @@
     const formatDate = Formatting.date;
     const formatValue = Formatting.value;
 
-    // UI Primitives (Phase 2.2)
+    // UI Primitives
     const Primitives = DawsOS.UI.Primitives;
     const LoadingSpinner = Primitives.LoadingSpinner;
     const ErrorMessage = Primitives.ErrorMessage;
@@ -89,16 +101,16 @@
     const FormField = Primitives.FormField;
     const DataBadge = Primitives.DataBadge;
 
-    // Data Utilities (Phase 2.2)
+    // Data Utilities
     const DataUtils = DawsOS.Utils.Data;
     const getDataSourceFromResponse = DataUtils.getDataSourceFromResponse;
 
-    // React Hooks (Phase 2.2)
+    // React Hooks
     const Hooks = DawsOS.Utils.Hooks;
     const useCachedQuery = Hooks.useCachedQuery;
     const useCachedMutation = Hooks.useCachedMutation;
 
-    // Pattern System (Phase 2.3)
+    // Pattern System
     const Patterns = DawsOS.Patterns;
     const PatternRenderer = Patterns.Renderer.PatternRenderer;
     const PanelRenderer = Patterns.Helpers.PanelRenderer;
@@ -110,13 +122,15 @@
     // Panels
     const Panels = DawsOS.Panels;
 
-    // Legacy compatibility (backward compat for emergency fixes)
-    const apiClient = API;  // DawsOS.Core.API is the new apiClient
+    // Legacy compatibility
+    const apiClient = API;
     const TokenManager = API.TokenManager;
     const getCurrentPortfolioId = Auth.getCurrentPortfolioId;
     const ErrorHandler = CoreErrors;
     const FormValidator = DawsOS.FormValidator || {};
     const cachedApiClient = Patterns.Helpers.queryHelpers || API;
+
+    console.log('✅ pages.js imports successful');
 
     // ============================================
     // PAGE COMPONENTS

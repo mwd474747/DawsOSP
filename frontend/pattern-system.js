@@ -1018,21 +1018,6 @@
         PanelRenderer: PanelRenderer
     };
 
-    // ============================================
-    // DEPRECATED: Backward compatibility aliases
-    // Remove in Phase 3
-    // ============================================
-
-    // Keep old PatternSystem namespace for backward compatibility
-    global.DawsOS.PatternSystem = {
-        getDataByPath: getDataByPath,
-        PatternRenderer: PatternRenderer,
-        PanelRenderer: PanelRenderer,
-        patternRegistry: patternRegistry,
-        queryKeys: queryKeys,
-        queryHelpers: queryHelpers
-    };
-
     console.log('✅ Pattern System loaded successfully (DawsOS.Patterns.*)');
 
 })(window);
