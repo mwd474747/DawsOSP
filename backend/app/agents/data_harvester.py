@@ -2574,8 +2574,11 @@ class DataHarvester(BaseAgent):
             
             # Filter by symbols AFTER getting the results, since FMP returns all
             if symbols:
-                logger.debug(f"Filtering dividends for symbols: {symbols}")
-                dividends = [d for d in dividends if d.get("symbol") in symbols]
+                # Normalize portfolio symbols to FMP format for matching
+                # FMP returns symbols with hyphens for share classes (BRK-B not BRK.B)
+                fmp_symbols = [normalize_symbol_for_fmp(s) for s in symbols]
+                logger.debug(f"Filtering dividends for symbols: {symbols} (FMP format: {fmp_symbols})")
+                dividends = [d for d in dividends if d.get("symbol") in fmp_symbols]
                 logger.info(f"Filtered dividends: {len(dividends)} records match portfolio symbols")
             
             # Normalize format - FMP returns adjDividend, not dividend
