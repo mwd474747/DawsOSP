@@ -1701,7 +1701,7 @@ class FinancialAnalyst(BaseAgent):
             # Get current price from pricing pack
             price_row = await conn.fetchrow(
                 """
-                SELECT price
+                SELECT close as price
                 FROM prices
                 WHERE security_id = $1 AND pricing_pack_id = $2
                 """,
@@ -1717,7 +1717,7 @@ class FinancialAnalyst(BaseAgent):
             # Get portfolio total value for weight calculation
             portfolio_value_row = await conn.fetchrow(
                 """
-                SELECT SUM(l.quantity_open * p.price) as total_value
+                SELECT SUM(l.quantity_open * p.close) as total_value
                 FROM lots l
                 JOIN prices p ON l.security_id = p.security_id
                 WHERE l.portfolio_id = $1
