@@ -4119,27 +4119,46 @@
                     
                     const ctx = chartRef.current.getContext('2d');
                     
-                    // Handle nested agent return structures (Phase 1: Fix data nesting)
-                    // Agent may return: {historical_nav: [{date, value}], ...} or {data: [{date, value}]}
+                    // Handle nested agent return structures (defensive handling for all cases)
+                    // Supports: flat arrays, nested objects, double-nested structures
                     let chartLabels = [];
                     let chartValues = [];
                     
-                    if (data.labels && data.values) {
-                        // Flat structure with labels and values
+                    // Try multiple extraction strategies in order of preference
+                    if (data.labels && data.values && Array.isArray(data.labels) && Array.isArray(data.values)) {
+                        // Strategy 1: Flat structure with labels and values
                         chartLabels = data.labels;
                         chartValues = data.values;
                     } else if (data.data && Array.isArray(data.data)) {
-                        // Array of {date, nav_value} or {date, value} or {x, y}
+                        // Strategy 2: Array of {date, nav_value} or {date, value} or {x, y}
                         chartLabels = data.data.map(d => d.date || d.x);
                         chartValues = data.data.map(d => d.nav_value || d.value || d.y);
                     } else if (Array.isArray(data)) {
-                        // Direct array of {date, nav_value} or {date, value}
+                        // Strategy 3: Direct array of {date, nav_value} or {date, value}
                         chartLabels = data.map(d => d.date || d.x);
                         chartValues = data.map(d => d.nav_value || d.value || d.y);
-                    } else if (data.historical_nav && Array.isArray(data.historical_nav)) {
-                        // Nested structure from agent: {historical_nav: [{date, nav_value}], ...}
-                        chartLabels = data.historical_nav.map(d => d.date || d.x);
-                        chartValues = data.historical_nav.map(d => d.nav_value || d.value || d.y);
+                    } else if (data.historical_nav) {
+                        // Strategy 4: Handle nested historical_nav (single or double nesting)
+                        const navData = Array.isArray(data.historical_nav) 
+                            ? data.historical_nav 
+                            : (data.historical_nav.historical_nav || data.historical_nav.data || []);
+                        if (Array.isArray(navData)) {
+                            chartLabels = navData.map(d => d.date || d.x);
+                            chartValues = navData.map(d => d.nav_value || d.value || d.y);
+                        }
+                    } else if (data.values && Array.isArray(data.values)) {
+                        // Strategy 5: Try to extract from common nested patterns
+                        // Check for nested data structures
+                        const nestedKeys = Object.keys(data).filter(k => 
+                            k !== 'labels' && k !== 'values' && k !== 'data' && 
+                            Array.isArray(data[k]) && data[k].length > 0
+                        );
+                        if (nestedKeys.length > 0) {
+                            // Use first array found
+                            const arrayData = data[nestedKeys[0]];
+                            chartLabels = arrayData.map(d => d.date || d.x || d.label);
+                            chartValues = arrayData.map(d => d.nav_value || d.value || d.y || d.value);
+                        }
                     }
                     
                     // Prepare chart data
@@ -4411,13 +4430,36 @@
                     
                     const ctx = chartRef.current.getContext('2d');
                     
-                    // Handle nested agent return structures (Phase 1: Fix data nesting)
-                    // Agent may return: {sector_allocation: {Tech: 30, ...}, ...} or {Tech: 30, ...}
+                    // Handle nested agent return structures (defensive handling for all cases)
+                    // Supports: flat objects, nested objects, double-nested structures
                     let chartDataObj = data;
                     
-                    if (data.sector_allocation && typeof data.sector_allocation === 'object' && !Array.isArray(data.sector_allocation)) {
-                        // Nested structure from agent: {sector_allocation: {Tech: 30, ...}, ...}
-                        chartDataObj = data.sector_allocation;
+                    // Try multiple extraction strategies
+                    if (data.sector_allocation) {
+                        // Strategy 1: Handle nested sector_allocation (single or double nesting)
+                        if (typeof data.sector_allocation === 'object' && !Array.isArray(data.sector_allocation)) {
+                            // Check for double nesting: {sector_allocation: {sector_allocation: {...}}}
+                            chartDataObj = data.sector_allocation.sector_allocation || data.sector_allocation;
+                        }
+                    } else if (typeof data === 'object' && !Array.isArray(data)) {
+                        // Strategy 2: Check if data itself is a flat object (already correct)
+                        // Filter out metadata fields
+                        const metadataKeys = ['_provenance', '__metadata__', 'total_sectors', 'total_value', 'currency', 'lookback_days', 'data_points'];
+                        const hasMetadata = metadataKeys.some(k => k in data);
+                        if (!hasMetadata) {
+                            // Likely already a flat object
+                            chartDataObj = data;
+                        } else {
+                            // Try to find nested object
+                            const nestedKeys = Object.keys(data).filter(k => 
+                                !metadataKeys.includes(k) && 
+                                typeof data[k] === 'object' && 
+                                !Array.isArray(data[k])
+                            );
+                            if (nestedKeys.length > 0) {
+                                chartDataObj = data[nestedKeys[0]];
+                            }
+                        }
                     }
                     
                     // Prepare chart data

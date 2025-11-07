@@ -96,7 +96,6 @@ class FinancialAnalyst(BaseAgent):
             # Original FinancialAnalyst capabilities
             "ledger.positions",
             "pricing.apply_pack",
-            "metrics.compute",  # Generic metrics computation (wrapper)
             "metrics.compute_twr",
             "metrics.compute_mwr",  # NEW: Money-Weighted Return (IRR) - Week 2
             "metrics.compute_sharpe",
@@ -749,6 +748,18 @@ class FinancialAnalyst(BaseAgent):
 
         return result
 
+    @capability(
+        name="metrics.compute_mwr",
+        inputs={"portfolio_id": str, "pack_id": str},
+        outputs={
+            "mwr": float,
+            "mwr_1y": float,
+            "mwr_3y": float,
+            "mwr_5y": float,
+            "cash_flows": list,
+        },
+        description="Compute Money-Weighted Return (MWR/IRR) for portfolio",
+    )
     async def metrics_compute_mwr(
         self,
         ctx: RequestCtx,
@@ -829,6 +840,17 @@ class FinancialAnalyst(BaseAgent):
                 }
             }
 
+    @capability(
+        name="metrics.compute_sharpe",
+        inputs={"portfolio_id": str, "asof_date": date},
+        outputs={
+            "sharpe_30d": float,
+            "sharpe_1y": float,
+            "sharpe_3y": float,
+            "sharpe_5y": float,
+        },
+        description="Compute Sharpe Ratio from metrics database",
+    )
     async def metrics_compute_sharpe(
         self,
         ctx: RequestCtx,
@@ -1049,6 +1071,12 @@ class FinancialAnalyst(BaseAgent):
 
         return result
 
+    @capability(
+        name="charts.overview",
+        inputs={"positions": dict, "metrics": dict, "twr": dict, "currency_attr": dict},
+        outputs={"charts": list, "chart_count": int},
+        description="Generate overview charts for portfolio",
+    )
     async def charts_overview(
         self,
         ctx: RequestCtx,
@@ -1446,6 +1474,12 @@ class FinancialAnalyst(BaseAgent):
 
         return self._attach_metadata(result, metadata)
 
+    @capability(
+        name="risk.overlay_cycle_phases",
+        inputs={"factor_exposures": dict, "stdc": dict, "ltdc": dict, "portfolio_id": str, "pack_id": str},
+        outputs={"overlay": dict, "cycle_phases": dict},
+        description="Overlay cycle phase information on risk metrics",
+    )
     async def risk_overlay_cycle_phases(
         self,
         ctx: RequestCtx,
