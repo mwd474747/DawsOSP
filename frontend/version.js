@@ -17,7 +17,10 @@
         },
         getQueryString: function() {
             // Use build timestamp for development, version string for production
-            return process.env.NODE_ENV === 'production' ? this.toString() : this.build;
+            // In browser, check for production mode via window.location or use timestamp
+            const isProduction = window.location.hostname !== 'localhost' && 
+                                 window.location.hostname !== '127.0.0.1';
+            return isProduction ? this.toString() : this.build;
         }
     };
     
