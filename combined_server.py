@@ -1193,61 +1193,102 @@ async def execute_pattern(request: ExecuteRequest, user: dict = Depends(require_
 async def list_patterns(user: dict = Depends(require_auth)):
     """
     List all available patterns with their metadata.
-    
+
     Returns pattern information for UI discovery.
+    AUTH_STATUS: MIGRATED - Sprint 3 (Final)
     """
     try:
         orchestrator = get_pattern_orchestrator()
-        patterns_info = []
-        
-        for pattern_id, pattern_def in orchestrator.patterns.items():
-            pattern_info = {
-                "id": pattern_id,
-                "name": pattern_def.get("metadata", {}).get("name", pattern_id),
-                "description": pattern_def.get("metadata", {}).get("description", ""),
-                "version": pattern_def.get("metadata", {}).get("version", "1.0.0"),
-                "category": pattern_def.get("metadata", {}).get("category", "general"),
-                "required_inputs": {},
-                "optional_inputs": {},
-                "output_format": pattern_def.get("metadata", {}).get("output_format", "mixed"),
-            }
-            
-            # Separate required and optional inputs
-            for input_name, input_def in pattern_def.get("inputs", {}).items():
-                if isinstance(input_def, dict):
-                    if input_def.get("required", False):
-                        pattern_info["required_inputs"][input_name] = {
-                            "type": input_def.get("type", "string"),
-                            "description": input_def.get("description", ""),
-                            "default": input_def.get("default", None)
-                        }
-                    else:
-                        pattern_info["optional_inputs"][input_name] = {
-                            "type": input_def.get("type", "string"),
-                            "description": input_def.get("description", ""),
-                            "default": input_def.get("default", None)
-                        }
-            
-            patterns_info.append(pattern_info)
-        
+        patterns_info = orchestrator.list_patterns()
+
         # Sort by category and then by name
-        patterns_info.sort(key=lambda x: (x["category"], x["name"]))
-        
+        patterns_info.sort(key=lambda x: (x.get("category", ""), x.get("name", "")))
+
         return SuccessResponse(
             status="success",
             data={
                 "patterns": patterns_info,
                 "total": len(patterns_info),
-                "categories": list(set(p["category"] for p in patterns_info))
+                "categories": list(set(p.get("category", "unknown") for p in patterns_info))
             }
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to list patterns: {e}")
         return SuccessResponse(
             status="error",
             data=None,
             error="Failed to list available patterns"
+        )
+
+@app.get("/api/patterns/metadata")
+async def get_patterns_metadata(user: dict = Depends(require_auth)):
+    """
+    Get comprehensive metadata for all patterns.
+
+    This endpoint provides all pattern metadata including display configuration,
+    eliminating the need for frontend hardcoded pattern registry.
+
+    AUTH_STATUS: MIGRATED - Sprint 3 (Final)
+    REFACTORING: Priority 0 - Week 1
+    """
+    try:
+        orchestrator = get_pattern_orchestrator()
+        patterns_metadata = orchestrator.list_patterns()
+
+        return SuccessResponse(
+            status="success",
+            data={
+                "patterns": patterns_metadata,
+                "total": len(patterns_metadata),
+                "version": "1.0",
+                "server_time": datetime.utcnow().isoformat()
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get patterns metadata: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve patterns metadata: {str(e)}"
+        )
+
+@app.get("/api/patterns/metadata/{pattern_id}")
+async def get_pattern_metadata(pattern_id: str, user: dict = Depends(require_auth)):
+    """
+    Get detailed metadata for a specific pattern.
+
+    Args:
+        pattern_id: Pattern identifier
+
+    Returns:
+        Detailed pattern metadata including steps count, inputs, outputs, display config
+
+    AUTH_STATUS: MIGRATED - Sprint 3 (Final)
+    REFACTORING: Priority 0 - Week 1
+    """
+    try:
+        orchestrator = get_pattern_orchestrator()
+        metadata = orchestrator.get_pattern_metadata(pattern_id)
+
+        if metadata is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Pattern '{pattern_id}' not found"
+            )
+
+        return SuccessResponse(
+            status="success",
+            data=metadata
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get metadata for pattern {pattern_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve pattern metadata: {str(e)}"
         )
 
 @app.get("/api/patterns/health")
