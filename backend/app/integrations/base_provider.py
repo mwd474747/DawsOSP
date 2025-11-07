@@ -29,24 +29,6 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-# Optional: OpenTelemetry tracing (graceful degradation if not installed)
-try:
-    from opentelemetry import trace
-    tracer = trace.get_tracer(__name__)
-    TRACING_ENABLED = True
-except ImportError:
-    # No-op tracer if opentelemetry not installed
-    class NoOpSpan:
-        def set_attribute(self, key, value): pass
-        def __enter__(self): return self
-        def __exit__(self, *args): pass
-
-    class NoOpTracer:
-        def start_as_current_span(self, name): return NoOpSpan()
-
-    tracer = NoOpTracer()
-    TRACING_ENABLED = False
-
 from app.core.types import ProviderTimeoutError, RequestCtx, RightsViolationError
 
 logger = logging.getLogger(__name__)
@@ -185,26 +167,17 @@ class BaseProvider(ABC):
         
         for attempt in range(self.max_retries + 1):
             try:
-                with tracer.start_as_current_span("provider.call") as span:
-                    span.set_attribute("provider", self.name)
-                    span.set_attribute("endpoint", request.endpoint)
-                    span.set_attribute("retry_attempt", attempt)
+                response = await self.call(request)
 
-                    response = await self.call(request)
+                # Cache successful response
+                await self._cache_response(request, response)
 
-                    span.set_attribute("latency_ms", response.latency_ms)
-                    span.set_attribute("status_code", response.status_code)
-                    span.set_attribute("cached", response.cached)
+                if attempt > 0:
+                    logger.info(
+                        f"{self.name}: Request succeeded after {attempt} retries for {request.endpoint}"
+                    )
 
-                    # Cache successful response
-                    await self._cache_response(request, response)
-
-                    if attempt > 0:
-                        logger.info(
-                            f"{self.name}: Request succeeded after {attempt} retries for {request.endpoint}"
-                        )
-
-                    return response
+                return response
 
             except httpx.HTTPStatusError as e:
                 last_exception = e
