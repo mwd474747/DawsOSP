@@ -19,28 +19,7 @@
       "description": "Number of days to look ahead (default 90)"
     }
   },
-  "outputs": {
-    "panels": [
-      {
-        "id": "actions_table",
-        "title": "Upcoming Corporate Actions",
-        "type": "table",
-        "dataPath": "actions_with_impact.actions"
-      },
-      {
-        "id": "summary_metrics",
-        "title": "Summary",
-        "type": "metrics_grid",
-        "dataPath": "actions_with_impact.summary"
-      },
-      {
-        "id": "notifications_list",
-        "title": "Notifications",
-        "type": "dual_list",
-        "dataPath": "actions_with_impact.notifications"
-      }
-    ]
-  },
+  "outputs": ["actions_with_impact"],
   "steps": [
     {
       "capability": "ledger.positions",
