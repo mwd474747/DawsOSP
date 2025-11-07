@@ -2,7 +2,7 @@
 DawsOS Core Type Definitions
 
 Purpose: Canonical types for request context, capabilities, and system contracts
-Updated: 2025-10-21
+Updated: 2025-01-14
 Priority: P0 (Critical for reproducibility and type safety)
 
 Usage:

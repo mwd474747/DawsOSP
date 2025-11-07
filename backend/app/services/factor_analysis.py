@@ -2,7 +2,7 @@
 DawsOS Factor Analysis Calculator
 
 Purpose: Compute factor exposures and attribution via regression
-Updated: 2025-10-21
+Updated: 2025-01-14
 Priority: P1 (Important for risk decomposition)
 
 Factors:

@@ -2,7 +2,7 @@
 Pricing Service - Query prices and FX rates from pricing packs
 
 Purpose: Service layer for pricing pack queries (prices, FX rates, pack metadata)
-Updated: 2025-10-23
+Updated: 2025-01-14
 Priority: P0 (Critical for valuation and metrics)
 
 Sacred Invariants:

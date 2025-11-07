@@ -2,7 +2,7 @@
 DawsOS Performance Metrics Calculator
 
 Purpose: Calculate TWR, MWR, Sharpe, Max Drawdown with ±1bp reconciliation guarantee
-Updated: 2025-10-21
+Updated: 2025-01-14
 Priority: P0 (Critical for portfolio analytics)
 
 Features:

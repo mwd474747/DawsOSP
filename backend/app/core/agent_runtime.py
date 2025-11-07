@@ -2,7 +2,7 @@
 DawsOS Agent Runtime
 
 Purpose: Agent registration, capability routing, retry management, and rights enforcement
-Updated: 2025-11-02
+Updated: 2025-01-14
 Priority: P0 (Critical for execution architecture)
 
 Features:

@@ -2,7 +2,7 @@
 Authentication API Routes
 
 Purpose: Login, token refresh, user management endpoints
-Updated: 2025-10-27
+Updated: 2025-01-14
 Priority: P0 (Critical for authentication)
 
 Endpoints:
@@ -45,6 +45,7 @@ from typing import Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Depends, status
+from starlette.requests import Request
 from pydantic import BaseModel, EmailStr, Field
 
 from app.services.auth import get_auth_service, AuthenticationError
@@ -121,7 +122,10 @@ class UserResponse(BaseModel):
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login(request: LoginRequest):
+async def login(
+    request: LoginRequest,
+    http_request: Request
+):
     """
     Authenticate user and return JWT token.
 
@@ -129,6 +133,7 @@ async def login(request: LoginRequest):
 
     Args:
         request: Login credentials (email, password)
+        http_request: FastAPI Request object for extracting IP and user agent
 
     Returns:
         LoginResponse with JWT token and user info
@@ -147,12 +152,25 @@ async def login(request: LoginRequest):
     try:
         auth_service = get_auth_service()
         
+        # Extract IP address from request (handles proxies via X-Forwarded-For)
+        client_ip = http_request.client.host if http_request.client else None
+        forwarded_for = http_request.headers.get("X-Forwarded-For")
+        if forwarded_for:
+            # Take first IP from X-Forwarded-For header (client IP)
+            client_ip = forwarded_for.split(",")[0].strip()
+        elif http_request.headers.get("X-Real-IP"):
+            # Fallback to X-Real-IP header
+            client_ip = http_request.headers.get("X-Real-IP")
+        
+        # Extract user agent from request
+        user_agent = http_request.headers.get("User-Agent", "Unknown")
+        
         # Use unified authentication service
         auth_data = await auth_service.authenticate_user(
             email=request.email,
             password=request.password,
-            ip_address="127.0.0.1",  # TODO: Get real IP from request
-            user_agent="API Client"  # TODO: Get real user agent
+            ip_address=client_ip or "127.0.0.1",
+            user_agent=user_agent
         )
 
         logger.info(f"Login successful: user_id={auth_data['user_id']}, email={request.email}")
@@ -337,7 +355,8 @@ async def list_users(
 async def create_user(
     email: EmailStr,
     password: str,
-    role: str = "USER"
+    role: str = "USER",
+    http_request: Request = None
 ) -> Dict:
     """
     Create new user (ADMIN only).
@@ -346,6 +365,7 @@ async def create_user(
         email: User email
         password: User password (will be hashed)
         role: User role (default: USER)
+        http_request: FastAPI Request object for extracting IP and user agent
 
     Returns:
         Created user record (without password hash)
@@ -365,22 +385,46 @@ async def create_user(
     try:
         auth_service = get_auth_service()
         
+        # Extract IP address from request (handles proxies via X-Forwarded-For)
+        client_ip = None
+        user_agent = "API Client"
+        if http_request:
+            client_ip = http_request.client.host if http_request.client else None
+            forwarded_for = http_request.headers.get("X-Forwarded-For")
+            if forwarded_for:
+                # Take first IP from X-Forwarded-For header (client IP)
+                client_ip = forwarded_for.split(",")[0].strip()
+            elif http_request.headers.get("X-Real-IP"):
+                # Fallback to X-Real-IP header
+                client_ip = http_request.headers.get("X-Real-IP")
+            
+            # Extract user agent from request
+            user_agent = http_request.headers.get("User-Agent", "API Client")
+        
         # Use unified authentication service
         user_data = await auth_service.register_user(
             email=email,
             password=password,
             role=role,
-            ip_address="127.0.0.1",  # TODO: Get real IP from request
-            user_agent="API Client"  # TODO: Get real user agent
+            ip_address=client_ip or "127.0.0.1",
+            user_agent=user_agent
         )
 
         logger.info(f"User created: id={user_data['user_id']}, email={email}, role={role}")
+
+        # Get actual creation time from database
+        from app.db.connection import execute_query_one
+        user_record = await execute_query_one(
+            "SELECT created_at FROM users WHERE id = $1",
+            user_data["user_id"]
+        )
+        created_at = user_record["created_at"] if user_record else None
 
         return {
             "id": user_data["user_id"],
             "email": user_data["email"],
             "role": user_data["role"],
-            "created_at": "NOW()"  # TODO: Get actual creation time
+            "created_at": created_at.isoformat() if created_at else None
         }
 
     except ValueError as e:

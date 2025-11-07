@@ -2,7 +2,7 @@
 DawsOS Data Harvester Agent
 
 Purpose: External data provider integration (FMP, Polygon, FRED, NewsAPI) + Report exports
-Updated: 2025-11-03
+Updated: 2025-01-14
 
 Capabilities:
     - fundamentals.load: Fetch company fundamentals (FMP)

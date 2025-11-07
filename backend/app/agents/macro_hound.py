@@ -2,7 +2,7 @@
 DawsOS Macro Hound Agent
 
 Purpose: Macro analysis, regime detection, cycles, scenarios, DaR
-Updated: 2025-11-02
+Updated: 2025-01-14
 
 Capabilities:
     - macro.detect_regime: Detect current macro regime (5 regimes)

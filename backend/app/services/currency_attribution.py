@@ -2,7 +2,7 @@
 DawsOS Currency Attribution Calculator
 
 Purpose: Decompose multi-currency portfolio returns into local + FX + interaction
-Updated: 2025-10-21
+Updated: 2025-01-14
 Priority: P0 (Critical for multi-currency portfolios)
 
 Formula:

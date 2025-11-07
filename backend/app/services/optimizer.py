@@ -6,7 +6,7 @@ The functionality has been consolidated into the FinancialAnalyst agent.
 Use `financial_analyst.propose_trades` capability instead.
 
 Purpose: Policy-based portfolio optimization and rebalancing with Riskfolio-Lib
-Updated: 2025-10-26
+Updated: 2025-01-14
 Priority: P1 (Core business logic for policy rebalance pattern)
 
 Features:
@@ -35,9 +35,9 @@ Dependencies:
     pip install riskfolio-lib
 
 Usage:
-    from app.services.optimizer import get_optimizer_service
+    from app.services.optimizer import OptimizerService
 
-    service = get_optimizer_service()
+    service = OptimizerService(use_db=True, db_pool=db_pool)
 
     # Generate rebalance trades
     result = await service.propose_trades(
@@ -52,6 +52,9 @@ Usage:
         proposed_trades=result["trades"],
         pricing_pack_id="PP_2025-10-26",
     )
+    
+    Note: get_optimizer_service() is deprecated. Use OptimizerService(db_pool=...) directly.
+    Note: This service is deprecated. Use FinancialAnalyst agent capabilities instead.
 
 Sacred Invariants:
     1. All optimizations use pricing_pack_id for reproducibility

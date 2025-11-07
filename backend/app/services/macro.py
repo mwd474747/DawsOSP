@@ -2,7 +2,7 @@
 Macro Regime Detection Service
 
 Purpose: Detect macro economic regimes from indicators (Dalio-inspired methodology)
-Updated: 2025-11-02
+Updated: 2025-01-14
 Priority: P0 (Critical for risk management)
 
 Features:
@@ -33,16 +33,18 @@ Architecture:
     FRED API → MacroService → FREDTransformation → RegimeDetector → Database
 
 Usage:
-    from app.providers.fred_client import get_fred_client
-    from app.services.macro import get_macro_service
+    from app.integrations.fred_provider import FREDProvider
+    from app.services.macro import MacroService
 
     # Fetch latest indicators from FRED
-    client = get_fred_client()
-    service = get_macro_service()
+    fred_client = FREDProvider(api_key=os.getenv("FRED_API_KEY"))
+    service = MacroService(fred_client=fred_client)
     await service.fetch_indicators(asof_date=date.today())
 
     # Detect regime
     regime = await service.detect_regime(asof_date=date.today())
+    
+    Note: get_macro_service() is deprecated. Use MacroService(fred_client=...) directly.
 """
 
 import logging

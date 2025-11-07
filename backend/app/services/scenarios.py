@@ -2,7 +2,7 @@
 Scenario Stress Testing Service
 
 Purpose: Apply macro shocks to portfolio and suggest hedges
-Updated: 2025-10-23
+Updated: 2025-01-14
 Priority: P0 (Critical for risk management)
 
 Features:
@@ -23,15 +23,17 @@ Architecture:
     Portfolio → Factor Betas → Scenario Shock → Delta P&L → Hedge Suggestions
 
 Usage:
-    from app.services.scenarios import get_scenario_service
+    from app.services.scenarios import ScenarioService
 
-    service = get_scenario_service()
+    service = ScenarioService()
     result = await service.apply_scenario(
         portfolio_id="...",
         shock_type="rates_up",
         pack_id="...",
     )
     hedges = await service.suggest_hedges(result.losers, "rates_up")
+    
+    Note: get_scenario_service() is deprecated. Use ScenarioService() directly.
 """
 
 import logging
