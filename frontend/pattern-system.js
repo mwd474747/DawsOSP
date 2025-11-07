@@ -41,9 +41,16 @@
     const { useState, useEffect } = React;
     const { createElement: e } = React;
 
-    // Import from DawsOS modules (assuming they are already loaded)
-    const { useUserContext, getCurrentPortfolioId } = global.DawsOS.Context || {};
-    const { apiClient } = global.DawsOS.APIClient || {};
+    // Import from DawsOS modules (with correct namespaces)
+    const { useUserContext, getCurrentPortfolioId } = global.DawsOS?.Context || {};
+    const { apiClient, TokenManager: TokenManagerFromAPI } = global.DawsOS?.APIClient || {};
+    
+    // Validate critical dependencies
+    if (!apiClient) {
+        console.error('[PatternSystem] API client not loaded from DawsOS.APIClient');
+        console.error('[PatternSystem] Available namespaces:', Object.keys(global.DawsOS || {}));
+        throw new Error('[PatternSystem] Required dependency DawsOS.APIClient not found. Check script load order.');
+    }
 
     // Import panel components
     const {
@@ -62,7 +69,15 @@
     } = global.DawsOS.Panels || {};
 
     // Import global utilities (these remain in full_ui.html)
-    const { ErrorHandler, CacheManager, TokenManager, ProvenanceWarningBanner } = global;
+    // Use TokenManager from DawsOS.APIClient if available, otherwise fallback to global
+    const { ErrorHandler, CacheManager, ProvenanceWarningBanner } = global;
+    const TokenManager = TokenManagerFromAPI || global.TokenManager;
+    
+    // Validate TokenManager
+    if (!TokenManager) {
+        console.error('[PatternSystem] TokenManager not available from DawsOS.APIClient or global');
+        throw new Error('[PatternSystem] TokenManager is required but not found');
+    }
 
     // ============================================
     // PATTERN REGISTRY

@@ -63,11 +63,19 @@
     const e = React.createElement;
 
     // Import dependencies from DawsOS namespace
-    const apiClient = global.DawsOS.APIClient;
-    const Utils = global.DawsOS.Utils || {};
-    const Panels = global.DawsOS.Panels || {};
-    const Context = global.DawsOS.Context || {};
-    const PatternSystem = global.DawsOS.PatternSystem || {};
+    const APIClient = global.DawsOS?.APIClient;
+    const apiClient = APIClient; // For backward compatibility
+    const Utils = global.DawsOS?.Utils || {};
+    const Panels = global.DawsOS?.Panels || {};
+    const Context = global.DawsOS?.Context || {};
+    const PatternSystem = global.DawsOS?.PatternSystem || {};
+    
+    // Validate critical dependencies
+    if (!APIClient) {
+        console.error('[Pages] DawsOS.APIClient not loaded');
+        console.error('[Pages] Available namespaces:', Object.keys(global.DawsOS || {}));
+        throw new Error('[Pages] Required dependency DawsOS.APIClient not found. Check script load order.');
+    }
 
     // Import utility functions
     const formatPercentage = Utils.formatPercentage || ((v) => v + '%');
@@ -92,8 +100,15 @@
     const PatternRenderer = global.PatternRenderer;
     const FormValidator = global.FormValidator;
     const ErrorHandler = global.ErrorHandler;
-    const TokenManager = global.TokenManager;
+    // Use TokenManager from DawsOS.APIClient if available, otherwise fallback to global
+    const TokenManager = APIClient?.TokenManager || global.TokenManager;
     const getDataSourceFromResponse = global.getDataSourceFromResponse;
+    
+    // Validate TokenManager
+    if (!TokenManager) {
+        console.error('[Pages] TokenManager not available from DawsOS.APIClient or global');
+        throw new Error('[Pages] TokenManager is required but not found');
+    }
 
     // ============================================
     // PAGE COMPONENTS

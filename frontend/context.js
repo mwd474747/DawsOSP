@@ -29,10 +29,26 @@
         global.DawsOS = {};
     }
 
-    // Get dependencies
-    const { TokenManager, apiClient } = global.DawsOS.APIClient || {};
+    // Get dependencies - Import from DawsOS.APIClient namespace
+    const { TokenManager, apiClient } = global.DawsOS?.APIClient || {};
     const { useState, useEffect, useCallback, useContext, createContext, useRef } = global.React || {};
-    const { e } = global.DawsOS.Utils || {};
+    const { e } = global.DawsOS?.Utils || {};
+    
+    // Validate critical dependencies (fail-fast instead of silent failure)
+    if (!TokenManager) {
+        console.error('[Context] TokenManager not loaded from DawsOS.APIClient.TokenManager');
+        console.error('[Context] Available namespaces:', Object.keys(global.DawsOS || {}));
+        throw new Error('[Context] Required dependency DawsOS.APIClient.TokenManager not found. Check script load order.');
+    }
+    if (!apiClient) {
+        console.error('[Context] API client not loaded from DawsOS.APIClient');
+        console.error('[Context] Available namespaces:', Object.keys(global.DawsOS || {}));
+        throw new Error('[Context] Required dependency DawsOS.APIClient not found. Check script load order.');
+    }
+    if (!e) {
+        console.error('[Context] React.createElement not available!');
+        throw new Error('[Context] React is required but not loaded');
+    }
 
     // ===== UNIFIED PATTERN INTEGRATION SYSTEM =====
 

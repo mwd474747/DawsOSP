@@ -372,8 +372,30 @@
     // Export to global scope for browser usage
     // ============================================
     
-    // Export the API client and utilities to the global window object
-    // This maintains backward compatibility with the existing code
+    // Initialize DawsOS namespace if it doesn't exist
+    if (!global.DawsOS) {
+        global.DawsOS = {};
+    }
+    
+    // Export to DawsOS.APIClient namespace (what code expects)
+    global.DawsOS.APIClient = {
+        // Export all apiClient methods
+        ...apiClient,
+        
+        // Token management
+        TokenManager: {
+            getToken: TokenManager.getToken,
+            setToken: TokenManager.setToken,
+            removeToken: TokenManager.removeToken,
+            getUser: TokenManager.getUser,
+            setUser: TokenManager.setUser,
+            removeUser: TokenManager.removeUser,
+            refreshToken: TokenManager.refreshToken.bind(TokenManager)
+        }
+    };
+    
+    // Also export to global scope for backward compatibility
+    // This maintains backward compatibility with existing code
     global.API_BASE = API_BASE;
     global.getCurrentPortfolioId = getCurrentPortfolioId;
     global.TokenManager = TokenManager;
@@ -382,6 +404,6 @@
     global.apiClient = apiClient;
     
     // For debugging purposes
-    console.log('API Client module loaded successfully');
+    console.log('✅ API Client module loaded successfully (DawsOS.APIClient)');
     
 })(window);
