@@ -98,7 +98,7 @@
     // Import core modules with fallbacks
     const FormValidator = DawsOS.FormValidator || {};
     const ErrorHandler = DawsOS.ErrorHandler || {};
-    const TokenManager = apiClient.TokenManager || apiClient?.TokenManager || {};
+    const TokenManager = global.TokenManager || {};
 
     // ============================================
     // PAGE COMPONENTS

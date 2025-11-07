@@ -30,7 +30,9 @@
     }
 
     // Get dependencies
-    const { TokenManager, apiClient } = global.DawsOS.APIClient || {};
+    // TokenManager and apiClient are exported directly to global scope by api-client.js
+    const TokenManager = global.TokenManager || {};
+    const apiClient = global.apiClient || {};
     const { useState, useEffect, useCallback, useContext, createContext, useRef } = global.React || {};
 
     // React.createElement shorthand (used throughout this module)
