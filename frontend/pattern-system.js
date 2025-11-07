@@ -41,6 +41,15 @@
     const { useState, useEffect } = React;
     const { createElement: e } = React;
 
+    // Import CacheManager from module (required for queryHelpers)
+    const CacheManager = global.DawsOS.CacheManager;
+    if (!CacheManager) {
+        console.error('[PatternSystem] CacheManager not loaded! Ensure cache-manager.js loads before pattern-system.js');
+        throw new Error('[PatternSystem] CacheManager module not available. Check script load order.');
+    }
+
+    console.log('[PatternSystem] CacheManager loaded successfully');
+
     // Import from DawsOS modules (assuming they are already loaded)
     const { useUserContext, getCurrentPortfolioId } = global.DawsOS.Context || {};
     const { apiClient } = global.DawsOS.APIClient || {};
@@ -61,8 +70,10 @@
         ReportViewerPanel
     } = global.DawsOS.Panels || {};
 
-    // Import global utilities (these remain in full_ui.html)
-    const { ErrorHandler, CacheManager, TokenManager, ProvenanceWarningBanner } = global;
+    // Import global utilities (ErrorHandler, TokenManager are now in modules; ProvenanceWarningBanner in full_ui.html)
+    // Note: CacheManager already imported above at line 45
+    const ErrorHandler = global.DawsOS.ErrorHandler;
+    const { TokenManager, ProvenanceWarningBanner } = global;
 
     // ============================================
     // PATTERN REGISTRY

@@ -11,17 +11,22 @@
     <script src="https://unpkg.com/axios@1.6.2/dist/axios.min.js"></script>
     <!-- Chart.js for visualizations -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    
+
+    <!-- Core Systems (MUST load FIRST - before all other modules) -->
+    <script src="frontend/cache-manager.js"></script>
+    <script src="frontend/error-handler.js"></script>
+    <script src="frontend/form-validator.js"></script>
+
     <!-- API Client Module -->
     <script src="frontend/api-client.js"></script>
-    
-    <!-- Utility Functions Module -->
+
+    <!-- Utility Functions Module (can now use CacheManager) -->
     <script src="frontend/utils.js"></script>
     <!-- Panel Components Module -->
     <script src="frontend/panels.js"></script>
     <!-- Context System Module (MUST load before pattern-system and pages) -->
     <script src="frontend/context.js"></script>
-    <!-- Pattern System Module (depends on context, utils, panels) -->
+    <!-- Pattern System Module (depends on CacheManager, context, utils, panels) -->
     <script src="frontend/pattern-system.js"></script>
     <!-- Page Components Module (depends on ALL modules above) -->
     <script src="frontend/pages.js"></script>
@@ -52,6 +57,35 @@
             // All API functionality (TokenManager, apiClient, etc.)
             // is available globally from the external module
             // ============================================
+
+            // ============================================
+            // Import Core Systems from Modules
+            // ============================================
+            // Verify core systems loaded successfully
+            if (!DawsOS.CacheManager || !DawsOS.ErrorHandler || !DawsOS.FormValidator) {
+                console.error('[App] Critical modules not loaded!', {
+                    CacheManager: !!DawsOS.CacheManager,
+                    ErrorHandler: !!DawsOS.ErrorHandler,
+                    FormValidator: !!DawsOS.FormValidator
+                });
+                document.getElementById('root').innerHTML =
+                    '<div style="padding: 2rem; text-align: center; color: #ef4444;">' +
+                    '<h2>Module Loading Error</h2>' +
+                    '<p>Critical modules failed to load. Please refresh the page.</p>' +
+                    '</div>';
+                throw new Error('Critical modules (CacheManager, ErrorHandler, FormValidator) not loaded!');
+            }
+
+            // Import core systems
+            const CacheManager = DawsOS.CacheManager;
+            const ErrorHandler = DawsOS.ErrorHandler;
+            const FormValidator = DawsOS.FormValidator;
+
+            console.log('[App] Core systems loaded successfully', {
+                CacheManager: !!CacheManager,
+                ErrorHandler: !!ErrorHandler,
+                FormValidator: !!FormValidator
+            });
 
             // ============================================
             // Import from External Modules
@@ -1162,602 +1196,9 @@
              * 
              * Inspired by React Query patterns from the TypeScript implementation
              */
-            const CacheManager = (() => {
-                // Cache storage
-                const cache = new Map();
-                const querySubscribers = new Map();
-                const activeRequests = new Map();
-                const cacheTimers = new Map();
-                
-                // Default configuration (matching React Query defaults)
-                const defaultConfig = {
-                    staleTime: 5 * 60 * 1000,      // 5 minutes - how long data is fresh
-                    gcTime: 10 * 60 * 1000,         // 10 minutes - garbage collection time
-                    retryCount: 3,                   // Number of retry attempts
-                    retryDelay: 1000,                // Base retry delay
-                    refetchOnWindowFocus: true,     // Refetch when window gains focus
-                    refetchOnReconnect: true,        // Refetch on network reconnect
-                    backgroundRefetchInterval: null  // Background refetch interval (null = disabled)
-                };
-                
-                /**
-                 * Generate cache key from query key array or string
-                 * @param {Array|string} queryKey - Query key
-                 * @returns {string} Serialized cache key
-                 */
-                const getCacheKey = (queryKey) => {
-                    if (typeof queryKey === 'string') return queryKey;
-                    if (Array.isArray(queryKey)) return JSON.stringify(queryKey);
-                    return JSON.stringify([queryKey]);
-                };
-                
-                /**
-                 * Check if cached data is stale
-                 * @param {object} entry - Cache entry
-                 * @param {number} staleTime - Stale time in ms
-                 * @returns {boolean} Whether data is stale
-                 */
-                const isStale = (entry, staleTime = defaultConfig.staleTime) => {
-                    if (!entry) return true;
-                    const age = Date.now() - entry.timestamp;
-                    return age > staleTime;
-                };
-                
-                /**
-                 * Check if cache should be garbage collected
-                 * @param {object} entry - Cache entry
-                 * @param {number} gcTime - Garbage collection time in ms
-                 * @returns {boolean} Whether to garbage collect
-                 */
-                const shouldGarbageCollect = (entry, gcTime = defaultConfig.gcTime) => {
-                    if (!entry) return true;
-                    const age = Date.now() - entry.lastAccessed;
-                    return age > gcTime && entry.subscribers === 0;
-                };
-                
-                /**
-                 * Get cached data with stale-while-revalidate pattern
-                 * @param {Array|string} queryKey - Query key
-                 * @param {Function} queryFn - Function to fetch data
-                 * @param {object} options - Query options
-                 * @returns {Promise} Cached or fresh data
-                 */
-                const get = async (queryKey, queryFn, options = {}) => {
-                    const key = getCacheKey(queryKey);
-                    const config = { ...defaultConfig, ...options };
-                    
-                    // Check cache
-                    const cached = cache.get(key);
-                    
-                    // Update last accessed time
-                    if (cached) {
-                        cached.lastAccessed = Date.now();
-                    }
-                    
-                    // Return fresh cached data immediately
-                    if (cached && !isStale(cached, config.staleTime)) {
-                        return { 
-                            data: cached.data, 
-                            error: null, 
-                            isStale: false,
-                            isFetching: false,
-                            isFromCache: true
-                        };
-                    }
-                    
-                    // Check if there's already an active request (deduplication)
-                    if (activeRequests.has(key)) {
-                        const activePromise = activeRequests.get(key);
-                        return activePromise;
-                    }
-                    
-                    // Stale-while-revalidate: Return stale data immediately while fetching
-                    if (cached && isStale(cached, config.staleTime)) {
-                        // Start background refetch
-                        const refetchPromise = fetchWithRetry(queryFn, config)
-                            .then(data => {
-                                set(queryKey, data);
-                                notifySubscribers(key, { data, error: null, isStale: false });
-                                return { data, error: null, isStale: false, isFetching: false };
-                            })
-                            .catch(error => {
-                                // Keep stale data on error
-                                notifySubscribers(key, { data: cached.data, error, isStale: true });
-                                return { data: cached.data, error, isStale: true, isFetching: false };
-                            })
-                            .finally(() => {
-                                activeRequests.delete(key);
-                            });
-                        
-                        activeRequests.set(key, refetchPromise);
-                        
-                        // Return stale data immediately
-                        return { 
-                            data: cached.data, 
-                            error: null, 
-                            isStale: true, 
-                            isFetching: true,
-                            isFromCache: true
-                        };
-                    }
-                    
-                    // No cache or expired - fetch fresh data
-                    const fetchPromise = fetchWithRetry(queryFn, config)
-                        .then(data => {
-                            set(queryKey, data);
-                            notifySubscribers(key, { data, error: null, isStale: false });
-                            return { data, error: null, isStale: false, isFetching: false };
-                        })
-                        .catch(error => {
-                            notifySubscribers(key, { data: null, error, isStale: false });
-                            throw error;
-                        })
-                        .finally(() => {
-                            activeRequests.delete(key);
-                        });
-                    
-                    activeRequests.set(key, fetchPromise);
-                    return fetchPromise;
-                };
-                
-                /**
-                 * Fetch with retry logic
-                 * @param {Function} queryFn - Query function
-                 * @param {object} config - Configuration
-                 * @returns {Promise} Query result
-                 */
-                const fetchWithRetry = async (queryFn, config) => {
-                    let lastError;
-                    
-                    for (let attempt = 0; attempt <= config.retryCount; attempt++) {
-                        try {
-                            const result = await queryFn();
-                            return result;
-                        } catch (error) {
-                            lastError = error;
-                            
-                            // Don't retry on 4xx errors
-                            if (error.response?.status >= 400 && error.response?.status < 500) {
-                                throw error;
-                            }
-                            
-                            // Wait before retry with exponential backoff
-                            if (attempt < config.retryCount) {
-                                const delay = Math.min(
-                                    config.retryDelay * Math.pow(2, attempt),
-                                    30000
-                                );
-                                await new Promise(resolve => setTimeout(resolve, delay));
-                            }
-                        }
-                    }
-                    
-                    throw lastError;
-                };
-                
-                /**
-                 * Set data in cache
-                 * @param {Array|string} queryKey - Query key
-                 * @param {any} data - Data to cache
-                 * @param {object} options - Cache options
-                 */
-                const set = (queryKey, data, options = {}) => {
-                    const key = getCacheKey(queryKey);
-                    const config = { ...defaultConfig, ...options };
-                    
-                    // Clear existing garbage collection timer
-                    if (cacheTimers.has(key)) {
-                        clearTimeout(cacheTimers.get(key));
-                    }
-                    
-                    // Store in cache
-                    cache.set(key, {
-                        data,
-                        timestamp: Date.now(),
-                        lastAccessed: Date.now(),
-                        subscribers: querySubscribers.get(key)?.size || 0
-                    });
-                    
-                    // Schedule garbage collection
-                    const gcTimer = setTimeout(() => {
-                        const entry = cache.get(key);
-                        if (entry && shouldGarbageCollect(entry, config.gcTime)) {
-                            cache.delete(key);
-                            cacheTimers.delete(key);
-                        }
-                    }, config.gcTime);
-                    
-                    cacheTimers.set(key, gcTimer);
-                };
-                
-                /**
-                 * Invalidate cache entries
-                 * @param {Array|string|Function} queryKey - Query key or predicate
-                 */
-                const invalidate = (queryKey) => {
-                    if (typeof queryKey === 'function') {
-                        // Invalidate by predicate
-                        for (const [key, entry] of cache.entries()) {
-                            if (queryKey(key, entry.data)) {
-                                cache.delete(key);
-                                notifySubscribers(key, { invalidated: true });
-                            }
-                        }
-                    } else {
-                        // Invalidate by key
-                        const key = getCacheKey(queryKey);
-                        
-                        // Support partial matching for array keys
-                        if (Array.isArray(queryKey)) {
-                            const prefix = JSON.stringify(queryKey);
-                            for (const cacheKey of cache.keys()) {
-                                if (cacheKey.startsWith(prefix.slice(0, -1))) {
-                                    cache.delete(cacheKey);
-                                    notifySubscribers(cacheKey, { invalidated: true });
-                                }
-                            }
-                        } else {
-                            cache.delete(key);
-                            notifySubscribers(key, { invalidated: true });
-                        }
-                    }
-                };
-                
-                /**
-                 * Clear entire cache
-                 */
-                const clear = () => {
-                    cache.clear();
-                    activeRequests.clear();
-                    
-                    // Clear all timers
-                    for (const timer of cacheTimers.values()) {
-                        clearTimeout(timer);
-                    }
-                    cacheTimers.clear();
-                    
-                    // Notify all subscribers
-                    for (const key of querySubscribers.keys()) {
-                        notifySubscribers(key, { invalidated: true });
-                    }
-                };
-                
-                /**
-                 * Subscribe to cache updates
-                 * @param {Array|string} queryKey - Query key
-                 * @param {Function} callback - Callback function
-                 * @returns {Function} Unsubscribe function
-                 */
-                const subscribe = (queryKey, callback) => {
-                    const key = getCacheKey(queryKey);
-                    
-                    if (!querySubscribers.has(key)) {
-                        querySubscribers.set(key, new Set());
-                    }
-                    
-                    querySubscribers.get(key).add(callback);
-                    
-                    // Update subscriber count
-                    const entry = cache.get(key);
-                    if (entry) {
-                        entry.subscribers = querySubscribers.get(key).size;
-                    }
-                    
-                    // Return unsubscribe function
-                    return () => {
-                        const subscribers = querySubscribers.get(key);
-                        if (subscribers) {
-                            subscribers.delete(callback);
-                            if (subscribers.size === 0) {
-                                querySubscribers.delete(key);
-                            }
-                            
-                            // Update subscriber count
-                            const entry = cache.get(key);
-                            if (entry) {
-                                entry.subscribers = subscribers.size;
-                            }
-                        }
-                    };
-                };
-                
-                /**
-                 * Notify subscribers of cache updates
-                 * @param {string} key - Cache key
-                 * @param {object} update - Update data
-                 */
-                const notifySubscribers = (key, update) => {
-                    const subscribers = querySubscribers.get(key);
-                    if (subscribers) {
-                        subscribers.forEach(callback => {
-                            try {
-                                callback(update);
-                            } catch (error) {
-                                console.error('Error in cache subscriber:', error);
-                            }
-                        });
-                    }
-                };
-                
-                /**
-                 * Prefetch data into cache
-                 * @param {Array|string} queryKey - Query key
-                 * @param {Function} queryFn - Query function
-                 * @param {object} options - Options
-                 */
-                const prefetch = async (queryKey, queryFn, options = {}) => {
-                    const key = getCacheKey(queryKey);
-                    const cached = cache.get(key);
-                    
-                    // Only prefetch if not cached or stale
-                    if (!cached || isStale(cached, options.staleTime)) {
-                        try {
-                            const data = await queryFn();
-                            set(queryKey, data, options);
-                        } catch (error) {
-                            console.error('Prefetch error:', error);
-                        }
-                    }
-                };
-                
-                /**
-                 * Get cache statistics
-                 * @returns {object} Cache statistics
-                 */
-                const getStats = () => {
-                    const entries = Array.from(cache.entries());
-                    const now = Date.now();
-                    
-                    return {
-                        size: cache.size,
-                        activeRequests: activeRequests.size,
-                        subscribers: querySubscribers.size,
-                        entries: entries.map(([key, entry]) => ({
-                            key,
-                            age: now - entry.timestamp,
-                            lastAccessed: now - entry.lastAccessed,
-                            isStale: isStale(entry),
-                            subscribers: entry.subscribers
-                        }))
-                    };
-                };
-                
-                // Setup window focus refetching
-                if (typeof window !== 'undefined' && defaultConfig.refetchOnWindowFocus) {
-                    window.addEventListener('focus', () => {
-                        // Refetch all queries with subscribers
-                        for (const [key, subscribers] of querySubscribers.entries()) {
-                            if (subscribers.size > 0) {
-                                const cached = cache.get(key);
-                                if (cached && isStale(cached)) {
-                                    // Mark for refetch
-                                    cached.timestamp = 0;
-                                }
-                            }
-                        }
-                    });
-                }
-                
-                // Setup online/offline handling
-                if (typeof window !== 'undefined' && defaultConfig.refetchOnReconnect) {
-                    window.addEventListener('online', () => {
-                        // Trigger refetch for stale queries
-                        for (const [key, entry] of cache.entries()) {
-                            if (isStale(entry)) {
-                                notifySubscribers(key, { refetch: true });
-                            }
-                        }
-                    });
-                }
-                
-                return {
-                    get,
-                    set,
-                    invalidate,
-                    clear,
-                    subscribe,
-                    prefetch,
-                    getStats,
-                    isStale,
-                    config: defaultConfig
-                };
-            })();
-
-            // ============================================
-            // ERROR HANDLING UTILITIES
-            // ============================================
-            
-            /**
-             * Error Classification and User-Friendly Messaging
-             * Maps technical errors to helpful user messages
-             */
-            const ErrorHandler = {
-                /**
-                 * Map error codes to user-friendly messages
-                 */
-                errorMessages: {
-                    400: "There was an issue with your request. Please check your input and try again.",
-                    401: "Your session has expired. Please log in again to continue.",
-                    403: "You don't have permission to access this resource.",
-                    404: "The requested data could not be found. It may have been moved or deleted.",
-                    408: "The request took too long. Please check your connection and try again.",
-                    429: "Too many requests. Please wait a moment and try again.",
-                    500: "We're experiencing a server issue. Please try again in a few moments.",
-                    502: "Unable to connect to the server. Please check your connection.",
-                    503: "The service is temporarily unavailable. Please try again later.",
-                    504: "The server took too long to respond. Please try again.",
-                    
-                    // Network errors
-                    'NETWORK_ERROR': "Unable to connect to the server. Please check your internet connection.",
-                    'TIMEOUT': "The request timed out. Please try again.",
-                    'UNKNOWN_ERROR': "An unexpected error occurred. Please try again.",
-                    
-                    // Application-specific errors
-                    'INVALID_PORTFOLIO': "The selected portfolio could not be found.",
-                    'INSUFFICIENT_DATA': "Not enough data available for this analysis.",
-                    'CALCULATION_ERROR': "Unable to complete the calculation. Please try again.",
-                    'AUTH_EXPIRED': "Your authentication has expired. Please log in again.",
-                    'RATE_LIMIT': "You've made too many requests. Please wait a moment.",
-                    'VALIDATION_ERROR': "Please check your input and try again.",
-                    'CONNECTION_LOST': "Connection to the server was lost. Attempting to reconnect..."
-                },
-                
-                /**
-                 * Classify error type for appropriate handling
-                 */
-                classifyError: (error) => {
-                    // Check if it's a network error
-                    if (!window.navigator.onLine) {
-                        return {
-                            type: 'network',
-                            severity: 'warning',
-                            message: ErrorHandler.errorMessages['NETWORK_ERROR'],
-                            canRetry: true
-                        };
-                    }
-                    
-                    // Check for response status codes
-                    if (error.response) {
-                        const status = error.response.status;
-                        const message = ErrorHandler.errorMessages[status] || 
-                                       error.response.data?.detail || 
-                                       error.response.data?.message || 
-                                       'An error occurred. Please try again.';
-                        
-                        return {
-                            type: status >= 500 ? 'server' : 'client',
-                            severity: status >= 500 ? 'error' : 'warning',
-                            status,
-                            message,
-                            canRetry: status >= 500 || status === 408 || status === 429,
-                            details: error.response.data
-                        };
-                    }
-                    
-                    // Check for request errors (no response received)
-                    if (error.request) {
-                        return {
-                            type: 'network',
-                            severity: 'error',
-                            message: ErrorHandler.errorMessages['NETWORK_ERROR'],
-                            canRetry: true
-                        };
-                    }
-                    
-                    // Check for timeout errors
-                    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-                        return {
-                            type: 'timeout',
-                            severity: 'warning',
-                            message: ErrorHandler.errorMessages['TIMEOUT'],
-                            canRetry: true
-                        };
-                    }
-                    
-                    // Default to unknown error
-                    return {
-                        type: 'unknown',
-                        severity: 'error',
-                        message: error.message || ErrorHandler.errorMessages['UNKNOWN_ERROR'],
-                        canRetry: true
-                    };
-                },
-                
-                /**
-                 * Get actionable suggestions based on error type
-                 */
-                getSuggestions: (errorInfo) => {
-                    const suggestions = [];
-                    
-                    switch (errorInfo.type) {
-                        case 'network':
-                            suggestions.push('Check your internet connection');
-                            suggestions.push('Try refreshing the page');
-                            suggestions.push('Check if you are behind a firewall or VPN');
-                            break;
-                        case 'server':
-                            suggestions.push('Wait a few moments and try again');
-                            suggestions.push('If the problem persists, contact support');
-                            break;
-                        case 'client':
-                            if (errorInfo.status === 401) {
-                                suggestions.push('Click here to log in again');
-                            } else if (errorInfo.status === 403) {
-                                suggestions.push('Contact your administrator for access');
-                            } else if (errorInfo.status === 429) {
-                                suggestions.push('Wait a few seconds before retrying');
-                            }
-                            break;
-                        case 'timeout':
-                            suggestions.push('Check your internet connection speed');
-                            suggestions.push('Try again with a smaller data range');
-                            break;
-                    }
-                    
-                    return suggestions;
-                },
-                
-                /**
-                 * Log error for debugging (in development mode)
-                 */
-                logError: (error, context = {}) => {
-                    if (console.group) {
-                        console.group('%c🔴 Error Details', 'color: #ef4444; font-weight: bold');
-                        console.error('Error:', error);
-                        console.log('Context:', context);
-                        console.log('Stack:', error.stack);
-                        console.log('Timestamp:', new Date().toISOString());
-                        console.groupEnd();
-                    } else {
-                        console.error('Error occurred:', error, context);
-                    }
-                }
-            };
-            
-            /**
-             * Form Validation Utilities
-             */
-            const FormValidator = {
-                /**
-                 * Validate email format
-                 */
-                validateEmail: (email) => {
-                    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    if (!email) return { valid: false, message: 'Email is required' };
-                    if (!re.test(email)) return { valid: false, message: 'Please enter a valid email address' };
-                    return { valid: true };
-                },
-                
-                /**
-                 * Validate password strength
-                 */
-                validatePassword: (password) => {
-                    if (!password) return { valid: false, message: 'Password is required' };
-                    if (password.length < 8) return { valid: false, message: 'Password must be at least 8 characters' };
-                    return { valid: true };
-                },
-                
-                /**
-                 * Validate required field
-                 */
-                validateRequired: (value, fieldName) => {
-                    if (!value || value.toString().trim() === '') {
-                        return { valid: false, message: `${fieldName} is required` };
-                    }
-                    return { valid: true };
-                },
-                
-                /**
-                 * Validate number range
-                 */
-                validateRange: (value, min, max, fieldName) => {
-                    const num = parseFloat(value);
-                    if (isNaN(num)) return { valid: false, message: `${fieldName} must be a number` };
-                    if (num < min) return { valid: false, message: `${fieldName} must be at least ${min}` };
-                    if (num > max) return { valid: false, message: `${fieldName} must be at most ${max}` };
-                    return { valid: true };
-                }
-            };
+            // CacheManager, ErrorHandler, and FormValidator are now loaded from external modules
+            // (frontend/cache-manager.js, frontend/error-handler.js, frontend/form-validator.js)
+            // Imported above and available as const CacheManager, ErrorHandler, FormValidator
             
             // ============================================
             // ERROR BOUNDARY COMPONENT

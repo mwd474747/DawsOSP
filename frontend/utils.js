@@ -25,6 +25,15 @@
         global.DawsOS = {};
     }
 
+    // Import CacheManager from module (required for useCachedQuery/useCachedMutation)
+    const CacheManager = global.DawsOS.CacheManager;
+    if (!CacheManager) {
+        console.error('[Utils] CacheManager not loaded! Ensure cache-manager.js loads before utils.js');
+        throw new Error('[Utils] CacheManager module not available. Check script load order.');
+    }
+
+    console.log('[Utils] CacheManager loaded successfully');
+
     // Create Utils namespace
     const Utils = {};
 
