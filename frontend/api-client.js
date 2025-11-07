@@ -397,8 +397,7 @@
                 getUser: TokenManager.getUser,
                 setUser: TokenManager.setUser,
                 removeUser: TokenManager.removeUser,
-                refreshToken: TokenManager.refreshToken.bind(TokenManager),
-                isTokenExpired: TokenManager.isTokenExpired.bind(TokenManager)
+                refreshToken: TokenManager.refreshToken.bind(TokenManager)
             },
 
             // Retry configuration
