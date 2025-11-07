@@ -312,7 +312,7 @@ async def list_users(
         >>> users = await list_users()
     """
     try:
-        pool = get_db_pool()
+        from app.db.connection import execute_query
 
         query = """
             SELECT id, email, role, created_at
@@ -321,7 +321,7 @@ async def list_users(
             LIMIT $1 OFFSET $2
         """
 
-        rows = await pool.fetch(query, limit, offset)
+        rows = await execute_query(query, limit, offset)
 
         return [dict(row) for row in rows]
 

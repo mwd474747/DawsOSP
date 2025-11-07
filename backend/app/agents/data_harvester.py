@@ -669,17 +669,16 @@ class DataHarvester(BaseAgent):
         source = "fundamentals:stub"
 
         try:
-            # Step 1: Lookup symbol from security_id
-            db_pool = self.services.get("db")
-            if db_pool:
-                async with db_pool.acquire() as conn:
-                    row = await conn.fetchrow(
-                        "SELECT symbol FROM securities WHERE id = $1",
-                        self._to_uuid(security_id, "security_id")
-                    )
-                    if row:
-                        symbol = row["symbol"]
-                        logger.info(f"Looked up symbol: {security_id} → {symbol}")
+            # Step 1: Lookup symbol from security_id (system-level data - no RLS needed)
+            from app.db.connection import execute_query_one
+            
+            row = await execute_query_one(
+                "SELECT symbol FROM securities WHERE id = $1",
+                self._to_uuid(security_id, "security_id")
+            )
+            if row:
+                symbol = row["symbol"]
+                logger.info(f"Looked up symbol: {security_id} → {symbol}")
 
             # Step 2: Attempt to fetch from provider if symbol found
             if symbol and provider == "fmp":

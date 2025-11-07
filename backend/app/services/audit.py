@@ -74,28 +74,11 @@ class AuditService:
         Initialize audit service.
 
         Args:
-            db_pool: AsyncPG connection pool (optional, can be lazy-loaded)
+            db_pool: AsyncPG connection pool (deprecated - kept for backward compatibility)
         """
-        self.db_pool = db_pool
+        # Removed self.db_pool - using helper functions instead
+        # db_pool parameter kept for backward compatibility but not used
         logger.info("AuditService initialized")
-
-    def _get_db_pool(self) -> asyncpg.Pool:
-        """
-        Get database pool (lazy load if needed).
-
-        Returns:
-            AsyncPG pool
-
-        Raises:
-            RuntimeError: If pool not available
-        """
-        if self.db_pool is not None:
-            return self.db_pool
-
-        # Try to get pool from connection module
-        from app.db.connection import get_db_pool
-        self.db_pool = get_db_pool()
-        return self.db_pool
 
     async def log(
         self,
@@ -129,7 +112,7 @@ class AuditService:
             ... )
         """
         try:
-            pool = self._get_db_pool()
+            from app.db.connection import execute_statement
 
             query = """
                 INSERT INTO audit_log (
@@ -145,7 +128,7 @@ class AuditService:
                 VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7)
             """
 
-            await pool.execute(
+            await execute_statement(
                 query,
                 UUID(user_id) if isinstance(user_id, str) else user_id,
                 action,
@@ -192,7 +175,7 @@ class AuditService:
             ...     print(f"{record['timestamp']}: {record['action']} on {record['resource_type']}")
         """
         try:
-            pool = self._get_db_pool()
+            from app.db.connection import execute_query
 
             query = """
                 SELECT
@@ -211,7 +194,7 @@ class AuditService:
                 LIMIT $2 OFFSET $3
             """
 
-            rows = await pool.fetch(
+            rows = await execute_query(
                 query,
                 UUID(user_id) if isinstance(user_id, str) else user_id,
                 limit,
@@ -248,7 +231,7 @@ class AuditService:
             ... )
         """
         try:
-            pool = self._get_db_pool()
+            from app.db.connection import execute_query
 
             query = """
                 SELECT
@@ -267,7 +250,7 @@ class AuditService:
                 LIMIT $3
             """
 
-            rows = await pool.fetch(query, resource_type, resource_id, limit)
+            rows = await execute_query(query, resource_type, resource_id, limit)
 
             return [dict(row) for row in rows]
 
@@ -307,7 +290,7 @@ class AuditService:
             ... )
         """
         try:
-            pool = self._get_db_pool()
+            from app.db.connection import execute_query
 
             # Build dynamic query based on filters
             conditions = []
@@ -360,7 +343,7 @@ class AuditService:
 
             params.append(limit)
 
-            rows = await pool.fetch(query, *params)
+            rows = await execute_query(query, *params)
 
             return [dict(row) for row in rows]
 

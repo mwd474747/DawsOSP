@@ -275,33 +275,30 @@ await execute_statement(query, *args)
 
 **File:** `backend/app/agents/data_harvester.py`  
 **Current Pattern:** Pattern 1 (pool.acquire)  
-**Target Pattern:** Pattern A (RLS-aware) if user data, Pattern B (helper functions) if system data
+**Context:** Queries `securities` table (system-level data)  
+**RLS Required:** ❌ No (system-level: securities table)  
+**Target Pattern:** Pattern B (helper functions)
 
 **Changes Required:**
 
-1. **Review context of `db_pool.acquire()` usage (line ~674):**
-   - Determine if data is user-scoped (needs RLS) or system-level
-   - If user-scoped: Use `get_db_connection_with_rls(ctx.user_id)`
-   - If system-level: Use `execute_query()`
-
-2. **Update based on context:**
+1. **Update `fundamentals.load` method (line ~675):**
    ```python
-   # IF USER-SCOPED:
-   from app.db.connection import get_db_connection_with_rls
+   # BEFORE:
+   db_pool = self.services.get("db")
+   if db_pool:
+       async with db_pool.acquire() as conn:
+           row = await conn.fetchrow("SELECT symbol FROM securities WHERE id = $1", ...)
    
-   async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
-       rows = await conn.fetch(query, ...)
+   # AFTER:
+   from app.db.connection import execute_query_one
    
-   # IF SYSTEM-LEVEL:
-   from app.db.connection import execute_query
-   
-   rows = await execute_query(query, ...)
+   row = await execute_query_one("SELECT symbol FROM securities WHERE id = $1", ...)
    ```
 
 **Validation:**
-- [ ] Review context to determine RLS requirement
-- [ ] Update to appropriate pattern
-- [ ] Test affected capability
+- [ ] Replace `pool.acquire()` with `execute_query_one()`
+- [ ] Remove `db_pool` check (helper functions handle errors)
+- [ ] Test `fundamentals.load` capability
 
 ---
 
@@ -310,45 +307,41 @@ await execute_statement(query, *args)
 ### Step 3.1: Update `backend/jobs/daily_valuation.py`
 
 **File:** `backend/jobs/daily_valuation.py`  
-**Current Pattern:** Pattern 1 (pool.acquire) + Pattern 4 (service-level pool caching)  
+**Current Pattern:** Pattern 1 (pool.acquire) - pool passed in `__init__`  
+**Context:** Background job - system-level operations  
+**RLS Required:** ❌ No (background job, system-level)  
 **Target Pattern:** Pattern B (helper functions)
 
 **Changes Required:**
 
-1. **Remove pool caching from `__init__`:**
+1. **Update `__init__` method (line ~29):**
    ```python
    # BEFORE:
-   def __init__(self):
-       self.db_pool = None
+   def __init__(self, db_pool: asyncpg.Pool):
+       self.db_pool = db_pool
    
    # AFTER:
    def __init__(self):
-       # Remove self.db_pool - not needed
+       # Remove db_pool parameter - not needed
        pass
    ```
 
-2. **Remove `_get_pool` method:**
-   ```python
-   # DELETE THIS METHOD:
-   async def _get_pool(self):
-       if self.db_pool is None:
-           from backend.app.db.connection import get_db_pool
-           self.db_pool = await get_db_pool()
-       return self.db_pool
-   ```
-
-3. **Update all methods using `_get_pool()`:**
-   - Line ~86: `compute_valuation`
-   - Line ~215: `_fetch_portfolio_positions`
-   - Line ~241: `_fetch_pricing_pack`
-   - Line ~261: `_calculate_position_values`
-   - Line ~301: `_update_daily_values`
-   - Line ~330: `_update_portfolio_metrics`
-
+2. **Update `_get_portfolios` method (line ~86):**
    ```python
    # BEFORE:
-   pool = await self._get_pool()
-   async with pool.acquire() as conn:
+   async with self.db_pool.acquire() as conn:
+       return await conn.fetch(query)
+   
+   # AFTER:
+   from app.db.connection import execute_query
+   
+   return await execute_query(query)
+   ```
+
+3. **Update `_fetch_portfolio_positions` method (line ~215):**
+   ```python
+   # BEFORE:
+   async with self.db_pool.acquire() as conn:
        rows = await conn.fetch(query, ...)
    
    # AFTER:
@@ -357,10 +350,69 @@ await execute_statement(query, *args)
    rows = await execute_query(query, ...)
    ```
 
+4. **Update `_fetch_pricing_pack` method (line ~241):**
+   ```python
+   # BEFORE:
+   async with self.db_pool.acquire() as conn:
+       row = await conn.fetchrow(query, ...)
+   
+   # AFTER:
+   from app.db.connection import execute_query_one
+   
+   row = await execute_query_one(query, ...)
+   ```
+
+5. **Update `_calculate_position_values` method (line ~261):**
+   ```python
+   # BEFORE:
+   async with self.db_pool.acquire() as conn:
+       rows = await conn.fetch(query, ...)
+   
+   # AFTER:
+   from app.db.connection import execute_query
+   
+   rows = await execute_query(query, ...)
+   ```
+
+6. **Update `_update_daily_values` method (line ~301):**
+   ```python
+   # BEFORE:
+   async with self.db_pool.acquire() as conn:
+       await conn.execute(query, ...)
+   
+   # AFTER:
+   from app.db.connection import execute_statement
+   
+   await execute_statement(query, ...)
+   ```
+
+7. **Update `_update_portfolio_metrics` method (line ~330):**
+   ```python
+   # BEFORE:
+   async with self.db_pool.acquire() as conn:
+       await conn.execute(query, ...)
+   
+   # AFTER:
+   from app.db.connection import execute_statement
+   
+   await execute_statement(query, ...)
+   ```
+
+8. **Update `run` method (line ~362):**
+   ```python
+   # BEFORE:
+   from backend.app.db.connection import get_db_pool
+   db_pool = await get_db_pool()
+   # ... uses db_pool
+   
+   # AFTER:
+   # Remove - no longer needed
+   ```
+
 **Validation:**
-- [ ] Remove `self.db_pool` from `__init__`
-- [ ] Remove `_get_pool()` method
-- [ ] Replace all 6 `pool.acquire()` calls with `execute_query()`
+- [ ] Remove `db_pool` parameter from `__init__`
+- [ ] Replace all 6 `pool.acquire()` calls with helper functions
+- [ ] Update job invocation to not pass `db_pool`
 - [ ] Test daily valuation job
 
 ---
@@ -369,37 +421,23 @@ await execute_statement(query, *args)
 
 ### Step 4.1: Review API Routes
 
+**Files Already Correct (No Changes):**
+- ✅ `backend/app/api/routes/portfolios.py` - 6 usages of `get_db_connection_with_rls()`
+- ✅ `backend/app/api/routes/trades.py` - 5 usages of `get_db_connection_with_rls()`
+- ✅ `backend/app/api/routes/corporate_actions.py` - 6 usages of `get_db_connection_with_rls()`
+- ✅ `backend/app/api/routes/alerts.py` - 6 usages of `get_db_connection_with_rls()`
+- ✅ `backend/app/api/routes/notifications.py` - 5 usages of `get_db_connection_with_rls()`
+- ✅ `backend/app/api/routes/macro.py` - 1 usage of `get_db_connection_with_rls()`
+
 **Files to Review:**
-- `backend/app/api/routes/auth.py` - Review if needs RLS
-- `backend/app/api/routes/macro.py` - Review if needs RLS
 
-**Files Already Correct:**
-- ✅ `backend/app/api/routes/portfolios.py` - Using `get_db_connection_with_rls()`
-- ✅ `backend/app/api/routes/trades.py` - Using `get_db_connection_with_rls()`
-- ✅ `backend/app/api/routes/corporate_actions.py` - Using `get_db_connection_with_rls()`
-- ✅ `backend/app/api/routes/alerts.py` - Using `get_db_connection_with_rls()`
-- ✅ `backend/app/api/routes/notifications.py` - Using `get_db_connection_with_rls()`
-
-**Changes Required:**
-
-1. **Review `backend/app/api/routes/auth.py` (line ~315):**
-   ```python
-   # CURRENT:
-   pool = get_db_pool()
-   # ... uses pool
-   
-   # REVIEW:
-   # - If accessing user data: Use get_db_connection_with_rls(user_id)
-   # - If system-level: Use execute_query* helper functions
-   ```
-
-2. **Review `backend/app/api/routes/macro.py`:**
-   - Check if any database access needs RLS
+1. **Review `backend/app/api/routes/auth.py`:**
+   - Check current database access pattern
+   - Determine if RLS needed (user data) or system-level
    - Update if needed
 
 **Validation:**
 - [ ] Review auth routes for RLS requirements
-- [ ] Review macro routes for RLS requirements
 - [ ] Update if needed
 - [ ] Test affected endpoints
 

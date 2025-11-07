@@ -9,9 +9,10 @@
 ## Executive Summary
 
 **Current State:** 5 different database connection patterns in use  
+**Actual State:** Most code already standardized (104 services using helper functions, 42 API routes using RLS-aware)  
 **Target State:** 2 standardized patterns (RLS-aware for user data, helper functions for system operations)  
-**Estimated Time:** 4-6 hours  
-**Files Affected:** ~50 files
+**Estimated Time:** 3-5 hours  
+**Files Affected:** ~5 files (~21 usages to standardize)
 
 ---
 
@@ -501,14 +502,28 @@ After migration:
 
 ## Summary
 
+**Current State:**
+- ✅ **104 services** already using `execute_query*` helper functions (69% of codebase)
+- ✅ **42 API routes** already using `get_db_connection_with_rls()` (28% of codebase)
+- ⚠️ **~21 usages** need standardization (13% of codebase)
+
 **Patterns to Standardize:**
 1. ✅ **Services:** Use `execute_query*` helper functions (system-level, no RLS)
+   - Most services already correct (104 usages)
+   - 2 files need updates: `ratings.py` (1 usage), `audit.py` (4 usages)
 2. ✅ **Agents:** Use `get_db_connection_with_rls(user_id)` (user-scoped, RLS required)
+   - 3 methods already correct in `financial_analyst.py`
+   - 9 methods need updates in `financial_analyst.py`
+   - 1 method needs update in `data_harvester.py` (system-level)
 3. ✅ **API Routes:** Use `get_db_connection_with_rls(user_id)` (user-scoped, RLS required)
+   - Most routes already correct (42 usages)
+   - 1 file to review: `auth.py` (may be system-level)
 4. ✅ **Jobs:** Use `execute_query*` helper functions (system-level, no RLS)
+   - 1 file needs updates: `daily_valuation.py` (6 usages)
 5. ✅ **Scripts:** Keep `asyncpg.connect()` (acceptable for one-time operations)
+   - No changes needed
 
-**Files to Update:** ~15 files
-**Estimated Time:** 4-6 hours
+**Files to Update:** 5 files (~21 usages)
+**Estimated Time:** 3-5 hours
 **Risk Level:** Medium (requires careful testing of RLS enforcement)
 

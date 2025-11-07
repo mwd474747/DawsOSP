@@ -74,7 +74,7 @@ class RatingsService:
             stacklevel=2
         )
         self.use_db = use_db
-        self.db_pool = db_pool
+        # Removed self.db_pool - using helper functions instead
         self.rubrics = {}  # Cache for loaded rubrics
         
         if not use_db:
@@ -94,10 +94,7 @@ class RatingsService:
                 "resilience": {...}
             }
         """
-        if not self.db_pool:
-            # Lazy import to avoid circular dependency
-            from app.db.connection import get_db_pool
-            self.db_pool = get_db_pool()
+        from app.db.connection import execute_query
 
         query = """
             SELECT
@@ -113,9 +110,8 @@ class RatingsService:
         """
 
         rubrics = {}
-        async with self.db_pool.acquire() as conn:
-            rows = await conn.fetch(query)
-            for row in rows:
+        rows = await execute_query(query)
+        for row in rows:
                 rating_type = row["rating_type"]
                 rubrics[rating_type] = {
                     "method_version": row["method_version"],

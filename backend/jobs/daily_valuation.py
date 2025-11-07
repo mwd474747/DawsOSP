@@ -26,8 +26,9 @@ logger = logging.getLogger("DawsOS.DailyValuation")
 class DailyValuationJob:
     """Computes and stores daily portfolio valuations from transactions."""
     
-    def __init__(self, db_pool: asyncpg.Pool):
-        self.db_pool = db_pool
+    def __init__(self):
+        # Removed db_pool parameter - using helper functions instead
+        pass
         
     async def run(self, backfill_days: int = 365) -> Dict[str, int]:
         """
@@ -77,14 +78,15 @@ class DailyValuationJob:
     
     async def _get_portfolios(self) -> List[asyncpg.Record]:
         """Get all active portfolios."""
+        from app.db.connection import execute_query
+        
         query = """
             SELECT DISTINCT p.id, p.base_currency
             FROM portfolios p
             WHERE p.active = true
         """
         
-        async with self.db_pool.acquire() as conn:
-            return await conn.fetch(query)
+        return await execute_query(query)
     
     async def _process_portfolio(
         self, 
@@ -206,15 +208,15 @@ class DailyValuationJob:
     
     async def _get_inception_date(self, portfolio_id: UUID) -> Optional[date]:
         """Get the earliest transaction date for a portfolio."""
+        from app.db.connection import execute_query_value
+        
         query = """
             SELECT MIN(transaction_date) as inception_date
             FROM transactions
             WHERE portfolio_id = $1
         """
         
-        async with self.db_pool.acquire() as conn:
-            result = await conn.fetchval(query, portfolio_id)
-            return result
+        return await execute_query_value(query, portfolio_id)
     
     async def _get_transactions(
         self, 
@@ -223,6 +225,8 @@ class DailyValuationJob:
         end_date: date
     ) -> List[asyncpg.Record]:
         """Get all transactions for a portfolio in date range."""
+        from app.db.connection import execute_query
+        
         query = """
             SELECT 
                 id,
@@ -238,8 +242,7 @@ class DailyValuationJob:
             ORDER BY transaction_date, created_at
         """
         
-        async with self.db_pool.acquire() as conn:
-            return await conn.fetch(query, portfolio_id, start_date, end_date)
+        return await execute_query(query, portfolio_id, start_date, end_date)
     
     async def _get_historical_prices(
         self, 
@@ -247,6 +250,8 @@ class DailyValuationJob:
         end_date: date
     ) -> List[asyncpg.Record]:
         """Get all historical prices in date range."""
+        from app.db.connection import execute_query
+        
         query = """
             SELECT 
                 s.symbol,
@@ -258,8 +263,7 @@ class DailyValuationJob:
             ORDER BY p.asof_date
         """
         
-        async with self.db_pool.acquire() as conn:
-            return await conn.fetch(query, start_date, end_date)
+        return await execute_query(query, start_date, end_date)
     
     def _get_price_on_date(
         self, 
@@ -284,6 +288,8 @@ class DailyValuationJob:
         if not daily_values:
             return 0
         
+        from app.db.connection import execute_statement
+        
         query = """
             INSERT INTO portfolio_daily_values (
                 portfolio_id, valuation_date, total_value,
@@ -298,26 +304,27 @@ class DailyValuationJob:
                 computed_at = CURRENT_TIMESTAMP
         """
         
-        async with self.db_pool.acquire() as conn:
-            count = 0
-            for dv in daily_values:
-                await conn.execute(
-                    query,
-                    dv['portfolio_id'],
-                    dv['valuation_date'],
-                    dv['total_value'],
-                    dv['cash_balance'],
-                    dv['positions_value'],
-                    dv['cash_flows']
-                )
-                count += 1
-            
-            return count
+        count = 0
+        for dv in daily_values:
+            await execute_statement(
+                query,
+                dv['portfolio_id'],
+                dv['valuation_date'],
+                dv['total_value'],
+                dv['cash_balance'],
+                dv['positions_value'],
+                dv['cash_flows']
+            )
+            count += 1
+        
+        return count
     
     async def _store_cash_flows(self, cash_flows: List[Dict]) -> int:
         """Store portfolio cash flows."""
         if not cash_flows:
             return 0
+        
+        from app.db.connection import execute_statement
         
         query = """
             INSERT INTO portfolio_cash_flows (
@@ -327,45 +334,35 @@ class DailyValuationJob:
             ON CONFLICT DO NOTHING
         """
         
-        async with self.db_pool.acquire() as conn:
-            count = 0
-            for cf in cash_flows:
-                result = await conn.execute(
-                    query,
-                    cf['portfolio_id'],
-                    cf['flow_date'],
-                    cf['flow_type'],
-                    cf['amount'],
-                    cf.get('transaction_id')
-                )
-                if result.split()[-1] != '0':
-                    count += 1
-            
-            return count
+        count = 0
+        for cf in cash_flows:
+            result = await execute_statement(
+                query,
+                cf['portfolio_id'],
+                cf['flow_date'],
+                cf['flow_type'],
+                cf['amount'],
+                cf.get('transaction_id')
+            )
+            if result.split()[-1] != '0':
+                count += 1
+        
+        return count
 
 
-async def run_daily_valuation(db_pool: asyncpg.Pool, backfill_days: int = 365):
+async def run_daily_valuation(backfill_days: int = 365):
     """Entry point for the daily valuation job."""
-    job = DailyValuationJob(db_pool)
+    job = DailyValuationJob()
     return await job.run(backfill_days)
 
 
 if __name__ == "__main__":
     # For testing
-    import os
-    from backend.app.db.connection import get_db_pool
-    
     async def main():
         logging.basicConfig(level=logging.INFO)
         
-        # Get database pool
-        db_pool = await get_db_pool()
-        
-        try:
-            # Run valuation job
-            result = await run_daily_valuation(db_pool, backfill_days=30)
-            print(f"Daily valuation complete: {result}")
-        finally:
-            await db_pool.close()
+        # Run valuation job (no db_pool needed - uses helper functions)
+        result = await run_daily_valuation(backfill_days=30)
+        print(f"Daily valuation complete: {result}")
     
     asyncio.run(main())

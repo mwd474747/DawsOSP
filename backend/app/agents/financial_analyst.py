@@ -1029,20 +1029,23 @@ class FinancialAnalyst(BaseAgent):
             f"pack_id={pack_id}, lookback_days={days}"
         )
 
-        # Get database connection from services
-        from app.db.connection import get_db_pool
-        db = get_db_pool()
-
         # Compute currency attribution using service
-        attr_service = CurrencyAttributor(db)
-
+        # CurrencyAttributor needs a connection - use RLS-aware for user-scoped data
+        from app.db.connection import get_db_connection_with_rls
+        from app.services.currency_attribution import CurrencyAttributor
+        
+        # Note: CurrencyAttributor takes a connection, not a pool
+        # We use RLS-aware connection for user-scoped data (portfolio positions)
         try:
-            # Service computes attribution internally using portfolio positions
-            attribution = await attr_service.compute_attribution(
-                portfolio_id=portfolio_id_str,
-                pack_id=pack_id,
-                lookback_days=days
-            )
+            async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
+                attr_service = CurrencyAttributor(conn)
+                
+                # Service computes attribution internally using portfolio positions
+                attribution = await attr_service.compute_attribution(
+                    portfolio_id=portfolio_id_str,
+                    pack_id=pack_id,
+                    lookback_days=days
+                )
 
             # Extract results from service response
             result = {
@@ -1248,12 +1251,12 @@ class FinancialAnalyst(BaseAgent):
 
         # Use real FactorAnalyzer service (Phase 3 integration)
         from app.services.factor_analysis import FactorAnalyzer
-        from app.db import get_db_pool
+        from app.db.connection import get_db_connection_with_rls
 
         try:
-            pool = await get_db_pool()
-            async with pool.acquire() as db:
-                factor_service = FactorAnalyzer(db)
+            # FactorAnalyzer needs a connection - use RLS-aware for user-scoped data
+            async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
+                factor_service = FactorAnalyzer(conn)
                 factor_result = await factor_service.compute_factor_exposure(
                     portfolio_id=str(portfolio_id_uuid),
                     pack_id=str(pack) if pack else None,
@@ -1362,16 +1365,16 @@ class FinancialAnalyst(BaseAgent):
 
         # PHASE 3 TASK 3.3: Implement historical lookback
         from app.services.factor_analysis import FactorAnalyzer
-        from app.db import get_db_pool
+        from app.db.connection import get_db_connection_with_rls, execute_query_value
         from datetime import date, timedelta
         
-        pool = await get_db_pool()
-        async with pool.acquire() as db:
-            factor_service = FactorAnalyzer(db)
+        # FactorAnalyzer needs a connection - use RLS-aware for user-scoped data
+        async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
+            factor_service = FactorAnalyzer(conn)
             
-            # Get current pack date
+            # Get current pack date (pricing_packs is system-level, but using RLS connection for consistency)
             if ctx.pricing_pack_id:
-                pack_date = await db.fetchval(
+                pack_date = await conn.fetchval(
                     "SELECT date FROM pricing_packs WHERE id = $1",
                     ctx.pricing_pack_id
                 )
@@ -1662,12 +1665,10 @@ class FinancialAnalyst(BaseAgent):
 
         logger.info(f"get_position_details: portfolio={portfolio_id}, security={security_id}, pack={pack}")
 
-        # Query lots table for position details
-        db_pool = self.services.get("db")
-        if not db_pool:
-            raise RuntimeError("Database pool not available")
+        # Query lots table for position details (user-scoped data - requires RLS)
+        from app.db.connection import get_db_connection_with_rls
 
-        async with db_pool.acquire() as conn:
+        async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
             # Get position from lots
             lots = await conn.fetch(
                 """
@@ -1774,11 +1775,10 @@ class FinancialAnalyst(BaseAgent):
         logger.info(f"compute_position_return: security={security_id}, lookback={lookback_days}, pack={pack}")
 
         # Get historical prices from pricing packs (last N days)
-        db_pool = self.services.get("db")
-        if not db_pool:
-            raise RuntimeError("Database pool not available")
+        # Note: prices table is system-level, but we use RLS-aware connection for consistency
+        from app.db.connection import get_db_connection_with_rls
 
-        async with db_pool.acquire() as conn:
+        async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
             # Query historical prices for this security
             prices = await conn.fetch(
                 """
@@ -1988,11 +1988,10 @@ class FinancialAnalyst(BaseAgent):
             return self._attach_metadata(result, metadata)
 
         # Get historical prices and FX rates
-        db_pool = self.services.get("db")
-        if not db_pool:
-            raise RuntimeError("Database pool not available")
+        # Note: prices/fx_rates are system-level, but we use RLS-aware connection for consistency
+        from app.db.connection import get_db_connection_with_rls
 
-        async with db_pool.acquire() as conn:
+        async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
             # Query historical prices in local currency and FX rates
             data = await conn.fetch(
                 """
@@ -2098,12 +2097,10 @@ class FinancialAnalyst(BaseAgent):
         position = await self.get_position_details(ctx, state, portfolio_id, security_id, pack)
         market_value = position.get("market_value", 0)
 
-        # Get historical returns for position and portfolio
-        db_pool = self.services.get("db")
-        if not db_pool:
-            raise RuntimeError("Database pool not available")
+        # Get historical returns for position and portfolio (user-scoped data - requires RLS)
+        from app.db.connection import get_db_connection_with_rls
 
-        async with db_pool.acquire() as conn:
+        async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
             # Get position returns
             position_data = await conn.fetch(
                 """
@@ -2120,7 +2117,7 @@ class FinancialAnalyst(BaseAgent):
                 lookback_days,
             )
 
-            # Get portfolio returns (from metrics table)
+            # Get portfolio returns (from metrics table - user-scoped)
             portfolio_metrics = await conn.fetch(
                 """
                 SELECT asof_date, twr_1d as daily_return
@@ -2252,11 +2249,10 @@ class FinancialAnalyst(BaseAgent):
 
         logger.info(f"get_transaction_history: portfolio={portfolio_id}, security={security_id}")
 
-        db_pool = self.services.get("db")
-        if not db_pool:
-            raise RuntimeError("Database pool not available")
+        # Query transactions (user-scoped data - requires RLS)
+        from app.db.connection import get_db_connection_with_rls
 
-        async with db_pool.acquire() as conn:
+        async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
             transactions = await conn.fetch(
                 """
                 SELECT
@@ -2319,26 +2315,24 @@ class FinancialAnalyst(BaseAgent):
 
         logger.info(f"get_security_fundamentals: security={security_id}")
 
-        db_pool = self.services.get("db")
-        if not db_pool:
-            raise RuntimeError("Database pool not available")
+        # Query securities table (system-level data - no RLS needed)
+        from app.db.connection import execute_query_one
 
-        async with db_pool.acquire() as conn:
-            security = await conn.fetchrow(
-                """
-                SELECT symbol, name, asset_class
-                FROM securities
-                WHERE id = $1
-                """,
-                security_uuid,
-            )
+        security = await execute_query_one(
+            """
+            SELECT symbol, name, asset_class
+            FROM securities
+            WHERE id = $1
+            """,
+            security_uuid,
+        )
 
-            if not security:
-                raise ValueError(f"Security not found: {security_id}")
+        if not security:
+            raise ValueError(f"Security not found: {security_id}")
 
-            symbol = security["symbol"]
-            name = security["name"]
-            asset_class = security["asset_class"]
+        symbol = security["symbol"]
+        name = security["name"]
+        asset_class = security["asset_class"]
 
         # For non-equity securities, return basic info only
         if asset_class not in ["equity", "stock"]:
@@ -2467,45 +2461,45 @@ class FinancialAnalyst(BaseAgent):
         security_uuid = self._to_uuid(security_id, "security_id")
         comparables = []
         
-        db_pool = self.services.get("db")
-        if db_pool:
-            try:
-                async with db_pool.acquire() as conn:
-                    # Get current security's sector if not provided
-                    if not sector:
-                        security_row = await conn.fetchrow(
-                            "SELECT sector FROM securities WHERE id = $1",
-                            security_uuid
-                        )
-                        if security_row and security_row.get("sector"):
-                            sector = security_row["sector"]
-                    
-                    # Query securities by sector (excluding current security)
-                    if sector:
-                        rows = await conn.fetch(
-                            """
-                            SELECT id, symbol, name, security_type
-                            FROM securities
-                            WHERE sector = $1 AND id != $2 AND active = TRUE
-                            ORDER BY symbol
-                            LIMIT $3
-                            """,
-                            sector,
-                            security_uuid,
-                            limit
-                        )
-                        
-                        comparables = [
-                            {
-                                "security_id": str(row["id"]),
-                                "symbol": row["symbol"],
-                                "name": row.get("name"),
-                                "security_type": row.get("security_type"),
-                            }
-                            for row in rows
-                        ]
-                    else:
-                        logger.warning(f"No sector data available for security {security_id}")
+        # Query securities table (system-level data - no RLS needed)
+        from app.db.connection import execute_query_one, execute_query
+
+        try:
+            # Get current security's sector if not provided
+            if not sector:
+                security_row = await execute_query_one(
+                    "SELECT sector FROM securities WHERE id = $1",
+                    security_uuid
+                )
+                if security_row and security_row.get("sector"):
+                    sector = security_row["sector"]
+            
+            # Query securities by sector (excluding current security)
+            if sector:
+                rows = await execute_query(
+                    """
+                    SELECT id, symbol, name, security_type
+                    FROM securities
+                    WHERE sector = $1 AND id != $2 AND active = TRUE
+                    ORDER BY symbol
+                    LIMIT $3
+                    """,
+                    sector,
+                    security_uuid,
+                    limit
+                )
+                
+                comparables = [
+                    {
+                        "security_id": str(row["id"]),
+                        "symbol": row["symbol"],
+                        "name": row.get("name"),
+                        "security_type": row.get("security_type"),
+                    }
+                    for row in rows
+                ]
+            else:
+                logger.warning(f"No sector data available for security {security_id}")
             except Exception as e:
                 logger.warning(f"Could not query comparables: {e}")
 
