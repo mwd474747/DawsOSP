@@ -10613,7 +10613,7 @@
                 const keyPatterns = [
                     { id: 'portfolio_overview', name: 'Portfolio Overview', icon: '📊' },
                     { id: 'portfolio_scenario_analysis', name: 'Risk Analysis', icon: '⚠️' },
-                    { id: 'portfolio_tax_report', name: 'Tax Insights', icon: '📋' },
+                    { id: 'tax_harvesting_opportunities', name: 'Tax Harvesting', icon: '💰' },
                     { id: 'portfolio_cycle_risk', name: 'Cycle Positioning', icon: '🔄' }
                 ];
                 
@@ -10631,8 +10631,7 @@
                             try {
                                 // Execute the pattern
                                 const result = await apiClient.executePattern(pattern.id, { 
-                                    portfolio_id: portfolioId,
-                                    tax_year: pattern.id === 'portfolio_tax_report' ? new Date().getFullYear() : undefined
+                                    portfolio_id: portfolioId
                                 });
                                 
                                 // Get AI explanation of the results
@@ -10747,8 +10746,7 @@
                                     e(PatternRenderer, {
                                         pattern: insight.pattern,
                                         inputs: { 
-                                            portfolio_id: portfolioId,
-                                            tax_year: insight.pattern === 'portfolio_tax_report' ? new Date().getFullYear() : undefined
+                                            portfolio_id: portfolioId
                                         },
                                         config: { 
                                             compact: true,
