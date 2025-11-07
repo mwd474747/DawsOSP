@@ -1672,7 +1672,7 @@ class FinancialAnalyst(BaseAgent):
             # Get position from lots
             lots = await conn.fetch(
                 """
-                SELECT l.*, s.symbol, s.currency as security_currency
+                SELECT l.*, s.symbol, l.currency as security_currency
                 FROM lots l
                 JOIN securities s ON l.security_id = s.id
                 WHERE l.portfolio_id = $1
