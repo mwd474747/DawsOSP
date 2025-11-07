@@ -2500,8 +2500,8 @@ class FinancialAnalyst(BaseAgent):
                 ]
             else:
                 logger.warning(f"No sector data available for security {security_id}")
-            except Exception as e:
-                logger.warning(f"Could not query comparables: {e}")
+        except Exception as e:
+            logger.warning(f"Could not query comparables: {e}")
 
         result = {
             "comparables": comparables,
