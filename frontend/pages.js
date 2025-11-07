@@ -66,13 +66,21 @@
     const apiClient = global.DawsOS.APIClient;
     const Utils = global.DawsOS.Utils || {};
     const Panels = global.DawsOS.Panels || {};
-    
+    const Context = global.DawsOS.Context || {};
+    const PatternSystem = global.DawsOS.PatternSystem || {};
+
     // Import utility functions
     const formatPercentage = Utils.formatPercentage || ((v) => v + '%');
     const formatCurrency = Utils.formatCurrency || ((v) => '$' + v);
     const formatNumber = Utils.formatNumber || ((v) => v.toFixed(2));
-    const useUserContext = Utils.useUserContext || (() => ({ portfolioId: null }));
-    
+
+    // Import context functions (from DawsOS.Context, NOT Utils)
+    const useUserContext = Context.useUserContext || (() => ({ portfolioId: null }));
+    const getCurrentPortfolioId = Context.getCurrentPortfolioId || (() => null);
+
+    // Import cached API client (queryHelpers) from pattern-system
+    const cachedApiClient = PatternSystem.queryHelpers || apiClient;
+
     // Import UI components (assumed to be globally available)
     const LoadingSpinner = global.LoadingSpinner;
     const ErrorMessage = global.ErrorMessage;

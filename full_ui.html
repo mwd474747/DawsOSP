@@ -19,12 +19,12 @@
     <script src="frontend/utils.js"></script>
     <!-- Panel Components Module -->
     <script src="frontend/panels.js"></script>
-    <!-- Page Components Module -->
-    <script src="frontend/pages.js"></script>
-    <!-- Context System Module -->
+    <!-- Context System Module (MUST load before pattern-system and pages) -->
     <script src="frontend/context.js"></script>
-    <!-- Pattern System Module -->
+    <!-- Pattern System Module (depends on context, utils, panels) -->
     <script src="frontend/pattern-system.js"></script>
+    <!-- Page Components Module (depends on ALL modules above) -->
+    <script src="frontend/pages.js"></script>
 
     <!-- Professional Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
