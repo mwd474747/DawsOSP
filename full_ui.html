@@ -10645,9 +10645,8 @@
             }
             
             function AIInsightsPage() {
-                const [insights, setInsights] = useState([]);
-                const [loading, setLoading] = useState(true);
-                const [error, setError] = useState(null);
+                const [explanations, setExplanations] = useState({});
+                const [loadingExplanations, setLoadingExplanations] = useState({});
                 const [refreshKey, setRefreshKey] = useState(0);
                 const { portfolioId } = useUserContext();
                 
@@ -10659,65 +10658,48 @@
                     { id: 'portfolio_cycle_risk', name: 'Cycle Positioning', icon: '🔄' }
                 ];
                 
-                useEffect(() => {
-                    loadInsights();
-                }, [portfolioId, refreshKey]);
-                
-                const loadInsights = async () => {
-                    setLoading(true);
-                    setError(null);
+                // Generate AI explanation when pattern data is loaded
+                const handlePatternDataLoaded = async (patternId, patternName, data) => {
+                    if (!data || data.error) return;
+                    
+                    // Skip if explanation already exists or is loading
+                    if (explanations[patternId] || loadingExplanations[patternId]) return;
+                    
+                    setLoadingExplanations(prev => ({ ...prev, [patternId]: true }));
                     
                     try {
-                        // Execute patterns in parallel for speed
-                        const insightPromises = keyPatterns.map(async (pattern) => {
-                            try {
-                                // Execute the pattern
-                                const result = await apiClient.executePattern(pattern.id, { 
-                                    portfolio_id: portfolioId
-                                });
-                                
-                                // Get AI explanation of the results
-                                const explanationPrompt = `Analyze these ${pattern.name} results and provide 2-3 key insights in simple, non-technical terms for an investor: ${JSON.stringify(result.data || result).substring(0, 1000)}`;
-                                
-                                const explanation = await apiClient.aiChat(explanationPrompt, {
-                                    portfolioId,
-                                    source: 'insights',
-                                    pattern: pattern.id
-                                });
-                                
-                                return {
-                                    pattern: pattern.id,
-                                    name: pattern.name,
-                                    icon: pattern.icon,
-                                    data: result.data || result,
-                                    explanation: explanation.data?.response || explanation.response || 'Analysis in progress...',
-                                    success: true
-                                };
-                            } catch (err) {
-                                console.error(`Failed to load ${pattern.name}:`, err);
-                                return {
-                                    pattern: pattern.id,
-                                    name: pattern.name,
-                                    icon: pattern.icon,
-                                    data: null,
-                                    explanation: `Unable to load ${pattern.name} data. Please try refreshing.`,
-                                    success: false
-                                };
-                            }
+                        // Get AI explanation of the results
+                        const explanationPrompt = `Analyze these ${patternName} results and provide 2-3 key insights in simple, non-technical terms for an investor: ${JSON.stringify(data).substring(0, 1000)}`;
+                        
+                        const explanation = await apiClient.aiChat(explanationPrompt, {
+                            portfolioId,
+                            source: 'insights',
+                            pattern: patternId
                         });
                         
-                        const results = await Promise.all(insightPromises);
-                        setInsights(results);
+                        setExplanations(prev => ({
+                            ...prev,
+                            [patternId]: explanation.data?.response || explanation.response || 'Analysis in progress...'
+                        }));
                     } catch (err) {
-                        console.error('Failed to load insights:', err);
-                        setError('Failed to load insights. Please try again.');
+                        console.error(`Failed to get AI explanation for ${patternName}:`, err);
+                        setExplanations(prev => ({
+                            ...prev,
+                            [patternId]: 'Unable to generate AI explanation. Please try refreshing.'
+                        }));
                     } finally {
-                        setLoading(false);
+                        setLoadingExplanations(prev => {
+                            const updated = { ...prev };
+                            delete updated[patternId];
+                            return updated;
+                        });
                     }
                 };
                 
                 const handleRefresh = () => {
                     setRefreshKey(prev => prev + 1);
+                    setExplanations({});
+                    setLoadingExplanations({});
                 };
                 
                 return e('div', null,
@@ -10732,36 +10714,30 @@
                         e('button', {
                             className: 'btn btn-primary',
                             onClick: handleRefresh,
-                            disabled: loading
-                        }, loading ? 'Loading...' : 'Refresh Insights')
+                            disabled: Object.keys(loadingExplanations).length > 0
+                        }, Object.keys(loadingExplanations).length > 0 ? 'Generating Insights...' : 'Refresh Insights')
                     ),
                     
-                    error && e('div', { className: 'alert alert-warning' }, error),
-                    
-                    // Loading state
-                    loading && insights.length === 0 && e('div', { className: 'loading-container' },
-                        e('div', { className: 'spinner' }),
-                        e('p', null, 'Analyzing your portfolio with AI...')
-                    ),
-                    
-                    // Display insights
-                    !loading && insights.length > 0 && e('div', { className: 'insights-grid' },
-                        insights.map(insight => 
+                    // Display insights using PatternRenderer directly
+                    e('div', { className: 'insights-grid' },
+                        keyPatterns.map(pattern => 
                             e('div', { 
-                                key: insight.pattern, 
+                                key: pattern.id, 
                                 className: 'card',
                                 style: { marginBottom: '2rem' }
                             },
                                 // Card header with pattern name and icon
                                 e('div', { className: 'card-header' },
                                     e('h3', { className: 'card-title' },
-                                        e('span', { style: { marginRight: '0.5rem' } }, insight.icon),
-                                        insight.name
+                                        e('span', { style: { marginRight: '0.5rem' } }, pattern.icon),
+                                        pattern.name
                                     )
                                 ),
                                 
-                                // AI Explanation section
-                                e('div', { style: { padding: '1rem', borderBottom: '1px solid var(--border-color)' } },
+                                // AI Explanation section (generated when pattern loads)
+                                (explanations[pattern.id] || loadingExplanations[pattern.id]) && e('div', { 
+                                    style: { padding: '1rem', borderBottom: '1px solid var(--border-color)' } 
+                                },
                                     e('h4', { style: { marginBottom: '0.75rem', color: 'var(--color-info)' } }, 
                                         '🤖 AI Analysis'
                                     ),
@@ -10773,40 +10749,35 @@
                                             border: '1px solid rgba(59, 130, 246, 0.2)'
                                         } 
                                     }, 
-                                        insight.explanation ? insight.explanation.split('\n').map((line, i) => 
-                                            e('p', { 
-                                                key: i, 
-                                                style: { marginBottom: i < insight.explanation.split('\n').length - 1 ? '0.5rem' : 0 }
-                                            }, line)
-                                        ) : 'Analysis in progress...'
+                                        loadingExplanations[pattern.id] ? 
+                                            e('p', null, 'Generating AI insights...') :
+                                            explanations[pattern.id] ? explanations[pattern.id].split('\n').map((line, i) => 
+                                                e('p', { 
+                                                    key: i, 
+                                                    style: { marginBottom: i < explanations[pattern.id].split('\n').length - 1 ? '0.5rem' : 0 }
+                                                }, line)
+                                            ) : null
                                     )
                                 ),
                                 
-                                // Pattern data using PatternRenderer
-                                insight.success && insight.data && e('div', { style: { padding: '1rem' } },
-                                    e('h4', { style: { marginBottom: '0.75rem' } }, 'Pattern Results'),
+                                // Pattern data using PatternRenderer (single execution)
+                                e('div', { style: { padding: '1rem' } },
                                     e(PatternRenderer, {
-                                        pattern: insight.pattern,
+                                        key: `${pattern.id}-${refreshKey}`,
+                                        pattern: pattern.id,
                                         inputs: { 
                                             portfolio_id: portfolioId
                                         },
                                         config: { 
                                             compact: true,
                                             hideHeader: true 
+                                        },
+                                        onDataLoaded: (data) => {
+                                            if (data && !data.error) {
+                                                handlePatternDataLoaded(pattern.id, pattern.name, data);
+                                            }
                                         }
                                     })
-                                ),
-                                
-                                // Error state for failed patterns
-                                !insight.success && e('div', { 
-                                    style: { 
-                                        padding: '1rem', 
-                                        backgroundColor: 'rgba(239, 68, 68, 0.05)',
-                                        borderRadius: '8px',
-                                        margin: '1rem'
-                                    } 
-                                }, 
-                                    e('p', { style: { color: 'var(--color-danger)' } }, insight.explanation)
                                 )
                             )
                         )
@@ -11938,11 +11909,10 @@
             }
             
             function MarketDataPage() {
-                const [portfolioSecurities, setPortfolioSecurities] = useState([]);
-                const [marketData, setMarketData] = useState({});
-                const [loadingPrices, setLoadingPrices] = useState(true);
+                const [portfolioData, setPortfolioData] = useState(null);
                 const [refreshKey, setRefreshKey] = useState(0);
                 const [refreshing, setRefreshing] = useState(false);
+                const { portfolioId } = useUserContext();
                 
                 // News filtering state
                 const [filterSymbol, setFilterSymbol] = useState('');
@@ -11950,68 +11920,39 @@
                 const [lookbackHours, setLookbackHours] = useState(72);
                 const [minImpactThreshold, setMinImpactThreshold] = useState(0.02);
                 
-                useEffect(() => {
-                    loadSecurityPrices();
-                }, []);
-                
-                const loadSecurityPrices = async () => {
-                    try {
-                        setLoadingPrices(true);
-                        
-                        // Get portfolio holdings for price display
-                        const holdingsRes = await apiClient.getHoldings().catch((error) => {
-                            console.error('Failed to get holdings for market data:', error);
-                            return { holdings: [] };
-                        });
-                        const holdings = holdingsRes.holdings || [];
-                        setPortfolioSecurities(holdings);
-                        
-                        // Fetch real-time prices for portfolio securities
-                        const pricesData = await fetchSecurityPrices(holdings.map(h => h.symbol));
-                        setMarketData(pricesData);
-                    } catch (err) {
-                        console.error('Error loading security prices:', err);
-                        setPortfolioSecurities([]);
-                        setMarketData({});
-                    } finally {
-                        setLoadingPrices(false);
+                // Callback to capture portfolio data from PatternRenderer
+                const handlePortfolioDataLoaded = (data) => {
+                    if (data && data.valued_positions) {
+                        setPortfolioData(data);
                     }
                 };
                 
-                const fetchSecurityPrices = async (symbols) => {
-                    try {
-                        const prices = {};
-                        for (const symbol of symbols) {
-                            const result = await apiClient.getQuote(symbol);
-                            if (result && result.price) {
-                                prices[symbol] = {
-                                    price: result.price,
-                                    change: result.change || 0,
-                                    changePercent: result.changePercent || 0
-                                };
-                            }
-                        }
-                        return prices;
-                    } catch (error) {
-                        console.error('Error fetching security prices:', error);
-                        return {};
-                    }
-                };
-                
-                const handleRefresh = async () => {
+                const handleRefresh = () => {
                     setRefreshing(true);
-                    // Refresh both prices and news by incrementing key
-                    await loadSecurityPrices();
                     setRefreshKey(prev => prev + 1);
-                    setRefreshing(false);
+                    // Reset refreshing after a short delay to allow PatternRenderer to update
+                    setTimeout(() => setRefreshing(false), 500);
                 };
                 
-                // Build inputs for PatternRenderer - only include supported parameters
+                // Build inputs for PatternRenderer
                 const patternInputs = {
-                    portfolio_id: getCurrentPortfolioId(),
-                    lookback_hours: lookbackHours,
-                    min_impact_threshold: minImpactThreshold
+                    portfolio_id: portfolioId || getCurrentPortfolioId(),
+                    lookback_days: 1  // Just need current prices
                 };
+                
+                // Extract market data from portfolio overview pattern results
+                const marketData = portfolioData?.valued_positions?.positions?.reduce((acc, pos) => {
+                    if (pos.symbol && pos.price) {
+                        acc[pos.symbol] = {
+                            price: pos.price,
+                            change: pos.unrealized_pnl_pct ? (pos.unrealized_pnl_pct * pos.price / 100) : 0,
+                            changePercent: pos.unrealized_pnl_pct || 0
+                        };
+                    }
+                    return acc;
+                }, {}) || {};
+                
+                const portfolioSecurities = portfolioData?.valued_positions?.positions || [];
                 
                 return e('div', null,
                     e('div', { className: 'page-header', style: { marginBottom: '1.5rem' } },
@@ -12133,33 +12074,21 @@
                         )
                     ),
                     
-                    // Portfolio Securities Prices (Secondary Feature)
-                    !loadingPrices && portfolioSecurities.length > 0 && e('div', { className: 'card', style: { marginBottom: '1.5rem' } },
+                    // Portfolio Securities Prices using PatternRenderer
+                    e('div', { className: 'card', style: { marginBottom: '1.5rem' } },
                         e('div', { className: 'card-header' },
                             e('h3', { className: 'card-title' }, 'Portfolio Security Prices')
                         ),
-                        e('div', { className: 'stats-grid' },
-                            portfolioSecurities.map(security => {
-                                const price = marketData[security.symbol] || {};
-                                return e('div', { 
-                                    key: security.symbol,
-                                    className: 'stat-card',
-                                },
-                                    e('div', { className: 'stat-label' }, security.symbol),
-                                    e('div', { style: { fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' } }, 
-                                        security.name),
-                                    e('div', { className: 'stat-value', style: { fontSize: '1.5rem' } }, 
-                                        price.price ? formatCurrency(price.price) : '--'),
-                                    e('div', { 
-                                        className: `stat-change ${price.change > 0 ? 'positive' : 'negative'}` 
-                                    }, 
-                                        price.change ? 
-                                            `${price.change > 0 ? '+' : ''}${formatCurrency(price.change)} (${price.changePercent > 0 ? '+' : ''}${price.changePercent}%)` :
-                                            '--'
-                                    )
-                                );
-                            })
-                        )
+                        e(PatternRenderer, {
+                            key: `portfolio-prices-${refreshKey}`,
+                            pattern: 'portfolio_overview',
+                            inputs: patternInputs,
+                            config: {
+                                showPanels: ['holdings'],  // Only show holdings panel with prices
+                                compact: true
+                            },
+                            onDataLoaded: handlePortfolioDataLoaded
+                        })
                     ),
                     
                     // News Impact Analysis using PatternRenderer with dynamic inputs
@@ -12167,7 +12096,11 @@
                     e(PatternRenderer, {
                         key: `${refreshKey}-${filterSymbol}-${sentimentFilter}-${lookbackHours}-${minImpactThreshold}`,
                         pattern: 'news_impact_analysis',
-                        inputs: patternInputs,
+                        inputs: {
+                            portfolio_id: portfolioId || getCurrentPortfolioId(),
+                            lookback_hours: lookbackHours,
+                            min_impact_threshold: minImpactThreshold
+                        },
                         config: {
                             filterSymbol: filterSymbol,
                             sentimentFilter: sentimentFilter
