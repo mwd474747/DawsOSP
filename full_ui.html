@@ -88,7 +88,93 @@
             });
 
             // ============================================
-            // Import from External Modules
+            // CENTRALIZED MODULE LOADER WITH VALIDATION
+            // ============================================
+
+            /**
+             * Validate that all required modules and their exports are available
+             * Fail fast with clear error messages if any dependencies are missing
+             */
+            function validateModules() {
+                const requiredModules = {
+                    'DawsOS.Utils': [
+                        'formatCurrency', 'formatPercentage', 'formatNumber', 'formatDate',
+                        'formatValue', 'getColorClass', 'LoadingSpinner', 'ErrorMessage',
+                        'EmptyState', 'RetryableError', 'useCachedQuery', 'useCachedMutation'
+                    ],
+                    'DawsOS.Panels': [
+                        'MetricsGridPanel', 'DataTablePanel', 'ChartPanel',
+                        'TimeSeriesChartPanel', 'ScorecardPanel', 'AlertPanel', 'HoldingsTable'
+                    ],
+                    'DawsOS.Pages': [
+                        'LoginPage', 'DashboardPage', 'DashboardPageLegacy', 'HoldingsPage',
+                        'SecurityDetailPage', 'TransactionsPage', 'PerformancePage',
+                        'MacroCyclesPage', 'ScenariosPage', 'RiskPage', 'AttributionPage',
+                        'OptimizerPage', 'RatingsPage', 'AIInsightsPage', 'AIAssistantPage',
+                        'AlertsPage', 'ReportsPage', 'CorporateActionsPage', 'MarketDataPage',
+                        'SettingsPage'
+                    ],
+                    'DawsOS.Context': [
+                        'getCurrentPortfolioId', 'UserContext', 'UserContextProvider',
+                        'useUserContext', 'PortfolioSelector'
+                    ],
+                    'DawsOS.PatternSystem': [
+                        'getDataByPath', 'PatternRenderer', 'PanelRenderer',
+                        'patternRegistry', 'queryKeys', 'queryHelpers'
+                    ]
+                };
+
+                const errors = [];
+                const warnings = [];
+
+                // Check each module and its exports
+                for (const [modulePath, exports] of Object.entries(requiredModules)) {
+                    const moduleObj = modulePath.split('.').reduce((obj, key) => obj?.[key], window);
+
+                    if (!moduleObj) {
+                        errors.push(`Module ${modulePath} not found. Check script load order.`);
+                        continue;
+                    }
+
+                    // Check each export
+                    for (const exportName of exports) {
+                        if (typeof moduleObj[exportName] === 'undefined') {
+                            errors.push(`${modulePath}.${exportName} is undefined`);
+                        } else if (moduleObj[exportName] === null) {
+                            warnings.push(`${modulePath}.${exportName} is null`);
+                        }
+                    }
+                }
+
+                return { errors, warnings };
+            }
+
+            // Validate modules before proceeding
+            const validation = validateModules();
+
+            if (validation.errors.length > 0) {
+                console.error('[App] Module validation failed!', validation.errors);
+                document.getElementById('root').innerHTML =
+                    '<div style="padding: 2rem; color: #ef4444; font-family: monospace;">' +
+                    '<h2>❌ Module Loading Error</h2>' +
+                    '<p><strong>The following modules or exports are missing:</strong></p>' +
+                    '<ul style="text-align: left; max-width: 600px; margin: 1rem auto;">' +
+                    validation.errors.map(err => `<li>${err}</li>`).join('') +
+                    '</ul>' +
+                    '<p style="margin-top: 2rem;">Please refresh the page. If the problem persists, check browser console.</p>' +
+                    '<button onclick="location.reload()" style="padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer;">Refresh Page</button>' +
+                    '</div>';
+                throw new Error('Module validation failed: ' + validation.errors.join(', '));
+            }
+
+            if (validation.warnings.length > 0) {
+                console.warn('[App] Module validation warnings:', validation.warnings);
+            }
+
+            console.log('[App] ✅ All modules validated successfully');
+
+            // ============================================
+            // Import from External Modules (VALIDATED)
             // ============================================
             // Utility functions are in DawsOS.Utils namespace
             const {
