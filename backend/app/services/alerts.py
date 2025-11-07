@@ -5,9 +5,13 @@ Alert Evaluation Service
 The functionality has been consolidated into the MacroHound agent.
 Use `macro_hound` agent capabilities instead.
 
+**Production Guard:** Stub mode (use_db=False) is prevented in production environments.
+Stub implementations (random values) are acceptable for this deprecated service as it
+will be removed once migration to MacroHound is complete.
+
 Purpose: Evaluate user-defined alert conditions against portfolio metrics
-Updated: 2025-10-23
-Priority: P1 (Sprint 3 Week 6)
+Updated: 2025-01-15 (Phase 1: Exception handling improvements)
+Priority: P1 (Deprecated - migration in progress)
 
 Features:
     - Condition evaluation (macro, metric, rating, price, news_sentiment)
@@ -81,8 +85,20 @@ class AlertService:
 
         Args:
             use_db: If True, use real database. If False, use stubs for testing.
+            
+        Raises:
+            ValueError: If use_db=False in production environment
         """
+        import os
         import warnings
+        
+        # Production guard: prevent stub mode in production
+        if not use_db and os.getenv("ENVIRONMENT") == "production":
+            raise ValueError(
+                "Cannot use stub mode (use_db=False) in production environment. "
+                "Stub mode is only available for development and testing."
+            )
+        
         warnings.warn(
             "AlertService is deprecated. Use MacroHound agent capabilities instead.",
             DeprecationWarning,
@@ -100,14 +116,29 @@ class AlertService:
                 self.metrics_queries = get_metrics_queries()
                 logger.info("AlertService initialized with database integration")
 
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - should not happen, log and re-raise
+                logger.error(f"Programming error in database initialization: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # Database connection errors - handle based on environment
+                import os
+                if os.getenv("ENVIRONMENT") == "production":
+                    logger.error(f"Failed to initialize database connections in production: {e}", exc_info=True)
+                    raise
+                # Only fall back to stub mode in development/testing
                 logger.warning(
                     f"Failed to initialize database connections: {e}. "
-                    "Falling back to stub mode."
+                    "Falling back to stub mode (development/testing only)."
                 )
                 self.use_db = False
         else:
-            logger.info("AlertService initialized in stub mode")
+            import os
+            if os.getenv("ENVIRONMENT") != "production":
+                logger.info("AlertService initialized in stub mode (development/testing only)")
+            else:
+                # This should never happen due to production guard above, but log if it does
+                logger.error("AlertService stub mode attempted in production - this should be prevented by production guard")
 
     async def evaluate_condition(
         self,
@@ -388,8 +419,12 @@ class AlertService:
 
             return success
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error in alert delivery: {e}", exc_info=True)
+            raise
         except Exception as e:
-            # Push to DLQ for retry
+            # Service/API errors - push to DLQ for retry
             logger.error(f"Failed to deliver alert {alert_id}: {e}", exc_info=True)
 
             await delivery_service.push_to_dlq(
@@ -434,7 +469,8 @@ class AlertService:
     ) -> Optional[Decimal]:
         """Get macro indicator value from database."""
         if not self.use_db:
-            # Stub: return random value
+            # Stub: return random value (acceptable for deprecated service)
+            # Note: This service is deprecated and will be removed once migration to MacroHound is complete
             import random
             return Decimal(str(random.uniform(10, 50)))
 
@@ -473,7 +509,12 @@ class AlertService:
             else:
                 logger.warning(f"Macro indicator not found: {series_id}")
                 return None
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error in get_macro_value for {series_id}: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database or other service errors - log and return None (graceful degradation)
             logger.error(f"Failed to get macro value for {series_id}: {e}")
             return None
 
@@ -510,7 +551,8 @@ class AlertService:
     ) -> Optional[Decimal]:
         """Get portfolio metric value from database."""
         if not self.use_db:
-            # Stub: return random value
+            # Stub: return random value (acceptable for deprecated service)
+            # Note: This service is deprecated and will be removed once migration to MacroHound is complete
             import random
             return Decimal(str(random.uniform(0.0, 0.3)))
 
@@ -540,7 +582,12 @@ class AlertService:
             else:
                 logger.warning(f"Metric not found: {metric_name} for portfolio {portfolio_id}")
                 return None
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error in get_metric_value for {portfolio_id}.{metric_name}: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database or other service errors - log and return None (graceful degradation)
             logger.error(f"Failed to get metric value for {portfolio_id}.{metric_name}: {e}")
             return None
 
@@ -577,7 +624,8 @@ class AlertService:
     ) -> Optional[Decimal]:
         """Get security rating value from database."""
         if not self.use_db:
-            # Stub: return random value (0-10 scale)
+            # Stub: return random value (0-10 scale) (acceptable for deprecated service)
+            # Note: This service is deprecated and will be removed once migration to MacroHound is complete
             import random
             return Decimal(str(random.randint(0, 10)))
 
@@ -607,7 +655,12 @@ class AlertService:
             else:
                 logger.warning(f"Rating not found: {metric_name} for {symbol}")
                 return None
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error in get_rating_value for {symbol}.{metric_name}: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database or other service errors - log and return None (graceful degradation)
             logger.error(f"Failed to get rating value for {symbol}.{metric_name}: {e}")
             return None
 
@@ -645,7 +698,8 @@ class AlertService:
     ) -> Optional[Decimal]:
         """Get price value from database."""
         if not self.use_db:
-            # Stub: return random value
+            # Stub: return random value (acceptable for deprecated service)
+            # Note: This service is deprecated and will be removed once migration to MacroHound is complete
             import random
             metric = condition.get("metric", "close")
             if metric == "change_pct":
@@ -726,7 +780,12 @@ class AlertService:
             logger.warning(f"Price not found: {symbol}.{metric_name}")
             return None
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error in get_price_value for {symbol}.{metric_name}: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database or other service errors - log and return None (graceful degradation)
             logger.error(f"Failed to get price value for {symbol}.{metric_name}: {e}")
             return None
 
@@ -763,7 +822,8 @@ class AlertService:
     ) -> Optional[Decimal]:
         """Get news sentiment value from database."""
         if not self.use_db:
-            # Stub: return random value (-1 to 1)
+            # Stub: return random value (-1 to 1) (acceptable for deprecated service)
+            # Note: This service is deprecated and will be removed once migration to MacroHound is complete
             import random
             return Decimal(str(random.uniform(-1.0, 1.0)))
 
@@ -791,7 +851,12 @@ class AlertService:
             else:
                 logger.warning(f"News sentiment not found for {symbol}")
                 return None
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error in get_news_sentiment for {symbol}: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database or other service errors - log and return None (graceful degradation)
             logger.error(f"Failed to get news sentiment for {symbol}: {e}")
             return None
 
@@ -889,7 +954,12 @@ class AlertService:
             try:
                 regime_classification = await macro_service.detect_current_regime(asof_date=asof_date)
                 regime = regime_classification.regime.value
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - should not happen, log and use fallback
+                logger.error(f"Programming error in regime detection: {e}", exc_info=True)
+                regime = "MID_EXPANSION"
             except Exception as e:
+                # Service errors - use fallback regime
                 logger.warning(f"Could not detect regime: {e}")
                 regime = "MID_EXPANSION"
 
@@ -923,7 +993,12 @@ class AlertService:
 
             return breach
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error in DaR breach evaluation: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service errors - log and return False (graceful degradation)
             logger.error(f"Failed to evaluate DaR breach condition: {e}", exc_info=True)
             return False
 
@@ -990,7 +1065,12 @@ class AlertService:
                 logger.warning(f"Drawdown not found for portfolio {portfolio_id}")
                 return False
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error in drawdown limit evaluation: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service errors - log and return False (graceful degradation)
             logger.error(f"Failed to evaluate drawdown limit: {e}")
             return False
 
@@ -1076,7 +1156,12 @@ class AlertService:
 
             return regime_shift
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error in regime shift evaluation: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service errors - log and return False (graceful degradation)
             logger.error(f"Failed to evaluate regime shift: {e}", exc_info=True)
             return False
 
@@ -1196,7 +1281,12 @@ class AlertService:
                 # Stub mode - no deduplication
                 return False
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error in duplicate alert check: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database errors - log and return False (assume not duplicate)
             logger.error(f"Failed to check duplicate alert: {e}")
             return False
 
@@ -1242,7 +1332,12 @@ class AlertService:
                     overall_success = False
                     error_details.append(f"{method}: {result.get('error', 'Unknown error')}")
 
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - should not happen, log and re-raise
+                logger.error(f"Programming error in delivery method {method}: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # Service/API errors - log and continue with other methods
                 logger.error(f"Delivery method {method} failed: {e}")
                 delivery_results.append({
                     "method": method,
@@ -1277,7 +1372,13 @@ class AlertService:
             
             return {"success": True, "message": "Email logged (not sent)"}
             
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error in email delivery: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service/API errors - return error result
+            logger.error(f"Email delivery failed: {e}")
             return {"success": False, "error": str(e)}
 
     async def _deliver_sms(self, alert_id: str, alert_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -1299,7 +1400,13 @@ class AlertService:
             
             return {"success": True, "message": "SMS logged (not sent)"}
             
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error in SMS delivery: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service/API errors - return error result
+            logger.error(f"SMS delivery failed: {e}")
             return {"success": False, "error": str(e)}
 
     async def _deliver_webhook(self, alert_id: str, alert_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -1321,7 +1428,13 @@ class AlertService:
             
             return {"success": True, "message": "Webhook logged (not sent)"}
             
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error in webhook delivery: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service/API errors - return error result
+            logger.error(f"Webhook delivery failed: {e}")
             return {"success": False, "error": str(e)}
 
     def _format_email_content(self, alert_id: str, alert_data: Dict[str, Any]) -> str:
@@ -1367,7 +1480,12 @@ Time: {context.get('timestamp', 'N/A')}
             # For now, just log the retry
             logger.info(f"Retry scheduled for alert {alert_id} (attempt {retry_count})")
             
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error in retry scheduling: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service errors - log and continue (retry scheduling is best-effort)
             logger.error(f"Failed to schedule retry for alert {alert_id}: {e}")
 
     async def _move_to_dlq(
@@ -1439,12 +1557,34 @@ def get_alert_service(use_db: bool = True) -> AlertService:
     """
     Get AlertService singleton instance.
 
+    ⚠️ DEPRECATED: AlertService is deprecated. Use MacroHound agent capabilities instead.
+
     Args:
         use_db: If True, use real database. If False, use stubs for testing.
+                Stub mode is only available in development/testing environments.
 
     Returns:
         AlertService instance
+        
+    Raises:
+        ValueError: If use_db=False in production environment
     """
+    import os
+    import warnings
+    
+    # Production guard: prevent stub mode in production
+    if not use_db and os.getenv("ENVIRONMENT") == "production":
+        raise ValueError(
+            "Cannot use stub mode (use_db=False) in production environment. "
+            "Stub mode is only available for development and testing."
+        )
+    
+    warnings.warn(
+        "get_alert_service() is deprecated. Use MacroHound agent capabilities instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    
     global _alert_service_db, _alert_service_stub
     
     if use_db:
