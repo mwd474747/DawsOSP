@@ -97,17 +97,43 @@
              */
             function validateModules() {
                 const requiredModules = {
-                    'DawsOS.Utils': [
-                        'formatCurrency', 'formatPercentage', 'formatNumber', 'formatDate',
-                        'formatValue', 'getColorClass', 'LoadingSpinner', 'ErrorMessage',
-                        'EmptyState', 'RetryableError', 'useCachedQuery', 'useCachedMutation',
-                        'NetworkStatusIndicator', 'FormField', 'DataBadge', 'getDataSourceFromResponse'
+                    // ============================================
+                    // PHASE 2 NAMESPACE STRUCTURE
+                    // ============================================
+
+                    // Core Infrastructure (Phase 2.1)
+                    'DawsOS.Core.API': [
+                        'request', 'get', 'post', 'put', 'delete', 'TokenManager', 'retryConfig'
                     ],
+                    'DawsOS.Core.Auth': ['getCurrentPortfolioId'],
+                    'DawsOS.Core.Errors': ['handleApiError'],
+
+                    // Pattern System (Phase 2.3)
+                    'DawsOS.Patterns.Renderer': ['render', 'PatternRenderer'],
+                    'DawsOS.Patterns.Registry': ['patterns', 'get', 'list', 'validate'],
+                    'DawsOS.Patterns.Helpers': ['getDataByPath', 'queryKeys', 'queryHelpers', 'PanelRenderer'],
+
+                    // UI Components (Phase 2.2)
+                    'DawsOS.UI.Primitives': [
+                        'LoadingSpinner', 'ErrorMessage', 'EmptyState', 'RetryableError',
+                        'DataBadge', 'FormField', 'NetworkStatusIndicator'
+                    ],
+
+                    // Utils (Phase 2.2)
+                    'DawsOS.Utils.Formatting': [
+                        'currency', 'percentage', 'number', 'date', 'value', 'getColorClass'
+                    ],
+                    'DawsOS.Utils.Hooks': ['useCachedQuery', 'useCachedMutation'],
+                    'DawsOS.Utils.Data': ['getDataSourceFromResponse', 'withDataProvenance', 'ProvenanceWarningBanner'],
+
+                    // Panels
                     'DawsOS.Panels': [
                         'MetricsGridPanel', 'TablePanel', 'LineChartPanel', 'NewsListPanel',
                         'PieChartPanel', 'DonutChartPanel', 'ScorecardPanel', 'BarChartPanel',
                         'ActionCardsPanel', 'CycleCardPanel', 'DualListPanel', 'ReportViewerPanel'
                     ],
+
+                    // Pages
                     'DawsOS.Pages': [
                         'LoginPage', 'DashboardPage', 'DashboardPageLegacy', 'HoldingsPage',
                         'SecurityDetailPage', 'TransactionsPage', 'PerformancePage',
@@ -116,19 +142,32 @@
                         'AlertsPage', 'ReportsPage', 'CorporateActionsPage', 'MarketDataPage',
                         'SettingsPage'
                     ],
+
+                    // Context
                     'DawsOS.Context': [
-                        'getCurrentPortfolioId', 'UserContext', 'UserContextProvider',
-                        'useUserContext', 'PortfolioSelector'
+                        'UserContext', 'UserContextProvider', 'useUserContext', 'PortfolioSelector'
+                    ],
+
+                    // Other modules
+                    'DawsOS.CacheManager': [],
+                    'DawsOS.FormValidator': [],
+                    'DawsOS.ErrorHandler': [],
+
+                    // ============================================
+                    // DEPRECATED: Backward compatibility checks
+                    // These old namespaces should still work (Phase 2)
+                    // Remove in Phase 3
+                    // ============================================
+                    'DawsOS.Utils': [
+                        'formatCurrency', 'formatPercentage', 'formatNumber', 'formatDate',
+                        'formatValue', 'getColorClass', 'LoadingSpinner', 'ErrorMessage',
+                        'EmptyState', 'RetryableError', 'useCachedQuery', 'useCachedMutation',
+                        'NetworkStatusIndicator', 'FormField', 'DataBadge', 'getDataSourceFromResponse'
                     ],
                     'DawsOS.PatternSystem': [
                         'getDataByPath', 'PatternRenderer', 'PanelRenderer',
                         'patternRegistry', 'queryKeys', 'queryHelpers'
-                    ],
-                    'DawsOS.CacheManager': [],   // Validate module exists (required by Utils hooks)
-                    'DawsOS.FormValidator': [],  // Validate module exists
-                    'DawsOS.ErrorHandler': [],   // Validate module exists
-                    'apiClient': [],             // Note: apiClient is at global.apiClient, not DawsOS.apiClient
-                    'TokenManager': []           // Note: TokenManager is at global.TokenManager (exported separately)
+                    ]
                 };
 
                 const errors = [];

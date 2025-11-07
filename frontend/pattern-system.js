@@ -980,21 +980,59 @@
     };
 
     // ============================================
-    // PUBLIC API EXPORT
+    // Export to DawsOS.Patterns namespace (Phase 2.3)
     // ============================================
 
-    /**
-     * Export Pattern System to global DawsOS namespace
-     */
-    global.DawsOS.PatternSystem = {
-        getDataByPath,
-        PatternRenderer,
-        PanelRenderer,
-        patternRegistry,
-        queryKeys,
-        queryHelpers
+    // Initialize Patterns namespace
+    global.DawsOS.Patterns = global.DawsOS.Patterns || {};
+
+    // Export Pattern Renderer
+    global.DawsOS.Patterns.Renderer = {
+        render: function(patternConfig, data) {
+            // Wrapper for rendering patterns
+            return PatternRenderer({ pattern: patternConfig, data: data });
+        },
+        PatternRenderer: PatternRenderer
     };
 
-    console.log('DawsOS Pattern System loaded successfully');
+    // Export Pattern Registry
+    global.DawsOS.Patterns.Registry = {
+        patterns: patternRegistry,
+        get: function(patternName) {
+            return patternRegistry[patternName];
+        },
+        list: function() {
+            return Object.keys(patternRegistry);
+        },
+        validate: function(patternName, data) {
+            // Future: Add JSON Schema validation here
+            return patternRegistry[patternName] !== undefined;
+        }
+    };
+
+    // Export Pattern Helpers
+    global.DawsOS.Patterns.Helpers = {
+        getDataByPath: getDataByPath,
+        queryKeys: queryKeys,
+        queryHelpers: queryHelpers,
+        PanelRenderer: PanelRenderer
+    };
+
+    // ============================================
+    // DEPRECATED: Backward compatibility aliases
+    // Remove in Phase 3
+    // ============================================
+
+    // Keep old PatternSystem namespace for backward compatibility
+    global.DawsOS.PatternSystem = {
+        getDataByPath: getDataByPath,
+        PatternRenderer: PatternRenderer,
+        PanelRenderer: PanelRenderer,
+        patternRegistry: patternRegistry,
+        queryKeys: queryKeys,
+        queryHelpers: queryHelpers
+    };
+
+    console.log('✅ Pattern System loaded successfully (DawsOS.Patterns.*)');
 
 })(window);

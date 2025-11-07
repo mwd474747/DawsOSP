@@ -635,7 +635,74 @@
         );
     };
 
-    // Expose Utils via global DawsOS namespace
-    global.DawsOS.Utils = Utils;
+    // ============================================
+    // Export to DawsOS namespace (Phase 2.2)
+    // ============================================
+
+    // Initialize namespaces
+    global.DawsOS.Utils = global.DawsOS.Utils || {};
+    global.DawsOS.UI = global.DawsOS.UI || {};
+    global.DawsOS.UI.Primitives = global.DawsOS.UI.Primitives || {};
+
+    // Export Formatting utilities to DawsOS.Utils.Formatting
+    global.DawsOS.Utils.Formatting = {
+        currency: Utils.formatCurrency,
+        percentage: Utils.formatPercentage,
+        number: Utils.formatNumber,
+        date: Utils.formatDate,
+        value: Utils.formatValue,
+        getColorClass: Utils.getColorClass
+    };
+
+    // Export React Hooks to DawsOS.Utils.Hooks
+    global.DawsOS.Utils.Hooks = {
+        useCachedQuery: Utils.useCachedQuery,
+        useCachedMutation: Utils.useCachedMutation
+    };
+
+    // Export Data utilities to DawsOS.Utils.Data
+    global.DawsOS.Utils.Data = {
+        getDataSourceFromResponse: Utils.getDataSourceFromResponse,
+        withDataProvenance: Utils.withDataProvenance,
+        ProvenanceWarningBanner: Utils.ProvenanceWarningBanner
+    };
+
+    // Export Primitive UI components to DawsOS.UI.Primitives
+    global.DawsOS.UI.Primitives = {
+        LoadingSpinner: Utils.LoadingSpinner,
+        ErrorMessage: Utils.ErrorMessage,
+        EmptyState: Utils.EmptyState,
+        RetryableError: Utils.RetryableError,
+        DataBadge: Utils.DataBadge,
+        FormField: Utils.FormField,
+        NetworkStatusIndicator: Utils.NetworkStatusIndicator
+    };
+
+    // ============================================
+    // DEPRECATED: Backward compatibility aliases
+    // Remove in Phase 3
+    // ============================================
+
+    // Keep old Utils namespace with deprecation warnings
+    global.DawsOS.Utils.formatCurrency = Utils.formatCurrency;
+    global.DawsOS.Utils.formatPercentage = Utils.formatPercentage;
+    global.DawsOS.Utils.formatNumber = Utils.formatNumber;
+    global.DawsOS.Utils.formatDate = Utils.formatDate;
+    global.DawsOS.Utils.formatValue = Utils.formatValue;
+    global.DawsOS.Utils.getColorClass = Utils.getColorClass;
+    global.DawsOS.Utils.LoadingSpinner = Utils.LoadingSpinner;
+    global.DawsOS.Utils.ErrorMessage = Utils.ErrorMessage;
+    global.DawsOS.Utils.EmptyState = Utils.EmptyState;
+    global.DawsOS.Utils.RetryableError = Utils.RetryableError;
+    global.DawsOS.Utils.DataBadge = Utils.DataBadge;
+    global.DawsOS.Utils.FormField = Utils.FormField;
+    global.DawsOS.Utils.NetworkStatusIndicator = Utils.NetworkStatusIndicator;
+    global.DawsOS.Utils.useCachedQuery = Utils.useCachedQuery;
+    global.DawsOS.Utils.useCachedMutation = Utils.useCachedMutation;
+    global.DawsOS.Utils.getDataSourceFromResponse = Utils.getDataSourceFromResponse;
+    global.DawsOS.Utils.withDataProvenance = Utils.withDataProvenance;
+    global.DawsOS.Utils.ProvenanceWarningBanner = Utils.ProvenanceWarningBanner;
+
+    console.log('✅ Utils module loaded successfully (DawsOS.Utils.*, DawsOS.UI.Primitives)');
 
 })(typeof window !== 'undefined' ? window : global);

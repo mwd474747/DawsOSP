@@ -62,43 +62,61 @@
     const { useState, useEffect, useRef } = React;
     const e = React.createElement;
 
-    // Import dependencies from DawsOS namespace
-    // EMERGENCY FIX: api-client exports to global.apiClient, NOT DawsOS.APIClient
-    const apiClient = global.DawsOS.APIClient || global.apiClient || {};
-    const Utils = global.DawsOS.Utils || {};
-    const Panels = global.DawsOS.Panels || {};
-    const Context = global.DawsOS.Context || {};
-    const PatternSystem = global.DawsOS.PatternSystem || {};
+    // ============================================
+    // PHASE 2 IMPORTS - New Namespace Structure
+    // ============================================
 
-    // Import utility functions
-    const formatPercentage = Utils.formatPercentage || ((v) => v + '%');
-    const formatCurrency = Utils.formatCurrency || ((v) => '$' + v);
-    const formatNumber = Utils.formatNumber || ((v) => v.toFixed(2));
+    // Core Infrastructure (Phase 2.1)
+    const API = DawsOS.Core.API;
+    const Auth = DawsOS.Core.Auth;
+    const CoreErrors = DawsOS.Core.Errors;
 
-    // Import context functions (from DawsOS.Context, NOT Utils)
-    const useUserContext = Context.useUserContext || (() => ({ portfolioId: null }));
-    const getCurrentPortfolioId = Context.getCurrentPortfolioId || (() => null);
+    // Formatting Utilities (Phase 2.2)
+    const Formatting = DawsOS.Utils.Formatting;
+    const formatCurrency = Formatting.currency;
+    const formatPercentage = Formatting.percentage;
+    const formatNumber = Formatting.number;
+    const formatDate = Formatting.date;
+    const formatValue = Formatting.value;
 
-    // Import cached API client (queryHelpers) from pattern-system
-    const cachedApiClient = PatternSystem.queryHelpers || apiClient;
+    // UI Primitives (Phase 2.2)
+    const Primitives = DawsOS.UI.Primitives;
+    const LoadingSpinner = Primitives.LoadingSpinner;
+    const ErrorMessage = Primitives.ErrorMessage;
+    const RetryableError = Primitives.RetryableError;
+    const EmptyState = Primitives.EmptyState;
+    const NetworkStatusIndicator = Primitives.NetworkStatusIndicator;
+    const FormField = Primitives.FormField;
+    const DataBadge = Primitives.DataBadge;
 
-    // Import UI components with fallbacks (EMERGENCY FIX: prevent undefined crashes)
-    const LoadingSpinner = Utils.LoadingSpinner || (() => e('div', null, 'Loading...'));
-    const ErrorMessage = Utils.ErrorMessage || (({ error }) => e('div', { style: { color: 'red' } }, String(error)));
-    const RetryableError = Utils.RetryableError || ErrorMessage;
-    const EmptyState = Utils.EmptyState || (({ message }) => e('div', null, message || 'No data'));
-    const NetworkStatusIndicator = Utils.NetworkStatusIndicator || (() => null);
-    const FormField = Utils.FormField || (({ children }) => children);
-    const DataBadge = Utils.DataBadge || (() => null);
-    const getDataSourceFromResponse = Utils.getDataSourceFromResponse || (() => 'unknown');
+    // Data Utilities (Phase 2.2)
+    const DataUtils = DawsOS.Utils.Data;
+    const getDataSourceFromResponse = DataUtils.getDataSourceFromResponse;
 
-    // Import pattern system components with fallback
-    const PatternRenderer = PatternSystem.PatternRenderer || (() => e('div', null, 'Pattern rendering unavailable'));
+    // React Hooks (Phase 2.2)
+    const Hooks = DawsOS.Utils.Hooks;
+    const useCachedQuery = Hooks.useCachedQuery;
+    const useCachedMutation = Hooks.useCachedMutation;
 
-    // Import core modules with fallbacks
+    // Pattern System (Phase 2.3)
+    const Patterns = DawsOS.Patterns;
+    const PatternRenderer = Patterns.Renderer.PatternRenderer;
+    const PanelRenderer = Patterns.Helpers.PanelRenderer;
+
+    // Context
+    const Context = DawsOS.Context;
+    const useUserContext = Context.useUserContext;
+
+    // Panels
+    const Panels = DawsOS.Panels;
+
+    // Legacy compatibility (backward compat for emergency fixes)
+    const apiClient = API;  // DawsOS.Core.API is the new apiClient
+    const TokenManager = API.TokenManager;
+    const getCurrentPortfolioId = Auth.getCurrentPortfolioId;
+    const ErrorHandler = CoreErrors;
     const FormValidator = DawsOS.FormValidator || {};
-    const ErrorHandler = DawsOS.ErrorHandler || {};
-    const TokenManager = global.TokenManager || {};
+    const cachedApiClient = Patterns.Helpers.queryHelpers || API;
 
     // ============================================
     // PAGE COMPONENTS

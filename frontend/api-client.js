@@ -369,19 +369,79 @@
     };
     
     // ============================================
-    // Export to global scope for browser usage
+    // Export to DawsOS.Core namespace (Phase 2.1)
     // ============================================
-    
-    // Export the API client and utilities to the global window object
-    // This maintains backward compatibility with the existing code
-    global.API_BASE = API_BASE;
-    global.getCurrentPortfolioId = getCurrentPortfolioId;
-    global.TokenManager = TokenManager;
-    global.handleApiError = handleApiError;
-    global.retryConfig = retryConfig;
-    global.apiClient = apiClient;
-    
+
+    // Initialize DawsOS.Core namespace
+    global.DawsOS = global.DawsOS || {};
+    global.DawsOS.Core = global.DawsOS.Core || {};
+
+    // Export API client to DawsOS.Core.API (new namespace)
+    global.DawsOS.Core.API = {
+        // Core API methods
+        request: apiClient.request,
+        get: apiClient.get,
+        post: apiClient.post,
+        put: apiClient.put,
+        delete: apiClient.delete,
+
+        // Token management
+        TokenManager: {
+            getToken: TokenManager.getToken,
+            setToken: TokenManager.setToken,
+            clearToken: TokenManager.clearToken,
+            isTokenExpired: TokenManager.isTokenExpired
+        },
+
+        // Retry configuration
+        retryConfig: retryConfig
+    };
+
+    // Export Auth utilities to DawsOS.Core.Auth
+    global.DawsOS.Core.Auth = {
+        getCurrentPortfolioId: getCurrentPortfolioId
+    };
+
+    // Export Error handling to DawsOS.Core.Errors
+    global.DawsOS.Core.Errors = {
+        handleApiError: handleApiError
+    };
+
+    // ============================================
+    // DEPRECATED: Backward compatibility aliases
+    // Remove in Phase 3
+    // ============================================
+
+    // Legacy global exports (with deprecation warnings)
+    Object.defineProperty(global, 'apiClient', {
+        get: function() {
+            console.warn('[DEPRECATED] global.apiClient is deprecated. Use DawsOS.Core.API instead.');
+            return global.DawsOS.Core.API;
+        }
+    });
+
+    Object.defineProperty(global, 'TokenManager', {
+        get: function() {
+            console.warn('[DEPRECATED] global.TokenManager is deprecated. Use DawsOS.Core.API.TokenManager instead.');
+            return global.DawsOS.Core.API.TokenManager;
+        }
+    });
+
+    Object.defineProperty(global, 'getCurrentPortfolioId', {
+        get: function() {
+            console.warn('[DEPRECATED] global.getCurrentPortfolioId is deprecated. Use DawsOS.Core.Auth.getCurrentPortfolioId instead.');
+            return global.DawsOS.Core.Auth.getCurrentPortfolioId;
+        }
+    });
+
+    Object.defineProperty(global, 'handleApiError', {
+        get: function() {
+            console.warn('[DEPRECATED] global.handleApiError is deprecated. Use DawsOS.Core.Errors.handleApiError instead.');
+            return global.DawsOS.Core.Errors.handleApiError;
+        }
+    });
+
     // For debugging purposes
-    console.log('API Client module loaded successfully');
+    console.log('✅ API Client module loaded successfully (DawsOS.Core.API)');
     
 })(window);
