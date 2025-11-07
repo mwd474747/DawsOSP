@@ -10603,207 +10603,170 @@
             }
             
             function AIInsightsPage() {
-                const [messages, setMessages] = useState([]);
-                const [inputValue, setInputValue] = useState('');
-                const [loading, setLoading] = useState(false);
+                const [insights, setInsights] = useState([]);
+                const [loading, setLoading] = useState(true);
                 const [error, setError] = useState(null);
-                const messagesEndRef = React.useRef(null);
+                const [refreshKey, setRefreshKey] = useState(0);
+                const { portfolioId } = useUserContext();
                 
-                // Auto-scroll to bottom when new messages arrive
+                // Key patterns to display in AI Insights
+                const keyPatterns = [
+                    { id: 'portfolio_overview', name: 'Portfolio Overview', icon: '📊' },
+                    { id: 'portfolio_scenario_analysis', name: 'Risk Analysis', icon: '⚠️' },
+                    { id: 'portfolio_tax_report', name: 'Tax Insights', icon: '📋' },
+                    { id: 'portfolio_cycle_risk', name: 'Cycle Positioning', icon: '🔄' }
+                ];
+                
                 useEffect(() => {
-                    if (messagesEndRef.current) {
-                        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-                    }
-                }, [messages]);
+                    loadInsights();
+                }, [portfolioId, refreshKey]);
                 
-                // Show welcome message on first load
-                useEffect(() => {
-                    const welcomeMessage = {
-                        role: 'ai',
-                        content: 'Welcome! I\'m your AI portfolio advisor powered by Claude. I can help you with:\n\n• Portfolio analysis and recommendations\n• Financial questions and market insights\n• What-if scenarios and risk assessment\n\nHow can I assist you today?',
-                        timestamp: new Date().toISOString()
-                    };
-                    setMessages([welcomeMessage]);
-                }, []);
-                
-                const sendMessage = async () => {
-                    if (!inputValue.trim() || loading) return;
-                    
-                    const userMessage = { 
-                        role: 'user', 
-                        content: inputValue,
-                        timestamp: new Date().toISOString()
-                    };
-                    
-                    setMessages(prev => [...prev, userMessage]);
-                    setInputValue('');
+                const loadInsights = async () => {
                     setLoading(true);
                     setError(null);
                     
                     try {
-                        const token = localStorage.getItem('access_token');
-                        const response = await axios.post(
-                            `${API_BASE}/api/ai/chat`,
-                            { message: inputValue },
-                            { headers: { 'Authorization': `Bearer ${token}` } }
-                        );
+                        // Execute patterns in parallel for speed
+                        const insightPromises = keyPatterns.map(async (pattern) => {
+                            try {
+                                // Execute the pattern
+                                const result = await apiClient.executePattern(pattern.id, { 
+                                    portfolio_id: portfolioId,
+                                    tax_year: pattern.id === 'portfolio_tax_report' ? new Date().getFullYear() : undefined
+                                });
+                                
+                                // Get AI explanation of the results
+                                const explanationPrompt = `Analyze these ${pattern.name} results and provide 2-3 key insights in simple, non-technical terms for an investor: ${JSON.stringify(result.data || result).substring(0, 1000)}`;
+                                
+                                const explanation = await apiClient.aiChat(explanationPrompt, {
+                                    portfolioId,
+                                    source: 'insights',
+                                    pattern: pattern.id
+                                });
+                                
+                                return {
+                                    pattern: pattern.id,
+                                    name: pattern.name,
+                                    icon: pattern.icon,
+                                    data: result.data || result,
+                                    explanation: explanation.data?.response || explanation.response || 'Analysis in progress...',
+                                    success: true
+                                };
+                            } catch (err) {
+                                console.error(`Failed to load ${pattern.name}:`, err);
+                                return {
+                                    pattern: pattern.id,
+                                    name: pattern.name,
+                                    icon: pattern.icon,
+                                    data: null,
+                                    explanation: `Unable to load ${pattern.name} data. Please try refreshing.`,
+                                    success: false
+                                };
+                            }
+                        });
                         
-                        const aiResponse = { 
-                            role: 'ai', 
-                            content: response.data.data.response || response.data.response || 'Let me help you analyze your portfolio.',
-                            type: response.data.data.type || 'general',
-                            timestamp: new Date().toISOString()
-                        };
-                        setMessages(prev => [...prev, aiResponse]);
-                    } catch (error) {
-                        console.error('AI chat error:', error);
-                        const errorMessage = { 
-                            role: 'ai', 
-                            content: 'I apologize, but I\'m having trouble connecting to the AI service. Let me provide some general insights: Based on portfolio best practices, ensure your holdings are diversified across sectors and maintain position sizes under 10% for individual stocks to manage concentration risk.',
-                            timestamp: new Date().toISOString()
-                        };
-                        setMessages(prev => [...prev, errorMessage]);
-                        setError('Connection issue - showing offline insights');
+                        const results = await Promise.all(insightPromises);
+                        setInsights(results);
+                    } catch (err) {
+                        console.error('Failed to load insights:', err);
+                        setError('Failed to load insights. Please try again.');
                     } finally {
                         setLoading(false);
                     }
                 };
                 
-                const clearChat = () => {
-                    const welcomeMessage = {
-                        role: 'ai',
-                        content: 'Chat history cleared. How can I help you analyze your portfolio?',
-                        timestamp: new Date().toISOString()
-                    };
-                    setMessages([welcomeMessage]);
-                    setError(null);
-                };
-                
-                const suggestedQuestions = [
-                    'How is my portfolio performing?',
-                    'Should I rebalance my holdings?',
-                    'What are my biggest risks?',
-                    'What happens if the market drops 20%?',
-                    'How can I improve diversification?',
-                    'What are dividend aristocrats?'
-                ];
-                
-                const askSuggestion = (question) => {
-                    setInputValue(question);
-                    // Auto-send after a brief delay for UX
-                    setTimeout(() => {
-                        const event = new KeyboardEvent('keypress', { key: 'Enter' });
-                        document.querySelector('.chat-input').dispatchEvent(event);
-                    }, 100);
-                };
-                
-                const formatMessage = (content) => {
-                    // Convert newlines to line breaks for better formatting
-                    if (content.includes('\n')) {
-                        return content.split('\n').map((line, i) => 
-                            e('div', { key: i, style: { marginBottom: line.trim() === '' ? '0.5rem' : '0.25rem' } }, 
-                                line || e('br'))
-                        );
-                    }
-                    return content;
+                const handleRefresh = () => {
+                    setRefreshKey(prev => prev + 1);
                 };
                 
                 return e('div', null,
                     e('div', { className: 'page-header' },
                         e('h1', { className: 'page-title' }, 'AI Insights'),
-                        e('p', { className: 'page-description' }, 'Claude-powered portfolio intelligence and financial advisory')
+                        e('p', { className: 'page-description' }, 'Pattern-driven portfolio intelligence with AI-powered explanations')
+                    ),
+                    
+                    // Header with refresh button
+                    e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' } },
+                        e('h2', { style: { margin: 0 } }, 'Portfolio Analysis Dashboard'),
+                        e('button', {
+                            className: 'btn btn-primary',
+                            onClick: handleRefresh,
+                            disabled: loading
+                        }, loading ? 'Loading...' : 'Refresh Insights')
                     ),
                     
                     error && e('div', { className: 'alert alert-warning' }, error),
                     
-                    // Suggested questions
-                    messages.length === 1 && e('div', { className: 'suggested-questions' },
-                        e('h4', { className: 'suggestions-title' }, 'Suggested Questions:'),
-                        e('div', { className: 'suggestions-grid' },
-                            suggestedQuestions.map(question => 
-                                e('button', {
-                                    key: question,
-                                    className: 'suggestion-chip',
-                                    onClick: () => askSuggestion(question)
-                                }, question)
-                            )
-                        )
+                    // Loading state
+                    loading && insights.length === 0 && e('div', { className: 'loading-container' },
+                        e('div', { className: 'spinner' }),
+                        e('p', null, 'Analyzing your portfolio with AI...')
                     ),
                     
-                    // Chat container
-                    e('div', { className: 'chat-container' },
-                        // Chat header with actions
-                        e('div', { className: 'chat-header' },
-                            e('div', { className: 'chat-status' },
-                                loading && e('span', { className: 'typing-indicator' }, 'Claude is thinking...'),
-                                !loading && messages.length > 1 && e('span', { className: 'message-count' }, 
-                                    `${messages.length} messages`)
-                            ),
-                            e('button', { 
-                                className: 'btn-clear',
-                                onClick: clearChat,
-                                disabled: messages.length <= 1
-                            }, 'Clear Chat')
-                        ),
-                        
-                        // Messages area
-                        e('div', { className: 'chat-messages' },
-                            messages.map((msg, i) => 
-                                e('div', { 
-                                    key: i, 
-                                    className: `chat-message ${msg.role}`
-                                },
-                                    e('div', { className: 'message-header' },
-                                        e('span', { className: 'message-role' }, 
-                                            msg.role === 'user' ? 'You' : 'Claude AI'),
-                                        msg.timestamp && e('span', { className: 'message-time' }, 
-                                            new Date(msg.timestamp).toLocaleTimeString([], { 
-                                                hour: '2-digit', 
-                                                minute: '2-digit' 
-                                            })
-                                        )
+                    // Display insights
+                    !loading && insights.length > 0 && e('div', { className: 'insights-grid' },
+                        insights.map(insight => 
+                            e('div', { 
+                                key: insight.pattern, 
+                                className: 'card',
+                                style: { marginBottom: '2rem' }
+                            },
+                                // Card header with pattern name and icon
+                                e('div', { className: 'card-header' },
+                                    e('h3', { className: 'card-title' },
+                                        e('span', { style: { marginRight: '0.5rem' } }, insight.icon),
+                                        insight.name
+                                    )
+                                ),
+                                
+                                // AI Explanation section
+                                e('div', { style: { padding: '1rem', borderBottom: '1px solid var(--border-color)' } },
+                                    e('h4', { style: { marginBottom: '0.75rem', color: 'var(--color-info)' } }, 
+                                        '🤖 AI Analysis'
                                     ),
-                                    e('div', { className: 'message-content' }, formatMessage(msg.content))
-                                )
-                            ),
-                            loading && e('div', { className: 'chat-message ai typing' },
-                                e('div', { className: 'typing-dots' },
-                                    e('span', { className: 'dot' }),
-                                    e('span', { className: 'dot' }),
-                                    e('span', { className: 'dot' })
-                                )
-                            ),
-                            e('div', { ref: messagesEndRef })
-                        ),
-                        
-                        // Input area
-                        e('div', { className: 'chat-input-container' },
-                            e('textarea', {
-                                className: 'chat-input',
-                                value: inputValue,
-                                onChange: (e) => setInputValue(e.target.value),
-                                onKeyPress: (e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        sendMessage();
-                                    }
-                                },
-                                placeholder: 'Ask about portfolio performance, risks, strategies, or any financial question...',
-                                disabled: loading,
-                                rows: 2
-                            }),
-                            e('div', { className: 'chat-actions' },
-                                e('span', { className: 'input-hint' }, 
-                                    'Press Enter to send, Shift+Enter for new line'),
-                                e('button', { 
-                                    className: `btn ${loading ? 'btn-loading' : 'btn-primary'}`,
-                                    onClick: sendMessage,
-                                    disabled: loading || !inputValue.trim()
+                                    e('div', { 
+                                        style: { 
+                                            padding: '1rem',
+                                            backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                                            borderRadius: '8px',
+                                            border: '1px solid rgba(59, 130, 246, 0.2)'
+                                        } 
+                                    }, 
+                                        insight.explanation ? insight.explanation.split('\n').map((line, i) => 
+                                            e('p', { 
+                                                key: i, 
+                                                style: { marginBottom: i < insight.explanation.split('\n').length - 1 ? '0.5rem' : 0 }
+                                            }, line)
+                                        ) : 'Analysis in progress...'
+                                    )
+                                ),
+                                
+                                // Pattern data using PatternRenderer
+                                insight.success && insight.data && e('div', { style: { padding: '1rem' } },
+                                    e('h4', { style: { marginBottom: '0.75rem' } }, 'Pattern Results'),
+                                    e(PatternRenderer, {
+                                        pattern: insight.pattern,
+                                        inputs: { 
+                                            portfolio_id: portfolioId,
+                                            tax_year: insight.pattern === 'portfolio_tax_report' ? new Date().getFullYear() : undefined
+                                        },
+                                        config: { 
+                                            compact: true,
+                                            hideHeader: true 
+                                        }
+                                    })
+                                ),
+                                
+                                // Error state for failed patterns
+                                !insight.success && e('div', { 
+                                    style: { 
+                                        padding: '1rem', 
+                                        backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                                        borderRadius: '8px',
+                                        margin: '1rem'
+                                    } 
                                 }, 
-                                    loading ? e('span', null,
-                                        e('span', { className: 'spinner-small' }),
-                                        ' Sending...'
-                                    ) : 'Send Message'
+                                    e('p', { style: { color: 'var(--color-danger)' } }, insight.explanation)
                                 )
                             )
                         )
