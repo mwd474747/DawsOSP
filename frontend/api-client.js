@@ -378,12 +378,8 @@
 
     // Export API client to DawsOS.Core.API (new namespace)
     global.DawsOS.Core.API = {
-        // Core API methods
-        request: apiClient.request,
-        get: apiClient.get,
-        post: apiClient.post,
-        put: apiClient.put,
-        delete: apiClient.delete,
+        // Export all apiClient methods (executePattern, getPortfolio, getHoldings, etc.)
+        ...apiClient,
 
         // Token management
         TokenManager: {
