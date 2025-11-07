@@ -39,6 +39,7 @@ from uuid import UUID
 
 from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
+from app.core.symbol_utils import normalize_symbol_for_fmp, normalize_symbol_for_news
 from app.services.fundamentals_transformer import transform_fmp_to_ratings_format
 
 logger = logging.getLogger("DawsOS.DataHarvester")
@@ -683,11 +684,11 @@ class DataHarvester(BaseAgent):
             # Step 2: Attempt to fetch from provider if symbol found
             if symbol and provider == "fmp":
                 logger.info(f"Attempting to fetch fundamentals for {symbol} from FMP")
-                
-                # Handle special ticker formats (e.g., BRK.B -> BRK-B for FMP)
-                fmp_symbol = symbol.replace(".", "-") if "." in symbol else symbol
+
+                # Normalize symbol for FMP API (share classes: BRK.B->BRK-B, exchanges: RY.TO->RY.TO)
+                fmp_symbol = normalize_symbol_for_fmp(symbol)
                 if fmp_symbol != symbol:
-                    logger.info(f"Converted symbol format for FMP: {symbol} -> {fmp_symbol}")
+                    logger.info(f"Normalized symbol for FMP: {symbol} -> {fmp_symbol}")
 
                 # Call provider.fetch_fundamentals (which may return stub if no API key)
                 fundamentals_data = await self.provider_fetch_fundamentals(
@@ -1737,12 +1738,12 @@ class DataHarvester(BaseAgent):
                 # This is a position object, extract symbol
                 symbol = entity.get("symbol")
                 if symbol:
-                    # Normalize symbol (e.g., BRK.B -> BRK-B for better search)
-                    normalized_symbol = symbol.replace(".", "-")
+                    # Normalize symbol for news search (converts all dots to hyphens)
+                    normalized_symbol = normalize_symbol_for_news(symbol)
                     symbols.append(normalized_symbol)
             elif isinstance(entity, str):
                 # This is already a symbol string
-                normalized_symbol = entity.replace(".", "-")
+                normalized_symbol = normalize_symbol_for_news(entity)
                 symbols.append(normalized_symbol)
         
         logger.info(f"news.search: symbols={symbols}, lookback_hours={lookback_hours}")
