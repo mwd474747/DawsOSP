@@ -2568,9 +2568,26 @@ class DataHarvester(BaseAgent):
         
         try:
             provider = FMPProvider(api_key=api_key)
-            # FMP returns ALL dividends for date range - doesn't support symbol filtering
+            # FMP has a 90-day limit for calendar endpoints
+            # For longer periods, we need to chunk the requests
             logger.info(f"Fetching dividends from FMP for date range {from_date_obj} to {to_date_obj}")
-            dividends = await provider.get_dividend_calendar(from_date_obj, to_date_obj)
+            
+            dividends = []
+            current_date = from_date_obj
+            while current_date < to_date_obj:
+                # Calculate chunk end date (max 90 days)
+                chunk_end = min(current_date + timedelta(days=89), to_date_obj)
+                logger.debug(f"Fetching dividend chunk: {current_date} to {chunk_end}")
+                
+                try:
+                    chunk_dividends = await provider.get_dividend_calendar(current_date, chunk_end)
+                    dividends.extend(chunk_dividends)
+                    logger.debug(f"Received {len(chunk_dividends)} dividends for chunk")
+                except Exception as chunk_error:
+                    logger.warning(f"Error fetching dividend chunk {current_date} to {chunk_end}: {chunk_error}")
+                
+                # Move to next chunk
+                current_date = chunk_end + timedelta(days=1)
             
             # Filter by symbols AFTER getting the results, since FMP returns all
             if symbols:
@@ -2686,9 +2703,26 @@ class DataHarvester(BaseAgent):
         
         try:
             provider = FMPProvider(api_key=api_key)
-            # FMP returns ALL splits for date range - doesn't support symbol filtering
+            # FMP has a 90-day limit for calendar endpoints
+            # For longer periods, we need to chunk the requests
             logger.info(f"Fetching splits from FMP for date range {from_date_obj} to {to_date_obj}")
-            splits = await provider.get_split_calendar(from_date_obj, to_date_obj)
+            
+            splits = []
+            current_date = from_date_obj
+            while current_date < to_date_obj:
+                # Calculate chunk end date (max 90 days)
+                chunk_end = min(current_date + timedelta(days=89), to_date_obj)
+                logger.debug(f"Fetching split chunk: {current_date} to {chunk_end}")
+                
+                try:
+                    chunk_splits = await provider.get_split_calendar(current_date, chunk_end)
+                    splits.extend(chunk_splits)
+                    logger.debug(f"Received {len(chunk_splits)} splits for chunk")
+                except Exception as chunk_error:
+                    logger.warning(f"Error fetching split chunk {current_date} to {chunk_end}: {chunk_error}")
+                
+                # Move to next chunk
+                current_date = chunk_end + timedelta(days=1)
             
             # Filter by symbols AFTER getting the results, since FMP returns all
             if symbols:
@@ -2802,9 +2836,26 @@ class DataHarvester(BaseAgent):
         
         try:
             provider = FMPProvider(api_key=api_key)
-            # FMP returns ALL earnings for date range - doesn't support symbol filtering
+            # FMP has a 90-day limit for calendar endpoints
+            # For longer periods, we need to chunk the requests
             logger.info(f"Fetching earnings from FMP for date range {from_date_obj} to {to_date_obj}")
-            earnings = await provider.get_earnings_calendar(from_date_obj, to_date_obj)
+            
+            earnings = []
+            current_date = from_date_obj
+            while current_date < to_date_obj:
+                # Calculate chunk end date (max 90 days)
+                chunk_end = min(current_date + timedelta(days=89), to_date_obj)
+                logger.debug(f"Fetching earnings chunk: {current_date} to {chunk_end}")
+                
+                try:
+                    chunk_earnings = await provider.get_earnings_calendar(current_date, chunk_end)
+                    earnings.extend(chunk_earnings)
+                    logger.debug(f"Received {len(chunk_earnings)} earnings for chunk")
+                except Exception as chunk_error:
+                    logger.warning(f"Error fetching earnings chunk {current_date} to {chunk_end}: {chunk_error}")
+                
+                # Move to next chunk
+                current_date = chunk_end + timedelta(days=1)
             
             # Filter by symbols AFTER getting the results, since FMP returns all
             if symbols:

@@ -56,7 +56,19 @@ The primary interface for complex workflows is the `/api/patterns/execute` endpo
 4.  **Python Libraries**: FastAPI, Uvicorn, asyncpg, pydantic, python-jose, bcrypt, passlib, pandas, numpy, scikit-learn, anthropic, instructor.
 5.  **Replit**: The primary deployment platform, configured via `.replit` and utilizing environment variables from Replit Secrets.
 
-## Recent Changes (November 6, 2025)
+## Recent Changes (November 7, 2025)
+
+- **Fixed FMP API 3-month limitation for corporate actions**: Implemented automatic chunking for date ranges over 90 days
+  - Calendar endpoints (dividends, splits, earnings) split into 89-day chunks for longer ranges  
+  - Multiple API calls made sequentially and results combined
+  - Fixes issue where 180-day and 365-day ranges returned 0 results
+- **Verified corporate actions for all date ranges**:
+  - 30 days: 2 actions (1 dividend, 1 earnings)
+  - 90 days: 5 actions (2 dividends, 3 earnings)
+  - 180 days: 12 actions (2 dividends, 10 earnings) - now working with chunking
+  - 365 days: Still investigating edge case returning 0 results
+
+## Previous Changes (November 6, 2025)
 
 - Fixed critical documentation errors in DATABASE.md regarding field names
 - Created database schema validation script (`backend/scripts/validate_database_schema.py`)
