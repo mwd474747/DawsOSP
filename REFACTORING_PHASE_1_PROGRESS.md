@@ -137,6 +137,55 @@ Utils.formatDate = function(dateString) {
 
 **Commit**: `4e04dc3` - "CRITICAL FIX: Add missing Utils format functions and fix Panel validation"
 
+### 3. Fixed CacheManager Dependency Blocking ([utils.js:28-36, 130-136, 212-218](frontend/utils.js))
+
+**Root Cause**: utils.js threw error at startup if CacheManager not loaded, preventing format functions from ever being defined.
+
+**Problem Flow**:
+1. utils.js line 29: Check if CacheManager exists
+2. If missing → throw error immediately
+3. Format functions (line 34+) never reached
+4. Module validation fails: "formatCurrency is undefined"
+
+**Solution**: Move CacheManager check into the hook functions that actually need it
+
+**Before**:
+```javascript
+// Line 29 - blocks entire file
+const CacheManager = global.DawsOS.CacheManager;
+if (!CacheManager) {
+    throw new Error('CacheManager not available');
+}
+
+// Never reached if CacheManager missing
+Utils.formatCurrency = function(value, decimals) { ... };
+```
+
+**After**:
+```javascript
+// Format functions defined immediately
+const Utils = {};
+Utils.formatCurrency = function(value, decimals) { ... };
+Utils.formatPercentage = function(value, decimals) { ... };
+
+// CacheManager check only in functions that need it
+Utils.useCachedQuery = function(queryKey, queryFn, options) {
+    const CacheManager = global.DawsOS.CacheManager;
+    if (!CacheManager) {
+        throw new Error('CacheManager not available');
+    }
+    // ... use CacheManager
+};
+```
+
+**Testing Results**:
+- ✅ `formatCurrency(1500000)` → `$1.5M`
+- ✅ `formatPercentage(0.15)` → `15.00%`
+- ✅ `formatNumber(1234.567)` → `1,234.57`
+- ✅ `formatDate("2025-11-07")` → `Nov 7, 2025`
+
+**Commit**: `41cf66c` - "CRITICAL FIX: Move CacheManager dependency check to prevent format function blocking"
+
 ---
 
 ## Phase 1.2: JSON Schema Validation 🚧 IN PROGRESS
