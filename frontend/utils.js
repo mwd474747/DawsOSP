@@ -25,15 +25,6 @@
         global.DawsOS = {};
     }
 
-    // Import CacheManager from module (required for useCachedQuery/useCachedMutation)
-    const CacheManager = global.DawsOS.CacheManager;
-    if (!CacheManager) {
-        console.error('[Utils] CacheManager not loaded! Ensure cache-manager.js loads before utils.js');
-        throw new Error('[Utils] CacheManager module not available. Check script load order.');
-    }
-
-    console.log('[Utils] CacheManager loaded successfully');
-
     // Create Utils namespace
     const Utils = {};
 
@@ -133,8 +124,16 @@
     /**
      * useCachedQuery - React Hook for cached queries with automatic invalidation
      * Lines 6379-6451
+     *
+     * NOTE: Requires CacheManager to be loaded
      */
     Utils.useCachedQuery = function(queryKey, queryFn, options = {}) {
+        // Check for CacheManager dependency
+        const CacheManager = global.DawsOS.CacheManager;
+        if (!CacheManager) {
+            console.error('[Utils.useCachedQuery] CacheManager not loaded! Ensure cache-manager.js loads before utils.js');
+            throw new Error('[Utils] CacheManager module not available. Check script load order.');
+        }
         const [state, setState] = React.useState({
             data: null,
             error: null,
@@ -207,8 +206,16 @@
     /**
      * useCachedMutation - React Hook for mutations with cache invalidation
      * Lines 6452-6551
+     *
+     * NOTE: Requires CacheManager to be loaded
      */
     Utils.useCachedMutation = function(mutationFn, options = {}) {
+        // Check for CacheManager dependency
+        const CacheManager = global.DawsOS.CacheManager;
+        if (!CacheManager) {
+            console.error('[Utils.useCachedMutation] CacheManager not loaded!');
+            throw new Error('[Utils] CacheManager module not available. Check script load order.');
+        }
         const [state, setState] = React.useState({
             isLoading: false,
             error: null,
