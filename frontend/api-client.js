@@ -220,6 +220,13 @@
     
     // API Client with enhanced error handling and retry support
     const apiClient = {
+        // Basic HTTP methods that the validation expects
+        request: axios.request.bind(axios),
+        get: axios.get.bind(axios),
+        post: axios.post.bind(axios),
+        put: axios.put.bind(axios),
+        delete: axios.delete.bind(axios),
+        
         // Helper method to handle API errors consistently
         handleApiCallError: (operation, error) => {
             const enhancedError = error.enhancedError || handleApiError(error);
