@@ -1690,7 +1690,7 @@ class FinancialAnalyst(BaseAgent):
             # Calculate aggregated position
             total_qty = sum(Decimal(str(lot["quantity_open"])) for lot in lots)
             weighted_cost = sum(
-                Decimal(str(lot["quantity_open"])) * Decimal(str(lot["price"]))
+                Decimal(str(lot["quantity_open"])) * Decimal(str(lot["cost_basis_per_share"]))
                 for lot in lots
             )
             avg_cost = weighted_cost / total_qty if total_qty > 0 else Decimal("0")
