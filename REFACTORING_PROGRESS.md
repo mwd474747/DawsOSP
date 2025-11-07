@@ -7,7 +7,42 @@
 
 ## ✅ Recently Completed (November 6, 2025)
 
-### Phase 1: Dependency Injection Migration & API Management
+### Pattern Output Format Analysis & Validation ✅ **COMPLETE**
+- ✅ **Comprehensive Analysis** - Analyzed all 15 patterns across 3 output formats ([PATTERN_OUTPUT_FORMAT_ANALYSIS.md](PATTERN_OUTPUT_FORMAT_ANALYSIS.md))
+  - Format 1 (Simple List): 8 patterns ✅
+  - Format 2 (Dict with Keys): 2 patterns ✅
+  - Format 3 (Panels with dataPath): 5 patterns ✅
+  - **Key Finding**: NO LARGE REFACTOR NEEDED - All formats work correctly
+- ✅ **Validation Utility Created** - Implemented pattern output validator ([pattern_validator.py](backend/app/core/pattern_validator.py))
+  - Validates panel ID → step result mapping
+  - Detects orphaned panel IDs (no matching state key)
+  - Detects ambiguous matches (multiple state keys match)
+  - Validates dataPath root keys exist in state
+- ✅ **Documentation Created** - Pattern author reference guide ([PATTERN_OUTPUT_FORMATS.md](docs/PATTERN_OUTPUT_FORMATS.md))
+  - Three formats explained with examples
+  - Fuzzy matching rules documented
+  - Common mistakes and solutions
+  - Migration guide included
+- ✅ **Resolution**: Quick fix implemented (3 hours) - validation + docs, no refactoring needed
+
+### Symbol Format Standardization ✅ **COMPLETE**
+- ✅ **Symbol Utilities Created** - Smart normalization for FMP API calls ([symbol_utils.py](backend/app/core/symbol_utils.py))
+  - `normalize_symbol_for_fmp()` - Hyphens for share classes, dots for exchanges
+  - `normalize_symbol_for_news()` - All dots to hyphens for news search
+  - `normalize_symbol_for_storage()` - Canonical format with dots
+  - `validate_symbol()` - Symbol format validation
+  - `detect_symbol_type()` - Auto-detect share class vs exchange suffix
+- ✅ **Bug Fixed** - FMP API symbol conversion ([data_harvester.py](backend/app/agents/data_harvester.py))
+  - **Critical Bug**: Line 688 converted ALL dots to hyphens (broke Canadian stocks)
+  - **Fix**: Smart conversion - BRK.B → BRK-B, but RY.TO → RY.TO (preserved)
+  - Fixed in 3 locations (lines 42, 688-691, 1741-1747)
+- ✅ **Documentation Created** - Comprehensive symbol format standards ([SYMBOL_FORMAT_STANDARDS.md](SYMBOL_FORMAT_STANDARDS.md))
+  - 23 exchange suffixes documented
+  - FMP API format rules explained
+  - Migration guide for existing code
+  - Common mistakes and solutions
+
+### Phase 1: Dependency Injection Migration & API Management ✅ **COMPLETE**
 - ✅ **Provider Registry Singleton** - Implemented centralized API client management ([provider_registry.py](backend/app/integrations/provider_registry.py))
 - ✅ **Startup API Key Validation** - Added validation on server start with visual feedback ([combined_server.py:251-260](backend/combined_server.py#L251-L260))
 - ✅ **OpenTelemetry Optional Import** - Made tracing gracefully degrade if not installed ([base_provider.py](backend/app/integrations/base_provider.py))
