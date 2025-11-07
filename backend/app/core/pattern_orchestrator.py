@@ -321,7 +321,12 @@ class PatternOrchestrator:
 
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse pattern {pattern_file}: {e}")
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - should not happen, log and re-raise
+                logger.error(f"Programming error loading pattern {pattern_file}: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # File I/O or other errors - log and continue
                 logger.error(f"Failed to load pattern {pattern_file}: {e}")
 
         logger.info(f"Loaded {pattern_count} patterns from {patterns_dir}")
@@ -541,12 +546,25 @@ class PatternOrchestrator:
                                                             f"Step {step_idx} ({capability}): "
                                                             f"references '{parts[0]}' which may not be available"
                                                         )
-                                        except Exception as e:
-                                            warnings.append(
-                                                f"Step {step_idx} ({capability}): "
-                                                f"could not validate template '{arg_value}': {e}"
-                                            )
+                        except (ValueError, TypeError, KeyError, AttributeError) as e:
+                            # Programming errors - should not happen, log and continue
+                            warnings.append(
+                                f"Step {step_idx} ({capability}): "
+                                f"programming error validating template '{arg_value}': {e}"
+                            )
                         except Exception as e:
+                            # Template validation errors - log and continue
+                            warnings.append(
+                                f"Step {step_idx} ({capability}): "
+                                f"could not validate template '{arg_value}': {e}"
+                            )
+                        except (ValueError, TypeError, KeyError, AttributeError) as e:
+                            # Programming errors - should not happen, log and continue
+                            warnings.append(
+                                f"Could not inspect signature for {capability} (programming error): {e}"
+                            )
+                        except Exception as e:
+                            # Inspection errors - log and continue
                             warnings.append(
                                 f"Could not inspect signature for {capability}: {e}"
                             )
