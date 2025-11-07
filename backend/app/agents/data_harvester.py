@@ -174,7 +174,12 @@ class DataHarvester(BaseAgent):
                             "error": f"No quote data available for {symbol}",
                             "provider": "fmp",
                         }
+                except (ValueError, TypeError, KeyError, AttributeError) as e:
+                    # Programming errors - re-raise to surface bugs immediately
+                    logger.error(f"Programming error fetching quote from FMP: {e}", exc_info=True)
+                    raise
                 except Exception as e:
+                    # API/service errors - return error response
                     logger.error(f"Error fetching quote from FMP: {e}", exc_info=True)
                     result = {
                         "symbol": symbol,
@@ -213,7 +218,12 @@ class DataHarvester(BaseAgent):
                             "error": f"No quote data available for {symbol}",
                             "provider": "polygon",
                         }
+                except (ValueError, TypeError, KeyError, AttributeError) as e:
+                    # Programming errors - re-raise to surface bugs immediately
+                    logger.error(f"Programming error fetching quote from Polygon: {e}", exc_info=True)
+                    raise
                 except Exception as e:
+                    # API/service errors - return error response
                     logger.error(f"Error fetching quote from Polygon: {e}", exc_info=True)
                     result = {
                         "symbol": symbol,
@@ -315,7 +325,12 @@ class DataHarvester(BaseAgent):
                     "provider": "fmp",
                 }
 
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - re-raise to surface bugs immediately
+                logger.error(f"Programming error fetching fundamentals from FMP: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # API/service errors - return error response
                 logger.error(f"Error fetching fundamentals from FMP: {e}", exc_info=True)
                 result = {
                     "symbol": symbol,
@@ -421,7 +436,12 @@ class DataHarvester(BaseAgent):
                     "_is_stub": False,
                 }
 
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - re-raise to surface bugs immediately
+                logger.error(f"Programming error fetching news from NewsAPI: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # API/service errors - return error response
                 logger.error(f"Error fetching news from NewsAPI: {e}", exc_info=True)
                 result = {
                     "symbol": symbol,
@@ -511,7 +531,12 @@ class DataHarvester(BaseAgent):
                     "_is_stub": False,
                 }
 
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - re-raise to surface bugs immediately
+                logger.error(f"Programming error fetching macro from FRED: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # API/service errors - return error response
                 logger.error(f"Error fetching macro from FRED: {e}", exc_info=True)
                 result = {
                     "series_id": series_id,
@@ -600,7 +625,12 @@ class DataHarvester(BaseAgent):
                     "provider": "fmp",
                 }
 
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - re-raise to surface bugs immediately
+                logger.error(f"Programming error fetching ratios from FMP: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # API/service errors - return error response
                 logger.error(f"Error fetching ratios from FMP: {e}", exc_info=True)
                 result = {
                     "symbol": symbol,

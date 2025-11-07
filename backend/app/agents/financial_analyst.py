@@ -941,7 +941,12 @@ class FinancialAnalyst(BaseAgent):
                     "sharpe_itd": float(metrics["sharpe_itd"]) if metrics.get("sharpe_itd") else None,
                 }
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in metrics.compute_sharpe: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - return error response
             logger.error(f"Error fetching metrics from database: {e}", exc_info=True)
             result = {
                 "portfolio_id": str(portfolio_id_uuid),
@@ -1324,7 +1329,12 @@ class FinancialAnalyst(BaseAgent):
 
                 return result
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in factor_analysis.analyze: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - return error response
             logger.error(
                 f"FactorAnalyzer failed: {e}",
                 exc_info=True

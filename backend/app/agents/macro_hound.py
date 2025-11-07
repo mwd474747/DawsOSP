@@ -201,7 +201,12 @@ class MacroHound(BaseAgent):
             # Data comes from computed indicators
             provenance = DataProvenance.COMPUTED
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in regime detection: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service/database errors - return error response
             logger.error(f"Error detecting regime: {e}", exc_info=True)
             result = {
                 "regime_name": "UNKNOWN",
@@ -314,7 +319,12 @@ class MacroHound(BaseAgent):
                 "date": str(asof) if asof else None,
             }
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in cycle computation: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service/database errors - return error response
             logger.error(f"Error computing cycles: {e}", exc_info=True)
             result = {
                 "stdc": None,
@@ -394,7 +404,12 @@ class MacroHound(BaseAgent):
                 "date": str(asof) if asof else None,
             }
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error getting indicators: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service/database errors - return error response
             logger.error(f"Error getting indicators: {e}", exc_info=True)
             result = {
                 "indicators": {},
@@ -569,7 +584,12 @@ class MacroHound(BaseAgent):
                 "as_of_date": str(scenario_result.as_of_date),
             }
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error running scenario {scenario_id}: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service/database errors - return error response
             logger.error(f"Error running scenario {scenario_id}: {e}", exc_info=True)
             result = {
                 "scenario_id": scenario_id or "unknown",
