@@ -4077,6 +4077,26 @@
                                                 const formattedValue = formatValue(value, col.format);
                                                 const colorClass = col.color_condition ? getColorClass(value, col.format) : '';
                                                 
+                                                // Make symbol field clickable in holdings table
+                                                if (col.field === 'symbol' && title?.includes('Holdings')) {
+                                                    return e('td', { 
+                                                        key: col.field,
+                                                        style: { cursor: 'pointer', color: '#00d9ff', textDecoration: 'underline' },
+                                                        onClick: () => {
+                                                            // Store security info globally
+                                                            window.selectedSecurity = {
+                                                                symbol: value,
+                                                                security_id: row.security_id
+                                                            };
+                                                            // Navigate to security detail
+                                                            const event = new CustomEvent('navigate', { 
+                                                                detail: { page: 'security-detail' } 
+                                                            });
+                                                            window.dispatchEvent(event);
+                                                        }
+                                                    }, formattedValue);
+                                                }
+                                                
                                                 return e('td', { 
                                                     key: col.field,
                                                     className: colorClass
@@ -8948,6 +8968,18 @@
                         setIsAuthenticated(true);
                         setUser(savedUser);
                     }
+                    
+                    // Listen for navigation events
+                    const handleNavigate = (event) => {
+                        if (event.detail && event.detail.page) {
+                            setCurrentPage(event.detail.page);
+                        }
+                    };
+                    window.addEventListener('navigate', handleNavigate);
+                    
+                    return () => {
+                        window.removeEventListener('navigate', handleNavigate);
+                    };
                 }, []);
                 
                 const handleLogin = (userData) => {
@@ -8976,6 +9008,8 @@
                             return e(DashboardPage);
                         case 'holdings':
                             return e(HoldingsPage);
+                        case 'security-detail':
+                            return e(SecurityDetailPage);
                         case 'transactions':
                             return e(TransactionsPage);
                         case 'performance':
@@ -11849,6 +11883,68 @@
                 );
             }
             
+            // Security Detail Page - Shows deep analysis for individual holdings
+            function SecurityDetailPage() {
+                const { portfolioId } = useUserContext();
+                const [currentSymbol, setCurrentSymbol] = useState(null);
+                const [currentSecurityId, setCurrentSecurityId] = useState(null);
+                const [loading, setLoading] = useState(false);
+                const [error, setError] = useState(null);
+                
+                // Get security info from global state (set by Holdings page)
+                useEffect(() => {
+                    const securityInfo = window.selectedSecurity;
+                    if (securityInfo) {
+                        setCurrentSymbol(securityInfo.symbol);
+                        setCurrentSecurityId(securityInfo.security_id);
+                    }
+                }, []);
+                
+                const goBackToHoldings = () => {
+                    // Clear selected security
+                    window.selectedSecurity = null;
+                    // Navigate back to holdings
+                    const event = new CustomEvent('navigate', { detail: { page: 'holdings' } });
+                    window.dispatchEvent(event);
+                };
+                
+                if (!currentSecurityId) {
+                    return e('div', { className: 'security-detail-page' },
+                        e('div', { className: 'page-header' },
+                            e('button', { 
+                                className: 'button button-secondary',
+                                onClick: goBackToHoldings
+                            }, '← Back to Holdings')
+                        ),
+                        e('div', { className: 'message' }, 'Select a security from Holdings to view details')
+                    );
+                }
+                
+                return e('div', { className: 'security-detail-page' },
+                    e('div', { className: 'page-header' },
+                        e('button', { 
+                            className: 'button button-secondary',
+                            onClick: goBackToHoldings,
+                            style: { marginBottom: '1rem' }
+                        }, '← Back to Holdings'),
+                        e('h1', { className: 'page-title' }, `Security Analysis: ${currentSymbol || 'Loading...'}`),
+                        e('p', { className: 'page-description' }, 'Detailed analysis of position, performance, risk, and contribution')
+                    ),
+                    
+                    // PatternRenderer for holding deep dive
+                    e(PatternRenderer, {
+                        pattern: 'holding_deep_dive',
+                        inputs: {
+                            portfolio_id: portfolioId,
+                            security_id: currentSecurityId,
+                            lookback_days: 252
+                        },
+                        config: {
+                            showMetadata: true
+                        }
+                    })
+                );
+            }
             
             function SettingsPage() {
                 return e('div', null,
