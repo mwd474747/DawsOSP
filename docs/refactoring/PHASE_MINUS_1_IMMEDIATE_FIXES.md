@@ -24,22 +24,38 @@ Before starting the major technical debt removal refactoring, we must fix **crit
 **Status:** 🔴 UNFIXED
 
 **Problem:**
-- `api-client.js` exports `TokenManager` to `DawsOS.Core.API.TokenManager`
-- `context.js` tries to import from `DawsOS.APIClient.TokenManager`
+- `api-client.js` exports `TokenManager` to `global.TokenManager` (line 379)
+- `context.js` tries to import from `global.DawsOS.APIClient.TokenManager` (line 33)
 - **Result:** TokenManager is undefined, authentication fails
 
 **Location:**
-- `frontend/api-client.js` - Export location
-- `frontend/context.js:33` - Import location
+- `frontend/api-client.js:379` - Exports to `global.TokenManager`
+- `frontend/context.js:33` - Imports from `global.DawsOS.APIClient` (doesn't exist)
+
+**Root Cause:**
+- `api-client.js` exports to global scope, not to `DawsOS.APIClient` namespace
+- `context.js` expects namespace export that doesn't exist
+- Namespace mismatch between export and import
 
 **Fix Required:**
 ```javascript
-// Option 1: Fix context.js import (RECOMMENDED)
+// Option 1: Fix context.js import (RECOMMENDED - matches actual export)
 // frontend/context.js line 33
-const { TokenManager, apiClient } = global.DawsOS?.Core?.API || {};
+const TokenManager = global.TokenManager;
+const apiClient = global.apiClient;
 
-// Option 2: Fix api-client.js export (if namespace is wrong)
-// frontend/api-client.js - Ensure exports to correct namespace
+// Add validation:
+if (!TokenManager || !apiClient) {
+    console.error('[Context] Missing dependencies:', {
+        TokenManager: !!TokenManager,
+        apiClient: !!apiClient
+    });
+    throw new Error('[Context] Required dependencies not loaded!');
+}
+
+// Option 2: Fix api-client.js export (if namespace is desired)
+// frontend/api-client.js - Export to DawsOS.APIClient namespace
+// But this requires updating all other imports too
 ```
 
 ---
@@ -100,17 +116,18 @@ const { TokenManager, apiClient } = global.DawsOS.APIClient || {};
 
 **Fixed Code:**
 ```javascript
-// Line 33 (CORRECT):
-const { TokenManager, apiClient } = global.DawsOS?.Core?.API || {};
+// Line 33 (CORRECT - matches actual export location):
+const TokenManager = global.TokenManager;
+const apiClient = global.apiClient;
 
 // Add validation:
 if (!TokenManager || !apiClient) {
     console.error('[Context] Missing dependencies:', {
         TokenManager: !!TokenManager,
         apiClient: !!apiClient,
-        availableNamespaces: Object.keys(global.DawsOS || {})
+        availableGlobals: Object.keys(global).filter(k => k.includes('Token') || k.includes('api'))
     });
-    throw new Error('[Context] Required dependencies not loaded!');
+    throw new Error('[Context] Required dependencies not loaded! Check module load order.');
 }
 ```
 
@@ -167,10 +184,10 @@ isTokenExpired: (token) => {
 (function(global) {
     'use strict';
     
-    // Validate dependencies
+    // Validate dependencies (match actual export locations)
     const requiredDeps = {
-        'DawsOS.Core.API.TokenManager': global.DawsOS?.Core?.API?.TokenManager,
-        'DawsOS.Core.API': global.DawsOS?.Core?.API
+        'global.TokenManager': global.TokenManager,
+        'global.apiClient': global.apiClient
     };
     
     const missingDeps = Object.entries(requiredDeps)
@@ -179,13 +196,15 @@ isTokenExpired: (token) => {
     
     if (missingDeps.length > 0) {
         console.error(`[context.js] Missing dependencies:`, missingDeps);
-        console.error(`[context.js] Available namespaces:`, Object.keys(global.DawsOS || {}));
+        console.error(`[context.js] Available globals:`, Object.keys(global).filter(k => 
+            k.includes('Token') || k.includes('api') || k.includes('DawsOS')
+        ));
         throw new Error(`[context.js] Required dependencies not loaded: ${missingDeps.join(', ')}`);
     }
     
     // Now safe to use
-    const TokenManager = global.DawsOS.Core.API.TokenManager;
-    const apiClient = global.DawsOS.Core.API;
+    const TokenManager = global.TokenManager;
+    const apiClient = global.apiClient;
     
     // ... rest of module
 })(window);
