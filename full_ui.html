@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DawsOS Portfolio Intelligence Platform</title>
     
+    <!-- Prevent aggressive caching during development -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <!-- React UMD builds -->
     <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
@@ -13,23 +18,23 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <!-- Core Systems (MUST load FIRST - before all other modules) -->
-    <script src="frontend/cache-manager.js"></script>
-    <script src="frontend/error-handler.js"></script>
-    <script src="frontend/form-validator.js"></script>
+    <script src="frontend/cache-manager.js?v=20251107.2"></script>
+    <script src="frontend/error-handler.js?v=20251107.2"></script>
+    <script src="frontend/form-validator.js?v=20251107.2"></script>
 
     <!-- API Client Module -->
-    <script src="frontend/api-client.js"></script>
+    <script src="frontend/api-client.js?v=20251107.2"></script>
 
     <!-- Utility Functions Module (can now use CacheManager) -->
-    <script src="frontend/utils.js"></script>
+    <script src="frontend/utils.js?v=20251107.2"></script>
     <!-- Panel Components Module -->
-    <script src="frontend/panels.js"></script>
+    <script src="frontend/panels.js?v=20251107.2"></script>
     <!-- Context System Module (MUST load before pattern-system and pages) -->
-    <script src="frontend/context.js"></script>
+    <script src="frontend/context.js?v=20251107.2"></script>
     <!-- Pattern System Module (depends on CacheManager, context, utils, panels) -->
-    <script src="frontend/pattern-system.js"></script>
+    <script src="frontend/pattern-system.js?v=20251107.2"></script>
     <!-- Page Components Module (depends on ALL modules above) -->
-    <script src="frontend/pages.js"></script>
+    <script src="frontend/pages.js?v=20251107.2"></script>
 
     <!-- Professional Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
