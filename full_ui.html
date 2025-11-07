@@ -8816,12 +8816,45 @@
             
             function DashboardPage() {
                 const { portfolioId } = useUserContext();
+                const [showMacroOverview, setShowMacroOverview] = useState(false);
                 
                 return e('div', { className: 'dashboard-page' },
+                    // Portfolio Overview (main dashboard)
                     e(PatternRenderer, {
                         pattern: 'portfolio_overview',
                         inputs: { portfolio_id: portfolioId, lookback_days: 252 }
-                    })
+                    }),
+                    
+                    // Macro Overview Section
+                    e('div', { style: { marginTop: '2rem' } },
+                        e('div', { className: 'card' },
+                            e('div', { 
+                                className: 'card-header',
+                                style: { cursor: 'pointer' },
+                                onClick: () => setShowMacroOverview(!showMacroOverview)
+                            },
+                                e('h3', { className: 'card-title' }, 
+                                    showMacroOverview ? '▼ Macro Economic Context' : '▶ Macro Economic Context'
+                                ),
+                                e('p', { style: { margin: 0, fontSize: '0.875rem', color: '#94a3b8' } }, 
+                                    'Click to view macro regime analysis and factor exposures'
+                                )
+                            ),
+                            showMacroOverview && e('div', { className: 'card-body' },
+                                e(PatternRenderer, {
+                                    pattern: 'portfolio_macro_overview',
+                                    inputs: { 
+                                        portfolio_id: portfolioId,
+                                        confidence_level: 0.95
+                                    },
+                                    config: {
+                                        showMetadata: false,
+                                        compact: true
+                                    }
+                                })
+                            )
+                        )
+                    )
                 );
             }
             
