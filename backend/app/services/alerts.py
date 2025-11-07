@@ -5,9 +5,13 @@ Alert Evaluation Service
 The functionality has been consolidated into the MacroHound agent.
 Use `macro_hound` agent capabilities instead.
 
+**Production Guard:** Stub mode (use_db=False) is prevented in production environments.
+Stub implementations (random values) are acceptable for this deprecated service as it
+will be removed once migration to MacroHound is complete.
+
 Purpose: Evaluate user-defined alert conditions against portfolio metrics
-Updated: 2025-10-23
-Priority: P1 (Sprint 3 Week 6)
+Updated: 2025-01-14
+Priority: P1 (Deprecated - migration in progress)
 
 Features:
     - Condition evaluation (macro, metric, rating, price, news_sentiment)
@@ -81,8 +85,20 @@ class AlertService:
 
         Args:
             use_db: If True, use real database. If False, use stubs for testing.
+            
+        Raises:
+            ValueError: If use_db=False in production environment
         """
+        import os
         import warnings
+        
+        # Production guard: prevent stub mode in production
+        if not use_db and os.getenv("ENVIRONMENT") == "production":
+            raise ValueError(
+                "Cannot use stub mode (use_db=False) in production environment. "
+                "Stub mode is only available for development and testing."
+            )
+        
         warnings.warn(
             "AlertService is deprecated. Use MacroHound agent capabilities instead.",
             DeprecationWarning,
@@ -101,13 +117,24 @@ class AlertService:
                 logger.info("AlertService initialized with database integration")
 
             except Exception as e:
+                # In production, re-raise the error instead of falling back to stubs
+                import os
+                if os.getenv("ENVIRONMENT") == "production":
+                    logger.error(f"Failed to initialize database connections in production: {e}", exc_info=True)
+                    raise
+                # Only fall back to stub mode in development/testing
                 logger.warning(
                     f"Failed to initialize database connections: {e}. "
-                    "Falling back to stub mode."
+                    "Falling back to stub mode (development/testing only)."
                 )
                 self.use_db = False
         else:
-            logger.info("AlertService initialized in stub mode")
+            import os
+            if os.getenv("ENVIRONMENT") != "production":
+                logger.info("AlertService initialized in stub mode (development/testing only)")
+            else:
+                # This should never happen due to production guard above, but log if it does
+                logger.error("AlertService stub mode attempted in production - this should be prevented by production guard")
 
     async def evaluate_condition(
         self,
@@ -434,7 +461,8 @@ class AlertService:
     ) -> Optional[Decimal]:
         """Get macro indicator value from database."""
         if not self.use_db:
-            # Stub: return random value
+            # Stub: return random value (acceptable for deprecated service)
+            # Note: This service is deprecated and will be removed once migration to MacroHound is complete
             import random
             return Decimal(str(random.uniform(10, 50)))
 
@@ -510,7 +538,8 @@ class AlertService:
     ) -> Optional[Decimal]:
         """Get portfolio metric value from database."""
         if not self.use_db:
-            # Stub: return random value
+            # Stub: return random value (acceptable for deprecated service)
+            # Note: This service is deprecated and will be removed once migration to MacroHound is complete
             import random
             return Decimal(str(random.uniform(0.0, 0.3)))
 
@@ -577,7 +606,8 @@ class AlertService:
     ) -> Optional[Decimal]:
         """Get security rating value from database."""
         if not self.use_db:
-            # Stub: return random value (0-10 scale)
+            # Stub: return random value (0-10 scale) (acceptable for deprecated service)
+            # Note: This service is deprecated and will be removed once migration to MacroHound is complete
             import random
             return Decimal(str(random.randint(0, 10)))
 
@@ -645,7 +675,8 @@ class AlertService:
     ) -> Optional[Decimal]:
         """Get price value from database."""
         if not self.use_db:
-            # Stub: return random value
+            # Stub: return random value (acceptable for deprecated service)
+            # Note: This service is deprecated and will be removed once migration to MacroHound is complete
             import random
             metric = condition.get("metric", "close")
             if metric == "change_pct":
@@ -763,7 +794,8 @@ class AlertService:
     ) -> Optional[Decimal]:
         """Get news sentiment value from database."""
         if not self.use_db:
-            # Stub: return random value (-1 to 1)
+            # Stub: return random value (-1 to 1) (acceptable for deprecated service)
+            # Note: This service is deprecated and will be removed once migration to MacroHound is complete
             import random
             return Decimal(str(random.uniform(-1.0, 1.0)))
 
@@ -1439,12 +1471,34 @@ def get_alert_service(use_db: bool = True) -> AlertService:
     """
     Get AlertService singleton instance.
 
+    ⚠️ DEPRECATED: AlertService is deprecated. Use MacroHound agent capabilities instead.
+
     Args:
         use_db: If True, use real database. If False, use stubs for testing.
+                Stub mode is only available in development/testing environments.
 
     Returns:
         AlertService instance
+        
+    Raises:
+        ValueError: If use_db=False in production environment
     """
+    import os
+    import warnings
+    
+    # Production guard: prevent stub mode in production
+    if not use_db and os.getenv("ENVIRONMENT") == "production":
+        raise ValueError(
+            "Cannot use stub mode (use_db=False) in production environment. "
+            "Stub mode is only available for development and testing."
+        )
+    
+    warnings.warn(
+        "get_alert_service() is deprecated. Use MacroHound agent capabilities instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    
     global _alert_service_db, _alert_service_stub
     
     if use_db:
