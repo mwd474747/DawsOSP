@@ -529,7 +529,15 @@ async def delete_portfolio(
 
     except HTTPException:
         raise
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error deleting portfolio: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error (programming error): {str(e)}"
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to delete portfolio: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
