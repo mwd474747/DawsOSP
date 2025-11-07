@@ -986,7 +986,12 @@ async def root():
         # Try to read UI from file
         ui_file = Path("full_ui.html")
         if ui_file.exists():
-            return HTMLResponse(content=ui_file.read_text())
+            response = HTMLResponse(content=ui_file.read_text())
+            # Add cache-control headers to prevent caching issues
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+            return response
     except Exception as e:
         logger.error(f"Error reading UI file: {e}")
 
@@ -6152,7 +6157,12 @@ async def catch_all_spa_routes(full_path: str):
         ui_file = Path("full_ui.html")
         if ui_file.exists():
             logger.debug(f"Serving SPA for path: /{full_path}")
-            return HTMLResponse(content=ui_file.read_text())
+            response = HTMLResponse(content=ui_file.read_text())
+            # Add cache-control headers to prevent caching issues
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+            return response
     except HTTPException:
         raise
     except Exception as e:
