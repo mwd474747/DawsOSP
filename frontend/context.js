@@ -32,7 +32,14 @@
     // Get dependencies
     const { TokenManager, apiClient } = global.DawsOS.APIClient || {};
     const { useState, useEffect, useCallback, useContext, createContext, useRef } = global.React || {};
-    const { e } = global.DawsOS.Utils || {};
+
+    // React.createElement shorthand (used throughout this module)
+    const e = global.React ? global.React.createElement : null;
+
+    if (!e) {
+        console.error('[Context] React.createElement not available!');
+        throw new Error('[Context] React is required but not loaded');
+    }
 
     // ===== UNIFIED PATTERN INTEGRATION SYSTEM =====
 
