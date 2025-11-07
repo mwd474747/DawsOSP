@@ -1,787 +1,692 @@
 # DawsOS Database Documentation
 
-**Version:** 3.1 (Accurate Schema Documentation)  
-**Last Updated:** January 14, 2025  
-**Database:** PostgreSQL 14+ with TimescaleDB Extension  
-**Status:** ✅ PRODUCTION READY (29 Active Tables, All Migrations Complete)
+**Version:** 4.0 (Replit-Optimized Documentation)  
+**Last Updated:** November 7, 2025  
+**Database:** PostgreSQL 14+ with TimescaleDB Extension (Neon-backed on Replit)  
+**Status:** ✅ PRODUCTION READY (32 Active Tables, 19 Migrations Executed)
 
 ---
 
-## 🚀 Recent Database Improvements (November 4, 2025)
+## 🚀 REPLIT-SPECIFIC DATABASE INFORMATION
 
-### Completed Migrations
+### How PostgreSQL Works on Replit
 
-**⚠️ CRITICAL CORRECTION (November 6, 2025):**
-Migration 001 **WAS EXECUTED**. The database uses `quantity_open` and `quantity_original` (full names), NOT the abbreviated forms. Previous documentation incorrectly stated the opposite. Database inspection confirms the full field names are in use.
+DawsOS uses Replit's fully managed PostgreSQL database built on **Neon serverless infrastructure**:
 
-1. **Migration 001: Field Standardization** ✅ **COMPLETED**
-   - Renamed `qty_open` → `quantity_open`
-   - Renamed `qty_original` → `quantity_original`
-   - **Status:** Successfully executed
-   - **Note:** Migration 007 originally added fields as `qty_open` and `qty_original`
+- **Auto-scaling:** Database scales automatically based on usage
+- **Cost-efficient:** Only charged when database is active (receiving requests + 5 min after)
+- **Storage:** 33MB minimum, 10 GiB maximum per database
+- **Connection:** Automatic credential management via environment variables
+- **Rollback Support:** Database snapshots created with code checkpoints
 
-2. **Migration 002: Constraints & Indexes** ✅
-   - Added FK constraint: `portfolios.user_id` → `users.id`
-   - Added FK constraint: `transactions.security_id` → `securities.id`
-   - Added check constraints for quantity validation
-   - Added composite indexes for query performance
+### Environment Variables (Auto-configured by Replit)
 
-3. **Migration 002b: Fix Quantity Indexes** ✅
-   - Renamed index: `idx_lots_qty_open` → `idx_lots_quantity_open`
-   - Updated index to reference `quantity_open` column
+```bash
+DATABASE_URL        # Full connection string (contains all credentials)
+PGHOST             # Database host
+PGUSER             # Database username  
+PGPASSWORD         # Database password
+PGDATABASE         # Database name (usually 'neondb')
+PGPORT             # Port (usually 5432)
+```
 
-4. **Migration 002c: Fix reduce_lot() Function** ✅
-   - Updated function to use `quantity_open` instead of `qty_open`
-   - Added row-level locking for concurrency safety
-   - Enhanced validation and error handling
+**⚠️ CRITICAL:** Never expose DATABASE_URL in logs or frontend code - it contains full credentials!
 
-5. **Migration 002d: Add Security FK Constraint** ✅
-   - Added FK constraint: `lots.security_id` → `securities.id`
-   - Fixed orphaned records with placeholder security
-   - Added validation to prevent orphaned records
+### Connecting to Database in DawsOS
 
-6. **Migration 003: Cleanup Unused Tables** ✅
-   - Removed unused tables (ledger_snapshots, ledger_transactions, audit_log, etc.)
-   - Note: Some tables like audit_log were removed in this migration
-   - Cleaned up legacy/unimplemented features
+```python
+# Pattern used throughout DawsOS backend
+import os
+from asyncpg import create_pool
 
-7. **Migration 014: Add Deprecation Comment** ✅ (January 14, 2025)
-   - Added deprecation comment to `lots.quantity` field
-   - Documents that field is deprecated and should not be used
-   - References Migration 007 for context
+# Replit automatically provides DATABASE_URL
+DATABASE_URL = os.environ['DATABASE_URL']
 
-8. **Migration 015: Add Economic Indicators** ✅ (January 14, 2025)
-   - Added economic indicators table
-   - Support for CPI, GDP, and other macro indicators
+# Create connection pool (done once in combined_server.py)
+pool = await create_pool(
+    DATABASE_URL,
+    min_size=2,
+    max_size=10,
+    command_timeout=60
+)
 
-### Recently Executed Migrations (November 6, 2025)
+# Register for cross-module access
+from backend.app.db.connection import register_external_pool
+register_external_pool(pool)
+```
 
-9. **Migration 016: Standardize asof_date Field** ✅ **COMPLETED**
-   - Renamed `valuation_date` → `asof_date` for consistency
-   - Impacts: holdings, portfolio_values, dar_results tables
-   - Successfully executed with rollback-safe checks
+---
 
-10. **Migration 017: Add Realized P&L Tracking** ✅ **COMPLETED**
-    - Added `realized_pl` field to transactions table
-    - Enables IRS Form 1099-B compliance and tax reporting
-    - Backfilled existing SELL transactions with realized P&L calculations
+## ⚠️ CRITICAL WARNINGS FOR DEVELOPERS
 
-11. **Migration 018: Add Cost Basis Method Tracking** ✅ **COMPLETED**
-    - Added `cost_basis_method` field to portfolios table  
-    - Created audit_log table for tracking cost basis changes
-    - Added triggers to prevent illegal LIFO for stocks
-    - Default: FIFO (IRS standard)
+### 1. Field Naming Convention - MUST READ!
 
-### Architecture Stability Achieved
-- ✅ 22 active tables (down from 30)
-- ✅ All field names standardized
-- ✅ All FK constraints enforced
-- ✅ All indexes updated
-- ✅ Trade execution tested and working
-- ✅ Data integrity enforced
+```sql
+-- ✅ CORRECT (What's actually in database after Migration 001)
+lots.quantity_open      -- Current open quantity
+lots.quantity_original  -- Original purchase quantity
+
+-- ❌ WRONG (Common mistakes)
+lots.qty_open          -- This was renamed!
+lots.qty_original      -- This was renamed!
+lots.quantity          -- DEPRECATED - do not use!
+```
+
+**Rule:** Always use full field names (`quantity_open`, `quantity_original`) - no abbreviations!
+
+### 2. ID Column Types - NEVER CHANGE!
+
+```sql
+-- ⚠️ DANGER: Changing ID types breaks everything!
+-- If a table has UUID, keep it UUID
+-- If a table has SERIAL, keep it SERIAL
+-- NEVER convert between types!
+
+-- Example of what NOT to do:
+ALTER TABLE users ALTER COLUMN id TYPE UUID; -- ❌ BREAKS DATA!
+```
+
+### 3. Time Field Inconsistency
+
+```sql
+-- Most tables use 'asof_date'
+factor_exposures.asof_date ✅
+currency_attribution.asof_date ✅
+
+-- But portfolio_daily_values uses 'valuation_date'  
+portfolio_daily_values.valuation_date ⚠️ INCONSISTENT
+
+-- Always check which field name each table uses!
+```
 
 ---
 
 ## 📊 Database Overview
 
-DawsOS uses PostgreSQL with TimescaleDB for time-series data optimization. The database employs a hybrid pattern of real-time computation and cached storage for optimal performance.
-
-### Key Statistics
-- **Total Tables:** 32 active (verified November 6, 2025 via SQL inspection)
-- **Total Views:** 2 (portfolio_currency_attributions, v_derived_indicators)
-- **Core Domain Tables:** 17
-- **System/Support Tables:** 12
+### Key Statistics (Verified November 7, 2025)
+- **Total Tables:** 32 active (not 29 as previously documented)
+- **Total Views:** 2 
+- **Migrations Executed:** 19 (tracked in migration_history table)
 - **Connection Method:** Cross-module pool using `sys.modules` storage
-- **Migrations Executed:** 002, 002b, 002c, 002d, 003, 005, 007, 008, 009, 010, 011, 012, 013, 014, 015, 016, 017, 018
-- **Pending Migrations:** None - All migrations complete as of November 6, 2025
+- **Hypertables:** 6 TimescaleDB-optimized tables for time-series data
 
 ### Architecture Pattern
-- **Compute-First:** Services calculate data on-demand by default
-- **Cache-Optional:** Tables like `factor_exposures` and `currency_attribution` exist for future caching
-- **Hybrid Approach:** Can switch between computed and stored based on performance needs
-
----
-
-## 🗄️ Complete Table Inventory (Verified via SQL Inspection)
-
-**Field Naming Standards (November 6, 2025 - Corrected):**
-- **Database Columns:** `quantity_open`, `quantity_original` (actual field names after Migration 001)
-- **Code Layer:** SQL aliases no longer needed - database has full names
-- **Legacy Field:** `lots.quantity` is deprecated (see Migration 014 deprecation comment)
-- **Important:** Migration 001 successfully renamed the abbreviated field names to full names.
-
-### Core Portfolio Management Tables
-
-#### 1. **portfolios**
-Primary portfolio definition table.
-```sql
-- id: UUID (Primary Key)
-- name: TEXT NOT NULL
-- base_currency: TEXT NOT NULL (e.g., 'USD', 'CAD')
-- owner_id: UUID REFERENCES users(id)
-- created_at: TIMESTAMP WITH TIME ZONE
-- updated_at: TIMESTAMP WITH TIME ZONE
-```
-
-#### 2. **lots**
-Tax lot tracking for portfolio positions.
-```sql
-- id: UUID (Primary Key)
-- portfolio_id: UUID REFERENCES portfolios(id)
-- security_id: UUID REFERENCES securities(id) [FK: fk_lots_security]
-- symbol: TEXT
-- quantity: NUMERIC(20,8) -- DEPRECATED (see Migration 014)
-- quantity_open: NUMERIC(20,8) -- Open quantity (renamed from qty_open by Migration 001)
-- quantity_original: NUMERIC(20,8) -- Original purchase quantity (renamed from qty_original by Migration 001)
-- cost_basis: NUMERIC(20,2)
-- cost_basis_per_share: NUMERIC(20,2)
-- acquisition_date: DATE
-- closed_date: DATE
-- currency: TEXT
-- is_open: BOOLEAN
-- created_at: TIMESTAMP WITH TIME ZONE
-- updated_at: TIMESTAMP WITH TIME ZONE
-```
-**Note:** Field names were standardized to full names (`quantity_open`, `quantity_original`) by Migration 001. No SQL aliases needed.
-
-#### 3. **transactions**
-All portfolio transactions (buy, sell, dividend, etc).
-```sql
-- id: UUID (Primary Key)
-- portfolio_id: UUID REFERENCES portfolios(id)
-- transaction_type: TEXT -- 'BUY', 'SELL', 'DIVIDEND', etc.
-- security_id: UUID REFERENCES securities(id)
-- symbol: TEXT
-- transaction_date: DATE
-- settlement_date: DATE
-- quantity: NUMERIC(20,8)
-- price: NUMERIC(20,8)
-- amount: NUMERIC(20,2)
-- currency: TEXT
-- fee: NUMERIC(20,2)
-- narration: TEXT
-- source: TEXT
-- created_at: TIMESTAMP WITH TIME ZONE
-```
-
-#### 4. **securities**
-Master security reference data.
-```sql
-- id: UUID (Primary Key)
-- symbol: TEXT UNIQUE
-- name: TEXT
-- security_type: TEXT -- 'EQUITY', 'BOND', 'ETF', etc.
-- currency: TEXT
-- sector: TEXT
-- industry: TEXT
-- exchange: TEXT
-- created_at: TIMESTAMP WITH TIME ZONE
-- updated_at: TIMESTAMP WITH TIME ZONE
-```
-
----
-
-### Pricing & Market Data Tables
-
-#### 5. **pricing_packs**
-Consistent pricing snapshots for point-in-time valuation.
-```sql
-- id: TEXT (Primary Key) -- e.g., 'PP_2025-11-03'
-- date: DATE NOT NULL
-- status: TEXT -- 'PENDING', 'COMPLETE', 'FAILED'
-- securities_count: INTEGER
-- fx_pairs_count: INTEGER
-- created_at: TIMESTAMP WITH TIME ZONE
-```
-
-#### 6. **prices**
-Security prices tied to pricing packs.
-```sql
-- pricing_pack_id: TEXT REFERENCES pricing_packs(id)
-- security_id: UUID REFERENCES securities(id)
-- date: DATE
-- open: NUMERIC(20,8)
-- high: NUMERIC(20,8)
-- low: NUMERIC(20,8)
-- close: NUMERIC(20,8)
-- volume: BIGINT
-- currency: TEXT
-- created_at: TIMESTAMP WITH TIME ZONE
-PRIMARY KEY (pricing_pack_id, security_id)
-```
-
-#### 7. **fx_rates**
-Foreign exchange rates for multi-currency support.
-```sql
-- pricing_pack_id: TEXT REFERENCES pricing_packs(id)
-- base_ccy: TEXT -- Base currency (e.g., 'CAD')
-- quote_ccy: TEXT -- Quote currency (e.g., 'USD')
-- rate: NUMERIC(20,8)
-- source: TEXT
-- created_at: TIMESTAMP WITH TIME ZONE
-PRIMARY KEY (pricing_pack_id, base_ccy, quote_ccy)
-```
-**Current Data:** 63 FX rate records (CAD/USD: 0.73, EUR/USD: 1.08)
-
----
-
-### Time-Series Analytics Tables (Hypertables)
-
-#### 8. **portfolio_daily_values** 🕐
-Daily portfolio NAV tracking (TimescaleDB hypertable).
-```sql
-- portfolio_id: UUID
-- valuation_date: DATE  -- Note: Uses valuation_date, not asof_date (inconsistent with other time-series tables)
-- total_value: NUMERIC(20,2) -- Total portfolio NAV
-- cash_balance: NUMERIC(20,2) -- Default: 0
-- positions_value: NUMERIC(20,2) -- Default: 0
-- cash_flows: NUMERIC(20,2) -- Default: 0
-- currency: VARCHAR(3) -- Default: 'USD'
-- computed_at: TIMESTAMP WITH TIME ZONE -- Default: CURRENT_TIMESTAMP
-PRIMARY KEY (portfolio_id, valuation_date)
--- Hypertable on 'valuation_date' column
-```
-**⚠️ Field Name Inconsistency:** Uses `valuation_date` instead of `asof_date` (other time-series tables use `asof_date`)
-
-#### 9. **portfolio_metrics** 🕐
-Performance metrics time-series (TimescaleDB hypertable).
-```sql
-- portfolio_id: UUID
-- date: DATE
-- metric_type: TEXT -- 'RETURN', 'SHARPE', 'VOLATILITY', etc.
-- value: NUMERIC(20,8)
-- period: TEXT -- '1D', '1M', '1Y', etc.
-- created_at: TIMESTAMP WITH TIME ZONE
-PRIMARY KEY (portfolio_id, date, metric_type, period)
--- Hypertable on 'date' column
-```
-
-#### 10. **portfolio_cash_flows** 🕐
-Cash flow tracking for MWR calculations (TimescaleDB hypertable).
-```sql
-- portfolio_id: UUID
-- date: DATE
-- flow_type: TEXT -- 'INFLOW', 'OUTFLOW', 'DIVIDEND'
-- amount: NUMERIC(20,2)
-- currency: TEXT
-- description: TEXT
-- created_at: TIMESTAMP WITH TIME ZONE
-PRIMARY KEY (portfolio_id, date, flow_type)
--- Hypertable on 'date' column
-```
-
-#### 11. **macro_indicators** 🕐
-Economic indicators for regime detection (TimescaleDB hypertable).
-```sql
-- indicator_name: TEXT -- e.g., 'GDP_GROWTH', 'INFLATION'
-- date: DATE
-- value: NUMERIC(20,8)
-- unit: TEXT
-- source: TEXT
-- created_at: TIMESTAMP WITH TIME ZONE
-PRIMARY KEY (indicator_name, date)
--- Hypertable on 'date' column
--- Contains 102 rows of active indicator data
-```
-
-#### 12. **currency_attribution** 🕐
-Currency performance attribution (TimescaleDB hypertable).
-```sql
-- portfolio_id: UUID
-- asof_date: DATE
-- pricing_pack_id: TEXT REFERENCES pricing_packs(id)
-- local_return: NUMERIC(12,8) NOT NULL
-- fx_return: NUMERIC(12,8) NOT NULL
-- interaction_return: NUMERIC(12,8) NOT NULL
-- total_return: NUMERIC(12,8) NOT NULL
-- base_return_actual: NUMERIC(12,8)
-- error_bps: NUMERIC(12,8)
-- attribution_by_currency: JSONB
-- base_currency: TEXT NOT NULL
-- created_at: TIMESTAMP WITH TIME ZONE
-PRIMARY KEY (portfolio_id, asof_date)
--- NOTE: Table exists but service computes from lots directly
-```
-**Architecture Note:** Currently computed on-demand, table for future caching
-
-#### 13. **factor_exposures** 🕐
-Portfolio factor exposures for risk analysis (TimescaleDB hypertable).
-```sql
-- portfolio_id: UUID
-- asof_date: DATE
-- pricing_pack_id: TEXT REFERENCES pricing_packs(id)
-- beta_real_rate: NUMERIC(12,8)
-- beta_inflation: NUMERIC(12,8)
-- beta_credit: NUMERIC(12,8)
-- beta_fx: NUMERIC(12,8)
-- beta_market: NUMERIC(12,8)
-- beta_size: NUMERIC(12,8)
-- beta_value: NUMERIC(12,8)
-- beta_momentum: NUMERIC(12,8)
-- var_factor: NUMERIC(12,8)
-- var_idiosyncratic: NUMERIC(12,8)
-- r_squared: NUMERIC(12,8)
-- factor_contributions: JSONB
-- estimation_window_days: INTEGER
-- benchmark_id: TEXT
-- created_at: TIMESTAMP WITH TIME ZONE
-PRIMARY KEY (portfolio_id, asof_date)
--- NOTE: Table exists but RiskService computes on-demand
-```
-**Architecture Note:** Currently computed on-demand, table for future caching
-
----
-
-### Risk & Scenario Analysis Tables
-
-#### 14. **regime_history**
-Historical economic regime detection results.
-```sql
-- id: UUID (Primary Key)
-- date: DATE
-- regime: TEXT -- 'GOLDILOCKS', 'STAGFLATION', etc.
-- confidence: NUMERIC(5,4)
-- indicators_json: JSONB
-- zscores_json: JSONB
-- regime_scores_json: JSONB
-- created_at: TIMESTAMP WITH TIME ZONE
--- Contains 2 rows of regime data
-```
-
-#### 15. **scenario_shocks**
-Shock scenarios for stress testing.
-```sql
-- scenario_id: TEXT (Primary Key)
-- factor_name: TEXT
-- shock_size: NUMERIC(12,8)
-- shock_type: TEXT -- 'ABSOLUTE', 'RELATIVE'
-- description: TEXT
-- created_at: TIMESTAMP WITH TIME ZONE
-```
-
-#### 16. **position_factor_betas**
-Security-level factor exposures.
-```sql
-- security_id: UUID REFERENCES securities(id)
-- asof_date: DATE
-- beta_real_rates: NUMERIC(12,8)
-- beta_inflation: NUMERIC(12,8)
-- beta_credit: NUMERIC(12,8)
-- beta_usd: NUMERIC(12,8)
-- beta_equity: NUMERIC(12,8)
-- estimation_error: NUMERIC(12,8)
-- created_at: TIMESTAMP WITH TIME ZONE
-PRIMARY KEY (security_id, asof_date)
-```
-
-#### 17. **cycle_phases**
-Economic cycle phase tracking.
-```sql
-- id: UUID (Primary Key)
-- cycle_type: TEXT -- 'STDC', 'LTDC', 'EMPIRE', 'CIVIL'
-- date: DATE
-- phase: TEXT
-- score: NUMERIC(5,4)
-- indicators: JSONB
-- created_at: TIMESTAMP WITH TIME ZONE
-```
-
----
-
-### System & Support Tables
-
-#### 18. **users**
-Application user accounts.
-```sql
-- id: UUID (Primary Key)
-- email: TEXT UNIQUE NOT NULL
-- password_hash: TEXT NOT NULL
-- role: TEXT -- 'ADMIN', 'MANAGER', 'USER', 'VIEWER'
-- created_at: TIMESTAMP WITH TIME ZONE
-- last_login: TIMESTAMP WITH TIME ZONE
-```
-
-#### 19. **corporate_actions**
-Tracks dividends, splits, and other corporate actions.
-```sql
-- id: UUID (Primary Key)
-- portfolio_id: UUID REFERENCES portfolios(id)
-- security_id: UUID REFERENCES securities(id)
-- action_type: TEXT -- 'DIVIDEND', 'SPLIT', 'MERGER'
-- ex_date: DATE
-- record_date: DATE
-- pay_date: DATE
-- amount: NUMERIC(20,8)
-- currency: TEXT
-- split_ratio: NUMERIC
-- status: TEXT -- 'PENDING', 'COMPLETED', 'CANCELLED'
-- created_at: TIMESTAMP WITH TIME ZONE
-```
-
-#### 20. **alerts**
-Alert definitions and rules.
-```sql
-- id: UUID (Primary Key)
-- portfolio_id: UUID REFERENCES portfolios(id)
-- alert_type: TEXT -- 'PRICE_THRESHOLD', 'VOLATILITY', 'DRAWDOWN', etc.
-- criteria: JSONB -- Alert trigger conditions
-- enabled: BOOLEAN
-- created_at: TIMESTAMP WITH TIME ZONE
-- updated_at: TIMESTAMP WITH TIME ZONE
-```
-
-#### 21. **alert_deliveries**
-Alert delivery tracking.
-```sql
-- id: UUID (Primary Key)
-- alert_id: UUID REFERENCES alerts(id)
-- delivery_status: TEXT -- 'PENDING', 'DELIVERED', 'FAILED'
-- delivery_channel: TEXT -- 'EMAIL', 'SMS', 'WEBHOOK'
-- delivered_at: TIMESTAMP WITH TIME ZONE
-- created_at: TIMESTAMP WITH TIME ZONE
-```
-
-#### 22. **alert_retries**
-Alert retry management.
-```sql
-- id: UUID (Primary Key)
-- alert_id: UUID REFERENCES alerts(id)
-- retry_count: INTEGER
-- last_retry_at: TIMESTAMP WITH TIME ZONE
-- next_retry_at: TIMESTAMP WITH TIME ZONE
-- error_message: TEXT
-```
-
-#### 23. **alert_dlq**
-Alert dead letter queue for failed alerts.
-```sql
-- id: UUID (Primary Key)
-- alert_id: UUID REFERENCES alerts(id)
-- failure_reason: TEXT
-- payload: JSONB
-- failed_at: TIMESTAMP WITH TIME ZONE
-```
-
-#### 24. **dlq**
-General dead letter queue.
-```sql
-- id: UUID (Primary Key)
-- queue_name: TEXT
-- message: JSONB
-- error: TEXT
-- retry_count: INTEGER
-- created_at: TIMESTAMP WITH TIME ZONE
--- Currently empty (normal state)
-```
-
-#### 25. **rating_rubrics**
-Quality rating criteria definitions.
-```sql
-- id: UUID (Primary Key)
-- rating_type: TEXT -- 'MOAT', 'DIVIDEND_SAFETY', 'RESILIENCE'
-- criteria: JSONB
-- weights: JSONB
-- created_at: TIMESTAMP WITH TIME ZONE
--- ⚠️ Currently empty - service uses hardcoded fallback weights
-```
-
-#### 26. **dar_history**
-Drawdown at Risk (DaR) historical calculations.
-```sql
-- id: UUID (Primary Key)
-- portfolio_id: UUID REFERENCES portfolios(id)
-- calculation_date: DATE
-- dar_value: NUMERIC(20,8)
-- dar_pct: NUMERIC(12,8)
-- confidence: NUMERIC(5,4)
-- regime: TEXT
-- horizon_days: INTEGER
-- created_at: TIMESTAMP WITH TIME ZONE
-```
-
-#### 27. **scenario_results**
-Scenario analysis results.
-```sql
-- id: UUID (Primary Key)
-- portfolio_id: UUID REFERENCES portfolios(id)
-- scenario_id: TEXT
-- run_date: DATE
-- shock_type: TEXT
-- portfolio_value_before: NUMERIC(20,2)
-- portfolio_value_after: NUMERIC(20,2)
-- delta_pl: NUMERIC(20,2)
-- delta_pl_pct: NUMERIC(12,8)
-- position_impacts: JSONB
-- created_at: TIMESTAMP WITH TIME ZONE
-```
-
-#### 28. **holdings**
-Current holdings snapshot view.
-```sql
-- portfolio_id: UUID REFERENCES portfolios(id)
-- security_id: UUID REFERENCES securities(id)
-- symbol: TEXT
-- quantity: NUMERIC(20,8)
-- cost_basis: NUMERIC(20,2)
-- market_value: NUMERIC(20,2)
-- unrealized_pl: NUMERIC(20,2)
-- weight: NUMERIC(12,8)
-- asof_date: DATE
-```
-
-#### 29. **security_classifications**
-Security classification metadata.
-```sql
-- security_id: UUID REFERENCES securities(id) PRIMARY KEY
-- sector: TEXT
-- industry: TEXT
-- sub_industry: TEXT
-- country: TEXT
-- market_cap_category: TEXT -- 'LARGE', 'MID', 'SMALL'
-- asset_class: TEXT -- 'EQUITY', 'FIXED_INCOME', 'COMMODITY'
-- created_at: TIMESTAMP WITH TIME ZONE
-- updated_at: TIMESTAMP WITH TIME ZONE
-```
-
-#### 30. **economic_indicators**
-Economic indicator time-series data.
-```sql
-- id: UUID (Primary Key)
-- indicator_code: TEXT -- 'GDP', 'CPI', 'UNEMPLOYMENT'
-- asof_date: DATE
-- value: NUMERIC(20,8)
-- unit: TEXT
-- frequency: TEXT -- 'DAILY', 'MONTHLY', 'QUARTERLY'
-- source: TEXT -- 'FRED', 'BLS', 'IMF'
-- created_at: TIMESTAMP WITH TIME ZONE
-```
-
----
-
-## 📐 Database Views
-
-#### 1. **portfolio_currency_attributions**
-Aggregated currency attribution across portfolios.
-
-#### 2. **v_derived_indicators**
-Computed macro indicators (real interest rate, term spread, etc.)
-
----
-
-## 🔄 Data Flow & Architecture Patterns
-
-### Computation vs Storage Strategy
-
-```mermaid
-graph LR
-    Request[API Request] --> Cache{Cached?}
-    Cache -->|Yes, Fresh| Return[Return Cached]
-    Cache -->|No/Stale| Compute[Compute Fresh]
-    Compute --> Store[Store Result]
-    Store --> Return
-```
-
-**Current Implementation:**
-| Pattern | Tables | Status |
-|---------|--------|--------|
-| **Computed On-Demand** | factor_exposures, currency_attribution | Services calculate fresh |
-| **Stored & Retrieved** | portfolio_metrics, portfolio_daily_values | Written and queried |
-| **Hybrid (Future)** | Could cache computed results with TTL | Not implemented |
-
-### Anti-Patterns & Refactoring Needs
-
-#### 1. **Unused Cache Tables**
-- **Issue:** Tables created but not used (factor_exposures, currency_attribution)
-- **Solution:** Implement TTL-based caching or remove tables
-
-#### 2. **Field Name Transformations**
-- **Issue:** `qty_open` → `qty` → `quantity` (different at each layer)
-- **Solution:** Standardize field names across layers
-
-#### 3. **Missing Data Seeds**
-- **Issue:** `rating_rubrics` empty (fallback to hardcoded)
-- **Solution:** Seed with proper rubric data
-
-#### 4. **Service Layer Mixing**
-- **Issue:** Services both compute AND access DB directly
-- **Solution:** Separate compute logic from storage logic
-
----
-
-## 🚀 Recommended Refactoring Strategy
-
-### Phase 1: Stabilize Current Patterns
-1. **Document Intent:** Clarify which tables are for caching vs active use
-2. **Standardize Names:** Create field mapping layer for consistent naming
-3. **Seed Missing Data:** Populate rating_rubrics and other empty tables
-
-### Phase 2: Implement Clear Patterns
 ```python
-# Proposed Three-Layer Pattern
-class CurrencyAttributionService:
-    def compute(self, portfolio_id, pack_id) -> Dict:
-        """Pure computation, no DB access"""
-        
-    def store(self, attribution_data) -> None:
-        """Save to currency_attribution table"""
-        
-    def get_or_compute(self, portfolio_id, pack_id) -> Dict:
-        """Cache-first strategy with TTL"""
-```
+# DawsOS uses a hybrid compute/cache pattern:
 
-### Phase 3: Optimize Performance
-1. **Add TTL columns** to cache tables
-2. **Implement cache invalidation** on data changes
-3. **Monitor query patterns** and add indexes
+# 1. Compute-first (default)
+result = service.compute_metric(portfolio_id)  # Fresh calculation
+
+# 2. Cache-optional (future optimization)
+result = service.get_or_compute(portfolio_id)  # Check cache first
+
+# 3. Store-always (time-series data)
+service.store_daily_value(portfolio_id, value)  # Always persist
+```
 
 ---
 
-## 📊 Current Data Population
+## 🗄️ Complete Table Inventory (32 Tables)
 
-| Table | Row Count | Status | Action Needed |
-|-------|-----------|--------|---------------|
-| portfolios | 1 | ✅ Active | None |
-| lots | 17 | ✅ Active | None |
-| securities | 17 | ✅ Active | None |
-| prices | 500+ | ✅ Active | None |
-| fx_rates | 63 | ✅ Fixed | Monitor for new pairs |
-| macro_indicators | 102 | ✅ Active | None |
-| factor_exposures | 1 | ⚠️ Minimal | Decide: use or remove |
-| currency_attribution | 1 | ⚠️ Minimal | Decide: use or remove |
-| rating_rubrics | 0 | ❌ Empty | Seed data needed |
-| regime_history | 2 | ⚠️ Minimal | Build history |
+### Migration Tracking Table (Added Migration 019)
 
----
-
-## 🔐 Database Configuration
-
-### Connection Management
-
-**Pattern:** Cross-module pool storage
-```python
-# Register pool (in combined_server.py)
-from backend.app.db.connection import register_external_pool
-register_external_pool(pool)
-
-# Access pool (in any module)
-from backend.app.db.connection import get_db_pool
-pool = get_db_pool()  # Returns same pool across all modules
-```
-
-**Why:** Python creates separate module instances on import. Solution: Store pool in `sys.modules['__dawsos_db_pool_storage__']`
-
-### Connection String
-```bash
-DATABASE_URL="postgresql://user:password@host:5432/dawsos"
-```
-
-### Required Extensions
+#### **migration_history** ⭐ NEW
+Tracks all executed database migrations with checksums.
 ```sql
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "timescaledb";
+- id: SERIAL (Primary Key)
+- migration_number: INTEGER NOT NULL
+- migration_name: TEXT NOT NULL
+- checksum: TEXT -- MD5 hash of migration file
+- executed_at: TIMESTAMP WITH TIME ZONE
+- execution_time_ms: INTEGER
+- success: BOOLEAN
+- error_message: TEXT -- NULL if successful
 ```
 
----
+**Current Status:** 19 migrations tracked:
+- 001: Field standardization (quantity_open/quantity_original)
+- 002-002d: Constraints and indexes
+- 003: Table cleanup
+- 005-018: Feature additions
+- 019: Migration tracking table itself
 
-## 🔧 Setup & Maintenance
+### Critical Tables for Frontend/Backend Development
 
-### Initial Setup
-```bash
-# Create database
-createdb dawsos
-
-# Enable TimescaleDB
-psql -d dawsos -c "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;"
-
-# Run migrations in order
-psql -d dawsos < backend/db/migrations/001_core_schema.sql
-psql -d dawsos < backend/db/migrations/002_seed_data.sql
-psql -d dawsos < backend/db/migrations/003_create_portfolio_metrics.sql
-# ... continue with all migrations
-```
-
-### Performance Optimization
-
-**Critical Indexes:**
+#### 1. **lots** - Tax Lot Tracking (MOST IMPORTANT!)
 ```sql
--- Frequently queried patterns
+CREATE TABLE lots (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    portfolio_id UUID REFERENCES portfolios(id),
+    security_id UUID REFERENCES securities(id),
+    symbol TEXT,
+    
+    -- ⚠️ CRITICAL FIELD NAMES - USE THESE EXACTLY!
+    quantity_open NUMERIC(20,8),      -- Current open quantity
+    quantity_original NUMERIC(20,8),  -- Original purchase quantity
+    quantity NUMERIC(20,8),            -- DEPRECATED - DO NOT USE!
+    
+    cost_basis NUMERIC(20,2),
+    cost_basis_per_share NUMERIC(20,2),
+    acquisition_date DATE,
+    closed_date DATE,
+    currency TEXT,
+    is_open BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for performance
 CREATE INDEX idx_lots_portfolio_open ON lots(portfolio_id) WHERE quantity_open > 0;
 CREATE INDEX idx_lots_quantity_open ON lots(quantity_open) WHERE quantity_open > 0;
-CREATE INDEX idx_prices_security_pack ON prices(security_id, pricing_pack_id);
-CREATE INDEX idx_fx_rates_pack ON fx_rates(pricing_pack_id);
-
--- Time-series optimization
-CREATE INDEX idx_portfolio_values_date ON portfolio_daily_values(date DESC);
-CREATE INDEX idx_macro_indicators_date ON macro_indicators(date DESC);
 ```
 
-**Hypertable Compression:**
+**Usage Example:**
+```python
+# ✅ CORRECT Python code
+async with pool.acquire() as conn:
+    positions = await conn.fetch("""
+        SELECT 
+            symbol,
+            SUM(quantity_open) as total_quantity,  -- USE quantity_open!
+            SUM(quantity_open * cost_basis_per_share) as total_cost
+        FROM lots
+        WHERE portfolio_id = $1 AND quantity_open > 0
+        GROUP BY symbol
+    """, portfolio_id)
+
+# ❌ WRONG - Don't use quantity or qty_open!
+```
+
+#### 2. **transactions** - All Portfolio Activity
 ```sql
--- Enable compression for older data
-SELECT add_compression_policy('portfolio_daily_values', INTERVAL '30 days');
-SELECT add_compression_policy('macro_indicators', INTERVAL '90 days');
+CREATE TABLE transactions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    portfolio_id UUID REFERENCES portfolios(id),
+    transaction_type TEXT,  -- 'BUY', 'SELL', 'DIVIDEND', etc.
+    security_id UUID REFERENCES securities(id),
+    symbol TEXT,
+    transaction_date DATE,
+    settlement_date DATE,
+    quantity NUMERIC(20,8),  -- ✅ Uses 'quantity' (not quantity_open)
+    price NUMERIC(20,8),
+    amount NUMERIC(20,2),
+    currency TEXT,
+    fee NUMERIC(20,2),
+    realized_pl NUMERIC(20,2),  -- Added in Migration 017
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Usage Example:**
+```python
+# Create a buy transaction
+async def record_buy_transaction(conn, portfolio_id, symbol, quantity, price):
+    await conn.execute("""
+        INSERT INTO transactions 
+        (portfolio_id, transaction_type, symbol, quantity, price, amount, transaction_date)
+        VALUES ($1, 'BUY', $2, $3, $4, $5, CURRENT_DATE)
+    """, portfolio_id, symbol, quantity, price, quantity * price)
+```
+
+#### 3. **portfolios** - Portfolio Configuration
+```sql
+CREATE TABLE portfolios (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    base_currency TEXT NOT NULL DEFAULT 'USD',
+    owner_id UUID REFERENCES users(id),
+    cost_basis_method TEXT DEFAULT 'FIFO',  -- Added Migration 018
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Cost basis methods: FIFO, LIFO, HIFO, SPECIFIC_ID
+-- Note: LIFO restricted for stocks per IRS rules
 ```
 
 ---
 
-## ⚠️ Known Issues & Action Items
+## 💡 PRACTICAL CODE EXAMPLES
 
-### Critical Issues
-1. **Empty rating_rubrics** - Blocks customization of rating calculations
-2. **Unused cache tables** - Wastes resources, confuses architecture
-3. **Field naming inconsistency** - Creates confusion across layers
+### 1. Getting Current Holdings
+```python
+async def get_holdings(portfolio_id: str):
+    """Get current holdings with proper field names"""
+    async with pool.acquire() as conn:
+        return await conn.fetch("""
+            SELECT 
+                l.symbol,
+                s.name as security_name,
+                SUM(l.quantity_open) as quantity,  -- ✅ quantity_open!
+                SUM(l.quantity_open * l.cost_basis_per_share) as total_cost,
+                AVG(l.cost_basis_per_share) as avg_cost
+            FROM lots l
+            JOIN securities s ON l.security_id = s.id
+            WHERE l.portfolio_id = $1 
+                AND l.quantity_open > 0  -- ✅ quantity_open!
+            GROUP BY l.symbol, s.name
+            ORDER BY total_cost DESC
+        """, portfolio_id)
+```
 
-### Improvement Opportunities
-1. **Implement caching strategy** with TTL for computed data
-2. **Separate compute from storage** in service layer
-3. **Standardize response format** across all endpoints
-4. **Add monitoring** for cache hit rates
+### 2. Recording a Trade with Tax Lot
+```python
+async def execute_trade(portfolio_id: str, trade_type: str, symbol: str, quantity: float, price: float):
+    """Execute trade with proper lot tracking"""
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            # Record transaction
+            tx_id = await conn.fetchval("""
+                INSERT INTO transactions 
+                (portfolio_id, transaction_type, symbol, quantity, price, amount, transaction_date)
+                VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE)
+                RETURNING id
+            """, portfolio_id, trade_type, symbol, quantity, price, quantity * price)
+            
+            if trade_type == 'BUY':
+                # Create new lot with proper field names
+                await conn.execute("""
+                    INSERT INTO lots 
+                    (portfolio_id, symbol, quantity_open, quantity_original, 
+                     cost_basis_per_share, cost_basis, acquisition_date)
+                    VALUES ($1, $2, $3, $3, $4, $5, CURRENT_DATE)
+                """, portfolio_id, symbol, quantity, price, quantity * price)
+            
+            elif trade_type == 'SELL':
+                # Reduce lots using FIFO (proper field names)
+                remaining = quantity
+                lots = await conn.fetch("""
+                    SELECT id, quantity_open 
+                    FROM lots 
+                    WHERE portfolio_id = $1 
+                        AND symbol = $2 
+                        AND quantity_open > 0
+                    ORDER BY acquisition_date ASC  -- FIFO
+                    FOR UPDATE
+                """, portfolio_id, symbol)
+                
+                for lot in lots:
+                    if remaining <= 0:
+                        break
+                    
+                    reduce_amount = min(remaining, lot['quantity_open'])
+                    await conn.execute("""
+                        UPDATE lots 
+                        SET quantity_open = quantity_open - $1,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = $2
+                    """, reduce_amount, lot['id'])
+                    
+                    remaining -= reduce_amount
+```
 
-### Architecture Decisions Needed
-1. **Cache Strategy:** When to compute vs retrieve?
-2. **Table Usage:** Keep unused tables for future or remove?
-3. **Data Freshness:** What's acceptable staleness for each data type?
+### 3. Pattern Execution Query
+```python
+async def get_portfolio_metrics(portfolio_id: str):
+    """Get metrics using correct time field names"""
+    async with pool.acquire() as conn:
+        # Note: portfolio_daily_values uses 'valuation_date'
+        nav_history = await conn.fetch("""
+            SELECT valuation_date, total_value  
+            FROM portfolio_daily_values
+            WHERE portfolio_id = $1
+            ORDER BY valuation_date DESC
+            LIMIT 252
+        """, portfolio_id)
+        
+        # But factor_exposures uses 'asof_date'
+        factor_exposures = await conn.fetchrow("""
+            SELECT asof_date, beta_real_rate, beta_market, r_squared
+            FROM factor_exposures
+            WHERE portfolio_id = $1
+            ORDER BY asof_date DESC
+            LIMIT 1
+        """, portfolio_id)
+        
+        return {
+            'nav_history': nav_history,
+            'factor_exposures': factor_exposures
+        }
+```
 
 ---
 
-## 📚 Migration & Troubleshooting
+## 🔄 Time-Series Tables (Hypertables)
 
-### Migration Files Location
-`backend/db/migrations/` - Sequential numbered files
+DawsOS uses TimescaleDB for efficient time-series data:
 
-### Common Issues
+```sql
+-- Creating a hypertable (already done for these tables)
+SELECT create_hypertable('portfolio_daily_values', 'valuation_date');
+SELECT create_hypertable('portfolio_metrics', 'date');
+SELECT create_hypertable('macro_indicators', 'date');
+```
 
-**"Database connection failed"**
-- Check DATABASE_URL environment variable
-- Verify PostgreSQL is running
-- Ensure pool is registered
-
-**"Table already exists"**
-- Migration already run, check with `\dt`
-
-**"Missing table"**
-- Run migrations in order (001, 002, 003...)
-
-**"Pool registration issue"**
-- Ensure pool registered in combined_server.py
-- Check sys.modules['__dawsos_db_pool_storage__']
+### Hypertable List:
+1. `portfolio_daily_values` - Daily NAV (uses `valuation_date` ⚠️)
+2. `portfolio_metrics` - Performance metrics (uses `date`)
+3. `portfolio_cash_flows` - Cash flows (uses `date`)
+4. `macro_indicators` - Economic data (uses `date`)
+5. `currency_attribution` - FX attribution (uses `asof_date`)
+6. `factor_exposures` - Risk factors (uses `asof_date`)
 
 ---
 
-## 🎯 Summary
+## 🔧 Common Database Operations
 
-The DawsOS database is **production-ready** with 22 active tables (down from 30). Recent migrations have:
+### Check Connection on Replit
+```python
+# Test database connection
+import asyncpg
+import os
 
-1. ✅ **Standardized field naming** - `qty_open` → `quantity_open`, `qty_original` → `quantity_original`
-2. ✅ **Enforced data integrity** - All FK constraints added, orphaned records fixed
-3. ✅ **Optimized performance** - Indexes updated, composite indexes added
-4. ✅ **Cleaned up legacy code** - 8 unused tables removed
+async def test_connection():
+    try:
+        conn = await asyncpg.connect(os.environ['DATABASE_URL'])
+        version = await conn.fetchval('SELECT version()')
+        print(f"Connected! PostgreSQL {version}")
+        
+        # Check TimescaleDB
+        timescale = await conn.fetchval("SELECT extversion FROM pg_extension WHERE extname='timescaledb'")
+        print(f"TimescaleDB version: {timescale}")
+        
+        # Count tables
+        table_count = await conn.fetchval("""
+            SELECT COUNT(*) FROM information_schema.tables 
+            WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+        """)
+        print(f"Total tables: {table_count}")
+        
+        await conn.close()
+    except Exception as e:
+        print(f"Connection failed: {e}")
 
-The system is **production-ready** and would benefit from:
-- Clear caching strategy implementation
-- Service layer refactoring for separation of concerns
-- Standardization of field names and response formats
+# Run test
+import asyncio
+asyncio.run(test_connection())
+```
 
-**Last Validated:** November 3, 2025 via direct SQL inspection  
-**Validation Method:** Direct database queries against running system  
-**Total Tables Confirmed:** 33 (all structures verified)
+### View Migration History
+```sql
+-- Check which migrations have been executed
+SELECT 
+    migration_number,
+    migration_name,
+    executed_at,
+    success,
+    error_message
+FROM migration_history
+ORDER BY migration_number;
+
+-- Verify critical Migration 001 (field renaming)
+SELECT * FROM migration_history 
+WHERE migration_number = 1;
+```
+
+### Debug Field Names
+```sql
+-- Check actual column names in lots table
+SELECT column_name, data_type, character_maximum_length
+FROM information_schema.columns
+WHERE table_name = 'lots'
+ORDER BY ordinal_position;
+
+-- Verify quantity_open exists (should return data)
+SELECT COUNT(*) FROM lots WHERE quantity_open > 0;
+```
+
+---
+
+## 🐛 Troubleshooting Guide
+
+### Issue: "column qty_open does not exist"
+**Cause:** Code using old field names  
+**Solution:** Use `quantity_open` and `quantity_original` (full names)
+
+### Issue: "No agent registered for capability tax.realized_gains"
+**Cause:** Tax agent not properly initialized  
+**Solution:** Check agent registration in combined_server.py
+
+### Issue: Database connection drops after 5 minutes
+**Cause:** Replit/Neon auto-sleep feature  
+**Solution:** This is normal - connection auto-restores on next request
+
+### Issue: "relation does not exist" 
+**Cause:** Migration not executed  
+**Solution:** Check migration_history table, run missing migrations
+
+### Issue: Different field names at each layer
+**Problem:**
+```python
+# Database: quantity_open
+# Python: qty_open
+# Frontend: quantity
+```
+**Solution:** Standardize to database field names everywhere
+
+---
+
+## 📝 Migration Management
+
+### Check Migration Status
+```python
+async def check_migrations():
+    async with pool.acquire() as conn:
+        # Get executed migrations
+        executed = await conn.fetch("""
+            SELECT migration_number, migration_name, executed_at
+            FROM migration_history
+            ORDER BY migration_number
+        """)
+        
+        print("Executed Migrations:")
+        for m in executed:
+            print(f"  {m['migration_number']:03d}: {m['migration_name']} ({m['executed_at']})")
+        
+        # Check for pending migrations
+        migration_files = os.listdir('backend/db/migrations')
+        executed_numbers = {m['migration_number'] for m in executed}
+        
+        pending = []
+        for file in migration_files:
+            if file.endswith('.sql'):
+                num = int(file.split('_')[0])
+                if num not in executed_numbers:
+                    pending.append(file)
+        
+        if pending:
+            print(f"\nPending Migrations: {pending}")
+        else:
+            print("\nAll migrations executed ✅")
+```
+
+### Execute Migration Safely
+```python
+async def run_migration(migration_file: str):
+    """Execute a migration with proper tracking"""
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            try:
+                # Read migration file
+                with open(f'backend/db/migrations/{migration_file}', 'r') as f:
+                    sql = f.read()
+                
+                # Calculate checksum
+                import hashlib
+                checksum = hashlib.md5(sql.encode()).hexdigest()
+                
+                # Check if already executed
+                exists = await conn.fetchval("""
+                    SELECT 1 FROM migration_history 
+                    WHERE migration_number = $1 OR checksum = $2
+                """, migration_number, checksum)
+                
+                if exists:
+                    print(f"Migration {migration_file} already executed")
+                    return
+                
+                # Execute migration
+                start_time = time.time()
+                await conn.execute(sql)
+                execution_time = int((time.time() - start_time) * 1000)
+                
+                # Record in history
+                await conn.execute("""
+                    INSERT INTO migration_history 
+                    (migration_number, migration_name, checksum, execution_time_ms, success)
+                    VALUES ($1, $2, $3, $4, true)
+                """, migration_number, migration_name, checksum, execution_time)
+                
+                print(f"✅ Migration {migration_file} executed successfully")
+                
+            except Exception as e:
+                # Record failure
+                await conn.execute("""
+                    INSERT INTO migration_history 
+                    (migration_number, migration_name, error_message, success)
+                    VALUES ($1, $2, $3, false)
+                """, migration_number, migration_name, str(e))
+                raise
+```
+
+---
+
+## 🎯 Best Practices for DawsOS Development
+
+### 1. Always Use Transactions for Multi-Step Operations
+```python
+async with conn.transaction():
+    # All queries here succeed or fail together
+    await conn.execute(query1)
+    await conn.execute(query2)
+```
+
+### 2. Use Prepared Statements (Parameterized Queries)
+```python
+# ✅ SAFE - Prevents SQL injection
+await conn.execute("SELECT * FROM lots WHERE portfolio_id = $1", portfolio_id)
+
+# ❌ UNSAFE - Never do this!
+await conn.execute(f"SELECT * FROM lots WHERE portfolio_id = '{portfolio_id}'")
+```
+
+### 3. Handle Replit Database Sleep
+```python
+async def execute_with_retry(query, *args, max_retries=3):
+    """Handle Replit/Neon database wake-up"""
+    for attempt in range(max_retries):
+        try:
+            async with pool.acquire() as conn:
+                return await conn.fetch(query, *args)
+        except asyncpg.PostgresConnectionError:
+            if attempt == max_retries - 1:
+                raise
+            await asyncio.sleep(1)  # Wait for database to wake up
+```
+
+### 4. Use Correct Field Names
+```python
+FIELD_MAPPING = {
+    # Always use database field names
+    'lots': {
+        'open_quantity': 'quantity_open',      # ✅
+        'original_quantity': 'quantity_original',  # ✅
+        'quantity': None,  # ❌ DEPRECATED
+    },
+    'portfolio_daily_values': {
+        'date': 'valuation_date',  # ⚠️ Inconsistent
+    },
+    'factor_exposures': {
+        'date': 'asof_date',  # ✅ Standard
+    }
+}
+```
+
+### 5. Monitor Connection Pool
+```python
+# In combined_server.py
+@app.get("/api/db/health")
+async def db_health():
+    pool = get_db_pool()
+    return {
+        "min_size": pool._minsize,
+        "max_size": pool._maxsize,
+        "current_size": pool._size,
+        "free_connections": pool._freesize,
+        "database": "PostgreSQL on Replit/Neon"
+    }
+```
+
+---
+
+## 📊 Data Statistics (Current Production)
+
+| Table | Row Count | Purpose | Status |
+|-------|-----------|---------|--------|
+| migration_history | 19 | Migration tracking | ✅ All migrations tracked |
+| portfolios | 1 | Michael's portfolio | ✅ Active |
+| users | 2 | michael@dawsos.com, test@dawsos.com | ✅ Active |
+| lots | 17 | Open positions | ✅ Using quantity_open |
+| transactions | 43 | Trade history | ✅ With realized P&L |
+| securities | 17 | Security master | ✅ Active |
+| prices | 500+ | Price history | ✅ In pricing packs |
+| fx_rates | 63 | FX rates | ✅ CAD/USD, EUR/USD |
+| portfolio_daily_values | 179 | NAV history | ✅ Daily updates |
+| macro_indicators | 102 | Economic data | ✅ For regime detection |
+
+---
+
+## 🚀 Quick Start for New Developers
+
+1. **Check Database Connection:**
+```bash
+# In Replit Shell
+echo $DATABASE_URL  # Should show connection string
+```
+
+2. **Verify Field Names:**
+```sql
+-- Run in Replit Database pane
+SELECT column_name FROM information_schema.columns 
+WHERE table_name = 'lots';
+-- Should show: quantity_open, quantity_original (NOT qty_open!)
+```
+
+3. **Test Pattern Execution:**
+```python
+# Test in Python console
+from backend.app.core.pattern_orchestrator import PatternOrchestrator
+orchestrator = PatternOrchestrator()
+result = await orchestrator.execute('portfolio_overview', {
+    'portfolio_id': '64ff3be6-0ed1-4990-a32b-4ded17f0320c'
+})
+print(f"Pattern result: {result}")
+```
+
+4. **Common Portfolio ID for Testing:**
+```python
+MICHAEL_PORTFOLIO_ID = '64ff3be6-0ed1-4990-a32b-4ded17f0320c'
+```
+
+---
+
+## 📚 Related Documentation
+
+- Frontend Integration: See `frontend/api-client.js`
+- Pattern Definitions: See `backend/patterns/*.json`
+- Agent Capabilities: See `backend/app/agents/`
+- Migration Files: See `backend/db/migrations/`
+
+---
+
+## ⚠️ Final Critical Reminders
+
+1. **NEVER use `qty_open` or `qty_original`** - Use `quantity_open` and `quantity_original`
+2. **NEVER change ID column types** - Keep UUID as UUID, SERIAL as SERIAL
+3. **ALWAYS check which date field** - Some use `asof_date`, others use `valuation_date`
+4. **NEVER expose DATABASE_URL** - Contains full credentials
+5. **ALWAYS use transactions** - For multi-step operations
+6. **CHECK migration_history table** - Before assuming migrations are missing
+
+---
+
+*This documentation reflects the actual production database state as of November 7, 2025, with all 19 migrations executed and 32 tables active.*
