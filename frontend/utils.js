@@ -38,6 +38,60 @@
     const Utils = {};
 
     /**
+     * formatCurrency - Format number as currency
+     */
+    Utils.formatCurrency = function(value, decimals = 2) {
+        if (value === null || value === undefined || isNaN(value)) return '-';
+        const absValue = Math.abs(value);
+        const sign = value < 0 ? '-' : '';
+
+        if (absValue >= 1e9) {
+            return sign + '$' + (absValue / 1e9).toFixed(1) + 'B';
+        } else if (absValue >= 1e6) {
+            return sign + '$' + (absValue / 1e6).toFixed(1) + 'M';
+        } else if (absValue >= 1e3) {
+            return sign + '$' + (absValue / 1e3).toFixed(1) + 'K';
+        }
+        return sign + '$' + absValue.toFixed(decimals);
+    };
+
+    /**
+     * formatPercentage - Format number as percentage
+     */
+    Utils.formatPercentage = function(value, decimals = 2) {
+        if (value === null || value === undefined || isNaN(value)) return '-';
+        return (value * 100).toFixed(decimals) + '%';
+    };
+
+    /**
+     * formatNumber - Format number with specified decimals
+     */
+    Utils.formatNumber = function(value, decimals = 2) {
+        if (value === null || value === undefined || isNaN(value)) return '-';
+        return value.toLocaleString('en-US', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+    };
+
+    /**
+     * formatDate - Format date string
+     */
+    Utils.formatDate = function(dateString) {
+        if (!dateString) return '-';
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        } catch (e) {
+            return dateString;
+        }
+    };
+
+    /**
      * formatValue - Format values according to specified format type
      * Lines 4637-4659
      */
@@ -53,15 +107,15 @@
 
         switch (format) {
             case 'percentage':
-                return Utils.formatPercentage ? Utils.formatPercentage(numValue) : numValue + '%';
+                return Utils.formatPercentage(numValue);
             case 'currency':
-                return Utils.formatCurrency ? Utils.formatCurrency(numValue) : '$' + numValue;
+                return Utils.formatCurrency(numValue);
             case 'number':
-                return Utils.formatNumber ? Utils.formatNumber(numValue, 2) : numValue.toFixed(2);
+                return Utils.formatNumber(numValue, 2);
             case 'bps':
-                return (Utils.formatNumber ? Utils.formatNumber(numValue, 0) : numValue.toFixed(0)) + ' bps';
+                return Utils.formatNumber(numValue, 0) + ' bps';
             default:
-                return typeof value === 'number' ? (Utils.formatNumber ? Utils.formatNumber(value, 2) : value.toFixed(2)) : String(value);
+                return typeof value === 'number' ? Utils.formatNumber(value, 2) : String(value);
         }
     };
 

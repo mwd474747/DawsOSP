@@ -103,8 +103,9 @@
                         'EmptyState', 'RetryableError', 'useCachedQuery', 'useCachedMutation'
                     ],
                     'DawsOS.Panels': [
-                        'MetricsGridPanel', 'DataTablePanel', 'ChartPanel',
-                        'TimeSeriesChartPanel', 'ScorecardPanel', 'AlertPanel', 'HoldingsTable'
+                        'MetricsGridPanel', 'TablePanel', 'LineChartPanel', 'NewsListPanel',
+                        'PieChartPanel', 'DonutChartPanel', 'ScorecardPanel', 'BarChartPanel',
+                        'ActionCardsPanel', 'CycleCardPanel', 'DualListPanel', 'ReportViewerPanel'
                     ],
                     'DawsOS.Pages': [
                         'LoginPage', 'DashboardPage', 'DashboardPageLegacy', 'HoldingsPage',
@@ -195,12 +196,17 @@
             // Panel components are in DawsOS.Panels namespace
             const {
                 MetricsGridPanel,
-                DataTablePanel,
-                ChartPanel,
-                TimeSeriesChartPanel,
+                TablePanel,
+                LineChartPanel,
+                NewsListPanel,
+                PieChartPanel,
+                DonutChartPanel,
                 ScorecardPanel,
-                AlertPanel,
-                HoldingsTable
+                BarChartPanel,
+                ActionCardsPanel,
+                CycleCardPanel,
+                DualListPanel,
+                ReportViewerPanel
             } = DawsOS.Panels;
 
             // Page components are in DawsOS.Pages namespace
