@@ -9,24 +9,28 @@
  *
  * Dependencies:
  * - React (useState, useEffect) - Required for component state management
- * - DawsOS.Utils - Utility functions (formatValue, LoadingSpinner, ErrorMessage)
- * - DawsOS.Panels - All panel components (MetricsGridPanel, TablePanel, ChartPanels, etc.)
- * - DawsOS.Context - Context hooks (useUserContext, getCurrentPortfolioId)
- * - DawsOS.APIClient - API client for pattern execution
- * - ErrorHandler - Global error handler (remains in full_ui.html)
- * - CacheManager - Global cache manager (remains in full_ui.html)
- * - TokenManager - Global token manager (remains in full_ui.html)
- * - ProvenanceWarningBanner - Phase 1 stub data warning component
+ * - DawsOS.CacheManager - Cache manager (defined in frontend/cache-manager.js)
+ * - DawsOS.Core.API - API client methods (executePattern, getPortfolio, etc.)
+ * - DawsOS.Core.API.TokenManager - Token management
+ * - DawsOS.Core.Auth.getCurrentPortfolioId - Portfolio ID retrieval
+ * - DawsOS.Context.useUserContext - User context hook
+ * - DawsOS.Panels - All panel components (MetricsGridPanel, TablePanel, etc.)
+ * - DawsOS.ErrorHandler - Error handler (defined in frontend/error-handler.js)
+ * - DawsOS.Utils.Data.ProvenanceWarningBanner - Phase 1 stub data warning component
  *
- * Components Exposed:
- * - getDataByPath - Extract data from nested object paths
- * - PatternRenderer - Main pattern orchestration component
- * - PanelRenderer - Panel rendering dispatcher
- * - patternRegistry - Pattern metadata and configuration
- * - queryKeys - Query key generation for caching
- * - queryHelpers - Data fetching helpers with caching
+ * Exports to DawsOS.Patterns:
+ * - Renderer.render - Pattern render function
+ * - Renderer.PatternRenderer - Main pattern orchestration component
+ * - Registry.patterns - Pattern metadata registry
+ * - Registry.get - Get pattern by name
+ * - Registry.list - List all pattern names
+ * - Registry.validate - Validate pattern exists
+ * - Helpers.getDataByPath - Extract data from nested object paths
+ * - Helpers.queryKeys - Query key generation for caching
+ * - Helpers.queryHelpers - Data fetching helpers with caching
+ * - Helpers.PanelRenderer - Panel rendering dispatcher
  *
- * @module DawsOS.PatternSystem
+ * @module DawsOS.Patterns
  */
 
 (function(global) {
@@ -50,9 +54,11 @@
 
     console.log('[PatternSystem] CacheManager loaded successfully');
 
-    // Import from DawsOS modules (assuming they are already loaded)
-    const { useUserContext, getCurrentPortfolioId } = global.DawsOS.Context || {};
-    const { apiClient } = global.DawsOS.APIClient || {};
+    // Import from DawsOS modules (with correct namespaces)
+    const { useUserContext } = global.DawsOS.Context || {};
+    const getCurrentPortfolioId = global.DawsOS?.Core?.Auth?.getCurrentPortfolioId;
+    const apiClient = global.DawsOS?.Core?.API;
+    const TokenManager = global.DawsOS?.Core?.API?.TokenManager;
 
     // Import panel components
     const {
@@ -70,10 +76,19 @@
         ReportViewerPanel
     } = global.DawsOS.Panels || {};
 
-    // Import global utilities (ErrorHandler, TokenManager are now in modules; ProvenanceWarningBanner in full_ui.html)
-    // Note: CacheManager already imported above at line 45
+    // Import utilities
     const ErrorHandler = global.DawsOS.ErrorHandler;
-    const { TokenManager, ProvenanceWarningBanner } = global;
+    const ProvenanceWarningBanner = global.DawsOS?.Utils?.Data?.ProvenanceWarningBanner;
+
+    // Validate critical dependencies
+    if (!apiClient || !TokenManager || !getCurrentPortfolioId) {
+        console.error('[PatternSystem] Missing critical dependencies!', {
+            'DawsOS.Core.API': !!apiClient,
+            'DawsOS.Core.API.TokenManager': !!TokenManager,
+            'DawsOS.Core.Auth.getCurrentPortfolioId': !!getCurrentPortfolioId
+        });
+        throw new Error('[PatternSystem] Required dependencies not loaded. Check script load order.');
+    }
 
     // ============================================
     // PATTERN REGISTRY

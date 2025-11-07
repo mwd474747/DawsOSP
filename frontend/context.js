@@ -9,16 +9,17 @@
  *
  * Dependencies:
  * - React (useState, useEffect, useCallback, useContext, createContext, useRef)
- * - DawsOS.APIClient.TokenManager (for user and token management)
- * - DawsOS.APIClient.apiClient (for portfolio data fetching)
- * - CacheManager (global, defined in full_ui.html)
+ * - DawsOS.Core.API.TokenManager (for user and token management)
+ * - DawsOS.Core.API (for API calls - executePattern, getPortfolio, etc.)
+ * - DawsOS.CacheManager (for cache invalidation, defined in frontend/cache-manager.js)
  *
- * Exports:
- * - getCurrentPortfolioId: Function to get current portfolio ID with fallback
+ * Exports to DawsOS.Context:
  * - UserContext: React context for user and portfolio state
  * - UserContextProvider: React component provider for UserContext
  * - useUserContext: Custom React hook to access UserContext
  * - PortfolioSelector: React component for portfolio selection UI
+ *
+ * Note: getCurrentPortfolioId is now in DawsOS.Core.Auth (exported by api-client.js)
  */
 
 (function(global) {
@@ -29,11 +30,20 @@
         global.DawsOS = {};
     }
 
-    // Get dependencies
-    // TokenManager and apiClient are exported directly to global scope by api-client.js
-    const TokenManager = global.TokenManager || {};
-    const apiClient = global.apiClient || {};
+    // Get dependencies - Import from correct DawsOS.Core namespaces
+    const TokenManager = global.DawsOS?.Core?.API?.TokenManager;
+    const apiClient = global.DawsOS?.Core?.API;
     const { useState, useEffect, useCallback, useContext, createContext, useRef } = global.React || {};
+
+    // Validate dependencies
+    if (!TokenManager) {
+        console.error('[Context] TokenManager not loaded from DawsOS.Core.API.TokenManager');
+        throw new Error('[Context] Required dependency DawsOS.Core.API.TokenManager not found. Check script load order.');
+    }
+    if (!apiClient) {
+        console.error('[Context] API client not loaded from DawsOS.Core.API');
+        throw new Error('[Context] Required dependency DawsOS.Core.API not found. Check script load order.');
+    }
 
     // React.createElement shorthand (used throughout this module)
     const e = global.React ? global.React.createElement : null;
