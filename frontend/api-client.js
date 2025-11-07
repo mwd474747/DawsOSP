@@ -6,12 +6,16 @@
 
 (function(global) {
     'use strict';
-    
-    // ============================================
-    // API Configuration and Authentication
-    // ============================================
-    
-    const API_BASE = '';
+
+    try {
+        console.log('[api-client.js] 1. IIFE started');
+
+        // ============================================
+        // API Configuration and Authentication
+        // ============================================
+
+        const API_BASE = '';
+        console.log('[api-client.js] 2. Constants defined');
     
     // Helper function to get current portfolio ID
     const getCurrentPortfolioId = () => {
@@ -368,45 +372,60 @@
         }
     };
     
-    // ============================================
-    // Export to DawsOS.Core namespace (Phase 2.1)
-    // ============================================
+        console.log('[api-client.js] 3. All objects defined (apiClient, TokenManager, retryConfig)');
 
-    // Initialize DawsOS.Core namespace
-    global.DawsOS = global.DawsOS || {};
-    global.DawsOS.Core = global.DawsOS.Core || {};
+        // ============================================
+        // Export to DawsOS.Core namespace (Phase 2.1)
+        // ============================================
 
-    // Export API client to DawsOS.Core.API (new namespace)
-    global.DawsOS.Core.API = {
-        // Export all apiClient methods (executePattern, getPortfolio, getHoldings, etc.)
-        ...apiClient,
+        // Initialize DawsOS.Core namespace
+        global.DawsOS = global.DawsOS || {};
+        global.DawsOS.Core = global.DawsOS.Core || {};
 
-        // Token management
-        TokenManager: {
-            getToken: TokenManager.getToken,
-            setToken: TokenManager.setToken,
-            removeToken: TokenManager.removeToken,
-            getUser: TokenManager.getUser,
-            setUser: TokenManager.setUser,
-            removeUser: TokenManager.removeUser,
-            refreshToken: TokenManager.refreshToken.bind(TokenManager),
-            isTokenExpired: TokenManager.isTokenExpired.bind(TokenManager)
-        },
+        console.log('[api-client.js] 4. Namespace initialized');
 
-        // Retry configuration
-        retryConfig: retryConfig
-    };
+        // Export API client to DawsOS.Core.API (new namespace)
+        global.DawsOS.Core.API = {
+            // Export all apiClient methods (executePattern, getPortfolio, getHoldings, etc.)
+            ...apiClient,
 
-    // Export Auth utilities to DawsOS.Core.Auth
-    global.DawsOS.Core.Auth = {
-        getCurrentPortfolioId: getCurrentPortfolioId
-    };
+            // Token management
+            TokenManager: {
+                getToken: TokenManager.getToken,
+                setToken: TokenManager.setToken,
+                removeToken: TokenManager.removeToken,
+                getUser: TokenManager.getUser,
+                setUser: TokenManager.setUser,
+                removeUser: TokenManager.removeUser,
+                refreshToken: TokenManager.refreshToken.bind(TokenManager),
+                isTokenExpired: TokenManager.isTokenExpired.bind(TokenManager)
+            },
 
-    // Export Error handling to DawsOS.Core.Errors
-    global.DawsOS.Core.Errors = {
-        handleApiError: handleApiError
-    };
+            // Retry configuration
+            retryConfig: retryConfig
+        };
 
-    console.log('✅ API Client module loaded successfully (DawsOS.Core.*)');
+        console.log('[api-client.js] 5. DawsOS.Core.API exported');
+
+        // Export Auth utilities to DawsOS.Core.Auth
+        global.DawsOS.Core.Auth = {
+            getCurrentPortfolioId: getCurrentPortfolioId
+        };
+
+        console.log('[api-client.js] 6. DawsOS.Core.Auth exported');
+
+        // Export Error handling to DawsOS.Core.Errors
+        global.DawsOS.Core.Errors = {
+            handleApiError: handleApiError
+        };
+
+        console.log('[api-client.js] 7. DawsOS.Core.Errors exported');
+        console.log('✅ API Client module loaded successfully (DawsOS.Core.*)');
+
+    } catch (error) {
+        console.error('❌ [api-client.js] FATAL ERROR during module load:', error);
+        console.error('Error stack:', error.stack);
+        throw error;  // Re-throw to prevent silent failure
+    }
     
 })(window);
