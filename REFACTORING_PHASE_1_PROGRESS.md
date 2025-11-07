@@ -73,6 +73,72 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/patterns/metada
 
 ---
 
+## Phase 1.1.5: Critical Module Export Fixes ✅ COMPLETE
+
+**Goal**: Fix distributed monolith anti-pattern - missing module exports causing runtime failures
+
+**Problem Identified**:
+- Module validation caught undefined exports:
+  - `DawsOS.Utils.formatCurrency` - undefined
+  - `DawsOS.Utils.formatPercentage` - undefined
+  - `DawsOS.Utils.formatNumber` - undefined
+  - `DawsOS.Utils.formatDate` - undefined
+  - `DawsOS.Panels.DataTablePanel` - wrong name (should be TablePanel)
+
+**Root Cause**: Distributed monolith anti-pattern
+- Modules referenced functions that were never defined
+- Panel validation used wrong names
+- No validation until runtime failures
+
+**Changes Made**:
+
+### 1. Added Missing Format Functions ([utils.js:40-92](frontend/utils.js#L40-L92))
+
+```javascript
+Utils.formatCurrency = function(value, decimals = 2) {
+    // Formats with $/K/M/B suffixes
+    // Example: 1500000 → $1.5M
+};
+
+Utils.formatPercentage = function(value, decimals = 2) {
+    // Multiplies by 100, adds %
+    // Example: 0.15 → 15.00%
+};
+
+Utils.formatNumber = function(value, decimals = 2) {
+    // Locale-aware number formatting
+    // Example: 1234.567 → 1,234.57
+};
+
+Utils.formatDate = function(dateString) {
+    // Date localization
+    // Example: "2025-11-07" → "Nov 7, 2025"
+};
+```
+
+### 2. Fixed Panel Validation Names ([full_ui.html:105-109](full_ui.html#L105-L109))
+
+**Before**:
+```javascript
+'DawsOS.Panels': ['MetricsGridPanel', 'DataTablePanel', 'ChartPanel', ...]
+```
+
+**After**:
+```javascript
+'DawsOS.Panels': ['MetricsGridPanel', 'TablePanel', 'LineChartPanel',
+                  'NewsListPanel', 'PieChartPanel', 'DonutChartPanel', ...]
+```
+
+**Impact**:
+- ✅ All module exports properly defined
+- ✅ Module validation passes
+- ✅ No more undefined component errors
+- ✅ Fail-fast validation catches future issues
+
+**Commit**: `4e04dc3` - "CRITICAL FIX: Add missing Utils format functions and fix Panel validation"
+
+---
+
 ## Phase 1.2: JSON Schema Validation 🚧 IN PROGRESS
 
 **Goal**: Add JSON Schemas to all 15 patterns for output validation
@@ -276,6 +342,7 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 
 **Week 1**:
 - ✅ Day 1: Phase 1.1 (metadata API) - COMPLETE
+- ✅ Day 1: Phase 1.1.5 (critical module export fixes) - COMPLETE
 - 🚧 Day 2-3: Phase 1.2 (JSON Schemas to all patterns) - IN PROGRESS
 - ⏳ Day 4: Phase 1.3 (pattern validation at startup) - PENDING
 - ⏳ Day 5: Phase 1.4 (fix phantom capabilities) - PENDING
@@ -312,7 +379,8 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 - ⏳ `backend/patterns/*.json` (14 files) - Awaiting schemas
 
 ### Frontend
-- ⏳ None yet (Phase 2)
+- ✅ `frontend/utils.js` - Added missing format functions (Phase 1.1.5)
+- ✅ `full_ui.html` - Fixed Panel validation names (Phase 1.1.5)
 
 ---
 
