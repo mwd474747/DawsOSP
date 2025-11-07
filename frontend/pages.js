@@ -62,75 +62,53 @@
     const { useState, useEffect, useRef } = React;
     const e = React.createElement;
 
-    // ============================================
-    // SAFE IMPORTS - Check namespaces exist first
-    // ============================================
-
-    // Verify all required namespaces are loaded
-    if (!DawsOS.Core || !DawsOS.Core.API || !DawsOS.Utils || !DawsOS.Patterns || !DawsOS.UI) {
-        console.error('[pages.js] Required namespaces not loaded!', {
-            'DawsOS.Core': !!DawsOS.Core,
-            'DawsOS.Core.API': !!DawsOS.Core?.API,
-            'DawsOS.Utils': !!DawsOS.Utils,
-            'DawsOS.Patterns': !!DawsOS.Patterns,
-            'DawsOS.UI': !!DawsOS.UI
-        });
-        throw new Error('Required namespaces not loaded. Check script load order and module errors.');
+    // Import dependencies from DawsOS namespace
+    const APIClient = global.DawsOS?.APIClient;
+    const apiClient = APIClient; // For backward compatibility
+    const Utils = global.DawsOS?.Utils || {};
+    const Panels = global.DawsOS?.Panels || {};
+    const Context = global.DawsOS?.Context || {};
+    const PatternSystem = global.DawsOS?.PatternSystem || {};
+    
+    // Validate critical dependencies
+    if (!APIClient) {
+        console.error('[Pages] DawsOS.APIClient not loaded');
+        console.error('[Pages] Available namespaces:', Object.keys(global.DawsOS || {}));
+        throw new Error('[Pages] Required dependency DawsOS.APIClient not found. Check script load order.');
     }
 
-    // Core Infrastructure
-    const API = DawsOS.Core.API;
-    const Auth = DawsOS.Core.Auth;
-    const CoreErrors = DawsOS.Core.Errors;
+    // Import utility functions
+    const formatPercentage = Utils.formatPercentage || ((v) => v + '%');
+    const formatCurrency = Utils.formatCurrency || ((v) => '$' + v);
+    const formatNumber = Utils.formatNumber || ((v) => v.toFixed(2));
 
-    // Formatting Utilities
-    const Formatting = DawsOS.Utils.Formatting;
-    const formatCurrency = Formatting.currency;
-    const formatPercentage = Formatting.percentage;
-    const formatNumber = Formatting.number;
-    const formatDate = Formatting.date;
-    const formatValue = Formatting.value;
+    // Import context functions (from DawsOS.Context, NOT Utils)
+    const useUserContext = Context.useUserContext || (() => ({ portfolioId: null }));
+    const getCurrentPortfolioId = Context.getCurrentPortfolioId || (() => null);
 
-    // UI Primitives
-    const Primitives = DawsOS.UI.Primitives;
-    const LoadingSpinner = Primitives.LoadingSpinner;
-    const ErrorMessage = Primitives.ErrorMessage;
-    const RetryableError = Primitives.RetryableError;
-    const EmptyState = Primitives.EmptyState;
-    const NetworkStatusIndicator = Primitives.NetworkStatusIndicator;
-    const FormField = Primitives.FormField;
-    const DataBadge = Primitives.DataBadge;
+    // Import cached API client (queryHelpers) from pattern-system
+    const cachedApiClient = PatternSystem.queryHelpers || apiClient;
 
-    // Data Utilities
-    const DataUtils = DawsOS.Utils.Data;
-    const getDataSourceFromResponse = DataUtils.getDataSourceFromResponse;
-
-    // React Hooks
-    const Hooks = DawsOS.Utils.Hooks;
-    const useCachedQuery = Hooks.useCachedQuery;
-    const useCachedMutation = Hooks.useCachedMutation;
-
-    // Pattern System
-    const Patterns = DawsOS.Patterns;
-    const PatternRenderer = Patterns.Renderer.PatternRenderer;
-    const PanelRenderer = Patterns.Helpers.PanelRenderer;
-
-    // Context
-    const Context = DawsOS.Context;
-    const useUserContext = Context.useUserContext;
-
-    // Panels
-    const Panels = DawsOS.Panels;
-
-    // Legacy compatibility
-    const apiClient = API;
-    const TokenManager = API.TokenManager;
-    const getCurrentPortfolioId = Auth.getCurrentPortfolioId;
-    const ErrorHandler = CoreErrors;
-    const FormValidator = DawsOS.FormValidator || {};
-    const cachedApiClient = Patterns.Helpers.queryHelpers || API;
-
-    console.log('✅ pages.js imports successful');
+    // Import UI components (assumed to be globally available)
+    const LoadingSpinner = global.LoadingSpinner;
+    const ErrorMessage = global.ErrorMessage;
+    const RetryableError = global.RetryableError;
+    const EmptyState = global.EmptyState;
+    const NetworkStatusIndicator = global.NetworkStatusIndicator;
+    const FormField = global.FormField;
+    const DataBadge = global.DataBadge;
+    const PatternRenderer = global.PatternRenderer;
+    const FormValidator = global.FormValidator;
+    const ErrorHandler = global.ErrorHandler;
+    // Use TokenManager from DawsOS.APIClient if available, otherwise fallback to global
+    const TokenManager = APIClient?.TokenManager || global.TokenManager;
+    const getDataSourceFromResponse = global.getDataSourceFromResponse;
+    
+    // Validate TokenManager
+    if (!TokenManager) {
+        console.error('[Pages] TokenManager not available from DawsOS.APIClient or global');
+        throw new Error('[Pages] TokenManager is required but not found');
+    }
 
     // ============================================
     // PAGE COMPONENTS

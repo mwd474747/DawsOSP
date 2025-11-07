@@ -9,17 +9,16 @@
  *
  * Dependencies:
  * - React (useState, useEffect, useCallback, useContext, createContext, useRef)
- * - DawsOS.Core.API.TokenManager (for user and token management)
- * - DawsOS.Core.API (for API calls - executePattern, getPortfolio, etc.)
- * - DawsOS.CacheManager (for cache invalidation, defined in frontend/cache-manager.js)
+ * - DawsOS.APIClient.TokenManager (for user and token management)
+ * - DawsOS.APIClient.apiClient (for portfolio data fetching)
+ * - CacheManager (global, defined in full_ui.html)
  *
- * Exports to DawsOS.Context:
+ * Exports:
+ * - getCurrentPortfolioId: Function to get current portfolio ID with fallback
  * - UserContext: React context for user and portfolio state
  * - UserContextProvider: React component provider for UserContext
  * - useUserContext: Custom React hook to access UserContext
  * - PortfolioSelector: React component for portfolio selection UI
- *
- * Note: getCurrentPortfolioId is now in DawsOS.Core.Auth (exported by api-client.js)
  */
 
 (function(global) {
@@ -30,24 +29,22 @@
         global.DawsOS = {};
     }
 
-    // Get dependencies - Import from correct DawsOS.Core namespaces
-    const TokenManager = global.DawsOS?.Core?.API?.TokenManager;
-    const apiClient = global.DawsOS?.Core?.API;
+    // Get dependencies - Import from DawsOS.APIClient namespace
+    const { TokenManager, apiClient } = global.DawsOS?.APIClient || {};
     const { useState, useEffect, useCallback, useContext, createContext, useRef } = global.React || {};
-
-    // Validate dependencies
+    const { e } = global.DawsOS?.Utils || {};
+    
+    // Validate critical dependencies (fail-fast instead of silent failure)
     if (!TokenManager) {
-        console.error('[Context] TokenManager not loaded from DawsOS.Core.API.TokenManager');
-        throw new Error('[Context] Required dependency DawsOS.Core.API.TokenManager not found. Check script load order.');
+        console.error('[Context] TokenManager not loaded from DawsOS.APIClient.TokenManager');
+        console.error('[Context] Available namespaces:', Object.keys(global.DawsOS || {}));
+        throw new Error('[Context] Required dependency DawsOS.APIClient.TokenManager not found. Check script load order.');
     }
     if (!apiClient) {
-        console.error('[Context] API client not loaded from DawsOS.Core.API');
-        throw new Error('[Context] Required dependency DawsOS.Core.API not found. Check script load order.');
+        console.error('[Context] API client not loaded from DawsOS.APIClient');
+        console.error('[Context] Available namespaces:', Object.keys(global.DawsOS || {}));
+        throw new Error('[Context] Required dependency DawsOS.APIClient not found. Check script load order.');
     }
-
-    // React.createElement shorthand (used throughout this module)
-    const e = global.React ? global.React.createElement : null;
-
     if (!e) {
         console.error('[Context] React.createElement not available!');
         throw new Error('[Context] React is required but not loaded');
@@ -68,7 +65,7 @@
         }
 
         // 2. Check if user has a portfolio ID in token storage
-        const storedUser = TokenManager && TokenManager.getUser ? TokenManager.getUser() : null;
+        const storedUser = TokenManager.getUser();
         if (storedUser && storedUser.default_portfolio_id) {
             console.log('Using user portfolio ID:', storedUser.default_portfolio_id);
             return storedUser.default_portfolio_id;
@@ -178,7 +175,7 @@
         // Initialize on mount
         useEffect(() => {
             // Get user from token manager
-            const storedUser = TokenManager && TokenManager.getUser ? TokenManager.getUser() : null;
+            const storedUser = TokenManager.getUser();
             if (storedUser) {
                 setUser(storedUser);
             }
@@ -360,11 +357,11 @@
 
     // Export to global DawsOS namespace
     global.DawsOS.Context = {
+        getCurrentPortfolioId,
         UserContext,
         UserContextProvider,
         useUserContext,
         PortfolioSelector
     };
-
 
 })(window);

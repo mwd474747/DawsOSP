@@ -6,16 +6,12 @@
 
 (function(global) {
     'use strict';
-
-    try {
-        console.log('[api-client.js] 1. IIFE started');
-
-        // ============================================
-        // API Configuration and Authentication
-        // ============================================
-
-        const API_BASE = '';
-        console.log('[api-client.js] 2. Constants defined');
+    
+    // ============================================
+    // API Configuration and Authentication
+    // ============================================
+    
+    const API_BASE = '';
     
     // Helper function to get current portfolio ID
     const getCurrentPortfolioId = () => {
@@ -220,13 +216,6 @@
     
     // API Client with enhanced error handling and retry support
     const apiClient = {
-        // Basic HTTP methods that the validation expects
-        request: axios.request.bind(axios),
-        get: axios.get.bind(axios),
-        post: axios.post.bind(axios),
-        put: axios.put.bind(axios),
-        delete: axios.delete.bind(axios),
-        
         // Helper method to handle API errors consistently
         handleApiCallError: (operation, error) => {
             const enhancedError = error.enhancedError || handleApiError(error);
@@ -379,59 +368,42 @@
         }
     };
     
-        console.log('[api-client.js] 3. All objects defined (apiClient, TokenManager, retryConfig)');
-
-        // ============================================
-        // Export to DawsOS.Core namespace (Phase 2.1)
-        // ============================================
-
-        // Initialize DawsOS.Core namespace
-        global.DawsOS = global.DawsOS || {};
-        global.DawsOS.Core = global.DawsOS.Core || {};
-
-        console.log('[api-client.js] 4. Namespace initialized');
-
-        // Export API client to DawsOS.Core.API (new namespace)
-        global.DawsOS.Core.API = {
-            // Export all apiClient methods (executePattern, getPortfolio, getHoldings, etc.)
-            ...apiClient,
-
-            // Token management
-            TokenManager: {
-                getToken: TokenManager.getToken,
-                setToken: TokenManager.setToken,
-                removeToken: TokenManager.removeToken,
-                getUser: TokenManager.getUser,
-                setUser: TokenManager.setUser,
-                removeUser: TokenManager.removeUser,
-                refreshToken: TokenManager.refreshToken.bind(TokenManager)
-            },
-
-            // Retry configuration
-            retryConfig: retryConfig
-        };
-
-        console.log('[api-client.js] 5. DawsOS.Core.API exported');
-
-        // Export Auth utilities to DawsOS.Core.Auth
-        global.DawsOS.Core.Auth = {
-            getCurrentPortfolioId: getCurrentPortfolioId
-        };
-
-        console.log('[api-client.js] 6. DawsOS.Core.Auth exported');
-
-        // Export Error handling to DawsOS.Core.Errors
-        global.DawsOS.Core.Errors = {
-            handleApiError: handleApiError
-        };
-
-        console.log('[api-client.js] 7. DawsOS.Core.Errors exported');
-        console.log('✅ API Client module loaded successfully (DawsOS.Core.*)');
-
-    } catch (error) {
-        console.error('❌ [api-client.js] FATAL ERROR during module load:', error);
-        console.error('Error stack:', error.stack);
-        throw error;  // Re-throw to prevent silent failure
+    // ============================================
+    // Export to global scope for browser usage
+    // ============================================
+    
+    // Initialize DawsOS namespace if it doesn't exist
+    if (!global.DawsOS) {
+        global.DawsOS = {};
     }
+    
+    // Export to DawsOS.APIClient namespace (what code expects)
+    global.DawsOS.APIClient = {
+        // Export all apiClient methods
+        ...apiClient,
+        
+        // Token management
+        TokenManager: {
+            getToken: TokenManager.getToken,
+            setToken: TokenManager.setToken,
+            removeToken: TokenManager.removeToken,
+            getUser: TokenManager.getUser,
+            setUser: TokenManager.setUser,
+            removeUser: TokenManager.removeUser,
+            refreshToken: TokenManager.refreshToken.bind(TokenManager)
+        }
+    };
+    
+    // Also export to global scope for backward compatibility
+    // This maintains backward compatibility with existing code
+    global.API_BASE = API_BASE;
+    global.getCurrentPortfolioId = getCurrentPortfolioId;
+    global.TokenManager = TokenManager;
+    global.handleApiError = handleApiError;
+    global.retryConfig = retryConfig;
+    global.apiClient = apiClient;
+    
+    // For debugging purposes
+    console.log('✅ API Client module loaded successfully (DawsOS.APIClient)');
     
 })(window);

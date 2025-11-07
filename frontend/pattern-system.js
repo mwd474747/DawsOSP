@@ -9,28 +9,24 @@
  *
  * Dependencies:
  * - React (useState, useEffect) - Required for component state management
- * - DawsOS.CacheManager - Cache manager (defined in frontend/cache-manager.js)
- * - DawsOS.Core.API - API client methods (executePattern, getPortfolio, etc.)
- * - DawsOS.Core.API.TokenManager - Token management
- * - DawsOS.Core.Auth.getCurrentPortfolioId - Portfolio ID retrieval
- * - DawsOS.Context.useUserContext - User context hook
- * - DawsOS.Panels - All panel components (MetricsGridPanel, TablePanel, etc.)
- * - DawsOS.ErrorHandler - Error handler (defined in frontend/error-handler.js)
- * - DawsOS.Utils.Data.ProvenanceWarningBanner - Phase 1 stub data warning component
+ * - DawsOS.Utils - Utility functions (formatValue, LoadingSpinner, ErrorMessage)
+ * - DawsOS.Panels - All panel components (MetricsGridPanel, TablePanel, ChartPanels, etc.)
+ * - DawsOS.Context - Context hooks (useUserContext, getCurrentPortfolioId)
+ * - DawsOS.APIClient - API client for pattern execution
+ * - ErrorHandler - Global error handler (remains in full_ui.html)
+ * - CacheManager - Global cache manager (remains in full_ui.html)
+ * - TokenManager - Global token manager (remains in full_ui.html)
+ * - ProvenanceWarningBanner - Phase 1 stub data warning component
  *
- * Exports to DawsOS.Patterns:
- * - Renderer.render - Pattern render function
- * - Renderer.PatternRenderer - Main pattern orchestration component
- * - Registry.patterns - Pattern metadata registry
- * - Registry.get - Get pattern by name
- * - Registry.list - List all pattern names
- * - Registry.validate - Validate pattern exists
- * - Helpers.getDataByPath - Extract data from nested object paths
- * - Helpers.queryKeys - Query key generation for caching
- * - Helpers.queryHelpers - Data fetching helpers with caching
- * - Helpers.PanelRenderer - Panel rendering dispatcher
+ * Components Exposed:
+ * - getDataByPath - Extract data from nested object paths
+ * - PatternRenderer - Main pattern orchestration component
+ * - PanelRenderer - Panel rendering dispatcher
+ * - patternRegistry - Pattern metadata and configuration
+ * - queryKeys - Query key generation for caching
+ * - queryHelpers - Data fetching helpers with caching
  *
- * @module DawsOS.Patterns
+ * @module DawsOS.PatternSystem
  */
 
 (function(global) {
@@ -45,20 +41,16 @@
     const { useState, useEffect } = React;
     const { createElement: e } = React;
 
-    // Import CacheManager from module (required for queryHelpers)
-    const CacheManager = global.DawsOS.CacheManager;
-    if (!CacheManager) {
-        console.error('[PatternSystem] CacheManager not loaded! Ensure cache-manager.js loads before pattern-system.js');
-        throw new Error('[PatternSystem] CacheManager module not available. Check script load order.');
-    }
-
-    console.log('[PatternSystem] CacheManager loaded successfully');
-
     // Import from DawsOS modules (with correct namespaces)
-    const { useUserContext } = global.DawsOS.Context || {};
-    const getCurrentPortfolioId = global.DawsOS?.Core?.Auth?.getCurrentPortfolioId;
-    const apiClient = global.DawsOS?.Core?.API;
-    const TokenManager = global.DawsOS?.Core?.API?.TokenManager;
+    const { useUserContext, getCurrentPortfolioId } = global.DawsOS?.Context || {};
+    const { apiClient, TokenManager: TokenManagerFromAPI } = global.DawsOS?.APIClient || {};
+    
+    // Validate critical dependencies
+    if (!apiClient) {
+        console.error('[PatternSystem] API client not loaded from DawsOS.APIClient');
+        console.error('[PatternSystem] Available namespaces:', Object.keys(global.DawsOS || {}));
+        throw new Error('[PatternSystem] Required dependency DawsOS.APIClient not found. Check script load order.');
+    }
 
     // Import panel components
     const {
@@ -76,18 +68,15 @@
         ReportViewerPanel
     } = global.DawsOS.Panels || {};
 
-    // Import utilities
-    const ErrorHandler = global.DawsOS.ErrorHandler;
-    const ProvenanceWarningBanner = global.DawsOS?.Utils?.Data?.ProvenanceWarningBanner;
-
-    // Validate critical dependencies
-    if (!apiClient || !TokenManager || !getCurrentPortfolioId) {
-        console.error('[PatternSystem] Missing critical dependencies!', {
-            'DawsOS.Core.API': !!apiClient,
-            'DawsOS.Core.API.TokenManager': !!TokenManager,
-            'DawsOS.Core.Auth.getCurrentPortfolioId': !!getCurrentPortfolioId
-        });
-        throw new Error('[PatternSystem] Required dependencies not loaded. Check script load order.');
+    // Import global utilities (these remain in full_ui.html)
+    // Use TokenManager from DawsOS.APIClient if available, otherwise fallback to global
+    const { ErrorHandler, CacheManager, ProvenanceWarningBanner } = global;
+    const TokenManager = TokenManagerFromAPI || global.TokenManager;
+    
+    // Validate TokenManager
+    if (!TokenManager) {
+        console.error('[PatternSystem] TokenManager not available from DawsOS.APIClient or global');
+        throw new Error('[PatternSystem] TokenManager is required but not found');
     }
 
     // ============================================
@@ -995,44 +984,21 @@
     };
 
     // ============================================
-    // Export to DawsOS.Patterns namespace (Phase 2.3)
+    // PUBLIC API EXPORT
     // ============================================
 
-    // Initialize Patterns namespace
-    global.DawsOS.Patterns = global.DawsOS.Patterns || {};
-
-    // Export Pattern Renderer
-    global.DawsOS.Patterns.Renderer = {
-        render: function(patternConfig, data) {
-            // Wrapper for rendering patterns
-            return PatternRenderer({ pattern: patternConfig, data: data });
-        },
-        PatternRenderer: PatternRenderer
+    /**
+     * Export Pattern System to global DawsOS namespace
+     */
+    global.DawsOS.PatternSystem = {
+        getDataByPath,
+        PatternRenderer,
+        PanelRenderer,
+        patternRegistry,
+        queryKeys,
+        queryHelpers
     };
 
-    // Export Pattern Registry
-    global.DawsOS.Patterns.Registry = {
-        patterns: patternRegistry,
-        get: function(patternName) {
-            return patternRegistry[patternName];
-        },
-        list: function() {
-            return Object.keys(patternRegistry);
-        },
-        validate: function(patternName, data) {
-            // Future: Add JSON Schema validation here
-            return patternRegistry[patternName] !== undefined;
-        }
-    };
-
-    // Export Pattern Helpers
-    global.DawsOS.Patterns.Helpers = {
-        getDataByPath: getDataByPath,
-        queryKeys: queryKeys,
-        queryHelpers: queryHelpers,
-        PanelRenderer: PanelRenderer
-    };
-
-    console.log('✅ Pattern System loaded successfully (DawsOS.Patterns.*)');
+    console.log('DawsOS Pattern System loaded successfully');
 
 })(window);
