@@ -127,7 +127,8 @@
                     'DawsOS.CacheManager': [],   // Validate module exists (required by Utils hooks)
                     'DawsOS.FormValidator': [],  // Validate module exists
                     'DawsOS.ErrorHandler': [],   // Validate module exists
-                    'apiClient': ['TokenManager']  // Note: apiClient is at global.apiClient, not DawsOS.apiClient
+                    'apiClient': [],             // Note: apiClient is at global.apiClient, not DawsOS.apiClient
+                    'TokenManager': []           // Note: TokenManager is at global.TokenManager (exported separately)
                 };
 
                 const errors = [];
