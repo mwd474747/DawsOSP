@@ -45,6 +45,9 @@ full_ui.html              (1,559 lines) - Minimal app shell
 - ✅ React.createElement undefined in context.js (fixed commit 036f575)
 - ✅ Dependency inversion (CacheManager) (fixed commit 5db15b8)
 - ✅ Module load order errors (fixed commit 4d9d7cd)
+- ✅ Missing format functions in Utils (fixed commit 4e04dc3) - Phase 1.1.5
+- ✅ CacheManager blocking Utils exports (fixed commit 41cf66c) - Phase 1.1.5
+- ✅ Panel validation wrong names (fixed commit 4e04dc3) - Phase 1.1.5
 
 **Documentation:**
 - See [UI_REFACTORING_STATUS.md](../UI_REFACTORING_STATUS.md) for complete analysis
@@ -435,6 +438,15 @@ python combined_server.py
 ### 2. Breaking Module Load Order
 **Problem**: Changing script tag order in full_ui.html breaks dependencies
 **Solution**: Keep load order (core systems → base → context → patterns → pages)
+**Recent Fix**: CacheManager dependency was blocking Utils exports (commit 41cf66c)
+
+### 2a. Module Export Dependencies (NEW - Nov 7, 2025)
+**Problem**: Distributed monolith anti-pattern - modules reference undefined exports
+**Solution**: Use module validation at startup (validateModules() in full_ui.html)
+**Recent Fixes**:
+- Added missing Utils.formatCurrency/formatPercentage/formatNumber/formatDate
+- Moved CacheManager check inside hook functions only
+- Module validation now catches missing exports before React renders
 
 ### 3. Assuming Capabilities Exist
 **Problem**: Pattern orchestrator silently allows non-existent capabilities
