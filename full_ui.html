@@ -124,9 +124,10 @@
                         'getDataByPath', 'PatternRenderer', 'PanelRenderer',
                         'patternRegistry', 'queryKeys', 'queryHelpers'
                     ],
+                    'DawsOS.CacheManager': [],   // Validate module exists (required by Utils hooks)
                     'DawsOS.FormValidator': [],  // Validate module exists
                     'DawsOS.ErrorHandler': [],   // Validate module exists
-                    'DawsOS.apiClient': ['TokenManager']
+                    'apiClient': ['TokenManager']  // Note: apiClient is at global.apiClient, not DawsOS.apiClient
                 };
 
                 const errors = [];
