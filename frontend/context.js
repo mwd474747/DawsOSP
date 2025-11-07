@@ -58,7 +58,7 @@
         }
 
         // 2. Check if user has a portfolio ID in token storage
-        const storedUser = TokenManager.getUser();
+        const storedUser = TokenManager && TokenManager.getUser ? TokenManager.getUser() : null;
         if (storedUser && storedUser.default_portfolio_id) {
             console.log('Using user portfolio ID:', storedUser.default_portfolio_id);
             return storedUser.default_portfolio_id;
@@ -168,7 +168,7 @@
         // Initialize on mount
         useEffect(() => {
             // Get user from token manager
-            const storedUser = TokenManager.getUser();
+            const storedUser = TokenManager && TokenManager.getUser ? TokenManager.getUser() : null;
             if (storedUser) {
                 setUser(storedUser);
             }
