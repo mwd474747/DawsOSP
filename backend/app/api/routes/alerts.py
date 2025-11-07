@@ -289,7 +289,15 @@ async def create_alert(
                 updated_at=row["updated_at"],
             )
 
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error creating alert: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error (programming error)",
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to create alert: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -370,7 +378,15 @@ async def list_alerts(
             logger.debug(f"Found {len(alerts)} alerts for user {user_id}")
             return alerts
 
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error listing alerts: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error (programming error)",
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to list alerts: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -442,7 +458,15 @@ async def get_alert(
 
     except HTTPException:
         raise
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error getting alert: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error (programming error)",
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to get alert: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -586,7 +610,15 @@ async def update_alert(
 
     except HTTPException:
         raise
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error updating alert: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error (programming error)",
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to update alert: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -645,7 +677,15 @@ async def delete_alert(
 
     except HTTPException:
         raise
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error deleting alert: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error (programming error)",
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to delete alert: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -766,7 +806,15 @@ async def test_alert(
 
     except HTTPException:
         raise
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error testing alert: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error (programming error)",
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to test alert: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

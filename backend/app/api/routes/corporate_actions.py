@@ -456,7 +456,12 @@ async def record_split(
         logger.error(f"Corporate action error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Split recording failed: {e}")
 
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error recording split: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error (programming error): {str(e)}")
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Unexpected error recording split: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
