@@ -3129,9 +3129,19 @@ class DataHarvester(BaseAgent):
             else:
                 informational.append(action)
         
+        # Calculate accurate counts for each action type
+        dividends_count = sum(1 for a in actions_with_impact if a.get("type") == "dividend")
+        splits_count = sum(1 for a in actions_with_impact if a.get("type") == "split")
+        earnings_count = sum(1 for a in actions_with_impact if a.get("type") == "earnings")
+        
         result = {
             "actions": actions_with_impact,
-            "total_dividend_impact": total_dividend_impact,
+            "summary": {  # Add summary object with pattern-expected field names
+                "total_actions": len(actions_with_impact),
+                "dividends_expected": total_dividend_impact,  # Portfolio-specific dividend amount
+                "splits_pending": splits_count,
+                "earnings_releases": earnings_count
+            },
             "notifications": {
                 "urgent": urgent,
                 "informational": informational
