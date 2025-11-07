@@ -43,6 +43,20 @@
 
 ## ✅ Completed (January 14, 2025)
 
+### Database Connection Standardization ✅ **COMPLETE**
+- ✅ **Status:** All database connections standardized
+- ✅ **Pattern A:** RLS-aware connections for user-scoped data (`get_db_connection_with_rls(user_id)`)
+- ✅ **Pattern B:** Helper functions for system-level data (`execute_query*()`)
+- ✅ **Files Updated:** 6 files
+  - `backend/app/services/ratings.py` - Removed pool caching, using `execute_query()`
+  - `backend/app/services/audit.py` - Removed pool caching, using `execute_query()` and `execute_statement()`
+  - `backend/app/agents/financial_analyst.py` - Replaced 9 `pool.acquire()` calls with RLS-aware connections
+  - `backend/app/agents/data_harvester.py` - Replaced 1 `pool.acquire()` call with `execute_query_one()`
+  - `backend/jobs/daily_valuation.py` - Removed `db_pool` parameter, replaced 6 `pool.acquire()` calls with helper functions
+  - `backend/app/api/routes/auth.py` - Replaced `get_db_pool()` with `execute_query()` for consistency
+- ✅ **Benefits:** Consistent patterns, RLS enforcement, simplified code, better security
+- ✅ **See:** [DATABASE_CONNECTION_STANDARDIZATION_COMPLETE.md](DATABASE_CONNECTION_STANDARDIZATION_COMPLETE.md)
+
 ### Phase 1: Critical Fixes
 - ✅ **Tax patterns archived** - Moved to `.archive/tax-patterns-2025-01-14/`
 - ✅ **Removed `metrics.compute`** - Removed from capabilities list (not implemented) - **COMPLETED 2025-01-14**

@@ -29,7 +29,8 @@
 - **[AGENT_CONVERSATION_MEMORY.md](AGENT_CONVERSATION_MEMORY.md)** - Shared memory for agent coordination
 
 ### Refactoring Status
-- **[REFACTOR_STATUS.md](REFACTOR_STATUS.md)** - Current refactoring status (Phases 0-3 Complete, Phase 4 Pending)
+- **[REFACTORING_PROGRESS.md](REFACTORING_PROGRESS.md)** - Current refactoring status (Phases 0-3 Complete, Phase 4 Pending)
+- **[DATABASE_CONNECTION_STANDARDIZATION_COMPLETE.md](DATABASE_CONNECTION_STANDARDIZATION_COMPLETE.md)** - Database connection standardization completion report
 
 ---
 
@@ -108,6 +109,14 @@ Historical documentation has been archived to `.archive/` directory:
 
 ## 📝 Recent Updates (January 14, 2025)
 
+### Database Connection Standardization ✅ (January 14, 2025)
+- **Status:** ✅ **COMPLETE** - All database connections standardized
+- **Pattern A:** RLS-aware connections for user-scoped data (`get_db_connection_with_rls(user_id)`)
+- **Pattern B:** Helper functions for system-level data (`execute_query*()`)
+- **Files Updated:** 6 files (ratings.py, audit.py, financial_analyst.py, data_harvester.py, daily_valuation.py, auth.py)
+- **Benefits:** Consistent patterns, RLS enforcement, simplified code, better security
+- **See:** [ARCHITECTURE.md](ARCHITECTURE.md#database-connection-architecture), [DATABASE.md](DATABASE.md#-database-connection-patterns-january-14-2025-), [DATABASE_CONNECTION_STANDARDIZATION_COMPLETE.md](DATABASE_CONNECTION_STANDARDIZATION_COMPLETE.md)
+
 ### Legacy Cleanup Complete ✅
 - **Observability Removal:** Removed Prometheus, Docker, and OpenTelemetry legacy code
   - Deleted `observability/` directory (13 configuration files)
@@ -123,16 +132,6 @@ Historical documentation has been archived to `.archive/` directory:
 - **Phase 2:** Foundation (capability contracts, validation) ✅ COMPLETE
 - **Phase 3:** Real features (factor analysis, DaR hardening) ✅ COMPLETE
 - **Phase 4:** Production readiness (pending) ⏳ PENDING
-
-### Phase 1 Complete: Provenance Warnings & Pattern Output Extraction ✅
-- **Provenance Warnings:** Stub data now explicitly marked with `_provenance` field
-  - UI displays warning banner when stub data detected
-  - Prevents user trust issues from silent fake data
-- **Pattern Output Extraction:** Fixed orchestrator to handle 3 output formats
-  - All 6 updated patterns return correct data
-  - Scenario analysis working correctly (12 scenarios)
-- **Migration 009:** Applied successfully - scenario analysis tables created
-- **See:** [ARCHITECTURE.md](ARCHITECTURE.md) for details, [CHANGELOG.md](CHANGELOG.md) for complete changes
 
 ### Field Naming Standardization ✅
 - **Phase 1 Complete:** Field naming standardized across agent layer

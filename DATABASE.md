@@ -247,11 +247,15 @@ CREATE TABLE portfolios (
 
 ## 💡 PRACTICAL CODE EXAMPLES
 
-### 1. Getting Current Holdings
+### 1. Getting Current Holdings (User-Scoped Data - Use RLS)
+
+**✅ CORRECT (Standardized Pattern - January 14, 2025):**
 ```python
-async def get_holdings(portfolio_id: str):
-    """Get current holdings with proper field names"""
-    async with pool.acquire() as conn:
+from app.db.connection import get_db_connection_with_rls
+
+async def get_holdings(portfolio_id: str, user_id: str):
+    """Get current holdings with proper field names and RLS"""
+    async with get_db_connection_with_rls(user_id) as conn:
         return await conn.fetch("""
             SELECT 
                 l.symbol,
@@ -268,11 +272,17 @@ async def get_holdings(portfolio_id: str):
         """, portfolio_id)
 ```
 
-### 2. Recording a Trade with Tax Lot
+**Why RLS?** User-scoped data (lots, portfolios, transactions) requires Row-Level Security to enforce data isolation.
+
+### 2. Recording a Trade with Tax Lot (User-Scoped Data - Use RLS)
+
+**✅ CORRECT (Standardized Pattern - January 14, 2025):**
 ```python
-async def execute_trade(portfolio_id: str, trade_type: str, symbol: str, quantity: float, price: float):
-    """Execute trade with proper lot tracking"""
-    async with pool.acquire() as conn:
+from app.db.connection import get_db_connection_with_rls
+
+async def execute_trade(portfolio_id: str, trade_type: str, symbol: str, quantity: float, price: float, user_id: str):
+    """Execute trade with proper lot tracking and RLS"""
+    async with get_db_connection_with_rls(user_id) as conn:
         async with conn.transaction():
             # Record transaction
             tx_id = await conn.fetchval("""
@@ -296,7 +306,7 @@ async def execute_trade(portfolio_id: str, trade_type: str, symbol: str, quantit
                 remaining = quantity
                 lots = await conn.fetch("""
                     SELECT id, quantity_open 
-                    FROM lots 
+                    FROM lots
                     WHERE portfolio_id = $1 
                         AND symbol = $2 
                         AND quantity_open > 0
@@ -319,11 +329,15 @@ async def execute_trade(portfolio_id: str, trade_type: str, symbol: str, quantit
                     remaining -= reduce_amount
 ```
 
-### 3. Pattern Execution Query
+### 3. Getting Portfolio Metrics (User-Scoped Data - Use RLS)
+
+**✅ CORRECT (Standardized Pattern - January 14, 2025):**
 ```python
-async def get_portfolio_metrics(portfolio_id: str):
-    """Get metrics using correct time field names"""
-    async with pool.acquire() as conn:
+from app.db.connection import get_db_connection_with_rls
+
+async def get_portfolio_metrics(portfolio_id: str, user_id: str):
+    """Get metrics using correct time field names and RLS"""
+    async with get_db_connection_with_rls(user_id) as conn:
         # Note: portfolio_daily_values uses 'valuation_date'
         nav_history = await conn.fetch("""
             SELECT valuation_date, total_value  
@@ -347,6 +361,29 @@ async def get_portfolio_metrics(portfolio_id: str):
             'factor_exposures': factor_exposures
         }
 ```
+
+**Why RLS?** Portfolio metrics are user-scoped data and require Row-Level Security.
+
+### 4. Getting Securities (System-Level Data - Use Helper Functions)
+
+**✅ CORRECT (Standardized Pattern - January 14, 2025):**
+```python
+from app.db.connection import execute_query, execute_query_one
+
+# Get all securities (system-level data - no RLS needed)
+async def get_securities(symbol: str = None):
+    """Get securities using helper functions"""
+    if symbol:
+        return await execute_query_one("""
+            SELECT * FROM securities WHERE symbol = $1
+        """, symbol)
+    else:
+        return await execute_query("""
+            SELECT * FROM securities ORDER BY symbol
+        """)
+```
+
+**Why Helper Functions?** Securities are system-level data (shared across all users), so no RLS needed.
 
 ---
 

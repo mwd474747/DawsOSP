@@ -464,6 +464,75 @@ backend/app/
 
 ## Database Connection Architecture
 
+### Standardized Connection Patterns (January 14, 2025) ✅
+
+**Status:** ✅ **STANDARDIZED** - All database connections follow consistent patterns
+
+**Two Standard Patterns:**
+
+#### Pattern A: RLS-Aware Connection (User-Scoped Data) ⭐
+
+**Use for:** User-scoped data (portfolios, lots, transactions, metrics)
+
+**Implementation:**
+```python
+from app.db.connection import get_db_connection_with_rls
+
+# User-scoped data requires RLS (Row-Level Security)
+async with get_db_connection_with_rls(str(ctx.user_id)) as conn:
+    rows = await conn.fetch("""
+        SELECT * FROM lots
+        WHERE portfolio_id = $1
+    """, portfolio_id)
+```
+
+**Why RLS?**
+- Enforces data isolation at database level
+- Prevents users from accessing other users' data
+- Automatically filters queries by `user_id`
+- Required for multi-tenant security
+
+**Usage:**
+- Agent methods accessing user data
+- API routes accessing portfolios/transactions
+- Any query on `portfolios`, `lots`, `transactions`, `portfolio_metrics`, etc.
+
+#### Pattern B: Helper Functions (System-Level Data)
+
+**Use for:** System-level data (securities, pricing_packs, fx_rates, users)
+
+**Implementation:**
+```python
+from app.db.connection import execute_query, execute_query_one, execute_statement
+
+# System-level data (no RLS needed)
+rows = await execute_query("""
+    SELECT * FROM securities
+    WHERE symbol = $1
+""", symbol)
+
+# Single row
+row = await execute_query_one("""
+    SELECT * FROM securities WHERE id = $1
+""", security_id)
+
+# Insert/Update/Delete
+await execute_statement("""
+    INSERT INTO securities (symbol, name) VALUES ($1, $2)
+""", symbol, name)
+```
+
+**Why Helper Functions?**
+- Simpler API (no connection management)
+- Automatic connection pooling
+- Consistent error handling
+- No RLS overhead for system data
+
+**Usage:**
+- Service methods accessing system data
+- Job scripts accessing pricing/securities
+- Admin operations
+
 ### Pool Management (Fixed Nov 2, 2025)
 
 **Challenge:** Module instance separation prevented pool sharing across agents
@@ -498,7 +567,9 @@ def register_external_pool(pool: asyncpg.Pool):
 - **Problem:** Module-level variables reset in new import instances (commits before e54da93)
 - **Old Approach:** Complex 5-priority fallback (600 lines, unreliable)
 - **New Approach:** sys.modules storage (382 lines, reliable)
+- **Standardization:** All connections standardized (January 14, 2025)
 - **Analysis:** See [DATABASE.md](DATABASE.md) for database operations documentation
+- **Completion Report:** See [DATABASE_CONNECTION_STANDARDIZATION_COMPLETE.md](DATABASE_CONNECTION_STANDARDIZATION_COMPLETE.md)
 
 ---
 
