@@ -291,7 +291,14 @@ class ScenarioService:
     Applies macro shocks to portfolio and suggests hedges.
     """
 
-    def __init__(self):
+    def __init__(self, db_pool=None):
+        """
+        Initialize scenario service.
+
+        Args:
+            db_pool: AsyncPG connection pool (optional, will get from connection module if not provided)
+        """
+        self.db_pool = db_pool
         self.scenarios = SCENARIO_LIBRARY
 
     async def get_position_betas(
@@ -945,14 +952,21 @@ class ScenarioService:
 _scenario_service: Optional[ScenarioService] = None
 
 
-def get_scenario_service() -> ScenarioService:
+def get_scenario_service(db_pool=None) -> ScenarioService:
     """
-    Get scenario service singleton.
+    DEPRECATED: Use ScenarioService(db_pool=...) directly instead.
 
-    Returns:
-        ScenarioService singleton
+    Migration:
+        OLD: scenario_service = get_scenario_service()
+        NEW: scenario_service = ScenarioService(db_pool=db_pool)
     """
+    import warnings
+    warnings.warn(
+        "get_scenario_service() is deprecated. Use ScenarioService(db_pool=...) directly.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     global _scenario_service
     if _scenario_service is None:
-        _scenario_service = ScenarioService()
+        _scenario_service = ScenarioService(db_pool=db_pool)
     return _scenario_service

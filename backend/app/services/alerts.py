@@ -1,6 +1,10 @@
 """
 Alert Evaluation Service
 
+⚠️ DEPRECATED: This service is deprecated and will be removed in a future release.
+The functionality has been consolidated into the MacroHound agent.
+Use `macro_hound` agent capabilities instead.
+
 Purpose: Evaluate user-defined alert conditions against portfolio metrics
 Updated: 2025-10-23
 Priority: P1 (Sprint 3 Week 6)
@@ -57,6 +61,10 @@ class AlertService:
     """
     Alert evaluation service.
 
+    ⚠️ DEPRECATED: This service is deprecated and will be removed in a future release.
+    The functionality has been consolidated into the MacroHound agent.
+    Use `macro_hound` agent capabilities instead.
+
     Evaluates user-defined conditions against:
     - Macro indicators (VIX, unemployment, rates)
     - Portfolio metrics (TWR, Sharpe, drawdown)
@@ -69,9 +77,17 @@ class AlertService:
         """
         Initialize alert service.
 
+        ⚠️ DEPRECATED: This service is deprecated. Use MacroHound agent capabilities instead.
+
         Args:
             use_db: If True, use real database. If False, use stubs for testing.
         """
+        import warnings
+        warnings.warn(
+            "AlertService is deprecated. Use MacroHound agent capabilities instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         self.use_db = use_db
 
         if use_db:

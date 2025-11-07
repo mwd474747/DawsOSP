@@ -607,7 +607,14 @@ class CyclesService:
     Detects STDC, LTDC, and Empire cycle phases.
     """
 
-    def __init__(self):
+    def __init__(self, db_pool=None):
+        """
+        Initialize cycles service.
+
+        Args:
+            db_pool: AsyncPG connection pool (optional, will get from connection module if not provided)
+        """
+        self.db_pool = db_pool
         self.stdc_detector = STDCDetector()
         self.ltdc_detector = LTDCDetector()
         self.empire_detector = EmpireDetector()
@@ -899,14 +906,21 @@ class CyclesService:
 _cycles_service: Optional[CyclesService] = None
 
 
-def get_cycles_service() -> CyclesService:
+def get_cycles_service(db_pool=None) -> CyclesService:
     """
-    Get cycles service singleton.
+    DEPRECATED: Use CyclesService(db_pool=...) directly instead.
 
-    Returns:
-        CyclesService singleton
+    Migration:
+        OLD: cycles_service = get_cycles_service()
+        NEW: cycles_service = CyclesService(db_pool=db_pool)
     """
+    import warnings
+    warnings.warn(
+        "get_cycles_service() is deprecated. Use CyclesService(db_pool=...) directly.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     global _cycles_service
     if _cycles_service is None:
-        _cycles_service = CyclesService()
+        _cycles_service = CyclesService(db_pool=db_pool)
     return _cycles_service

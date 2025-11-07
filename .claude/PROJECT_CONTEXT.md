@@ -644,3 +644,32 @@ See [CLAUDE_IDE_AGENTS_RECOMMENDATION.md](CLAUDE_IDE_AGENTS_RECOMMENDATION.md) f
 - Optional MCP server for database inspection
 
 **Status:** ✅ Phase 1 complete (4 commands), Phase 2/3 optional
+
+---
+
+## 🔧 Current Refactoring Status (Nov 6, 2025)
+
+**Latest Plan:** [REFACTORING_PLAN_COMPREHENSIVE.md](../REFACTORING_PLAN_COMPREHENSIVE.md)
+
+**Completed by Replit Agent:**
+- ✅ Provider registry singleton ([provider_registry.py](../backend/app/integrations/provider_registry.py))
+- ✅ Startup API key validation ([combined_server.py:251-260](../backend/combined_server.py#L251-L260))
+- ✅ Tax patterns added to repo (patterns not yet implemented)
+
+**In Progress:**
+- ⏳ Dependency injection migration (14 services need deprecation warnings)
+- ⏳ Agent refactoring (FinancialAnalyst, MacroHound still use old singleton pattern)
+
+**Pending Decisions:**
+- 🤔 holding_deep_dive pattern: Implement? (Recommended: YES - all capabilities exist, 8-12h effort)
+- 🤔 portfolio_macro_overview pattern: Investigate redundancy first
+- ⏸️ cycle_deleveraging_scenarios: Wait for FRED data population
+- ⏸️ Tax capabilities: User decision = "do later" (40h effort, $200K ARR)
+
+**Next Steps:**
+1. User approval of [REFACTORING_PLAN_COMPREHENSIVE.md](../REFACTORING_PLAN_COMPREHENSIVE.md)
+2. Phase 0: Test provider registry (2-3 hours)
+3. Phase 1: Complete DI migration (6-8 hours)
+4. Phase 2: Implement holding_deep_dive pattern (8-12 hours)
+
+**Estimated Remaining Effort:** 12-18 hours across 3 phases

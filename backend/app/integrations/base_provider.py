@@ -28,12 +28,28 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 import httpx
-from opentelemetry import trace
+
+# Optional: OpenTelemetry tracing (graceful degradation if not installed)
+try:
+    from opentelemetry import trace
+    tracer = trace.get_tracer(__name__)
+    TRACING_ENABLED = True
+except ImportError:
+    # No-op tracer if opentelemetry not installed
+    class NoOpSpan:
+        def set_attribute(self, key, value): pass
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+
+    class NoOpTracer:
+        def start_as_current_span(self, name): return NoOpSpan()
+
+    tracer = NoOpTracer()
+    TRACING_ENABLED = False
 
 from app.core.types import ProviderTimeoutError, RequestCtx, RightsViolationError
 
 logger = logging.getLogger(__name__)
-tracer = trace.get_tracer(__name__)
 
 
 # ============================================================================

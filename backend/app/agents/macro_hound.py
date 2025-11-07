@@ -48,6 +48,8 @@ from app.services.cycles import CyclesService
 from app.services.macro_aware_scenarios import MacroAwareScenarioService
 from app.services.alerts import AlertService
 from app.services.playbooks import PlaybookGenerator
+from app.services.scenarios import ScenarioService
+from app.integrations.fred_provider import FREDProvider
 
 logger = logging.getLogger("DawsOS.MacroHound")
 
@@ -68,6 +70,35 @@ class MacroHound(BaseAgent):
         - CyclesService (STDC/LTDC/Empire phases)
         - RiskService (DaR scenarios)
     """
+
+    def __init__(self, name: str, services: Dict[str, Any]):
+        """
+        Initialize MacroHound with dependency injection.
+
+        Args:
+            name: Agent identifier (e.g., "macro_hound")
+            services: Dependency injection dict (db, redis, API clients)
+        """
+        super().__init__(name, services)
+
+        # Get db_pool from services
+        self.db_pool = services.get("db")
+
+        # Initialize services with dependency injection
+        # FRED API provider for macro data
+        import os
+        api_key = os.getenv("FRED_API_KEY")
+        self.fred_client = FREDProvider(api_key=api_key) if api_key else None
+
+        # Core macro services
+        self.macro_service = MacroService(fred_client=self.fred_client) if self.fred_client else None
+        self.cycles_service = CyclesService()
+        self.scenario_service = ScenarioService()
+        self.macro_aware_service = MacroAwareScenarioService()
+
+        # Alert and playbook services
+        self.alert_service = AlertService(use_db=self.db_pool is not None)
+        self.playbook_generator = PlaybookGenerator()
 
     def get_capabilities(self) -> List[str]:
         """Return list of capabilities."""
@@ -148,16 +179,15 @@ class MacroHound(BaseAgent):
 
         logger.info(f"macro.detect_regime: asof_date={asof}")
 
-        # Get macro service (singleton pattern for now, TODO: DI)
-        from app.services.macro import get_macro_service
-        macro_service = get_macro_service()
-
         provenance = DataProvenance.UNKNOWN
         warnings = []
 
         try:
-            # Detect current regime
-            classification = await macro_service.detect_current_regime()
+            if not self.macro_service:
+                raise ValueError("FRED_API_KEY not configured")
+
+            # Detect current regime using injected macro_service
+            classification = await self.macro_service.detect_current_regime()
 
             result = {
                 "regime_name": classification.regime.value,
@@ -253,15 +283,11 @@ class MacroHound(BaseAgent):
 
         logger.info(f"macro.compute_cycles: asof_date={asof}")
 
-        # Get cycles service (singleton pattern for now, TODO: DI)
-        from app.services.cycles import get_cycles_service
-        cycles_service = get_cycles_service()
-
         try:
-            # Detect all cycle phases
-            stdc_phase = await cycles_service.detect_stdc_phase(as_of_date=asof)
-            ltdc_phase = await cycles_service.detect_ltdc_phase(as_of_date=asof)
-            empire_phase = await cycles_service.detect_empire_phase(as_of_date=asof)
+            # Detect all cycle phases using injected cycles_service
+            stdc_phase = await self.cycles_service.detect_stdc_phase(as_of_date=asof)
+            ltdc_phase = await self.cycles_service.detect_ltdc_phase(as_of_date=asof)
+            empire_phase = await self.cycles_service.detect_empire_phase(as_of_date=asof)
 
             result = {
                 "stdc": {
@@ -354,14 +380,13 @@ class MacroHound(BaseAgent):
 
         logger.info(f"macro.get_indicators: asof_date={asof}")
 
-        # Get macro service
-        from app.services.macro import get_macro_service
-        macro_service = get_macro_service()
-
         try:
-            # Get indicators with z-scores
-            indicators = await macro_service.get_indicators(asof_date=asof)
-            zscores = await macro_service.compute_zscores(indicators, window_days=252)
+            if not self.macro_service:
+                raise ValueError("FRED_API_KEY not configured")
+
+            # Get indicators with z-scores using injected macro_service
+            indicators = await self.macro_service.get_indicators(asof_date=asof)
+            zscores = await self.macro_service.compute_zscores(indicators, window_days=252)
 
             result = {
                 "indicators": {k: float(v) for k, v in indicators.items()},
@@ -458,12 +483,10 @@ class MacroHound(BaseAgent):
             f"scenario_id={scenario_id}, pack_id={pack_id_str}"
         )
 
-        # Get scenario service
-        from app.services.scenarios import get_scenario_service, ShockType
-
-        scenario_service = get_scenario_service()
-
         try:
+            # Import ShockType enum
+            from app.services.scenarios import ShockType
+
             # Determine shock type
             if scenario_id:
                 # Map scenario_id to ShockType enum
@@ -487,8 +510,8 @@ class MacroHound(BaseAgent):
                 # Default to rates_up if no scenario specified
                 shock_type = ShockType.RATES_UP
 
-            # Run scenario stress test
-            scenario_result = await scenario_service.apply_scenario(
+            # Run scenario stress test using injected scenario_service
+            scenario_result = await self.scenario_service.apply_scenario(
                 portfolio_id=str(portfolio_id_uuid),
                 shock_type=shock_type,
                 pack_id=pack_id_str,
@@ -748,18 +771,13 @@ class MacroHound(BaseAgent):
         if cycle_adjusted:
             logger.info("Cycle-adjusted DaR requested (not yet fully implemented)")
 
-        # Get scenario service
-        from app.services.scenarios import get_scenario_service
-        scenario_service = get_scenario_service()
-
-        # Get macro service to detect current regime
-        from app.services.macro import get_macro_service
-        macro_service = get_macro_service()
-
         try:
             # Detect current regime for conditioning
             try:
-                regime_classification = await macro_service.detect_current_regime()
+                if not self.macro_service:
+                    raise ValueError("FRED_API_KEY not configured")
+
+                regime_classification = await self.macro_service.detect_current_regime()
                 regime = regime_classification.regime.value
             except Exception as e:
                 logger.warning(f"Could not detect regime for DaR conditioning: {e}")
@@ -767,8 +785,8 @@ class MacroHound(BaseAgent):
 
             logger.info(f"Computing DaR conditioned on regime: {regime}")
 
-            # Compute DaR using scenario service
-            dar_result = await scenario_service.compute_dar(
+            # Compute DaR using injected scenario_service
+            dar_result = await self.scenario_service.compute_dar(
                 portfolio_id=str(portfolio_id_uuid),
                 regime=regime,
                 confidence=confidence,
@@ -859,8 +877,7 @@ class MacroHound(BaseAgent):
         else:
             logger.info(f"macro.get_regime_history: lookback={lookback_days} days")
 
-        macro_service = MacroService()
-        history = await macro_service.get_regime_history(lookback_days)
+        history = await self.macro_service.get_regime_history(lookback_days)
 
         metadata = self._create_metadata(
             source=f"macro_service:regime_history",
@@ -914,8 +931,7 @@ class MacroHound(BaseAgent):
         else:
             # Fetch from MacroService (fallback)
             logger.debug("Fetching regime history from MacroService")
-            macro_service = MacroService()
-            history = await macro_service.get_regime_history(90)  # Last 90 days
+            history = await self.macro_service.get_regime_history(90)  # Last 90 days
 
             # Find regime changes
             shifts = []
@@ -952,8 +968,7 @@ class MacroHound(BaseAgent):
         asof = asof_date or ctx.asof_date
         logger.info(f"cycles.compute_short_term: asof={asof}")
 
-        cycles_service = CyclesService()
-        phase = await cycles_service.detect_stdc_phase(as_of_date=asof)
+        phase = await self.cycles_service.detect_stdc_phase(as_of_date=asof)
 
         result = {
             "cycle_type": "short_term_debt",
@@ -986,8 +1001,7 @@ class MacroHound(BaseAgent):
         asof = asof_date or ctx.asof_date
         logger.info(f"cycles.compute_long_term: asof={asof}")
 
-        cycles_service = CyclesService()
-        phase = await cycles_service.detect_ltdc_phase(as_of_date=asof)
+        phase = await self.cycles_service.detect_ltdc_phase(as_of_date=asof)
 
         result = {
             "cycle_type": "long_term_debt",
@@ -1020,8 +1034,7 @@ class MacroHound(BaseAgent):
         asof = asof_date or ctx.asof_date
         logger.info(f"cycles.compute_empire: asof={asof}")
 
-        cycles_service = CyclesService()
-        phase = await cycles_service.detect_empire_phase(as_of_date=asof)
+        phase = await self.cycles_service.detect_empire_phase(as_of_date=asof)
 
         result = {
             "cycle_type": "empire",
@@ -1063,9 +1076,8 @@ class MacroHound(BaseAgent):
         logger.info(f"cycles.compute_civil: asof={asof}")
 
         try:
-            # Use the real CyclesService to detect civil phase
-            cycles_service = CyclesService()
-            phase = await cycles_service.detect_civil_phase(as_of_date=asof)
+            # Use the injected cycles_service to detect civil phase
+            phase = await self.cycles_service.detect_civil_phase(as_of_date=asof)
 
             # Generate description based on phase
             descriptions = {
@@ -1149,12 +1161,10 @@ class MacroHound(BaseAgent):
         asof = asof_date or ctx.asof_date
         logger.info(f"cycles.aggregate_overview: asof={asof}")
 
-        cycles_service = CyclesService()
-
-        # Compute all three cycles from service
-        stdc_phase = await cycles_service.detect_stdc_phase(as_of_date=asof)
-        ltdc_phase = await cycles_service.detect_ltdc_phase(as_of_date=asof)
-        empire_phase = await cycles_service.detect_empire_phase(as_of_date=asof)
+        # Compute all three cycles from injected service
+        stdc_phase = await self.cycles_service.detect_stdc_phase(as_of_date=asof)
+        ltdc_phase = await self.cycles_service.detect_ltdc_phase(as_of_date=asof)
+        empire_phase = await self.cycles_service.detect_empire_phase(as_of_date=asof)
 
         # Compute civil cycle using our implementation
         civil_data = await self.cycles_compute_civil(ctx, state, asof_date=asof)
@@ -1208,9 +1218,6 @@ class MacroHound(BaseAgent):
         """
         logger.info(f"scenarios.deleveraging_austerity: portfolio={portfolio_id}, ltdc_phase={ltdc_phase}")
 
-        from app.services.scenarios import ScenariosService
-        scenarios_service = ScenariosService()
-
         # Define austerity scenario shocks
         scenario_spec = {
             "government_bonds": Decimal("0.15"),  # +15% (flight to safety)
@@ -1219,7 +1226,7 @@ class MacroHound(BaseAgent):
             "currencies_usd": Decimal("0.10"),     # +10% USD strength (deflation)
         }
 
-        result = await scenarios_service.apply_scenario(
+        result = await self.scenario_service.apply_scenario(
             portfolio_id=self._to_uuid(portfolio_id, "portfolio_id"),
             scenario_spec=scenario_spec,
             pack_id=pack_id
@@ -1248,9 +1255,6 @@ class MacroHound(BaseAgent):
         """
         logger.info(f"scenarios.deleveraging_default: portfolio={portfolio_id}, ltdc_phase={ltdc_phase}")
 
-        from app.services.scenarios import ScenariosService
-        scenarios_service = ScenariosService()
-
         # Define default scenario shocks (severe deflation)
         scenario_spec = {
             "government_bonds": Decimal("-0.30"),  # -30% (default risk)
@@ -1259,7 +1263,7 @@ class MacroHound(BaseAgent):
             "currencies_usd": Decimal("0.20"),      # +20% USD (deflation, flight to safety)
         }
 
-        result = await scenarios_service.apply_scenario(
+        result = await self.scenario_service.apply_scenario(
             portfolio_id=self._to_uuid(portfolio_id, "portfolio_id"),
             scenario_spec=scenario_spec,
             pack_id=pack_id
@@ -1288,9 +1292,6 @@ class MacroHound(BaseAgent):
         """
         logger.info(f"scenarios.deleveraging_money_printing: portfolio={portfolio_id}, ltdc_phase={ltdc_phase}")
 
-        from app.services.scenarios import ScenariosService
-        scenarios_service = ScenariosService()
-
         # Define money printing scenario shocks (inflation)
         scenario_spec = {
             "government_bonds": Decimal("-0.25"),   # -25% (inflation erodes value)
@@ -1299,7 +1300,7 @@ class MacroHound(BaseAgent):
             "currencies_usd": Decimal("-0.15"),      # -15% USD (currency debasement)
         }
 
-        result = await scenarios_service.apply_scenario(
+        result = await self.scenario_service.apply_scenario(
             portfolio_id=self._to_uuid(portfolio_id, "portfolio_id"),
             scenario_spec=scenario_spec,
             pack_id=pack_id
@@ -1328,11 +1329,8 @@ class MacroHound(BaseAgent):
         """
         logger.info(f"scenarios.macro_aware_apply: portfolio={portfolio_id}, scenario={scenario_name}")
 
-        # Initialize the macro-aware scenario service
-        macro_aware_service = MacroAwareScenarioService()
-
-        # Apply the scenario with macro adjustments
-        result = await macro_aware_service.apply_macro_aware_scenario(
+        # Apply the scenario with macro adjustments using injected service
+        result = await self.macro_aware_service.apply_macro_aware_scenario(
             portfolio_id=self._to_uuid(portfolio_id, "portfolio_id"),
             scenario_name=scenario_name,
             pack_id=pack_id
@@ -1360,11 +1358,8 @@ class MacroHound(BaseAgent):
         """
         logger.info(f"scenarios.macro_aware_rank: portfolio={portfolio_id}")
 
-        # Initialize the macro-aware scenario service
-        macro_aware_service = MacroAwareScenarioService()
-
-        # Get regime-weighted scenarios
-        ranked_scenarios = await macro_aware_service.get_regime_weighted_scenarios(
+        # Get regime-weighted scenarios using injected service
+        ranked_scenarios = await self.macro_aware_service.get_regime_weighted_scenarios(
             portfolio_id=self._to_uuid(portfolio_id, "portfolio_id"),
             pack_id=pack_id
         )
@@ -1424,7 +1419,6 @@ class MacroHound(BaseAgent):
         """
         logger.info(f"macro_hound.suggest_alert_presets: portfolio_id={portfolio_id}")
 
-        playbook_gen = PlaybookGenerator()
         suggestions = []
 
         # Check for regime shift
@@ -1433,7 +1427,7 @@ class MacroHound(BaseAgent):
             new_regime = trend_analysis.get("new_regime", "Unknown")
             confidence = trend_analysis.get("confidence", 0.0)
 
-            playbook = playbook_gen.generate_regime_shift_playbook(
+            playbook = self.playbook_generator.generate_regime_shift_playbook(
                 old_regime=old_regime,
                 new_regime=new_regime,
                 confidence=float(confidence)
@@ -1460,7 +1454,7 @@ class MacroHound(BaseAgent):
             dar_change = trend_analysis.get("dar_change_pct", 0.0)
             current_dar = trend_analysis.get("current_dar", 0.0)
 
-            playbook = playbook_gen.generate_dar_breach_playbook(
+            playbook = self.playbook_generator.generate_dar_breach_playbook(
                 threshold=float(current_dar),
                 portfolio_id=portfolio_id,
                 severity="warning"
@@ -1556,8 +1550,6 @@ class MacroHound(BaseAgent):
         """
         logger.info(f"macro_hound.create_alert_if_threshold: portfolio_id={portfolio_id}, threshold={threshold}")
 
-        alert_service = AlertService(use_db=self.services is not None)
-
         # Extract total impact
         total_impact = abs(float(news_impact.get("total_impact", 0.0)))
         threshold_value = threshold or 0.05
@@ -1575,7 +1567,7 @@ class MacroHound(BaseAgent):
 
             # Evaluate condition
             try:
-                eval_result = await alert_service.evaluate_condition(
+                eval_result = await self.alert_service.evaluate_condition(
                     condition=condition,
                     ctx={"asof_date": ctx.asof_date}
                 )

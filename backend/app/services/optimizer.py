@@ -1,6 +1,10 @@
 """
 Portfolio Optimizer Service - Riskfolio-Lib Integration
 
+⚠️ DEPRECATED: This service is deprecated and will be removed in a future release.
+The functionality has been consolidated into the FinancialAnalyst agent.
+Use `financial_analyst.propose_trades` capability instead.
+
 Purpose: Policy-based portfolio optimization and rebalancing with Riskfolio-Lib
 Updated: 2025-10-26
 Priority: P1 (Core business logic for policy rebalance pattern)
@@ -237,18 +241,33 @@ class OptimizerService:
     """
     Portfolio optimizer using Riskfolio-Lib.
 
+    ⚠️ DEPRECATED: This service is deprecated and will be removed in a future release.
+    The functionality has been consolidated into the FinancialAnalyst agent.
+    Use `financial_analyst.propose_trades` capability instead.
+
     Implements mean-variance optimization, risk parity, and other methods
     with quality rating constraints and turnover limits.
     """
 
-    def __init__(self, use_db: bool = True):
+    def __init__(self, use_db: bool = True, db_pool=None):
         """
         Initialize optimizer service.
-        
+
+        ⚠️ DEPRECATED: This service is deprecated. Use FinancialAnalyst agent capabilities instead.
+
         Args:
             use_db: If True, use real database. If False, use stubs for testing.
+            db_pool: AsyncPG connection pool (optional, will get from connection module if not provided)
         """
+        import warnings
+        warnings.warn(
+            "OptimizerService is deprecated. Use FinancialAnalyst agent capabilities "
+            "(e.g., financial_analyst.propose_trades) instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         self.use_db = use_db
+        self.db_pool = db_pool
         self.riskfolio_available = RISKFOLIO_AVAILABLE
         
         if use_db:
@@ -1681,11 +1700,21 @@ class OptimizerService:
 _optimizer_service: Optional[OptimizerService] = None
 
 
-def get_optimizer_service() -> OptimizerService:
-    """Get singleton optimizer service instance."""
+def get_optimizer_service(use_db: bool = True, db_pool=None) -> OptimizerService:
+    """
+    DEPRECATED: Use OptimizerService(db_pool=...) directly instead.
+
+    Migration:
+        OLD: optimizer_service = get_optimizer_service()
+        NEW: optimizer_service = OptimizerService(db_pool=db_pool)
+    """
+    import warnings
+    warnings.warn(
+        "get_optimizer_service() is deprecated. Use OptimizerService(db_pool=...) directly.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     global _optimizer_service
-
     if _optimizer_service is None:
-        _optimizer_service = OptimizerService()
-
+        _optimizer_service = OptimizerService(use_db=use_db, db_pool=db_pool)
     return _optimizer_service

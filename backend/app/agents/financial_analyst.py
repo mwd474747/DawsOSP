@@ -70,10 +70,10 @@ from app.db import (
     get_pricing_pack_queries,
     get_db_connection_with_rls,
 )
-from app.services.pricing import get_pricing_service
+from app.services.pricing import PricingService
 from app.services.currency_attribution import CurrencyAttributor
-from app.services.optimizer import get_optimizer_service
-from app.services.ratings import get_ratings_service
+from app.services.optimizer import OptimizerService
+from app.services.ratings import RatingsService
 from app.services.fundamentals_transformer import transform_fmp_to_ratings_format
 
 logger = logging.getLogger("DawsOS.FinancialAnalyst")
@@ -89,6 +89,24 @@ class FinancialAnalyst(BaseAgent):
         - Pricing packs (via pricing service)
         - Metrics service (TWR, MWR, Sharpe, etc.)
     """
+
+    def __init__(self, name: str, services: Dict[str, Any]):
+        """
+        Initialize FinancialAnalyst with dependency injection.
+
+        Args:
+            name: Agent identifier (e.g., "financial_analyst")
+            services: Dependency injection dict (db, redis, API clients)
+        """
+        super().__init__(name, services)
+
+        # Get db_pool from services
+        self.db_pool = services.get("db")
+
+        # Initialize services with dependency injection
+        self.pricing_service = PricingService(use_db=True)
+        self.optimizer = OptimizerService(use_db=True)
+        self.ratings = RatingsService(use_db=True, db_pool=self.db_pool)
 
     def get_capabilities(self) -> List[str]:
         """Return list of capabilities."""
@@ -403,8 +421,6 @@ class FinancialAnalyst(BaseAgent):
             f"pricing.apply_pack: pack_id={pack_id}, positions_count={len(positions)}"
         )
 
-        pricing_service = get_pricing_service()
-
         # Collect security IDs for batch price loading
         security_ids: List[UUID] = []
         for pos in positions:
@@ -420,7 +436,7 @@ class FinancialAnalyst(BaseAgent):
         price_map: Dict[str, Decimal] = {}
         if security_ids:
             try:
-                price_map = await pricing_service.get_prices_as_decimals(
+                price_map = await self.pricing_service.get_prices_as_decimals(
                     security_ids, pack_id
                 )
                 logger.info(f"Loaded {len(price_map)} prices from pack {pack_id}")
@@ -476,7 +492,7 @@ class FinancialAnalyst(BaseAgent):
             if currency != base_currency and value_local != 0:
                 cache_key = (currency, base_currency)
                 if cache_key not in fx_cache:
-                    fx_record = await pricing_service.get_fx_rate(
+                    fx_record = await self.pricing_service.get_fx_rate(
                         currency, base_currency, pack_id
                     )
                     fx_cache[cache_key] = fx_record.rate if fx_record else None
@@ -2811,11 +2827,8 @@ class FinancialAnalyst(BaseAgent):
             f"policy={policy_json.get('method', 'mean_variance')}"
         )
 
-        # Call optimizer service
-        optimizer_service = get_optimizer_service()
-
         try:
-            result = await optimizer_service.propose_trades(
+            result = await self.optimizer.propose_trades(
                 portfolio_id=portfolio_uuid,
                 policy_json=policy_json,
                 pricing_pack_id=pricing_pack_id,
@@ -2886,12 +2899,10 @@ class FinancialAnalyst(BaseAgent):
             
             # Transform FMP format if needed
             fundamentals = self._transform_rating_fundamentals(fundamentals)
-            
-            # Call service
-            ratings_service = get_ratings_service()
+
             security_uuid = self._to_uuid(security_id, "security_id")
-            
-            result = await ratings_service.calculate_dividend_safety(
+
+            result = await self.ratings.calculate_dividend_safety(
                 symbol=symbol,
                 fundamentals=fundamentals,
                 security_id=security_uuid,
@@ -2934,12 +2945,10 @@ class FinancialAnalyst(BaseAgent):
             
             # Transform FMP format if needed
             fundamentals = self._transform_rating_fundamentals(fundamentals)
-            
-            # Call service
-            ratings_service = get_ratings_service()
+
             security_uuid = self._to_uuid(security_id, "security_id")
-            
-            result = await ratings_service.calculate_moat_strength(
+
+            result = await self.ratings.calculate_moat_strength(
                 symbol=symbol,
                 fundamentals=fundamentals,
                 security_id=security_uuid,
@@ -2982,12 +2991,10 @@ class FinancialAnalyst(BaseAgent):
             
             # Transform FMP format if needed
             fundamentals = self._transform_rating_fundamentals(fundamentals)
-            
-            # Call service
-            ratings_service = get_ratings_service()
+
             security_uuid = self._to_uuid(security_id, "security_id")
-            
-            result = await ratings_service.calculate_resilience(
+
+            result = await self.ratings.calculate_resilience(
                 symbol=symbol,
                 fundamentals=fundamentals,
                 security_id=security_uuid,
@@ -3036,12 +3043,10 @@ class FinancialAnalyst(BaseAgent):
             
             # Transform FMP format if needed
             fundamentals = self._transform_rating_fundamentals(fundamentals)
-            
-            # Call service
-            ratings_service = get_ratings_service()
+
             security_uuid = self._to_uuid(security_id, "security_id")
-            
-            result = await ratings_service.aggregate(
+
+            result = await self.ratings.aggregate(
                 symbol=symbol,
                 fundamentals=fundamentals,
                 security_id=security_uuid,
@@ -3068,7 +3073,6 @@ class FinancialAnalyst(BaseAgent):
         self, ctx: RequestCtx, positions: List[Dict]
     ) -> Dict[str, Any]:
         """Calculate weighted average rating for portfolio."""
-        ratings_service = get_ratings_service()
         position_ratings = []
         total_weight = Decimal("0")
         weighted_sum = Decimal("0")
@@ -3084,7 +3088,7 @@ class FinancialAnalyst(BaseAgent):
             try:
                 # Get aggregate rating for this position
                 security_uuid = self._to_uuid(security_id, "security_id")
-                result = await ratings_service.aggregate(
+                result = await self.ratings.aggregate(
                     symbol=symbol,
                     fundamentals={},  # Service will handle missing fundamentals
                     security_id=security_uuid,
@@ -3420,11 +3424,8 @@ class FinancialAnalyst(BaseAgent):
             f"pricing_pack_id={pricing_pack_id}"
         )
 
-        # Call optimizer service
-        optimizer_service = get_optimizer_service()
-
         try:
-            result = await optimizer_service.analyze_impact(
+            result = await self.optimizer.analyze_impact(
                 portfolio_id=portfolio_uuid,
                 proposed_trades=proposed_trades,
                 pricing_pack_id=pricing_pack_id,
@@ -3520,11 +3521,8 @@ class FinancialAnalyst(BaseAgent):
             f"pricing_pack_id={pricing_pack_id}"
         )
 
-        # Call optimizer service
-        optimizer_service = get_optimizer_service()
-
         try:
-            result = await optimizer_service.suggest_hedges(
+            result = await self.optimizer.suggest_hedges(
                 portfolio_id=portfolio_uuid,
                 scenario_id=scenario_id,
                 pricing_pack_id=pricing_pack_id,
@@ -3650,11 +3648,8 @@ class FinancialAnalyst(BaseAgent):
             f"pricing_pack_id={pricing_pack_id}"
         )
 
-        # Call optimizer service
-        optimizer_service = get_optimizer_service()
-
         try:
-            result = await optimizer_service.suggest_deleveraging_hedges(
+            result = await self.optimizer.suggest_deleveraging_hedges(
                 portfolio_id=portfolio_uuid,
                 regime=regime,
                 pricing_pack_id=pricing_pack_id,

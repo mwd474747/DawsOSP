@@ -138,24 +138,27 @@ class PricingService:
     All methods use pricing_pack_id to ensure reproducibility.
     """
 
-    def __init__(self, use_db: bool = True):
+    def __init__(self, use_db: bool = True, db_pool=None):
         """
         Initialize pricing service.
 
         Args:
             use_db: Use database connection (default: True, False for testing)
+            db_pool: Database connection pool (optional, for dependency injection)
 
         Raises:
             ValueError: If use_db=False in production environment
         """
         import os
-        
+
         # Production guard: prevent stub mode in production
         if not use_db and os.getenv("ENVIRONMENT") == "production":
             raise ValueError(
                 "Cannot use stub mode (use_db=False) in production environment. "
                 "Stub mode is only available for development and testing."
             )
+
+        self.db_pool = db_pool
         
         self.use_db = use_db
         self.pack_queries = get_pricing_pack_queries(use_db=use_db)
@@ -764,21 +767,43 @@ class PricingService:
 _pricing_service: Optional[PricingService] = None
 
 
-def get_pricing_service(use_db: bool = True) -> PricingService:
+def get_pricing_service(use_db: bool = True, db_pool=None) -> PricingService:
     """
+    DEPRECATED: Use PricingService(db_pool=...) directly instead.
+
     Get singleton PricingService instance.
 
     Args:
-        use_db: Use database connection (default: True)
+        use_db: Use database connection (default: True) - DEPRECATED
+        db_pool: Database connection pool (pass to PricingService constructor)
 
     Returns:
         PricingService instance
-        
+
     Raises:
         ValueError: If use_db=False in production environment
+
+    Migration:
+        OLD: pricing_service = get_pricing_service()
+        NEW: pricing_service = PricingService(db_pool=db_pool)
+
+    Example:
+        # Old pattern (deprecated)
+        pricing_service = get_pricing_service()
+
+        # New pattern (dependency injection)
+        db_pool = services.get("db")
+        pricing_service = PricingService(db_pool=db_pool)
     """
+    import warnings
     import os
-    
+
+    warnings.warn(
+        "get_pricing_service() is deprecated. Use PricingService(db_pool=...) directly.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+
     # Production guard: prevent stub mode in production (extra safety check)
     if not use_db and os.getenv("ENVIRONMENT") == "production":
         raise ValueError(
@@ -786,10 +811,10 @@ def get_pricing_service(use_db: bool = True) -> PricingService:
             "Stub mode is only available for development and testing. "
             "This check is in addition to the guard in PricingService.__init__()"
         )
-    
+
     global _pricing_service
     if _pricing_service is None:
-        _pricing_service = PricingService(use_db=use_db)
+        _pricing_service = PricingService(use_db=use_db, db_pool=db_pool)
     return _pricing_service
 
 

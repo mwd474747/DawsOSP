@@ -431,12 +431,13 @@ class MacroService:
         "CPILFESL": "Consumer Price Index for All Urban Consumers: All Items Less Food and Energy",
     }
 
-    def __init__(self, fred_client: Optional[FREDProvider] = None):
+    def __init__(self, fred_client: Optional[FREDProvider] = None, db_pool=None):
         """
         Initialize macro service.
 
         Args:
             fred_client: FRED API client (optional, will create if not provided)
+            db_pool: AsyncPG connection pool (optional, will get from connection module if not provided)
         """
         if fred_client is None:
             api_key = os.getenv("FRED_API_KEY")
@@ -444,6 +445,7 @@ class MacroService:
                 raise ValueError("FRED_API_KEY not configured")
             fred_client = FREDProvider(api_key=api_key)
         self.fred_client = fred_client
+        self.db_pool = db_pool
         self.detector = RegimeDetector()
         self.transformation_service = FREDTransformationService()
 
@@ -868,17 +870,21 @@ class MacroService:
 _macro_service: Optional[MacroService] = None
 
 
-def get_macro_service(fred_client: Optional[FREDProvider] = None) -> MacroService:
+def get_macro_service(fred_client: Optional[FREDProvider] = None, db_pool=None) -> MacroService:
     """
-    Get macro service singleton.
+    DEPRECATED: Use MacroService(fred_client=..., db_pool=...) directly instead.
 
-    Args:
-        fred_client: FRED API client (optional)
-
-    Returns:
-        MacroService singleton
+    Migration:
+        OLD: macro_service = get_macro_service()
+        NEW: macro_service = MacroService(fred_client=fred_client, db_pool=db_pool)
     """
+    import warnings
+    warnings.warn(
+        "get_macro_service() is deprecated. Use MacroService(fred_client=..., db_pool=...) directly.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     global _macro_service
     if _macro_service is None:
-        _macro_service = MacroService(fred_client=fred_client)
+        _macro_service = MacroService(fred_client=fred_client, db_pool=db_pool)
     return _macro_service

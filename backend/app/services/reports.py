@@ -1,6 +1,10 @@
 """
 DawsOS Reports Service
 
+⚠️ DEPRECATED: This service is deprecated and will be removed in a future release.
+The functionality has been consolidated into the DataHarvester agent.
+Use `data_harvester` agent capabilities instead.
+
 Purpose: Generate PDF/CSV exports with rights enforcement
 Updated: 2025-10-27
 Priority: P0 (Critical for export functionality)
@@ -65,6 +69,10 @@ class ReportService:
     """
     Report service: generate exports with rights enforcement.
 
+    ⚠️ DEPRECATED: This service is deprecated and will be removed in a future release.
+    The functionality has been consolidated into the DataHarvester agent.
+    Use `data_harvester` agent capabilities instead.
+
     Integrates with RightsRegistry to ensure compliance with provider
     export restrictions and attribution requirements.
     """
@@ -73,10 +81,18 @@ class ReportService:
         """
         Initialize report service.
 
+        ⚠️ DEPRECATED: This service is deprecated. Use DataHarvester agent capabilities instead.
+
         Args:
             environment: "staging" or "production" (affects enforcement)
             templates_dir: Path to templates directory (default: backend/templates)
         """
+        import warnings
+        warnings.warn(
+            "ReportService is deprecated. Use DataHarvester agent capabilities instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         self.environment = environment
         self.registry = get_registry()
 
