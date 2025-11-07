@@ -456,7 +456,18 @@ class AgentRuntime:
 
                 return result
 
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - should not happen, log and re-raise immediately (no retry)
+                agent_status = "error"
+                last_exception = e
+                logger.error(
+                    f"Programming error in capability {capability} in {agent_name}: {e}",
+                    exc_info=True,
+                )
+                # Don't retry programming errors - they indicate bugs
+                raise
             except Exception as e:
+                # Service/database errors - retry logic applies
                 agent_status = "error"
                 last_exception = e
 

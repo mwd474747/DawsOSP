@@ -546,18 +546,18 @@ class PatternOrchestrator:
                                                             f"Step {step_idx} ({capability}): "
                                                             f"references '{parts[0]}' which may not be available"
                                                         )
-                        except (ValueError, TypeError, KeyError, AttributeError) as e:
-                            # Programming errors - should not happen, log and continue
-                            warnings.append(
-                                f"Step {step_idx} ({capability}): "
-                                f"programming error validating template '{arg_value}': {e}"
-                            )
-                        except Exception as e:
-                            # Template validation errors - log and continue
-                            warnings.append(
-                                f"Step {step_idx} ({capability}): "
-                                f"could not validate template '{arg_value}': {e}"
-                            )
+                                        except (ValueError, TypeError, KeyError, AttributeError) as e:
+                                            # Programming errors - should not happen, log and continue
+                                            warnings.append(
+                                                f"Step {step_idx} ({capability}): "
+                                                f"programming error validating template '{arg_value}': {e}"
+                                            )
+                                        except Exception as e:
+                                            # Template validation errors - log and continue
+                                            warnings.append(
+                                                f"Step {step_idx} ({capability}): "
+                                                f"could not validate template '{arg_value}': {e}"
+                                            )
                         except (ValueError, TypeError, KeyError, AttributeError) as e:
                             # Programming errors - should not happen, log and continue
                             warnings.append(
