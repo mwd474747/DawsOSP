@@ -1742,23 +1742,19 @@ async def get_portfolio_metrics(portfolio_id: str):
         if result["success"]:
             return result["data"]
         else:
-            # Return mock data as fallback
-            return {
-                "total_value": 291290,
-                "ytd_return": 14.5,
-                "sharpe_ratio": 1.35,
-                "max_drawdown": -12.3,
-                "volatility": 18.2
-            }
+            # Return error response instead of mock data
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get metrics: {result.get('error', 'Unknown error')}"
+            )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting metrics: {e}")
-        return {
-            "total_value": 291290,
-            "ytd_return": 14.5,
-            "sharpe_ratio": 1.35,
-            "max_drawdown": -12.3,
-            "volatility": 18.2
-        }
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error getting metrics: {str(e)}"
+        )
 
 @app.get("/api/portfolio")
 async def get_portfolio(user: dict = Depends(require_auth)):

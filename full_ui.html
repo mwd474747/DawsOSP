@@ -7748,13 +7748,13 @@
                     e(DataBadge, { source: dataSource, position: 'top-right' }),
                     e('div', { className: 'stat-card' },
                         e('div', { className: 'stat-label' }, 'Total Value'),
-                        e('div', { className: 'stat-value' }, formatCurrency(data.total_value || 291290)),
+                        e('div', { className: 'stat-value' }, formatCurrency(data.total_value || 0)),
                         e('div', { className: `stat-change ${data.change_pct >= 0 ? 'positive' : 'negative'}` }, 
                             formatPercentage((data.change_pct || 0.0235) / 100))
                     ),
                     e('div', { className: 'stat-card' },
                         e('div', { className: 'stat-label' }, 'Holdings'),
-                        e('div', { className: 'stat-value' }, data.holdings_count || 9),
+                        e('div', { className: 'stat-value' }, data.holdings_count || 0),
                         e('div', { className: 'stat-change neutral' }, 'Securities')
                     ),
                     e('div', { className: 'stat-card' },
@@ -7765,7 +7765,7 @@
                     ),
                     e('div', { className: 'stat-card' },
                         e('div', { className: 'stat-label' }, 'Sharpe Ratio'),
-                        e('div', { className: 'stat-value' }, formatNumber(data.sharpe_ratio || 1.35)),
+                        e('div', { className: 'stat-value' }, formatNumber(data.sharpe_ratio || 0)),
                         e('div', { className: 'stat-change neutral' }, 'Risk-Adjusted')
                     )
                 );
@@ -7878,10 +7878,9 @@
                 useEffect(() => {
                     if (loading) {
                         const timeout = setTimeout(() => {
-                            console.warn('MacroCyclesPage: Pattern loading timeout, using fallback data');
+                            console.warn('MacroCyclesPage: Pattern loading timeout');
                             setLoading(false);
-                            setError('Data loading timed out. Using fallback data.');
-                            setMacroData(getComprehensiveMockData());
+                            setError('Data loading timed out. Please try refreshing the page.');
                         }, 30000); // 30 second timeout
                         
                         return () => clearTimeout(timeout);
@@ -7902,9 +7901,7 @@
                         // Check for error first
                         if (data?.error) {
                             console.error('MacroCyclesPage: Pattern execution failed:', data.error);
-                            setError(data.error);
-                            // Always use mock data as fallback to keep page functional
-                            setMacroData(getComprehensiveMockData());
+                            setError(data.error || 'Failed to load macro cycle data. Please try refreshing the page.');
                             setLoading(false);
                             return;
                         }
@@ -7942,142 +7939,17 @@
                             setError(null);
                             setLoading(false);
                         } else {
-                            // Fallback to mock data if structure is unexpected
-                            console.warn('MacroCyclesPage: Unexpected data structure, using fallback. Received:', result);
-                            setMacroData(getComprehensiveMockData());
+                            // Unexpected data structure - show error
+                            console.warn('MacroCyclesPage: Unexpected data structure. Received:', result);
+                            setError('Unexpected data format. Please try refreshing the page.');
                             setLoading(false);
                         }
                     } catch (err) {
                         console.error('MacroCyclesPage: Error processing pattern data:', err);
-                        setError(err.message);
-                        // Always use mock data on error so page is functional
-                        setMacroData(getComprehensiveMockData());
+                        setError(err.message || 'Failed to process macro cycle data. Please try refreshing the page.');
                         setLoading(false);
                     }
                 };
-                
-                const getComprehensiveMockData = () => ({
-                    // Short-term debt cycle (5-8 years)
-                    stdc: {
-                        phase_label: 'Late Expansion',
-                        score: 0.72,
-                        confidence: 0.85,
-                        description: 'Credit growth decelerating, rates elevated',
-                        phase_duration_months: 14,
-                        credit_growth: 0.034,
-                        policy_rate_zscore: 1.8,
-                        unemployment_gap: -0.012,
-                        next_phase_probability: { contraction: 0.65, continuation: 0.35 }
-                    },
-                    // Long-term debt cycle (75-100 years)
-                    ltdc: {
-                        phase_label: 'Late Cycle',
-                        score: 0.68,
-                        confidence: 0.78,
-                        description: 'High debt levels, declining productivity growth',
-                        phase_duration_years: 3.5,
-                        debt_to_gdp: 2.80,
-                        debt_service_ratio: 0.145,
-                        real_rates_trend: -0.021,
-                        deleveraging_risk: 'HIGH',
-                        wealth_gap_top_1pct: 0.35
-                    },
-                    // Empire cycle (250-500 years)
-                    empire: {
-                        phase_label: 'Relative Decline',
-                        score: 0.51,
-                        confidence: 0.72,
-                        description: 'Declining reserve currency share, rising competitors',
-                        reserve_currency_share: 0.584,
-                        military_power: 0.89,
-                        innovation_rate: 0.76,
-                        education_rank: 15,
-                        trade_balance: -0.032,
-                        global_trade_share: 0.243
-                    },
-                    // Civil/Internal Order cycle (4th cycle)
-                    civil: {
-                        cycle_type: 'civil',
-                        phase_label: 'Rising Tension',
-                        phase_number: 3,
-                        composite_score: 0.42,
-                        confidence: 0.81,
-                        description: 'Increasing wealth inequality, declining social cohesion',
-                        indicators: {
-                            gini_coefficient: 0.415,
-                            wealth_top_1pct: 0.324,
-                            polarization_index: 0.78,
-                            institutional_trust: 0.38,
-                            social_mobility: 0.41
-                        },
-                        risk_factors: {
-                            wealth_inequality: 'HIGH',
-                            political_polarization: 'HIGH',
-                            trust_deficit: 'HIGH'
-                        }
-                    },
-                    // DAR (Debt-Asset Ratio) analysis
-                    dar: {
-                        current: 1.85,
-                        thirty_day_change: 0.12,
-                        distance_to_crisis: 0.15,
-                        threshold: 2.0
-                    },
-                    // Regime detection
-                    regime_detection: {
-                        inflation: 'DECLINING',
-                        growth: 'SLOWING',
-                        credit: 'TIGHTENING',
-                        liquidity: 'MODERATE',
-                        classification: 'LATE CYCLE SLOWDOWN',
-                        description: 'Characterized by slowing growth, tightening credit conditions, and elevated debt levels. Risk of recession in next 12-18 months.'
-                    },
-                    // Historical data for charts
-                    short_term_history: generateShortTermHistory(),
-                    long_term_history: generateLongTermHistory(),
-                    empire_history: generateEmpireHistory(),
-                    dar_history: generateDarHistory()
-                });
-                
-                // Generate historical data for short-term debt cycle
-                function generateShortTermHistory() {
-                    return Array.from({ length: 96 }, (_, i) => ({
-                        month: `${2016 + Math.floor(i/12)}-${String((i % 12) + 1).padStart(2, '0')}`,
-                        debt: 100 + 20 * Math.sin(i * 0.13) + Math.random() * 10,
-                        gdp: 100 + 15 * Math.sin(i * 0.13 + 1) + Math.random() * 5,
-                        credit: 100 + 25 * Math.sin(i * 0.13 - 0.5) + Math.random() * 8
-                    }));
-                }
-                
-                // Generate historical data for long-term debt cycle
-                function generateLongTermHistory() {
-                    return Array.from({ length: 100 }, (_, i) => ({
-                        year: 1924 + i,
-                        debtToGDP: 30 + 40 * Math.sin(i * 0.063) + i * 0.3,
-                        productivity: 100 + i * 0.5 + Math.random() * 10,
-                        inequality: 20 + 30 * Math.sin(i * 0.063 + 2) + i * 0.2
-                    }));
-                }
-                
-                // Generate historical data for empire cycle
-                function generateEmpireHistory() {
-                    return Array.from({ length: 500 }, (_, i) => ({
-                        year: 1524 + i,
-                        power: 50 + 40 * Math.exp(-((i - 250) ** 2) / 20000),
-                        education: 30 + 35 * Math.exp(-((i - 220) ** 2) / 18000),
-                        military: 40 + 45 * Math.exp(-((i - 270) ** 2) / 22000),
-                        trade: 35 + 40 * Math.exp(-((i - 240) ** 2) / 19000)
-                    }));
-                }
-                
-                // Generate DAR history
-                function generateDarHistory() {
-                    return Array.from({ length: 30 }, (_, i) => ({
-                        year: 1994 + i,
-                        dar: 1.2 + 0.8 * Math.sin(i * 0.3) + Math.random() * 0.2,
-                        threshold: 2.0
-                    }));
-                }
                 
                 const renderActiveChart = () => {
                     // Clean up existing chart for active tab
@@ -8106,9 +7978,10 @@
                 
                 const renderShortTermChart = () => {
                     if (!chartRefs.shortTerm.current) return;
+                    if (!macroData?.short_term_history) return; // Don't render if no data
                     
                     const ctx = chartRefs.shortTerm.current.getContext('2d');
-                    const data = macroData?.short_term_history || generateShortTermHistory();
+                    const data = macroData.short_term_history;
                     
                     chartInstances.current['short-term'] = new Chart(ctx, {
                         type: 'line',
@@ -8964,15 +8837,7 @@
                                 setPortfolioError(error);
                                 ErrorHandler.logError(error, { context: 'Portfolio Overview' });
                                 
-                                // Return fallback data only for non-critical errors
-                                if (errorInfo.type !== 'network') {
-                                    return { 
-                                        total_value: 291290,
-                                        holdings_count: 9,
-                                        ytd_return: 14.5,
-                                        sharpe_ratio: 1.35
-                                    };
-                                }
+                                // Re-throw error - no fallback data
                                 throw error;
                             })
                             .finally(() => setPortfolioLoading(false));
@@ -9491,31 +9356,18 @@
                         
                         setScenarios(results);
                         
-                        // If no results with data, use fallback scenarios
+                        // If no results with data, show error
                         if (results.every(r => r.impact === null)) {
-                            console.warn('No scenario data available, using fallback values');
-                            setScenarios(getFallbackScenarios());
+                            console.warn('No scenario data available');
+                            setError('No scenario data available. Please try refreshing the page.');
                         }
                         
                     } catch (error) {
                         console.error('Failed to fetch scenarios:', error);
-                        setError('Failed to load scenario analysis');
-                        // Use fallback scenarios on error
-                        setScenarios(getFallbackScenarios());
+                        setError('Failed to load scenario analysis. Please try refreshing the page.');
                     } finally {
                         setLoading(false);
                     }
-                };
-                
-                const getFallbackScenarios = () => {
-                    return [
-                        { id: 'equity_selloff', name: 'Market Crash', description: 'Equity selloff -20%', impactPct: -18.5 },
-                        { id: 'cpi_surprise', name: 'Inflation Spike', description: 'CPI surprise +1%', impactPct: -7.2 },
-                        { id: 'rates_up', name: 'Fed Rate Hike', description: 'Rates up +100bp', impactPct: -10.3 },
-                        { id: 'equity_rally', name: 'Recovery Rally', description: 'Equity rally +15%', impactPct: 14.2 },
-                        { id: 'credit_spread_widening', name: 'Credit Crisis', description: 'Credit spreads +200bp', impactPct: -12.8 },
-                        { id: 'usd_up', name: 'USD Strength', description: 'USD up +5%', impactPct: -3.4 }
-                    ];
                 };
                 
                 const showScenarioDetails = (scenario) => {
@@ -9778,62 +9630,6 @@
                             currentConcentration: impactAnalysis.current_concentration || 0,
                             postConcentration: impactAnalysis.post_concentration || 0,
                             concentrationDelta: impactAnalysis.concentration_delta || 0
-                        }
-                    };
-                };
-                
-                const getFallbackOptimizationData = () => {
-                    return {
-                        summary: {
-                            totalTrades: 3,
-                            totalTurnover: 25000,
-                            turnoverPct: 8.6,
-                            estimatedCosts: 125,
-                            costBps: 4.3,
-                            teImpact: 0.2
-                        },
-                        trades: [
-                            {
-                                symbol: 'MSFT',
-                                action: 'BUY',
-                                quantity: 50,
-                                price: 380,
-                                value: 19000,
-                                reason: 'Underweight technology sector, high quality moat',
-                                estimated_cost: 38
-                            },
-                            {
-                                symbol: 'BRK.B',
-                                action: 'SELL',
-                                quantity: 30,
-                                price: 360,
-                                value: -10800,
-                                reason: 'Over-concentrated position (29% of portfolio)',
-                                estimated_cost: 22
-                            },
-                            {
-                                symbol: 'JNJ',
-                                action: 'BUY',
-                                quantity: 40,
-                                price: 155,
-                                value: 6200,
-                                reason: 'Strong dividend safety, defensive characteristics',
-                                estimated_cost: 12
-                            }
-                        ],
-                        impact: {
-                            currentValue: 291290,
-                            postValue: 291290,
-                            valueDelta: 0,
-                            currentDivSafety: 7.2,
-                            postDivSafety: 7.8,
-                            divSafetyDelta: 0.6,
-                            currentMoat: 8.1,
-                            postMoat: 8.3,
-                            moatDelta: 0.2,
-                            currentConcentration: 65,
-                            postConcentration: 58,
-                            concentrationDelta: -7
                         }
                     };
                 };
@@ -10285,14 +10081,14 @@
                                         return { symbol, rating: parseBuffettResults(result.data, symbol) };
                                     } else {
                                         console.warn(`Failed to get rating for ${symbol}:`, result.error || result);
-                                        return { symbol, rating: getFallbackRating(symbol) };
+                                        return { symbol, rating: null, error: result.error || 'Failed to fetch rating' };
                                     }
                                 } catch (err) {
                                     console.error(`Error fetching rating for ${symbol}:`, err);
-                                    return { symbol, rating: getFallbackRating(symbol) };
+                                    return { symbol, rating: null, error: err.message };
                                 }
                             } else {
-                                return { symbol, rating: getFallbackRating(symbol) };
+                                return { symbol, rating: null, error: 'No security_id available' };
                             }
                         });
                         
@@ -10309,12 +10105,14 @@
                             };
                         }
                         
-                        setRatings(ratingsData);
+                        if (Object.keys(ratingsData).length === 0) {
+                            setError('No ratings data available. Please try refreshing the page.');
+                        } else {
+                            setRatings(ratingsData);
+                        }
                     } catch (err) {
                         console.error('Failed to fetch ratings:', err);
-                        setError('Failed to load ratings data');
-                        // Use fallback data on error
-                        setRatings(getAllFallbackRatings());
+                        setError('Failed to load ratings data. Please try refreshing the page.');
                     } finally {
                         setLoading(false);
                     }
@@ -10382,42 +10180,6 @@
                         },
                         rawData: data
                     };
-                };
-                
-                const getFallbackRating = (symbol) => {
-                    // Fallback ratings for when API fails - differentiated by business characteristics
-                    const fallbacks = {
-                        'BRK.B': { moatScore: 9.5, dividendScore: null, resilienceScore: 9.8, overallScore: 9.7, letterGrade: 'A+' },
-                        'CNR': { moatScore: 8.5, dividendScore: 8.2, resilienceScore: 8.8, overallScore: 8.5, letterGrade: 'A' },
-                        'BAM': { moatScore: 8.2, dividendScore: 7.5, resilienceScore: 8.0, overallScore: 7.9, letterGrade: 'A' },
-                        'BTI': { moatScore: 8.8, dividendScore: 6.5, resilienceScore: 6.8, overallScore: 7.4, letterGrade: 'B+' },
-                        'EVO': { moatScore: 7.8, dividendScore: 7.0, resilienceScore: 9.0, overallScore: 7.9, letterGrade: 'A' },
-                        'HHC': { moatScore: 5.5, dividendScore: null, resilienceScore: 5.8, overallScore: 5.7, letterGrade: 'C+' },
-                        'NKE': { moatScore: 7.5, dividendScore: 8.0, resilienceScore: 8.5, overallScore: 8.0, letterGrade: 'A' },
-                        'PYPL': { moatScore: 8.0, dividendScore: null, resilienceScore: 8.8, overallScore: 8.4, letterGrade: 'A' },
-                        'BBUC': { moatScore: 6.5, dividendScore: 6.8, resilienceScore: 7.0, overallScore: 6.8, letterGrade: 'B' },
-                        'AAPL': { moatScore: 9.2, dividendScore: 8.8, resilienceScore: 9.0, overallScore: 9.0, letterGrade: 'A+' },
-                        'GOOGL': { moatScore: 8.5, dividendScore: null, resilienceScore: 8.8, overallScore: 8.7, letterGrade: 'A' },
-                        'MSFT': { moatScore: 8.8, dividendScore: 8.5, resilienceScore: 9.2, overallScore: 8.8, letterGrade: 'A' }
-                    };
-                    
-                    return fallbacks[symbol] || {
-                        symbol: symbol,
-                        moatScore: 6.5,
-                        dividendScore: 6.0,
-                        resilienceScore: 6.8,
-                        overallScore: 6.4,
-                        letterGrade: 'B'
-                    };
-                };
-                
-                const getAllFallbackRatings = () => {
-                    const symbols = ['BRK.B', 'BAM', 'AAPL', 'GOOGL', 'MSFT', 'CNR', 'EVO', 'NKE'];
-                    const result = {};
-                    symbols.forEach(sym => {
-                        result[sym] = getFallbackRating(sym);
-                    });
-                    return result;
                 };
                 
                 const showDetailedRating = (symbol) => {
@@ -10895,7 +10657,7 @@
                             const patternInputs = {
                                 portfolio_id: portfolioId,
                                 tax_year: pattern.id === 'portfolio_tax_report' ? new Date().getFullYear() : undefined,
-                                symbol: pattern.id === 'holding_deep_dive' ? 'AAPL' : undefined // Default to AAPL for demo
+                                symbol: undefined // User must specify symbol
                             };
                             
                             const result = await apiClient.executePattern(pattern.id, patternInputs);
@@ -11099,7 +10861,7 @@
                                             inputs: {
                                                 portfolio_id: portfolioId,
                                                 tax_year: msg.pattern === 'portfolio_tax_report' ? new Date().getFullYear() : undefined,
-                                                symbol: msg.pattern === 'holding_deep_dive' ? 'AAPL' : undefined
+                                                symbol: undefined // User must specify symbol
                                             },
                                             config: {
                                                 compact: true,
@@ -11199,29 +10961,7 @@
                         setAlerts(result.data?.alerts || []);
                     } catch (err) {
                         console.error('Error loading alerts:', err);
-                        setError('Failed to load alerts');
-                        // Use mock data as fallback
-                        setAlerts([
-                            {
-                                id: '1',
-                                type: 'price',
-                                symbol: 'AAPL',
-                                threshold: 150,
-                                condition: 'below',
-                                message: 'Apple stock below $150',
-                                active: true,
-                                created_at: new Date().toISOString()
-                            },
-                            {
-                                id: '2',
-                                type: 'portfolio',
-                                threshold: -10,
-                                condition: 'below',
-                                message: 'Portfolio down more than 10%',
-                                active: true,
-                                created_at: new Date().toISOString()
-                            }
-                        ]);
+                        setError('Failed to load alerts. Please try refreshing the page.');
                     } finally {
                         setLoading(false);
                     }
