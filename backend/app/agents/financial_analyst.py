@@ -1678,7 +1678,7 @@ class FinancialAnalyst(BaseAgent):
                 WHERE l.portfolio_id = $1
                   AND l.security_id = $2
                   AND l.quantity_open > 0
-                ORDER BY l.open_date
+                ORDER BY l.acquisition_date
                 """,
                 portfolio_uuid,
                 security_uuid,
