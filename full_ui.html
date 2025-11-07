@@ -100,7 +100,8 @@
                     'DawsOS.Utils': [
                         'formatCurrency', 'formatPercentage', 'formatNumber', 'formatDate',
                         'formatValue', 'getColorClass', 'LoadingSpinner', 'ErrorMessage',
-                        'EmptyState', 'RetryableError', 'useCachedQuery', 'useCachedMutation'
+                        'EmptyState', 'RetryableError', 'useCachedQuery', 'useCachedMutation',
+                        'NetworkStatusIndicator', 'FormField', 'DataBadge', 'getDataSourceFromResponse'
                     ],
                     'DawsOS.Panels': [
                         'MetricsGridPanel', 'TablePanel', 'LineChartPanel', 'NewsListPanel',
@@ -122,7 +123,10 @@
                     'DawsOS.PatternSystem': [
                         'getDataByPath', 'PatternRenderer', 'PanelRenderer',
                         'patternRegistry', 'queryKeys', 'queryHelpers'
-                    ]
+                    ],
+                    'DawsOS.FormValidator': [],  // Validate module exists
+                    'DawsOS.ErrorHandler': [],   // Validate module exists
+                    'DawsOS.apiClient': ['TokenManager']
                 };
 
                 const errors = [];

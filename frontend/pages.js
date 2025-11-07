@@ -81,19 +81,24 @@
     // Import cached API client (queryHelpers) from pattern-system
     const cachedApiClient = PatternSystem.queryHelpers || apiClient;
 
-    // Import UI components (assumed to be globally available)
-    const LoadingSpinner = global.LoadingSpinner;
-    const ErrorMessage = global.ErrorMessage;
-    const RetryableError = global.RetryableError;
-    const EmptyState = global.EmptyState;
-    const NetworkStatusIndicator = global.NetworkStatusIndicator;
-    const FormField = global.FormField;
-    const DataBadge = global.DataBadge;
-    const PatternRenderer = global.PatternRenderer;
-    const FormValidator = global.FormValidator;
-    const ErrorHandler = global.ErrorHandler;
-    const TokenManager = global.TokenManager;
-    const getDataSourceFromResponse = global.getDataSourceFromResponse;
+    // Import UI components from their actual namespaced locations
+    // (Fixed Nov 7 2025 - Phase 1.1.6: Namespace mapping issue)
+    const LoadingSpinner = Utils.LoadingSpinner;
+    const ErrorMessage = Utils.ErrorMessage;
+    const RetryableError = Utils.RetryableError;
+    const EmptyState = Utils.EmptyState;
+    const NetworkStatusIndicator = Utils.NetworkStatusIndicator;
+    const FormField = Utils.FormField;
+    const DataBadge = Utils.DataBadge;
+    const getDataSourceFromResponse = Utils.getDataSourceFromResponse;
+
+    // Import pattern system components
+    const PatternRenderer = PatternSystem.PatternRenderer;
+
+    // Import core modules
+    const FormValidator = DawsOS.FormValidator;
+    const ErrorHandler = DawsOS.ErrorHandler;
+    const TokenManager = apiClient.TokenManager;
 
     // ============================================
     // PAGE COMPONENTS
