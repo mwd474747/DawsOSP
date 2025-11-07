@@ -63,7 +63,8 @@
     const e = React.createElement;
 
     // Import dependencies from DawsOS namespace
-    const apiClient = global.DawsOS.APIClient;
+    // EMERGENCY FIX: api-client exports to global.apiClient, NOT DawsOS.APIClient
+    const apiClient = global.DawsOS.APIClient || global.apiClient || {};
     const Utils = global.DawsOS.Utils || {};
     const Panels = global.DawsOS.Panels || {};
     const Context = global.DawsOS.Context || {};
@@ -81,24 +82,23 @@
     // Import cached API client (queryHelpers) from pattern-system
     const cachedApiClient = PatternSystem.queryHelpers || apiClient;
 
-    // Import UI components from their actual namespaced locations
-    // (Fixed Nov 7 2025 - Phase 1.1.6: Namespace mapping issue)
-    const LoadingSpinner = Utils.LoadingSpinner;
-    const ErrorMessage = Utils.ErrorMessage;
-    const RetryableError = Utils.RetryableError;
-    const EmptyState = Utils.EmptyState;
-    const NetworkStatusIndicator = Utils.NetworkStatusIndicator;
-    const FormField = Utils.FormField;
-    const DataBadge = Utils.DataBadge;
-    const getDataSourceFromResponse = Utils.getDataSourceFromResponse;
+    // Import UI components with fallbacks (EMERGENCY FIX: prevent undefined crashes)
+    const LoadingSpinner = Utils.LoadingSpinner || (() => e('div', null, 'Loading...'));
+    const ErrorMessage = Utils.ErrorMessage || (({ error }) => e('div', { style: { color: 'red' } }, String(error)));
+    const RetryableError = Utils.RetryableError || ErrorMessage;
+    const EmptyState = Utils.EmptyState || (({ message }) => e('div', null, message || 'No data'));
+    const NetworkStatusIndicator = Utils.NetworkStatusIndicator || (() => null);
+    const FormField = Utils.FormField || (({ children }) => children);
+    const DataBadge = Utils.DataBadge || (() => null);
+    const getDataSourceFromResponse = Utils.getDataSourceFromResponse || (() => 'unknown');
 
-    // Import pattern system components
-    const PatternRenderer = PatternSystem.PatternRenderer;
+    // Import pattern system components with fallback
+    const PatternRenderer = PatternSystem.PatternRenderer || (() => e('div', null, 'Pattern rendering unavailable'));
 
-    // Import core modules
-    const FormValidator = DawsOS.FormValidator;
-    const ErrorHandler = DawsOS.ErrorHandler;
-    const TokenManager = apiClient.TokenManager;
+    // Import core modules with fallbacks
+    const FormValidator = DawsOS.FormValidator || {};
+    const ErrorHandler = DawsOS.ErrorHandler || {};
+    const TokenManager = apiClient.TokenManager || apiClient?.TokenManager || {};
 
     // ============================================
     // PAGE COMPONENTS
