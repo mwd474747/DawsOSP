@@ -2692,8 +2692,11 @@ class DataHarvester(BaseAgent):
             
             # Filter by symbols AFTER getting the results, since FMP returns all
             if symbols:
-                logger.debug(f"Filtering splits for symbols: {symbols}")
-                splits = [s for s in splits if s.get("symbol") in symbols]
+                # Normalize portfolio symbols to FMP format for matching
+                # FMP returns symbols with hyphens for share classes (BRK-B not BRK.B)
+                fmp_symbols = [normalize_symbol_for_fmp(s) for s in symbols]
+                logger.debug(f"Filtering splits for symbols: {symbols} (FMP format: {fmp_symbols})")
+                splits = [s for s in splits if s.get("symbol") in fmp_symbols]
                 logger.info(f"Filtered splits: {len(splits)} records match portfolio symbols")
             
             # Normalize format - FMP returns numerator/denominator for split ratio
