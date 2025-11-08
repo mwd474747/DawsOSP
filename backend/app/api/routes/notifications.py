@@ -214,6 +214,7 @@ async def list_notifications(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to list notifications: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to list notifications",
@@ -324,6 +325,7 @@ async def mark_notification_read(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to mark notification as read: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to mark notification as read",
@@ -380,6 +382,7 @@ async def delete_notification(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to delete notification: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete notification",

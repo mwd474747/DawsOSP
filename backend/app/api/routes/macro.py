@@ -409,6 +409,7 @@ async def get_current_regime(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Error detecting regime: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=500,
             detail=f"Error detecting regime: {str(e)}",
@@ -496,6 +497,7 @@ async def get_regime_history(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Error fetching regime history: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=500,
             detail=f"Error fetching regime history: {str(e)}",
@@ -565,6 +567,7 @@ async def get_indicators(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Error fetching indicators: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=500,
             detail=f"Error fetching indicators: {str(e)}",

@@ -113,8 +113,9 @@ class ClaudeAgent(BaseAgent):
             logger.error(f"Programming error in Claude API call: {e}", exc_info=True)
             return "Unable to process request. Please check your input."
         except Exception as e:
-            # API/network errors - log and return fallback
+            # API/network errors - log and return fallback (graceful degradation)
             logger.error(f"Claude API call failed: {e}")
+            # Don't raise ExternalAPIError here - return fallback is intentional
             return "Unable to connect to Claude AI. Please check your connection."
 
     def get_capabilities(self) -> List[str]:

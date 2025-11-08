@@ -206,8 +206,9 @@ ALL_VALID_PATTERNS = PORTFOLIO_PATTERNS + MACRO_PATTERNS
 db_pool: Optional[Pool] = None
 
 # Pattern Orchestrator and Agent Runtime (singleton instances)
-_agent_runtime: Optional[AgentRuntime] = None
-_pattern_orchestrator: Optional[PatternOrchestrator] = None
+# Phase 2: Removed singleton variables - using DI container instead
+# _agent_runtime: Optional[AgentRuntime] = None
+# _pattern_orchestrator: Optional[PatternOrchestrator] = None
 
 # FRED Cache
 fred_cache: Dict[str, Any] = {}
@@ -327,65 +328,64 @@ class ValidationError(Exception):
 # ============================================================================
 
 def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
-    """Get or create singleton agent runtime."""
-    global _agent_runtime, db_pool
-
-    services = {
-        "db": db_pool,
-        "redis": None,  # TODO: Wire real Redis when needed
-    }
-
-    # If runtime exists and reinit_services=True, update the services dict
-    if _agent_runtime is not None and reinit_services:
-        logger.info("Updating agent runtime with database pool")
-        _agent_runtime.services = services
-        # Also update services on each registered agent
-        for agent_id, agent in _agent_runtime.agents.items():
-            agent.services = services
-        return _agent_runtime
-
-    if _agent_runtime is None:
-        # Create runtime
-        _agent_runtime = AgentRuntime(services)
-
-        # Register Financial Analyst
-        financial_analyst = FinancialAnalyst("financial_analyst", services)
-        _agent_runtime.register_agent(financial_analyst)
-
-        # Register Macro Hound
-        macro_hound = MacroHound("macro_hound", services)
-        _agent_runtime.register_agent(macro_hound)
-
-        # Register remaining agents
-        # Current architecture: 4 agents providing all capabilities
-        
-        from backend.app.agents.data_harvester import DataHarvester
-        from backend.app.agents.claude_agent import ClaudeAgent
-
-        data_harvester = DataHarvester("data_harvester", services)
-        _agent_runtime.register_agent(data_harvester)
-
-        claude_agent = ClaudeAgent("claude_agent", services)
-        _agent_runtime.register_agent(claude_agent)
-
-        logger.info(f"Agent runtime initialized with {len(_agent_runtime.agents)} agents")
-
-    return _agent_runtime
+    """
+    Get or create agent runtime using DI container.
+    
+    Phase 2: Migrated to use DI container instead of singleton pattern.
+    """
+    from app.core.di_container import get_container
+    from app.core.service_initializer import initialize_services
+    
+    global db_pool
+    
+    # Get or initialize DI container
+    container = get_container()
+    
+    # Initialize services if not already initialized or if reinit requested
+    if not container._initialized or reinit_services:
+        try:
+            initialize_services(container, db_pool=db_pool)
+            logger.info("Services initialized using DI container")
+        except Exception as e:
+            logger.error(f"Failed to initialize services: {e}", exc_info=True)
+            raise
+    
+    # Resolve agent runtime from container
+    try:
+        return container.resolve("agent_runtime")
+    except (KeyError, RuntimeError) as e:
+        logger.error(f"Failed to resolve agent runtime: {e}", exc_info=True)
+        raise
 
 def get_pattern_orchestrator() -> PatternOrchestrator:
-    """Get or create singleton pattern orchestrator."""
-    global _pattern_orchestrator, db_pool
-
-    if _pattern_orchestrator is None:
-        runtime = get_agent_runtime()
-        _pattern_orchestrator = PatternOrchestrator(
-            agent_runtime=runtime,
-            db=db_pool,
-            redis=None  # TODO: Add Redis when available
-        )
-        logger.info("Pattern orchestrator initialized")
-
-    return _pattern_orchestrator
+    """
+    Get or create pattern orchestrator using DI container.
+    
+    Phase 2: Migrated to use DI container instead of singleton pattern.
+    """
+    from app.core.di_container import get_container
+    from app.core.service_initializer import initialize_services
+    
+    global db_pool
+    
+    # Get or initialize DI container
+    container = get_container()
+    
+    # Initialize services if not already initialized
+    if not container._initialized:
+        try:
+            initialize_services(container, db_pool=db_pool)
+            logger.info("Services initialized using DI container")
+        except Exception as e:
+            logger.error(f"Failed to initialize services: {e}", exc_info=True)
+            raise
+    
+    # Resolve pattern orchestrator from container
+    try:
+        return container.resolve("pattern_orchestrator")
+    except (KeyError, RuntimeError) as e:
+        logger.error(f"Failed to resolve pattern orchestrator: {e}", exc_info=True)
+        raise
 
 async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any], user_id: str = None) -> Dict[str, Any]:
     """Execute a pattern through the orchestrator and return results."""

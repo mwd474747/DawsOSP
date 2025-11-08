@@ -51,6 +51,9 @@ from email.mime.multipart import MIMEMultipart
 from typing import Dict, Any, Optional, List
 from uuid import UUID
 
+from app.db.connection import execute_query, execute_statement, execute_query_one
+from app.core.exceptions import DatabaseError, ExternalAPIError
+
 logger = logging.getLogger("DawsOS.Notifications")
 
 
@@ -104,6 +107,7 @@ class NotificationService:
                     f"Failed to initialize database connections: {e}. "
                     "Falling back to stub mode."
                 )
+                # Don't raise DatabaseError here - graceful degradation is intentional
                 self.use_db = False
         else:
             logger.info("NotificationService initialized in stub mode")
@@ -156,10 +160,9 @@ class NotificationService:
                 logger.error(f"Programming error sending in-app notification: {e}", exc_info=True)
                 raise
             except Exception as e:
-                # Database/service errors - log and re-raise
+                # Database/service errors - re-raise as DatabaseError (critical operation)
                 logger.error(f"Failed to send in-app notification: {e}")
-                success = False
-                raise
+                raise DatabaseError(f"Failed to send in-app notification: {e}", retryable=True) from e
 
         # Send email notification
         if channels.get("email", False):
@@ -176,9 +179,9 @@ class NotificationService:
                 else:
                     logger.warning(f"No email found for user {user_id}")
             except Exception as e:
+                # Email service errors - re-raise as ExternalAPIError (critical operation)
                 logger.error(f"Failed to send email notification: {e}")
-                success = False
-                raise
+                raise ExternalAPIError(f"Failed to send email notification: {e}", api_name="email", retryable=True) from e
 
         return success
 
@@ -243,8 +246,9 @@ class NotificationService:
                 return ""
 
         except Exception as e:
+            # Database errors - re-raise as DatabaseError (critical operation)
             logger.error(f"Failed to insert in-app notification: {e}")
-            raise
+            raise DatabaseError(f"Failed to insert in-app notification: {e}", retryable=True) from e
 
     async def send_email_notification(
         self,
@@ -319,8 +323,9 @@ class NotificationService:
             return True
 
         except Exception as e:
+            # SMTP errors - re-raise as ExternalAPIError (critical operation)
             logger.error(f"Failed to send email via SMTP: {e}")
-            raise
+            raise ExternalAPIError(f"Failed to send email via SMTP: {e}", api_name="smtp", retryable=True) from e
 
     async def _send_email_ses(
         self,
@@ -367,8 +372,9 @@ class NotificationService:
             logger.error("boto3 not installed. Install with: pip install boto3")
             raise
         except Exception as e:
+            # SES errors - re-raise as ExternalAPIError (critical operation)
             logger.error(f"Failed to send email via SES: {e}")
-            raise
+            raise ExternalAPIError(f"Failed to send email via SES: {e}", api_name="ses", retryable=True) from e
 
     async def check_deduplication(
         self,
@@ -419,8 +425,9 @@ class NotificationService:
                 return True
 
         except Exception as e:
+            # Database errors - fail open (allow notification on error)
             logger.error(f"Failed to check deduplication: {e}")
-            # On error, allow notification (fail open)
+            # Don't raise DatabaseError here - fail open is intentional
             return True
 
     def generate_idempotency_key(
@@ -473,7 +480,9 @@ class NotificationService:
                 logger.warning(f"No email found for user {user_id}")
                 return None
         except Exception as e:
+            # Database errors - log and return None (graceful degradation)
             logger.error(f"Failed to get user email: {e}")
+            # Don't raise DatabaseError here - graceful degradation is intentional
             return None
 
     async def mark_notification_read(
@@ -510,7 +519,9 @@ class NotificationService:
             updated = int(result.split()[-1]) if result else 0
             return updated > 0
         except Exception as e:
+            # Database errors - log and return False (graceful degradation)
             logger.error(f"Failed to mark notification as read: {e}")
+            # Don't raise DatabaseError here - graceful degradation is intentional
             return False
 
     async def delete_notification(
@@ -550,6 +561,7 @@ class NotificationService:
         except Exception as e:
             # Database errors - log and return False (graceful degradation)
             logger.error(f"Failed to delete notification: {e}")
+            # Don't raise DatabaseError here - graceful degradation is intentional
             return False
 
     async def get_user_notifications(
@@ -613,5 +625,7 @@ class NotificationService:
             ]
 
         except Exception as e:
+            # Database errors - log and return empty list (graceful degradation)
             logger.error(f"Failed to get user notifications: {e}")
+            # Don't raise DatabaseError here - graceful degradation is intentional
             return []

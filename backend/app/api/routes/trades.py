@@ -385,6 +385,7 @@ async def execute_trade(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Unexpected error executing trade: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

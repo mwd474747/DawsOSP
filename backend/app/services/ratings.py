@@ -149,6 +149,7 @@ class RatingsService:
             except Exception as e:
                 # Database/service errors - log and fall back to hardcoded weights
                 logger.error(f"Failed to load rubrics from database: {e}")
+                # Don't raise DatabaseError here - fallback to hardcoded weights is intentional
                 self.rubrics = {}  # Empty dict triggers fallback
 
         # Get weights from rubric, or use fallback

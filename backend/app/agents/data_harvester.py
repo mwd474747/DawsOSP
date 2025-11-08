@@ -179,8 +179,9 @@ class DataHarvester(BaseAgent):
                     logger.error(f"Programming error fetching quote from FMP: {e}", exc_info=True)
                     raise
                 except Exception as e:
-                    # API/service errors - return error response
+                    # API/service errors - return error response (graceful degradation)
                     logger.error(f"Error fetching quote from FMP: {e}", exc_info=True)
+                    # Don't raise ExternalAPIError here - return error response is intentional
                     result = {
                         "symbol": symbol,
                         "error": f"FMP error: {str(e)}",
@@ -223,8 +224,9 @@ class DataHarvester(BaseAgent):
                     logger.error(f"Programming error fetching quote from Polygon: {e}", exc_info=True)
                     raise
                 except Exception as e:
-                    # API/service errors - return error response
+                    # API/service errors - return error response (graceful degradation)
                     logger.error(f"Error fetching quote from Polygon: {e}", exc_info=True)
+                    # Don't raise ExternalAPIError here - return error response is intentional
                     result = {
                         "symbol": symbol,
                         "error": f"Polygon error: {str(e)}",
@@ -330,8 +332,9 @@ class DataHarvester(BaseAgent):
                 logger.error(f"Programming error fetching fundamentals from FMP: {e}", exc_info=True)
                 raise
             except Exception as e:
-                # API/service errors - return error response
+                # API/service errors - return error response (graceful degradation)
                 logger.error(f"Error fetching fundamentals from FMP: {e}", exc_info=True)
+                # Don't raise ExternalAPIError here - return error response is intentional
                 result = {
                     "symbol": symbol,
                     "error": f"FMP error: {str(e)}",

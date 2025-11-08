@@ -128,6 +128,7 @@ async def get_currency_attribution(
         logger.error(
             f"Error computing currency attribution for {portfolio_id}: {e}"
         )
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=500,
             detail="Internal server error computing attribution"

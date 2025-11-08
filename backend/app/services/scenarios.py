@@ -816,6 +816,7 @@ class ScenarioService:
                 # Service/database errors - log and continue with other scenarios
                 scenario_name = shock_type.value if hasattr(shock_type, 'value') else str(shock_type)
                 logger.warning(f"Scenario {scenario_name} failed (service error): {e}")
+                # Don't raise DatabaseError here - continue with other scenarios is intentional
                 continue
 
         if not scenario_drawdowns:
@@ -919,6 +920,7 @@ class ScenarioService:
         except Exception as e:
             # Database/service errors - log but continue (persistence is best-effort)
             logger.error(f"Failed to persist DaR to dar_history: {e}", exc_info=True)
+            # Don't raise DatabaseError here - persistence is best-effort
             # Add warning to result to indicate persistence failed
             result.setdefault("warnings", []).append(f"DaR history persistence failed: {str(e)}")
 

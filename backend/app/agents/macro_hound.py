@@ -206,8 +206,9 @@ class MacroHound(BaseAgent):
             logger.error(f"Programming error in regime detection: {e}", exc_info=True)
             raise
         except Exception as e:
-            # Service/database errors - return error response
+            # Service/database errors - return error response (graceful degradation)
             logger.error(f"Error detecting regime: {e}", exc_info=True)
+            # Don't raise DatabaseError here - return error response is intentional
             result = {
                 "regime_name": "UNKNOWN",
                 "confidence": 0.0,
@@ -324,8 +325,9 @@ class MacroHound(BaseAgent):
             logger.error(f"Programming error in cycle computation: {e}", exc_info=True)
             raise
         except Exception as e:
-            # Service/database errors - return error response
+            # Service/database errors - return error response (graceful degradation)
             logger.error(f"Error computing cycles: {e}", exc_info=True)
+            # Don't raise DatabaseError here - return error response is intentional
             result = {
                 "stdc": None,
                 "ltdc": None,
@@ -409,8 +411,9 @@ class MacroHound(BaseAgent):
             logger.error(f"Programming error getting indicators: {e}", exc_info=True)
             raise
         except Exception as e:
-            # Service/database errors - return error response
+            # Service/database errors - return error response (graceful degradation)
             logger.error(f"Error getting indicators: {e}", exc_info=True)
+            # Don't raise DatabaseError here - return error response is intentional
             result = {
                 "indicators": {},
                 "zscores": {},

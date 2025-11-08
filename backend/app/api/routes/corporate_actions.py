@@ -386,6 +386,7 @@ async def record_dividend(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Unexpected error recording dividend: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -463,6 +464,7 @@ async def record_split(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Unexpected error recording split: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -537,7 +539,9 @@ async def record_withholding_tax(
         raise HTTPException(status_code=500, detail=f"Withholding tax recording failed: {e}")
 
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Unexpected error recording withholding tax: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

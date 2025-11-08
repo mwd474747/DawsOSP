@@ -287,6 +287,7 @@ class OptimizerService:
             except Exception as e:
                 # Connection/configuration errors - log and fall back to stub mode
                 logger.warning(f"Failed to initialize database connections: {e}. Falling back to stub mode.")
+                # Don't raise DatabaseError here - graceful degradation is intentional
                 self.use_db = False
         else:
             # Use mock methods for testing
@@ -802,6 +803,7 @@ class OptimizerService:
         except Exception as e:
             # Service/database errors - return error response
             logger.error(f"Hedge suggestion failed (service error): {e}", exc_info=True)
+            # Don't raise DatabaseError here - return error response is intentional
             return {
                 "scenario_id": scenario_id,
                 "hedges": [],
