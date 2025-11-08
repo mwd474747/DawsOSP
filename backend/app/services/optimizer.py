@@ -1,13 +1,14 @@
 """
 Portfolio Optimizer Service - Riskfolio-Lib Integration
 
-⚠️ DEPRECATED: This service is deprecated and will be removed in a future release.
-The functionality has been consolidated into the FinancialAnalyst agent.
-Use `financial_analyst.propose_trades` capability instead.
-
 Purpose: Policy-based portfolio optimization and rebalancing with Riskfolio-Lib
-Updated: 2025-01-14
+Updated: 2025-01-15
 Priority: P1 (Core business logic for policy rebalance pattern)
+
+**Architecture Note:** This service is an implementation detail of the FinancialAnalyst agent.
+Patterns should use `financial_analyst` agent capabilities (e.g., `financial_analyst.propose_trades`),
+not this service directly. The service is used internally by FinancialAnalyst to implement
+optimization logic.
 
 Features:
     - propose_trades: Generate rebalance trades based on policy constraints
@@ -54,7 +55,6 @@ Usage:
     )
     
     Note: get_optimizer_service() is deprecated. Use OptimizerService(db_pool=...) directly.
-    Note: This service is deprecated. Use FinancialAnalyst agent capabilities instead.
 
 Sacred Invariants:
     1. All optimizations use pricing_pack_id for reproducibility
@@ -82,6 +82,7 @@ except ImportError:
     logging.warning("Riskfolio-Lib not installed. Optimizer will return stub data.")
 
 from app.db.connection import get_db_pool
+from app.core.exceptions import BusinessLogicError, DatabaseError
 from app.core.constants.scenarios import (
     MIN_QUALITY_SCORE,
     DEFAULT_MAX_SINGLE_POSITION_PCT,
@@ -255,9 +256,8 @@ class OptimizerService:
     """
     Portfolio optimizer using Riskfolio-Lib.
 
-    ⚠️ DEPRECATED: This service is deprecated and will be removed in a future release.
-    The functionality has been consolidated into the FinancialAnalyst agent.
-    Use `financial_analyst.propose_trades` capability instead.
+    **Architecture Note:** This service is an implementation detail of the FinancialAnalyst agent.
+    Patterns should use `financial_analyst` agent capabilities, not this service directly.
 
     Implements mean-variance optimization, risk parity, and other methods
     with quality rating constraints and turnover limits.
@@ -267,19 +267,13 @@ class OptimizerService:
         """
         Initialize optimizer service.
 
-        ⚠️ DEPRECATED: This service is deprecated. Use FinancialAnalyst agent capabilities instead.
+        **Architecture Note:** This service is an implementation detail of the FinancialAnalyst agent.
+        Patterns should use `financial_analyst` agent capabilities, not this service directly.
 
         Args:
             use_db: If True, use real database. If False, use stubs for testing.
             db_pool: AsyncPG connection pool (optional, will get from connection module if not provided)
         """
-        import warnings
-        warnings.warn(
-            "OptimizerService is deprecated. Use FinancialAnalyst agent capabilities "
-            "(e.g., financial_analyst.propose_trades) instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
         self.use_db = use_db
         self.db_pool = db_pool
         self.riskfolio_available = RISKFOLIO_AVAILABLE
@@ -735,7 +729,7 @@ class OptimizerService:
             ValueError: If portfolio_id is invalid or not found.
             ValueError: If pricing_pack_id is invalid or not found.
             ValueError: If scenario_id is not recognized.
-            ServiceError: If scenario service fails.
+            BusinessLogicError: If scenario service fails.
             DatabaseError: If database query fails.
             
         Note:

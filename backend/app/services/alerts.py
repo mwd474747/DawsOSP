@@ -1,17 +1,16 @@
 """
 Alert Evaluation Service
 
-⚠️ DEPRECATED: This service is deprecated and will be removed in a future release.
-The functionality has been consolidated into the MacroHound agent.
-Use `macro_hound` agent capabilities instead.
-
-**Production Guard:** Stub mode (use_db=False) is prevented in production environments.
-Stub implementations (random values) are acceptable for this deprecated service as it
-will be removed once migration to MacroHound is complete.
-
 Purpose: Evaluate user-defined alert conditions against portfolio metrics
 Updated: 2025-01-15 (Phase 1: Exception handling improvements)
-Priority: P1 (Deprecated - migration in progress)
+Priority: P1 (Core business logic for alert evaluation)
+
+**Architecture Note:** This service is an implementation detail of the MacroHound agent.
+Patterns should use `macro_hound` agent capabilities (e.g., `macro_hound.suggest_alert_presets`),
+not this service directly. The service is used internally by MacroHound to implement
+alert evaluation logic.
+
+**Production Guard:** Stub mode (use_db=False) is prevented in production environments.
 
 Features:
     - Condition evaluation (macro, metric, rating, price, news_sentiment)
@@ -79,9 +78,8 @@ class AlertService:
     """
     Alert evaluation service.
 
-    ⚠️ DEPRECATED: This service is deprecated and will be removed in a future release.
-    The functionality has been consolidated into the MacroHound agent.
-    Use `macro_hound` agent capabilities instead.
+    **Architecture Note:** This service is an implementation detail of the MacroHound agent.
+    Patterns should use `macro_hound` agent capabilities, not this service directly.
 
     Evaluates user-defined conditions against:
     - Macro indicators (VIX, unemployment, rates)
@@ -95,7 +93,8 @@ class AlertService:
         """
         Initialize alert service.
 
-        ⚠️ DEPRECATED: This service is deprecated. Use MacroHound agent capabilities instead.
+        **Architecture Note:** This service is an implementation detail of the MacroHound agent.
+        Patterns should use `macro_hound` agent capabilities, not this service directly.
 
         Args:
             use_db: If True, use real database. If False, use stubs for testing.
@@ -104,7 +103,6 @@ class AlertService:
             ValueError: If use_db=False in production environment
         """
         import os
-        import warnings
         
         # Production guard: prevent stub mode in production
         if not use_db and os.getenv("ENVIRONMENT") == "production":
@@ -113,11 +111,6 @@ class AlertService:
                 "Stub mode is only available for development and testing."
             )
         
-        warnings.warn(
-            "AlertService is deprecated. Use MacroHound agent capabilities instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
         self.use_db = use_db
 
         if use_db:
@@ -484,8 +477,7 @@ class AlertService:
     ) -> Optional[Decimal]:
         """Get macro indicator value from database."""
         if not self.use_db:
-            # Stub: return random value (acceptable for deprecated service)
-            # Note: This service is deprecated and will be removed once migration to MacroHound is complete
+            # Stub: return random value (for testing only)
             import random
             return Decimal(str(random.uniform(10, 50)))
 
@@ -567,8 +559,7 @@ class AlertService:
     ) -> Optional[Decimal]:
         """Get portfolio metric value from database."""
         if not self.use_db:
-            # Stub: return random value (acceptable for deprecated service)
-            # Note: This service is deprecated and will be removed once migration to MacroHound is complete
+            # Stub: return random value (for testing only)
             import random
             return Decimal(str(random.uniform(MOCK_DATA_RANDOM_MIN, MOCK_DATA_RANDOM_MAX)))
 
@@ -733,8 +724,7 @@ class AlertService:
     ) -> Optional[Decimal]:
         """Get price value from database."""
         if not self.use_db:
-            # Stub: return random value (acceptable for deprecated service)
-            # Note: This service is deprecated and will be removed once migration to MacroHound is complete
+            # Stub: return random value (for testing only)
             import random
             metric = condition.get("metric", "close")
             if metric == "change_pct":
@@ -1232,6 +1222,7 @@ class AlertService:
     # NOTE: This legacy implementation is deprecated.
     # Use deliver_alert() (line 272) which integrates with NotificationService
     # and AlertDeliveryService for proper delivery tracking and DLQ management.
+    # This method is kept for backward compatibility only.
 
     async def _deliver_alert_legacy(
         self,
@@ -1626,7 +1617,11 @@ def get_alert_service(use_db: bool = True) -> AlertService:
     """
     Get AlertService singleton instance.
 
-    ⚠️ DEPRECATED: AlertService is deprecated. Use MacroHound agent capabilities instead.
+    **DEPRECATED:** Use `AlertService(use_db=...)` directly instead of this singleton function.
+    This function is deprecated as part of the singleton pattern removal (Phase 2).
+
+    **Architecture Note:** AlertService itself is an implementation detail of the MacroHound agent.
+    Patterns should use `macro_hound` agent capabilities, not this service directly.
 
     Args:
         use_db: If True, use real database. If False, use stubs for testing.
@@ -1649,7 +1644,7 @@ def get_alert_service(use_db: bool = True) -> AlertService:
         )
     
     warnings.warn(
-        "get_alert_service() is deprecated. Use MacroHound agent capabilities instead.",
+        "get_alert_service() is deprecated. Use AlertService(use_db=...) directly instead.",
         DeprecationWarning,
         stacklevel=2
     )

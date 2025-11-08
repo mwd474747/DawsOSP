@@ -1,16 +1,18 @@
 """
 DawsOS Ratings Service - Buffett Quality Scoring
 
-⚠️ DEPRECATED: This service is deprecated and will be removed in a future release.
-The functionality has been consolidated into the FinancialAnalyst agent.
-Use `financial_analyst.dividend_safety`, `financial_analyst.moat_strength`, etc. capabilities instead.
-
 Purpose: Calculate quality ratings (dividend safety, moat strength, resilience) on 0-10 scale
 Specification: .claude/agents/business/RATINGS_ARCHITECT.md (lines 175-407)
 Governance: P0-CODE-1 remediation (2025-10-26)
+Updated: 2025-01-15
+
+**Architecture Note:** This service is an implementation detail of the FinancialAnalyst agent.
+Patterns should use `financial_analyst` agent capabilities (e.g., `financial_analyst.dividend_safety`),
+not this service directly. The service is used internally by FinancialAnalyst to implement
+ratings calculation logic.
 
 Architecture:
-    Agent → RatingsService → rating_rubrics table → Database
+    Pattern → Agent Capability → RatingsService → rating_rubrics table → Database
 
 Implemented Features:
     - ✅ Calculate ratings using correct thresholds from spec
@@ -48,9 +50,8 @@ class RatingsService:
     """
     Ratings calculation service.
 
-    ⚠️ DEPRECATED: This service is deprecated and will be removed in a future release.
-    The functionality has been consolidated into the FinancialAnalyst agent.
-    Use `financial_analyst.dividend_safety`, `financial_analyst.moat_strength`, etc. capabilities instead.
+    **Architecture Note:** This service is an implementation detail of the FinancialAnalyst agent.
+    Patterns should use `financial_analyst` agent capabilities, not this service directly.
 
     Returns Dict with component scores (not just overall rating).
     This prevents duplication - agent layer only formats, doesn't recalculate.
@@ -60,19 +61,13 @@ class RatingsService:
         """
         Initialize ratings service.
 
-        ⚠️ DEPRECATED: This service is deprecated. Use FinancialAnalyst agent capabilities instead.
+        **Architecture Note:** This service is an implementation detail of the FinancialAnalyst agent.
+        Patterns should use `financial_analyst` agent capabilities, not this service directly.
 
         Args:
             use_db: If True, use real database. If False, use stubs for testing.
             db_pool: AsyncPG connection pool (optional, will get from connection module if not provided)
         """
-        import warnings
-        warnings.warn(
-            "RatingsService is deprecated. Use FinancialAnalyst agent capabilities "
-            "(e.g., financial_analyst.dividend_safety, financial_analyst.moat_strength) instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
         self.use_db = use_db
         # Removed self.db_pool - using helper functions instead
         self.rubrics = {}  # Cache for loaded rubrics

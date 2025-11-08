@@ -15,7 +15,18 @@ This index organizes all constants extraction documentation into a clear hierarc
 
 ### Primary Documentation (Read These First)
 
-1. **[CONSTANTS_CODE_REVIEW.md](CONSTANTS_CODE_REVIEW.md)** ⭐ **MOST IMPORTANT**
+1. **[CONSTANTS_DYNAMIC_VS_STATIC_STRATEGY.md](CONSTANTS_DYNAMIC_VS_STATIC_STRATEGY.md)** ⭐⭐ **STRATEGIC - READ FIRST**
+   - **Purpose**: Domain-driven analysis of which constants should be dynamic data
+   - **Audience**: ALL developers and stakeholders
+   - **Content**:
+     - 🔴 Risk-free rate should fetch from FRED (not hardcoded)
+     - 🟠 VIX/unemployment thresholds should be data-driven
+     - Classification matrix (static vs dynamic vs user preference)
+     - 3-phase implementation roadmap (15-50 hours total)
+   - **When to Read**: **NOW** - Changes entire constants strategy
+   - **Status**: 🎯 **STRATEGIC RECOMMENDATION** - Game changer
+
+2. **[CONSTANTS_CODE_REVIEW.md](CONSTANTS_CODE_REVIEW.md)** ⭐ **QUALITY ANALYSIS**
    - **Purpose**: Comprehensive code review of all constants work
    - **Audience**: Developers fixing issues
    - **Content**:
@@ -27,7 +38,19 @@ This index organizes all constants extraction documentation into a clear hierarc
    - **When to Read**: Before making any changes to constants
    - **Status**: ⚠️ **CRITICAL ISSUES FOUND** - Read before continuing
 
-2. **[CONSTANTS_EXTRACTION_FINAL.md](CONSTANTS_EXTRACTION_FINAL.md)** ⭐
+3. **[CONSTANTS_REFACTOR_PLAN_CONSERVATIVE.md](CONSTANTS_REFACTOR_PLAN_CONSERVATIVE.md)** ⭐ **IMPLEMENTATION PLAN**
+   - **Purpose**: Conservative, non-disruptive refactor plan validated against existing code
+   - **Audience**: Developers implementing changes
+   - **Content**:
+     - ✅ Validated assumptions (DGS10 exists, MacroService pattern, database schema)
+     - 3-phase plan (setup, deprecation, migration) - 22-30 hours
+     - Batch migration strategy (high-impact first)
+     - Testing strategy (unit, integration, regression)
+     - Rollback plan (per-service revert)
+   - **When to Read**: Before implementing any changes
+   - **Status**: 🎯 **PRODUCTION-READY** - Validated against codebase
+
+4. **[CONSTANTS_EXTRACTION_FINAL.md](CONSTANTS_EXTRACTION_FINAL.md)** ⭐
    - **Purpose**: Achievement report for Phases 1-8
    - **Audience**: Management, stakeholders
    - **Content**:
@@ -38,7 +61,7 @@ This index organizes all constants extraction documentation into a clear hierarc
    - **When to Read**: For overview of work completed
    - **Status**: ✅ Accurate as of Nov 7, 2025
 
-3. **[CONSTANTS_REMAINING_ANALYSIS.md](CONSTANTS_REMAINING_ANALYSIS.md)**
+5. **[CONSTANTS_REMAINING_ANALYSIS.md](CONSTANTS_REMAINING_ANALYSIS.md)**
    - **Purpose**: Analysis of remaining 100-120 magic numbers
    - **Audience**: Developers planning Phases 9-19
    - **Content**:

@@ -90,7 +90,12 @@ class AuthorizationError(Exception):
     pass
 
 class ServiceError(Exception):
-    """Base exception for service errors."""
+    """
+    Base exception for service errors.
+    
+    **Deprecated:** Use exceptions from `app.core.exceptions` instead (e.g., `BusinessLogicError`).
+    This class is kept for backward compatibility only.
+    """
     pass
 
 # ============================================================================

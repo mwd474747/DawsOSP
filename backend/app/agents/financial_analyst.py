@@ -65,7 +65,7 @@ except ImportError:
 from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 from app.core.provenance import ProvenanceWrapper, DataProvenance
-from app.core.exceptions import DatabaseError
+from app.core.exceptions import DatabaseError, BusinessLogicError
 from app.db import (
     get_metrics_queries,
     get_pricing_pack_queries,
@@ -409,7 +409,7 @@ class FinancialAnalyst(BaseAgent):
             ValueError: If positions is empty or invalid.
             ValueError: If pack_id is invalid (if explicitly provided).
             ValueError: If pricing_pack_id is not available in context and not provided.
-            ServiceError: If pricing service fails.
+            BusinessLogicError: If pricing service fails.
             
         Note:
             - Falls back to stub prices if pricing pack unavailable (does not raise)

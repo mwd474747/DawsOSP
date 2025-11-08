@@ -1,13 +1,14 @@
 """
 DawsOS Reports Service
 
-⚠️ DEPRECATED: This service is deprecated and will be removed in a future release.
-The functionality has been consolidated into the DataHarvester agent.
-Use `data_harvester` agent capabilities instead.
-
 Purpose: Generate PDF/CSV exports with rights enforcement
-Updated: 2025-10-27
+Updated: 2025-01-15
 Priority: P0 (Critical for export functionality)
+
+**Architecture Note:** This service is an implementation detail of the DataHarvester agent.
+Patterns should use `data_harvester` agent capabilities (e.g., `data_harvester.render_pdf`),
+not this service directly. The service is used internally by DataHarvester to implement
+report generation logic.
 
 Features:
     - PDF report generation with WeasyPrint
@@ -45,7 +46,12 @@ logger = logging.getLogger(__name__)
 
 # Custom exceptions (for backward compatibility, but prefer using exception hierarchy)
 class ServiceError(Exception):
-    """Base exception for service errors (deprecated - use app.core.exceptions)."""
+    """
+    Base exception for service errors.
+    
+    **Deprecated:** Use exceptions from `app.core.exceptions` instead (e.g., `BusinessLogicError`).
+    This class is kept for backward compatibility only.
+    """
     pass
 
 class RightsViolationError(BusinessLogicError):
@@ -70,9 +76,8 @@ class ReportService:
     """
     Report service: generate exports with rights enforcement.
 
-    ⚠️ DEPRECATED: This service is deprecated and will be removed in a future release.
-    The functionality has been consolidated into the DataHarvester agent.
-    Use `data_harvester` agent capabilities instead.
+    **Architecture Note:** This service is an implementation detail of the DataHarvester agent.
+    Patterns should use `data_harvester` agent capabilities, not this service directly.
 
     Integrates with RightsRegistry to ensure compliance with provider
     export restrictions and attribution requirements.
@@ -82,18 +87,13 @@ class ReportService:
         """
         Initialize report service.
 
-        ⚠️ DEPRECATED: This service is deprecated. Use DataHarvester agent capabilities instead.
+        **Architecture Note:** This service is an implementation detail of the DataHarvester agent.
+        Patterns should use `data_harvester` agent capabilities, not this service directly.
 
         Args:
             environment: "staging" or "production" (affects enforcement)
             templates_dir: Path to templates directory (default: backend/templates)
         """
-        import warnings
-        warnings.warn(
-            "ReportService is deprecated. Use DataHarvester agent capabilities instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
         self.environment = environment
         self.registry = get_registry()
 
@@ -453,11 +453,13 @@ class ReportService:
             return pdf_bytes
             
         except ImportError:
-            raise ServiceError("WeasyPrint not available. Install with: pip install weasyprint")
+            from app.core.exceptions import BusinessLogicError
+            raise BusinessLogicError("WeasyPrint not available. Install with: pip install weasyprint")
         except (ValueError, TypeError, KeyError, AttributeError) as e:
             # Programming errors - re-raise to surface bugs immediately
             logger.error(f"Programming error generating PDF: {e}", exc_info=True)
-            raise ServiceError(f"PDF generation failed (programming error): {str(e)}")
+            from app.core.exceptions import BusinessLogicError
+            raise BusinessLogicError(f"PDF generation failed (programming error): {str(e)}")
         except Exception as e:
             # Service/library errors - re-raise as BusinessLogicError (critical operation)
             logger.error(f"PDF generation failed: {str(e)}")
@@ -798,7 +800,21 @@ _reports_service = None
 
 
 def get_reports_service() -> ReportService:
-    """Get singleton reports service instance."""
+    """
+    Get singleton reports service instance.
+    
+    **DEPRECATED:** Use `ReportService(environment=...)` directly instead of this singleton function.
+    This function is deprecated as part of the singleton pattern removal (Phase 2).
+    
+    **Architecture Note:** ReportService itself is an implementation detail of the DataHarvester agent.
+    Patterns should use `data_harvester` agent capabilities, not this service directly.
+    """
+    import warnings
+    warnings.warn(
+        "get_reports_service() is deprecated. Use ReportService(environment=...) directly instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     global _reports_service
 
     if _reports_service is None:

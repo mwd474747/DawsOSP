@@ -44,6 +44,15 @@ from app.core.constants.time_periods import (
     DAYS_PER_YEAR,
 )
 
+# NEW: Macro data helpers (dynamic data from database)
+# These replace hardcoded constants with live data from FRED
+# See: CONSTANTS_REFACTOR_PLAN_CONSERVATIVE.md
+from app.services.macro_data_helpers import (
+    get_risk_free_rate,  # Replaces DEFAULT_RISK_FREE_RATE (0.02 hardcoded)
+    get_latest_indicator_value,
+    get_indicator_percentile,
+)
+
 __all__ = [
     # Financial
     "TRADING_DAYS_PER_YEAR",
@@ -58,4 +67,8 @@ __all__ = [
     # Time periods
     "SECONDS_PER_DAY",
     "DAYS_PER_YEAR",
+    # Macro data helpers (NEW - dynamic data)
+    "get_risk_free_rate",
+    "get_latest_indicator_value",
+    "get_indicator_percentile",
 ]
