@@ -37,20 +37,54 @@
         global.DawsOS = {};
     }
 
-    // Import React hooks (assuming React is globally available)
-    const { useState, useEffect } = React;
-    const { createElement: e } = React;
+    // Initialize placeholder namespace immediately with safe defaults
+    global.DawsOS.PatternSystem = {
+        PatternPanel: function PlaceholderPatternPanel() {
+            if (global.React && global.React.createElement) {
+                return global.React.createElement('div', null, 'Loading Pattern Panel...');
+            }
+            return null;
+        },
+        PatternComposerPanel: function PlaceholderComposerPanel() {
+            if (global.React && global.React.createElement) {
+                return global.React.createElement('div', null, 'Loading Pattern Composer...');
+            }
+            return null;
+        },
+        isInitialized: false
+    };
+
+    // Define initialization function that can be called multiple times
+    function initializePatternSystem() {
+        // Check if React is available
+        if (!global.React) {
+            console.log('[PatternSystem] React not available, will retry...');
+            setTimeout(initializePatternSystem, 100);
+            return;
+        }
+        
+        // Check if APIClient is available
+        if (!global.DawsOS?.APIClient) {
+            console.log('[PatternSystem] APIClient not ready, will retry...');
+            setTimeout(initializePatternSystem, 100);
+            return;
+        }
+        
+        // Don't re-initialize if already done
+        if (global.DawsOS.PatternSystem.isInitialized) {
+            return;
+        }
+        
+        console.log('[PatternSystem] All dependencies ready, initializing...');
+
+    // Import React hooks (now we know React is available)
+    const { createElement: e, useState, useEffect } = global.React;
 
     // Import from DawsOS modules (with correct namespaces)
     const { useUserContext, getCurrentPortfolioId } = global.DawsOS?.Context || {};
-    const { apiClient, TokenManager: TokenManagerFromAPI } = global.DawsOS?.APIClient || {};
-    
-    // Validate critical dependencies
-    if (!apiClient) {
-        console.error('[PatternSystem] API client not loaded from DawsOS.APIClient');
-        console.error('[PatternSystem] Available namespaces:', Object.keys(global.DawsOS || {}));
-        throw new Error('[PatternSystem] Required dependency DawsOS.APIClient not found. Check script load order.');
-    }
+    // Note: apiClient methods are directly on DawsOS.APIClient, not nested
+    const apiClient = global.DawsOS.APIClient;
+    const TokenManagerFromAPI = apiClient.TokenManager;
 
     // Import panel components
     const {
@@ -987,18 +1021,23 @@
     // PUBLIC API EXPORT
     // ============================================
 
-    /**
-     * Export Pattern System to global DawsOS namespace
-     */
-    global.DawsOS.PatternSystem = {
-        getDataByPath,
-        PatternRenderer,
-        PanelRenderer,
-        patternRegistry,
-        queryKeys,
-        queryHelpers
+        /**
+         * Export Pattern System to global DawsOS namespace
+         */
+        global.DawsOS.PatternSystem = {
+            getDataByPath,
+            PatternRenderer,
+            PanelRenderer,
+            patternRegistry,
+            queryKeys,
+            queryHelpers,
+            isInitialized: true
     };
 
-    console.log('DawsOS Pattern System loaded successfully');
+        console.log('[PatternSystem] Module fully initialized');
+    }
+    
+    // Start initialization process
+    initializePatternSystem();
 
 })(window);

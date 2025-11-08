@@ -57,6 +57,10 @@ def initialize_services(
     
     container.register("db_pool", db_pool)
     
+    # Register literal values as constants for DI container
+    container.register("use_db_true", True)
+    container.register("staging_env", "staging")
+    
     # Register FRED provider if not provided
     if fred_provider is None:
         from app.integrations.fred_provider import FREDProvider
@@ -88,8 +92,11 @@ def initialize_services(
     
     container.register_service("fred_transformation", FREDTransformationService)
     container.register_service("indicator_config", IndicatorConfigManager)
-    container.register_service("rights_registry", RightsRegistry)
-    container.register_service("alert_delivery", AlertDeliveryService)
+    # RightsRegistry needs a config - register an empty dict instance
+    container.register("rights_config", {})
+    container.register_service("rights_registry", RightsRegistry, config="rights_config")
+    # AlertDeliveryService expects use_db parameter
+    container.register_service("alert_delivery", AlertDeliveryService, use_db="use_db_true")
     container.register_service("playbooks", PlaybookGenerator)
     container.register_service("auth", AuthService)
     
@@ -100,10 +107,15 @@ def initialize_services(
     from app.services.notifications import NotificationService
     from app.services.audit import AuditService
     
-    container.register_service("pricing", PricingService, db_pool="db_pool")
-    container.register_service("ratings", RatingsService, db_pool="db_pool")
-    container.register_service("optimizer", OptimizerService, db_pool="db_pool")
-    container.register_service("notifications", NotificationService, db_pool="db_pool")
+    # PricingService expects use_db and db_pool
+    container.register_service("pricing", PricingService, use_db="use_db_true", db_pool="db_pool")
+    # RatingsService expects use_db and db_pool
+    container.register_service("ratings", RatingsService, use_db="use_db_true", db_pool="db_pool")
+    # OptimizerService expects use_db and db_pool  
+    container.register_service("optimizer", OptimizerService, use_db="use_db_true", db_pool="db_pool")
+    # NotificationService expects use_db
+    container.register_service("notifications", NotificationService, use_db="use_db_true")
+    # AuditService expects db_pool
     container.register_service("audit", AuditService, db_pool="db_pool")
     
     # Step 4: Register core services (service dependencies)
@@ -111,8 +123,8 @@ def initialize_services(
     from app.services.scenarios import ScenarioService
     from app.services.metrics import PerformanceCalculator
     from app.services.currency_attribution import CurrencyAttributor
-    from app.services.risk_metrics import RiskMetricsService
-    from app.services.factor_analysis import FactorAnalysisService
+    from app.services.risk_metrics import RiskMetrics
+    from app.services.factor_analysis import FactorAnalyzer
     from app.services.benchmarks import BenchmarkService
     from app.services.alerts import AlertService
     from app.services.cycles import CyclesService
@@ -128,32 +140,32 @@ def initialize_services(
         "scenarios",
         ScenarioService,
         db_pool="db_pool",
-        pricing_service="pricing",
     )
-    container.register_service("metrics", PerformanceCalculator, pricing_service="pricing")
-    container.register_service("currency_attribution", CurrencyAttributor, pricing_service="pricing")
-    container.register_service("risk_metrics", RiskMetricsService, pricing_service="pricing")
-    container.register_service("factor_analysis", FactorAnalysisService, pricing_service="pricing")
-    container.register_service("benchmarks", BenchmarkService, pricing_service="pricing")
-    container.register_service(
-        "alerts",
-        AlertService,
-        db_pool="db_pool",
-        notifications_service="notifications",
-        alert_delivery_service="alert_delivery",
-    )
-    container.register_service("cycles", CyclesService, indicator_config="indicator_config")
-    container.register_service("reports", ReportService, rights_registry="rights_registry")
+    # PerformanceCalculator expects db (not pricing_service)
+    container.register_service("metrics", PerformanceCalculator, db="db_pool")
+    # CurrencyAttributor expects db (not pricing_service)
+    container.register_service("currency_attribution", CurrencyAttributor, db="db_pool")
+    # RiskMetrics expects db (not pricing_service)
+    container.register_service("risk_metrics", RiskMetrics, db="db_pool")
+    # FactorAnalyzer expects db (not pricing_service)
+    container.register_service("factor_analysis", FactorAnalyzer, db="db_pool")
+    # BenchmarkService expects use_db (not pricing_service)
+    container.register_service("benchmarks", BenchmarkService, use_db="use_db_true")
+    # AlertService expects only use_db
+    container.register_service("alerts", AlertService, use_db="use_db_true")
+    # CyclesService expects db_pool (not indicator_config)
+    container.register_service("cycles", CyclesService, db_pool="db_pool")
+    # ReportService expects environment and optionally templates_dir
+    container.register_service("reports", ReportService, environment="staging_env")
     
     # Step 5: Register composite services
     from app.services.macro_aware_scenarios import MacroAwareScenarioService
     
+    # MacroAwareScenarioService expects only use_db parameter
     container.register_service(
         "macro_aware_scenarios",
         MacroAwareScenarioService,
-        scenarios_service="scenarios",
-        macro_service="macro",
-        db_pool="db_pool",
+        use_db="use_db_true"
     )
     
     # Step 6: Register agents
@@ -211,10 +223,10 @@ def initialize_services(
         return ClaudeAgent("claude", services)
     
     # Register agents with factory functions (no dependencies since they resolve internally)
-    container.register_service("macro_hound", MacroHound, factory=create_macro_hound, dependencies={})
-    container.register_service("financial_analyst", FinancialAnalyst, factory=create_financial_analyst, dependencies={})
-    container.register_service("data_harvester", DataHarvester, factory=create_data_harvester, dependencies={})
-    container.register_service("claude_agent", ClaudeAgent, factory=create_claude_agent, dependencies={})
+    container.register_service("macro_hound", MacroHound, factory=create_macro_hound)
+    container.register_service("financial_analyst", FinancialAnalyst, factory=create_financial_analyst)
+    container.register_service("data_harvester", DataHarvester, factory=create_data_harvester)
+    container.register_service("claude_agent", ClaudeAgent, factory=create_claude_agent)
     
     # Step 7: Register runtime
     from app.core.agent_runtime import AgentRuntime
@@ -238,14 +250,15 @@ def initialize_services(
         return runtime
     
     # Register runtime with factory function (no dependencies since it resolves internally)
-    container.register_service("agent_runtime", AgentRuntime, factory=create_agent_runtime, dependencies={})
+    container.register_service("agent_runtime", AgentRuntime, factory=create_agent_runtime)
     
-    # Pattern Orchestrator needs agent runtime
+    # Pattern Orchestrator needs agent runtime and db
     def create_pattern_orchestrator() -> PatternOrchestrator:
         runtime = container.resolve("agent_runtime")
-        return PatternOrchestrator(runtime)
+        db = container.resolve("db_pool")
+        return PatternOrchestrator(runtime, db)
     
-    container.register_service("pattern_orchestrator", PatternOrchestrator, factory=create_pattern_orchestrator, dependencies={})
+    container.register_service("pattern_orchestrator", PatternOrchestrator, factory=create_pattern_orchestrator)
     
     # Initialize all services in dependency order
     dependency_order = [

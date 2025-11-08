@@ -97,7 +97,7 @@
     const NetworkStatusIndicator = global.NetworkStatusIndicator;
     const FormField = global.FormField;
     const DataBadge = global.DataBadge;
-    const PatternRenderer = global.PatternRenderer;
+    const PatternRenderer = PatternSystem.PatternRenderer;
     const FormValidator = global.FormValidator;
     const ErrorHandler = global.ErrorHandler;
     // Use TokenManager from DawsOS.APIClient if available, otherwise fallback to global

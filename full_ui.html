@@ -56,12 +56,34 @@
     <div id="root"></div>
     
     <script>
-        // Check if React is loaded
-        if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
-            document.getElementById('root').innerHTML = '<div style="padding: 2rem; text-align: center;">Loading React framework...</div>';
-            setTimeout(() => location.reload(), 2000);
-        } else {
-            // Initialize the application
+        // Wait for all scripts to load before initializing
+        function initializeApp() {
+            // Check if React is loaded
+            if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+                document.getElementById('root').innerHTML = '<div style="padding: 2rem; text-align: center;">Loading React framework...</div>';
+                setTimeout(() => location.reload(), 2000);
+                return;
+            }
+            
+            // Check if all required namespaces are loaded
+            if (!window.DawsOS || !window.DawsOS.APIClient || !window.DawsOS.Utils || 
+                !window.DawsOS.Panels || !window.DawsOS.Pages || 
+                !window.DawsOS.Context || !window.DawsOS.PatternSystem) {
+                console.log('Waiting for modules to load...', {
+                    DawsOS: !!window.DawsOS,
+                    APIClient: !!window.DawsOS?.APIClient,
+                    Utils: !!window.DawsOS?.Utils,
+                    Panels: !!window.DawsOS?.Panels,
+                    Pages: !!window.DawsOS?.Pages,
+                    Context: !!window.DawsOS?.Context,
+                    PatternSystem: !!window.DawsOS?.PatternSystem
+                });
+                // Wait a bit and try again
+                setTimeout(initializeApp, 100);
+                return;
+            }
+            
+            // All modules loaded, initialize the application
             const { useState, useEffect, useCallback, useRef } = React;
             const e = React.createElement;
             
@@ -2172,6 +2194,14 @@
                 e(ErrorBoundary, null, e(App)),
                 document.getElementById('root')
             );
+        }
+        
+        // Start the initialization when the DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            // DOM is already loaded
+            initializeApp();
         }
     </script>
 </body>

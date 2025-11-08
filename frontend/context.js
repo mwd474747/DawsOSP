@@ -29,26 +29,53 @@
         global.DawsOS = {};
     }
 
-    // Get dependencies - Import from DawsOS.APIClient namespace
-    const { TokenManager, apiClient } = global.DawsOS?.APIClient || {};
-    const { useState, useEffect, useCallback, useContext, createContext, useRef } = global.React || {};
-    const { e } = global.DawsOS?.Utils || {};
+    // Initialize placeholder namespace immediately with safe defaults
+    global.DawsOS.Context = {
+        UserContextProvider: function PlaceholderProvider({ children }) {
+            // Safe placeholder that just renders children
+            if (global.React) {
+                return children;
+            }
+            return null;
+        },
+        useUserContext: () => ({ user: null, setUser: () => {} }),
+        getCurrentUserId: () => null,
+        getCurrentPortfolioId: () => null,
+        isInitialized: false
+    };
+
+    // Define initialization function that can be called multiple times
+    function initializeContext() {
+        // Check if React is available
+        if (!global.React) {
+            console.log('[Context] React not available, will retry...');
+            setTimeout(initializeContext, 100);
+            return;
+        }
+        
+        // Check if APIClient is available
+        if (!global.DawsOS?.APIClient) {
+            console.log('[Context] APIClient not ready, will retry...');
+            setTimeout(initializeContext, 100);
+            return;
+        }
+        
+        // Don't re-initialize if already done
+        if (global.DawsOS.Context.isInitialized) {
+            return;
+        }
+        
+        console.log('[Context] All dependencies ready, initializing...');
+        
+        // Now we have all dependencies, do the real initialization
+        const { createElement: e } = global.React;
     
-    // Validate critical dependencies (fail-fast instead of silent failure)
-    if (!TokenManager) {
-        console.error('[Context] TokenManager not loaded from DawsOS.APIClient.TokenManager');
-        console.error('[Context] Available namespaces:', Object.keys(global.DawsOS || {}));
-        throw new Error('[Context] Required dependency DawsOS.APIClient.TokenManager not found. Check script load order.');
-    }
-    if (!apiClient) {
-        console.error('[Context] API client not loaded from DawsOS.APIClient');
-        console.error('[Context] Available namespaces:', Object.keys(global.DawsOS || {}));
-        throw new Error('[Context] Required dependency DawsOS.APIClient not found. Check script load order.');
-    }
-    if (!e) {
-        console.error('[Context] React.createElement not available!');
-        throw new Error('[Context] React is required but not loaded');
-    }
+    // Get dependencies - Import from DawsOS.APIClient namespace
+    // Note: apiClient methods are directly on DawsOS.APIClient, not nested
+    const apiClient = global.DawsOS.APIClient;
+    const TokenManager = apiClient.TokenManager;
+    const { useState, useEffect, useCallback, useContext, createContext, useRef } = global.React;
+    // Note: e is already defined above
 
     // ===== UNIFIED PATTERN INTEGRATION SYSTEM =====
 
@@ -355,13 +382,20 @@
         );
     }
 
-    // Export to global DawsOS namespace
-    global.DawsOS.Context = {
-        getCurrentPortfolioId,
-        UserContext,
-        UserContextProvider,
-        useUserContext,
-        PortfolioSelector
-    };
+        // Export real implementations to global DawsOS namespace
+        global.DawsOS.Context = {
+            getCurrentPortfolioId,
+            UserContext,
+            UserContextProvider,
+            useUserContext,
+            PortfolioSelector,
+            isInitialized: true
+        };
+        
+        console.log('[Context] Module fully initialized');
+    }
+    
+    // Start initialization process
+    initializeContext();
 
 })(window);
