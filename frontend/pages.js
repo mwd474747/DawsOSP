@@ -95,17 +95,19 @@
     // Import cached API client (queryHelpers) from pattern-system
     const cachedApiClient = PatternSystem.queryHelpers || apiClient;
 
-    // Import UI components (assumed to be globally available)
-    const LoadingSpinner = global.LoadingSpinner;
-    const ErrorMessage = global.ErrorMessage;
-    const RetryableError = global.RetryableError;
-    const EmptyState = global.EmptyState;
-    const NetworkStatusIndicator = global.NetworkStatusIndicator;
-    const FormField = global.FormField;
-    const DataBadge = global.DataBadge;
+    // Import UI components from DawsOS namespaces
+    const LoadingSpinner = Utils.LoadingSpinner || global.LoadingSpinner;
+    const ErrorMessage = Utils.ErrorMessage || global.ErrorMessage;
+    const RetryableError = Utils.RetryableError || global.RetryableError;
+    const EmptyState = Utils.EmptyState || global.EmptyState;
+    // These are in UI.Primitives namespace (exported from utils.js)
+    const NetworkStatusIndicator = global.DawsOS?.UI?.Primitives?.NetworkStatusIndicator || Utils.NetworkStatusIndicator;
+    const FormField = global.DawsOS?.UI?.Primitives?.FormField || Utils.FormField;
+    const DataBadge = global.DawsOS?.UI?.Primitives?.DataBadge || global.DataBadge;
     const PatternRenderer = PatternSystem.PatternRenderer;
-    const FormValidator = global.FormValidator;
-    const ErrorHandler = global.ErrorHandler;
+    // These should be in DawsOS namespace if loaded correctly
+    const FormValidator = global.DawsOS?.FormValidator || global.FormValidator;
+    const ErrorHandler = global.DawsOS?.ErrorHandler || global.ErrorHandler;
     // Use TokenManager from DawsOS.APIClient if available, otherwise fallback to global
     const TokenManager = APIClient?.TokenManager || global.TokenManager;
     const getDataSourceFromResponse = global.getDataSourceFromResponse;

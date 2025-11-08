@@ -128,7 +128,7 @@ class PolicyConstraints:
 
     # Optimization method
     method: str = METHOD_MEAN_VARIANCE  # mean_variance, risk_parity, max_sharpe, cvar
-    risk_free_rate: float  # Risk-free rate (annual) - fetched from FRED or policy override
+    risk_free_rate: float = 0.045  # Risk-free rate (annual) - fetched from FRED or policy override, default 4.5%
 
     # Historical lookback
     lookback_days: int = DEFAULT_OPTIMIZATION_LOOKBACK_DAYS  # Trading days for covariance estimation

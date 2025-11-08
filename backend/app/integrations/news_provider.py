@@ -35,11 +35,14 @@ from datetime import datetime, date, timedelta
 from .base_provider import BaseProvider, ProviderConfig, ProviderError, ProviderRequest, ProviderResponse
 from .rate_limiter import rate_limit
 from app.core.constants.integration import (
-    NEWS_API_DEV_RATE_LIMIT,
-    NEWS_API_BUSINESS_RATE_LIMIT,
     DEFAULT_MAX_RETRIES,
     DEFAULT_RETRY_DELAY,
 )
+
+# NewsAPI rate limits (requests per minute)
+# Source: https://newsapi.org/pricing
+NEWS_API_DEV_RATE_LIMIT = 30  # Free tier: 30 req/min
+NEWS_API_BUSINESS_RATE_LIMIT = 100  # Business tier: 100 req/min
 
 logger = logging.getLogger(__name__)
 
