@@ -84,11 +84,7 @@ class AgentRuntime:
         """
         self.services = services
         self.agents: Dict[str, BaseAgent] = {}
-        self.capability_map: Dict[str, str] = {}  # capability → primary agent_name
-        
-        # Support for dual registration (multiple agents for same capability)
-        # Format: {capability: [(agent_name, priority), ...]}
-        self.capability_registry: Dict[str, List[Tuple[str, int]]] = {}
+        self.capability_map: Dict[str, str] = {}  # capability → agent_name
         
         # Request-level capability cache
         # Format: {request_id: {cache_key: result}}
@@ -212,20 +208,15 @@ class AgentRuntime:
         if request_id in self._cache_stats:
             del self._cache_stats[request_id]
 
-    def register_agent(self, agent: BaseAgent, priority: int = 100, allow_dual_registration: bool = True):
+    def register_agent(self, agent: BaseAgent):
         """
         Register an agent and its capabilities.
-        
-        Supports dual registration where multiple agents can provide the same capability
-        for safe consolidation rollout.
 
         Args:
             agent: Agent instance to register
-            priority: Priority for capability routing (lower = higher priority, default 100)
-            allow_dual_registration: Allow multiple agents to handle same capability
 
         Raises:
-            ValueError: If capability conflict and dual registration not allowed
+            ValueError: If capability conflict (same capability registered by multiple agents)
         """
         agent_name = agent.name
 
@@ -236,47 +227,30 @@ class AgentRuntime:
 
         self.agents[agent_name] = agent
 
-        # Map capabilities to agent with support for dual registration
+        # Map capabilities to agent
         capabilities = agent.get_capabilities()
         conflicts = []
         
         for cap in capabilities:
             # Check for existing registration
-            if cap in self.capability_map and not allow_dual_registration:
+            if cap in self.capability_map:
                 existing_agent = self.capability_map[cap]
                 conflicts.append(f"{cap} (already in {existing_agent})")
                 continue
                 
-            # Initialize registry entry if needed
-            if cap not in self.capability_registry:
-                self.capability_registry[cap] = []
-            
-            # Add agent to registry with priority
-            self.capability_registry[cap].append((agent_name, priority))
-            # Sort by priority (ascending)
-            self.capability_registry[cap].sort(key=lambda x: x[1])
-            
-            # Update primary mapping (agent with highest priority)
-            if not self.capability_map.get(cap) or priority < self.capability_registry[cap][0][1]:
-                self.capability_map[cap] = agent_name
+            # Map capability to agent
+            self.capability_map[cap] = agent_name
         
-        if conflicts and not allow_dual_registration:
+        if conflicts:
             raise ValueError(
                 f"Capability conflicts for {agent_name}: {', '.join(conflicts)}. "
-                f"Set allow_dual_registration=True to enable consolidation mode."
+                f"Each capability must be handled by exactly one agent."
             )
 
         logger.info(
-            f"Registered agent {agent_name} with {len(capabilities)} capabilities "
-            f"(priority={priority}, dual_reg={allow_dual_registration}): "
+            f"Registered agent {agent_name} with {len(capabilities)} capabilities: "
             f"{', '.join(capabilities[:5])}{'...' if len(capabilities) > 5 else ''}"
         )
-        
-        # Log any dual registrations for monitoring
-        for cap in capabilities:
-            if len(self.capability_registry.get(cap, [])) > 1:
-                agents = [a for a, _ in self.capability_registry[cap]]
-                logger.debug(f"Capability '{cap}' now handled by multiple agents: {agents}")
 
     def get_agent(self, agent_name: str) -> Optional[BaseAgent]:
         """

@@ -27,16 +27,11 @@ Alignment: Phase 7 of TECHNICAL_DEBT_REMOVAL_PLAN_V3.md
 # Re-export commonly used constants for convenience
 from app.core.constants.financial import (
     TRADING_DAYS_PER_YEAR,
-    CALENDAR_DAYS_PER_YEAR,
     MONTHS_PER_YEAR,
-    ANNUALIZATION_DAYS,
 )
 
 from app.core.constants.risk import (
     CONFIDENCE_LEVEL_95,
-    CONFIDENCE_LEVEL_99,
-    SIGNIFICANCE_LEVEL_5,
-    DEFAULT_VAR_CONFIDENCE,
 )
 
 from app.core.constants.time_periods import (
@@ -56,14 +51,9 @@ from app.services.macro_data_helpers import (
 __all__ = [
     # Financial
     "TRADING_DAYS_PER_YEAR",
-    "CALENDAR_DAYS_PER_YEAR",
     "MONTHS_PER_YEAR",
-    "ANNUALIZATION_DAYS",
     # Risk
     "CONFIDENCE_LEVEL_95",
-    "CONFIDENCE_LEVEL_99",
-    "SIGNIFICANCE_LEVEL_5",
-    "DEFAULT_VAR_CONFIDENCE",
     # Time periods
     "SECONDS_PER_DAY",
     "DAYS_PER_YEAR",

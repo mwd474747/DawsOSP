@@ -3,10 +3,19 @@ HTTP Status Codes with Domain Context
 
 Domain: API error handling, client-server communication
 Sources: RFC 7231, HTTP specification
-Identified by: Replit analysis (15+ HTTP status code instances)
+Identified by: Replit analysis (15+ HTTP status code instances) + Constants audit 2025-11-07
 
 This module provides named constants for HTTP status codes used throughout
 the DawsOS API, improving code readability and reducing magic numbers.
+
+Cleanup History:
+- 2025-11-07: Removed 4 unused aggregate lists
+  - Removed: SUCCESS_STATUS_CODES (unused)
+  - Removed: CLIENT_ERROR_STATUS_CODES (unused)
+  - Removed: SERVER_ERROR_STATUS_CODES (unused)
+  - Removed: STATUS_CODE_DESCRIPTIONS (unused)
+  - Kept: All individual status codes (47% utilization, but future-proof)
+  - Kept: RETRYABLE_STATUS_CODES (canonical source, used in retry logic)
 """
 
 # =============================================================================
@@ -39,34 +48,12 @@ HTTP_503_SERVICE_UNAVAILABLE = 503
 HTTP_504_GATEWAY_TIMEOUT = 504
 
 # =============================================================================
-# STATUS CODE CATEGORIES
+# RETRY LOGIC (canonical source)
 # =============================================================================
 
-SUCCESS_STATUS_CODES = [200, 201, 202, 204]
-CLIENT_ERROR_STATUS_CODES = [400, 401, 403, 404, 422, 429]
-SERVER_ERROR_STATUS_CODES = [500, 502, 503, 504]
+# Status codes that warrant automatic retry
+# Note: This is the canonical definition (was duplicate in integration.py)
 RETRYABLE_STATUS_CODES = [429, 500, 502, 503, 504]
-
-# =============================================================================
-# HUMAN-READABLE DESCRIPTIONS
-# =============================================================================
-
-STATUS_CODE_DESCRIPTIONS = {
-    200: "Success",
-    201: "Resource created",
-    202: "Accepted for processing",
-    204: "Success with no content",
-    400: "Invalid request",
-    401: "Authentication required",
-    403: "Permission denied",
-    404: "Resource not found",
-    422: "Validation error",
-    429: "Rate limit exceeded",
-    500: "Server error",
-    502: "Bad gateway",
-    503: "Service temporarily unavailable",
-    504: "Gateway timeout",
-}
 
 # =============================================================================
 # MODULE METADATA
@@ -90,11 +77,6 @@ __all__ = [
     "HTTP_502_BAD_GATEWAY",
     "HTTP_503_SERVICE_UNAVAILABLE",
     "HTTP_504_GATEWAY_TIMEOUT",
-    # Categories
-    "SUCCESS_STATUS_CODES",
-    "CLIENT_ERROR_STATUS_CODES",
-    "SERVER_ERROR_STATUS_CODES",
+    # Retry logic
     "RETRYABLE_STATUS_CODES",
-    # Descriptions
-    "STATUS_CODE_DESCRIPTIONS",
 ]
