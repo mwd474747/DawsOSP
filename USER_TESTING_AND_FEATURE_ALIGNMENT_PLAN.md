@@ -117,7 +117,18 @@
     - **Root Cause**: Function not imported after module extraction
     - **Fix**: Import `formatDate` from `Utils` namespace or use `Utils.formatDate`
 
-14. **Flash of Unstyled Content (FOUC)** ⚠️
+14. **Pattern Execution Failure: `macro_trend_monitor`** ❌
+    - **Error**: "Pattern execution 'macro_trend_monitor' failed:"
+    - **Location**: `backend/patterns/macro_trend_monitor.json`
+    - **Impact**: `macro_trend_monitor` pattern fails, MacroCyclesPage cannot display trend monitoring
+    - **Root Cause**: Unknown (requires full error message) - Could be:
+      - Missing data (no regime history in database)
+      - Step dependency issue (Step 3 depends on Steps 1 & 2)
+      - Field name mismatch in data structures
+      - Capability execution error
+    - **Fix**: Get full error message, verify data availability, check step result structures, verify field names
+
+15. **Flash of Unstyled Content (FOUC)** ⚠️
     - **Issue**: "Layout was forced before the page was fully loaded"
     - **Location**: React rendering before stylesheets loaded
     - **Impact**: Flash of unstyled content, poor UX, layout shift
@@ -870,7 +881,7 @@ function RequestInspector({ request }) {
 **Impact Level**: **HIGH** (ensures all features work before refactoring)
 
 **Critical Issues from Console Log**:
-- ❌ **5 production bugs** (4 patterns + 1 page broken - must fix before testing)
+- ❌ **6 production bugs** (5 patterns + 1 page broken - must fix before testing)
 - ⚠️ **4 performance/UX issues** (should fix before testing)
 - ⚠️ **4 code quality issues** (FOUC, deprecations, documentation, error messages)
 

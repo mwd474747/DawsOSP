@@ -478,7 +478,7 @@ TransactionsPage https://.../frontend/pages.js?v=20250115:1864
 
 | Priority | Count | Issues |
 |----------|-------|--------|
-| **P0 (CRITICAL)** | 5 | Field name mismatches (2), Missing capability (1), Pattern dependency (1), Missing function import (1) |
+| **P0 (CRITICAL)** | 6 | Field name mismatches (2), Missing capability (1), Pattern dependency (2), Missing function import (1) |
 | **P1 (High)** | 4 | Multiple executions, Fallback portfolio, Timeout, Excessive retries |
 | **P2 (Medium)** | 4 | FOUC, Browser deprecations, Page count mismatch, Error message inconsistency |
 
@@ -499,7 +499,7 @@ TransactionsPage https://.../frontend/pages.js?v=20250115:1864
 
 | Impact | Count | Patterns/Pages Affected |
 |--------|-------|-------------------------|
-| **Pattern Broken** | 4 | `holding_deep_dive`, `buffett_checklist`, `policy_rebalance`, `tax_harvesting_opportunities` |
+| **Pattern Broken** | 5 | `holding_deep_dive`, `buffett_checklist`, `policy_rebalance`, `tax_harvesting_opportunities`, `macro_trend_monitor` |
 | **Page Broken** | 1 | `TransactionsPage` (formatDate not defined) |
 | **Performance** | 2 | All patterns (multiple executions, retries) |
 | **UX** | 3 | All pages (timeout, fallback portfolio, FOUC) |
@@ -644,8 +644,9 @@ TransactionsPage https://.../frontend/pages.js?v=20250115:1864
 ---
 
 **Status**: 📋 **ANALYSIS COMPLETE**  
-**Total Issues**: 13 (5 P0, 4 P1, 4 P2)  
-**Estimated Fix Time**: 9-13 hours (P0 + P1)  
+**Total Issues**: 14 (6 P0, 4 P1, 4 P2)  
+**Estimated Fix Time**: 10-14 hours (P0 + P1)  
 **Risk Level**: **LOW** (all fixes are straightforward)  
-**Impact Level**: **HIGH** (fixes 4 broken patterns + 1 broken page, improves performance and UX)
+**Impact Level**: **HIGH** (fixes 5 broken patterns + 1 broken page, improves performance and UX)  
+**Note**: `macro_trend_monitor` failure requires full error message to diagnose root cause
 
