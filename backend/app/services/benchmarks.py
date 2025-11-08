@@ -83,11 +83,17 @@ class BenchmarkService:
             db_pool: Database connection pool (optional, will use DI container if not provided)
         """
         self.use_db = use_db
-        # Get pricing service from DI container
-        from app.core.di_container import ensure_initialized
-        container = ensure_initialized()
-        self.pricing_service = container.resolve("pricing")
+        self._pricing_service = None  # Lazy load to avoid circular dependency
         logger.info(f"BenchmarkService initialized (use_db={use_db})")
+    
+    @property
+    def pricing_service(self):
+        """Lazy load pricing service to avoid circular dependency during initialization."""
+        if self._pricing_service is None:
+            from app.core.di_container import ensure_initialized
+            container = ensure_initialized()
+            self._pricing_service = container.resolve("pricing")
+        return self._pricing_service
 
     async def get_benchmark_returns(
         self,
