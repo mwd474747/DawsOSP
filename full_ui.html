@@ -18,27 +18,27 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <!-- Version Management (load first for cache-busting) -->
-    <script src="frontend/version.js"></script>
+    <script src="frontend/version.js?v=20250115"></script>
     
     <!-- Module Dependency Validation (load early) -->
-    <script src="frontend/module-dependencies.js"></script>
+    <script src="frontend/module-dependencies.js?v=20250115"></script>
     
     <!-- API Client Module -->
-    <script src="frontend/api-client.js"></script>
+    <script src="frontend/api-client.js?v=20250115"></script>
     
     <!-- Utility Functions Module -->
-    <script src="frontend/utils.js"></script>
+    <script src="frontend/utils.js?v=20250115"></script>
     <!-- Panel Components Module -->
-    <script src="frontend/panels.js"></script>
+    <script src="frontend/panels.js?v=20250115"></script>
     <!-- Context System Module (MUST load before pattern-system and pages) -->
-    <script src="frontend/context.js"></script>
+    <script src="frontend/context.js?v=20250115"></script>
     <!-- Pattern System Module (depends on context, utils, panels) -->
-    <script src="frontend/pattern-system.js"></script>
+    <script src="frontend/pattern-system.js?v=20250115"></script>
     <!-- Page Components Module (depends on ALL modules above) -->
-    <script src="frontend/pages.js"></script>
+    <script src="frontend/pages.js?v=20250115"></script>
     
     <!-- Namespace Validation (load after all modules) -->
-    <script src="frontend/namespace-validator.js"></script>
+    <script src="frontend/namespace-validator.js?v=20250115"></script>
     
     <!-- Note: Cache-busting is handled via version query parameters in script src attributes -->
     <!-- The version.js module provides version info, but we don't modify script tags after load -->
