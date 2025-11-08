@@ -38,7 +38,7 @@ Successfully migrated **21 remaining singleton function calls** to use the DI co
 ### Jobs (3 calls migrated)
 
 7. **`backend/jobs/compute_macro.py`** - 3 calls
-   - `get_transformation_service()` → `container.resolve("fred_transformation")`
+   - `get_transformation_service()` → `FREDTransformationService()` or `container.resolve("fred_transformation")`
    - `get_macro_service()` → `container.resolve("macro")` (2 locations)
    - Fixed `get_connection_pool()` → `get_db_pool()` typo
 

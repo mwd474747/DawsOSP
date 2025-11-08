@@ -271,7 +271,7 @@ grep -r "from package_name" backend/
 python3 -c "import json; json.load(open('backend/config/macro_indicators_defaults.json'))"
 
 # Test configuration loading
-python3 -c "from backend.app.services.indicator_config import get_config_manager; get_config_manager()"
+python3 -c "from app.services.indicator_config import IndicatorConfigManager; IndicatorConfigManager()"
 ```
 
 ---
