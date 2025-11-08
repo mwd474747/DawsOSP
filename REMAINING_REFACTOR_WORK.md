@@ -73,7 +73,38 @@ This is the **single source of truth** for all remaining refactor work. It conso
 
 ### P1 (Critical) - Must Fix Before Production
 
-#### 1. Pattern Capability Naming Inconsistency (NEW - Jan 15)
+#### 1. Fix React Error #130 - Module Loading Race Condition (NEW - Jan 15)
+**Status:** 🔄 IN PROGRESS  
+**Priority:** P1 (Critical)  
+**Estimated Time:** 4-6 hours  
+**Impact:** CRITICAL - Causes "Something went wrong" errors in UI
+
+**Root Cause:**
+- Panel components are destructured during initialization, capturing undefined values
+- PanelRenderer uses captured components instead of dynamically looking them up
+- No validation that components exist before marking modules as ready
+- Race condition: pattern-system.js initializes before panels.js loads
+
+**Fixes Applied:**
+- ✅ **PanelRenderer Dynamic Lookup:** Changed to lookup components from `global.DawsOS.Panels` at render time
+- ✅ **Removed Destructuring:** Removed panel component destructuring during initialization
+- ✅ **Component Validation:** Added validation that all required panel components exist before marking as initialized
+- ✅ **Retry Logic:** Added retry mechanism if components not yet loaded
+
+**Remaining Fixes:**
+- ⏳ **Pricing Pack ID Validation:** Add defensive checks before sending to backend
+- ⏳ **Error Boundaries:** Add React error boundaries to catch rendering errors gracefully
+- ⏳ **Module Load Retry:** Implement retry mechanisms for failed module loads
+- ⏳ **Circular Dependencies:** Clean up remaining circular dependencies (benchmarks service)
+
+**Files Modified:**
+- `frontend/pattern-system.js` - PanelRenderer and initialization logic
+
+**See:** User feedback on React Error #130 for detailed analysis
+
+---
+
+#### 2. Pattern Capability Naming Inconsistency (NEW - Jan 15)
 **Status:** ✅ COMPLETE  
 **Priority:** P1 (High)  
 **Estimated Time:** 2-3 hours  
@@ -344,11 +375,11 @@ This is the **single source of truth** for all remaining refactor work. It conso
 
 | Priority | Tasks | Estimated Time | Status |
 |----------|-------|----------------|--------|
-| **P1 (Critical)** | 1 task | ~2-3 hours | ✅ COMPLETE |
+| **P1 (Critical)** | 2 tasks | ~6-9 hours | 🔄 IN PROGRESS (1 complete, 1 in progress) |
 | **P2 (High)** | 4 tasks | ~10-11 hours | ✅ COMPLETE |
 | **P3 (Medium)** | 3 tasks | ~2-3 days | ⏳ PENDING |
 | **P4 (Low)** | 5 tasks | ~3-4 days | ⏳ PENDING |
-| **Total** | 13 tasks | ~4-5 days | ~75% complete |
+| **Total** | 14 tasks | ~5-6 days | ~75% complete |
 
 ---
 

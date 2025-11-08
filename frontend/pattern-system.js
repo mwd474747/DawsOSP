@@ -111,51 +111,10 @@
     const apiClient = global.DawsOS.APIClient;
     const TokenManagerFromAPI = apiClient.TokenManager;
 
-    // Import panel components with validation
-    const PanelsNamespace = global.DawsOS?.Panels || {};
-    const {
-        MetricsGridPanel,
-        TablePanel,
-        LineChartPanel,
-        PieChartPanel,
-        DonutChartPanel,
-        BarChartPanel,
-        ActionCardsPanel,
-        CycleCardPanel,
-        ScorecardPanel,
-        DualListPanel,
-        NewsListPanel,
-        ReportViewerPanel
-    } = PanelsNamespace;
-    
-    // Validate panel components are available
-    const panelComponents = {
-        MetricsGridPanel,
-        TablePanel,
-        LineChartPanel,
-        PieChartPanel,
-        DonutChartPanel,
-        BarChartPanel,
-        ActionCardsPanel,
-        CycleCardPanel,
-        ScorecardPanel,
-        DualListPanel,
-        NewsListPanel,
-        ReportViewerPanel
-    };
-    
-    // Check for missing panel components
-    const missingPanels = Object.entries(panelComponents)
-        .filter(([name, component]) => !component)
-        .map(([name]) => name);
-    
-    if (missingPanels.length > 0) {
-        if (Logger) {
-            Logger.warn('[PatternSystem] Missing panel components:', missingPanels);
-        } else {
-            (global.DawsOS?.Logger || console).warn('[PatternSystem] Missing panel components:', missingPanels);
-        }
-    }
+    // DO NOT destructure panel components during initialization
+    // This causes race conditions - components may be undefined if panels.js hasn't loaded yet
+    // Instead, PanelRenderer will dynamically lookup components at render time
+    // This ensures components are always fresh, even if they load after pattern-system.js
 
     // Import global utilities (these remain in full_ui.html)
     // Use TokenManager from DawsOS.APIClient if available, otherwise fallback to global
