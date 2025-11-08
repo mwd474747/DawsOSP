@@ -68,6 +68,9 @@ This agent is a specialized expert in:
 - Database Mapping: `.claude/knowledge/provider-database-mapping.md`
 - Data Contracts: `.claude/knowledge/data-contracts.md`
 - Data Lineage: `.claude/knowledge/data-lineage.md`
+- **Scale/Type Reference:** `DATA_SCALE_TYPE_DOCUMENTATION.md` (comprehensive API format guide)
+- **Constants Reference:** `backend/app/core/constants/` (domain-organized constants)
+- **Technical Debt:** `TECHNICAL_DEBT_CYCLES_SCALING.md` (cycles.py scaling conflict)
 
 **2. User-Generated Data:**
 - **Portfolio Holdings:** Lots table (position-level data)
@@ -89,6 +92,48 @@ This agent is a specialized expert in:
 
 ---
 
+## Constants & Configuration
+
+### Domain-Organized Constants
+**Location:** `backend/app/core/constants/`
+
+The codebase uses domain-driven constant organization (Phase 4 complete, 96.3% utilization):
+
+**Financial Constants** (`financial.py`):
+- `TRADING_DAYS_PER_YEAR = 252` - Used for volatility annualization, Sharpe ratios
+- `MONTHS_PER_YEAR`, `WEEKS_PER_YEAR` - Imported from `time_periods.py` (canonical source)
+
+**Risk Constants** (`risk.py`):
+- `CONFIDENCE_LEVEL_95 = 0.95` - VaR/CVaR calculations
+- `VAR_LOOKBACK_DAYS = 252` - Risk calculation window (1 trading year)
+- `DEFAULT_TRACKING_ERROR_PERIODS = 252` - Tracking error vs benchmark
+
+**Macro Constants** (`macro.py`):
+- `DEFAULT_MACRO_LOOKBACK_DAYS = 252` - Z-score rolling window
+- Regime detection thresholds, phase weights
+
+**Integration Constants** (`integration.py`):
+- `DEFAULT_HTTP_TIMEOUT` - API request timeouts
+- `DEFAULT_MAX_RETRIES`, `DEFAULT_RETRY_DELAY` - Retry logic
+- `FRED_RATE_LIMIT_REQUESTS`, `FRED_RATE_LIMIT_WINDOW` - Rate limiting
+
+**Time Period Constants** (`time_periods.py`):
+- `DAYS_PER_YEAR = 365` - Calendar days (NOT trading days)
+- `SECONDS_PER_DAY = 86400` - Time conversions
+
+**Key Principles:**
+1. **Semantic Differentiation**: `TRADING_DAYS_PER_YEAR` (252) ≠ `DAYS_PER_YEAR` (365)
+2. **Domain Ownership**: Each constant lives in its semantic domain
+3. **Canonical Sources**: Import from source module, re-export from domain module
+4. **No Magic Numbers**: All hardcoded values replaced with named constants
+
+**Documentation:**
+- Architecture: `backend/app/core/constants/__init__.py`
+- Phase 4 Report: `CONSTANTS_REFACTOR_PHASE4_COMPLETE.md`
+- Phase 4.1 Fixes: `CONSTANTS_REFACTOR_PHASE4.1_COMPLETE.md`
+
+---
+
 ## Data Flow Patterns
 
 ### Pattern 1: External Data Ingestion (FRED)
@@ -98,12 +143,19 @@ DataHarvester.data_fetch_external()
   ↓
 FRED API Request (series_id, date_range)
   ↓
+FREDTransformationService.transform_fred_value()
+  ↓ (Convert percentages: 4.5 → 0.045 via ÷100)
 Transform to schema (series_id, asof_date, value, unit, source)
   ↓
 INSERT INTO economic_indicators
   ↓ (TimescaleDB hypertable, partitioned by asof_date)
 Store with metadata (created_at, source='FRED')
 ```
+
+**Scale/Type Handling:**
+- ✅ FRED percentages converted via FREDTransformationService (÷100)
+- ✅ Stored as decimals (0.045 not 4.5%)
+- ⚠️ **ISSUE**: cycles.py has duplicate hardcoded scaling (see TECHNICAL_DEBT_CYCLES_SCALING.md)
 
 **Issues:**
 - ✅ No deduplication logic
@@ -113,8 +165,10 @@ Store with metadata (created_at, source='FRED')
 
 **References:**
 - Implementation: `backend/app/agents/data_harvester.py`
+- Transformation: `backend/app/services/fred_transformation.py`
 - Configuration: `backend/config/macro_indicators_defaults.json`
 - Table: `backend/db/schema/economic_indicators.sql`
+- **Scale Documentation**: `DATA_SCALE_TYPE_DOCUMENTATION.md`
 
 ---
 
