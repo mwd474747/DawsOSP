@@ -98,7 +98,7 @@ try:
     from app.core.pattern_orchestrator import PatternOrchestrator
     from app.core.types import RequestCtx, ExecReq, ExecResp
     from app.services.metrics import PerformanceCalculator
-    from app.services.scenarios import get_scenario_service, ShockType
+    from app.services.scenarios import ScenarioService, ShockType
     from app.agents.financial_analyst import FinancialAnalyst
     from app.agents.macro_hound import MacroHound
     from app.agents.data_harvester import DataHarvester
@@ -3483,7 +3483,8 @@ async def run_scenario_analysis(
         # Fallback to direct ScenarioService or simplified calculation
         if db_pool:
             try:
-                service = get_scenario_service()
+                # Use direct instantiation (DI container already initialized via get_pattern_orchestrator)
+                service = ScenarioService(db_pool=db_pool)
                 shock_type = scenario_mapping[scenario]
 
                 result = await service.apply_scenario(

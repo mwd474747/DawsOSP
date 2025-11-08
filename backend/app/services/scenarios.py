@@ -986,10 +986,14 @@ class ScenarioService:
 
 
 # ============================================================================
-# Singleton
+# Singleton - REMOVED
 # ============================================================================
-
-# Factory function for combined_server.py
-def get_scenario_service():
-    """Factory function to return ScenarioService instance."""
-    return ScenarioService()
+#
+# DEPRECATED: Singleton pattern removed as part of Phase 2 refactoring.
+# Use ScenarioService(db_pool=...) directly instead.
+#
+# Migration:
+#     OLD: service = get_scenario_service()
+#     NEW: service = ScenarioService(db_pool=db_pool)
+#     OR:  service = container.resolve("scenarios")
+#
