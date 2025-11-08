@@ -22,11 +22,25 @@ from pathlib import Path
 from decimal import Decimal
 
 # Configure logging early before any imports that might use it
+# Make logging level configurable via environment variable (default: INFO)
+import os
+log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
+try:
+    log_level_attr = getattr(logging, log_level, logging.INFO)
+except AttributeError:
+    logger_temp = logging.getLogger(__name__)
+    logger_temp.warning(f"Invalid LOG_LEVEL '{log_level}', defaulting to INFO")
+    log_level_attr = logging.INFO
+
 logging.basicConfig(
-    level=logging.DEBUG,  # Changed to DEBUG to see detailed logs
+    level=log_level_attr,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+if log_level_attr == logging.DEBUG:
+    logger.debug(f"Logging configured at DEBUG level")
+else:
+    logger.info(f"Logging configured at {log_level} level")
 
 from fastapi import FastAPI, HTTPException, Request, Depends, status, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
@@ -93,31 +107,140 @@ try:
     # Observability disabled (modules not available)
     # Graceful degradation patterns handle missing observability modules
 
-    # Now import the modules
-    from app.core.agent_runtime import AgentRuntime
-    from app.core.pattern_orchestrator import PatternOrchestrator
-    from app.core.types import RequestCtx, ExecReq, ExecResp
-    from app.services.metrics import PerformanceCalculator
-    from app.services.scenarios import ScenarioService, ShockType
-    from app.agents.financial_analyst import FinancialAnalyst
-    from app.agents.macro_hound import MacroHound
-    from app.agents.data_harvester import DataHarvester
+    # ============================================================================
+    # Critical Imports - Fail Fast
+    # ============================================================================
+    # These are required for the server to function. If they fail, we should
+    # fail fast rather than setting to None and causing runtime errors.
+    
+    try:
+        from app.core.types import RequestCtx, ExecReq, ExecResp
+        REQUEST_CTX_AVAILABLE = True
+        logger.debug("RequestCtx imported successfully")
+    except ImportError as e:
+        logger.error(f"CRITICAL: RequestCtx not available: {e}")
+        logger.error("Cannot start server without RequestCtx. Check imports.")
+        raise RuntimeError(f"Cannot start server: RequestCtx import failed: {e}") from e
 
-    PATTERN_ORCHESTRATION_AVAILABLE = True
-    logger.info("Pattern orchestration modules loaded successfully")
-except ImportError as e:
-    logger.warning(f"Pattern orchestration modules not available: {e}")
+    # ============================================================================
+    # Core Orchestration Imports - Fail Fast
+    # ============================================================================
+    # These are required for pattern execution. Without them, pattern endpoints
+    # should return errors, not None.
+    
+    try:
+        from app.core.agent_runtime import AgentRuntime
+        AGENT_RUNTIME_AVAILABLE = True
+        logger.debug("AgentRuntime imported successfully")
+    except ImportError as e:
+        logger.error(f"CRITICAL: AgentRuntime not available: {e}")
+        logger.error("Pattern execution will not work. Check imports.")
+        AgentRuntime = None
+        AGENT_RUNTIME_AVAILABLE = False
+
+    try:
+        from app.core.pattern_orchestrator import PatternOrchestrator
+        PATTERN_ORCHESTRATOR_AVAILABLE = True
+        logger.debug("PatternOrchestrator imported successfully")
+    except ImportError as e:
+        logger.error(f"CRITICAL: PatternOrchestrator not available: {e}")
+        logger.error("Pattern execution will not work. Check imports.")
+        PatternOrchestrator = None
+        PATTERN_ORCHESTRATOR_AVAILABLE = False
+
+    # ============================================================================
+    # Service Imports - Use Classes, Not Factories
+    # ============================================================================
+    # These should use classes directly, not singleton factory functions.
+    # If unavailable, we can degrade gracefully.
+    
+    try:
+        from app.services.metrics import PerformanceCalculator
+        PERFORMANCE_CALCULATOR_AVAILABLE = True
+        logger.debug("PerformanceCalculator imported successfully")
+    except ImportError as e:
+        logger.warning(f"PerformanceCalculator not available: {e}")
+        PerformanceCalculator = None
+        PERFORMANCE_CALCULATOR_AVAILABLE = False
+
+    try:
+        from app.services.scenarios import ScenarioService, ShockType
+        SCENARIO_SERVICE_AVAILABLE = True
+        logger.debug("ScenarioService imported successfully")
+    except ImportError as e:
+        logger.warning(f"ScenarioService not available: {e}")
+        ScenarioService = None
+        ShockType = None
+        SCENARIO_SERVICE_AVAILABLE = False
+
+    # ============================================================================
+    # Agent Imports - Use Classes, Not Factories
+    # ============================================================================
+    # These should use classes directly. If unavailable, pattern execution
+    # will fail for those specific capabilities.
+    
+    try:
+        from app.agents.financial_analyst import FinancialAnalyst
+        FINANCIAL_ANALYST_AVAILABLE = True
+        logger.debug("FinancialAnalyst imported successfully")
+    except ImportError as e:
+        logger.warning(f"FinancialAnalyst not available: {e}")
+        FinancialAnalyst = None
+        FINANCIAL_ANALYST_AVAILABLE = False
+
+    try:
+        from app.agents.macro_hound import MacroHound
+        MACRO_HOUND_AVAILABLE = True
+        logger.debug("MacroHound imported successfully")
+    except ImportError as e:
+        logger.warning(f"MacroHound not available: {e}")
+        MacroHound = None
+        MACRO_HOUND_AVAILABLE = False
+
+    try:
+        from app.agents.data_harvester import DataHarvester
+        DATA_HARVESTER_AVAILABLE = True
+        logger.debug("DataHarvester imported successfully")
+    except ImportError as e:
+        logger.warning(f"DataHarvester not available: {e}")
+        DataHarvester = None
+        DATA_HARVESTER_AVAILABLE = False
+
+    # ============================================================================
+    # Overall Availability Flag
+    # ============================================================================
+    PATTERN_ORCHESTRATION_AVAILABLE = (
+        REQUEST_CTX_AVAILABLE and
+        AGENT_RUNTIME_AVAILABLE and
+        PATTERN_ORCHESTRATOR_AVAILABLE
+    )
+
+    if PATTERN_ORCHESTRATION_AVAILABLE:
+        logger.info("Pattern orchestration modules loaded successfully")
+    else:
+        logger.warning("Pattern orchestration partially available - some features may not work")
+        logger.warning(f"  RequestCtx: {REQUEST_CTX_AVAILABLE}")
+        logger.warning(f"  AgentRuntime: {AGENT_RUNTIME_AVAILABLE}")
+        logger.warning(f"  PatternOrchestrator: {PATTERN_ORCHESTRATOR_AVAILABLE}")
+except Exception as e:
+    # This catch-all is for any unexpected errors during import setup
+    # (not just ImportError)
+    logger.error(f"Unexpected error during pattern orchestration import setup: {e}", exc_info=True)
+    # Set defaults for graceful degradation
     PATTERN_ORCHESTRATION_AVAILABLE = False
-    # Create dummy classes to avoid NameErrors
-    AgentRuntime = None
-    PatternOrchestrator = None
-    RequestCtx = None
-    PerformanceCalculator = None
-    ScenarioService = None
-    ShockType = None
-    FinancialAnalyst = None
-    MacroHound = None
-    DataHarvester = None
+    REQUEST_CTX_AVAILABLE = False
+    AGENT_RUNTIME_AVAILABLE = False
+    PATTERN_ORCHESTRATOR_AVAILABLE = False
+    PERFORMANCE_CALCULATOR_AVAILABLE = False
+    SCENARIO_SERVICE_AVAILABLE = False
+    FINANCIAL_ANALYST_AVAILABLE = False
+    MACRO_HOUND_AVAILABLE = False
+    DATA_HARVESTER_AVAILABLE = False
+    # Critical imports - these should have been set above, but if we get here
+    # something unexpected happened
+    if 'RequestCtx' not in locals():
+        logger.error("CRITICAL: RequestCtx not imported and unexpected error occurred")
+        raise RuntimeError(f"Cannot start server: RequestCtx import failed: {e}") from e
 
 # ============================================================================
 # Configuration and Constants
@@ -432,6 +555,15 @@ async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any]
             logger.warning(f"Could not fetch pricing pack, using default: {e}")
 
         # Create request context with required values
+        # Guardrail: RequestCtx is critical - should never be None (fail fast if import failed)
+        if not REQUEST_CTX_AVAILABLE:
+            logger.error("CRITICAL: RequestCtx not available - cannot create request context")
+            return {
+                "success": False,
+                "error": "RequestCtx not available - server configuration error",
+                "data": {}
+            }
+        
         ctx = RequestCtx(
             trace_id=str(uuid4()),
             request_id=str(uuid4()),
@@ -3482,7 +3614,7 @@ async def run_scenario_analysis(
                 logger.warning(f"Pattern orchestrator scenario analysis failed, using fallback: {e}")
 
         # Fallback to direct ScenarioService or simplified calculation
-        if db_pool:
+        if db_pool and SCENARIO_SERVICE_AVAILABLE:
             try:
                 # Use direct instantiation (DI container already initialized via get_pattern_orchestrator)
                 service = ScenarioService(db_pool=db_pool)
