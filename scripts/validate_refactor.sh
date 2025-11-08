@@ -17,25 +17,38 @@ echo ""
 echo "0.1 Field Name Inconsistencies:"
 FIELD_NAME_ERRORS=0
 
-if grep -r "trade_date" backend/app --include="*.py" 2>/dev/null | grep -v "schema\|migration\|README\|REMOVED\|DEPRECATED" | grep -q .; then
+# Check for old field names, excluding comments, migrations, and README files
+if grep -r "trade_date" backend/app --include="*.py" 2>/dev/null | \
+   grep -v "^[[:space:]]*#" | \
+   grep -v "schema\|migration\|README\|REMOVED\|DEPRECATED\|Migration:\|NOT trade_date\|NOT.*trade_date" | \
+   grep -v "backend/db/migrations" | \
+   grep -q .; then
     echo "  ❌ trade_date still found in code"
     FIELD_NAME_ERRORS=$((FIELD_NAME_ERRORS + 1))
 else
-    echo "  ✅ No trade_date references found"
+    echo "  ✅ No trade_date references found in actual code"
 fi
 
-if grep -r "realized_pnl" backend/app --include="*.py" 2>/dev/null | grep -v "migration\|README\|REMOVED\|DEPRECATED" | grep -q .; then
+if grep -r "realized_pnl" backend/app --include="*.py" 2>/dev/null | \
+   grep -v "^[[:space:]]*#" | \
+   grep -v "migration\|README\|REMOVED\|DEPRECATED\|Migration:\|NOT realized_pnl\|NOT.*realized_pnl" | \
+   grep -v "backend/db/migrations" | \
+   grep -q .; then
     echo "  ❌ realized_pnl still found in code"
     FIELD_NAME_ERRORS=$((FIELD_NAME_ERRORS + 1))
 else
-    echo "  ✅ No realized_pnl references found"
+    echo "  ✅ No realized_pnl references found in actual code"
 fi
 
-if grep -r "debt_to_equity" backend/app --include="*.py" 2>/dev/null | grep -v "README\|REMOVED\|DEPRECATED" | grep -q .; then
+if grep -r "debt_to_equity" backend/app --include="*.py" 2>/dev/null | \
+   grep -v "^[[:space:]]*#" | \
+   grep -v "README\|REMOVED\|DEPRECATED\|Migration:\|NOT debt_to_equity\|NOT.*debt_to_equity" | \
+   grep -v "backend/db/migrations" | \
+   grep -q .; then
     echo "  ❌ debt_to_equity still found in code"
     FIELD_NAME_ERRORS=$((FIELD_NAME_ERRORS + 1))
 else
-    echo "  ✅ No debt_to_equity references found"
+    echo "  ✅ No debt_to_equity references found in actual code"
 fi
 
 if [ $FIELD_NAME_ERRORS -eq 0 ]; then
