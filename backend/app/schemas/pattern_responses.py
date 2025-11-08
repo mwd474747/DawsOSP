@@ -256,6 +256,13 @@ class PatternResponseValidator:
     def check_deprecated_fields(cls, data: Any, path: str = "root") -> List[str]:
         """
         Recursively check for deprecated field names.
+        
+        NOTE: This is a temporary migration tool to detect deprecated field names
+        during the migration period. It checks for old naming patterns like 'qty'
+        and 'qty_*' that should be migrated to 'quantity' and 'quantity_*'.
+        
+        This method is actively used in pattern_orchestrator.py to provide migration
+        warnings. It should be removed after the migration period is complete.
 
         Args:
             data: Data structure to check
