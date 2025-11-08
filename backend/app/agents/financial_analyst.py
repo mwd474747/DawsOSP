@@ -104,10 +104,18 @@ class FinancialAnalyst(BaseAgent):
         # Get db_pool from services
         self.db_pool = services.get("db")
 
-        # Initialize services with dependency injection
-        self.pricing_service = PricingService(use_db=True)
-        self.optimizer = OptimizerService(use_db=True)
-        self.ratings = RatingsService(use_db=True, db_pool=self.db_pool)
+        # Get services from DI container (passed via services dict)
+        self.pricing_service = services.get("pricing_service")
+        if not self.pricing_service:
+            raise ValueError("pricing_service not available in DI container")
+        
+        self.optimizer = services.get("optimizer_service")
+        if not self.optimizer:
+            raise ValueError("optimizer_service not available in DI container")
+        
+        self.ratings = services.get("ratings_service")
+        if not self.ratings:
+            raise ValueError("ratings_service not available in DI container")
 
     def get_capabilities(self) -> List[str]:
         """Return list of capabilities."""

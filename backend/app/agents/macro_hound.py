@@ -84,21 +84,28 @@ class MacroHound(BaseAgent):
         # Get db_pool from services
         self.db_pool = services.get("db")
 
-        # Initialize services with dependency injection
-        # FRED API provider for macro data
-        import os
-        api_key = os.getenv("FRED_API_KEY")
-        self.fred_client = FREDProvider(api_key=api_key) if api_key else None
-
-        # Core macro services
-        self.macro_service = MacroService(fred_client=self.fred_client) if self.fred_client else None
-        self.cycles_service = CyclesService()
-        self.scenario_service = ScenarioService()
-        self.macro_aware_service = MacroAwareScenarioService()
+        # Get services from DI container (passed via services dict)
+        self.macro_service = services.get("macro_service")
+        self.cycles_service = services.get("cycles_service")
+        if not self.cycles_service:
+            raise ValueError("cycles_service not available in DI container")
+        
+        self.scenario_service = services.get("scenarios_service")
+        if not self.scenario_service:
+            raise ValueError("scenarios_service not available in DI container")
+        
+        self.macro_aware_service = services.get("macro_aware_service")
+        if not self.macro_aware_service:
+            raise ValueError("macro_aware_service not available in DI container")
 
         # Alert and playbook services
-        self.alert_service = AlertService(use_db=self.db_pool is not None)
-        self.playbook_generator = PlaybookGenerator()
+        self.alert_service = services.get("alerts_service")
+        if not self.alert_service:
+            raise ValueError("alerts_service not available in DI container")
+        
+        self.playbook_generator = services.get("playbooks_service")
+        if not self.playbook_generator:
+            raise ValueError("playbooks_service not available in DI container")
 
     def get_capabilities(self) -> List[str]:
         """Return list of capabilities."""
