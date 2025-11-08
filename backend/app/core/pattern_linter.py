@@ -177,11 +177,20 @@ def main():
     args = parser.parse_args()
     
     # Initialize orchestrator (requires agent runtime and db)
-    # Import here to avoid circular dependencies
+    # Use DI container to get agent runtime (same pattern as combined_server.py)
     try:
-        from combined_server import get_agent_runtime
-        agent_runtime = get_agent_runtime()
+        from app.core.di_container import get_container
+        from app.core.service_initializer import initialize_services
+        from app.core.agent_runtime import AgentRuntime
+        from app.db.connection import get_db_pool
+        
+        # Get DI container and initialize services
+        container = get_container()
         db_pool = get_db_pool()
+        initialize_services(container, db_pool=db_pool)
+        
+        # Get agent runtime from container
+        agent_runtime = container.resolve("agent_runtime")
         
         orchestrator = PatternOrchestrator(agent_runtime, db_pool)
         linter = PatternLinter(orchestrator)

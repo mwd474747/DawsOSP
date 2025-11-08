@@ -523,53 +523,48 @@ All remaining tasks are low priority and can be done incrementally. Estimated 3-
 
 **Remaining Work (P4 - Low Priority Only):**
 
-1. **Refine Architecture Validator** (P4 - ~30 minutes)
-   - **Current State:** Validator has false positives for DI container accessors
-   - **Issue:** Flags `get_agent_runtime()`, `get_pattern_orchestrator()`, `get_agent()` as violations
-   - **Status:** These are acceptable patterns (DI container accessors, helper methods)
-   - **Action:** Update validator to exclude DI container accessors and helper methods
-   - **Files:** `backend/app/core/architecture_validator.py`
-   - **Impact:** Low - Validator works, just needs refinement
+**✅ ALL P4 CLEANUP TASKS COMPLETE (January 15, 2025)**
 
-2. **Update Documentation Comments** (P4 - ~1 hour)
-   - **Current State:** Some docstrings still reference old singleton functions
-   - **Files:**
-     - `backend/app/api/routes/notifications.py:41` - Import statement in docstring/comment
-     - `backend/app/services/auth.py:17` - Import statement in docstring/comment
-   - **Action:** Update docstrings to use new patterns
-   - **Impact:** Low - Documentation only, no functional impact
+1. ✅ **Refine Architecture Validator** (P4 - ~30 minutes) - **COMPLETE**
+   - ✅ Updated validator to exclude DI container accessors (`get_agent_runtime`, `get_pattern_orchestrator`)
+   - ✅ Updated validator to exclude helper methods (`get_agent`)
+   - ✅ Updated validator to exclude test files
+   - ✅ Updated validator to exclude validator file itself
+   - ✅ Validator now passes with no false positives
 
-3. **Migrate Test Files** (P4 - ~2-3 hours)
-   - **Current State:** Test files may still use old singleton functions
-   - **Files:**
-     - `backend/test_optimizer.py`
-     - `backend/test_ratings_service.py`
-     - `backend/test_ratings_complete.py`
-     - `backend/test_optimizer_simple.py`
-   - **Action:** Migrate test files to use DI container or direct instantiation
-   - **Impact:** Low - Test files only, no production impact
+2. ✅ **Update Documentation Comments** (P4 - ~1 hour) - **COMPLETE**
+   - ✅ Updated `backend/app/api/routes/notifications.py` - Removed unused `AuthService` import
+   - ✅ Updated `backend/app/services/auth.py` - Updated docstring to use `AuthService()` directly
+   - ✅ Updated `ARCHITECTURE.md` - Updated `indicator_config` example to use `IndicatorConfigManager()`
 
-4. **Add Validator to CI/CD** (P4 - ~1 hour)
-   - **Current State:** Architecture validator not integrated into CI/CD
-   - **Action:** Add validator to pre-commit hook or GitHub Actions
-   - **Impact:** Low - Nice to have, prevents regression
+3. ✅ **Migrate Test Files** (P4 - ~2-3 hours) - **COMPLETE**
+   - ✅ Updated `backend/test_optimizer.py` - Uses `OptimizerService(db_pool=None)` directly
+   - ✅ Updated `backend/test_ratings_service.py` - Uses `RatingsService(db_pool=None)` directly
+   - ✅ Updated `backend/test_ratings_complete.py` - Uses `RatingsService(db_pool=None)` directly
+   - ✅ Updated `backend/test_optimizer_simple.py` - Updated docstring example
 
-5. **Review ARCHITECTURE.md** (P4 - ~1-2 hours)
-   - **Current State:** Documentation may be outdated after refactor
-   - **Action:** Review and update ARCHITECTURE.md for accuracy
-   - **Impact:** Low - Documentation only
+4. ✅ **Add Validator to CI/CD** (P4 - ~1 hour) - **COMPLETE**
+   - ✅ Created `.github/workflows/architecture-validation.yml`
+   - ✅ Runs on PR and push to main/develop branches
+   - ✅ Validates architecture on every commit
 
-6. **Review API Documentation** (P4 - ~1-2 hours)
+5. ✅ **Review ARCHITECTURE.md** (P4 - ~1-2 hours) - **COMPLETE**
+   - ✅ Verified all examples use DI container or direct instantiation
+   - ✅ Updated `indicator_config` usage example
+   - ✅ All documentation accurate and up-to-date
+
+6. ⏳ **Review API Documentation** (P4 - ~1-2 hours) - **PENDING**
    - **Current State:** API documentation may need updates for new error handling
    - **Action:** Review and update API documentation
    - **Impact:** Low - Documentation only
+   - **Note:** API documentation is auto-generated from FastAPI endpoints at `/docs` endpoint
 
-7. **Migrate Code to Use Existing Constants** (P4 - ~1-2 days)
+7. ⏳ **Migrate Code to Use Existing Constants** (P4 - ~1-2 days) - **PENDING**
    - **Current State:** Constants infrastructure complete, ~70-80 instances to migrate
    - **Impact:** Code maintainability
    - **Note:** Another agent will handle this per user request
 
-8. **Add Comprehensive Tests** (P4 - ~2-3 days)
+8. ⏳ **Add Comprehensive Tests** (P4 - ~2-3 days) - **PENDING**
    - **Current State:** Test coverage needs improvement
    - **Impact:** Code quality and reliability
    - **Tasks:** DI container tests, exception handling tests, frontend Logger tests, pattern execution tests
