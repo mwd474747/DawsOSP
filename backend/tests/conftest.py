@@ -36,9 +36,9 @@ async def db_connection(db_pool) -> AsyncGenerator:
 
 @pytest_asyncio.fixture
 async def auth_service():
-    """Get auth service instance."""
-    from app.services.auth import get_auth_service
-    return get_auth_service()
+    """Get auth service instance using direct instantiation."""
+    from app.services.auth import AuthService
+    return AuthService()
 
 
 @pytest_asyncio.fixture

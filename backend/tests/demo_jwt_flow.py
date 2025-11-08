@@ -15,7 +15,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from app.services.auth import get_auth_service, ROLES
+from app.services.auth import AuthService, ROLES
 
 print("=" * 80)
 print("DawsOS JWT AUTHENTICATION FLOW DEMONSTRATION")
