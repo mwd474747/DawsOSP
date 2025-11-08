@@ -365,7 +365,11 @@
                 // Phase 1: Metadata removed from results (moved to trace only)
                 // Use default 'cached' if holdings exist, 'demo' if empty
                 const dataSource = holdings.length > 0 ? 'cached' : 'demo';
-                console.log('[HoldingsTable] Data source:', dataSource, holdings);
+                if (Logger) {
+                    Logger.debug('[HoldingsTable] Data source:', dataSource, holdings);
+                } else {
+                    console.log('[HoldingsTable] Data source:', dataSource, holdings);
+                }
                 
                 return e('div', { className: 'card', style: { position: 'relative' } },
                     e(DataBadge, { source: dataSource, position: 'top-right' }),
