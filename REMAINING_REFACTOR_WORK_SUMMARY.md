@@ -59,5 +59,5 @@
 
 ---
 
-**For detailed information, see:** `REMAINING_REFACTOR_WORK.md`
+**For detailed information, see:** `REMAINING_REFACTOR_WORK.md` (single source of truth)
 

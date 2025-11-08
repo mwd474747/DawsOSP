@@ -257,6 +257,8 @@ This document provides the **final, accurate status** of the V3 Technical Debt R
 
 ---
 
-**Status:** 🚧 ~70% COMPLETE  
+**Status:** 🚧 ~72% COMPLETE  
 **Last Updated:** January 15, 2025
+
+**Note:** For the single source of truth on remaining work, see `REMAINING_REFACTOR_WORK.md`
 
