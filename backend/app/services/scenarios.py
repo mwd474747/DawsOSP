@@ -33,7 +33,7 @@ Usage:
     )
     hedges = await service.suggest_hedges(result.losers, "rates_up")
     
-    Note: get_scenario_service() is deprecated. Use ScenarioService() directly.
+    Note: Use ScenarioService(db_pool=...) directly or container.resolve("scenarios").
 """
 
 import logging
