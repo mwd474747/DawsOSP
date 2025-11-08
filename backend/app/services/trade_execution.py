@@ -1,14 +1,13 @@
 """
-Trade Execution Service
+Trade Execution Service v2
 
-Purpose: Execute trades and manage tax lot selection (FIFO/LIFO/HIFO/specific lot)
-Updated: 2025-01-15
-Priority: P1 (Core business logic for trade execution)
+Schema-aligned version that matches the actual database schema.
 
-**Architecture Note:** This service is used by API routes for trade execution.
-Patterns should use `financial_analyst` agent capabilities (e.g., `ledger.positions`),
-not this service directly. The service is used internally by API routes to execute
-trades and manage tax lot selection.
+Database Schema (as of 2025-10-23):
+- lots: quantity_original, quantity_open, closed_date, quantity, is_open
+- transactions: transaction_date, quantity, amount, fee, narration
+
+Created: 2025-10-23
 """
 
 from uuid import UUID, uuid4

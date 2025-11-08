@@ -271,10 +271,10 @@ class PerformanceCalculator:
         # Get all cash flows
         cash_flows = await self.db.fetch(
             """
-            SELECT flow_date, amount
+            SELECT trade_date, amount
             FROM portfolio_cash_flows
-            WHERE portfolio_id = $1 AND flow_date BETWEEN $2 AND $3
-            ORDER BY flow_date
+            WHERE portfolio_id = $1 AND trade_date BETWEEN $2 AND $3
+            ORDER BY trade_date
         """,
             portfolio_id,
             start_date,
@@ -288,7 +288,7 @@ class PerformanceCalculator:
         # Build cash flow series for IRR calculation
         cf_series = []
         for cf in cash_flows:
-            days_from_start = (cf["flow_date"] - start_date).days
+            days_from_start = (cf["trade_date"] - start_date).days
             cf_series.append((days_from_start, float(cf["amount"])))
 
         # Add terminal value (ending portfolio value as negative cash flow)

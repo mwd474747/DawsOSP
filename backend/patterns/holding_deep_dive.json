@@ -293,13 +293,13 @@
     "transactions": {
       "columns": [
         {
-          "field": "transaction_date",
+          "field": "trade_date",
           "header": "Date",
           "format": "date",
           "width": 100
         },
         {
-          "field": "transaction_type",
+          "field": "action",
           "header": "Action",
           "width": 80
         },
@@ -328,7 +328,7 @@
           "width": 100
         },
         {
-          "field": "realized_pl",
+          "field": "realized_pnl",
           "header": "Realized P&L",
           "format": "currency",
           "width": 120,

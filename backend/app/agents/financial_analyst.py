@@ -2286,17 +2286,17 @@ class FinancialAnalyst(BaseAgent):
             transactions = await conn.fetch(
                 """
                 SELECT
-                    transaction_date,
-                    transaction_type,
+                    trade_date,
+                    action,
                     quantity,
                     price,
                     (quantity * price) as total_value,
                     commission,
-                    realized_pl
+                    realized_pnl
                 FROM transactions
                 WHERE portfolio_id = $1
                   AND security_id = $2
-                ORDER BY transaction_date DESC
+                ORDER BY trade_date DESC
                 LIMIT $3
                 """,
                 portfolio_uuid,
@@ -2307,13 +2307,13 @@ class FinancialAnalyst(BaseAgent):
             result = {
                 "transactions": [
                     {
-                        "transaction_date": str(t["transaction_date"]),
-                        "transaction_type": t["transaction_type"],
+                        "trade_date": str(t["trade_date"]),
+                        "action": t["action"],
                         "quantity": float(t["quantity"]),
                         "price": float(t["price"]),
                         "total_value": float(t["total_value"]),
                         "commission": float(t["commission"]) if t["commission"] else 0.0,
-                        "realized_pl": float(t["realized_pl"]) if t["realized_pl"] else None,
+                        "realized_pnl": float(t["realized_pnl"]) if t["realized_pnl"] else None,
                     }
                     for t in transactions
                 ],

@@ -2,14 +2,8 @@
 DawsOS Risk Metrics Calculator
 
 Purpose: Compute VaR, CVaR, tracking error, and risk decomposition
-Updated: 2025-01-15
+Updated: 2025-10-21
 Priority: P1 (Important for risk management)
-
-**Architecture Note:** This service provides VaR/CVaR/tracking error calculations.
-For DaR (Drawdown at Risk) calculations, see `risk.py` (RiskService class).
-Both services are needed - they serve different purposes:
-- `risk.py` (RiskService): DaR calculations for stress testing
-- `risk_metrics.py` (RiskMetrics): VaR/CVaR/tracking error calculations
 
 Metrics:
     - Value-at-Risk (VaR): Maximum loss at confidence level

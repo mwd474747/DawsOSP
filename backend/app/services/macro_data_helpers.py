@@ -78,18 +78,15 @@ async def get_risk_free_rate(as_of_date: Optional[date] = None) -> Decimal:
         - Frequency: Daily
 
     Notes:
-        - DGS10 is stored as decimal (transformed by FREDTransformationService)
-        - Database stores 0.0408 for 4.08%, no conversion needed
+        - DGS10 is stored in percent, so we divide by 100 to get decimal
         - Uses conservative 3% fallback if no data available
         - Logs warning if fallback is used (check FRED data freshness)
     """
     dgs10 = await get_latest_indicator_value("DGS10", as_of_date)
 
     if dgs10 is not None:
-        # DGS10 is already stored as decimal by FREDTransformationService (e.g., 0.0408 for 4.08%)
-        # No conversion needed - use value as-is
-        # Fixed: Removed ÷100 that caused double conversion bug (SCALE-BUG-002)
-        return dgs10
+        # DGS10 is stored in percent (e.g., 4.5), convert to decimal (0.045)
+        return dgs10 / Decimal("100")
 
     # Fallback: Conservative 3% if no data
     logger.warning(

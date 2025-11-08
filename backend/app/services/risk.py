@@ -2,14 +2,8 @@
 Risk Service (DaR - Drawdown at Risk)
 
 Purpose: Regime-conditioned risk calculation using Monte Carlo simulation
-Updated: 2025-01-15
+Updated: 2025-10-23
 Priority: P0 (Critical for risk management)
-
-**Architecture Note:** This service provides DaR (Drawdown at Risk) calculations.
-For VaR/CVaR/tracking error calculations, see `risk_metrics.py` (RiskMetrics class).
-Both services are needed - they serve different purposes:
-- `risk.py` (RiskService): DaR calculations for stress testing
-- `risk_metrics.py` (RiskMetrics): VaR/CVaR/tracking error calculations
 
 Features:
     - DaR (Drawdown at Risk) calculation at 95% confidence

@@ -2,12 +2,7 @@
 FMP Fundamentals to Ratings Transformer
 
 Purpose: Transform FMP API response format to rating-ready metrics
-Updated: 2025-01-15
-Priority: P1 (Core business logic for ratings)
-
-**Architecture Note:** This module provides shared transformation functions for FMP data.
-Used by DataHarvester and FinancialAnalyst agents to transform FMP fundamentals data
-into rating-ready metrics. Functions are stateless and can be imported directly.
+Created: 2025-11-02 for buffett_checklist pattern integration
 
 Transforms raw FMP data (income_statement, balance_sheet, cash_flow) into
 the specific metrics needed by RatingsService:

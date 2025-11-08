@@ -2,13 +2,8 @@
 Playbook Generation Service
 
 Purpose: Generate actionable playbooks from alert triggers
-Updated: 2025-01-15
-Priority: P1 (Core business logic for playbook generation)
-
-**Architecture Note:** This service is an implementation detail of the MacroHound agent.
-Patterns should use `macro_hound` agent capabilities (e.g., `macro_hound.suggest_alert_presets`),
-not this service directly. The service is used internally by MacroHound to generate
-actionable playbooks from alert triggers.
+Updated: 2025-10-26
+Priority: P1 (Sprint 3 Week 6)
 
 Implements ALERTS_ARCHITECT playbook patterns:
 - DaR breach playbooks (hedge recommendations)

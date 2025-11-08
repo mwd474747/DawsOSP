@@ -2,12 +2,8 @@
 Portfolio Helper Functions
 
 Purpose: Shared helper functions for portfolio calculations
-Updated: 2025-01-15
+Created: 2025-11-05
 Priority: P1 (Reduce code duplication)
-
-**Architecture Note:** This module provides shared utility functions for portfolio calculations.
-Used by multiple services (currency_attribution, metrics) to avoid code duplication.
-Functions are stateless and can be imported directly.
 
 Functions:
     - get_portfolio_value: Calculate total portfolio value from pricing pack

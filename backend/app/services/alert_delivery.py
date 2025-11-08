@@ -2,12 +2,8 @@
 Alert Delivery Tracking Service
 
 Purpose: Track alert deliveries and manage DLQ for failed alerts
-Updated: 2025-01-15
-Priority: P0 (Core business logic for alert delivery)
-
-**Architecture Note:** This service is used by alert retry worker jobs for delivery tracking.
-The service provides delivery tracking and DLQ management for failed alert deliveries.
-It is registered in the DI container and used by background jobs.
+Updated: 2025-10-27
+Priority: P0 (Phase 2 Task 2.2)
 
 Features:
     - Delivery tracking (alert_deliveries table)
