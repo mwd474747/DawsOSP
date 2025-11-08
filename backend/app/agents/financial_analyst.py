@@ -65,6 +65,7 @@ except ImportError:
 from app.agents.base_agent import BaseAgent
 from app.core.types import RequestCtx
 from app.core.provenance import ProvenanceWrapper, DataProvenance
+from app.core.exceptions import DatabaseError
 from app.db import (
     get_metrics_queries,
     get_pricing_pack_queries,
@@ -286,6 +287,7 @@ class FinancialAnalyst(BaseAgent):
             import asyncpg
             import os
             
+            # Use DatabaseError for database errors
             if isinstance(e, asyncpg.PostgresError):
                 # Database-specific error - log and handle appropriately
                 logger.error(f"Database error querying positions: {e}", exc_info=True)
@@ -306,8 +308,8 @@ class FinancialAnalyst(BaseAgent):
                     provenance = DataProvenance.STUB
                     warnings.append("Using demo data - database connection failed")
                 else:
-                    # In production, re-raise the error instead of falling back to stubs
-                    raise
+                    # In production, re-raise as DatabaseError (critical operation)
+                    raise DatabaseError(f"Database error querying positions: {e}", retryable=True) from e
             else:
                 # Other service errors - re-raise
                 logger.error(f"Service error querying positions: {e}", exc_info=True)
@@ -845,8 +847,9 @@ class FinancialAnalyst(BaseAgent):
             logger.error(f"Programming error in metrics.compute_mwr: {e}", exc_info=True)
             raise
         except Exception as e:
-            # Database/service errors - return error response
+            # Database/service errors - return error response (graceful degradation)
             logger.error(f"Failed to compute MWR: {e}", exc_info=True)
+            # Don't raise DatabaseError here - return error response is intentional
             return {
                 "mwr": 0.0,
                 "ann_mwr": 0.0,
@@ -948,8 +951,9 @@ class FinancialAnalyst(BaseAgent):
             logger.error(f"Programming error in metrics.compute_sharpe: {e}", exc_info=True)
             raise
         except Exception as e:
-            # Database/service errors - return error response
+            # Database/service errors - return error response (graceful degradation)
             logger.error(f"Error fetching metrics from database: {e}", exc_info=True)
+            # Don't raise DatabaseError here - return error response is intentional
             result = {
                 "portfolio_id": str(portfolio_id_uuid),
                 "asof_date": str(asof) if asof else None,
