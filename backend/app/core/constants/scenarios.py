@@ -81,8 +81,18 @@ DEFAULT_MAX_TRACKING_ERROR_PCT = 5.0  # Maximum 5% tracking error vs benchmark
 # Turnover constraints (percentages)
 DEFAULT_MAX_TURNOVER_PCT = 100.0  # Maximum 100% turnover
 
-# Risk-free rate
-DEFAULT_OPTIMIZATION_RISK_FREE_RATE = 0.02  # 2% annual risk-free rate
+# Risk-free rate - REMOVED (Use Dynamic Data)
+#
+# REMOVED in v1.1.0 - Use get_risk_free_rate() from app.core.constants instead
+#
+# The hardcoded DEFAULT_OPTIMIZATION_RISK_FREE_RATE constant has been removed.
+# Use the dynamic helper function to fetch live 10-Year Treasury rates from FRED.
+#
+# Migration:
+#   from app.core.constants import get_risk_free_rate
+#   rf_rate = await get_risk_free_rate()  # Live from FRED (e.g., 0.045)
+#
+# See: CONSTANTS_REFACTOR_PHASES1-2_SUMMARY.md
 
 # Historical lookback for covariance estimation
 DEFAULT_OPTIMIZATION_LOOKBACK_DAYS = 252  # 1 year of trading days
@@ -147,7 +157,7 @@ __all__ = [
     "DEFAULT_MAX_SECTOR_PCT",
     "DEFAULT_MAX_TRACKING_ERROR_PCT",
     "DEFAULT_MAX_TURNOVER_PCT",
-    "DEFAULT_OPTIMIZATION_RISK_FREE_RATE",
+    # Note: DEFAULT_OPTIMIZATION_RISK_FREE_RATE removed - use get_risk_free_rate() from app.core.constants
     "DEFAULT_OPTIMIZATION_LOOKBACK_DAYS",
     # Severity levels
     "SEVERITY_LOW",

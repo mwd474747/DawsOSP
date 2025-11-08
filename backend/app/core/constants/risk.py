@@ -96,13 +96,19 @@ DEFAULT_MAR = 0.0
 SORTINO_LOOKBACK_DAYS = 252
 
 # =============================================================================
-# RISK-FREE RATE (for Sharpe/Sortino calculations)
+# RISK-FREE RATE - REMOVED (Use Dynamic Data)
 # =============================================================================
 
-# Default risk-free rate
-# 0.0 = excess return over cash
-# Actual T-bill rates should be injected at runtime
-DEFAULT_RISK_FREE_RATE = 0.0
+# REMOVED in v1.1.0 - Use get_risk_free_rate() from app.core.constants instead
+#
+# The hardcoded DEFAULT_RISK_FREE_RATE constant has been removed.
+# Use the dynamic helper function to fetch live 10-Year Treasury rates from FRED.
+#
+# Migration:
+#   from app.core.constants import get_risk_free_rate
+#   rf_rate = await get_risk_free_rate()  # Live from FRED (e.g., 0.045)
+#
+# See: CONSTANTS_REFACTOR_PHASES1-2_SUMMARY.md
 
 # =============================================================================
 # MODULE METADATA
@@ -136,6 +142,5 @@ __all__ = [
     # Downside risk
     "DEFAULT_MAR",
     "SORTINO_LOOKBACK_DAYS",
-    # Risk-free rate
-    "DEFAULT_RISK_FREE_RATE",
+    # Note: DEFAULT_RISK_FREE_RATE removed - use get_risk_free_rate() from app.core.constants
 ]

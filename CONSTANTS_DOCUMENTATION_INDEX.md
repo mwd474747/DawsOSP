@@ -1,7 +1,7 @@
 # Constants Extraction - Documentation Index
 
 **Last Updated**: November 7, 2025
-**Status**: Phases 1-8 Complete (88% overall)
+**Status**: Phases 1-8 Complete (88% overall) + Dynamic Refactor Phases 1-2 Complete ✅
 
 ---
 
@@ -15,7 +15,19 @@ This index organizes all constants extraction documentation into a clear hierarc
 
 ### Primary Documentation (Read These First)
 
-1. **[CONSTANTS_DYNAMIC_VS_STATIC_STRATEGY.md](CONSTANTS_DYNAMIC_VS_STATIC_STRATEGY.md)** ⭐⭐ **STRATEGIC - READ FIRST**
+1. **[CONSTANTS_REFACTOR_PHASES1-2_SUMMARY.md](CONSTANTS_REFACTOR_PHASES1-2_SUMMARY.md)** ⭐⭐⭐ **CURRENT WORK - READ FIRST**
+   - **Purpose**: Complete summary of dynamic data refactor (Phases 1-2)
+   - **Audience**: ALL developers and stakeholders
+   - **Content**:
+     - ✅ Phases 1-2 COMPLETE (5 hours, non-breaking)
+     - Infrastructure created (macro_data_helpers.py, 25 tests)
+     - Deprecation warnings added (3 constant files)
+     - Before/after comparisons (hardcoded vs dynamic)
+     - Phase 3 decision point (optimizer migration - optional)
+   - **When to Read**: **NOW** - See what was just completed
+   - **Status**: ✅ **COMPLETE** - Ready for Phase 3 (optional)
+
+2. **[CONSTANTS_DYNAMIC_VS_STATIC_STRATEGY.md](CONSTANTS_DYNAMIC_VS_STATIC_STRATEGY.md)** ⭐⭐ **STRATEGIC - IMPLEMENTED**
    - **Purpose**: Domain-driven analysis of which constants should be dynamic data
    - **Audience**: ALL developers and stakeholders
    - **Content**:
@@ -23,8 +35,8 @@ This index organizes all constants extraction documentation into a clear hierarc
      - 🟠 VIX/unemployment thresholds should be data-driven
      - Classification matrix (static vs dynamic vs user preference)
      - 3-phase implementation roadmap (15-50 hours total)
-   - **When to Read**: **NOW** - Changes entire constants strategy
-   - **Status**: 🎯 **STRATEGIC RECOMMENDATION** - Game changer
+   - **When to Read**: For strategic context
+   - **Status**: ✅ **PHASES 1-2 IMPLEMENTED** - See PHASES1-2_SUMMARY.md
 
 2. **[CONSTANTS_CODE_REVIEW.md](CONSTANTS_CODE_REVIEW.md)** ⭐ **QUALITY ANALYSIS**
    - **Purpose**: Comprehensive code review of all constants work
@@ -38,17 +50,29 @@ This index organizes all constants extraction documentation into a clear hierarc
    - **When to Read**: Before making any changes to constants
    - **Status**: ⚠️ **CRITICAL ISSUES FOUND** - Read before continuing
 
-3. **[CONSTANTS_REFACTOR_PLAN_CONSERVATIVE.md](CONSTANTS_REFACTOR_PLAN_CONSERVATIVE.md)** ⭐ **IMPLEMENTATION PLAN**
+3. **[CONSTANTS_REFACTOR_PHASE3_PLAN.md](CONSTANTS_REFACTOR_PHASE3_PLAN.md)** ⭐ **NEXT PHASE (OPTIONAL)**
+   - **Purpose**: Detailed migration plan for Phase 3 (service migration)
+   - **Audience**: Developers considering Phase 3 implementation
+   - **Content**:
+     - 3-batch migration strategy (optimizer → seed scripts → cleanup)
+     - Batch 1: optimizer.py (6-12 hours, HIGH IMPACT) ⭐ Recommended
+     - Testing strategy, rollback plans, risk assessment
+     - 3 execution options (full / batch 1 only / defer)
+     - Pre-flight checklist, monitoring during migration
+   - **When to Read**: To decide if/when to execute Phase 3
+   - **Status**: ⏳ **READY TO EXECUTE** - Awaiting user decision
+
+4. **[CONSTANTS_REFACTOR_PLAN_CONSERVATIVE.md](CONSTANTS_REFACTOR_PLAN_CONSERVATIVE.md)** ⭐ **ORIGINAL PLAN (IMPLEMENTED)**
    - **Purpose**: Conservative, non-disruptive refactor plan validated against existing code
-   - **Audience**: Developers implementing changes
+   - **Audience**: Reference for original plan
    - **Content**:
      - ✅ Validated assumptions (DGS10 exists, MacroService pattern, database schema)
      - 3-phase plan (setup, deprecation, migration) - 22-30 hours
      - Batch migration strategy (high-impact first)
      - Testing strategy (unit, integration, regression)
      - Rollback plan (per-service revert)
-   - **When to Read**: Before implementing any changes
-   - **Status**: 🎯 **PRODUCTION-READY** - Validated against codebase
+   - **When to Read**: For historical context
+   - **Status**: ✅ **PHASES 1-2 COMPLETE** - See Phase 3 plan for next steps
 
 4. **[CONSTANTS_EXTRACTION_FINAL.md](CONSTANTS_EXTRACTION_FINAL.md)** ⭐
    - **Purpose**: Achievement report for Phases 1-8

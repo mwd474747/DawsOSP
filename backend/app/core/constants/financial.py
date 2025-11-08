@@ -96,13 +96,19 @@ MAX_DAILY_PRICE_CHANGE_PERCENT = 0.50
 MIN_VALID_PRICE = 0.01  # Penny stocks threshold
 
 # =============================================================================
-# RISK-FREE RATE DEFAULTS
+# RISK-FREE RATE - REMOVED (Use Dynamic Data)
 # =============================================================================
 
-# Default risk-free rate for Sharpe ratio calculation
-# 0.0 = excess return over cash (common when using actual returns)
-# Can be overridden with actual T-bill rates
-DEFAULT_SHARPE_RISK_FREE_RATE = 0.0
+# REMOVED in v1.1.0 - Use get_risk_free_rate() from app.core.constants instead
+#
+# The hardcoded DEFAULT_SHARPE_RISK_FREE_RATE constant has been removed.
+# Use the dynamic helper function to fetch live 10-Year Treasury rates from FRED.
+#
+# Migration:
+#   from app.core.constants import get_risk_free_rate
+#   rf_rate = await get_risk_free_rate()  # Live from FRED (e.g., 0.045)
+#
+# See: CONSTANTS_REFACTOR_PHASES1-2_SUMMARY.md
 
 # =============================================================================
 # MODULE METADATA
@@ -139,6 +145,5 @@ __all__ = [
     "PRICING_PACK_STALE_DAYS",
     "MAX_DAILY_PRICE_CHANGE_PERCENT",
     "MIN_VALID_PRICE",
-    # Risk-free rate
-    "DEFAULT_SHARPE_RISK_FREE_RATE",
+    # Note: DEFAULT_SHARPE_RISK_FREE_RATE removed - use get_risk_free_rate() from app.core.constants
 ]
