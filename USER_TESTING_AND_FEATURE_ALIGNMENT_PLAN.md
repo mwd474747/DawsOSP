@@ -110,7 +110,7 @@
     - **Root Cause**: Error messages not updated after capability naming migration
     - **Fix**: Update all error messages to use category-based naming
 
-12. **Missing Function Import: `formatDate`** ❌
+13. **Missing Function Import: `formatDate`** ❌
     - **Error**: "ReferenceError: formatDate is not defined"
     - **Location**: `frontend/pages.js:1864` uses `formatDate` without `Utils.` prefix
     - **Impact**: `TransactionsPage` completely broken (ReferenceError)
