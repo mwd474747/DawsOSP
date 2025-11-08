@@ -80,6 +80,17 @@
             return;
         }
         
+        // Check if Panels are available
+        if (!global.DawsOS?.Panels) {
+            if (Logger) {
+                Logger.debug('[PatternSystem] Panels not ready, will retry...');
+            } else {
+                console.log('[PatternSystem] Panels not ready, will retry...');
+            }
+            setTimeout(initializePatternSystem, 100);
+            return;
+        }
+        
         // Don't re-initialize if already done
         if (global.DawsOS.PatternSystem.isInitialized) {
             return;
@@ -100,7 +111,8 @@
     const apiClient = global.DawsOS.APIClient;
     const TokenManagerFromAPI = apiClient.TokenManager;
 
-    // Import panel components
+    // Import panel components with validation
+    const PanelsNamespace = global.DawsOS?.Panels || {};
     const {
         MetricsGridPanel,
         TablePanel,
@@ -114,7 +126,36 @@
         DualListPanel,
         NewsListPanel,
         ReportViewerPanel
-    } = global.DawsOS.Panels || {};
+    } = PanelsNamespace;
+    
+    // Validate panel components are available
+    const panelComponents = {
+        MetricsGridPanel,
+        TablePanel,
+        LineChartPanel,
+        PieChartPanel,
+        DonutChartPanel,
+        BarChartPanel,
+        ActionCardsPanel,
+        CycleCardPanel,
+        ScorecardPanel,
+        DualListPanel,
+        NewsListPanel,
+        ReportViewerPanel
+    };
+    
+    // Check for missing panel components
+    const missingPanels = Object.entries(panelComponents)
+        .filter(([name, component]) => !component)
+        .map(([name]) => name);
+    
+    if (missingPanels.length > 0) {
+        if (Logger) {
+            Logger.warn('[PatternSystem] Missing panel components:', missingPanels);
+        } else {
+            console.warn('[PatternSystem] Missing panel components:', missingPanels);
+        }
+    }
 
     // Import global utilities (these remain in full_ui.html)
     // Use TokenManager from DawsOS.APIClient if available, otherwise fallback to global
@@ -841,32 +882,45 @@
     function PanelRenderer({ panel, data, fullData }) {
         const { type, title, config } = panel;
 
-        // Render based on panel type
+        // Get panel component with validation
+        let PanelComponent = null;
         switch (type) {
             case 'metrics_grid':
-                return e(MetricsGridPanel, { title, data, config });
+                PanelComponent = MetricsGridPanel;
+                break;
             case 'table':
-                return e(TablePanel, { title, data, config });
+                PanelComponent = TablePanel;
+                break;
             case 'line_chart':
-                return e(LineChartPanel, { title, data, config });
+                PanelComponent = LineChartPanel;
+                break;
             case 'pie_chart':
-                return e(PieChartPanel, { title, data, config });
+                PanelComponent = PieChartPanel;
+                break;
             case 'donut_chart':
-                return e(DonutChartPanel, { title, data, config });
+                PanelComponent = DonutChartPanel;
+                break;
             case 'bar_chart':
-                return e(BarChartPanel, { title, data, config });
+                PanelComponent = BarChartPanel;
+                break;
             case 'action_cards':
-                return e(ActionCardsPanel, { title, data, config });
+                PanelComponent = ActionCardsPanel;
+                break;
             case 'cycle_card':
-                return e(CycleCardPanel, { title, data, config });
+                PanelComponent = CycleCardPanel;
+                break;
             case 'scorecard':
-                return e(ScorecardPanel, { title, data, config });
+                PanelComponent = ScorecardPanel;
+                break;
             case 'dual_list':
-                return e(DualListPanel, { title, data, config });
+                PanelComponent = DualListPanel;
+                break;
             case 'news_list':
-                return e(NewsListPanel, { title, data, config });
+                PanelComponent = NewsListPanel;
+                break;
             case 'report_viewer':
-                return e(ReportViewerPanel, { title, data, config });
+                PanelComponent = ReportViewerPanel;
+                break;
             default:
                 return e('div', { className: 'card' },
                     e('div', { className: 'card-header' },
@@ -874,6 +928,42 @@
                     ),
                     e('p', null, `Unsupported panel type: ${type}`)
                 );
+        }
+        
+        // Validate component exists before rendering
+        if (!PanelComponent) {
+            if (Logger) {
+                Logger.error(`[PanelRenderer] Panel component not available for type: ${type}`);
+            } else {
+                console.error(`[PanelRenderer] Panel component not available for type: ${type}`);
+            }
+            return e('div', { className: 'card' },
+                e('div', { className: 'card-header' },
+                    e('h3', { className: 'card-title' }, title || 'Panel')
+                ),
+                e('p', { style: { color: '#ef4444' } }, 
+                    `Panel component "${type}" not loaded. Please refresh the page.`
+                )
+            );
+        }
+        
+        // Render the panel component
+        try {
+            return e(PanelComponent, { title, data, config });
+        } catch (error) {
+            if (Logger) {
+                Logger.error(`[PanelRenderer] Error rendering panel ${type}:`, error);
+            } else {
+                console.error(`[PanelRenderer] Error rendering panel ${type}:`, error);
+            }
+            return e('div', { className: 'card' },
+                e('div', { className: 'card-header' },
+                    e('h3', { className: 'card-title' }, title || 'Panel')
+                ),
+                e('p', { style: { color: '#ef4444' } }, 
+                    `Error rendering panel: ${error.message}`
+                )
+            );
         }
     }
 
