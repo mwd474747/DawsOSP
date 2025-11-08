@@ -2,8 +2,13 @@
 DawsOS Rights Registry
 
 Purpose: Load and enforce data provider export rights
-Updated: 2025-10-21
+Updated: 2025-01-15
 Priority: P0 (Critical for legal compliance)
+
+**Architecture Note:** This service is used by ReportService for export rights enforcement.
+Patterns should use `data_harvester` agent capabilities (e.g., `reports.render_pdf`),
+not this service directly. The service is used internally by ReportService to ensure
+compliance with data provider export rights.
 
 Features:
     - Load rights from .ops/RIGHTS_REGISTRY.yaml

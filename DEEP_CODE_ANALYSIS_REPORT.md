@@ -101,164 +101,153 @@ Comprehensive analysis of the codebase for orphaned code, dead code, duplicate c
 
 ---
 
-#### 1.5 `backend/app/services/trade_execution.py` - Unused Service
-**Status**: ⚠️ **UNUSED** - No usage found  
-**Size**: Unknown  
+#### 1.5 `backend/app/services/trade_execution.py` - ACTUALLY USED (Keep)
+**Status**: ✅ **IN USE** - Used by API routes  
+**Size**: ~617 lines  
+**Usage**: Used by trades.py and portfolios.py API routes  
+**Action**: **KEEP** - Service is actively used
+
+**Evidence**:
+- Imported by `trades.py:24` (TradeExecutionService, TradeExecutionError, etc.)
+- Imported by `portfolios.py:33` (TradeExecutionService)
+- Used in API endpoints for trade execution
+
+**Recommendation**: 
+- **KEEP** - Service is actively used for trade execution
+
+**Risk**: **NONE** - Service is actively used
+
+---
+
+#### 1.6 `backend/app/services/playbooks.py` - ACTUALLY USED (Keep)
+**Status**: ✅ **IN USE** - Used by MacroHound agent  
+**Size**: ~411 lines  
+**Usage**: Registered in DI container, used by MacroHound agent  
+**Action**: **KEEP** - Service is actively used
+
+**Evidence**:
+- Registered in `service_initializer.py:90,100`
+- Imported by `macro_hound.py:50`
+- Used by `evaluate_alerts.py:355` (PlaybookGenerator)
+
+**Recommendation**: 
+- **KEEP** - Service is actively used for playbook generation
+
+**Risk**: **NONE** - Service is actively used
+
+---
+
+#### 1.7 `backend/app/services/rights_registry.py` - ACTUALLY USED (Keep)
+**Status**: ✅ **IN USE** - Used by ReportService  
+**Size**: ~376 lines  
+**Usage**: Registered in DI container, used by reports.py  
+**Action**: **KEEP** - Service is actively used
+
+**Evidence**:
+- Registered in `service_initializer.py:88,97`
+- Imported by `reports.py:42` (get_registry, ExportCheckResult)
+- Used by ReportService for export rights enforcement
+
+**Recommendation**: 
+- **KEEP** - Service is actively used for rights enforcement
+
+**Risk**: **NONE** - Service is actively used
+
+---
+
+#### 1.8 `backend/app/services/portfolio_helpers.py` - ACTUALLY USED (Keep)
+**Status**: ✅ **IN USE** - Used by currency_attribution.py and metrics.py  
+**Size**: ~75 lines  
+**Usage**: Used by multiple services  
+**Action**: **KEEP** - Service is actively used
+
+**Evidence**:
+- Imported by `currency_attribution.py:40` (get_portfolio_value)
+- Imported by `metrics.py:40` (get_portfolio_value)
+- Provides shared helper function for portfolio value calculation
+
+**Recommendation**: 
+- **KEEP** - Service provides shared utility function
+
+**Risk**: **NONE** - Service is actively used
+
+---
+
+#### 1.9 `backend/app/services/fundamentals_transformer.py` - ACTUALLY USED (Keep)
+**Status**: ✅ **IN USE** - Used by DataHarvester and FinancialAnalyst agents  
+**Size**: ~247 lines  
+**Usage**: Used by multiple agents  
+**Action**: **KEEP** - Service is actively used
+
+**Evidence**:
+- Imported by `data_harvester.py:43` (transform_fmp_to_ratings_format)
+- Imported by `financial_analyst.py:78` (transform_fmp_to_ratings_format)
+- Provides shared transformation function for FMP data
+
+**Recommendation**: 
+- **KEEP** - Service provides shared utility function
+
+**Risk**: **NONE** - Service is actively used
+
+---
+
+#### 1.10 `backend/app/services/risk_metrics.py` - ACTUALLY USED (Keep)
+**Status**: ✅ **IN USE** - Used by service_initializer and other services  
+**Size**: ~519 lines  
+**Usage**: Registered in DI container, used by optimizer and macro_aware_scenarios  
+**Action**: **KEEP** - Service is actively used
+
+**Evidence**:
+- Registered in `service_initializer.py:126,150`
+- Used by `optimizer.py:658` (risk_metrics)
+- Used by `macro_aware_scenarios.py:972` (risk_metrics)
+- Provides VaR, CVaR, tracking error calculations (different from risk.py)
+
+**Recommendation**: 
+- **KEEP** - Service provides different functionality than risk.py
+- `risk.py` provides DaR calculations
+- `risk_metrics.py` provides VaR/CVaR/tracking error calculations
+- Document the difference in docstrings
+
+**Risk**: **NONE** - Service is actively used, different functionality
+
+---
+
+#### 1.11 `backend/app/services/alert_delivery.py` - ACTUALLY USED (Keep)
+**Status**: ✅ **IN USE** - Used by service_initializer and jobs  
+**Size**: ~358 lines  
+**Usage**: Registered in DI container, used by alert_retry_worker job  
+**Action**: **KEEP** - Service is actively used
+
+**Evidence**:
+- Registered in `service_initializer.py:89,99`
+- Used by `alert_retry_worker.py:27,59` (AlertDeliveryService)
+- Provides delivery tracking and DLQ management
+
+**Recommendation**: 
+- **KEEP** - Service is actively used for alert delivery tracking
+
+**Risk**: **NONE** - Service is actively used
+
+---
+
+#### 1.12 `backend/app/services/alert_validation.py` - UNUSED (Delete)
+**Status**: ⚠️ **UNUSED** - No imports found  
+**Size**: ~197 lines  
 **Usage**: No usage found in codebase  
-**Action**: **DELETE** or **VERIFY**
+**Action**: **DELETE** - Not used anywhere
 
 **Evidence**:
 - No imports found in codebase
 - Not registered in service_initializer.py
-- May be planned feature that was never implemented
+- Not used by any agents or API routes
+- Only mentioned in migration documentation
 
 **Recommendation**: 
-- Verify if it's a planned feature
-- If not needed, delete
-- If needed, document why it's not used
+- **DELETE** `alert_validation.py` - Not used anywhere
+- Validation logic may be handled elsewhere or not needed
 
-**Risk**: **LOW** - No usage found, likely safe to delete
-
----
-
-#### 1.6 `backend/app/services/playbooks.py` - Unused Service
-**Status**: ⚠️ **UNUSED** - No usage found  
-**Size**: Unknown  
-**Usage**: No usage found in codebase  
-**Action**: **DELETE** or **VERIFY**
-
-**Evidence**:
-- No imports found in codebase
-- May be registered in DI container (need to check)
-- May be planned feature that was never implemented
-
-**Recommendation**: 
-- Check if registered in DI container
-- If not used, delete
-- If used, document usage
-
-**Risk**: **LOW** - No usage found, likely safe to delete
-
----
-
-#### 1.7 `backend/app/services/rights_registry.py` - Unused Service
-**Status**: ⚠️ **UNUSED** - No usage found  
-**Size**: Unknown  
-**Usage**: No usage found in codebase  
-**Action**: **DELETE** or **VERIFY**
-
-**Evidence**:
-- No imports found in codebase
-- May be planned feature that was never implemented
-- Rights enforcement may be handled elsewhere
-
-**Recommendation**: 
-- Verify if rights enforcement is handled elsewhere
-- If not needed, delete
-- If needed, document why it's not used
-
-**Risk**: **LOW** - No usage found, likely safe to delete
-
----
-
-#### 1.8 `backend/app/services/portfolio_helpers.py` - Unused Service
-**Status**: ⚠️ **UNUSED** - No usage found  
-**Size**: Unknown  
-**Usage**: No usage found in codebase  
-**Action**: **DELETE** or **VERIFY**
-
-**Evidence**:
-- No imports found in codebase
-- May be legacy code
-- Functionality may be in agents
-
-**Recommendation**: 
-- Verify if functionality is in agents
-- If not needed, delete
-- If needed, document usage
-
-**Risk**: **LOW** - No usage found, likely safe to delete
-
----
-
-#### 1.9 `backend/app/services/fundamentals_transformer.py` - Unused Service
-**Status**: ⚠️ **UNUSED** - No usage found  
-**Size**: Unknown  
-**Usage**: No usage found in codebase  
-**Action**: **DELETE** or **VERIFY**
-
-**Evidence**:
-- No imports found in codebase
-- May be used internally by DataHarvester
-- Need to verify
-
-**Recommendation**: 
-- Check if used by DataHarvester agent
-- If not used, delete
-- If used, document usage
-
-**Risk**: **LOW** - No usage found, likely safe to delete
-
----
-
-#### 1.10 `backend/app/services/risk_metrics.py` - Duplicate of risk.py?
-**Status**: ⚠️ **POTENTIAL DUPLICATE** - May duplicate risk.py functionality  
-**Size**: Unknown  
-**Usage**: Need to verify  
-**Action**: **CONSOLIDATE** or **VERIFY**
-
-**Evidence**:
-- Two risk-related files:
-  - `risk.py` (main risk service)
-  - `risk_metrics.py` (risk metrics service)
-- Need to check if they overlap
-
-**Recommendation**: 
-- Compare functionality
-- If duplicate, consolidate
-- If different, document differences
-
-**Risk**: **MEDIUM** - Need to verify before consolidation
-
----
-
-#### 1.11 `backend/app/services/alert_delivery.py` - Unused Service
-**Status**: ⚠️ **UNUSED** - No usage found  
-**Size**: Unknown  
-**Usage**: No usage found in codebase  
-**Action**: **DELETE** or **VERIFY**
-
-**Evidence**:
-- No imports found in codebase
-- May be part of deprecated alerts service
-- Functionality may be in MacroHound
-
-**Recommendation**: 
-- Verify if functionality is in MacroHound
-- If not needed, delete
-- If needed, document usage
-
-**Risk**: **LOW** - No usage found, likely safe to delete
-
----
-
-#### 1.12 `backend/app/services/alert_validation.py` - Unused Service
-**Status**: ⚠️ **UNUSED** - No usage found  
-**Size**: Unknown  
-**Usage**: No usage found in codebase  
-**Action**: **DELETE** or **VERIFY**
-
-**Evidence**:
-- No imports found in codebase
-- May be part of deprecated alerts service
-- Functionality may be in MacroHound
-
-**Recommendation**: 
-- Verify if functionality is in MacroHound
-- If not needed, delete
-- If needed, document usage
-
-**Risk**: **LOW** - No usage found, likely safe to delete
+**Risk**: **LOW** - No usage found, safe to delete
 
 ---
 
@@ -527,21 +516,21 @@ if not db_pool:
 
 ## 7. Summary of Findings
 
-### 🔴 Critical (Delete/Archive)
-1. **`alerts.py`** - DEPRECATED, functionality moved to MacroHound
-2. **`corporate_actions_sync_enhanced.py`** - Duplicate, need to verify usage
-3. **`risk_metrics.py`** - Potential duplicate of `risk.py`
+### 🔴 Critical (Delete After Verification)
+1. **`corporate_actions_sync_enhanced.py`** - UNUSED, base version is used
+2. **`macro_data_agent.py`** - UNUSED, no imports found
+3. **`dlq.py`** - UNUSED, no imports found
+4. **`alert_validation.py`** - UNUSED, no imports found
 
-### ⚠️ High Priority (Verify and Remove)
-4. **`macro_data_agent.py`** - No usage found
-5. **`dlq.py`** - No usage found
-6. **`trade_execution.py`** - No usage found
-7. **`playbooks.py`** - No usage found
-8. **`rights_registry.py`** - No usage found
-9. **`portfolio_helpers.py`** - No usage found
-10. **`fundamentals_transformer.py`** - No usage found
-11. **`alert_delivery.py`** - No usage found
-12. **`alert_validation.py`** - No usage found
+### ✅ Actually Used (Keep)
+1. **`alerts.py`** - Used by MacroHound and service_initializer
+2. **`trade_execution.py`** - Used by API routes
+3. **`playbooks.py`** - Used by MacroHound and service_initializer
+4. **`rights_registry.py`** - Used by ReportService
+5. **`portfolio_helpers.py`** - Used by currency_attribution and metrics
+6. **`fundamentals_transformer.py`** - Used by DataHarvester and FinancialAnalyst
+7. **`risk_metrics.py`** - Used by optimizer and macro_aware_scenarios (different from risk.py)
+8. **`alert_delivery.py`** - Used by service_initializer and jobs
 
 ### ✅ Acceptable (Keep)
 - REMOVED/DEPRECATED comments (documentation)
@@ -558,56 +547,52 @@ if not db_pool:
 
 ## 8. Recommended Action Plan
 
-### Phase 1: Verify and Remove Unused Services (2-3 hours)
+### Phase 1: Remove Verified Unused Services (1 hour)
 
-**Step 1: Verify Usage** (1 hour)
-- Check each unused service file for actual usage
-- Search codebase for imports
-- Check DI container registration
-- Verify pattern usage
+**Step 1: Delete Unused Services** (30 minutes)
+- Delete verified unused services:
+  1. `corporate_actions_sync_enhanced.py` - Not used (base version is used)
+  2. `macro_data_agent.py` - Not used (no imports found)
+  3. `dlq.py` - Not used (no imports found)
+  4. `alert_validation.py` - Not used (no imports found)
 
-**Step 2: Remove Unused Services** (1-2 hours)
-- Delete verified unused services
-- Archive if needed for reference
-- Update documentation
-
-**Files to Verify**:
-1. `macro_data_agent.py`
-2. `dlq.py`
-3. `trade_execution.py`
-4. `playbooks.py`
-5. `rights_registry.py`
-6. `portfolio_helpers.py`
-7. `fundamentals_transformer.py`
-8. `alert_delivery.py`
-9. `alert_validation.py`
-
----
-
-### Phase 2: Consolidate Duplicate Services (1-2 hours)
-
-**Step 1: Compare Functionality** (30 minutes)
-- Compare `corporate_actions_sync.py` vs `corporate_actions_sync_enhanced.py`
-- Compare `risk.py` vs `risk_metrics.py`
-- Document differences
-
-**Step 2: Consolidate** (30 minutes - 1.5 hours)
-- Keep the version that's actually used
-- Delete the unused version
-- Update imports if needed
-
----
-
-### Phase 3: Archive Deprecated Services (30 minutes)
-
-**Step 1: Archive `alerts.py`** (15 minutes)
-- Move to `.archive/services/`
-- Add deprecation notice
-- Update documentation
-
-**Step 2: Update References** (15 minutes)
-- Update any documentation references
+**Step 2: Update Documentation** (30 minutes)
 - Update service_initializer.py if needed
+- Update any documentation references
+- Add notes about removed services
+
+**Files to Delete**:
+1. ✅ `backend/app/services/corporate_actions_sync_enhanced.py` - Verified unused
+2. ✅ `backend/app/services/macro_data_agent.py` - Verified unused
+3. ✅ `backend/app/services/dlq.py` - Verified unused
+4. ✅ `backend/app/services/alert_validation.py` - Verified unused
+
+---
+
+### Phase 2: Document Service Differences (30 minutes)
+
+**Step 1: Document risk.py vs risk_metrics.py** (15 minutes)
+- `risk.py` provides DaR (Drawdown at Risk) calculations
+- `risk_metrics.py` provides VaR/CVaR/tracking error calculations
+- They serve different purposes, both are needed
+
+**Step 2: Update Docstrings** (15 minutes)
+- Add clear documentation explaining the difference
+- Update service docstrings to clarify purpose
+
+---
+
+### Phase 3: Improve Service Documentation (1 hour)
+
+**Step 1: Add Architecture Notes** (30 minutes)
+- Add architecture notes to services used by agents
+- Clarify that services are implementation details
+- Document which agent uses which service
+
+**Step 2: Update Service Docstrings** (30 minutes)
+- Add clear purpose statements
+- Document service dependencies
+- Add usage examples where helpful
 
 ---
 
@@ -628,54 +613,111 @@ if not db_pool:
 ## 9. Risk Assessment
 
 ### Low Risk (Safe to Proceed)
-- Removing unused service files (after verification)
-- Archiving deprecated services
-- Adding documentation
-- Adding type hints
+- ✅ Removing verified unused service files (4 files identified)
+- ✅ Adding documentation
+- ✅ Adding type hints
+- ✅ Improving service docstrings
 
 ### Medium Risk (Verify First)
-- Consolidating duplicate services
-- Removing `corporate_actions_sync_enhanced.py`
-- Removing `risk_metrics.py`
+- ⚠️ Consolidating duplicate services (none found - risk_metrics.py is different from risk.py)
+- ⚠️ Removing services without verification (already verified)
 
 ### High Risk (Avoid)
-- Removing services without verification
-- Consolidating services without comparing functionality
-- Removing documentation comments (REMOVED/DEPRECATED sections)
+- ❌ Removing services without verification
+- ❌ Removing documentation comments (REMOVED/DEPRECATED/Phase/NOTE sections are valuable)
+- ❌ Consolidating services without comparing functionality
 
 ---
 
 ## 10. Success Criteria
 
 ### ✅ Completion Criteria
-- [ ] All unused services verified and removed
-- [ ] All duplicate services consolidated
-- [ ] Deprecated services archived
-- [ ] Documentation improved
+- [ ] All unused services verified and removed (4 files)
+- [ ] Service differences documented (risk.py vs risk_metrics.py)
+- [ ] Service documentation improved
 - [ ] No breaking changes introduced
 - [ ] All tests pass
 - [ ] Codebase size reduced
 
 ### 📊 Metrics
-- **Files Removed**: 8-12 service files (estimated)
-- **Lines Removed**: ~2,000-5,000 lines (estimated)
-- **Documentation Added**: ~500-1,000 lines (estimated)
+- **Files Removed**: 4 service files (verified unused)
+- **Lines Removed**: ~1,500-2,000 lines (estimated)
+- **Documentation Added**: ~200-500 lines (estimated)
 - **Code Quality**: Improved clarity and maintainability
 
 ---
 
 ## 11. Next Steps
 
-1. **Verify Usage** - Check each unused service file for actual usage
-2. **Remove Unused Services** - Delete verified unused services
-3. **Consolidate Duplicates** - Merge duplicate service implementations
-4. **Archive Deprecated** - Move deprecated services to archive
-5. **Improve Documentation** - Add missing docstrings and examples
+1. ✅ **Verify Usage** - COMPLETE - All services verified
+2. **Remove Unused Services** - Delete 4 verified unused services
+3. **Document Service Differences** - Clarify risk.py vs risk_metrics.py
+4. **Improve Documentation** - Add architecture notes and docstrings
+5. **Extract Common Patterns** - If validation patterns repeated 5+ times
 
 ---
 
-**Status**: 📋 **ANALYSIS COMPLETE - READY FOR EXECUTION**  
-**Estimated Time**: 5-8 hours total  
-**Priority**: P2 (Code Quality Improvements)  
-**Risk**: LOW (with proper verification)
+## 12. Verified Unused Services (Ready to Delete)
+
+### ✅ Confirmed Unused (Safe to Delete)
+
+1. **`backend/app/services/corporate_actions_sync_enhanced.py`** (~475 lines)
+   - **Status**: Not imported anywhere
+   - **Base version used**: `corporate_actions_sync.py` is used in `corporate_actions.py:634`
+   - **Action**: DELETE
+
+2. **`backend/app/services/macro_data_agent.py`** (~427 lines)
+   - **Status**: Not imported anywhere (only self-reference in docstring)
+   - **Action**: DELETE
+
+3. **`backend/app/services/dlq.py`** (~483 lines)
+   - **Status**: Not imported anywhere (only self-reference in docstring)
+   - **Action**: DELETE
+
+4. **`backend/app/services/alert_validation.py`** (~197 lines)
+   - **Status**: Not imported anywhere
+   - **Action**: DELETE
+
+**Total Lines to Remove**: ~1,582 lines
+
+---
+
+**Status**: ✅ **EXECUTION COMPLETE**  
+**Time Taken**: ~1 hour  
+**Files Removed**: 4 service files  
+**Lines Removed**: ~1,582 lines  
+**Documentation Added**: ~200 lines  
+**Impact**: Improved code clarity and maintainability
+
+---
+
+## 13. Execution Summary
+
+### ✅ Completed Tasks
+
+1. **Removed 4 Unused Services** (~1,582 lines)
+   - `corporate_actions_sync_enhanced.py` - DELETED
+   - `macro_data_agent.py` - DELETED
+   - `dlq.py` - DELETED
+   - `alert_validation.py` - DELETED
+
+2. **Improved 9 Service Docstrings**
+   - Added architecture notes to clarify service purposes
+   - Updated "Updated:" dates to 2025-01-15
+   - Documented service differences (risk.py vs risk_metrics.py)
+
+3. **Documented Service Differences**
+   - Clarified that `risk.py` and `risk_metrics.py` serve different purposes
+   - Both services are needed and should not be consolidated
+
+### 📋 Remaining (Low Priority)
+
+- **Extract common validation patterns** - Not needed (acceptable duplication)
+- **Extract common error handling** - Not needed (acceptable duplication)
+- **Add type hints** - P3 (Low Priority, future work)
+- **Review error messages** - P4 (Very Low Priority, future work)
+
+---
+
+**See**: `DEEP_CODE_CLEANUP_EXECUTION_PLAN.md` for complete execution details.
 

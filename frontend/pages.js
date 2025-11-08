@@ -313,8 +313,8 @@
                     e('div', { className: 'stat-card' },
                         e('div', { className: 'stat-label' }, 'Total Value'),
                         e('div', { className: 'stat-value' }, formatCurrency(data.total_value || 0)),
-                        e('div', { className: `stat-change ${data.change_pct >= 0 ? 'positive' : 'negative'}` }, 
-                            formatPercentage((data.change_pct || 0.0235) / 100))
+                        e('div', { className: `stat-change ${data.change_pct >= 0 ? 'positive' : 'negative'}` },
+                            formatPercentage(data.change_pct || 0.0235))
                     ),
                     e('div', { className: 'stat-card' },
                         e('div', { className: 'stat-label' }, 'Holdings'),
@@ -323,7 +323,7 @@
                     ),
                     e('div', { className: 'stat-card' },
                         e('div', { className: 'stat-label' }, 'YTD Return'),
-                        e('div', { className: 'stat-value' }, formatPercentage((data.ytd_return || 0.145) / 100)),
+                        e('div', { className: 'stat-value' }, formatPercentage(data.ytd_return || 0.145)),
                         e('div', { className: `stat-change ${data.ytd_return >= 0 ? 'positive' : 'negative'}` },
                             'Year to Date')
                     ),
@@ -401,9 +401,9 @@
                                         e('td', null, holding.name || holding.symbol),
                                         e('td', null, formatNumber(holding.quantity, 0)),
                                         e('td', null, formatCurrency(holding.market_value)),
-                                        e('td', null, formatPercentage((holding.weight || 0) / 100)),
+                                        e('td', null, formatPercentage(holding.weight || 0)),
                                         e('td', { className: holding.return_pct >= 0 ? 'positive' : 'negative' },
-                                            formatPercentage((holding.return_pct || 0) / 100))
+                                            formatPercentage(holding.return_pct || 0))
                                     )
                                 )
                             )
@@ -1779,9 +1779,9 @@
                             e('div', { className: 'stat-label' }, 'Total P&L')
                         ),
                         e('div', { className: 'stat-card' },
-                            e('div', { 
-                                className: `stat-value ${summaryData.totalPnLPct >= 0 ? 'positive' : 'negative'}` 
-                            }, formatPercentage(summaryData.totalPnLPct / 100)),
+                            e('div', {
+                                className: `stat-value ${summaryData.totalPnLPct >= 0 ? 'positive' : 'negative'}`
+                            }, formatPercentage(summaryData.totalPnLPct)),
                             e('div', { className: 'stat-label' }, 'Total Return')
                         ),
                         e('div', { className: 'stat-card' },
@@ -2072,10 +2072,10 @@
                             },
                                 e('div', { className: 'stat-label' }, scenario.name),
                                 e('div', { className: 'stat-description' }, scenario.description),
-                                scenario.impactPct !== null ? 
-                                    e('div', { 
-                                        className: `stat-value ${scenario.impactPct >= 0 ? 'positive' : 'negative'}` 
-                                    }, formatPercentage(scenario.impactPct / 100)) :
+                                scenario.impactPct !== null ?
+                                    e('div', {
+                                        className: `stat-value ${scenario.impactPct >= 0 ? 'positive' : 'negative'}`
+                                    }, formatPercentage(scenario.impactPct)) :
                                     e('div', { className: 'stat-value' }, '--'),
                                 e('div', { 
                                     className: `stat-change ${scenario.impactPct >= 0 ? 'positive' : 'negative'}` 
@@ -2541,8 +2541,8 @@
                         ),
                         e('div', { className: 'stat-card' },
                             e('div', { className: 'stat-label' }, 'Turnover %'),
-                            e('div', { className: 'stat-value' }, 
-                                formatPercentage((optimizationData.summary.turnoverPct || 0) / 100))
+                            e('div', { className: 'stat-value' },
+                                formatPercentage(optimizationData.summary.turnoverPct || 0))
                         ),
                         e('div', { className: 'stat-card' },
                             e('div', { className: 'stat-label' }, 'Est. Costs'),
@@ -2556,8 +2556,8 @@
                         ),
                         e('div', { className: 'stat-card' },
                             e('div', { className: 'stat-label' }, 'TE Impact'),
-                            e('div', { className: 'stat-value' }, 
-                                formatPercentage((optimizationData.summary.teImpact || 0) / 100))
+                            e('div', { className: 'stat-value' },
+                                formatPercentage(optimizationData.summary.teImpact || 0))
                         )
                     ),
                     
@@ -2649,11 +2649,11 @@
                                     ),
                                     e('tr', null,
                                         e('td', null, 'Concentration (Top 10)'),
-                                        e('td', null, formatPercentage(optimizationData.impact.currentConcentration / 100)),
-                                        e('td', null, formatPercentage(optimizationData.impact.postConcentration / 100)),
-                                        e('td', { 
-                                            className: optimizationData.impact.concentrationDelta <= 0 ? 'positive' : 'negative' 
-                                        }, formatPercentage(optimizationData.impact.concentrationDelta / 100))
+                                        e('td', null, formatPercentage(optimizationData.impact.currentConcentration)),
+                                        e('td', null, formatPercentage(optimizationData.impact.postConcentration)),
+                                        e('td', {
+                                            className: optimizationData.impact.concentrationDelta <= 0 ? 'positive' : 'negative'
+                                        }, formatPercentage(optimizationData.impact.concentrationDelta))
                                     )
                                 )
                             )

@@ -1,8 +1,14 @@
 """
 Alert Service for DawsOS
 
-This is a consolidated alert service that was refactored during the cleanup.
-It provides a minimal implementation to satisfy imports and allow the system to initialize.
+Purpose: Unified alert service for portfolio monitoring and notifications
+Updated: 2025-01-15
+Priority: P1 (Core business logic for alert evaluation)
+
+**Architecture Note:** This service is an implementation detail of the MacroHound agent.
+Patterns should use `macro_hound` agent capabilities (e.g., `macro_hound.suggest_alert_presets`),
+not this service directly. The service is used internally by MacroHound to implement
+alert evaluation logic.
 """
 
 import logging

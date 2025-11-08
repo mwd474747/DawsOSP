@@ -1,6 +1,6 @@
 # Data Scale & Type Reference Documentation
 
-**Last Updated:** 2025-11-07
+**Last Updated:** 2025-11-08
 **Purpose:** Comprehensive guide to data scales, units, and type conversions across DawsOS
 **Audience:** Developers integrating APIs, calculating metrics, or debugging scale issues
 
@@ -374,6 +374,72 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 ```
+
+---
+
+## Frontend Data Handling
+
+### formatPercentage() Function
+
+**Location:** [frontend/utils.js:55-58](frontend/utils.js#L55-L58)
+
+```javascript
+Utils.formatPercentage = function(value, decimals = 2) {
+    if (value === null || value === undefined || isNaN(value)) return '-';
+    return (value * 100).toFixed(decimals) + '%';  // Expects decimal input
+};
+```
+
+**Expected Input:** Decimal (e.g., 0.145)
+**Processing:** Multiplies by 100
+**Output:** String with % (e.g., "14.50%")
+
+### Critical UI Rule
+
+✅ **DO**: Pass decimals directly to formatPercentage
+```javascript
+// Backend returns: 0.145 (14.5%)
+formatPercentage(data.ytd_return)  // ✅ "14.50%"
+```
+
+❌ **DON'T**: Divide by 100 before calling formatPercentage
+```javascript
+// Backend returns: 0.145 (14.5%)
+formatPercentage(data.ytd_return / 100)  // ❌ "0.14%" (WRONG - 100x too small)
+```
+
+### Backend Returns Decimals
+
+**All backend APIs return decimals:**
+- Performance metrics (TWR, volatility): `0.145` = 14.5%
+- Weights/allocations: `0.25` = 25%
+- Change percentages: `0.0235` = 2.35%
+- Macro indicators: `0.0408` = 4.08%
+
+**Source:** [backend/app/services/metrics.py:87-94](backend/app/services/metrics.py#L87-L94)
+
+```python
+async def compute_twr(...) -> Dict:
+    """
+    Returns:
+        - twr: Total return over period (decimal, e.g., 0.15 = 15%)
+        - ann_twr: Annualized return (decimal)
+        - vol: Annualized volatility (decimal)
+    """
+```
+
+### UI Scaling Bugs Fixed
+
+**Date:** 2025-11-08
+
+Fixed 8 critical double-conversion bugs where frontend incorrectly divided by 100:
+- Portfolio overview (change_pct, ytd_return)
+- Holdings table (weight, return_pct)
+- Transactions page (totalPnLPct)
+- Scenarios page (impactPct)
+- Optimizer page (turnoverPct, teImpact, concentration metrics)
+
+**Details:** [UI_DATA_SCALING_CRITICAL_ISSUES.md](UI_DATA_SCALING_CRITICAL_ISSUES.md)
 
 ---
 
