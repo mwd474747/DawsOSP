@@ -259,10 +259,20 @@ class PatternOrchestrator:
             db: Database connection pool
             redis: Redis connection pool (optional, for caching)
         """
+        logger.debug(f"Initializing PatternOrchestrator with agent_runtime: {agent_runtime}, db: {db}")
         self.agent_runtime = agent_runtime
         self.db = db
         self.redis = redis
         self.patterns: Dict[str, Dict[str, Any]] = {}
+        
+        # Debug logging
+        logger.debug(f"Set self.agent_runtime to: {self.agent_runtime}")
+        logger.debug(f"Agent runtime type: {type(self.agent_runtime)}")
+        if self.agent_runtime:
+            logger.debug(f"Agent runtime has execute_capability: {hasattr(self.agent_runtime, 'execute_capability')}")
+        else:
+            logger.error("WARNING: agent_runtime is None in PatternOrchestrator constructor!")
+        
         self._load_patterns()
 
     def _load_patterns(self):

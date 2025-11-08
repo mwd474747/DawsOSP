@@ -23,7 +23,7 @@ from decimal import Decimal
 
 # Configure logging early before any imports that might use it
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # Changed to DEBUG to see detailed logs
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -400,6 +400,15 @@ async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any]
             }
 
         orchestrator = get_pattern_orchestrator()
+        
+        # Debug logging
+        logger.debug(f"Orchestrator object: {orchestrator}")
+        logger.debug(f"Orchestrator type: {type(orchestrator)}")
+        if orchestrator:
+            logger.debug(f"Orchestrator agent_runtime: {getattr(orchestrator, 'agent_runtime', 'NO ATTRIBUTE')}")
+            logger.debug(f"Agent runtime type: {type(getattr(orchestrator, 'agent_runtime', None))}")
+            if hasattr(orchestrator, 'agent_runtime') and orchestrator.agent_runtime:
+                logger.debug(f"Agent runtime has execute_capability: {hasattr(orchestrator.agent_runtime, 'execute_capability')}")
 
         # Get real pricing pack ID from database
         pricing_pack_id = f"PP_{date.today().isoformat()}"  # Default fallback
@@ -452,7 +461,9 @@ async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any]
             "data_provenance": provenance_info  # Include provenance metadata
         }
     except Exception as e:
+        import traceback
         logger.error(f"Pattern execution failed for {pattern_name}: {e}")
+        logger.error(f"Full traceback:\n{traceback.format_exc()}")
         # Return mock data as fallback to avoid breaking the UI
         return {
             "success": False,
