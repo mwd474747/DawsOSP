@@ -806,7 +806,11 @@
 
                 // Display warnings if found
                 if (provenanceWarnings.length > 0) {
-                    console.warn('Provenance warnings detected:', provenanceWarnings);
+                    if (Logger) {
+                        Logger.warn('Provenance warnings detected:', provenanceWarnings);
+                    } else {
+                        console.warn('Provenance warnings detected:', provenanceWarnings);
+                    }
                 }
 
                 // Callback for parent components
