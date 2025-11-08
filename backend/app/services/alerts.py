@@ -58,6 +58,12 @@ from uuid import UUID
 from app.services.notifications import NotificationService
 from app.services.alert_delivery import AlertDeliveryService
 from app.core.exceptions import DatabaseError, ExternalAPIError
+from app.core.constants.validation import (
+    DEFAULT_ALERT_COOLDOWN_HOURS,
+    DEFAULT_ALERT_LOOKBACK_HOURS,
+    MOCK_DATA_RANDOM_MIN,
+    MOCK_DATA_RANDOM_MAX,
+)
 
 logger = logging.getLogger("DawsOS.Alerts")
 
@@ -245,7 +251,7 @@ class AlertService:
 
         # Check cooldown
         last_fired_at = alert.get("last_fired_at")
-        cooldown_hours = alert.get("cooldown_hours", 24)
+        cooldown_hours = alert.get("cooldown_hours", DEFAULT_ALERT_COOLDOWN_HOURS)
 
         cooldown_passed = self.check_cooldown(
             alert_id=alert.get("id"),
@@ -259,7 +265,7 @@ class AlertService:
         self,
         alert_id: str,
         last_fired_at: Optional[datetime],
-        cooldown_hours: int = 24,
+        cooldown_hours: int = DEFAULT_ALERT_COOLDOWN_HOURS,
     ) -> bool:
         """
         Check if cooldown period has passed.
@@ -383,7 +389,7 @@ class AlertService:
         is_duplicate = await delivery_service.check_duplicate_delivery(
             alert_id=alert_id,
             content_hash=content_hash,
-            lookback_hours=24,
+            lookback_hours=DEFAULT_ALERT_LOOKBACK_HOURS,
         )
 
         if is_duplicate:
@@ -557,7 +563,7 @@ class AlertService:
             # Stub: return random value (acceptable for deprecated service)
             # Note: This service is deprecated and will be removed once migration to MacroHound is complete
             import random
-            return Decimal(str(random.uniform(0.0, 0.3)))
+            return Decimal(str(random.uniform(MOCK_DATA_RANDOM_MIN, MOCK_DATA_RANDOM_MAX)))
 
         portfolio_id = condition.get("portfolio_id")
         metric_name = condition.get("metric")  # twr_ytd, sharpe_1y, max_drawdown_1y, etc.
