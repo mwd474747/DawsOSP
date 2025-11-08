@@ -816,76 +816,19 @@ class PricingService:
 # 
 # DEPRECATED: Use PricingService(db_pool=...) directly instead.
 # 
-def get_pricing_service(use_db: bool = True, db_pool=None) -> PricingService:
-    """
-    DEPRECATED: Use PricingService(db_pool=...) directly instead.
-
-    Get singleton PricingService instance.
-
-    Args:
-        use_db: Use database connection (default: True) - DEPRECATED
-        db_pool: Database connection pool (pass to PricingService constructor)
-
-    Returns:
-        PricingService instance
-
-    Raises:
-        ValueError: If use_db=False in production environment
-
-    Migration:
-        OLD: pricing_service = get_pricing_service()
-        NEW: pricing_service = PricingService(db_pool=db_pool)
-
-    Example:
-        # Old pattern (deprecated)
-        pricing_service = get_pricing_service()
-
-        # New pattern (dependency injection)
-        db_pool = services.get("db")
-        pricing_service = PricingService(db_pool=db_pool)
-    """
-    import warnings
-    import os
-
-    warnings.warn(
-        "get_pricing_service() is deprecated. Use PricingService(db_pool=...) directly.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-
-    # Production guard: prevent stub mode in production (extra safety check)
-    if not use_db and os.getenv("ENVIRONMENT") == "production":
-        raise ValueError(
-            "Cannot use stub mode (use_db=False) in production environment. "
-            "Stub mode is only available for development and testing. "
-            "This check is in addition to the guard in PricingService.__init__()"
-        )
-
-    global _pricing_service
-    if _pricing_service is None:
-        _pricing_service = PricingService(use_db=use_db, db_pool=db_pool)
-    return _pricing_service
+# Migration:
+#     OLD: pricing_service = get_pricing_service()
+#     NEW: pricing_service = PricingService(db_pool=db_pool)
+#
 
 
-def init_pricing_service(use_db: bool = True, force: bool = False) -> PricingService:
-    """
-    Initialize PricingService (with optional singleton reset).
-
-    Args:
-        use_db: Use database connection (default: True)
-        force: Force reinitialization even if singleton exists (default: False)
-
-    Returns:
-        PricingService instance
-
-    Note:
-        In production, ALWAYS call with use_db=True and force=True during startup
-        to ensure freshness gate uses real database instead of cached stub.
-    """
-    global _pricing_service
-
-    if force or _pricing_service is None:
-        logger.info(f"Initializing pricing service with use_db={use_db}")
-        _pricing_service = PricingService(use_db=use_db)
-
-    return _pricing_service
+# ============================================================================
+# init_pricing_service - REMOVED
+# ============================================================================
+# 
+# DEPRECATED: Use PricingService(db_pool=...) directly instead.
+# 
+# Migration:
+#     OLD: pricing_service = init_pricing_service()
+#     NEW: pricing_service = PricingService(db_pool=db_pool)
+#
