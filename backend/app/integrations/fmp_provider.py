@@ -9,9 +9,9 @@ Features:
     - Company profiles
     - Income statements, balance sheets, cash flow statements
     - Financial ratios
-    - Rate limiting: 120 req/min (token bucket)
+    - Rate limiting: FMP_RATE_LIMIT_REQUESTS per minute (from constants)
     - Bandwidth tracking: Alert at 70%, 85%, 95% of monthly quota
-    - Smart retry logic with exponential backoff (1s, 2s, 4s)
+    - Smart retry logic with exponential backoff (configurable via constants)
     - Dead Letter Queue for failed requests
     - Rights: Restricted export, requires attribution
 
@@ -34,6 +34,11 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, date
 from decimal import Decimal
 
+from app.core.constants.integration import (
+    FMP_RATE_LIMIT_REQUESTS,
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_RETRY_DELAY,
+)
 from .base_provider import BaseProvider, ProviderConfig, ProviderError
 from .rate_limiter import rate_limit
 
@@ -56,9 +61,9 @@ class FMPProvider(BaseProvider):
         config = ProviderConfig(
             name="FMP",
             base_url=base_url,
-            rate_limit_rpm=120,  # 120 requests per minute
-            max_retries=3,
-            retry_base_delay=1.0,
+            rate_limit_rpm=FMP_RATE_LIMIT_REQUESTS,  # From FMP API documentation
+            max_retries=DEFAULT_MAX_RETRIES,
+            retry_base_delay=DEFAULT_RETRY_DELAY,
             rights={
                 "export_pdf": False,  # Restricted
                 "export_csv": False,  # Restricted

@@ -75,8 +75,9 @@ FMP_RATE_LIMIT_WINDOW = 60
 
 # Polygon API rate limits (basic tier)
 # Source: https://polygon.io/pricing
-POLYGON_RATE_LIMIT_REQUESTS = 5
-POLYGON_RATE_LIMIT_WINDOW = 1  # Per second
+# Note: Actual implementation uses 100 requests per minute (conservative setting)
+POLYGON_RATE_LIMIT_REQUESTS = 100  # Requests per minute (conservative)
+POLYGON_RATE_LIMIT_WINDOW = 60  # Per minute
 
 # NewsAPI rate limits (free tier)
 NEWS_API_RATE_LIMIT_REQUESTS = 100

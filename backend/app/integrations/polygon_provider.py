@@ -33,6 +33,11 @@ from decimal import Decimal
 
 from .base_provider import BaseProvider, ProviderConfig, ProviderError
 from .rate_limiter import rate_limit
+from app.core.constants.integration import (
+    POLYGON_RATE_LIMIT_REQUESTS,
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_RETRY_DELAY,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +58,9 @@ class PolygonProvider(BaseProvider):
         config = ProviderConfig(
             name="Polygon",
             base_url=base_url,
-            rate_limit_rpm=100,  # 100 requests per minute
-            max_retries=3,
-            retry_base_delay=1.0,
+            rate_limit_rpm=POLYGON_RATE_LIMIT_REQUESTS,  # From Polygon API documentation
+            max_retries=DEFAULT_MAX_RETRIES,
+            retry_base_delay=DEFAULT_RETRY_DELAY,
             rights={
                 "export_pdf": False,  # Restricted
                 "export_csv": False,  # Restricted
