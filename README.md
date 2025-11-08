@@ -51,15 +51,17 @@ python combined_server.py
 - **Server**: `combined_server.py` - FastAPI server (6,043 lines, 53 endpoints)
 - **Database**: PostgreSQL + TimescaleDB
 - **Agents**: 4 agents providing ~70 capabilities
-  - **FinancialAnalyst**: Portfolio management, pricing, metrics, ratings, charts
-  - **MacroHound**: Macro economic cycles, scenarios, alerts
-  - **DataHarvester**: External data, news, reports
-  - **PortfolioAgent**: Core portfolio operations
-  - **Note:** Phase 0-3 refactoring complete (January 14, 2025):
-    - Phase 0: Zombie code removal (1,197 lines) ✅ COMPLETE
-    - Phase 1: Emergency fixes (provenance warnings) ✅ COMPLETE
-    - Phase 2: Foundation (capability contracts, validation) ✅ COMPLETE
-    - Phase 3: Real features (factor analysis, DaR hardening) ✅ COMPLETE
+  - **FinancialAnalyst**: Portfolio management, pricing, metrics, ratings, charts, optimization
+  - **MacroHound**: Macro economic cycles, scenarios, alerts, regime detection
+  - **DataHarvester**: External data, news, reports, corporate actions
+  - **ClaudeAgent**: AI-powered explanations and insights
+  - **Note:** V3 refactoring ~70% complete (January 15, 2025):
+    - Phase -1: Critical bugs fixed ✅ COMPLETE
+    - Phase 0: Browser infrastructure ✅ COMPLETE
+    - Phase 1: Exception handling (85%) ✅ MOSTLY COMPLETE
+    - Phase 2: Singleton removal → DI container (95%) ✅ MOSTLY COMPLETE
+    - Phase 3: Code duplication extraction ✅ COMPLETE
+    - Phase 4: Legacy code removal ✅ COMPLETE
 - **Patterns**: 13 pattern definitions for orchestration
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.

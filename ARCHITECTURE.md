@@ -87,25 +87,23 @@ Capability Request ("ledger.positions") → Runtime Lookup → FinancialAnalyst.
 4. **ClaudeAgent** - AI-powered explanations and insights (~6 capabilities)
    - Capabilities: `claude.*`, `ai.*`
 
-**Agent Registration** (combined_server.py:261-300):
+**Agent Registration** (via DI container - backend/app/core/service_initializer.py):
 ```python
-def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
-    services = {"db": db_pool, "redis": None}
-    _agent_runtime = AgentRuntime(services)
+def initialize_services(container, db_pool, ...):
+    # Register agents with factory functions
+    container.register_service("financial_analyst", FinancialAnalyst, factory=create_financial_analyst)
+    container.register_service("macro_hound", MacroHound, factory=create_macro_hound)
+    container.register_service("data_harvester", DataHarvester, factory=create_data_harvester)
+    container.register_service("claude_agent", ClaudeAgent, factory=create_claude_agent)
     
-    # Register Financial Analyst (handles ledger, pricing, metrics, attribution)
-    financial_analyst = FinancialAnalyst("financial_analyst", services)
-    _agent_runtime.register_agent(financial_analyst)
+    # Register agent runtime (registers all agents)
+    container.register_service("agent_runtime", AgentRuntime, factory=create_agent_runtime)
     
-    # Register Macro Hound (handles macro cycles and scenarios)
-    macro_hound = MacroHound("macro_hound", services)
-    _agent_runtime.register_agent(macro_hound)
-    
-    # Register remaining 2 agents
-    # DataHarvester, ClaudeAgent
-    
-    return _agent_runtime
+    # Initialize in dependency order
+    container.initialize_services(dependency_order)
 ```
+
+**Note:** All services and agents are initialized via DI container (Phase 2 complete). Singleton pattern has been removed.
 
 ### 3. Backend (FastAPI)
 
@@ -113,7 +111,7 @@ def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
 
 **Architecture**:
 - **Monolithic Design**: Single file containing all endpoints
-- **Singleton Pattern**: Global agent_runtime and pattern_orchestrator
+- **Dependency Injection**: DI container manages service initialization (Phase 2 complete)
 - **Lifespan Management**: Async context managers for database pool and agent initialization
 - **Static File Serving**: Serves full_ui.html at root path
 
@@ -444,7 +442,7 @@ backend/app/
 ## Design Patterns
 
 1. **Pattern-Driven Architecture**: Business logic defined declaratively in JSON, executed by orchestrator
-2. **Singleton Pattern**: Global agent_runtime and pattern_orchestrator instances
+2. **Dependency Injection**: DI container manages service initialization and dependencies (Phase 2 complete)
 3. **Capability Routing**: String-based routing ("agent.method") to Python methods
 4. **Template Substitution**: Dynamic value injection using {{}} syntax
 5. **Request Context**: Immutable context object for reproducibility
@@ -590,8 +588,8 @@ Centralized JSON-based configuration for ~40 macro economic indicators used in c
 - Data quality tracking (confidence levels, last updated, notes)
 
 **Configuration Manager:** [backend/app/services/indicator_config.py](backend/app/services/indicator_config.py) (471 lines)
-- `IndicatorConfigManager` class with singleton pattern
-- Accessed via `get_config_manager()` function
+- `IndicatorConfigManager` class (registered in DI container)
+- Accessed via DI container resolution
 - Fallback mechanism: Database → Config → Hardcoded defaults
 - Validation & scaling rules
 - Alias resolution (e.g., GDP_growth = gdp_growth)
