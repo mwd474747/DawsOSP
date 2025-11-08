@@ -356,7 +356,7 @@ class BaseAgent(ABC):
                 pricing_pack_id="",
                 reason="pricing_pack_id is required but not provided. "
                        "Must be set in request context (ctx.pricing_pack_id) or provided as parameter. "
-                       "Use get_pricing_service().get_latest_pack() to fetch current pack."
+                       "Use PricingService(db_pool=...).get_latest_pack() to fetch current pack."
             )
         
         # Validate format using shared validation function

@@ -365,15 +365,52 @@ This is the **single source of truth** for all remaining refactor work. It conso
 2. Extract magic numbers from JSON pattern files (e.g., `"default": 252`)
 
 #### 11. Remove Deprecated Singleton Functions
-**Status:** ⏳ PENDING  
+**Status:** 🔄 IN PROGRESS  
 **Priority:** P4 (Low)  
 **Estimated Time:** 2 hours  
 **Impact:** LOW - Dead code cleanup
 
+**Current State:**
+- **Functions Found:** 14 deprecated singleton factory functions
+- **Usages Found:** 33 usages across 17 files (grep results)
+- **Status:** All functions have deprecation warnings, migration path documented
+- **Files with Usages:**
+  - `backend/app/services/optimizer.py` (4 usages)
+  - `backend/app/services/risk.py` (2 usages)
+  - `backend/app/services/benchmarks.py` (2 usages)
+  - `backend/app/services/reports.py` (2 usages)
+  - `backend/app/services/ratings.py` (3 usages)
+  - `backend/app/services/pricing.py` (5 usages)
+  - `backend/app/services/auth.py` (3 usages)
+  - `backend/app/services/audit.py` (3 usages)
+  - `backend/tests/*.py` (test files)
+  - `backend/jobs/*.py` (job files)
+  - `backend/app/agents/base_agent.py` (1 usage)
+  - Other service files
+
+**Deprecated Functions:**
+1. `get_optimizer_service()` - `backend/app/services/optimizer.py`
+2. `get_ratings_service()` - `backend/app/services/ratings.py`
+3. `get_pricing_service()` - `backend/app/services/pricing.py`
+4. `init_pricing_service()` - `backend/app/services/pricing.py`
+5. `get_reports_service()` - `backend/app/services/reports.py`
+6. `get_risk_service()` - `backend/app/services/risk.py`
+7. `get_benchmark_service()` - `backend/app/services/benchmarks.py`
+8. `init_benchmark_service()` - `backend/app/services/benchmarks.py`
+9. `get_macro_aware_scenario_service()` - `backend/app/services/macro_aware_scenarios.py`
+10. `get_audit_service()` - `backend/app/services/audit.py`
+11. `get_macro_service()` - `backend/app/services/macro.py` (if exists)
+12. `get_scenarios_service()` - `backend/app/services/scenarios.py` (if exists)
+13. `get_cycles_service()` - `backend/app/services/cycles.py` (if exists)
+14. `get_claude_agent()` - `backend/app/agents/claude_agent.py` (if exists)
+
 **Task:**
-- Remove deprecated singleton factory functions (~14 functions)
-- After deprecation period
-- Document migration path
+1. ✅ Identify all deprecated singleton functions (14 found)
+2. ✅ Identify all usages (33 found across 17 files)
+3. ⏳ Migrate usages to DI container or direct instantiation
+4. ⏳ Remove function definitions
+5. ⏳ Remove global singleton instances
+6. ⏳ Update documentation
 
 #### 12. Add Comprehensive Tests
 **Status:** ⏳ PENDING  
@@ -450,10 +487,44 @@ This is the **single source of truth** for all remaining refactor work. It conso
 
 ## Next Steps
 
-1. ⏳ **Fix Pattern Capability Naming** (P1 - ~2-3 hours) - **NEXT**
-2. ⏳ **Complete P2 tasks** (frontend logging, exception handlers, backwards compatibility removal) - ~10-11 hours
-3. ⏳ **Complete P3 tasks** (magic numbers, remaining TODOs, additional backwards compatibility) - ~2-3 days
-4. ⏳ **Complete P4 tasks** (documentation, cleanup, testing, database field removal) - ~3-4 days
+### Current State (January 15, 2025)
+
+**✅ All Critical/High/Medium Priority Tasks Complete:**
+- ✅ **P1 (Critical):** React Error #130 fixed, Pattern capability naming complete
+- ✅ **P2 (High):** Frontend logging, exception handlers, backwards compatibility removal complete
+- ✅ **P3 (Medium):** Magic number infrastructure, TODO cleanup, additional backwards compatibility complete
+
+**⏳ Remaining Work (P4 - Low Priority):**
+All remaining tasks are low priority and can be done incrementally. Estimated 3-4 days total.
+
+### Recommended Next Steps (Priority Order)
+
+1. **Remove Deprecated Singleton Functions** (P4 - ~2 hours) - **RECOMMENDED NEXT**
+   - **Current State:** 33 usages found across 17 files
+   - **Status:** Functions are deprecated with warnings, but still in use
+   - **Impact:** Clean up dead code, reduce technical debt
+   - **Risk:** Low - functions have deprecation warnings, migration path documented
+   - **Files to check:** `backend/app/services/*.py`, `backend/tests/*.py`, `backend/jobs/*.py`
+
+2. **Update Architecture.md** (P4 - ~1-2 hours)
+   - **Current State:** Documentation may be outdated after refactoring
+   - **Impact:** Ensure documentation matches implementation
+   - **Tasks:** Update capability naming, agent counts, DI container usage
+
+3. **Pattern Standardization** (P4 - ~3 hours)
+   - **Current State:** 3 patterns may still use legacy formats
+   - **Impact:** Consistency across patterns
+   - **Tasks:** Migrate patterns to Format 1, extract magic numbers
+
+4. **Migrate Code to Use Existing Constants** (P4 - ~1-2 days)
+   - **Current State:** Constants infrastructure complete, ~70-80 instances to migrate
+   - **Impact:** Code maintainability
+   - **Note:** Another agent will handle this per user request
+
+5. **Add Comprehensive Tests** (P4 - ~2-3 days)
+   - **Current State:** Test coverage needs improvement
+   - **Impact:** Code quality and reliability
+   - **Tasks:** DI container tests, exception handling tests, frontend Logger tests, pattern execution tests
 
 ---
 

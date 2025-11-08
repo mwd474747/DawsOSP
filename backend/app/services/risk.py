@@ -28,7 +28,7 @@ Architecture:
     Portfolio → Factor Betas → Regime Covariance → Monte Carlo → DaR (95%)
 
 Usage:
-    from app.services.risk import get_risk_service
+    from app.services.risk import RiskService
     from app.services.macro import MacroService
 
     # Detect current regime
@@ -37,8 +37,9 @@ Usage:
     regime = await macro_service.detect_current_regime()
 
     # Compute DaR
-    risk_service = get_risk_service()
-    dar = await service.compute_dar(
+    # Use direct instantiation instead of deprecated singleton function
+    risk_service = RiskService(db_pool=db_pool) if db_pool else RiskService()
+    dar = await risk_service.compute_dar(
         portfolio_id="...",
         regime=regime.regime.value,
         confidence=0.95,

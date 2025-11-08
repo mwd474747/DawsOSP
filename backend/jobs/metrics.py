@@ -432,8 +432,8 @@ class MetricsComputer:
             return [random.gauss(0.0004, 0.012) for _ in range(min(lookback_days, 252))]
 
         try:
-            from app.db.connection import execute_query_one
-            from app.services.benchmarks import get_benchmark_service
+            from app.db.connection import execute_query_one, get_db_pool
+            from app.services.benchmarks import BenchmarkService
 
             # Get portfolio benchmark and base currency
             query = """
@@ -451,7 +451,9 @@ class MetricsComputer:
             base_currency = portfolio["base_currency"]
 
             # Get benchmark returns (hedged to base currency)
-            benchmark_service = get_benchmark_service(use_db=self.use_db)
+            # Use direct instantiation instead of deprecated singleton function
+            db_pool = get_db_pool() if self.use_db else None
+            benchmark_service = BenchmarkService(use_db=self.use_db, db_pool=db_pool)
             start_date = asof_date - timedelta(days=lookback_days)
 
             # Get pack_id for this date

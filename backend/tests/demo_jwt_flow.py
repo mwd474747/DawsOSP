@@ -21,8 +21,9 @@ print("=" * 80)
 print("DawsOS JWT AUTHENTICATION FLOW DEMONSTRATION")
 print("=" * 80)
 
-# Initialize auth service
-auth = get_auth_service()
+# Initialize auth service using direct instantiation
+from app.services.auth import AuthService
+auth = AuthService()
 
 # STEP 1: Generate JWT for a user
 print("\n📝 STEP 1: Generate JWT Token")
