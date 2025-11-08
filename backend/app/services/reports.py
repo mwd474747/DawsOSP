@@ -39,15 +39,16 @@ from typing import Any, Dict, List, Optional
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from app.services.rights_registry import get_registry, ExportCheckResult
+from app.core.exceptions import DatabaseError, BusinessLogicError
 
 logger = logging.getLogger(__name__)
 
-# Custom exceptions
+# Custom exceptions (for backward compatibility, but prefer using exception hierarchy)
 class ServiceError(Exception):
-    """Base exception for service errors."""
+    """Base exception for service errors (deprecated - use app.core.exceptions)."""
     pass
 
-class RightsViolationError(ServiceError):
+class RightsViolationError(BusinessLogicError):
     """Raised when export rights are violated."""
     pass
 
@@ -393,6 +394,7 @@ class ReportService:
         except Exception as e:
             # Template not found or other errors - return fallback HTML (graceful degradation)
             logger.error(f"Template not found: {template_name} - {e}")
+            # Don't raise exception here - graceful degradation is intentional
             return self._generate_fallback_html(report_data, attributions, watermark)
 
         # Render template
@@ -457,9 +459,10 @@ class ReportService:
             logger.error(f"Programming error generating PDF: {e}", exc_info=True)
             raise ServiceError(f"PDF generation failed (programming error): {str(e)}")
         except Exception as e:
-            # Service/library errors - re-raise as ServiceError
+            # Service/library errors - re-raise as BusinessLogicError (critical operation)
             logger.error(f"PDF generation failed: {str(e)}")
-            raise ServiceError(f"PDF generation failed: {str(e)}")
+            from app.core.exceptions import BusinessLogicError
+            raise BusinessLogicError(f"PDF generation failed: {str(e)}") from e
     
     def _generate_watermark_css(self, watermark: Any) -> str:
         """
@@ -713,7 +716,9 @@ class ReportService:
             )
             
         except Exception as e:
+            # Database errors - log and continue (audit logging is best-effort)
             logger.error(f"Failed to log export audit: {e}")
+            # Don't raise DatabaseError here - best-effort is intentional
             # Fallback to file logging
             # Handle both string and datetime timestamps for fallback
             timestamp_str = rights_check.timestamp
