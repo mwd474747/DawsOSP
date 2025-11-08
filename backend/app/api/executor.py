@@ -54,6 +54,11 @@ from app.core.agent_runtime import AgentRuntime
 from app.agents.financial_analyst import FinancialAnalyst
 from app.middleware.auth_middleware import verify_token
 from app.services.audit import get_audit_service
+from app.core.constants.http_status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+    HTTP_503_SERVICE_UNAVAILABLE,
+)
 
 # Optional imports for observability (graceful degradation)
 try:
@@ -988,7 +993,7 @@ async def health_pack():
             
             if not pack_obj:
                 return JSONResponse(
-                    status_code=503,  # Changed from 500 to 503
+                    status_code=HTTP_503_SERVICE_UNAVAILABLE,  # Changed from 500 to 503
                     content={
                         "status": "error",
                         "message": "No pricing packs found",
@@ -1007,7 +1012,7 @@ async def health_pack():
             error_message = None  # PricingPack object doesn't have error_message field
         except PricingPackNotFoundError as e:
             return JSONResponse(
-                status_code=503,  # Changed from 500 to 503
+                status_code=HTTP_503_SERVICE_UNAVAILABLE,  # Changed from 500 to 503
                 content={
                     "status": "error",
                     "message": "No pricing packs found",
@@ -1027,7 +1032,7 @@ async def health_pack():
         except PricingPackValidationError as e:
             logger.error(f"Invalid pricing pack ID in health check: {e}")
             return JSONResponse(
-                status_code=400,
+                status_code=HTTP_400_BAD_REQUEST,
                 content={
                     "status": "error",
                     "message": f"Invalid pricing pack ID: {e.reason}",
@@ -1073,7 +1078,7 @@ async def health_pack():
         logger.exception(f"Health pack check failed: {e}")
         # Don't raise DatabaseError here - return error response is intentional
         return JSONResponse(
-            status_code=500,
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "status": "error",
                 "message": str(e),

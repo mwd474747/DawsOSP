@@ -45,6 +45,10 @@ from app.services.risk import get_risk_service
 from app.db.connection import get_db_connection_with_rls
 from app.middleware.auth_middleware import verify_token
 from app.services.auth import get_auth_service
+from app.core.constants.http_status import (
+    HTTP_401_UNAUTHORIZED,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -332,7 +336,7 @@ def get_user_id_from_claims(claims: dict) -> str:
     user_id = claims.get("user_id")
     if not user_id:
         raise HTTPException(
-            status_code=401,
+            status_code=HTTP_401_UNAUTHORIZED,
             detail="JWT token missing user_id claim"
         )
     return user_id
@@ -403,7 +407,7 @@ async def get_current_regime(
         # Programming errors - should not happen, log and re-raise as HTTPException
         logger.error(f"Programming error detecting regime: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error (programming error): {str(e)}",
         )
     except Exception as e:
@@ -411,7 +415,7 @@ async def get_current_regime(
         logger.error(f"Error detecting regime: {e}", exc_info=True)
         # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
-            status_code=500,
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error detecting regime: {str(e)}",
         )
 
@@ -491,7 +495,7 @@ async def get_regime_history(
         # Programming errors - should not happen, log and re-raise as HTTPException
         logger.error(f"Programming error fetching regime history: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error (programming error): {str(e)}",
         )
     except Exception as e:
@@ -499,7 +503,7 @@ async def get_regime_history(
         logger.error(f"Error fetching regime history: {e}", exc_info=True)
         # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
-            status_code=500,
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching regime history: {str(e)}",
         )
 
@@ -561,7 +565,7 @@ async def get_indicators(
         # Programming errors - should not happen, log and re-raise as HTTPException
         logger.error(f"Programming error fetching indicators: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error (programming error): {str(e)}",
         )
     except Exception as e:
@@ -569,7 +573,7 @@ async def get_indicators(
         logger.error(f"Error fetching indicators: {e}", exc_info=True)
         # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
-            status_code=500,
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching indicators: {str(e)}",
         )
 
@@ -661,14 +665,14 @@ async def run_scenario(
         # Programming errors - should not happen, log and re-raise as HTTPException
         logger.error(f"Programming error running scenario: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error (programming error): {str(e)}",
         )
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Error running scenario: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error running scenario: {str(e)}",
         )
 
@@ -764,13 +768,13 @@ async def compute_dar(
         # Programming errors - should not happen, log and re-raise as HTTPException
         logger.error(f"Programming error computing DaR: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error (programming error): {str(e)}",
         )
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Error computing DaR: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error computing DaR: {str(e)}",
         )
