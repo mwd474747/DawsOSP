@@ -164,7 +164,11 @@
     
     // Validate TokenManager
     if (!TokenManager) {
-        console.error('[PatternSystem] TokenManager not available from DawsOS.APIClient or global');
+        if (Logger) {
+            Logger.error('[PatternSystem] TokenManager not available from DawsOS.APIClient or global');
+        } else {
+            console.error('[PatternSystem] TokenManager not available from DawsOS.APIClient or global');
+        }
         throw new Error('[PatternSystem] TokenManager is required but not found');
     }
 
@@ -689,7 +693,11 @@
         // Listen for portfolio changes from the portfolio selector
         useEffect(() => {
             const handlePortfolioChange = (event) => {
-                console.log('Portfolio changed, reloading pattern:', pattern);
+                if (Logger) {
+                    Logger.debug('Portfolio changed, reloading pattern:', pattern);
+                } else {
+                    console.log('Portfolio changed, reloading pattern:', pattern);
+                }
                 loadPattern();
             };
 
@@ -709,7 +717,11 @@
                 // Backend will return appropriate error if authentication required
                 const token = TokenManager.getToken();
                 if (!token) {
-                    console.warn(`No authentication token for pattern ${pattern}`);
+                    if (Logger) {
+                        Logger.warn(`No authentication token for pattern ${pattern}`);
+                    } else {
+                        console.warn(`No authentication token for pattern ${pattern}`);
+                    }
                     // Don't block - let backend handle auth
                     // Some patterns might not require auth
                 }
@@ -728,19 +740,31 @@
                     // If still no portfolio ID, use the fallback
                     if (!validPortfolioId) {
                         validPortfolioId = getCurrentPortfolioId();
-                        console.warn('No portfolio ID in context or inputs, using fallback:', validPortfolioId);
+                        if (Logger) {
+                            Logger.warn('No portfolio ID in context or inputs, using fallback:', validPortfolioId);
+                        } else {
+                            console.warn('No portfolio ID in context or inputs, using fallback:', validPortfolioId);
+                        }
                     }
 
                     // Add portfolio ID to inputs, ensuring it's always present
                     finalInputs.portfolio_id = validPortfolioId;
                 }
 
-                console.log(`Executing pattern ${pattern} with inputs:`, finalInputs);
+                if (Logger) {
+                    Logger.debug(`Executing pattern ${pattern} with inputs:`, finalInputs);
+                } else {
+                    console.log(`Executing pattern ${pattern} with inputs:`, finalInputs);
+                }
 
                 // Execute pattern
                 const result = await apiClient.executePattern(pattern, finalInputs);
 
-                console.log(`Pattern ${pattern} execution result:`, result);
+                if (Logger) {
+                    Logger.debug(`Pattern ${pattern} execution result:`, result);
+                } else {
+                    console.log(`Pattern ${pattern} execution result:`, result);
+                }
 
                 // Get pattern metadata
                 const metadata = patternRegistry[pattern];
@@ -790,7 +814,11 @@
                     onDataLoaded(dataResult);
                 }
             } catch (err) {
-                console.error(`Error loading pattern ${pattern}:`, err);
+                if (Logger) {
+                    Logger.error(`Error loading pattern ${pattern}:`, err);
+                } else {
+                    console.error(`Error loading pattern ${pattern}:`, err);
+                }
                 const errorMessage = err.message || 'Failed to load pattern';
                 setError(errorMessage);
                 setLoading(false);
@@ -1138,7 +1166,11 @@
             isInitialized: true
     };
 
-        console.log('[PatternSystem] Module fully initialized');
+        if (Logger) {
+            Logger.checkpoint('[PatternSystem] Module fully initialized');
+        } else {
+            console.log('[PatternSystem] Module fully initialized');
+        }
         
         // Register module with validator when ready (with retry logic)
         function registerPatternSystemModule() {
@@ -1147,7 +1179,11 @@
             }
             try {
                 global.DawsOS.ModuleValidator.validate('pattern-system.js');
-                console.log('[PatternSystem] Module validated');
+                if (Logger) {
+                    Logger.checkpoint('[PatternSystem] Module validated');
+                } else {
+                    console.log('[PatternSystem] Module validated');
+                }
                 return true;
             } catch (e) {
                 return false;
@@ -1165,7 +1201,11 @@
             if (validationAttempts < maxValidationAttempts) {
                 setTimeout(tryRegisterPatternSystemModule, 50);
             } else {
-                console.warn('[PatternSystem] Failed to validate after', maxValidationAttempts, 'attempts');
+                if (Logger) {
+                    Logger.warn('[PatternSystem] Failed to validate after', maxValidationAttempts, 'attempts');
+                } else {
+                    console.warn('[PatternSystem] Failed to validate after', maxValidationAttempts, 'attempts');
+                }
             }
         }
         tryRegisterPatternSystemModule();
