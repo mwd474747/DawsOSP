@@ -2,6 +2,7 @@
 """Run the DawsOS backend API server."""
 import uvicorn
 import os
+from app.core.constants.network import DEFAULT_API_PORT, ALL_INTERFACES
 
 if __name__ == "__main__":
     # Ensure database URL is available
@@ -11,8 +12,8 @@ if __name__ == "__main__":
     # Run the FastAPI application
     uvicorn.run(
         "app.api.executor:app",
-        host="0.0.0.0",
-        port=8000,
+        host=ALL_INTERFACES,
+        port=DEFAULT_API_PORT,
         reload=True,
         log_level="info"
     )

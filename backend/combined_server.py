@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 
 from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
+from app.core.constants.network import DEFAULT_COMBINED_SERVER_PORT
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware
@@ -242,7 +243,7 @@ if __name__ == "__main__":
     import uvicorn
     import os
 
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", DEFAULT_COMBINED_SERVER_PORT))
 
     print("=" * 80)
     print(f"Starting DawsOS Combined Server on port {port}")
