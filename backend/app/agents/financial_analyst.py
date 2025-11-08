@@ -1578,19 +1578,19 @@ class FinancialAnalyst(BaseAgent):
             
             if cycles_service:
                 if stdc is None:
-                stdc_obj = await cycles_service.detect_stdc_phase()
-                stdc = {
-                    "phase": stdc_obj.phase,
-                    "phase_label": stdc_obj.phase,
-                    "score": float(stdc_obj.composite_score),
-                }
-            if ltdc is None:
-                ltdc_obj = await cycles_service.detect_ltdc_phase()
-                ltdc = {
-                    "phase": ltdc_obj.phase,
-                    "phase_label": ltdc_obj.phase,
-                    "score": float(ltdc_obj.composite_score),
-                }
+                    stdc_obj = await cycles_service.detect_stdc_phase()
+                    stdc = {
+                        "phase": stdc_obj.phase,
+                        "phase_label": stdc_obj.phase,
+                        "score": float(stdc_obj.composite_score),
+                    }
+                if ltdc is None:
+                    ltdc_obj = await cycles_service.detect_ltdc_phase()
+                    ltdc = {
+                        "phase": ltdc_obj.phase,
+                        "phase_label": ltdc_obj.phase,
+                        "score": float(ltdc_obj.composite_score),
+                    }
 
         # Extract phase information
         stdc_phase = stdc.get("phase") or stdc.get("phase_label", "Unknown")

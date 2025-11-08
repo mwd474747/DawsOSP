@@ -206,6 +206,7 @@ def initialize_services(
             "optimizer_service": container.resolve("optimizer"),
             "ratings_service": container.resolve("ratings"),
             "currency_attribution_service": container.resolve("currency_attribution"),
+            "cycles_service": container.resolve("cycles"),  # For cycle phase detection
         }
         return FinancialAnalyst("financial_analyst", services)
     
