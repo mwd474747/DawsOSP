@@ -38,7 +38,7 @@ from pydantic import BaseModel, Field
 from app.db.connection import get_db_connection_with_rls
 from app.services.notifications import NotificationService
 from app.middleware.auth_middleware import verify_token
-from app.services.auth import get_auth_service
+from app.services.auth import AuthService
 
 logger = logging.getLogger("DawsOS.API.Notifications")
 

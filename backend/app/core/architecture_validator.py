@@ -28,8 +28,8 @@ def validate_no_singleton_factories(root_dir: str = "backend/app") -> List[Tuple
     violations = []
     
     for root, dirs, files in os.walk(root_dir):
-        # Skip test files
-        if "test" in root or "__pycache__" in root:
+        # Skip test files and cache directories
+        if "test" in root or "__pycache__" in root or "tests" in root:
             continue
             
         for file in files:
@@ -47,6 +47,12 @@ def validate_no_singleton_factories(root_dir: str = "backend/app") -> List[Tuple
                         # Check for get_*_service or get_*_agent patterns
                         if (node.name.startswith("get_") and 
                             (node.name.endswith("_service") or node.name.endswith("_agent"))):
+                            # Skip DI container accessors (acceptable patterns)
+                            if node.name in ["get_agent_runtime", "get_pattern_orchestrator"]:
+                                continue
+                            # Skip helper methods (acceptable patterns)
+                            if node.name == "get_agent":  # Helper method in AgentRuntime
+                                continue
                             # Skip if it's a comment explaining removal
                             # Check if function body is just a comment/docstring
                             violations.append((file_path, node.name, node.lineno))
@@ -67,7 +73,8 @@ def validate_imports_use_classes(root_dir: str = "backend") -> List[Tuple[str, s
     violations = []
     
     for root, dirs, files in os.walk(root_dir):
-        if "test" in root or "__pycache__" in root:
+        # Skip test files and cache directories
+        if "test" in root or "__pycache__" in root or "tests" in root:
             continue
             
         for file in files:
@@ -88,6 +95,18 @@ def validate_imports_use_classes(root_dir: str = "backend") -> List[Tuple[str, s
                             continue
                         # Skip if it's in a migration comment
                         if "Migration:" in line or "OLD:" in line or "DEPRECATED" in line:
+                            continue
+                        # Skip DI container accessors (acceptable patterns)
+                        if "get_agent_runtime" in line or "get_pattern_orchestrator" in line:
+                            continue
+                        # Skip helper methods (acceptable patterns)
+                        if "get_agent" in line and "get_agent(" not in line:  # Import, not call
+                            continue
+                        # Skip test files (acceptable for tests to use old patterns temporarily)
+                        if "test" in file_path.lower() or file_path.endswith("_test.py"):
+                            continue
+                        # Skip this validator file itself (it checks for these patterns)
+                        if "architecture_validator" in file_path:
                             continue
                         violations.append((file_path, line.strip(), i))
                         

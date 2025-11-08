@@ -14,9 +14,9 @@ Architecture:
     - Account lockout and security features
 
 Usage:
-    from app.services.auth import get_auth_service
+    from app.services.auth import AuthService
 
-    auth_service = get_auth_service()
+    auth_service = AuthService()
 
     # Register user
     user_data = await auth_service.register_user(

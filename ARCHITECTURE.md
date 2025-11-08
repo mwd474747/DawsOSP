@@ -685,10 +685,10 @@ Centralized JSON-based configuration for ~40 macro economic indicators used in c
 ### Usage
 
 ```python
-from app.services.indicator_config import get_config_manager
+from app.services.indicator_config import IndicatorConfigManager
 
-# Get configuration manager
-config_manager = get_config_manager()
+# Get configuration manager (direct instantiation - stateless, no parameters needed)
+config_manager = IndicatorConfigManager()
 
 # Get indicator value
 gdp_growth = config_manager.get_indicator("gdp_growth")
@@ -699,6 +699,8 @@ gdp_metadata = config_manager.get_indicator("gdp_growth", with_metadata=True)
 # Apply scenario
 recession_indicators = config_manager.get_scenario_indicators("recession_scenario")
 ```
+
+**Note:** `IndicatorConfigManager` is stateless and can be instantiated directly. It's also registered in the DI container and can be accessed via `container.resolve("indicator_config")` if needed.
 
 ### Files
 
