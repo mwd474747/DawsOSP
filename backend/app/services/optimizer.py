@@ -90,10 +90,10 @@ from app.core.constants.scenarios import (
     DEFAULT_MAX_SECTOR_PCT,
     DEFAULT_MAX_TRACKING_ERROR_PCT,
     DEFAULT_MAX_TURNOVER_PCT,
-    DEFAULT_OPTIMIZATION_RISK_FREE_RATE,
     DEFAULT_OPTIMIZATION_LOOKBACK_DAYS,
     METHOD_MEAN_VARIANCE,
 )
+from app.core.constants import get_risk_free_rate  # Dynamic risk-free rate from FRED
 
 logger = logging.getLogger("DawsOS.OptimizerService")
 
@@ -128,7 +128,7 @@ class PolicyConstraints:
 
     # Optimization method
     method: str = METHOD_MEAN_VARIANCE  # mean_variance, risk_parity, max_sharpe, cvar
-    risk_free_rate: float = DEFAULT_OPTIMIZATION_RISK_FREE_RATE  # Risk-free rate (annual)
+    risk_free_rate: float  # Risk-free rate (annual) - fetched from FRED or policy override
 
     # Historical lookback
     lookback_days: int = DEFAULT_OPTIMIZATION_LOOKBACK_DAYS  # Trading days for covariance estimation
@@ -290,10 +290,29 @@ class OptimizerService:
                 logger.error(f"Programming error initializing database connections: {e}", exc_info=True)
                 raise
             except Exception as e:
-                # Connection/configuration errors - log and fall back to stub mode
-                logger.warning(f"Failed to initialize database connections: {e}. Falling back to stub mode.")
-                # Don't raise DatabaseError here - graceful degradation is intentional
-                self.use_db = False
+                # Connection/configuration errors - check environment
+                import os
+                environment = os.getenv("ENVIRONMENT", "development")
+                
+                if environment == "production":
+                    # In production, fail fast - don't mask database issues
+                    logger.error(
+                        f"Failed to initialize database connections in production: {e}. "
+                        f"This is a critical error and cannot fall back to stub mode.",
+                        exc_info=True
+                    )
+                    from app.core.exceptions import DatabaseError
+                    raise DatabaseError(
+                        f"Failed to initialize database connections: {e}. "
+                        f"Stub mode is not available in production."
+                    ) from e
+                else:
+                    # In development/testing, allow graceful degradation
+                    logger.warning(
+                        f"Failed to initialize database connections: {e}. "
+                        f"Falling back to stub mode (environment: {environment})."
+                    )
+                    self.use_db = False
         else:
             # Use mock methods for testing
             self.execute_query = self._mock_execute_query
@@ -469,8 +488,8 @@ class OptimizerService:
                 "constraints": policy_json
             }
 
-        # Parse policy constraints
-        policy = self._parse_policy(policy_json)
+        # Parse policy constraints (fetches live risk-free rate from FRED)
+        policy = await self._parse_policy(policy_json)
 
         # Get current positions - use caller-supplied or fetch from DB
         if positions is not None and not use_db:
@@ -968,8 +987,22 @@ class OptimizerService:
     # Private Helper Methods
     # ========================================================================
 
-    def _parse_policy(self, policy_json: Dict[str, Any]) -> PolicyConstraints:
-        """Parse policy JSON into PolicyConstraints dataclass."""
+    async def _parse_policy(self, policy_json: Dict[str, Any]) -> PolicyConstraints:
+        """
+        Parse policy JSON into PolicyConstraints dataclass.
+
+        Fetches current risk-free rate from FRED (DGS10) unless overridden in policy.
+        """
+        # Fetch current risk-free rate from FRED (10Y Treasury)
+        # Policy can override by providing "risk_free_rate" in JSON
+        if "risk_free_rate" in policy_json:
+            rf_rate = float(policy_json["risk_free_rate"])
+            logger.info(f"Using policy-specified risk-free rate: {rf_rate:.4f}")
+        else:
+            rf_rate_decimal = await get_risk_free_rate()
+            rf_rate = float(rf_rate_decimal)
+            logger.info(f"Using live risk-free rate from FRED: {rf_rate:.4f}")
+
         return PolicyConstraints(
             min_quality_score=float(policy_json.get("min_quality_score", 0.0)),
             max_single_position_pct=float(policy_json.get("max_single_position_pct", 20.0)),
@@ -981,7 +1014,7 @@ class OptimizerService:
             commission_per_trade=float(policy_json.get("commission_per_trade", 5.00)),
             market_impact_bps=float(policy_json.get("market_impact_bps", 15.0)),
             method=policy_json.get("method", "mean_variance"),
-            risk_free_rate=float(policy_json.get("risk_free_rate", 0.02)),
+            risk_free_rate=rf_rate,  # From FRED or policy override
             lookback_days=int(policy_json.get("lookback_days", 252)),
         )
 

@@ -539,12 +539,17 @@ class AlertService:
         Evaluate portfolio metric condition.
 
         Example:
-            {"type": "metric", "portfolio_id": "xxx", "metric": "max_drawdown_1y", "op": ">", "value": 0.15}
+            {"type": "metric", "portfolio_id": "portfolio-uuid-here", "metric": "max_drawdown_1y", "op": ">", "value": 0.15}
         """
         value = await self._get_metric_value(condition, ctx)
 
         if value is None:
-            logger.warning(f"Metric value not available: {condition}")
+            # Log detailed context about why value is None
+            logger.warning(
+                f"Metric value not available for condition: {condition}. "
+                f"This may indicate missing data, calculation error, or database issue. "
+                f"Check portfolio_id={condition.get('portfolio_id')}, metric={condition.get('metric')}"
+            )
             return False
 
         threshold = Decimal(str(condition.get("value", 0)))
@@ -620,12 +625,18 @@ class AlertService:
         Evaluate security rating condition.
 
         Example:
-            {"type": "rating", "portfolio_id": "xxx", "symbol": "AAPL", "metric": "dividend_safety", "op": "<", "value": 6}
+            {"type": "rating", "portfolio_id": "portfolio-uuid-here", "symbol": "AAPL", "metric": "dividend_safety", "op": "<", "value": 6}
         """
         value = await self._get_rating_value(condition, ctx)
 
         if value is None:
-            logger.warning(f"Rating value not available: {condition}")
+            # Log detailed context about why value is None
+            logger.warning(
+                f"Rating value not available for condition: {condition}. "
+                f"This may indicate missing data, calculation error, or database issue. "
+                f"Check portfolio_id={condition.get('portfolio_id')}, symbol={condition.get('symbol')}, "
+                f"metric={condition.get('metric')}"
+            )
             return False
 
         threshold = Decimal(str(condition.get("value", 0)))
@@ -955,7 +966,7 @@ class AlertService:
         Example:
             {
                 "type": "dar_breach",
-                "portfolio_id": "xxx",
+                "portfolio_id": "portfolio-uuid-here",
                 "threshold": 0.15,  # 15%
                 "confidence": 0.95,  # 95%
                 "horizon_days": 30
@@ -1058,7 +1069,7 @@ class AlertService:
         Example:
             {
                 "type": "drawdown_limit",
-                "portfolio_id": "xxx",
+                "portfolio_id": "portfolio-uuid-here",
                 "limit": 0.20  # 20%
             }
         """

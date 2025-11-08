@@ -21,7 +21,7 @@ Email Configuration:
     SMTP_HOST=smtp.gmail.com
     SMTP_PORT=587
     SMTP_USER=alerts@dawsos.com
-    SMTP_PASSWORD=xxx
+    SMTP_PASSWORD=your-smtp-password-here
     SMTP_FROM=DawsOS Alerts <alerts@dawsos.com>
 
     Or use AWS SES:
@@ -35,8 +35,8 @@ Usage:
 
     # Send notification
     await notif_svc.send_notification(
-        user_id="xxx",
-        alert_id="yyy",
+        user_id="user-uuid-here",
+        alert_id="alert-uuid-here",
         message="VIX exceeded 30 (current: 32.5)",
         channels={"email": True, "inapp": True}
     )

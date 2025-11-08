@@ -31,8 +31,8 @@ Usage:
 
     # Push failed job to DLQ
     await dlq_svc.push_to_dlq(
-        alert_id="xxx",
-        user_id="yyy",
+        alert_id="alert-uuid-here",
+        user_id="user-uuid-here",
         payload={"message": "...", "channels": {"email": True}},
         error="SMTP connection timeout"
     )

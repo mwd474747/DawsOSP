@@ -225,7 +225,7 @@ def validate_metric_condition(condition: Dict[str, Any]) -> Tuple[bool, List[str
     Example:
         {
             "type": "metric",
-            "portfolio_id": "xxx",
+            "portfolio_id": "portfolio-uuid-here",
             "metric": "max_drawdown_1y",
             "op": ">",
             "value": 0.15
@@ -280,7 +280,7 @@ def validate_rating_condition(condition: Dict[str, Any]) -> Tuple[bool, List[str
     Example:
         {
             "type": "rating",
-            "portfolio_id": "xxx",
+            "portfolio_id": "portfolio-uuid-here",
             "symbol": "AAPL",
             "metric": "dividend_safety",
             "op": "<",
