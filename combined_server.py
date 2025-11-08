@@ -3980,7 +3980,14 @@ async def ai_chat(request: AIChatRequest, user: dict = Depends(require_auth)):
                 
                 if claude_agent:
                     # Create a minimal context
-                    from backend.app.core.types import RequestCtx
+                    # Guardrail: RequestCtx is critical - check availability before use
+                    if not REQUEST_CTX_AVAILABLE:
+                        logger.error("CRITICAL: RequestCtx not available - cannot create request context for AI chat")
+                        raise HTTPException(
+                            status_code=500,
+                            detail="RequestCtx not available - server configuration error"
+                        )
+                    
                     ctx = RequestCtx(
                         trace_id=str(uuid4()),
                         request_id=str(uuid4()),
