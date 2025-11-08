@@ -8,10 +8,16 @@
 
 DawsOS is an AI-powered portfolio management platform built on a **pattern-driven agent orchestration architecture**. The system uses specialized agents that provide capabilities, which are composed into executable patterns defined in JSON.
 
-**Production Stack**:
-- **Server**: `combined_server.py` - Single FastAPI application (6,043 lines, 59 functional endpoints)
-- **UI**: `full_ui.html` - React 18 SPA (11,594 lines, 20 pages including login, no build step)
+**Production Stack** (Updated Nov 8, 2025):
+- **Server**: Hybrid architecture
+  - `combined_server.py` (root) - Production entry point (6,718 lines)
+  - Imports modular services from `backend/app/` (agents, services, routers)
+- **UI**: Hybrid architecture (modular JavaScript)
+  - `full_ui.html` - HTML shell (2,216 lines) loading modular JS
+  - `frontend/*.js` - Modular JavaScript (9,984 lines total)
+    - 20 page components, 13 panel components, pattern system, utilities
 - **Database**: PostgreSQL 14+ with TimescaleDB extension
+  - Single migration system (root `migrations/` folder)
 - **Agents**: 4 specialized agents providing 72 capabilities
   - **Note:** Phase 3 consolidation complete (November 3, 2025) - 9 agents → 4 agents
 - **Patterns**: 15 pattern definitions for business workflows
@@ -228,13 +234,53 @@ ratings_service = RatingsService(db_pool=db_pool)
 **Authentication:**
 17. Login - JWT authentication
 
-**Pattern Registry:** 15 patterns defined in `full_ui.html` patternRegistry (lines 2784-3117)
+**Pattern Registry:** 15 patterns defined in `frontend/pattern-system.js`
 
 **Technology**:
 - React 18.2.0 (UMD build)
 - Chart.js 4.4.0 for visualizations
 - IBM Plex Sans/Mono fonts
 - Professional dark theme (#1a1a1a background)
+
+**Architecture** (Updated Nov 7-8, 2025):
+
+The frontend uses a **hybrid architecture** with modular JavaScript:
+
+```
+Frontend Architecture
+├── full_ui.html (2,216 lines) - HTML shell
+│   └── Loads modular JavaScript via <script> tags
+└── frontend/ (9,984 lines modular JS)
+    ├── version.js - DawsOS namespace initialization
+    ├── logger.js - Logging (DawsOS.Logger)
+    ├── api-client.js (403 lines) - API client (DawsOS.APIClient)
+    ├── utils.js (571 lines) - Utilities (DawsOS.Utils)
+    ├── panels.js (907 lines) - 13 UI panels (DawsOS.Panels)
+    ├── context.js - React context (DawsOS.Context)
+    ├── pattern-system.js (~1,500 lines) - Pattern orchestration
+    ├── pages.js (4,553 lines) - 20 page components (DawsOS.Pages)
+    ├── namespace-validator.js - Namespace validation
+    ├── error-handler.js, form-validator.js, cache-manager.js
+    ├── module-dependencies.js - Dependency tracking
+    └── styles.css - Styles
+```
+
+**Module Load Order** (Critical - see [frontend/MODULE_LOAD_ORDER.md](frontend/MODULE_LOAD_ORDER.md)):
+1. Foundation: version.js, logger.js
+2. Utilities: api-client.js, utils.js, error-handler.js
+3. Components: panels.js
+4. State: context.js
+5. Orchestration: pattern-system.js
+6. Pages: pages.js
+7. Validation: namespace-validator.js
+
+**Why This Approach**:
+- ✅ No build step (fast iteration)
+- ✅ Modular code (easier to maintain)
+- ✅ Works in all browsers (no transpilation)
+- ⚠️ Module load order dependencies (must load in specific order)
+
+**History**: Modularized Nov 7, 2025 (Phase 1) from single 11,892-line monolith
 
 ### 5. Database Layer
 
@@ -247,7 +293,41 @@ ratings_service = RatingsService(db_pool=db_pool)
 - `004_auth.sql` - User authentication
 - `006_alerts.sql` - Alert system
 
-**Note:** Schema file `005_audit.sql` was removed as part of Migration 003 (November 4, 2025) along with the `audit_log` table.
+**Migration System** (Updated Nov 8, 2025):
+
+DawsOS uses a **single migration system** in the root `migrations/` folder:
+
+```
+Database Migrations
+├── migrations/ (ROOT - PRODUCTION)
+│   ├── 001_initial.sql ✅ Applied
+│   ├── 002_*.sql ✅ Applied
+│   ├── 003_*.sql ✅ Applied (deleted audit_log - see below)
+│   ├── ...
+│   ├── 009_*.sql ✅ Applied
+│   └── 010_restore_audit_log.sql (Nov 8, 2025) - Restores audit_log
+│
+└── backend/db/migrations_ORPHANED_OCT23_NOV8/ (ARCHIVED)
+    ├── 005-022 (18 migrations) ❌ Never applied
+    ├── Created: Oct 23 - Nov 8, 2025
+    └── See README.md for details
+```
+
+**The Audit Log Paradox** (Resolved Nov 8, 2025):
+- **Oct 23, 2025**: Backend migration 010 creates `audit_log` (never applied)
+- **Nov 4, 2025**: Root migration 003 deletes `audit_log` ("never implemented")
+- **Result**: Code expects `audit_log`, but table doesn't exist
+- **Impact**: 50-100 errors/day (auth logging, audit service, reports broken)
+- **Resolution**: Created `migrations/010_restore_audit_log.sql` to restore table
+
+**Field Naming Standards** (Verified Nov 8, 2025):
+- ✅ `transaction_date` (NOT `trade_date`) in `transactions` table
+- ✅ `transaction_type` (NOT `action`) in `transactions` table
+- ✅ `realized_pl` (NOT `realized_pnl`) in `transactions` table
+- ✅ `flow_date` (NOT `trade_date`) in `portfolio_cash_flows` table
+- ✅ `debt_equity_ratio` (NOT `debt_to_equity`) in fundamentals
+
+**Source of Truth**: [DATABASE.md](DATABASE.md) Section 6 - Field Scaling and Format Conventions
 
 **Field Naming Standards (January 14, 2025):**
 - **Database Columns:** `quantity_open`, `quantity_original` (standardized from `qty_open`, `qty_original`)
@@ -272,8 +352,7 @@ ratings_service = RatingsService(db_pool=db_pool)
 - `transactions` - Trade history
 - `pricing_packs` - Market data snapshots
 - `users` - Authentication
-
-**Note:** The `audit_log` table was removed in Migration 003 (November 4, 2025) as it was never implemented.
+- `audit_log` - Audit trail (restored Nov 8, 2025 via migration 010)
 
 **Design Principles**:
 - UUID primary keys
