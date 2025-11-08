@@ -128,7 +128,7 @@
 
             function LoginPage({ onLogin }) {
                 const [email, setEmail] = useState('michael@dawsos.com');
-                const [password, setPassword] = useState('admin123');
+                const [password, setPassword] = useState('password123');
                 const [loading, setLoading] = useState(false);
                 const [error, setError] = useState(null);
                 const [fieldErrors, setFieldErrors] = useState({});
