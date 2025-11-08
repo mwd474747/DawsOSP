@@ -30,6 +30,12 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from app.core.types import ProviderTimeoutError, RequestCtx, RightsViolationError
+from app.core.constants.integration import (
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_RETRY_DELAY,
+    DEFAULT_HTTP_TIMEOUT,
+    DEFAULT_REQUEST_TIMEOUT,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +62,8 @@ class ProviderConfig:
     name: str
     base_url: str
     rate_limit_rpm: int
-    max_retries: int = 3
-    retry_base_delay: float = 1.0  # Base delay for exponential backoff
+    max_retries: int = DEFAULT_MAX_RETRIES
+    retry_base_delay: float = DEFAULT_RETRY_DELAY  # Base delay for exponential backoff
     rights: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -69,7 +75,7 @@ class ProviderRequest:
     params: Dict[str, Any]
     ctx: RequestCtx
     rights_check: Optional[str] = None  # e.g., "export_pdf"
-    timeout: float = 5.0
+    timeout: float = DEFAULT_REQUEST_TIMEOUT
 
 
 @dataclass(frozen=True)
@@ -269,7 +275,7 @@ class BaseProvider(ABC):
         url: str,
         params: Optional[Dict] = None,
         json_body: Optional[Dict] = None,
-        timeout: float = 30.0
+        timeout: float = DEFAULT_HTTP_TIMEOUT
     ) -> Any:
         """
         Make HTTP request with error handling.
@@ -281,7 +287,7 @@ class BaseProvider(ABC):
             url: Request URL
             params: Query parameters
             json_body: JSON request body
-            timeout: Request timeout in seconds (default: 30.0)
+            timeout: Request timeout in seconds (default: DEFAULT_HTTP_TIMEOUT)
 
         Returns:
             Response JSON data

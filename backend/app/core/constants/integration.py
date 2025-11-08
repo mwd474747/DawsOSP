@@ -34,6 +34,10 @@ DEFAULT_CONNECTION_TIMEOUT = 10
 # Time to wait for response after connection
 DEFAULT_READ_TIMEOUT = 30
 
+# Request timeout (seconds)
+# Short timeout for fast operations
+DEFAULT_REQUEST_TIMEOUT = 5.0
+
 # =============================================================================
 # RETRY CONFIGURATION
 # =============================================================================
@@ -79,9 +83,11 @@ FMP_RATE_LIMIT_WINDOW = 60
 POLYGON_RATE_LIMIT_REQUESTS = 100  # Requests per minute (conservative)
 POLYGON_RATE_LIMIT_WINDOW = 60  # Per minute
 
-# NewsAPI rate limits (free tier)
-NEWS_API_RATE_LIMIT_REQUESTS = 100
-NEWS_API_RATE_LIMIT_WINDOW = 86400  # Per day
+# NewsAPI rate limits (tier-specific)
+# Source: https://newsapi.org/pricing
+NEWS_API_DEV_RATE_LIMIT = 30  # Dev tier: ~100 req/day ≈ 30 req/min
+NEWS_API_BUSINESS_RATE_LIMIT = 100  # Business tier: higher limits
+NEWS_API_RATE_LIMIT_WINDOW = 60  # Per minute
 
 # =============================================================================
 # DATA CACHING (UPDATED from Replit - 8 instances)
@@ -140,6 +146,7 @@ __all__ = [
     "NEWS_API_TIMEOUT",
     "DEFAULT_CONNECTION_TIMEOUT",
     "DEFAULT_READ_TIMEOUT",
+    "DEFAULT_REQUEST_TIMEOUT",
     # Retry configuration
     "DEFAULT_MAX_RETRIES",
     "DEFAULT_RETRY_DELAY",
@@ -155,7 +162,8 @@ __all__ = [
     "FMP_RATE_LIMIT_WINDOW",
     "POLYGON_RATE_LIMIT_REQUESTS",
     "POLYGON_RATE_LIMIT_WINDOW",
-    "NEWS_API_RATE_LIMIT_REQUESTS",
+    "NEWS_API_DEV_RATE_LIMIT",
+    "NEWS_API_BUSINESS_RATE_LIMIT",
     "NEWS_API_RATE_LIMIT_WINDOW",
     # Caching
     "CACHE_TTL_REALTIME",

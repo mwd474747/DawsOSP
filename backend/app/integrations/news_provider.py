@@ -34,6 +34,12 @@ from datetime import datetime, date, timedelta
 
 from .base_provider import BaseProvider, ProviderConfig, ProviderError, ProviderRequest, ProviderResponse
 from .rate_limiter import rate_limit
+from app.core.constants.integration import (
+    NEWS_API_DEV_RATE_LIMIT,
+    NEWS_API_BUSINESS_RATE_LIMIT,
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_RETRY_DELAY,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,10 +65,10 @@ class NewsAPIProvider(BaseProvider):
         """
         # Tier-specific configuration
         if tier == "dev":
-            rate_limit_rpm = 30  # Dev tier: 100 req/day ≈ 30 req/min
+            rate_limit_rpm = NEWS_API_DEV_RATE_LIMIT  # From NewsAPI documentation
             export_allowed = False
         elif tier == "business":
-            rate_limit_rpm = 100  # Business tier: higher limits
+            rate_limit_rpm = NEWS_API_BUSINESS_RATE_LIMIT  # From NewsAPI documentation
             export_allowed = True
         else:
             raise ValueError(f"Invalid tier: {tier}. Must be 'dev' or 'business'")
@@ -71,8 +77,8 @@ class NewsAPIProvider(BaseProvider):
             name=f"NewsAPI-{tier}",
             base_url=base_url,
             rate_limit_rpm=rate_limit_rpm,
-            max_retries=3,
-            retry_base_delay=1.0,
+            max_retries=DEFAULT_MAX_RETRIES,
+            retry_base_delay=DEFAULT_RETRY_DELAY,
             rights={
                 "export_pdf": export_allowed,
                 "export_csv": export_allowed,
