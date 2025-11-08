@@ -1116,6 +1116,130 @@ async def test_pool_access():
 
     return results
 
+@app.get("/api/db-health")
+async def database_health_check():
+    """
+    Comprehensive database health check endpoint for debugging.
+    Returns detailed information about database connectivity, schema, and pool status.
+    """
+    health_report = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "status": "checking",
+        "connection": {},
+        "pool": {},
+        "schema": {},
+        "environment": {},
+        "diagnostics": []
+    }
+    
+    # Check 1: Environment Variables
+    health_report["environment"] = {
+        "DATABASE_URL": bool(os.environ.get("DATABASE_URL")),
+        "PGHOST": bool(os.environ.get("PGHOST")),
+        "PGUSER": bool(os.environ.get("PGUSER")),
+        "PGDATABASE": bool(os.environ.get("PGDATABASE")),
+        "PGPORT": bool(os.environ.get("PGPORT"))
+    }
+    
+    # Check 2: Pool Status
+    if db_pool:
+        health_report["pool"]["exists"] = True
+        health_report["pool"]["status"] = "initialized"
+        health_report["pool"]["type"] = str(type(db_pool))
+        
+        # Test basic connectivity
+        try:
+            async with db_pool.acquire() as conn:
+                # Test basic query
+                result = await conn.fetchval("SELECT 1")
+                health_report["connection"]["basic_query"] = "success"
+                
+                # Get database version
+                version = await conn.fetchval("SELECT version()")
+                health_report["connection"]["database_version"] = version
+                
+                # Check TimescaleDB
+                try:
+                    timescale = await conn.fetchval(
+                        "SELECT installed_version FROM pg_extension WHERE extname = 'timescaledb'"
+                    )
+                    health_report["connection"]["timescaledb"] = timescale or "not_installed"
+                except:
+                    health_report["connection"]["timescaledb"] = "check_failed"
+                
+                # Check critical tables exist
+                tables_query = """
+                    SELECT tablename 
+                    FROM pg_tables 
+                    WHERE schemaname = 'public' 
+                    AND tablename IN (
+                        'portfolios', 'securities', 'transactions', 
+                        'lots', 'pricing_packs', 'price_entries',
+                        'portfolio_metrics', 'users'
+                    )
+                    ORDER BY tablename;
+                """
+                tables = await conn.fetch(tables_query)
+                health_report["schema"]["tables"] = [row["tablename"] for row in tables]
+                health_report["schema"]["table_count"] = len(tables)
+                
+                # Check if tables have data
+                for table in ['portfolios', 'securities', 'transactions']:
+                    try:
+                        count = await conn.fetchval(f"SELECT COUNT(*) FROM {table}")
+                        health_report["schema"][f"{table}_count"] = count
+                    except Exception as e:
+                        health_report["schema"][f"{table}_count"] = f"error: {str(e)}"
+                
+                # Check pool statistics
+                pool_stats = db_pool.get_stats() if hasattr(db_pool, 'get_stats') else {}
+                health_report["pool"]["stats"] = {
+                    "size": pool_stats.get("size", "unknown"),
+                    "free": pool_stats.get("free", "unknown"),
+                    "used": pool_stats.get("used", "unknown"),
+                    "waiting": pool_stats.get("waiting", "unknown")
+                }
+                
+                health_report["status"] = "healthy"
+                health_report["diagnostics"].append("✅ Database connection successful")
+                
+        except Exception as e:
+            health_report["connection"]["error"] = str(e)
+            health_report["status"] = "unhealthy"
+            health_report["diagnostics"].append(f"❌ Connection failed: {str(e)}")
+            logger.error(f"Database health check failed: {e}", exc_info=True)
+    else:
+        health_report["pool"]["exists"] = False
+        health_report["status"] = "unhealthy"
+        health_report["diagnostics"].append("❌ Database pool not initialized")
+        
+        # Try to diagnose why
+        if not os.environ.get("DATABASE_URL"):
+            health_report["diagnostics"].append("❌ DATABASE_URL environment variable not set")
+        else:
+            health_report["diagnostics"].append("⚠️ DATABASE_URL exists but pool not created")
+    
+    # Check 3: Backend module integration
+    try:
+        from backend.app.db.connection import get_db_pool
+        backend_pool = get_db_pool()
+        if backend_pool:
+            health_report["pool"]["backend_module"] = "accessible"
+            health_report["pool"]["pools_match"] = (backend_pool == db_pool)
+        else:
+            health_report["pool"]["backend_module"] = "no_pool"
+    except Exception as e:
+        health_report["pool"]["backend_module"] = f"error: {str(e)}"
+        health_report["diagnostics"].append(f"⚠️ Backend module pool issue: {str(e)}")
+    
+    # Overall assessment
+    if health_report["status"] == "healthy":
+        health_report["summary"] = "✅ Database fully operational"
+    else:
+        health_report["summary"] = "❌ Database issues detected - check diagnostics"
+    
+    return health_report
+
 @app.post("/api/patterns/execute", response_model=SuccessResponse)
 async def execute_pattern(request: ExecuteRequest, user: dict = Depends(require_auth)):
     """
