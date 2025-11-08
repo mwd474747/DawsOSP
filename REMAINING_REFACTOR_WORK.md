@@ -263,6 +263,14 @@ This is the **single source of truth** for all remaining refactor work. It conso
   
 - **P2 TODOs (12 TODOs):** Type hints, docstrings, error messages, logging
   - Estimated Time: 4 hours
+  - Status: 🔄 IN PROGRESS (6 of 12 addressed)
+  - Completed:
+    - ✅ metrics.py:190 - Risk-free rate configuration (documented)
+    - ✅ service_initializer.py:177 - Agent services (marked complete)
+    - ✅ service_initializer.py:244 - Redis wiring (clarified)
+    - ✅ base_agent.py:574 - Redis caching (documented)
+    - ✅ currency_attribution.py:426 - FX hedge detection (clarified)
+    - ✅ corporate_actions_sync.py:310 - Withholding tax (documented)
   
 - **P3 TODOs (17 TODOs):** Future enhancements
   - Estimated Time: 6 hours

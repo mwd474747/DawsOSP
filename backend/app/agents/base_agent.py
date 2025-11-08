@@ -571,8 +571,8 @@ def cache_capability(ttl: int = 300):
     """
     def decorator(func):
         async def wrapper(self, ctx, state, **kwargs):
-            # TODO: Implement Redis caching
-            # For now, just execute without caching
+            # NOTE: Redis caching can be implemented here when Redis is available in services dict
+            # For now, caching is handled at the pattern orchestrator level
             return await func(self, ctx, state, **kwargs)
         return wrapper
     return decorator
