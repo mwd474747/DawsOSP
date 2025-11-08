@@ -156,9 +156,10 @@ class ContinuousAggregateManager:
         """Get refresh policy for a continuous aggregate."""
         query = """
             SELECT
-                schedule_interval,
-                config->>'start_offset' as start_offset,
-                config->>'end_offset' as end_offset
+                j.schedule_interval,
+                j.config->>'start_offset' as start_offset,
+                j.config->>'end_offset' as end_offset,
+                j.enabled
             FROM timescaledb_information.jobs j
             JOIN timescaledb_information.continuous_aggregates ca
                 ON ca.materialization_hypertable_name =
@@ -172,12 +173,15 @@ class ContinuousAggregateManager:
         if not row:
             return None
 
+        # Get enabled status from job (default to True if not found)
+        enabled = row.get("enabled", True) if row.get("enabled") is not None else True
+
         return RefreshPolicy(
             view_name=view_name,
             schedule_interval=row["schedule_interval"],
             start_offset=self._parse_interval(row["start_offset"]),
             end_offset=self._parse_interval(row["end_offset"]),
-            enabled=True,  # TODO: Check if job is enabled
+            enabled=enabled,
         )
 
     async def _get_aggregate_size(self, view_name: str) -> Dict[str, Any]:
