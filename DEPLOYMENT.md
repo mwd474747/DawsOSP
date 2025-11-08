@@ -1,8 +1,10 @@
 # DawsOS Deployment Guide
 
+**⚠️ HISTORICAL DOCUMENT**  
 **Last Updated:** January 14, 2025  
 **CI/CD:** Handled by Replit (GitHub Actions workflows archived - see `.archive/ci-cd/`)  
-**Status:** ✅ Production Ready
+**Status:** ✅ COMPLETE (Historical)  
+**Note:** This is a historical progress document. Numbers may be outdated. See [ARCHITECTURE.md](../ARCHITECTURE.md) for current specifications.
 
 ---
 

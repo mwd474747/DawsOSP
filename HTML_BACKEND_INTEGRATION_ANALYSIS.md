@@ -93,7 +93,7 @@
 │                    combined_server.py (6,043 lines)              │
 ├─────────────────────────────────────────────────────────────────┤
 │  FastAPI Server:                                                 │
-│  ├── 53 functional endpoints                                     │
+│  ├── 59 functional endpoints                                     │
 │  ├── JWT authentication                                          │
 │  ├── Pattern orchestration endpoint (/api/patterns/execute)     │
 │  └── CORS middleware                                             │

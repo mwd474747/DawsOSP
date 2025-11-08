@@ -9,12 +9,12 @@
 DawsOS is an AI-powered portfolio management platform built on a **pattern-driven agent orchestration architecture**. The system uses specialized agents that provide capabilities, which are composed into executable patterns defined in JSON.
 
 **Production Stack**:
-- **Server**: `combined_server.py` - Single FastAPI application (6,043 lines, 53 functional endpoints)
-- **UI**: `full_ui.html` - React 18 SPA (11,594 lines, 18 pages including login, no build step)
+- **Server**: `combined_server.py` - Single FastAPI application (6,043 lines, 59 functional endpoints)
+- **UI**: `full_ui.html` - React 18 SPA (11,594 lines, 20 pages including login, no build step)
 - **Database**: PostgreSQL 14+ with TimescaleDB extension
 - **Agents**: 4 specialized agents providing 72 capabilities
   - **Note:** Phase 3 consolidation complete (November 3, 2025) - 9 agents → 4 agents
-- **Patterns**: 13 pattern definitions for business workflows
+- **Patterns**: 15 pattern definitions for business workflows
 
 ---
 
@@ -157,7 +157,7 @@ ratings_service = RatingsService(db_pool=db_pool)
 - **Lifespan Management**: Async context managers for database pool and agent initialization
 - **Static File Serving**: Serves full_ui.html at root path
 
-**Key Endpoints** (53 functional endpoints):
+**Key Endpoints** (59 functional endpoints):
 - `GET /` - Serves full_ui.html
 - `POST /api/patterns/execute` - Execute pattern (main endpoint)
 - `POST /api/auth/login` - JWT authentication
@@ -187,7 +187,7 @@ ratings_service = RatingsService(db_pool=db_pool)
 - **Client-Side Routing**: Hash-based routing (#/dashboard, #/holdings, etc.)
 - **API Client**: Centralized [frontend/api-client.js](frontend/api-client.js) with caching
 
-**18 Pages** (organized by navigation sections):
+**20 Pages** (organized by navigation sections):
 
 **Portfolio Section (5 pages):**
 1. Dashboard (`/dashboard`) - Portfolio overview using `portfolio_overview` pattern
@@ -228,7 +228,7 @@ ratings_service = RatingsService(db_pool=db_pool)
 **Authentication:**
 17. Login - JWT authentication
 
-**Pattern Registry:** 13 patterns defined in `full_ui.html` patternRegistry (lines 2784-3117)
+**Pattern Registry:** 15 patterns defined in `full_ui.html` patternRegistry (lines 2784-3117)
 
 **Technology**:
 - React 18.2.0 (UMD build)

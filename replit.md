@@ -7,13 +7,13 @@ DawsOS is a production-ready portfolio management platform that combines financi
 **Key Characteristics:**
 - **Single-file deployment**: Both server (`combined_server.py`) and UI (`full_ui.html`) are monolithic files
 - **No build step**: React 18 SPA runs directly in browser using UMD builds
-- **Pattern-driven**: Business logic defined in 13 JSON pattern files
+- **Pattern-driven**: Business logic defined in 15 JSON pattern files
 - **Agent-based**: 4 specialized agents provide portfolio analysis, macro analysis, data harvesting, and AI insights
 - **Replit-optimized**: Designed for serverless PostgreSQL (Neon-backed) with automatic scaling
 
 **Current State:**
-- Production-ready with 53 functional endpoints
-- 18 complete UI pages including dashboard, analytics, and reporting
+- Production-ready with 59 functional endpoints
+- 20 complete UI pages including dashboard, analytics, and reporting
 - TimescaleDB-powered time-series analysis
 - JWT authentication with role-based access control
 
@@ -33,7 +33,7 @@ The application uses a declarative pattern system where business workflows are d
 Pattern Definition (JSON) → Template Substitution → Agent Capability Calls → Result Aggregation
 ```
 
-- **Pattern files**: 13 JSON files in `backend/patterns/` define multi-step workflows
+- **Pattern files**: 15 JSON files in `backend/patterns/` define multi-step workflows
 - **PatternOrchestrator**: Executes patterns by calling agent capabilities and substituting template variables
 - **Request Context (RequestCtx)**: Immutable context ensures reproducibility (pricing_pack_id, ledger_commit_hash, trace_id)
 - **Template system**: Dynamic values using `{{inputs.x}}`, `{{step_result}}`, `{{ctx.z}}`

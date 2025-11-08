@@ -27,6 +27,7 @@ Cleanup History:
 
 # Confidence levels (industry standard)
 # 95% = 1 in 20 days expected to exceed VaR (common for internal risk management)
+# Example: var = await calculator.compute_var(portfolio_id, pack_id, confidence=CONFIDENCE_LEVEL_95)
 CONFIDENCE_LEVEL_95 = 0.95
 
 # Lookback period for VaR calculation

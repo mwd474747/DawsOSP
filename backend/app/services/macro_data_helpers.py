@@ -31,6 +31,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Optional, List
 from app.db.connection import execute_query_one, execute_query
+from app.core.constants.financial import TRADING_DAYS_PER_YEAR
 
 logger = logging.getLogger("DawsOS.MacroDataHelpers")
 
@@ -174,7 +175,7 @@ async def get_latest_indicator_value(
 
 async def get_indicator_history(
     indicator_id: str,
-    lookback_days: int = 252,
+    lookback_days: int = TRADING_DAYS_PER_YEAR,
     as_of_date: Optional[date] = None
 ) -> List[dict]:
     """
@@ -182,7 +183,7 @@ async def get_indicator_history(
 
     Args:
         indicator_id: FRED series ID
-        lookback_days: Number of days to look back (default: 252 trading days)
+        lookback_days: Number of days to look back (default: TRADING_DAYS_PER_YEAR = 252)
         as_of_date: End date for history (default: today)
 
     Returns:
@@ -225,7 +226,7 @@ async def get_indicator_history(
 async def get_indicator_percentile(
     indicator_id: str,
     percentile: int,
-    lookback_days: int = 252,
+    lookback_days: int = TRADING_DAYS_PER_YEAR,
     as_of_date: Optional[date] = None
 ) -> Optional[Decimal]:
     """
@@ -234,7 +235,7 @@ async def get_indicator_percentile(
     Args:
         indicator_id: FRED series ID (e.g., "VIX", "UNRATE")
         percentile: Percentile to calculate (0-100)
-        lookback_days: Historical window (default: 252 trading days = 1 year)
+        lookback_days: Historical window (default: TRADING_DAYS_PER_YEAR = 252)
         as_of_date: End date for calculation (default: today)
 
     Returns:

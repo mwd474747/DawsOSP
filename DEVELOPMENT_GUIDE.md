@@ -45,8 +45,8 @@ python combined_server.py
 
 ```
 DawsOSP/
-├── combined_server.py          # ⭐ PRIMARY SERVER (6,043 lines, 53 endpoints)
-├── full_ui.html                # ⭐ PRIMARY UI (React SPA, 18 pages)
+├── combined_server.py          # ⭐ PRIMARY SERVER (6,043 lines, 59 endpoints)
+├── full_ui.html                # ⭐ PRIMARY UI (React SPA, 20 pages)
 ├── backend/
 │   ├── app/
 │   │   ├── agents/             # 4 agents (financial_analyst, macro_hound, data_harvester, claude_agent)
@@ -55,7 +55,7 @@ DawsOSP/
 │   │   ├── services/           # Business logic
 │   │   ├── db/                 # Database layer
 │   │   └── auth/               # Authentication (JWT, RBAC)
-│   ├── patterns/               # 13 pattern definitions (JSON)
+│   ├── patterns/               # 15 pattern definitions (JSON)
 │   ├── db/
 │   │   ├── migrations/         # Sequential SQL migrations
 │   │   └── seeds/              # Seed data
@@ -466,7 +466,7 @@ curl -X POST http://localhost:8000/api/patterns/execute \
 1. Start server: `python combined_server.py`
 2. Open browser: http://localhost:8000/
 3. Login: michael@dawsos.com / admin123
-4. Test all 18 pages manually
+4. Test all 20 pages manually
 
 ---
 

@@ -79,7 +79,7 @@ Preferred communication style: Simple, everyday language.
 The core architectural pattern is **declarative workflow execution**:
 
 1. **Pattern Definitions** (JSON files in `backend/patterns/`)
-   - 13 patterns total: `portfolio_overview`, `buffett_checklist`, `macro_cycles_overview`, `corporate_actions_upcoming`, etc.
+   - 15 patterns total: `portfolio_overview`, `buffett_checklist`, `macro_cycles_overview`, `corporate_actions_upcoming`, etc.
    - Define multi-step workflows with template substitution
    - Use `{{inputs.x}}`, `{{state.y}}`, `{{ctx.z}}` syntax
 

@@ -40,7 +40,7 @@ python combined_server.py
 - ✅ **Transaction History**: Complete audit trail with pagination
 - ✅ **Alerts System**: Real-time monitoring and notifications
 - ✅ **PDF Reports**: Professional report generation
-- ✅ **18 Complete UI Pages**: Fully functional React SPA
+- ✅ **20 Complete UI Pages**: Fully functional React SPA
 
 ---
 
@@ -48,25 +48,25 @@ python combined_server.py
 
 **Current Production Stack**:
 - **UI**: `full_ui.html` - Single-page React application (11,594 lines, no build step)
-- **Server**: `combined_server.py` - FastAPI server (6,043 lines, 53 endpoints)
+- **Server**: `combined_server.py` - FastAPI server (6,043 lines, 59 endpoints)
 - **Database**: PostgreSQL + TimescaleDB
-- **Agents**: 4 agents providing ~70 capabilities
-  - **FinancialAnalyst**: Portfolio management, pricing, metrics, ratings, charts, optimization
-  - **MacroHound**: Macro economic cycles, scenarios, alerts, regime detection
-  - **DataHarvester**: External data, news, reports, corporate actions
-  - **ClaudeAgent**: AI-powered explanations and insights
-  - **Note:** V3 refactoring ~70% complete (January 15, 2025):
+- **Agents**: 4 agents providing 72 capabilities
+  - **FinancialAnalyst**: Portfolio management, pricing, metrics, ratings, charts, optimization (30 capabilities)
+  - **MacroHound**: Macro economic cycles, scenarios, alerts, regime detection (19 capabilities)
+  - **DataHarvester**: External data, news, reports, corporate actions (16 capabilities)
+  - **ClaudeAgent**: AI-powered explanations and insights (7 capabilities)
+  - **Note:** V3 refactoring ~95% complete (January 15, 2025):
     - Phase -1: Critical bugs fixed ✅ COMPLETE
     - Phase 0: Browser infrastructure ✅ COMPLETE
-    - Phase 1: Exception handling (85%) ✅ MOSTLY COMPLETE
-    - Phase 2: Singleton removal → DI container (95%) ✅ MOSTLY COMPLETE
+    - Phase 1: Exception handling ✅ COMPLETE
+    - Phase 2: Singleton removal → DI container ✅ COMPLETE
     - Phase 3: Code duplication extraction ✅ COMPLETE
     - Phase 4: Legacy code removal ✅ COMPLETE
-    - Phase 5: Frontend logging (85%) 🚧 IN PROGRESS
-    - Phase 6: Fix TODOs (15%) 🚧 IN PROGRESS
-    - Phase 7: Pattern standardization (64%) 🚧 IN PROGRESS
-    - **Remaining Work:** ~5-7 days (see `REMAINING_REFACTOR_WORK.md`)
-- **Patterns**: 13 pattern definitions for orchestration
+    - Phase 5: Frontend logging ✅ COMPLETE
+    - Phase 6: Fix TODOs ✅ COMPLETE
+    - Phase 7: Pattern standardization ✅ COMPLETE
+    - **Remaining Work:** ~1 day (see `REMAINING_REFACTOR_WORK.md`)
+- **Patterns**: 15 pattern definitions for orchestration
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.
 
@@ -203,7 +203,7 @@ DawsOSP/
 │   │   ├── core/                 # AgentRuntime, PatternOrchestrator
 │   │   ├── services/             # Business logic
 │   │   └── db/                   # Database layer
-│   ├── patterns/                 # 13 pattern definitions (JSON)
+│   ├── patterns/                 # 15 pattern definitions (JSON)
 │   ├── db/
 │   │   ├── schema/               # Database schema files
 │   │   └── seeds/                # Seed data
@@ -258,7 +258,7 @@ curl http://localhost:8000/health
 
 # UI tests
 # Open browser: http://localhost:8000/
-# Test all 18 pages manually
+# Test all 20 pages manually
 ```
 
 ---

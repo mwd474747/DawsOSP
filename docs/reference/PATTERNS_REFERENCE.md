@@ -21,7 +21,9 @@
 
 ---
 
-## Pattern Inventory (13 patterns)
+## Pattern Inventory (15 patterns)
+
+**Note:** This document reflects the current state as of January 15, 2025. For the most up-to-date information, see [ARCHITECTURE.md](../../ARCHITECTURE.md).
 
 ### Portfolio Patterns (5 patterns)
 
@@ -437,7 +439,7 @@ curl -X POST http://localhost:8000/api/patterns/execute \
 ## References
 
 **Code:**
-- [backend/patterns/](backend/patterns/) - Pattern JSON files (13 patterns)
+- [backend/patterns/](backend/patterns/) - Pattern JSON files (15 patterns)
 - [backend/app/core/pattern_orchestrator.py](backend/app/core/pattern_orchestrator.py) - Orchestrator implementation
 - [backend/app/core/agent_runtime.py](backend/app/core/agent_runtime.py) - Agent routing
 

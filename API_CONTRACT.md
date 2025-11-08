@@ -1,5 +1,8 @@
 # API Contract Documentation
-*Version 1.0 - November 4, 2025*
+
+**⚠️ HISTORICAL DOCUMENT**  
+*Version 1.0 - November 4, 2025*  
+**Note:** This is a historical progress document. Numbers may be outdated. See [ARCHITECTURE.md](../ARCHITECTURE.md) for current specifications.
 
 ## Overview
 
