@@ -758,7 +758,7 @@ class OptimizerService:
         """
         logger.info(f"suggest_hedges: portfolio_id={portfolio_id}, scenario={scenario_id}")
         
-        from app.services.scenarios import get_scenario_service, ShockType
+        from app.services.scenarios import ScenarioService, ShockType
         
         # Map scenario_id to ShockType
         scenario_mapping = {
@@ -777,7 +777,8 @@ class OptimizerService:
         
         shock_type = scenario_mapping.get(scenario_id, ShockType.RATES_UP)
         
-        scenario_service = get_scenario_service()
+        # Create scenario service instance directly (should be passed via DI container)
+        scenario_service = ScenarioService(db_pool=self.db_pool) if hasattr(self, 'db_pool') and self.db_pool else ScenarioService()
         
         try:
             # Run scenario to get losers

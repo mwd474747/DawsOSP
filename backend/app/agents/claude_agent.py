@@ -766,23 +766,3 @@ Provide 3-5 specific insights and 2-3 actionable recommendations based on the da
 
 # ============================================================================
 # Factory Function (Singleton Pattern)
-# ============================================================================
-
-_claude_agent_instance = None
-
-
-def get_claude_agent(services: Optional[Dict[str, Any]] = None) -> ClaudeAgent:
-    """
-    Get or create singleton ClaudeAgent.
-
-    Args:
-        services: Services dict (optional)
-
-    Returns:
-        ClaudeAgent instance
-    """
-    global _claude_agent_instance
-    if _claude_agent_instance is None:
-        _claude_agent_instance = ClaudeAgent("claude", services or {})
-        logger.info("ClaudeAgent initialized")
-    return _claude_agent_instance

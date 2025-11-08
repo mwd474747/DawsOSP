@@ -3245,25 +3245,3 @@ class DataHarvester(BaseAgent):
             return "staging"
 
 
-# ============================================================================
-# Factory Function (Singleton Pattern)
-# ============================================================================
-
-_data_harvester_instance = None
-
-
-def get_data_harvester(services: Optional[Dict[str, Any]] = None) -> DataHarvester:
-    """
-    Get or create singleton DataHarvester agent.
-
-    Args:
-        services: Services dict (optional)
-
-    Returns:
-        DataHarvester instance
-    """
-    global _data_harvester_instance
-    if _data_harvester_instance is None:
-        _data_harvester_instance = DataHarvester("data_harvester", services or {})
-        logger.info("DataHarvester agent initialized")
-    return _data_harvester_instance

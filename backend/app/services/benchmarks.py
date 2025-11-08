@@ -49,7 +49,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from app.services.pricing import PricingService, get_pricing_service
+from app.services.pricing import PricingService
 from app.db.connection import execute_query
 
 logger = logging.getLogger("DawsOS.Benchmarks")

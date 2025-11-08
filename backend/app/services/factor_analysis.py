@@ -37,7 +37,7 @@ from app.core.types import (
     PricingPackNotFoundError,
     PricingPackValidationError,
 )
-from app.services.pricing import get_pricing_service
+from app.services.pricing import PricingService
 
 logger = logging.getLogger(__name__)
 

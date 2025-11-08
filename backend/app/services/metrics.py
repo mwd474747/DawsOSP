@@ -36,7 +36,7 @@ from app.core.types import (
     PricingPackValidationError,
 )
 from app.core.exceptions import DatabaseError
-from app.services.pricing import get_pricing_service
+from app.services.pricing import PricingService
 from app.services.portfolio_helpers import get_portfolio_value
 
 logger = logging.getLogger(__name__)

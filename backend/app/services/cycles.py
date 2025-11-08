@@ -924,27 +924,3 @@ class CyclesService:
 
 # ============================================================================
 # Singleton
-# ============================================================================
-
-
-_cycles_service: Optional[CyclesService] = None
-
-
-def get_cycles_service(db_pool=None) -> CyclesService:
-    """
-    DEPRECATED: Use CyclesService(db_pool=...) directly instead.
-
-    Migration:
-        OLD: cycles_service = get_cycles_service()
-        NEW: cycles_service = CyclesService(db_pool=db_pool)
-    """
-    import warnings
-    warnings.warn(
-        "get_cycles_service() is deprecated. Use CyclesService(db_pool=...) directly.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-    global _cycles_service
-    if _cycles_service is None:
-        _cycles_service = CyclesService(db_pool=db_pool)
-    return _cycles_service

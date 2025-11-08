@@ -29,10 +29,11 @@ Architecture:
 
 Usage:
     from app.services.risk import get_risk_service
-    from app.services.macro import get_macro_service
+    from app.services.macro import MacroService
 
     # Detect current regime
-    macro_service = get_macro_service()
+    # Create macro service instance directly (should be passed via DI container)
+    macro_service = MacroService(db_pool=db_pool) if db_pool else MacroService()
     regime = await macro_service.detect_current_regime()
 
     # Compute DaR

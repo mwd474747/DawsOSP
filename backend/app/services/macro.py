@@ -894,27 +894,3 @@ class MacroService:
 
 # ============================================================================
 # Singleton
-# ============================================================================
-
-
-_macro_service: Optional[MacroService] = None
-
-
-def get_macro_service(fred_client: Optional[FREDProvider] = None, db_pool=None) -> MacroService:
-    """
-    DEPRECATED: Use MacroService(fred_client=..., db_pool=...) directly instead.
-
-    Migration:
-        OLD: macro_service = get_macro_service()
-        NEW: macro_service = MacroService(fred_client=fred_client, db_pool=db_pool)
-    """
-    import warnings
-    warnings.warn(
-        "get_macro_service() is deprecated. Use MacroService(fred_client=..., db_pool=...) directly.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-    global _macro_service
-    if _macro_service is None:
-        _macro_service = MacroService(fred_client=fred_client, db_pool=db_pool)
-    return _macro_service
