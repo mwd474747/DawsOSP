@@ -1240,6 +1240,189 @@ async def database_health_check():
     
     return health_report
 
+@app.get("/api/db-schema")
+async def database_schema_validation():
+    """
+    Validates database schema completeness.
+    Returns information about tables, columns, indexes, and constraints.
+    """
+    schema_report = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "status": "checking",
+        "tables": {},
+        "missing_tables": [],
+        "issues": [],
+        "recommendations": []
+    }
+    
+    # Expected tables for DawsOS
+    expected_tables = [
+        'users', 'portfolios', 'securities', 'transactions', 'lots',
+        'pricing_packs', 'price_entries', 'fx_rates', 'portfolio_metrics',
+        'performance_metrics', 'risk_metrics', 'attribution_metrics',
+        'currency_attribution', 'factor_exposures', 'scenarios',
+        'corporate_actions', 'news_sentiment', 'security_ratings',
+        'audit_log', 'alerts'
+    ]
+    
+    if not db_pool:
+        schema_report["status"] = "error"
+        schema_report["issues"].append("Database pool not initialized")
+        return schema_report
+    
+    try:
+        async with db_pool.acquire() as conn:
+            # Get all tables
+            tables_query = """
+                SELECT 
+                    t.tablename,
+                    obj_description(c.oid, 'pg_class') as comment
+                FROM pg_tables t
+                JOIN pg_class c ON c.relname = t.tablename
+                WHERE t.schemaname = 'public'
+                ORDER BY t.tablename;
+            """
+            tables = await conn.fetch(tables_query)
+            existing_tables = {row['tablename']: row['comment'] for row in tables}
+            
+            # Check for missing tables
+            schema_report["missing_tables"] = [t for t in expected_tables if t not in existing_tables]
+            
+            if schema_report["missing_tables"]:
+                schema_report["issues"].append(f"Missing {len(schema_report['missing_tables'])} expected tables")
+                schema_report["recommendations"].append("Run database migrations to create missing tables")
+            
+            # For each existing table, get detailed info
+            for table_name in existing_tables:
+                table_info = {
+                    "exists": True,
+                    "comment": existing_tables[table_name],
+                    "row_count": 0,
+                    "columns": [],
+                    "indexes": [],
+                    "has_rls": False
+                }
+                
+                # Get row count
+                try:
+                    count = await conn.fetchval(f"SELECT COUNT(*) FROM {table_name}")
+                    table_info["row_count"] = count
+                except:
+                    table_info["row_count"] = "error"
+                
+                # Get columns
+                columns_query = """
+                    SELECT 
+                        column_name,
+                        data_type,
+                        is_nullable,
+                        column_default
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public' 
+                    AND table_name = $1
+                    ORDER BY ordinal_position;
+                """
+                columns = await conn.fetch(columns_query, table_name)
+                table_info["columns"] = [dict(row) for row in columns]
+                
+                # Get indexes
+                indexes_query = """
+                    SELECT indexname, indexdef
+                    FROM pg_indexes
+                    WHERE schemaname = 'public'
+                    AND tablename = $1;
+                """
+                indexes = await conn.fetch(indexes_query, table_name)
+                table_info["indexes"] = [row["indexname"] for row in indexes]
+                
+                # Check RLS
+                rls_query = """
+                    SELECT relrowsecurity
+                    FROM pg_class
+                    WHERE relname = $1;
+                """
+                rls_result = await conn.fetchval(rls_query, table_name)
+                table_info["has_rls"] = bool(rls_result)
+                
+                schema_report["tables"][table_name] = table_info
+            
+            # Check for data integrity issues
+            if 'portfolios' in existing_tables and table_info["row_count"] == 0:
+                schema_report["issues"].append("No portfolios found in database")
+                schema_report["recommendations"].append("Create a default portfolio for testing")
+            
+            if 'pricing_packs' in existing_tables:
+                # Check for recent pricing data
+                recent_pricing = await conn.fetchval(
+                    "SELECT COUNT(*) FROM pricing_packs WHERE created_at > NOW() - INTERVAL '7 days'"
+                )
+                if recent_pricing == 0:
+                    schema_report["issues"].append("No recent pricing data (last 7 days)")
+                    schema_report["recommendations"].append("Run pricing data population script")
+            
+            schema_report["status"] = "complete"
+            
+            if not schema_report["issues"]:
+                schema_report["summary"] = "✅ Schema validation successful"
+            else:
+                schema_report["summary"] = f"⚠️ Schema has {len(schema_report['issues'])} issues"
+                
+    except Exception as e:
+        schema_report["status"] = "error"
+        schema_report["error"] = str(e)
+        schema_report["issues"].append(f"Schema validation failed: {str(e)}")
+        logger.error(f"Schema validation error: {e}", exc_info=True)
+    
+    return schema_report
+
+@app.get("/api/db-query")
+async def execute_diagnostic_query(query: str = None):
+    """
+    Execute a diagnostic query for debugging purposes.
+    Only allows SELECT queries for safety.
+    """
+    if not query:
+        return {
+            "error": "No query provided",
+            "usage": "Add ?query=SELECT... to execute a diagnostic query"
+        }
+    
+    # Safety check - only allow SELECT queries
+    if not query.strip().upper().startswith("SELECT"):
+        return {
+            "error": "Only SELECT queries are allowed for safety",
+            "query": query
+        }
+    
+    if not db_pool:
+        return {
+            "error": "Database pool not initialized",
+            "query": query
+        }
+    
+    try:
+        async with db_pool.acquire() as conn:
+            # Execute query with timeout
+            result = await conn.fetch(query)
+            
+            # Convert to list of dicts
+            rows = [dict(row) for row in result]
+            
+            return {
+                "status": "success",
+                "query": query,
+                "row_count": len(rows),
+                "rows": rows[:100],  # Limit to 100 rows for safety
+                "truncated": len(rows) > 100
+            }
+            
+    except Exception as e:
+        return {
+            "status": "error",
+            "query": query,
+            "error": str(e)
+        }
+
 @app.post("/api/patterns/execute", response_model=SuccessResponse)
 async def execute_pattern(request: ExecuteRequest, user: dict = Depends(require_auth)):
     """
