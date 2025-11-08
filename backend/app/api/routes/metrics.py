@@ -97,6 +97,7 @@ async def get_portfolio_metrics(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Error fetching metrics for {portfolio_id}: {e}")
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=500,
             detail="Internal server error fetching metrics"
@@ -175,6 +176,7 @@ async def get_metrics_history(
             f"Error fetching metrics history for {portfolio_id} "
             f"({start_date} to {end_date}): {e}"
         )
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=500,
             detail="Internal server error fetching metrics history"

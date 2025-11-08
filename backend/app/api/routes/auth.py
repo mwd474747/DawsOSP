@@ -205,6 +205,7 @@ async def login(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Login error: {e}")
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Authentication failed"
@@ -362,6 +363,7 @@ async def list_users(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to list users: {e}")
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to list users"
@@ -462,7 +464,9 @@ async def create_user(
             )
 
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to create user: {e}")
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create user"

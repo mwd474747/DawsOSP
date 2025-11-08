@@ -299,6 +299,7 @@ async def create_alert(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to create alert: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create alert",
@@ -388,6 +389,7 @@ async def list_alerts(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to list alerts: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to list alerts",
@@ -468,6 +470,7 @@ async def get_alert(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to get alert: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get alert",

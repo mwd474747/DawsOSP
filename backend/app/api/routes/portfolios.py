@@ -32,6 +32,7 @@ from app.db.connection import get_db_connection_with_rls
 from app.middleware.auth_middleware import verify_token
 from app.services.auth import get_auth_service
 from app.services.trade_execution import TradeExecutionService
+from app.core.exceptions import DatabaseError
 
 logger = logging.getLogger("DawsOS.API.Portfolios")
 
@@ -203,6 +204,7 @@ async def create_portfolio(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to create portfolio: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create portfolio: {str(e)}"
@@ -283,6 +285,7 @@ async def list_portfolios(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to list portfolios: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list portfolios: {str(e)}"
@@ -356,6 +359,7 @@ async def get_portfolio(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to get portfolio: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get portfolio: {str(e)}"
@@ -473,6 +477,7 @@ async def update_portfolio(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to update portfolio: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update portfolio: {str(e)}"
@@ -539,6 +544,7 @@ async def delete_portfolio(
     except Exception as e:
         # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to delete portfolio: {e}", exc_info=True)
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete portfolio: {str(e)}"
