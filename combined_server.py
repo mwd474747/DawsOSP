@@ -1050,41 +1050,45 @@ async def calculate_portfolio_risk_metrics(holdings: List[dict], portfolio_id: s
         }
 
     # Try to use real MetricsService if available
-    if db_pool and portfolio_id:
+    if db_pool and portfolio_id and PERFORMANCE_CALCULATOR_AVAILABLE:
         try:
-            # Use the performance calculator to get real metrics
-            calc = PerformanceCalculator(db_pool)
+            # Guardrail: Check availability before using PerformanceCalculator
+            if PerformanceCalculator is None:
+                logger.warning("PerformanceCalculator not available - skipping real metrics")
+            else:
+                # Use the performance calculator to get real metrics
+                calc = PerformanceCalculator(db_pool)
 
-            # Get TWR and related metrics for past year (trading days)
-            metrics = await calc.compute_twr(portfolio_id, pack_id=None, lookback_days=LOOKBACK_DAYS_YEAR)
+                # Get TWR and related metrics for past year (trading days)
+                metrics = await calc.compute_twr(portfolio_id, pack_id=None, lookback_days=LOOKBACK_DAYS_YEAR)
 
-            # Get max drawdown
-            dd = await calc.compute_max_drawdown(portfolio_id, lookback_days=LOOKBACK_DAYS_YEAR)
+                # Get max drawdown
+                dd = await calc.compute_max_drawdown(portfolio_id, lookback_days=LOOKBACK_DAYS_YEAR)
 
-            # Get VaR
-            var_result = await calc.compute_var(portfolio_id, confidence=0.95, lookback_days=LOOKBACK_DAYS_YEAR)
+                # Get VaR
+                var_result = await calc.compute_var(portfolio_id, confidence=0.95, lookback_days=LOOKBACK_DAYS_YEAR)
 
-            # Calculate weighted beta for positions
-            weighted_beta = 0
-            for holding in holdings:
-                weight = holding.get("value", 0) / total_value
-                beta = holding.get("beta", 1.0)
-                weighted_beta += weight * beta
+                # Calculate weighted beta for positions
+                weighted_beta = 0
+                for holding in holdings:
+                    weight = holding.get("value", 0) / total_value
+                    beta = holding.get("beta", 1.0)
+                    weighted_beta += weight * beta
 
-            # Use real volatility from metrics or estimate from beta
-            portfolio_volatility = metrics.get("vol", weighted_beta * 0.15)
+                # Use real volatility from metrics or estimate from beta
+                portfolio_volatility = metrics.get("vol", weighted_beta * 0.15)
 
-            # Simple risk score based on volatility and drawdown
-            risk_score = min(max((portfolio_volatility + abs(dd.get("max_drawdown", 0))) / 2, 0), MAX_RISK_SCORE)
+                # Simple risk score based on volatility and drawdown
+                risk_score = min(max((portfolio_volatility + abs(dd.get("max_drawdown", 0))) / 2, 0), MAX_RISK_SCORE)
 
-            return {
-                "portfolio_beta": round(weighted_beta, 2),
-                "portfolio_volatility": round(portfolio_volatility, 4),
-                "sharpe_ratio": round(metrics.get("sharpe", 0), 2),
-                "max_drawdown": round(dd.get("max_drawdown", 0), 4),
-                "var_95": round(var_result.get("var_95", total_value * 0.02), 2),
-                "risk_score": round(risk_score, 2)
-            }
+                return {
+                    "portfolio_beta": round(weighted_beta, 2),
+                    "portfolio_volatility": round(portfolio_volatility, 4),
+                    "sharpe_ratio": round(metrics.get("sharpe", 0), 2),
+                    "max_drawdown": round(dd.get("max_drawdown", 0), 4),
+                    "var_95": round(var_result.get("var_95", total_value * 0.02), 2),
+                    "risk_score": round(risk_score, 2)
+                }
         except Exception as e:
             logger.warning(f"Could not calculate real metrics, using estimates: {e}")
 

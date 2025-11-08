@@ -62,10 +62,10 @@ Pre-configured scenarios for testing:
 ### Using in Code
 
 ```python
-from app.services.indicator_config import get_config_manager
+from app.services.indicator_config import IndicatorConfigManager
 
 # Get configuration manager
-config_manager = get_config_manager()
+config_manager = IndicatorConfigManager()
 
 # Get indicator value
 gdp_growth = config_manager.get_indicator("gdp_growth")

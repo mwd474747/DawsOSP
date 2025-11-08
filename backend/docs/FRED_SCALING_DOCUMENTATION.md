@@ -125,8 +125,8 @@ The transformation logic is implemented in:
 ```bash
 # Test the transformation service
 cd backend && python -c "
-from app.services.fred_transformation import get_transformation_service
-service = get_transformation_service()
+from app.services.fred_transformation import FREDTransformationService
+service = FREDTransformationService()
 
 # Test key transformations
 print('Interest Rate:', service.transform_fred_value('DFF', 4.08, '2025-11-02'))

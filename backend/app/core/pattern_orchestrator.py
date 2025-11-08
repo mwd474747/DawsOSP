@@ -258,20 +258,26 @@ class PatternOrchestrator:
             agent_runtime: AgentRuntime instance for capability routing
             db: Database connection pool
             redis: Redis connection pool (optional, for caching)
+        
+        Raises:
+            ValueError: If agent_runtime or db is None
         """
-        logger.debug(f"Initializing PatternOrchestrator with agent_runtime: {agent_runtime}, db: {db}")
+        # Guardrail: Validate required dependencies are not None
+        if agent_runtime is None:
+            raise ValueError("agent_runtime cannot be None - required for pattern execution")
+        if db is None:
+            raise ValueError("db cannot be None - required for database operations")
+        
+        # Debug logging (conditional on log level)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Initializing PatternOrchestrator with agent_runtime: {agent_runtime}, db: {db}")
+            logger.debug(f"Agent runtime type: {type(agent_runtime)}")
+            logger.debug(f"Agent runtime has execute_capability: {hasattr(agent_runtime, 'execute_capability')}")
+        
         self.agent_runtime = agent_runtime
         self.db = db
         self.redis = redis
         self.patterns: Dict[str, Dict[str, Any]] = {}
-        
-        # Debug logging
-        logger.debug(f"Set self.agent_runtime to: {self.agent_runtime}")
-        logger.debug(f"Agent runtime type: {type(self.agent_runtime)}")
-        if self.agent_runtime:
-            logger.debug(f"Agent runtime has execute_capability: {hasattr(self.agent_runtime, 'execute_capability')}")
-        else:
-            logger.error("WARNING: agent_runtime is None in PatternOrchestrator constructor!")
         
         self._load_patterns()
 

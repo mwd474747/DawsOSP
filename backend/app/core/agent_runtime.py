@@ -81,7 +81,16 @@ class AgentRuntime:
         Args:
             services: Dependency injection dict (db, redis, API clients)
             enable_rights_enforcement: Enable rights validation and attribution (default: True)
+        
+        Raises:
+            ValueError: If services is None or missing required 'db' key
         """
+        # Guardrail: Validate required dependencies are not None
+        if services is None:
+            raise ValueError("services cannot be None - required for agent runtime")
+        if "db" not in services:
+            raise ValueError("services must contain 'db' key - required for database operations")
+        
         self.services = services
         self.agents: Dict[str, BaseAgent] = {}
         self.capability_map: Dict[str, str] = {}  # capability → agent_name
