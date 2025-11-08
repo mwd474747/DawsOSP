@@ -40,21 +40,9 @@
     <!-- Namespace Validation (load after all modules) -->
     <script src="frontend/namespace-validator.js"></script>
     
-    <!-- Cache-busting: Add version query parameters dynamically -->
-    <script>
-        // Add version query parameters to all script tags for cache-busting
-        (function() {
-            'use strict';
-            const version = window.DawsOS?.Version?.getQueryString() || Date.now();
-            const scripts = document.querySelectorAll('script[src^="frontend/"]');
-            scripts.forEach(script => {
-                const src = script.getAttribute('src');
-                if (src && !src.includes('?v=')) {
-                    script.setAttribute('src', `${src}?v=${version}`);
-                }
-            });
-        })();
-    </script>
+    <!-- Note: Cache-busting is handled via version query parameters in script src attributes -->
+    <!-- The version.js module provides version info, but we don't modify script tags after load -->
+    <!-- This prevents race conditions and ensures scripts load correctly -->
 
     <!-- Professional Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
