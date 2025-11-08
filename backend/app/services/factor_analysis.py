@@ -22,7 +22,7 @@ Acceptance:
 
 Usage:
     analyzer = FactorAnalyzer(db)
-    factors = await analyzer.compute_factor_exposure(portfolio_id, pack_id, lookback_days=252)
+    factors = await analyzer.compute_factor_exposure(portfolio_id, pack_id, lookback_days=TRADING_DAYS_PER_YEAR)
 """
 
 import logging
@@ -38,6 +38,8 @@ from app.core.types import (
     PricingPackValidationError,
 )
 from app.services.pricing import PricingService
+from app.core.constants.financial import TRADING_DAYS_PER_YEAR
+from app.core.constants.risk import CONFIDENCE_LEVEL_95
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +61,7 @@ class FactorAnalyzer:
         self.db = db
 
     async def compute_factor_exposure(
-        self, portfolio_id: str, pack_id: str, lookback_days: int = 252
+        self, portfolio_id: str, pack_id: str, lookback_days: int = TRADING_DAYS_PER_YEAR
     ) -> Dict:
         """
         Compute factor exposures via regression.
@@ -70,7 +72,7 @@ class FactorAnalyzer:
         Args:
             portfolio_id: Portfolio UUID
             pack_id: Pricing pack UUID
-            lookback_days: Historical period (default 252 = 1 year)
+            lookback_days: Historical period (default TRADING_DAYS_PER_YEAR = 1 year)
 
         Returns:
             {
@@ -169,7 +171,7 @@ class FactorAnalyzer:
         # Residual volatility
         y_pred = model.predict(X)
         residuals = y - y_pred
-        residual_vol = float(np.std(residuals) * np.sqrt(252))
+        residual_vol = float(np.std(residuals) * np.sqrt(TRADING_DAYS_PER_YEAR))
 
         # Factor attribution (beta × factor_return)
         factor_means = {
@@ -207,7 +209,7 @@ class FactorAnalyzer:
         }
 
     async def compute_factor_var(
-        self, portfolio_id: str, pack_id: str, confidence: float = 0.95
+        self, portfolio_id: str, pack_id: str, confidence: float = CONFIDENCE_LEVEL_95
     ) -> Dict:
         """
         Compute Value-at-Risk (VaR) using factor model.
@@ -217,7 +219,7 @@ class FactorAnalyzer:
         Args:
             portfolio_id: Portfolio UUID
             pack_id: Pricing pack UUID
-            confidence: Confidence level (default 0.95 = 95%)
+            confidence: Confidence level (default CONFIDENCE_LEVEL_95 = 95%)
 
         Returns:
             {
@@ -379,7 +381,7 @@ class FactorAnalyzer:
             sp500_ret = self._safe_return(
                 prev["sp500_level"], curr["sp500_level"]
             )
-            erp_ret = float(sp500_ret) - (0.04 / 252)  # Daily risk-free rate
+            erp_ret = float(sp500_ret) - (0.04 / TRADING_DAYS_PER_YEAR)  # Daily risk-free rate
 
             returns.append(
                 {
@@ -417,7 +419,7 @@ class FactorAnalyzer:
         """
         # Get date
         end_date = await self._get_pack_date(pack_id)
-        start_date = end_date - timedelta(days=252)
+        start_date = end_date - timedelta(days=TRADING_DAYS_PER_YEAR)
 
         # Get factor returns
         factor_returns = await self._get_factor_returns(start_date, end_date)

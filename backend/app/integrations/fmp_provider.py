@@ -2,7 +2,7 @@
 FMP (Financial Modeling Prep) Provider Facade
 
 Purpose: Fetch fundamentals, financials, ratios from FMP Premium API
-Updated: 2025-10-21
+Updated: 2025-11-07 (Added API response format documentation)
 Priority: P0 (Critical for pricing pack builder)
 
 Features:
@@ -22,6 +22,31 @@ Endpoints:
     - /v3/cash-flow-statement/{symbol}
     - /v3/ratios/{symbol}
     - /v3/quote/{symbols} (bulk endpoint for efficiency)
+
+API Response Format Reference (CRITICAL):
+==========================================
+
+**Financial Ratios** (/v3/ratios):
+All percentage-based ratios are returned as DECIMALS (0-1 scale), NOT percentages (0-100):
+
+- returnOnEquity: 1.72 = 172% ROE (exceptional but possible for high-performing companies)
+- returnOnAssets: 0.28 = 28% ROA
+- netProfitMargin: 0.25 = 25% net profit margin
+- dividendYield: 0.0045 = 0.45% dividend yield (divide by 100 to get %)
+- grossProfitMargin: 0.43 = 43% gross margin
+
+**Pure Ratios** (dimensionless):
+- currentRatio: 1.07 = 1.07:1 (not a percentage)
+- debtToEquity: 1.97 = 1.97:1 (not a percentage)
+- priceToEarningsRatio: 31.5 = 31.5x earnings (not a percentage)
+- priceToBookRatio: 51.04 = 51.04x book value
+
+**Important**:
+If FMP changes this format (e.g., starts returning percentages instead of decimals),
+calculations in data_harvester.py will be 100x off. Monitor via integration tests.
+
+Verified: 2025-11-07 with AAPL real API data
+Source: https://site.financialmodelingprep.com/developer/docs/financial-ratios-formula
 
 Usage:
     provider = FMPProvider(api_key=settings.FMP_API_KEY)

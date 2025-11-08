@@ -21,7 +21,7 @@ Acceptance:
 
 Usage:
     attributor = CurrencyAttributor(db)
-    attribution = await attributor.compute_attribution(portfolio_id, pack_id, lookback_days=252)
+    attribution = await attributor.compute_attribution(portfolio_id, pack_id, lookback_days=TRADING_DAYS_PER_YEAR)
 """
 
 import logging
@@ -38,6 +38,7 @@ from app.core.types import (
 )
 from app.services.pricing import PricingService
 from app.services.portfolio_helpers import get_portfolio_value
+from app.core.constants.financial import TRADING_DAYS_PER_YEAR
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class CurrencyAttributor:
         self.db = db
 
     async def compute_attribution(
-        self, portfolio_id: str, pack_id: str, lookback_days: int = 252
+        self, portfolio_id: str, pack_id: str, lookback_days: int = TRADING_DAYS_PER_YEAR
     ) -> Dict:
         """
         Compute currency attribution for multi-currency portfolio.
@@ -83,7 +84,7 @@ class CurrencyAttributor:
         Args:
             portfolio_id: Portfolio UUID. Required.
             pack_id: Pricing pack UUID for end date. Format: "PP_YYYY-MM-DD". Required.
-            lookback_days: Historical period in days. Must be between 1 and 3650. Default 252 (1 trading year).
+            lookback_days: Historical period in days. Must be between 1 and 3650. Default TRADING_DAYS_PER_YEAR (1 trading year).
 
         Returns:
             Dict containing:

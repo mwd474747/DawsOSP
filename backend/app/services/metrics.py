@@ -11,7 +11,7 @@ Features:
     - Sharpe ratio and Sortino ratio
     - Maximum drawdown with recovery tracking
     - Beta to benchmark (hedged/unhedged)
-    - Rolling volatility (30/90/252 day windows)
+    - Rolling volatility (30/90/TRADING_DAYS_PER_YEAR day windows)
 
 Acceptance:
     - TWR reconciles to Beancount ledger ±1 basis point
@@ -20,7 +20,7 @@ Acceptance:
 
 Usage:
     calc = PerformanceCalculator(db)
-    twr = await calc.compute_twr(portfolio_id, pack_id, lookback_days=252)
+    twr = await calc.compute_twr(portfolio_id, pack_id, lookback_days=TRADING_DAYS_PER_YEAR)
 """
 
 import logging
@@ -38,6 +38,8 @@ from app.core.types import (
 from app.core.exceptions import DatabaseError
 from app.services.pricing import PricingService
 from app.services.portfolio_helpers import get_portfolio_value
+from app.core.constants.financial import TRADING_DAYS_PER_YEAR
+from app.core.constants.time_periods import DAYS_PER_YEAR
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +62,7 @@ class PerformanceCalculator:
         self.db = db
 
     async def compute_twr(
-        self, portfolio_id: str, pack_id: str, lookback_days: int = 252
+        self, portfolio_id: str, pack_id: str, lookback_days: int = TRADING_DAYS_PER_YEAR
     ) -> Dict:
         """
         Compute Time-Weighted Return (TWR) with geometric linking.
@@ -79,13 +81,13 @@ class PerformanceCalculator:
         Args:
             portfolio_id: Portfolio UUID. Required.
             pack_id: Pricing pack UUID for end date. Format: "PP_YYYY-MM-DD". Required.
-            lookback_days: Historical period in days. Must be between 1 and 3650. Default 252 (1 trading year).
+            lookback_days: Historical period in days. Must be between 1 and 3650. Default TRADING_DAYS_PER_YEAR (1 trading year).
 
         Returns:
             Dict containing:
             - twr: Total return over period (decimal, e.g., 0.15 = 15%)
             - ann_twr: Annualized return (decimal)
-            - vol: Annualized volatility (standard deviation of daily returns × sqrt(252))
+            - vol: Annualized volatility (standard deviation of daily returns × sqrt(TRADING_DAYS_PER_YEAR))
             - sharpe: Sharpe ratio ((ann_twr - risk_free_rate) / vol). Assumes 4% risk-free rate.
             - sortino: Sortino ratio (uses downside deviation only)
             - days: Number of days in period
@@ -103,7 +105,7 @@ class PerformanceCalculator:
             - Uses portfolio_daily_values hypertable for daily valuations
             - Gracefully handles missing portfolio_daily_values table (returns empty result)
             - Reconciliation guarantee: ±1 basis point accuracy when data available
-            - Annualization assumes 365 days per year
+            - Annualization assumes DAYS_PER_YEAR days per year
         """
         # Get pack date
         end_date = await self._get_pack_date(pack_id)
@@ -179,11 +181,11 @@ class PerformanceCalculator:
 
         # Annualize
         days = (end_date - start_date).days
-        ann_factor = 365 / days if days > 0 else 1
+        ann_factor = DAYS_PER_YEAR / days if days > 0 else 1
         ann_twr = (1 + twr) ** ann_factor - 1
 
         # Volatility (annualized standard deviation of daily returns)
-        vol = float(np.std(returns) * np.sqrt(252)) if len(returns) > 1 else 0.0
+        vol = float(np.std(returns) * np.sqrt(TRADING_DAYS_PER_YEAR)) if len(returns) > 1 else 0.0
 
         # Sharpe ratio
         # Risk-free rate: Use dynamic helper from constants (fetches live 10Y Treasury from FRED)
@@ -200,7 +202,7 @@ class PerformanceCalculator:
         # Sortino ratio (downside deviation only)
         downside_returns = [r for r in returns if r < 0]
         downside_vol = (
-            float(np.std(downside_returns) * np.sqrt(252))
+            float(np.std(downside_returns) * np.sqrt(TRADING_DAYS_PER_YEAR))
             if len(downside_returns) > 1
             else vol
         )
@@ -234,7 +236,7 @@ class PerformanceCalculator:
 
         Where:
             CF_i = Cash flow at time i (positive for contributions, negative for withdrawals)
-            t_i = Days from start / 365
+            t_i = Days from start / DAYS_PER_YEAR
             V_n = Terminal portfolio value (as negative cash flow)
 
         Solves for IRR using Newton-Raphson method with convergence tolerance 1e-6.
@@ -256,15 +258,15 @@ class PerformanceCalculator:
             DatabaseError: If database query fails.
             
         Note:
-            - Uses 1 year lookback period (365 days from pack date)
+            - Uses 1 year lookback period (DAYS_PER_YEAR days from pack date)
             - Returns empty result with error message if no cash flows
             - IRR must be > -100% (bounded at -0.99)
             - Terminal value is included as negative cash flow
-            - Annualization: (1 + mwr)^(365/days) - 1
+            - Annualization: (1 + mwr)^(DAYS_PER_YEAR/days) - 1
         """
         # Get date range (1 year lookback)
         end_date = await self._get_pack_date(pack_id)
-        start_date = end_date - timedelta(days=365)
+        start_date = end_date - timedelta(days=DAYS_PER_YEAR)
 
         # Get all cash flows
         cash_flows = await self.db.fetch(
@@ -304,7 +306,7 @@ class PerformanceCalculator:
             return {"mwr": 0.0, "ann_mwr": 0.0, "error": str(e)}
 
         # Annualize if period < 1 year
-        ann_mwr = (1 + irr) ** (365 / total_days) - 1 if total_days > 0 else 0.0
+        ann_mwr = (1 + irr) ** (DAYS_PER_YEAR / total_days) - 1 if total_days > 0 else 0.0
 
         logger.info(
             f"MWR calculated for {portfolio_id}: {irr:.4f} (annualized: {ann_mwr:.4f})"
@@ -333,12 +335,12 @@ class PerformanceCalculator:
         r = guess
 
         for iteration in range(max_iter):
-            # NPV = sum(CF_i / (1+r)^(t_i/365))
-            npv = sum(cf / (1 + r) ** (t / 365) for t, cf in cash_flows)
+            # NPV = sum(CF_i / (1+r)^(t_i/DAYS_PER_YEAR))
+            npv = sum(cf / (1 + r) ** (t / DAYS_PER_YEAR) for t, cf in cash_flows)
 
-            # NPV' = sum(-t * CF_i / (365 * (1+r)^(t/365 + 1)))
+            # NPV' = sum(-t * CF_i / (DAYS_PER_YEAR * (1+r)^(t/DAYS_PER_YEAR + 1)))
             npv_prime = sum(
-                -t * cf / (365 * (1 + r) ** (t / 365 + 1)) for t, cf in cash_flows
+                -t * cf / (DAYS_PER_YEAR * (1 + r) ** (t / DAYS_PER_YEAR + 1)) for t, cf in cash_flows
             )
 
             # Check convergence
@@ -366,7 +368,7 @@ class PerformanceCalculator:
         )
 
     async def compute_max_drawdown(
-        self, portfolio_id: str, pack_id: str, lookback_days: int = 252
+        self, portfolio_id: str, pack_id: str, lookback_days: int = TRADING_DAYS_PER_YEAR
     ) -> Dict:
         """
         Compute maximum drawdown (largest peak-to-trough decline).
@@ -374,7 +376,7 @@ class PerformanceCalculator:
         Args:
             portfolio_id: Portfolio UUID
             pack_id: Pricing pack UUID
-            lookback_days: Historical period (default 252)
+            lookback_days: Historical period (default TRADING_DAYS_PER_YEAR)
 
         Returns:
             {
@@ -466,7 +468,7 @@ class PerformanceCalculator:
         return -1
 
     async def compute_rolling_volatility(
-        self, portfolio_id: str, pack_id: str, windows: List[int] = [30, 90, 252]
+        self, portfolio_id: str, pack_id: str, windows: List[int] = [30, 90, TRADING_DAYS_PER_YEAR]
     ) -> Dict:
         """
         Compute rolling volatility for multiple windows.
@@ -474,7 +476,7 @@ class PerformanceCalculator:
         Args:
             portfolio_id: Portfolio UUID
             pack_id: Pricing pack UUID
-            windows: List of window sizes in days (default [30, 90, 252])
+            windows: List of window sizes in days (default [30, 90, TRADING_DAYS_PER_YEAR])
 
         Returns:
             {
@@ -522,7 +524,7 @@ class PerformanceCalculator:
         for window in windows:
             if len(returns) >= window:
                 window_returns = returns[-window:]
-                vol = float(np.std(window_returns) * np.sqrt(252))
+                vol = float(np.std(window_returns) * np.sqrt(TRADING_DAYS_PER_YEAR))
                 result[f"vol_{window}d"] = round(vol, 6)
             else:
                 result[f"vol_{window}d"] = 0.0
