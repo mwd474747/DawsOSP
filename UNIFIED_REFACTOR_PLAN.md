@@ -23,6 +23,10 @@ This unified plan synthesizes:
 - **Architecture**: `ARCHITECTURE.md` - System architecture and patterns
 - **Database**: `DATABASE.md` - Database schema and field names
 - **Console Log Issues**: `CONSOLE_LOG_ISSUES_ANALYSIS.md` - Detailed issue analysis
+- **Validation Agent**: `REFACTOR_VALIDATION_AGENT.md` - Execution validation framework
+- **Execution Status**: `REFACTOR_EXECUTION_STATUS.md` - Real-time status tracker
+- **Phase -1 Summary**: `PHASE_MINUS_1_COMPLETION_SUMMARY.md` - Architecture reconciliation complete
+- **Production Issues**: `PRODUCTION_ISSUES_ACTION_PLAN.md` - Critical issues resolved
 
 **Root Cause Analysis**: All issues stem from 4 fundamental problems:
 1. **Field Name Mismatches** - Code doesn't match database schema/data structures
@@ -73,10 +77,17 @@ This unified plan synthesizes:
 
 ## Phase 0: Critical Production Bug Fixes (P0 - MUST FIX FIRST)
 
-**Status**: 🔴 **CRITICAL** - Production bugs causing 500 errors and broken features  
+**Status**: 🔴 **IN PROGRESS** - Production bugs causing 500 errors and broken features  
 **Priority**: P0 (Must fix immediately)  
-**Estimated Time**: 6-8 hours  
-**Impact**: Fixes 5 broken patterns + 1 broken page
+**Estimated Time**: 6-8 hours (4-6 hours remaining)  
+**Impact**: Fixes 5 broken patterns + 1 broken page  
+**Completion**: 25% (1 of 4 tasks complete)
+
+**Current Status** (See `REFACTOR_EXECUTION_STATUS.md` for real-time updates):
+- ✅ **0.1**: Field Name Inconsistencies - COMPLETE
+- ❌ **0.2**: Missing Capability: `metrics.unrealized_pl` - NOT STARTED
+- ⚠️ **0.3**: Pattern Dependency Issues - PARTIAL (50%)
+- ❌ **0.4**: Missing Function Import: `formatDate` - NOT FIXED
 
 ### 0.1 Fix Field Name Inconsistencies (2-3 hours)
 
@@ -867,13 +878,27 @@ This unified plan synthesizes:
 
 ## Related Documents
 
+### Execution & Validation
+- **Validation Agent**: `REFACTOR_VALIDATION_AGENT.md` - Execution validation framework
+- **Execution Status**: `REFACTOR_EXECUTION_STATUS.md` - Real-time status tracker
+- **Phase -1 Summary**: `PHASE_MINUS_1_COMPLETION_SUMMARY.md` - Architecture reconciliation complete
+- **Production Issues**: `PRODUCTION_ISSUES_ACTION_PLAN.md` - Critical issues resolved
+
+### Planning & Context
 - **Knowledge Base**: `REFACTOR_KNOWLEDGE_BASE.md` - Complete context, guardrails, and patterns
+- **Unified Plan V2**: `UNIFIED_REFACTOR_PLAN_V2.md` - Updated plan with Phase -1
 - **Console Log Issues**: `CONSOLE_LOG_ISSUES_ANALYSIS.md` - Detailed issue analysis
 - **Remaining Refactor Work**: `REMAINING_REFACTOR_WORK.md` - Remaining technical debt
 - **Pattern System Optimization**: `PATTERN_SYSTEM_OPTIMIZATION_PLAN.md` - Pattern system improvements
 - **User Testing Plan**: `USER_TESTING_AND_FEATURE_ALIGNMENT_PLAN.md` - User testing strategy
+
+### Architecture & Reference
 - **Architecture**: `ARCHITECTURE.md` - System architecture and patterns
 - **Database**: `DATABASE.md` - Database schema and field names
+- **Module Load Order**: `frontend/MODULE_LOAD_ORDER.md` - Frontend module dependencies
+- **Orphaned Migrations**: `backend/db/migrations_ORPHANED_OCT23_NOV8/README.md` - Migration history
+
+### Lessons Learned
 - **Anti-Patterns**: `ANTI_PATTERN_ANALYSIS.md` - Anti-patterns to avoid
 - **Replit Changes**: `REPLIT_CHANGES_ANALYSIS.md` - Past errors and lessons learned
 
