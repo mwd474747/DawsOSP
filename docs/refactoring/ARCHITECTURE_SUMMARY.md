@@ -90,8 +90,10 @@ This document provides a high-level overview of the DawsOS architecture after th
 ## Security
 
 **SQL Injection Protection**
-- **Location:** `backend/app/services/alert_validation.py`
+- **Location:** Validation handled directly in `backend/app/services/alerts.py`
 - **Method:** Whitelist-based validation
+
+**Note:** `alert_validation.py` was removed during cleanup (2025-01-15) as it was unused. Validation is now handled directly in the alert service.
 - **Coverage:** Metric names, symbols, UUIDs
 
 **Authentication**

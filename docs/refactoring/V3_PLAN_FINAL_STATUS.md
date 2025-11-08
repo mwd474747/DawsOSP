@@ -68,8 +68,10 @@ This document provides the **final, accurate status** of the V3 Technical Debt R
 
 **Completed:**
 - ✅ Root cause analysis performed
-- ✅ SQL injection protection added (`alert_validation.py`)
+- ✅ SQL injection protection added (validation now handled in alert service)
 - ✅ Exception hierarchy created (`exceptions.py`)
+
+**Note:** `alert_validation.py` was removed during cleanup (2025-01-15) as it was unused. Validation is now handled directly in the alert service.
 - ✅ Exception handlers improved (specific exceptions caught first)
 
 **Remaining:**

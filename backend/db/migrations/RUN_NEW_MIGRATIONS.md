@@ -163,5 +163,6 @@ DROP VIEW IF EXISTS rls_policy_status;
 ## Related Files
 
 - `backend/app/services/alerts.py` - Uses these tables for alert conditions
-- `backend/app/services/alert_validation.py` - Validates inputs for security
 - `backend/app/db/connection.py` - Manages RLS-aware connections
+
+**Note:** `alert_validation.py` was removed during cleanup (2025-01-15) as it was unused. Validation is now handled directly in the alert service.
