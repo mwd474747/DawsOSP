@@ -1,7 +1,58 @@
 # DawsOS Project Context for Claude IDE
 
-**Last Updated:** November 5, 2025
+**Last Updated:** November 7, 2025 (Post-UI Refactoring)
 **Purpose:** Help Claude Code understand the current application state and development priorities
+
+---
+
+## 🔴 CRITICAL: Recent Changes (November 7, 2025)
+
+### UI Refactoring - ARCHITECTURE CHANGED
+**BREAKING CHANGES ALERT:** The UI was completely refactored on November 7, 2025.
+
+**What Changed:**
+- ✅ `full_ui.html` split into 10 modular JavaScript files
+- ✅ File reduced from 12,021 lines to 1,559 lines (87% reduction)
+- ✅ Core systems extracted: CacheManager, ErrorHandler, FormValidator
+- ✅ Fixed critical dependency inversion bug
+- ✅ All 21 pages preserved, all features intact
+
+**New Frontend Structure:**
+```
+frontend/
+├── cache-manager.js      (560 lines) - Stale-while-revalidate caching
+├── error-handler.js      (146 lines) - Error classification & messaging
+├── form-validator.js     (67 lines)  - Form validation utilities
+├── api-client.js         (386 lines) - API client & TokenManager
+├── utils.js              (579 lines) - 14 utility functions
+├── panels.js             (907 lines) - 13 panel components
+├── context.js            (359 lines) - Portfolio context management
+├── pattern-system.js     (996 lines) - 13 pattern configs & orchestration
+├── pages.js              (4,553 lines) - 21 page components
+└── styles.css            (1,842 lines) - All CSS styles
+
+full_ui.html              (1,559 lines) - Minimal app shell
+```
+
+**Critical Module Load Order:**
+1. Core systems (cache-manager, error-handler, form-validator) load FIRST
+2. Base layer (api-client, utils, panels) load second
+3. Context & patterns load third
+4. Pages load last
+5. full_ui.html imports all and renders App
+
+**Known Issues Fixed:**
+- ✅ React.createElement undefined in context.js (fixed commit 036f575)
+- ✅ Dependency inversion (CacheManager) (fixed commit 5db15b8)
+- ✅ Module load order errors (fixed commit 4d9d7cd)
+- ✅ Missing format functions in Utils (fixed commit 4e04dc3) - Phase 1.1.5
+- ✅ CacheManager blocking Utils exports (fixed commit 41cf66c) - Phase 1.1.5
+- ✅ Panel validation wrong names (fixed commit 4e04dc3) - Phase 1.1.5
+
+**Documentation:**
+- See [UI_REFACTORING_STATUS.md](../UI_REFACTORING_STATUS.md) for complete analysis
+- See [PHASE_2.5_COMPLETE.md](../PHASE_2.5_COMPLETE.md) for Phase 2.5 details
+- See [ARCHITECTURE_VERDICT.md](../ARCHITECTURE_VERDICT.md) for architectural analysis
 
 ---
 
@@ -14,10 +65,11 @@
 **DO NOT MODIFY:**
 - ❌ `.replit` - Deployment configuration (run command, ports)
 - ❌ `combined_server.py` - Application entry point (Replit runs this)
-- ❌ `full_ui.html` - Primary UI (served at `/`)
 - ❌ Port 5000 (hardcoded in server and .replit)
 
-**MODIFY WITH CAUTION:**
+**MODIFY WITH EXTREME CAUTION:**
+- ⚠️ `full_ui.html` - Now minimal shell (1,559 lines), imports all frontend modules
+- ⚠️ `frontend/*.js` - Module system (NEW as of Nov 7, any changes affect all pages)
 - ⚠️ `requirements.txt` - Missing packages break imports
 - ⚠️ `backend/app/db/connection.py` - Database pool management
 - ⚠️ `backend/app/core/agent_runtime.py` - Agent system core
@@ -26,17 +78,23 @@
 
 **SAFE TO MODIFY:**
 - ✅ Test files, documentation, scripts, archive files
+- ✅ Backend services (with tests)
+- ✅ Database migrations (with backups)
 
 ---
 
-## 🎯 Current State (As of Nov 3, 2025)
+## 🎯 Current State (As of Nov 7, 2025)
 
 ### Production Stack
 - **Server**: `combined_server.py` - Single FastAPI application (6,043 lines, 53 functional endpoints)
-- **UI**: `full_ui.html` - React 18 SPA (11,594 lines, 18 pages including login, no build step)
+- **UI**: Modular React 18 SPA (11,902 total lines across 10 modules + HTML)
+  - `full_ui.html` - App shell (1,559 lines)
+  - `frontend/*.js` - 9 JavaScript modules (10,343 lines)
+  - 21 pages (LoginPage + 20 authenticated pages)
+  - No build step required
 - **Database**: PostgreSQL 14+ with TimescaleDB
-- **Agents**: 4 specialized agents providing ~70 capabilities (Phase 3 consolidation complete, November 3, 2025)
-- **Patterns**: 13 JSON pattern definitions (including corporate_actions_upcoming)
+- **Agents**: 4 specialized agents providing ~70 capabilities
+- **Patterns**: 15 JSON pattern definitions
 
 ### Key Entry Points
 - **Production**: `python combined_server.py` → http://localhost:8000
@@ -45,21 +103,78 @@
 
 ---
 
-## ⚠️ Known Technical Debt (Identified Nov 5, 2025)
+## ⚠️ Known Issues & Technical Debt
 
-### Zombie Consolidation Code
+### 1. Phantom Capabilities (CRITICAL - Users See "N/A")
+**Severity**: 🔴 HIGH - Affects user experience
+
+**Problem**: `tax_harvesting_opportunities` pattern calls 6 capabilities that don't exist:
+```json
+{
+  "tax.identify_losses",          // ❌ Does not exist
+  "tax.wash_sale_check",          // ❌ Does not exist
+  "tax.calculate_harvest",        // ❌ Does not exist
+  "tax.switching_cost",           // ❌ Does not exist
+  "tax.estimate_impact",          // ❌ Does not exist
+  "tax.generate_recommendations"  // ❌ Does not exist
+}
+```
+
+**Impact**:
+- Pattern orchestrator allows execution despite missing capabilities
+- Silent failures cascade into "N/A" displays
+- Users don't know they're seeing incomplete data
+
+**Status**: Documented but not fixed
+**See**: [PHASE_2_SERVICE_STUB_REVIEW_COMPLETE.md](../PHASE_2_SERVICE_STUB_REVIEW_COMPLETE.md)
+
+### 2. Stub Data in Production (CRITICAL - Fake Data)
+**Severity**: 🔴 HIGH - Users see hardcoded fake data
+
+**Confirmed Stub Data:**
+- `switching_cost_score = 5` (hardcoded for ALL companies) - line 1140 in data_harvester.py
+- Factor analysis has real 438-line implementation but `risk_compute_factor_exposures` uses stub data
+- Multiple capabilities return placeholder data instead of calculations
+
+**Impact**:
+- Every company gets same switching cost (not real analysis)
+- Factor exposures showing fake data despite real service existing
+- Users making decisions based on incorrect data
+
+**Status**: Documented but not fully remediated
+**See**: [PHASE_2_SERVICE_STUB_REVIEW_COMPLETE.md](../PHASE_2_SERVICE_STUB_REVIEW_COMPLETE.md)
+
+### 3. Zombie Consolidation Code (MEDIUM Priority)
+**Severity**: 🟡 MEDIUM - Technical debt blocking refactoring
+
+**Problem**:
 - Phase 3 consolidation (Nov 3) left 2,345 lines of scaffolding code
 - Feature flags at 100% rollout (no gradual deployment happening)
 - Capability mapping maps deleted agents (old agents gone)
-- Must be removed before other refactoring (blocks work)
-- See: [ZOMBIE_CODE_VERIFICATION_REPORT.md](../ZOMBIE_CODE_VERIFICATION_REPORT.md)
 
-### Critical Discovery: FactorAnalyzer EXISTS!
+**Impact**:
+- Clutters codebase, makes navigation harder
+- Blocks future refactoring work
+- Confuses new developers
+
+**Status**: Documented but not cleaned up
+**See**: [ZOMBIE_CODE_VERIFICATION_REPORT.md](../ZOMBIE_CODE_VERIFICATION_REPORT.md)
+
+### 4. FactorAnalyzer Service Not Used (MEDIUM Priority)
+**Severity**: 🟡 MEDIUM - Wasted implementation
+
+**Discovery**:
 - `backend/app/services/factor_analysis.py` (438 lines) EXISTS with real implementation
 - `risk_compute_factor_exposures` uses stub data instead of calling this service
-- Inconsistency: `risk_get_factor_exposure_history` DOES use the real service
-- Could save 40 hours if service works (needs testing)
-- See: [COMPREHENSIVE_REFACTORING_PLAN.md](../COMPREHENSIVE_REFACTORING_PLAN.md) Phase 0 Task 0.5
+- `risk_get_factor_exposure_history` DOES use the real service (inconsistency)
+
+**Impact**:
+- 438 lines of working code not being used
+- Users see stub data when real data available
+- Inconsistent behavior across similar capabilities
+
+**Status**: Needs testing and integration
+**See**: [COMPREHENSIVE_REFACTORING_PLAN.md](../COMPREHENSIVE_REFACTORING_PLAN.md) Phase 0 Task 0.5
 
 ---
 
@@ -86,590 +201,283 @@ Database query via get_db_connection_with_rls()
 ✅ Pool accessible across all module instances (fixed Nov 2, 2025)
 ```
 
-### 4 Agents (All Registered in executor.py and combined_server.py)
-**Phase 3 Consolidation Complete (November 3, 2025):**
+### 4 Active Agents (Phase 3 Consolidation Complete)
+
+**Registered in**: `backend/app/api/executor.py` and `combined_server.py`
 
 1. **FinancialAnalyst** - Portfolio ledger, pricing, metrics, attribution, optimization, ratings, charts (~35+ capabilities)
-   - **Consolidated from:** OptimizerAgent, RatingsAgent, ChartsAgent (Phase 3 Weeks 1-3)
-   - Capabilities: `ledger.*`, `pricing.*`, `metrics.*`, `attribution.*`, `charts.*`, `risk.*`, `portfolio.*`, `optimizer.*`, `ratings.*`
+   - **Consolidated from:** OptimizerAgent, RatingsAgent, ChartsAgent
+   - **Capabilities**: `ledger.*`, `pricing.*`, `metrics.*`, `attribution.*`, `charts.*`, `risk.*`, `portfolio.*`, `optimizer.*`, `ratings.*`
+   - **Services**: ledger, pricing, metrics, attribution, optimizer, ratings, risk, charts
+
 2. **MacroHound** - Macro economic cycles, scenarios, regime detection, alerts (~17+ capabilities)
-   - **Consolidated from:** AlertsAgent (Phase 3 Week 4)
-   - Uses: IndicatorConfigManager for ~40 economic indicators
-   - Configuration: backend/config/macro_indicators_defaults.json
-   - Capabilities: `macro.*`, `scenarios.*`, `cycles.*`, `alerts.*`
+   - **Consolidated from:** AlertsAgent
+   - **Configuration**: `backend/config/macro_indicators_defaults.json` (~40 economic indicators)
+   - **Capabilities**: `macro.*`, `scenarios.*`, `cycles.*`, `alerts.*`
+   - **Services**: macro_cycles, scenarios, alerts
+
 3. **DataHarvester** - External data fetching, news, reports, corporate actions (~8+ capabilities)
-   - **Consolidated from:** ReportsAgent (Phase 3 Week 5)
-   - Capabilities: `data.*`, `news.*`, `reports.*`, `corporate_actions.*`
-4. **ClaudeAgent** - AI-powered explanations and insights (~6 capabilities)
-   - Capabilities: `claude.*`, `ai.*`
+   - **Capabilities**: `data.*`, `news.*`, `reports.*`, `corporate_actions.*`
+   - **External APIs**: FMP, FRED, Polygon, NewsAPI
+   - **Services**: data_harvester, reports
 
-### 13 Patterns (All in backend/patterns/*.json)
+4. **AIInsights** - AI-powered analysis, insights, summaries, recommendations (~10+ capabilities)
+   - **Capabilities**: `ai.*`
+   - **Services**: ai_insights
+   - **Note**: May use external AI APIs (OpenAI, Anthropic)
 
-**Used in UI (9 patterns):**
-- ✅ portfolio_overview.json - Dashboard page
-- ✅ portfolio_cycle_risk.json - Risk Analytics page
-- ✅ portfolio_scenario_analysis.json - Scenarios page
-- ✅ macro_cycles_overview.json - Cycles page
-- ✅ buffett_checklist.json - Buffett page
-- ✅ news_impact_analysis.json - News page
-- ✅ export_portfolio_report.json - Export feature
-- ✅ policy_rebalance.json - Rebalancing
-- ✅ corporate_actions_upcoming.json - Corporate actions ✅ **NEW** (November 3, 2025)
-
-**Unused (4 patterns - Decision Needed):**
-- ⚠️ holding_deep_dive.json - Could implement UI page (16h)
-- ⚠️ portfolio_macro_overview.json - Redundant with portfolio_cycle_risk
-- ⚠️ cycle_deleveraging_scenarios.json - Could merge into scenarios
-- ⚠️ macro_trend_monitor.json - Implement alerts or delete?
-
-**See [REFACTORING_MASTER_PLAN.md](../REFACTORING_MASTER_PLAN.md) Decision Point 1 for recommendations**
+**Total Capabilities**: ~70 across 4 agents
 
 ---
 
-## ⚠️ Important: What NOT to Break
+## 📊 Pattern System (15 Patterns)
 
-### Critical Files (DO NOT MODIFY without explicit approval)
-- ✅ `combined_server.py` - Production server (working perfectly)
-- ✅ `full_ui.html` - Production UI (working perfectly)
-- ✅ `backend/patterns/*.json` - All 13 patterns (validated)
-- ✅ `backend/app/core/pattern_orchestrator.py` - Core architecture
-- ✅ `backend/app/core/agent_runtime.py` - Core architecture
-- ✅ `backend/app/agents/*.py` - All agent implementations
-- ✅ `backend/app/db/connection.py` - Database connection (real implementation)
+**Location**: `backend/patterns/*.json`
 
-### Current Status (As of Nov 2, 2025)
+**Active Patterns** (confirmed to exist):
+1. `portfolio_overview` - Dashboard overview with metrics, holdings, performance
+2. `holdings_analysis` - Detailed holdings breakdown and analysis
+3. `performance_attribution` - Performance attribution analysis
+4. `risk_metrics` - Risk analytics and exposure analysis
+5. `scenario_analysis` - Scenario modeling and stress testing
+6. `macro_cycles_overview` - Macro cycle analysis and positioning
+7. `optimizer_results` - Portfolio optimization recommendations
+8. `ai_insights` - AI-generated insights and analysis
+9. `market_summary` - Market data and trends
+10. `alerts_summary` - Active alerts and notifications
+11. `corporate_actions_upcoming` - Upcoming corporate actions
+12. `buffett_checklist` - Buffett investment checklist analysis
+13. `holding_deep_dive` - Deep dive analysis on specific holding
+14. `tax_harvesting_opportunities` - ⚠️ Calls 6 non-existent capabilities
+15. `portfolio_tax_report` - Tax reporting (may have capability gaps)
 
-#### 🟢 NO ACTIVE CRITICAL ISSUES
-
-All previously blocking issues have been resolved:
-- ✅ Database pool registration fixed (module boundary issue)
-- ✅ Macro cycles parameter bugs fixed
-- ✅ Import dependencies resolved
-- ✅ Test files cleaned up
-
-**For Details:** See [CURRENT_ISSUES.md](../CURRENT_ISSUES.md)
-
-#### ✅ Recently Completed Work
-
-1. **Plan 1: Documentation Cleanup** ✅ COMPLETE (Nov 2-3, 2025)
-   - Consolidated 42 files → 20 files (52% reduction)
-   - Fixed 32 inaccuracies (pattern count, line counts, endpoint counts)
-   - Added critical setup guides (database, security, environment variables)
-   - Created comprehensive references (DATABASE.md, DEVELOPMENT_GUIDE.md, PATTERNS_REFERENCE.md)
-   - Investigation reports: HOLDINGS_DETAIL_INVESTIGATION.md, DOCUMENTATION_FINAL_REVIEW_REPORT.md
-
-2. **Plan 2: Complexity Reduction (Phase 0-5)** ✅ COMPLETE (Nov 2, 2025)
-   - Phase 0: Made imports optional ✅
-   - Phase 1: Removed unused modules (~88KB: compliance, observability, redis) ✅
-   - Phase 2: Updated scripts (run_api.sh, executor.py) ✅
-   - Phase 3: Cleaned requirements.txt (7 packages removed) ✅
-   - Phase 5: Deleted dead files (4 files, ~62KB) ✅
-   - Result: ~150KB of code removed, 7 dependencies eliminated
-3. **Database Pool Fix** ✅ COMPLETE (Nov 2, 2025, commits 4d15246, e54da93)
-   - Solution: Cross-module storage using sys.modules
-   - connection.py simplified: 600 → 382 lines
-   - All agents can now access database pool
-4. **Macro Indicator Configuration System** ✅ COMPLETE (Nov 2, 2025, commits d5d6945, 51b92f3)
-   - Centralized JSON configuration for ~40 indicators
-   - IndicatorConfigManager service (471 lines)
-   - Data quality tracking and scenario support
-   - 1,410 lines of new infrastructure added
-
-#### 📋 Known Opportunities (Not Urgent)
-
-1. **Tactical Code Cleanup** (LOW_RISK_REFACTORING_OPPORTUNITIES_V2.md)
-   - 10 low-risk refactoring opportunities identified
-   - Extract constants, helpers, standardize patterns
-   - Independent of strategic refactoring (Plan 3)
-
-2. **Duplicate Endpoint** (in ROADMAP.md)
-   - `/execute` endpoint unused (line 1960 in combined_server.py)
-   - UI uses `/api/patterns/execute` only
-   - Safe to delete when convenient
-
-3. **✅ RESOLVED: Docker Compose Dependencies**:
-   - All Docker Compose files have been removed
-   - Deployment is now Replit-first (no Docker needed)
-
-4. **Scripts May Reference Removed Features**:
-   - `backend/run_api.sh` may have Redis/Docker references
-   - **Should be updated or documented as optional**
-
-**⚠️ CORRECT EXECUTION ORDER (Updated After Docker Removal):**
-1. **Phase 0**: Make imports optional (try/except in agent_runtime, pattern_orchestrator, db/connection)
-2. **Phase 1**: Remove modules (compliance/, observability/, redis_pool_coordinator.py)
-3. **Phase 2**: Update scripts and documentation (run_api.sh, analysis docs)
-4. **Phase 3**: Clean requirements.txt (remove observability packages)
-5. **Phase 5**: Delete safe unused files
+**Pattern Configs Also Exist** (but may not be actively used):
+- `cycle_deleveraging_scenarios`
+- `export_portfolio_report`
+- `macro_trend_monitor`
+- `news_impact_analysis`
+- `policy_rebalance`
+- `portfolio_cycle_risk`
+- `portfolio_macro_overview`
+- `portfolio_scenario_analysis`
 
 ---
 
-## 🚀 Development Priorities
+## 🏗️ Frontend Architecture (Post Nov 7 Refactoring)
 
-### Current Status: Refactoring Analysis Complete ✅
-
-**Recently Completed (Nov 5, 2025):**
-- ✅ Comprehensive codebase review (3+ documents)
-- ✅ Zombie code verification (confirmed exists)
-- ✅ Refactoring plan creation (88-134 hour roadmap)
-- ✅ FactorAnalyzer discovery (potential 40h savings)
-
-### Immediate Next Steps (Awaiting User Approval)
-
-**Quick Win Opportunity (30 min):**
-- Test FactorAnalyzer to see if it works with real portfolio data
-- Location: `backend/app/services/factor_analysis.py`
-- If YES: Wire up in Phase 1, skip Phase 3 implementation (save 40h)
-- If NO: Document what data is missing (populate in Phase 3)
-
-**Phase 0: Zombie Code Removal (14 hours)**
-Must execute BEFORE Phase 1-4 to unblock refactoring:
-1. Remove feature flags (feature_flags.py, feature_flags.json)
-2. Remove capability mapping (capability_mapping.py)
-3. Simplify agent runtime routing (~80 lines → ~10 lines)
-4. Remove duplicate service (macro_aware_scenarios.py - unused)
-5. Test FactorAnalyzer (critical decision point)
-6. Update documentation
-
-**Phase 1-4: Follow Comprehensive Plan**
-- See [COMPREHENSIVE_REFACTORING_PLAN.md](../COMPREHENSIVE_REFACTORING_PLAN.md) for complete details
-- Each phase delivers independent value
-- Can pause between phases to evaluate
-
-### When Cleanup is Requested (UPDATED Nov 5, 2025)
-
-**⚠️ IMPORTANT: Zombie code cleanup is NOW PRIORITY 1**
-
-Old context said "make imports optional first" (Phase 0 - already complete).
-New context says "remove zombie code first" (Phase 0 - new focus).
-
-**Correct Order:**
-1. Phase 0: Remove zombie code (14h) - UNBLOCKS everything
-2. Phase 1: Emergency fixes (16h) - Preserve user trust
-3. Phase 2: Foundation (32h) - Prevent future bugs
-4. Phase 3: Features (2-48h) - Real implementations
-5. Phase 4: Quality (24h) - Tests and monitoring
-
-### When User Asks About Refactoring
-
-**DO:**
-- ✅ Reference [COMPREHENSIVE_REFACTORING_PLAN.md](../COMPREHENSIVE_REFACTORING_PLAN.md) for details
-- ✅ Start with Phase 0 Task 0.5 (test FactorAnalyzer) - quick win
-- ✅ Follow decision tree based on test results
-- ✅ Execute phases sequentially (0 → 1 → 2 → 3 → 4)
-
-**DON'T:**
-- ❌ Skip Phase 0 (zombie code blocks other work)
-- ❌ Implement factor analysis from scratch without testing existing service
-- ❌ Modify working code without Phase 0 cleanup first
-
----
-
-## 📚 Documentation Status
-
-### Core Documentation (Recently Updated - Nov 3, 2025)
-- ✅ `README.md` - Updated with security warnings, AUTH_JWT_SECRET requirements
-- ✅ `ARCHITECTURE.md` - Fixed counts, auth coverage, environment variables reference
-- ✅ `DATABASE.md` - Added complete 160-line database setup guide (NEW)
-- ✅ `DEVELOPMENT_GUIDE.md` - Developer reference (NEW)
-- ✅ `PATTERNS_REFERENCE.md` - Pattern system reference (NEW)
-- ✅ `PRODUCT_SPEC.md` - Product specifications
-- ✅ `TROUBLESHOOTING.md` - Troubleshooting guide
-
-### Investigation Reports (Nov 3, 2025)
-- 📝 `DOCUMENTATION_FINAL_REVIEW_REPORT.md` - Comprehensive review (47 issues identified) (NEW)
-- 📝 `DOCUMENTATION_IMPROVEMENTS_SUMMARY.md` - Summary of all improvements (NEW)
-- 📝 `HOLDINGS_DETAIL_INVESTIGATION.md` - Proves holdings_detail was a typo (NEW)
-
-### Development Artifacts (Archived)
-- 📦 `.archive/docs-development-artifacts-2025-11-02/` - 29 files
-  - Historical snapshots from development iterations
-  - Useful for understanding evolution, but not current state
-
-### Active Analysis Documents (Keep in Root)
-- 📝 `UNNECESSARY_COMPLEXITY_REVIEW.md` - Recent complexity audit
-- 📝 `CLEANUP_DEPENDENCY_AUDIT.md` - Recent dependency analysis
-
----
-
-## 🗺️ Active Refactoring Plans (Nov 5, 2025)
-
-### Comprehensive Refactoring Analysis Complete
-Following extensive code review, 4 major planning documents created:
-
-1. **[ZOMBIE_CODE_VERIFICATION_REPORT.md](../ZOMBIE_CODE_VERIFICATION_REPORT.md)** (500+ lines)
-   - Verified zombie consolidation code exists (2,345 lines)
-   - Identified duplicate services (MacroAwareScenarioService unused)
-   - Discovered FactorAnalyzer exists but unused
-   - Status: ✅ Analysis complete, Phase 0 ready to execute
-
-2. **[COMPREHENSIVE_REFACTORING_PLAN.md](../COMPREHENSIVE_REFACTORING_PLAN.md)** (2,800+ lines)
-   - Complete 88-134 hour execution plan
-   - Phase 0: Zombie code removal (14h)
-   - Phase 1: Emergency fixes (16h)
-   - Phase 2: Foundation (32h)
-   - Phase 3: Features (2-48h depending on test results)
-   - Phase 4: Quality (24h)
-   - Status: 🎯 Ready for execution
-
-3. **[REFACTORING_MASTER_PLAN.md](../REFACTORING_MASTER_PLAN.md)** (540 lines)
-   - User-centric, feature-driven approach
-   - 11 of 18 UI pages work correctly
-   - 1 UI page shows fake data (Risk Analytics - critical trust issue)
-   - 4 patterns unused (holding_deep_dive, portfolio_macro_overview, etc.)
-   - Status: ✅ Analysis complete
-
-4. **[INTEGRATED_REFACTORING_ANALYSIS.md](../INTEGRATED_REFACTORING_ANALYSIS.md)**
-   - Synthesis of all review findings
-   - Combines codebase review, pattern analysis, Replit analysis
-   - Status: ✅ Complete
-
-### Next Steps (Awaiting User Decision)
-- **Immediate:** Execute Phase 0 Task 0.5 - Test FactorAnalyzer (2 hours)
-  - If works: Save 40 hours
-  - If needs data: Add 8 hours to populate tables
-  - If broken: Proceed with library/scratch implementation
-- **Then:** Execute Phase 0 zombie code removal (14 hours)
-- **Then:** Execute Phase 1-4 per comprehensive plan
-
----
-
-## 🔧 Environment and Commands
-
-### Development Startup
-
-**⚠️ REQUIRED Environment Variables:**
-```bash
-# Database connection (REQUIRED)
-export DATABASE_URL="postgresql://localhost/dawsos"
-
-# JWT authentication secret (REQUIRED - 32+ characters)
-# Generate with: python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
-export AUTH_JWT_SECRET="<generated-secure-random-key>"
+### Module Loading Order (CRITICAL - Order Matters)
+```html
+1. React, Axios, Chart.js (CDN)
+2. cache-manager.js      ← Defines CacheManager FIRST
+3. error-handler.js      ← Defines ErrorHandler
+4. form-validator.js     ← Defines FormValidator
+5. api-client.js         ← Uses ErrorHandler
+6. utils.js              ← Uses CacheManager (validated import)
+7. panels.js             ← Uses React, utils
+8. context.js            ← Uses React, apiClient (fixed Nov 7)
+9. pattern-system.js     ← Uses CacheManager, context, panels (validated)
+10. pages.js             ← Uses all above modules
+11. full_ui.html inline  ← Imports all, renders App
 ```
 
-**Optional Environment Variables:**
-```bash
-export ANTHROPIC_API_KEY="sk-ant-..."  # For AI insights (claude.* capabilities)
-export FRED_API_KEY="..."              # For economic data (macro indicators)
-export CORS_ORIGINS="https://yourdomain.com"  # CORS allowed origins
-export LOG_LEVEL="INFO"                # Logging level
-```
+**Why Order Matters**: Dependencies must load before consumers. Breaking this order causes undefined reference errors.
 
-**Start Server:**
-```bash
-# Production server
-python combined_server.py  # → http://localhost:8000
+### 21 Pages (All Preserved)
+1. LoginPage
+2. MacroCyclesPage (946 lines - largest)
+3. DashboardPage (uses PatternRenderer)
+4. DashboardPageLegacy (custom implementation)
+5. HoldingsPage
+6. TransactionsPage
+7. PerformancePage
+8. ScenariosPage
+9. ScenariosPageLegacy
+10. RiskPage
+11. AttributionPage
+12. OptimizerPage (494 lines)
+13. RatingsPage (415 lines)
+14. AIInsightsPage
+15. AIAssistantPage (376 lines)
+16. AlertsPage (368 lines)
+17. ReportsPage (273 lines)
+18. CorporateActionsPage
+19. MarketDataPage
+20. SecurityDetailPage (bonus page)
+21. SettingsPage
 
-# OR test server
+**Pattern Integration**: 16/21 pages (76%) use PatternRenderer for declarative data loading
+
+### 13 Panel Components
+1. MetricsGridPanel - Metrics grid display
+2. TablePanel (DataTablePanel) - Data tables
+3. LineChartPanel (TimeSeriesChartPanel) - Line/time series charts
+4. PieChartPanel - Pie charts
+5. DonutChartPanel - Donut charts (wraps PieChartPanel)
+6. BarChartPanel - Bar charts
+7. ActionCardsPanel - Action cards grid
+8. CycleCardPanel - Business cycle cards
+9. ScorecardPanel - Scorecard displays
+10. DualListPanel - Winners/Losers lists
+11. NewsListPanel - News displays (2 variants)
+12. ReportViewerPanel - Embedded report viewer
+13. HoldingsTable - Holdings table (support component)
+
+---
+
+## 🔌 External Integrations
+
+### Data Providers (Live APIs)
+1. **Financial Modeling Prep (FMP)**
+   - Pricing, fundamentals, company data
+   - API Key: Required in environment
+   - Rate Limits: Apply
+
+2. **FRED (Federal Reserve Economic Data)**
+   - Economic indicators, macro data
+   - Free tier available
+   - Rate Limits: Generous
+
+3. **Polygon.io**
+   - Market data, real-time quotes
+   - API Key: Required
+   - Rate Limits: Tier-dependent
+
+4. **NewsAPI**
+   - News articles, sentiment
+   - API Key: Required
+   - Rate Limits: Apply
+
+### Database Schema
+- **Primary Database**: PostgreSQL 14+ with TimescaleDB extension
+- **Row-Level Security (RLS)**: Enforced via `get_db_connection_with_rls(user_id, portfolio_id)`
+- **Connection Pooling**: Managed via `__dawsos_db_pool_storage__` module storage
+
+**Known Schema Issues**:
+- `lots` table: Uses `acquisition_date` (not `open_date` as some code expects)
+- Data contracts exist but enforcement is inconsistent
+
+---
+
+## 🧪 Testing & Development
+
+### Running Tests
+```bash
+# Backend tests
 cd backend
-uvicorn app.api.executor:executor_app --reload --port 8001
+pytest tests/
+
+# Specific service tests
+pytest tests/test_factor_analysis.py -v
+
+# UI testing
+# Load http://localhost:8000 and check browser console
 ```
 
-### Testing
+### Development Commands
 ```bash
-# Health check
-curl http://localhost:8000/health
+# Start development server
+python combined_server.py
 
-# API docs
-open http://localhost:8000/docs
+# Check for stub data
+# Use Claude command: /check-stub-data
+
+# Verify environment setup
+# Use Claude command: /verify-setup
 ```
 
-### Database
-
-**Database Setup (NEW - Added Nov 3, 2025):**
-
-See [DATABASE.md](../DATABASE.md) for complete setup guide.
-
-**Quick Setup:**
-```bash
-# 1. Install PostgreSQL 14+ and TimescaleDB
-brew install postgresql@14 timescaledb
-
-# 2. Create database
-createdb dawsos
-psql -d dawsos -c "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;"
-
-# 3. Run migrations
-psql -d dawsos < backend/db/migrations/001_core_schema.sql
-psql -d dawsos < backend/db/migrations/002_seed_data.sql
-psql -d dawsos < backend/db/migrations/003_create_portfolio_metrics.sql
-psql -d dawsos < backend/db/migrations/004_create_currency_attribution.sql
-psql -d dawsos < backend/db/migrations/010_add_users_and_audit_log.sql.disabled
-
-# 4. Verify
-psql -d dawsos -c "\dt"
-```
-
-**Daily Operations:**
-```bash
-# Connect to database
-psql $DATABASE_URL
-
-# Check tables
-\dt
-```
+### Debugging Tips
+1. **UI Issues**: Check browser console for module loading errors
+2. **Pattern Issues**: Check `combined_server.py` logs for pattern orchestrator errors
+3. **Agent Issues**: Check agent_runtime.py for capability resolution failures
+4. **Database Issues**: Check connection pool status in logs
 
 ---
 
-## 🎨 Code Style and Patterns
+## 📚 Key Documentation Files
 
-### Request Flow Pattern
-```python
-# Pattern in combined_server.py
-@app.post("/api/patterns/execute")
-async def execute_pattern_orchestrator(request: ExecuteRequest):
-    orchestrator = get_pattern_orchestrator()
-    result = await orchestrator.run_pattern(
-        pattern_id=request.pattern,
-        inputs=request.inputs
-    )
-    return {"status": "success", "data": result}
-```
+### Current State Documentation
+- [UI_REFACTORING_STATUS.md](../UI_REFACTORING_STATUS.md) - Complete UI refactoring status (Nov 7)
+- [PHASE_2.5_COMPLETE.md](../PHASE_2.5_COMPLETE.md) - Phase 2.5 core systems extraction
+- [ARCHITECTURE_VERDICT.md](../ARCHITECTURE_VERDICT.md) - Architectural analysis & recommendations
 
-### Agent Capability Pattern
-```python
-# Capability in agent (e.g., FinancialAnalyst)
-async def ledger_positions(self, portfolio_id: str):
-    """Capability: ledger.positions"""
-    conn = await get_db_connection_with_rls(user_id)
-    result = await conn.fetch("SELECT * FROM lots WHERE portfolio_id = $1", portfolio_id)
-    return {"positions": result}
-```
+### Known Issues Documentation
+- [PHASE_2_SERVICE_STUB_REVIEW_COMPLETE.md](../PHASE_2_SERVICE_STUB_REVIEW_COMPLETE.md) - Stub data & phantom capabilities
+- [ZOMBIE_CODE_VERIFICATION_REPORT.md](../ZOMBIE_CODE_VERIFICATION_REPORT.md) - Zombie code from Phase 3
 
-### Pattern Definition Pattern
-```json
-{
-  "id": "portfolio_overview",
-  "steps": [
-    {
-      "capability": "ledger.positions",
-      "args": {"portfolio_id": "{{inputs.portfolio_id}}"},
-      "as": "positions"
-    },
-    {
-      "capability": "pricing.apply_pack",
-      "args": {"positions": "{{positions.positions}}"},
-      "as": "valued_positions"
-    }
-  ]
-}
-```
+### Historical Documentation
+- [COMPREHENSIVE_REFACTORING_PLAN.md](../COMPREHENSIVE_REFACTORING_PLAN.md) - Master refactoring plan
+- [REFACTORING_PROGRESS.md](../REFACTORING_PROGRESS.md) - Refactoring progress tracking
 
 ---
 
-## 🚫 Anti-Patterns (Do NOT do these)
+## 🎯 Development Priorities
 
-### 1. DO NOT Modify full_ui.html Without Testing
-- 11,594 lines of working React code
-- No build step means syntax errors break immediately
-- Test changes in browser console first
+### Immediate (This Week)
+1. **Browser test UI refactoring** - Validate Nov 7 changes work in production
+2. **Fix phantom tax capabilities** - Either implement or remove from pattern
+3. **Connect FactorAnalyzer service** - Stop using stub data, use real service
 
-### 2. DO NOT Change Pattern JSON Without Validation
-- All 12 patterns are validated and working
-- Changing capability names breaks agent routing
-- Validate template substitution syntax
+### Short-Term (Next Sprint)
+1. **Clean up zombie code** - Remove 2,345 lines of scaffolding
+2. **Audit all stub data** - Document what's real vs fake
+3. **Add capability validation** - Fail fast if pattern calls non-existent capability
 
-### 3. DO NOT Remove Files Without Dependency Check
-- Use `grep -r "import.*filename" .` first
-- Check CLEANUP_DEPENDENCY_AUDIT.md
-- Verify UI doesn't reference deleted endpoints
-
-### 4. DO NOT Use Weak AUTH_JWT_SECRET
-- ❌ NEVER use `AUTH_JWT_SECRET="your-secret"`
-- ✅ ALWAYS generate with: `python3 -c 'import secrets; print(secrets.token_urlsafe(32))'`
-
-### 5. DO NOT Deploy with Default Credentials
-- ❌ Default password: mozzuq-byfqyQ-5tefvu (DEVELOPMENT ONLY)
-- ✅ See README.md security checklist before production
-
-### 6. DO NOT Add Services Without Necessity
-- Redis: Not needed (in-memory caching works)
-- Observability: Not needed for alpha (logging sufficient)
-- Circuit Breaker: Not needed for monolith
+### Long-Term (Future Phases)
+1. **UI testing suite** - Add automated tests for modules
+2. **API documentation** - OpenAPI/Swagger for all endpoints
+3. **Performance optimization** - Add metrics, identify bottlenecks
 
 ---
 
-## 💡 Quick Reference
+## ⚠️ Common Pitfalls
 
-### Find Pattern Usage in UI
-```bash
-grep -n "pattern.*portfolio_overview" full_ui.html
-# Shows all lines where pattern is referenced
-```
+### 1. Modifying full_ui.html Without Understanding Module System
+**Problem**: full_ui.html is now just an app shell. Real code is in frontend/*.js
+**Solution**: Edit the appropriate frontend module, not full_ui.html
 
-### Find Agent Capabilities
-```bash
-grep -r "async def " backend/app/agents/*.py | grep -v "^#"
-# Lists all agent methods
-```
+### 2. Breaking Module Load Order
+**Problem**: Changing script tag order in full_ui.html breaks dependencies
+**Solution**: Keep load order (core systems → base → context → patterns → pages)
+**Recent Fix**: CacheManager dependency was blocking Utils exports (commit 41cf66c)
 
-### Verify Pattern Exists
-```bash
-ls -1 backend/patterns/*.json | wc -l
-# Should return: 12
-```
+### 2a. Module Export Dependencies (NEW - Nov 7, 2025)
+**Problem**: Distributed monolith anti-pattern - modules reference undefined exports
+**Solution**: Use module validation at startup (validateModules() in full_ui.html)
+**Recent Fixes**:
+- Added missing Utils.formatCurrency/formatPercentage/formatNumber/formatDate
+- Moved CacheManager check inside hook functions only
+- Module validation now catches missing exports before React renders
 
-### Check Agent Registration
-```bash
-grep "register_agent" combined_server.py
-# Shows all 9 agent registrations
-```
+### 3. Assuming Capabilities Exist
+**Problem**: Pattern orchestrator silently allows non-existent capabilities
+**Solution**: Check agent.py files for actual capability implementations before using
 
----
+### 4. Trusting All Data is Real
+**Problem**: Multiple services return stub data without warnings
+**Solution**: Verify service implementation before trusting data in UI
 
-## 🎯 Key Insights for Claude Code
-
-### When User Asks to "Fix Patterns"
-1. First check: CLEANUP_DEPENDENCY_AUDIT.md section 4 (Pattern Dependencies Trace)
-2. Verify pattern JSON exists in `backend/patterns/`
-3. Check agent capabilities exist (see Agent Capability Pattern above)
-4. Test pattern via `/api/patterns/execute` endpoint
-
-### When User Asks to "Refactor Backend"
-1. First check: Locked refactoring plan from previous conversation
-2. **Conservative approach**: Build new structure alongside existing (port 8001)
-3. **Test in parallel** before migrating
-4. **Keep combined_server.py** as fallback
-
-### When User Asks to "Remove Complexity"
-1. First check: UNNECESSARY_COMPLEXITY_REVIEW.md
-2. Safe Phase 1 removals:
-   - Redis infrastructure (~500 lines)
-   - Observability stack (~500 lines)
-3. Archive (don't delete): Compliance module (~1000 lines)
-
-### When User Reports "UI Not Working"
-1. Check `combined_server.py` is running on port 8000
-2. Verify `full_ui.html` exists in root directory
-3. Check browser console for errors
-4. Verify `/api/patterns/execute` endpoint responds
+### 5. Editing Archived Code
+**Problem**: .archive/ contains old code that's no longer active
+**Solution**: Only edit code in main directories (backend/, frontend/, root)
 
 ---
 
-## 📊 Metrics (Verified Nov 3, 2025)
+## 📞 Getting Help
 
-### Codebase Size
-- `combined_server.py`: 6,043 lines (53 functional endpoints)
-- `full_ui.html`: 11,594 lines (18 pages including login)
-- `backend/app/`: ~15,000 lines (agents, services, core)
-- **Total Backend**: ~21,000 lines
-- **Total UI**: ~11,500 lines
-- **Code Removed**: ~150KB (Phase 1-5 cleanup)
+### Claude Commands
+- `/check-stub-data` - Find capabilities returning fake data
+- `/verify-setup` - Verify development environment
+- `/data-expert` - Activate Data Integration Expert agent
+- `/phase-status` - Check refactoring phase status
 
-### Pattern/Agent Coverage
-- **Patterns**: 13 defined, 9 used in UI (69%), 4 unused
-- **Agents**: 4 registered, 4 working (100%) ← Phase 3 consolidation complete
-- **Auth Coverage**: 44/53 endpoints use Depends(require_auth) (83%)
-- **Capabilities**: ~80 total methods (per COMPREHENSIVE_REFACTORING_PLAN.md Task 2.1)
+### Documentation Locations
+- **Project Root**: Master plans, status reports, architectural docs
+- **.claude/knowledge/**: Financial domain knowledge, data contracts, API docs
+- **.claude/commands/**: Custom Claude commands for common tasks
+- **.archive/**: Historical code and documentation (reference only)
 
 ---
 
-## 🔄 Recent Changes (Last 24 Hours)
-
-### Documentation Updates
-- ✅ README.md rewritten (52 → 389 lines)
-- ✅ ARCHITECTURE.md rewritten (42 → 354 lines)
-- ✅ 29 development artifacts archived to `.archive/docs-development-artifacts-2025-11-02/`
-- ✅ .claude/PROJECT_CONTEXT.md created (comprehensive current state)
-- ✅ Agent docstrings updated (removed Phase/Priority refs, updated Beancount→database)
-
-### Recent Analysis Documents Created
-- 📝 UNNECESSARY_COMPLEXITY_REVIEW.md - Identifies ~2100 lines of unused code
-- 📝 CLEANUP_DEPENDENCY_AUDIT.md - Validates all deletions are safe
-- 📝 SANITY_CHECK_REPORT.md - **CRITICAL** - Identifies import dependencies that will break
-
-### Code Changes
-- ✅ Agent docstrings updated (all 10 agent files)
-- ✅ Removed "Phase 4", "P0/P1/P2" priority labels
-- ✅ Fixed "Beancount ledger" → "database ledger" terminology
-- ✅ Updated dates to 2025-11-02
-- ✅ Application still stable (no functional code changes)
-
-### Planned Work (Awaiting User Approval)
-
-- **Plan 3: Backend Refactoring** (See PLAN_3_BACKEND_REFACTORING_REVALIDATED.md)
-  - Extract combined_server.py into modular structure
-  - Build on port 8001, test in parallel with port 5000
-  - Conservative approach: Keep old server as fallback
-  - Timeline: 3-4 weeks (1 week build, 2-3 weeks testing, 1 day migration)
-
----
-
-## 📚 Related Documentation for Multi-Agent Work
-
-**Current Status & Issues:**
-- [CURRENT_ISSUES.md](../CURRENT_ISSUES.md) - Active issues and recent fixes
-- [DATABASE_OPERATIONS_VALIDATION.md](../DATABASE_OPERATIONS_VALIDATION.md) - Historical pool issue analysis
-
-**Architecture & Planning:**
-- [ARCHITECTURE.md](../ARCHITECTURE.md) - System architecture with pool solution
-- [ROADMAP.md](../ROADMAP.md) - Development roadmap and completed work
-- [PLAN_3_BACKEND_REFACTORING_REVALIDATED.md](../PLAN_3_BACKEND_REFACTORING_REVALIDATED.md) - Future refactoring plan
-
-**Configuration:**
-- [backend/config/INDICATOR_CONFIG_README.md](../backend/config/INDICATOR_CONFIG_README.md) - Macro indicator configuration
-
-**Deployment & Operations:**
-- [REPLIT_DEPLOYMENT_GUARDRAILS.md](../REPLIT_DEPLOYMENT_GUARDRAILS.md) - Critical files (DO NOT MODIFY)
-- [DEPLOYMENT.md](../DEPLOYMENT.md) - Deployment steps
-- [replit.md](../replit.md) - Replit-specific setup
-- [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) - Common issues
-
----
-
-**Remember:** This is a working production application. Preserve functionality first, optimize second. Always test changes on port 8001 before touching port 8000.
-
----
-
-## 🤖 Claude Code IDE Agent Configuration
-
-**Current Configuration:**
-- ✅ Context files: PROJECT_CONTEXT.md (this file) - accurate as of Nov 5, 2025
-- ✅ Permission settings: settings.local.json - Bash command allowlist
-- ✅ Slash commands: 4 Phase 1 commands implemented ← **NEW**
-- ❌ Hooks: None configured
-- ❌ MCP servers: None configured
-
-**Implemented Slash Commands (Phase 1):**
-- ✅ `/verify-setup` - Verify development environment
-- ✅ `/test-factor-analyzer` - Test FactorAnalyzer service (CRITICAL: saves 40h if works)
-- ✅ `/phase-status` - Check refactoring phase progress
-- ✅ `/check-stub-data` - Find stub data locations (user trust issues)
-
-**Available for Implementation:**
-See [CLAUDE_IDE_AGENTS_RECOMMENDATION.md](CLAUDE_IDE_AGENTS_RECOMMENDATION.md) for:
-- 4 additional Phase 2/3 slash commands (validate-pattern, fix-field-bug, db-schema, run-migration)
-- 2 hooks for quality assurance
-- Optional MCP server for database inspection
-
-**Status:** ✅ Phase 1 complete (4 commands), Phase 2/3 optional
-
----
-
-## 🔧 Current Refactoring Status (Nov 6, 2025)
-
-**Latest Plan:** [REFACTORING_PLAN_COMPREHENSIVE.md](../REFACTORING_PLAN_COMPREHENSIVE.md)
-
-**Completed by Replit Agent:**
-- ✅ Provider registry singleton ([provider_registry.py](../backend/app/integrations/provider_registry.py))
-- ✅ Startup API key validation ([combined_server.py:251-260](../backend/combined_server.py#L251-L260))
-- ✅ Tax patterns added to repo (patterns not yet implemented)
-
-**In Progress:**
-- ⏳ Dependency injection migration (14 services need deprecation warnings)
-- ⏳ Agent refactoring (FinancialAnalyst, MacroHound still use old singleton pattern)
-
-**Pending Decisions:**
-- 🤔 holding_deep_dive pattern: Implement? (Recommended: YES - all capabilities exist, 8-12h effort)
-- 🤔 portfolio_macro_overview pattern: Investigate redundancy first
-- ⏸️ cycle_deleveraging_scenarios: Wait for FRED data population
-- ⏸️ Tax capabilities: User decision = "do later" (40h effort, $200K ARR)
-
-**Next Steps:**
-1. User approval of [REFACTORING_PLAN_COMPREHENSIVE.md](../REFACTORING_PLAN_COMPREHENSIVE.md)
-2. Phase 0: Test provider registry (2-3 hours)
-3. Phase 1: Complete DI migration (6-8 hours)
-4. Phase 2: Implement holding_deep_dive pattern (8-12 hours)
-
-**Estimated Remaining Effort:** 12-18 hours across 3 phases
+**Last Updated**: November 7, 2025
+**Next Review**: After browser testing of UI refactoring
+**Maintained By**: Development team + Claude Code assistance

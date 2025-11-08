@@ -333,10 +333,10 @@ class PatternOrchestrator:
 
     def list_patterns(self) -> List[Dict[str, Any]]:
         """
-        Get list of all loaded patterns.
+        Get list of all loaded patterns with metadata.
 
         Returns:
-            List of pattern metadata dicts
+            List of pattern metadata dicts including display configuration
         """
         return [
             {
@@ -344,9 +344,36 @@ class PatternOrchestrator:
                 "name": spec["name"],
                 "description": spec.get("description", ""),
                 "category": spec.get("category", "unknown"),
+                "display": spec.get("display", {}),  # Display configuration for frontend
+                "inputs": spec.get("inputs", {}),    # Input schema
             }
             for spec in self.patterns.values()
         ]
+
+    def get_pattern_metadata(self, pattern_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get detailed metadata for a specific pattern.
+
+        Args:
+            pattern_id: Pattern identifier
+
+        Returns:
+            Pattern metadata dict or None if not found
+        """
+        spec = self.patterns.get(pattern_id)
+        if not spec:
+            return None
+
+        return {
+            "id": spec["id"],
+            "name": spec["name"],
+            "description": spec.get("description", ""),
+            "category": spec.get("category", "unknown"),
+            "display": spec.get("display", {}),
+            "inputs": spec.get("inputs", {}),
+            "outputs": spec.get("outputs", []),
+            "steps_count": len(spec.get("steps", [])),
+        }
 
     def _apply_pattern_defaults(
         self, 

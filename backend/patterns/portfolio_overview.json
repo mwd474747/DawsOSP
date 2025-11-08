@@ -20,6 +20,80 @@
     }
   },
   "outputs": ["perf_metrics", "currency_attr", "valued_positions", "sector_allocation", "historical_nav"],
+  "output_schemas": {
+    "perf_metrics": {
+      "description": "Performance metrics including TWR, volatility, Sharpe ratio",
+      "type": "object",
+      "required": ["twr_1y", "volatility", "sharpe_ratio", "max_drawdown"],
+      "properties": {
+        "twr_1y": {"type": "number", "description": "1-year time-weighted return"},
+        "volatility": {"type": "number", "description": "Annualized volatility"},
+        "sharpe_ratio": {"type": "number", "description": "Sharpe ratio"},
+        "max_drawdown": {"type": "number", "description": "Maximum drawdown"}
+      }
+    },
+    "currency_attr": {
+      "description": "Currency attribution breakdown",
+      "type": "object",
+      "required": ["local_return", "fx_return", "interaction"],
+      "properties": {
+        "local_return": {"type": "number"},
+        "fx_return": {"type": "number"},
+        "interaction": {"type": "number"}
+      }
+    },
+    "valued_positions": {
+      "description": "Portfolio positions with current values",
+      "type": "object",
+      "required": ["positions", "total_value"],
+      "properties": {
+        "positions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["symbol", "quantity", "market_value", "weight"],
+            "properties": {
+              "symbol": {"type": "string"},
+              "name": {"type": "string"},
+              "quantity": {"type": "number"},
+              "market_value": {"type": "number"},
+              "weight": {"type": "number"},
+              "unrealized_pnl": {"type": "number"},
+              "dividend_safety": {"type": ["string", "null"]},
+              "moat_strength": {"type": ["string", "null"]}
+            }
+          }
+        },
+        "total_value": {"type": "number"}
+      }
+    },
+    "sector_allocation": {
+      "description": "Sector allocation breakdown",
+      "type": "object",
+      "properties": {
+        "sectors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["sector", "value", "weight"],
+            "properties": {
+              "sector": {"type": "string"},
+              "value": {"type": "number"},
+              "weight": {"type": "number"}
+            }
+          }
+        }
+      }
+    },
+    "historical_nav": {
+      "description": "Historical NAV time series",
+      "type": "object",
+      "properties": {
+        "dates": {"type": "array", "items": {"type": "string", "format": "date"}},
+        "values": {"type": "array", "items": {"type": "number"}}
+      }
+    }
+  },
   "display": {
     "panels": [
       {

@@ -29,6 +29,60 @@
     const Utils = {};
 
     /**
+     * formatCurrency - Format number as currency
+     */
+    Utils.formatCurrency = function(value, decimals = 2) {
+        if (value === null || value === undefined || isNaN(value)) return '-';
+        const absValue = Math.abs(value);
+        const sign = value < 0 ? '-' : '';
+
+        if (absValue >= 1e9) {
+            return sign + '$' + (absValue / 1e9).toFixed(1) + 'B';
+        } else if (absValue >= 1e6) {
+            return sign + '$' + (absValue / 1e6).toFixed(1) + 'M';
+        } else if (absValue >= 1e3) {
+            return sign + '$' + (absValue / 1e3).toFixed(1) + 'K';
+        }
+        return sign + '$' + absValue.toFixed(decimals);
+    };
+
+    /**
+     * formatPercentage - Format number as percentage
+     */
+    Utils.formatPercentage = function(value, decimals = 2) {
+        if (value === null || value === undefined || isNaN(value)) return '-';
+        return (value * 100).toFixed(decimals) + '%';
+    };
+
+    /**
+     * formatNumber - Format number with specified decimals
+     */
+    Utils.formatNumber = function(value, decimals = 2) {
+        if (value === null || value === undefined || isNaN(value)) return '-';
+        return value.toLocaleString('en-US', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+    };
+
+    /**
+     * formatDate - Format date string
+     */
+    Utils.formatDate = function(dateString) {
+        if (!dateString) return '-';
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        } catch (e) {
+            return dateString;
+        }
+    };
+
+    /**
      * formatValue - Format values according to specified format type
      * Lines 4637-4659
      */
@@ -44,15 +98,15 @@
 
         switch (format) {
             case 'percentage':
-                return Utils.formatPercentage ? Utils.formatPercentage(numValue) : numValue + '%';
+                return Utils.formatPercentage(numValue);
             case 'currency':
-                return Utils.formatCurrency ? Utils.formatCurrency(numValue) : '$' + numValue;
+                return Utils.formatCurrency(numValue);
             case 'number':
-                return Utils.formatNumber ? Utils.formatNumber(numValue, 2) : numValue.toFixed(2);
+                return Utils.formatNumber(numValue, 2);
             case 'bps':
-                return (Utils.formatNumber ? Utils.formatNumber(numValue, 0) : numValue.toFixed(0)) + ' bps';
+                return Utils.formatNumber(numValue, 0) + ' bps';
             default:
-                return typeof value === 'number' ? (Utils.formatNumber ? Utils.formatNumber(value, 2) : value.toFixed(2)) : String(value);
+                return typeof value === 'number' ? Utils.formatNumber(value, 2) : String(value);
         }
     };
 
@@ -70,8 +124,16 @@
     /**
      * useCachedQuery - React Hook for cached queries with automatic invalidation
      * Lines 6379-6451
+     *
+     * NOTE: Requires CacheManager to be loaded
      */
     Utils.useCachedQuery = function(queryKey, queryFn, options = {}) {
+        // Check for CacheManager dependency
+        const CacheManager = global.DawsOS.CacheManager;
+        if (!CacheManager) {
+            console.error('[Utils.useCachedQuery] CacheManager not loaded! Ensure cache-manager.js loads before utils.js');
+            throw new Error('[Utils] CacheManager module not available. Check script load order.');
+        }
         const [state, setState] = React.useState({
             data: null,
             error: null,
@@ -144,8 +206,16 @@
     /**
      * useCachedMutation - React Hook for mutations with cache invalidation
      * Lines 6452-6551
+     *
+     * NOTE: Requires CacheManager to be loaded
      */
     Utils.useCachedMutation = function(mutationFn, options = {}) {
+        // Check for CacheManager dependency
+        const CacheManager = global.DawsOS.CacheManager;
+        if (!CacheManager) {
+            console.error('[Utils.useCachedMutation] CacheManager not loaded!');
+            throw new Error('[Utils] CacheManager module not available. Check script load order.');
+        }
         const [state, setState] = React.useState({
             isLoading: false,
             error: null,
@@ -565,7 +635,49 @@
         );
     };
 
-    // Expose Utils via global DawsOS namespace
-    global.DawsOS.Utils = Utils;
+    // ============================================
+    // Export to DawsOS namespace (Phase 2.2)
+    // ============================================
+
+    // Initialize namespaces
+    global.DawsOS.Utils = global.DawsOS.Utils || {};
+    global.DawsOS.UI = global.DawsOS.UI || {};
+    global.DawsOS.UI.Primitives = global.DawsOS.UI.Primitives || {};
+
+    // Export Formatting utilities to DawsOS.Utils.Formatting
+    global.DawsOS.Utils.Formatting = {
+        currency: Utils.formatCurrency,
+        percentage: Utils.formatPercentage,
+        number: Utils.formatNumber,
+        date: Utils.formatDate,
+        value: Utils.formatValue,
+        getColorClass: Utils.getColorClass
+    };
+
+    // Export React Hooks to DawsOS.Utils.Hooks
+    global.DawsOS.Utils.Hooks = {
+        useCachedQuery: Utils.useCachedQuery,
+        useCachedMutation: Utils.useCachedMutation
+    };
+
+    // Export Data utilities to DawsOS.Utils.Data
+    global.DawsOS.Utils.Data = {
+        getDataSourceFromResponse: Utils.getDataSourceFromResponse,
+        withDataProvenance: Utils.withDataProvenance,
+        ProvenanceWarningBanner: Utils.ProvenanceWarningBanner
+    };
+
+    // Export Primitive UI components to DawsOS.UI.Primitives
+    global.DawsOS.UI.Primitives = {
+        LoadingSpinner: Utils.LoadingSpinner,
+        ErrorMessage: Utils.ErrorMessage,
+        EmptyState: Utils.EmptyState,
+        RetryableError: Utils.RetryableError,
+        DataBadge: Utils.DataBadge,
+        FormField: Utils.FormField,
+        NetworkStatusIndicator: Utils.NetworkStatusIndicator
+    };
+
+    console.log('✅ Utils module loaded successfully (DawsOS.Utils.*, DawsOS.UI.Primitives)');
 
 })(typeof window !== 'undefined' ? window : global);

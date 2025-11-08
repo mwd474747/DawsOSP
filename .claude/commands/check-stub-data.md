@@ -6,13 +6,20 @@ Search for stub data in codebase:
 
 **Known Stub Data Locations:**
 1. **risk.compute_factor_exposures** (line 1086-1110 in financial_analyst.py)
-   - Returns hardcoded factor exposures
+   - Returns hardcoded factor exposures: {Real Rates: 0.5, Inflation: 0.3, Credit: 0.2, ...}
    - Used by: portfolio_cycle_risk pattern (Risk Analytics page)
-   - Impact: **CRITICAL USER TRUST ISSUE**
+   - Impact: **CRITICAL USER TRUST ISSUE** - Users see fake data
+   - Fix: Wire to FactorAnalyzer service (see REPLIT_BACKEND_TASKS.md Task 3)
 
 2. **macro.compute_dar** (macro_hound.py)
    - Falls back to stub data on errors
    - Used by: portfolio_cycle_risk pattern
+   - Impact: **MEDIUM** - Rare, only on error conditions
+
+3. **scenario.switching_cost_score** (financial_analyst.py)
+   - Returns hardcoded value: 5
+   - Used by: portfolio_rebalancing_optimizer pattern (Rebalancing page)
+   - Impact: **MEDIUM** - Not critical for decision-making
 
 **Search Commands:**
 ```bash
