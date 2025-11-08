@@ -116,7 +116,7 @@
         if (Logger) {
             Logger.checkpoint('[PatternSystem] All dependencies ready, initializing...');
         } else {
-            (global.DawsOS?.Logger || console).checkpoint('[PatternSystem] All dependencies ready, initializing...');
+            console.log('[PatternSystem] All dependencies ready, initializing...');
         }
 
     // Import React hooks (now we know React is available)
