@@ -581,9 +581,10 @@ class MacroService:
             logger.error(f"Programming error computing derived indicators: {e}", exc_info=True)
             raise
         except Exception as e:
-            # Database/service errors - re-raise (critical operation)
+            # Database/service errors - re-raise as DatabaseError (critical operation)
+            from app.core.exceptions import DatabaseError
             logger.error(f"Failed to compute derived indicators: {e}", exc_info=True)
-            raise
+            raise DatabaseError(f"Failed to compute derived indicators: {e}", retryable=True) from e
 
     async def fetch_indicators(
         self,
@@ -706,7 +707,9 @@ class MacroService:
                 raise
             except Exception as e:
                 # API/service errors - log and continue with other indicators
+                from app.core.exceptions import ExternalAPIError
                 logger.error(f"Failed to fetch {indicator_id}: {e}")
+                # Don't raise ExternalAPIError here - continue with other indicators is intentional
                 results[indicator_id] = []
 
         return results

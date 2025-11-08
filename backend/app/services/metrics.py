@@ -35,6 +35,7 @@ from app.core.types import (
     PricingPackNotFoundError,
     PricingPackValidationError,
 )
+from app.core.exceptions import DatabaseError
 from app.services.pricing import get_pricing_service
 from app.services.portfolio_helpers import get_portfolio_value
 
@@ -129,6 +130,7 @@ class PerformanceCalculator:
         except Exception as e:
             # Database/service errors - log and use empty dataset (graceful degradation)
             logger.warning(f"Could not query portfolio_daily_values: {e}. Using empty dataset.")
+            # Don't raise DatabaseError here - graceful degradation is intentional
             values = []
 
         if len(values) < 2:
@@ -400,6 +402,7 @@ class PerformanceCalculator:
         except Exception as e:
             # Database/service errors - log and use empty dataset (graceful degradation)
             logger.warning(f"Could not query portfolio_daily_values: {e}. Using empty dataset.")
+            # Don't raise DatabaseError here - graceful degradation is intentional
             values = []
 
         if len(values) < 2:
@@ -498,6 +501,7 @@ class PerformanceCalculator:
         except Exception as e:
             # Database/service errors - log and use empty dataset (graceful degradation)
             logger.warning(f"Could not query portfolio_daily_values: {e}. Using empty dataset.")
+            # Don't raise DatabaseError here - graceful degradation is intentional
             values = []
 
         if len(values) < 2:
