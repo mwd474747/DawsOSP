@@ -142,7 +142,12 @@ class RatingsService:
         if not self.rubrics:
             try:
                 self.rubrics = await self._load_rubrics()
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - should not happen, log and re-raise
+                logger.error(f"Programming error loading rubrics from database: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # Database/service errors - log and fall back to hardcoded weights
                 logger.error(f"Failed to load rubrics from database: {e}")
                 self.rubrics = {}  # Empty dict triggers fallback
 

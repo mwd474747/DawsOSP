@@ -94,7 +94,12 @@ class NotificationService:
                 self.execute_statement = execute_statement
                 logger.info("NotificationService initialized with database integration")
 
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - should not happen, log and re-raise
+                logger.error(f"Programming error initializing database connections: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # Connection/configuration errors - log and fall back to stub mode
                 logger.warning(
                     f"Failed to initialize database connections: {e}. "
                     "Falling back to stub mode."
@@ -146,7 +151,12 @@ class NotificationService:
             try:
                 await self.send_inapp_notification(user_id, alert_id, message)
                 logger.info(f"In-app notification sent to user {user_id}")
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - re-raise to surface bugs immediately
+                logger.error(f"Programming error sending in-app notification: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # Database/service errors - log and re-raise
                 logger.error(f"Failed to send in-app notification: {e}")
                 success = False
                 raise
@@ -533,7 +543,12 @@ class NotificationService:
             result = await self.execute_statement(query, notification_id, user_id)
             deleted = int(result.split()[-1]) if result else 0
             return deleted > 0
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error deleting notification: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database errors - log and return False (graceful degradation)
             logger.error(f"Failed to delete notification: {e}")
             return False
 

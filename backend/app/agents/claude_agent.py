@@ -108,7 +108,12 @@ class ClaudeAgent(BaseAgent):
                 else:
                     logger.error(f"Claude API error: {response.status_code} - {response.text}")
                     return f"API error: {response.status_code}. Using fallback response."
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and return fallback
+            logger.error(f"Programming error in Claude API call: {e}", exc_info=True)
+            return "Unable to process request. Please check your input."
         except Exception as e:
+            # API/network errors - log and return fallback
             logger.error(f"Claude API call failed: {e}")
             return "Unable to connect to Claude AI. Please check your connection."
 

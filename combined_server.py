@@ -973,10 +973,16 @@ async def calculate_portfolio_risk_metrics(holdings: List[dict], portfolio_id: s
 
 @app.get("/frontend/{filename}")
 async def serve_frontend_file(filename: str):
-    """Serve files from the frontend directory"""
+    """Serve files from the frontend directory with cache-control headers"""
     file_path = Path(f"frontend/{filename}")
     if file_path.exists() and file_path.is_file():
-        return FileResponse(file_path)
+        response = FileResponse(file_path)
+        # Add cache-control headers for JS files to prevent caching issues
+        if filename.endswith('.js'):
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
     raise HTTPException(status_code=404, detail="File not found")
 
 @app.get("/", response_class=HTMLResponse)
@@ -986,7 +992,12 @@ async def root():
         # Try to read UI from file
         ui_file = Path("full_ui.html")
         if ui_file.exists():
-            return HTMLResponse(content=ui_file.read_text())
+            response = HTMLResponse(content=ui_file.read_text())
+            # Add cache-control headers to prevent caching issues
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+            return response
     except Exception as e:
         logger.error(f"Error reading UI file: {e}")
 
@@ -6193,7 +6204,12 @@ async def catch_all_spa_routes(full_path: str):
         ui_file = Path("full_ui.html")
         if ui_file.exists():
             logger.debug(f"Serving SPA for path: /{full_path}")
-            return HTMLResponse(content=ui_file.read_text())
+            response = HTMLResponse(content=ui_file.read_text())
+            # Add cache-control headers to prevent caching issues
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+            return response
     except HTTPException:
         raise
     except Exception as e:

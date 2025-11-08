@@ -321,7 +321,12 @@ class PatternOrchestrator:
 
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse pattern {pattern_file}: {e}")
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - should not happen, log and re-raise
+                logger.error(f"Programming error loading pattern {pattern_file}: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # File I/O or other errors - log and continue
                 logger.error(f"Failed to load pattern {pattern_file}: {e}")
 
         logger.info(f"Loaded {pattern_count} patterns from {patterns_dir}")
@@ -568,12 +573,25 @@ class PatternOrchestrator:
                                                             f"Step {step_idx} ({capability}): "
                                                             f"references '{parts[0]}' which may not be available"
                                                         )
+                                        except (ValueError, TypeError, KeyError, AttributeError) as e:
+                                            # Programming errors - should not happen, log and continue
+                                            warnings.append(
+                                                f"Step {step_idx} ({capability}): "
+                                                f"programming error validating template '{arg_value}': {e}"
+                                            )
                                         except Exception as e:
+                                            # Template validation errors - log and continue
                                             warnings.append(
                                                 f"Step {step_idx} ({capability}): "
                                                 f"could not validate template '{arg_value}': {e}"
                                             )
+                        except (ValueError, TypeError, KeyError, AttributeError) as e:
+                            # Programming errors - should not happen, log and continue
+                            warnings.append(
+                                f"Could not inspect signature for {capability} (programming error): {e}"
+                            )
                         except Exception as e:
+                            # Inspection errors - log and continue
                             warnings.append(
                                 f"Could not inspect signature for {capability}: {e}"
                             )
@@ -695,7 +713,14 @@ class PatternOrchestrator:
                 # Resolve template arguments
                 try:
                     args = self._resolve_args(step.get("args", {}), state)
+                except (ValueError, TypeError, KeyError, AttributeError) as e:
+                    # Programming errors - should not happen, log and re-raise
+                    error_msg = f"Programming error resolving args for {capability}: {e}"
+                    logger.error(error_msg, exc_info=True)
+                    trace.add_error(capability, error_msg)
+                    raise ValueError(error_msg)
                 except Exception as e:
+                    # Template resolution errors - log and re-raise
                     error_msg = f"Failed to resolve args for {capability}: {e}"
                     logger.error(error_msg)
                     trace.add_error(capability, error_msg)
@@ -747,14 +772,28 @@ class PatternOrchestrator:
                         f"Completed {capability} in {duration:.3f}s → {result_key}"
                     )
 
+                except (ValueError, TypeError, KeyError, AttributeError) as e:
+                    # Programming errors - should not happen, log and re-raise
+                    error_msg = f"Programming error in capability {capability}: {e}"
+                    logger.error(error_msg, exc_info=True)
+                    trace.add_error(capability, error_msg)
+                    raise
                 except Exception as e:
+                    # Service/database errors - log and re-raise
                     error_msg = f"Capability {capability} failed: {e}"
                     logger.error(error_msg, exc_info=True)
                     trace.add_error(capability, error_msg)
                     raise
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            pattern_status = "error"
+            error_msg = f"Programming error in pattern execution: {e}"
+            logger.error(error_msg, exc_info=True)
+            trace.add_error("pattern_execution", error_msg)
+            raise
         except Exception as e:
-            # Pattern failed - record error status
+            # Service/database errors - log and re-raise
             pattern_status = "error"
             error_msg = f"Pattern execution failed: {e}"
             logger.error(error_msg, exc_info=True)
@@ -866,8 +905,11 @@ class PatternOrchestrator:
                 for warning in deprecated_warnings:
                     logger.warning(f"  - {warning}")
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and continue (non-blocking)
+            logger.error(f"Programming error in pattern validation (non-blocking): {e}", exc_info=True)
         except Exception as e:
-            # Validation itself should never break execution
+            # Validation errors - log and continue (non-blocking)
             logger.error(f"Pattern validation error (non-blocking): {e}", exc_info=True)
 
         return result
@@ -986,7 +1028,12 @@ class PatternOrchestrator:
             # Now evaluate the resolved condition safely
             return self._safe_evaluate(safe_condition, state)
             
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and return False
+            logger.warning(f"Programming error evaluating condition '{condition}': {e}")
+            return False
         except Exception as e:
+            # Condition evaluation errors - log and return False
             logger.warning(f"Failed to evaluate condition '{condition}': {e}")
             return False
     

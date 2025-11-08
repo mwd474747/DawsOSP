@@ -213,7 +213,12 @@ class BaseProvider(ABC):
 
                     await asyncio.sleep(delay)
                     
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - don't retry, re-raise immediately
+                logger.error(f"Programming error in {self.name} for {request.endpoint}: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # Network/timeout/service errors - retry logic applies
                 last_exception = e
                 
                 if attempt < self.max_retries:

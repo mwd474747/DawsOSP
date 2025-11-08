@@ -576,7 +576,12 @@ class MacroService:
             else:
                 logger.warning("No derived indicators were computed - check if base indicators are available")
                 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error computing derived indicators: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - re-raise (critical operation)
             logger.error(f"Failed to compute derived indicators: {e}", exc_info=True)
             raise
 
@@ -695,7 +700,12 @@ class MacroService:
                     f"Fetched {len(indicators)} observations for {indicator_id}"
                 )
 
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - re-raise to surface bugs immediately
+                logger.error(f"Programming error fetching {indicator_id}: {e}", exc_info=True)
+                raise
             except Exception as e:
+                # API/service errors - log and continue with other indicators
                 logger.error(f"Failed to fetch {indicator_id}: {e}")
                 results[indicator_id] = []
 

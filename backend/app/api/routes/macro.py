@@ -399,7 +399,15 @@ async def get_current_regime(
             indicators=classification.indicators,
         )
 
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error detecting regime: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error (programming error): {str(e)}",
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Error detecting regime: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
@@ -478,7 +486,15 @@ async def get_regime_history(
             transitions=transitions,
         )
 
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error fetching regime history: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error (programming error): {str(e)}",
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Error fetching regime history: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
@@ -539,7 +555,15 @@ async def get_indicators(
             asof_date=classification.date,
         )
 
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error fetching indicators: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error (programming error): {str(e)}",
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Error fetching indicators: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
@@ -630,7 +654,15 @@ async def run_scenario(
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except (TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error running scenario: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error (programming error): {str(e)}",
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Error running scenario: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
@@ -725,7 +757,15 @@ async def compute_dar(
             current_nav=dar_result.current_nav,
         )
 
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error computing DaR: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error (programming error): {str(e)}",
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Error computing DaR: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,

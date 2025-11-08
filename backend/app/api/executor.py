@@ -471,8 +471,35 @@ async def execute(
             # Re-raise HTTP exceptions (already formatted)
             raise
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise as HTTPException
+            logger.exception(f"Programming error in execute: {e}")
+
+            # Capture in Sentry with context
+            capture_exception(
+                e,
+                context={
+                    "pattern_id": req.pattern_id,
+                    "request_id": request_id,
+                },
+                tags={
+                    "component": "executor",
+                    "pattern_id": req.pattern_id,
+                    "error_type": "programming_error",
+                },
+            )
+
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=ExecError(
+                    code=ErrorCode.INTERNAL_ERROR,
+                    message=f"Internal server error (programming error): {str(e)}",
+                    request_id=request_id,
+                ).to_dict(),
+            )
+
         except Exception as e:
-            # Capture unexpected errors
+            # Capture unexpected errors (service/database errors)
             logger.exception(f"Unexpected error in execute: {e}")
 
             # Capture in Sentry with context
@@ -872,8 +899,21 @@ async def _execute_pattern_internal(
         # Re-raise HTTP exceptions (already formatted)
         raise
 
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.exception(f"Programming error in pattern execution: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=ExecError(
+                code=ErrorCode.INTERNAL_ERROR,
+                message="Internal server error during pattern execution (programming error).",
+                details={"error": str(e)},
+                request_id=request_id,
+            ).to_dict(),
+        )
+
     except Exception as e:
-        # Catch-all for unexpected errors
+        # Catch-all for unexpected errors (service/database errors)
         logger.exception(f"Execute failed with unexpected error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

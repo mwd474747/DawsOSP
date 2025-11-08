@@ -124,7 +124,12 @@ class PricingPackQueries:
 
             return dict(row)
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error getting latest pack: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database errors - log and re-raise
             logger.error(f"Failed to get latest pack: {e}", exc_info=True)
             raise
 
@@ -171,7 +176,12 @@ class PricingPackQueries:
 
             return dict(row)
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error getting pack by ID {pack_id}: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database errors - log and re-raise
             logger.error(f"Failed to get pack by ID {pack_id}: {e}", exc_info=True)
             raise
 
@@ -251,7 +261,12 @@ class PricingPackQueries:
             logger.info(f"Marked pack {pack_id} as fresh: {result}")
             return True
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error marking pack {pack_id} as fresh: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database errors - log and re-raise
             logger.error(f"Failed to mark pack {pack_id} as fresh: {e}", exc_info=True)
             raise
 
@@ -285,7 +300,12 @@ class PricingPackQueries:
             logger.error(f"Marked pack {pack_id} as error: {result}")
             return True
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error marking pack {pack_id} as error: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database errors - log and re-raise
             logger.error(f"Failed to mark pack {pack_id} as error: {e}", exc_info=True)
             raise
 

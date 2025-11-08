@@ -277,9 +277,12 @@ class FinancialAnalyst(BaseAgent):
             logger.info(f"Retrieved {len(positions)} positions from lots table")
             provenance = DataProvenance.REAL
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error querying positions: {e}", exc_info=True)
+            raise
         except Exception as e:
-            # PHASE 4 FIX: Catch only database errors, not all exceptions
-            # This prevents masking programming errors (TypeError, KeyError, etc.)
+            # Database/service errors - log and handle appropriately
             import asyncpg
             import os
             
@@ -306,9 +309,8 @@ class FinancialAnalyst(BaseAgent):
                     # In production, re-raise the error instead of falling back to stubs
                     raise
             else:
-                # Programming errors (TypeError, KeyError, AttributeError, etc.) - re-raise
-                # This helps catch bugs early instead of masking them with stub data
-                logger.error(f"Programming error in ledger_positions: {e}", exc_info=True)
+                # Other service errors - re-raise
+                logger.error(f"Service error querying positions: {e}", exc_info=True)
                 raise
 
         result = {
@@ -941,7 +943,12 @@ class FinancialAnalyst(BaseAgent):
                     "sharpe_itd": float(metrics["sharpe_itd"]) if metrics.get("sharpe_itd") else None,
                 }
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in metrics.compute_sharpe: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - return error response
             logger.error(f"Error fetching metrics from database: {e}", exc_info=True)
             result = {
                 "portfolio_id": str(portfolio_id_uuid),
@@ -1324,7 +1331,12 @@ class FinancialAnalyst(BaseAgent):
 
                 return result
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in factor_analysis.analyze: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - return error response
             logger.error(
                 f"FactorAnalyzer failed: {e}",
                 exc_info=True

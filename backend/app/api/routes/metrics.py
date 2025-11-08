@@ -87,7 +87,15 @@ async def get_portfolio_metrics(
 
     except HTTPException:
         raise
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error fetching metrics for {portfolio_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error (programming error) fetching metrics"
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Error fetching metrics for {portfolio_id}: {e}")
         raise HTTPException(
             status_code=500,
@@ -151,7 +159,18 @@ async def get_metrics_history(
 
     except HTTPException:
         raise
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(
+            f"Programming error fetching metrics history for {portfolio_id} "
+            f"({start_date} to {end_date}): {e}", exc_info=True
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error (programming error) fetching metrics history"
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(
             f"Error fetching metrics history for {portfolio_id} "
             f"({start_date} to {end_date}): {e}"

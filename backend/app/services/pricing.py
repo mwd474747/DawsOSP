@@ -383,7 +383,12 @@ class PricingService:
                 volume=row.get("volume"),
             )
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in get_price for {security_id}: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - re-raise (critical operation)
             logger.error(f"Failed to get price for {security_id}: {e}", exc_info=True)
             raise
 
@@ -458,7 +463,12 @@ class PricingService:
 
             return prices
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in get_prices_for_securities: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - re-raise (critical operation)
             logger.error(f"Failed to get prices for securities: {e}", exc_info=True)
             raise
 
@@ -511,7 +521,12 @@ class PricingService:
             logger.debug(f"Loaded {len(prices)} prices as Decimals from pack {pack_id}")
             return prices
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in get_prices_as_decimals: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - re-raise (critical operation)
             logger.error(f"Failed to get prices as decimals: {e}", exc_info=True)
             raise
 
@@ -571,7 +586,12 @@ class PricingService:
 
             return prices
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in get_all_prices for pack {pack_id}: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - re-raise (critical operation)
             logger.error(f"Failed to get all prices for pack {pack_id}: {e}", exc_info=True)
             raise
 
@@ -651,7 +671,12 @@ class PricingService:
                 policy=row.get("policy"),
             )
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in get_fx_rate for {base_ccy}/{quote_ccy}: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - re-raise (critical operation)
             logger.error(f"Failed to get FX rate {base_ccy}/{quote_ccy}: {e}", exc_info=True)
             raise
 
@@ -705,7 +730,12 @@ class PricingService:
 
             return fx_rates
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in get_all_fx_rates for pack {pack_id}: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database/service errors - re-raise (critical operation)
             logger.error(f"Failed to get all FX rates for pack {pack_id}: {e}", exc_info=True)
             raise
 

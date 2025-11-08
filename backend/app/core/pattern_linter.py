@@ -228,7 +228,12 @@ def main():
         else:
             parser.print_help()
     
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and exit
+        print(f"Programming error initializing pattern linter: {e}", file=sys.stderr)
+        sys.exit(1)
     except Exception as e:
+        # Initialization errors - log and exit
         print(f"Error initializing pattern linter: {e}", file=sys.stderr)
         sys.exit(1)
 

@@ -114,7 +114,17 @@ async def get_currency_attribution(
             status_code=400,
             detail=str(e)
         )
+    except (TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(
+            f"Programming error computing currency attribution for {portfolio_id}: {e}", exc_info=True
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error (programming error) computing attribution"
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(
             f"Error computing currency attribution for {portfolio_id}: {e}"
         )

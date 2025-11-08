@@ -193,7 +193,15 @@ async def create_portfolio(
             updated_at=row["updated_at"],
         )
 
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error creating portfolio: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error (programming error): {str(e)}"
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to create portfolio: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -265,7 +273,15 @@ async def list_portfolios(
         logger.info(f"Found {len(portfolios)} portfolios for user {user_id}")
         return portfolios
 
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error listing portfolios: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error (programming error): {str(e)}"
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to list portfolios: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -330,7 +346,15 @@ async def get_portfolio(
 
     except HTTPException:
         raise
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error getting portfolio: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error (programming error): {str(e)}"
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to get portfolio: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -439,7 +463,15 @@ async def update_portfolio(
 
     except HTTPException:
         raise
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error updating portfolio: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error (programming error): {str(e)}"
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to update portfolio: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -497,7 +529,15 @@ async def delete_portfolio(
 
     except HTTPException:
         raise
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise as HTTPException
+        logger.error(f"Programming error deleting portfolio: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error (programming error): {str(e)}"
+        )
     except Exception as e:
+        # Service/database errors - log and re-raise as HTTPException
         logger.error(f"Failed to delete portfolio: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -386,9 +386,13 @@ class ReportService:
 
         try:
             template = self.jinja_env.get_template(template_name)
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error loading template {template_name}: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Template not found or other errors - return fallback HTML (graceful degradation)
             logger.error(f"Template not found: {template_name} - {e}")
-            # Return simple HTML fallback
             return self._generate_fallback_html(report_data, attributions, watermark)
 
         # Render template
@@ -448,7 +452,12 @@ class ReportService:
             
         except ImportError:
             raise ServiceError("WeasyPrint not available. Install with: pip install weasyprint")
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error generating PDF: {e}", exc_info=True)
+            raise ServiceError(f"PDF generation failed (programming error): {str(e)}")
         except Exception as e:
+            # Service/library errors - re-raise as ServiceError
             logger.error(f"PDF generation failed: {str(e)}")
             raise ServiceError(f"PDF generation failed: {str(e)}")
     

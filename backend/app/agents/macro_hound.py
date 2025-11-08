@@ -201,7 +201,12 @@ class MacroHound(BaseAgent):
             # Data comes from computed indicators
             provenance = DataProvenance.COMPUTED
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in regime detection: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service/database errors - return error response
             logger.error(f"Error detecting regime: {e}", exc_info=True)
             result = {
                 "regime_name": "UNKNOWN",
@@ -314,7 +319,12 @@ class MacroHound(BaseAgent):
                 "date": str(asof) if asof else None,
             }
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error in cycle computation: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service/database errors - return error response
             logger.error(f"Error computing cycles: {e}", exc_info=True)
             result = {
                 "stdc": None,
@@ -394,7 +404,12 @@ class MacroHound(BaseAgent):
                 "date": str(asof) if asof else None,
             }
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error getting indicators: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service/database errors - return error response
             logger.error(f"Error getting indicators: {e}", exc_info=True)
             result = {
                 "indicators": {},
@@ -569,7 +584,12 @@ class MacroHound(BaseAgent):
                 "as_of_date": str(scenario_result.as_of_date),
             }
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error running scenario {scenario_id}: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service/database errors - return error response
             logger.error(f"Error running scenario {scenario_id}: {e}", exc_info=True)
             result = {
                 "scenario_id": scenario_id or "unknown",
@@ -779,7 +799,12 @@ class MacroHound(BaseAgent):
 
                 regime_classification = await self.macro_service.detect_current_regime()
                 regime = regime_classification.regime.value
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
+                # Programming errors - should not happen, log and use default
+                logger.warning(f"Programming error detecting regime for DaR conditioning: {e}")
+                regime = "MID_EXPANSION"  # Default fallback
             except Exception as e:
+                # Service/database errors - log and use default
                 logger.warning(f"Could not detect regime for DaR conditioning: {e}")
                 regime = "MID_EXPANSION"  # Default fallback
 
@@ -827,9 +852,29 @@ class MacroHound(BaseAgent):
                         "implementation_status": "complete",
                     }
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and return error response
+            logger.error(f"Programming error computing DaR: {e}", exc_info=True)
+            result = {
+                "dar_value": None,
+                "dar_amount": None,
+                "confidence": confidence,
+                "portfolio_id": str(portfolio_id_uuid),
+                "regime": None,
+                "horizon_days": horizon_days,
+                "scenarios_run": 0,
+                "worst_scenario": None,
+                "worst_scenario_drawdown": None,
+                "error": f"Programming error: {str(e)}",
+                "_provenance": {
+                    "type": "error",
+                    "source": "scenario_analysis_service",
+                    "error": str(e),
+                }
+            }
         except Exception as e:
+            # Service/database errors - log and return error response
             logger.error(f"Error computing DaR: {e}", exc_info=True)
-            # PHASE 3 FIX: Return error instead of stub data
             result = {
                 "dar_value": None,
                 "dar_amount": None,
@@ -1113,9 +1158,34 @@ class MacroHound(BaseAgent):
                 },
             }
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and return fallback
+            logger.error(f"Programming error computing civil cycle: {e}", exc_info=True)
+            result = {
+                "cycle_type": "civil",
+                "phase_label": "Crisis",
+                "phase_number": 4,
+                "composite_score": 0.42,
+                "confidence": 0.50,
+                "description": "Institutional breakdown, high conflict risk",
+                "date": asof.isoformat() if asof else None,
+                "indicators": {
+                    "gini_coefficient": 0.418,
+                    "institutional_trust": 0.38,
+                    "polarization_index": 0.78,
+                    "social_unrest_score": 0.30,
+                    "fiscal_deficit_gdp": -6.20,
+                },
+                "risk_factors": {
+                    "wealth_inequality": "HIGH",
+                    "political_polarization": "HIGH",
+                    "trust_deficit": "HIGH",
+                },
+                "error": f"Programming error: {str(e)}",
+            }
         except Exception as e:
+            # Service/database errors - log and return fallback
             logger.error(f"Error computing civil cycle: {e}", exc_info=True)
-            # Return fallback values on error
             result = {
                 "cycle_type": "civil",
                 "phase_label": "Crisis",

@@ -198,9 +198,13 @@ class MacroAwareScenarioService:
             logger.info(f"Current macro state: Regime={macro_state['regime']}, LTDC={macro_state['ltdc_phase']}")
             return macro_state
             
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error getting macro state: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service/database errors - return neutral state on error (graceful degradation)
             logger.error(f"Failed to get macro state: {e}")
-            # Return neutral state on error
             return {
                 "regime": Regime.MID_EXPANSION,  # Default to mid-expansion
                 "regime_probability": {},
@@ -897,7 +901,12 @@ class MacroAwareScenarioService:
         # Get current macro state
         try:
             macro_state = await self._get_macro_state()
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - re-raise to surface bugs immediately
+            logger.error(f"Programming error getting macro state: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Service/database errors - use defaults (graceful degradation)
             logger.warning(f"Failed to get macro state: {e}, using defaults")
             macro_state = {
                 "regime": Regime.MID_EXPANSION,
