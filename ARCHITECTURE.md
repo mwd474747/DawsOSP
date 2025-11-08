@@ -12,7 +12,7 @@ DawsOS is an AI-powered portfolio management platform built on a **pattern-drive
 - **Server**: `combined_server.py` - Single FastAPI application (6,043 lines, 53 functional endpoints)
 - **UI**: `full_ui.html` - React 18 SPA (11,594 lines, 18 pages including login, no build step)
 - **Database**: PostgreSQL 14+ with TimescaleDB extension
-- **Agents**: 4 specialized agents providing ~70 capabilities
+- **Agents**: 4 specialized agents providing 72 capabilities
   - **Note:** Phase 3 consolidation complete (November 3, 2025) - 9 agents → 4 agents
 - **Patterns**: 13 pattern definitions for business workflows
 
@@ -32,7 +32,10 @@ Pattern Definition (JSON) → Template Substitution → Agent Capability Calls �
 
 **Key Concepts**:
 - **Patterns**: Declarative JSON files defining multi-step workflows
-- **Capabilities**: Agent methods exposed as "capability.method" strings (e.g., "ledger.positions", "pricing.apply_pack")
+- **Capabilities**: Agent methods exposed as "category.operation" strings (e.g., "ledger.positions", "pricing.apply_pack", "ratings.dividend_safety")
+  - **Naming Convention**: Capabilities use category-based naming (e.g., `ratings.*`, `optimizer.*`, `charts.*`) rather than agent-prefixed naming (e.g., `financial_analyst.*`)
+  - This abstraction allows patterns to reference capabilities without knowing which agent implements them
+  - Examples: `ratings.dividend_safety`, `optimizer.propose_trades`, `charts.macro_overview`, `alerts.suggest_presets`
 - **Template Substitution**: Dynamic values using `{{inputs.x}}`, `{{step_result}}`, `{{ctx.z}}`
 - **Request Context (RequestCtx)**: Immutable context ensuring reproducibility (pricing_pack_id, ledger_commit_hash, trace_id)
 
@@ -53,10 +56,18 @@ Pattern Definition (JSON) → Template Substitution → Agent Capability Calls �
       "capability": "metrics.compute_twr",
       "args": {"portfolio_id": "{{inputs.portfolio_id}}"},
       "as": "perf_metrics"
+    },
+    {
+      "capability": "ratings.aggregate",
+      "args": {"positions": "{{valued_positions.positions}}"},
+      "as": "ratings"
     }
-  ]
+  ],
+  "outputs": ["valued_positions", "perf_metrics", "ratings"]
 }
 ```
+
+**Note:** All patterns use category-based capability naming (e.g., `ratings.aggregate`, `optimizer.propose_trades`, `charts.macro_overview`). Agent-prefixed naming (e.g., `financial_analyst.*`) has been migrated to category-based naming (January 15, 2025).
 
 **Pattern Optimization (Week 3/4 - November 2025):** The `portfolio.get_valued_positions` capability combines the common pattern of getting positions from the ledger and pricing them with a pricing pack. This eliminates duplication across 6 patterns that previously used the 2-step sequence of `ledger.positions` → `pricing.apply_pack`.
 
@@ -73,37 +84,68 @@ Capability Request ("ledger.positions") → Runtime Lookup → FinancialAnalyst.
 ```
 
 **Registered Agents** (4 total - Phase 3 consolidation complete):
-1. **FinancialAnalyst** - Portfolio ledger, pricing, metrics, attribution, optimization, ratings, charts (29 capabilities)
+1. **FinancialAnalyst** - Portfolio ledger, pricing, metrics, attribution, optimization, ratings, charts (30 capabilities)
    - Capabilities: `ledger.*`, `pricing.*`, `metrics.*`, `attribution.*`, `charts.*`, `risk.*`, `portfolio.*`, `optimizer.*`, `ratings.*`
    - **Consolidated from:** OptimizerAgent, RatingsAgent, ChartsAgent (Phase 3 Weeks 1-3, November 3, 2025)
    - **Week 3/4 additions:** `portfolio.get_valued_positions`, `metrics.compute_mwr` (November 5, 2025)
-   - **Total:** 19 original + 9 consolidated + 2 new = 30 capabilities (updated count)
-2. **MacroHound** - Macro economic cycles, scenarios, regime detection, alerts (~17+ capabilities)
+   - **Total:** 20 original + 4 optimization + 4 ratings + 2 charting = 30 capabilities
+2. **MacroHound** - Macro economic cycles, scenarios, regime detection, alerts (19 capabilities)
    - Capabilities: `macro.*`, `scenarios.*`, `cycles.*`, `alerts.*`
    - **Consolidated from:** AlertsAgent (Phase 3 Week 4, November 3, 2025)
-3. **DataHarvester** - External data fetching, news integration, reports (~8+ capabilities)
-   - Capabilities: `data.*`, `news.*`, `reports.*`, `corporate_actions.*`
+   - **Total:** 7 macro + 5 cycles + 3 scenarios + 2 alerts + 2 new = 19 capabilities
+3. **DataHarvester** - External data fetching, news integration, reports (16 capabilities)
+   - Capabilities: `provider.*`, `fundamentals.*`, `news.*`, `reports.*`, `corporate_actions.*`
    - **Consolidated from:** ReportsAgent (Phase 3 Week 5, November 3, 2025)
-4. **ClaudeAgent** - AI-powered explanations and insights (~6 capabilities)
+   - **Total:** 5 provider + 1 fundamentals + 2 news + 3 reports + 5 corporate_actions = 16 capabilities
+4. **ClaudeAgent** - AI-powered explanations and insights (7 capabilities)
    - Capabilities: `claude.*`, `ai.*`
+   - **Total:** 7 capabilities
+
+**Total System Capabilities:** 30 + 19 + 16 + 7 = **72 capabilities**
 
 **Agent Registration** (via DI container - backend/app/core/service_initializer.py):
+
+All services and agents are initialized via DI container (Phase 2 complete). Singleton pattern has been removed.
+
+**Service Initialization Pattern:**
 ```python
-def initialize_services(container, db_pool, ...):
-    # Register agents with factory functions
-    container.register_service("financial_analyst", FinancialAnalyst, factory=create_financial_analyst)
-    container.register_service("macro_hound", MacroHound, factory=create_macro_hound)
-    container.register_service("data_harvester", DataHarvester, factory=create_data_harvester)
-    container.register_service("claude_agent", ClaudeAgent, factory=create_claude_agent)
-    
-    # Register agent runtime (registers all agents)
-    container.register_service("agent_runtime", AgentRuntime, factory=create_agent_runtime)
-    
-    # Initialize in dependency order
-    container.initialize_services(dependency_order)
+from app.core.service_initializer import initialize_services
+from app.core.di_container import get_container
+from app.db.connection import get_db_pool
+
+# Get DI container
+container = get_container()
+
+# Get database pool
+db_pool = get_db_pool()
+
+# Initialize all services in dependency order
+initialize_services(container, db_pool=db_pool)
+
+# Services are now available via container.resolve()
+pricing_service = container.resolve("pricing")
+ratings_service = container.resolve("ratings")
+optimizer_service = container.resolve("optimizer")
 ```
 
-**Note:** All services and agents are initialized via DI container (Phase 2 complete). Singleton pattern has been removed.
+**Direct Instantiation Pattern (Alternative):**
+```python
+# For services that don't need DI container, use direct instantiation
+from app.services.pricing import PricingService
+from app.services.ratings import RatingsService
+
+# Direct instantiation with db_pool
+db_pool = get_db_pool()
+pricing_service = PricingService(db_pool=db_pool)
+ratings_service = RatingsService(db_pool=db_pool)
+```
+
+**Migration from Singleton Pattern:**
+- **OLD (Deprecated):** `pricing_service = get_pricing_service()`
+- **NEW (DI Container):** `pricing_service = container.resolve("pricing")`
+- **NEW (Direct):** `pricing_service = PricingService(db_pool=db_pool)`
+
+**Note:** All deprecated singleton factory functions (`get_*_service()`) have been removed (January 15, 2025). Use DI container or direct instantiation instead.
 
 ### 3. Backend (FastAPI)
 
