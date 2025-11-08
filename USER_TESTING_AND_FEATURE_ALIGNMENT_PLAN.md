@@ -24,9 +24,90 @@
 
 ---
 
+## Critical Issues Identified from Console Log
+
+### P0 (CRITICAL) - Production Bugs
+
+1. **Field Name Inconsistency: `debt_to_equity` vs `debt_equity_ratio`** ❌
+   - **Error**: "Missing required fundamentals for resilience calculation: debt_to_equity. Available keys: ... debt_equity_ratio"
+   - **Location**: `backend/app/services/ratings.py:493` expects `debt_to_equity` but fundamentals have `debt_equity_ratio`
+   - **Impact**: `buffett_checklist` pattern fails for all securities (9 failures in console log)
+   - **Root Cause**: Field name mismatch between code and data structure
+   - **Fix**: Update `ratings.py` to use `debt_equity_ratio` instead of `debt_to_equity`, OR update fundamentals transformer to provide both
+
+2. **Missing Capability: `metrics.unrealized_pl`** ❌
+   - **Error**: "No agent registered for capability metrics.unrealized_pl"
+   - **Location**: `backend/patterns/tax_harvesting_opportunities.json:45` uses `metrics.unrealized_pl`
+   - **Impact**: `tax_harvesting_opportunities` pattern completely broken
+   - **Root Cause**: Capability doesn't exist - unrealized P&L is calculated in `pricing.apply_pack` but not exposed as separate capability
+   - **Fix**: Either create `metrics.unrealized_pl` capability OR update pattern to use `pricing.apply_pack` and extract unrealized P&L
+
+3. **Pattern Dependency Issue: `policy_rebalance`** ❌
+   - **Error**: "proposed_trades required for financial_analyst.analyze_impact. Run financial_analyst.propose_trades first."
+   - **Location**: `backend/patterns/policy_rebalance.json:63` uses `optimizer.analyze_impact` but error message references `financial_analyst.analyze_impact`
+   - **Impact**: `policy_rebalance` pattern fails
+   - **Root Cause**: Error message uses old agent-prefixed naming, AND step result structure may not match expectations
+   - **Fix**: Update error message to use category-based naming, verify step result structure matches pattern expectations
+
+4. **Field Name Inconsistency: `trade_date` vs `transaction_date`** ❌ (Already identified)
+   - **Error**: "column 'trade_date' does not exist"
+   - **Location**: `backend/app/agents/financial_analyst.py:2289` uses `trade_date` but schema has `transaction_date`
+   - **Impact**: `holding_deep_dive` pattern fails (500 error)
+   - **Root Cause**: Field name mismatch between code and database schema
+   - **Fix**: Update `financial_analyst.py` to use `transaction_date` (already in plan)
+
+### P1 (High Priority) - Performance & UX Issues
+
+5. **Multiple Pattern Executions** ⚠️
+   - **Issue**: Same patterns executed multiple times (e.g., `portfolio_overview` executed 3+ times)
+   - **Impact**: Unnecessary API calls, performance degradation
+   - **Root Cause**: Missing memoization or unnecessary re-renders
+   - **Fix**: Add React memoization, prevent duplicate pattern executions
+
+6. **Fallback Portfolio ID Usage** ⚠️
+   - **Issue**: "Using fallback portfolio ID" appears multiple times
+   - **Impact**: May use wrong portfolio, context not properly initialized
+   - **Root Cause**: Portfolio context not properly set or passed
+   - **Fix**: Ensure portfolio context is properly initialized and passed to patterns
+
+7. **Pattern Loading Timeout** ⚠️
+   - **Issue**: "MacroCyclesPage: Pattern loading timeout"
+   - **Impact**: User sees timeout error, poor UX
+   - **Root Cause**: Pattern execution takes too long or timeout too short
+   - **Fix**: Increase timeout or optimize pattern execution
+
+8. **Excessive Retry Logic** ⚠️
+   - **Issue**: Multiple retries happening (6+ retries for some requests)
+   - **Impact**: Slow page loads, poor UX
+   - **Root Cause**: Network issues or server errors causing retries
+   - **Fix**: Investigate root cause of failures, improve error handling
+
+### P2 (Medium Priority) - Code Quality Issues
+
+9. **Browser Deprecation Warnings** ⚠️
+   - **Issue**: "Window.fullScreen attribute is deprecated", "InstallTrigger is deprecated", etc.
+   - **Location**: `namespace-validator.js:131`
+   - **Impact**: Future browser compatibility issues
+   - **Root Cause**: Using deprecated browser APIs
+   - **Fix**: Update to use modern browser APIs
+
+10. **Page Count Mismatch** ⚠️
+    - **Issue**: Console shows 23 pages loaded but documentation says 20
+    - **Impact**: Documentation inconsistency
+    - **Root Cause**: Extra pages not documented or legacy pages counted
+    - **Fix**: Verify actual page count and update documentation
+
+11. **Error Message Inconsistency** ⚠️
+    - **Issue**: Error messages reference old agent-prefixed naming (`financial_analyst.analyze_impact`)
+    - **Impact**: Confusion, inconsistent with architecture
+    - **Root Cause**: Error messages not updated after capability naming migration
+    - **Fix**: Update all error messages to use category-based naming
+
+---
+
 ## Current State Analysis
 
-### Frontend Pages (20 total)
+### Frontend Pages (23 total - console shows 23, documentation says 20)
 
 | # | Page | Pattern Used | API Endpoints | Status | Notes |
 |---|------|-------------|---------------|--------|-------|
@@ -63,24 +144,32 @@
 |---|------------|---------------|--------|-------|
 | 1 | `portfolio_overview` | DashboardPage, PerformancePage, AttributionPage | ❓ | Most common pattern |
 | 2 | `macro_cycles_overview` | MacroCyclesPage | ❓ | Macro cycles |
-| 3 | `holding_deep_dive` | HoldingsPage | ❌ | **Known broken (500 error)** |
-| 4 | `portfolio_scenario_analysis` | ScenariosPage | ❓ | Scenario analysis |
-| 5 | `policy_rebalance` | OptimizerPage | ❓ | Optimization |
-| 6 | `buffett_checklist` | RatingsPage | ❓ | Ratings |
+| 3 | `holding_deep_dive` | HoldingsPage | ❌ | **Known broken (500 error - field name issue)** |
+| 4 | `portfolio_scenario_analysis` | ScenariosPage | ✅ | **Working (console shows success)** |
+| 5 | `policy_rebalance` | OptimizerPage | ❌ | **Broken (pattern dependency issue)** |
+| 6 | `buffett_checklist` | RatingsPage | ❌ | **Broken (field name mismatch - debt_to_equity vs debt_equity_ratio)** |
 | 7 | `export_portfolio_report` | ReportsPage | ❓ | Reports |
 | 8 | `corporate_actions_upcoming` | CorporateActionsPage | ❓ | Corporate actions |
 | 9 | `news_impact_analysis` | MarketDataPage? | ❓ | News analysis |
 | 10 | `macro_trend_monitor` | MacroCyclesPage? | ❓ | Macro trends |
 | 11 | `cycle_deleveraging_scenarios` | ScenariosPage? | ❓ | Scenarios |
 | 12 | `portfolio_macro_overview` | DashboardPage? | ❓ | Macro overview |
-| 13 | `tax_harvesting_opportunities` | None? | ❓ | **Not used?** |
+| 13 | `tax_harvesting_opportunities` | OptimizerPage? | ❌ | **Broken (missing capability metrics.unrealized_pl)** |
 | 14 | `portfolio_tax_report` | None? | ❓ | **Not used?** |
 | 15 | `portfolio_cycle_risk` | RiskPage | ❓ | Risk analysis |
 
 **Issues Identified**:
-- 2 patterns may not be used (`tax_harvesting_opportunities`, `portfolio_tax_report`)
-- 1 pattern known broken (`holding_deep_dive` - field name issues)
-- Many patterns have unknown status
+- ❌ **4 patterns broken** (from console log):
+  - `holding_deep_dive` - Field name issue (`trade_date` vs `transaction_date`)
+  - `buffett_checklist` - Field name mismatch (`debt_to_equity` vs `debt_equity_ratio`)
+  - `policy_rebalance` - Pattern dependency issue (step result structure)
+  - `tax_harvesting_opportunities` - Missing capability (`metrics.unrealized_pl`)
+- ✅ **2 patterns working** (from console log):
+  - `portfolio_overview` - Working (multiple successful executions)
+  - `portfolio_scenario_analysis` - Working (successful execution)
+  - `macro_cycles_overview` - Working (successful execution)
+  - `portfolio_cycle_risk` - Working (successful execution)
+- ❓ **9 patterns unknown** - Need testing
 
 ### API Endpoints (59 total)
 
@@ -657,12 +746,27 @@ function RequestInspector({ request }) {
 
 ## Implementation Priority
 
-### P0 (Critical) - Do First
-1. **Phase 1.1-1.6**: Feature Mapping & Inventory (4-6 hours)
+### P0 (CRITICAL) - Do First - **Production Bugs**
+1. **Phase 0.1**: Fix Field Name Inconsistencies (2-3 hours)
+   - 🔴 **CRITICAL** - Fixes 2 broken patterns (`holding_deep_dive`, `buffett_checklist`)
+   - Must fix before user testing
+2. **Phase 0.2**: Fix Missing Capability (1-2 hours)
+   - 🔴 **CRITICAL** - Fixes `tax_harvesting_opportunities` pattern
+   - Must fix before user testing
+3. **Phase 0.3**: Fix Pattern Dependency Issue (1 hour)
+   - 🔴 **CRITICAL** - Fixes `policy_rebalance` pattern
+   - Must fix before user testing
+4. **Phase 0.4**: Fix Multiple Pattern Executions (1 hour)
+   - ⚠️ **HIGH** - Performance issue, causes unnecessary API calls
+5. **Phase 0.5**: Fix Fallback Portfolio ID Usage (30 minutes)
+   - ⚠️ **HIGH** - May cause wrong portfolio to be used
+
+### P1 (High Priority) - Do Next
+6. **Phase 1.1-1.6**: Feature Mapping & Inventory (4-6 hours)
    - Must know what we have before testing
-2. **Phase 2.2.1-2.2.2**: Debug Mode UI (3-4 hours)
+7. **Phase 2.2.1-2.2.2**: Debug Mode UI (3-4 hours)
    - Essential for testing and debugging
-3. **Phase 3.1**: Test All Pages (4-6 hours)
+8. **Phase 3.1**: Test All Pages (4-6 hours)
    - Critical user flows must work
 
 ### P1 (High Priority) - Do Next
@@ -737,8 +841,18 @@ function RequestInspector({ request }) {
 
 ---
 
-**Status**: 📋 **PLAN READY FOR EXECUTION**  
-**Estimated Total Time**: 28-42 hours  
+**Status**: 📋 **PLAN UPDATED WITH CONSOLE LOG ISSUES**  
+**Estimated Total Time**: 32-48 hours (added 4-6 hours for critical bug fixes)  
 **Risk Level**: **LOW** (testing and cleanup, no breaking changes)  
 **Impact Level**: **HIGH** (ensures all features work before refactoring)
+
+**Critical Issues from Console Log**:
+- ❌ **4 patterns broken** (must fix before testing)
+- ⚠️ **4 performance/UX issues** (should fix before testing)
+- ⚠️ **3 code quality issues** (nice to have)
+
+**Next Steps**:
+1. **IMMEDIATE**: Fix Phase 0 critical bugs (4-6 hours)
+2. **THEN**: Execute feature mapping and testing (28-42 hours)
+3. **FINALLY**: Clean up and document (8-12 hours)
 
