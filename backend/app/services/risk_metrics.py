@@ -34,6 +34,12 @@ from app.core.types import (
     PricingPackValidationError,
 )
 from app.services.pricing import get_pricing_service
+from app.core.constants.risk import (
+    CONFIDENCE_LEVEL_95,
+    VAR_LOOKBACK_DAYS,
+    DEFAULT_TRACKING_ERROR_PERIODS,
+)
+from app.core.constants.financial import TRADING_DAYS_PER_YEAR
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +64,8 @@ class RiskMetrics:
         self,
         portfolio_id: str,
         pack_id: str,
-        confidence: float = 0.95,
-        lookback_days: int = 252,
+        confidence: float = CONFIDENCE_LEVEL_95,
+        lookback_days: int = VAR_LOOKBACK_DAYS,
         method: str = "historical",
     ) -> Dict:
         """
@@ -70,8 +76,8 @@ class RiskMetrics:
         Args:
             portfolio_id: Portfolio UUID
             pack_id: Pricing pack UUID
-            confidence: Confidence level (default 0.95 = 95%)
-            lookback_days: Historical period (default 252 = 1 year)
+            confidence: Confidence level (default CONFIDENCE_LEVEL_95 = 95%)
+            lookback_days: Historical period (default VAR_LOOKBACK_DAYS = 1 year)
             method: "historical" or "parametric"
 
         Returns:
@@ -139,8 +145,8 @@ class RiskMetrics:
         self,
         portfolio_id: str,
         pack_id: str,
-        confidence: float = 0.95,
-        lookback_days: int = 252,
+        confidence: float = CONFIDENCE_LEVEL_95,
+        lookback_days: int = VAR_LOOKBACK_DAYS,
     ) -> Dict:
         """
         Compute Conditional Value-at-Risk (CVaR / Expected Shortfall).
@@ -150,8 +156,8 @@ class RiskMetrics:
         Args:
             portfolio_id: Portfolio UUID
             pack_id: Pricing pack UUID
-            confidence: Confidence level (default 0.95 = 95%)
-            lookback_days: Historical period (default 252 = 1 year)
+            confidence: Confidence level (default CONFIDENCE_LEVEL_95 = 95%)
+            lookback_days: Historical period (default VAR_LOOKBACK_DAYS = 1 year)
 
         Returns:
             {
@@ -209,7 +215,7 @@ class RiskMetrics:
         portfolio_id: str,
         benchmark_id: str,
         pack_id: str,
-        lookback_days: int = 252,
+        lookback_days: int = DEFAULT_TRACKING_ERROR_PERIODS,
     ) -> Dict:
         """
         Compute tracking error vs benchmark.
@@ -220,7 +226,7 @@ class RiskMetrics:
             portfolio_id: Portfolio UUID
             benchmark_id: Benchmark portfolio UUID (or symbol like "SPY")
             pack_id: Pricing pack UUID
-            lookback_days: Historical period (default 252 = 1 year)
+            lookback_days: Historical period (default DEFAULT_TRACKING_ERROR_PERIODS = 1 year)
 
         Returns:
             {
@@ -269,7 +275,7 @@ class RiskMetrics:
         excess_returns = merged["return"] - merged["return_bench"]
 
         # Tracking error = annualized volatility of excess returns
-        tracking_error = float(np.std(excess_returns) * np.sqrt(252))
+        tracking_error = float(np.std(excess_returns) * np.sqrt(TRADING_DAYS_PER_YEAR))
 
         # Beta
         cov = np.cov(merged["return"], merged["return_bench"])[0, 1]
@@ -282,7 +288,7 @@ class RiskMetrics:
         )
 
         # Excess return (annualized)
-        excess_return_mean = float(np.mean(excess_returns) * 252)
+        excess_return_mean = float(np.mean(excess_returns) * TRADING_DAYS_PER_YEAR)
 
         # Information ratio
         information_ratio = (
