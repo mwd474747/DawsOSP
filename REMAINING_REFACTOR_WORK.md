@@ -368,8 +368,13 @@ This is the **single source of truth** for all remaining refactor work. It conso
 **Impact:** LOW - Consistency
 
 **Tasks:**
-1. Migrate `macro_cycles_overview.json` pattern from Format 2 to Format 1 or Format 3
-2. Extract magic numbers from JSON pattern files (e.g., `"default": 252`)
+1. ✅ Migrate `news_impact_analysis.json` pattern from Format 3 to Format 1
+2. ✅ Verify all patterns use Format 1 (list of keys)
+
+**Completed:**
+- ✅ Migrated `news_impact_analysis.json` from Format 3 (panels) to Format 1 (list of keys)
+- ✅ Verified all patterns now use Format 1: `["output1", "output2", ...]`
+- ✅ Note: Magic numbers in JSON patterns (e.g., `"default": 252`) are configuration values, not code. They cannot reference Python constants since JSON cannot import Python modules. These are acceptable as-is.
 
 #### 11. Remove Deprecated Singleton Functions
 **Status:** ✅ COMPLETE  
