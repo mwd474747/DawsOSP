@@ -277,9 +277,12 @@ class FinancialAnalyst(BaseAgent):
             logger.info(f"Retrieved {len(positions)} positions from lots table")
             provenance = DataProvenance.REAL
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error querying positions: {e}", exc_info=True)
+            raise
         except Exception as e:
-            # PHASE 4 FIX: Catch only database errors, not all exceptions
-            # This prevents masking programming errors (TypeError, KeyError, etc.)
+            # Database/service errors - log and handle appropriately
             import asyncpg
             import os
             
@@ -306,9 +309,8 @@ class FinancialAnalyst(BaseAgent):
                     # In production, re-raise the error instead of falling back to stubs
                     raise
             else:
-                # Programming errors (TypeError, KeyError, AttributeError, etc.) - re-raise
-                # This helps catch bugs early instead of masking them with stub data
-                logger.error(f"Programming error in ledger_positions: {e}", exc_info=True)
+                # Other service errors - re-raise
+                logger.error(f"Service error querying positions: {e}", exc_info=True)
                 raise
 
         result = {
