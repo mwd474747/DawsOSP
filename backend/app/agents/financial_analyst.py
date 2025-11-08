@@ -1565,10 +1565,19 @@ class FinancialAnalyst(BaseAgent):
 
         # Get current cycle phases if not provided
         if stdc is None or ltdc is None:
-            from app.services.cycles import CyclesService
-            cycles_service = CyclesService()
-
-            if stdc is None:
+            # Get cycles service from services dict (should be passed from DI container)
+            cycles_service = self.services.get("cycles_service")
+            if not cycles_service:
+                logger.warning("cycles_service not available, using fallback cycle phases")
+                # Fallback: use default phases if service not available
+                if stdc is None:
+                    stdc = {"phase_label": "Late Expansion", "score": 0.72}
+                if ltdc is None:
+                    ltdc = {"phase_label": "Late Cycle", "score": 0.68}
+                cycles_service = None
+            
+            if cycles_service:
+                if stdc is None:
                 stdc_obj = await cycles_service.detect_stdc_phase()
                 stdc = {
                     "phase": stdc_obj.phase,
