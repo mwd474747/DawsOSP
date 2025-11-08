@@ -386,11 +386,6 @@ def get_pattern_orchestrator() -> PatternOrchestrator:
     except (KeyError, RuntimeError) as e:
         logger.error(f"Failed to resolve pattern orchestrator: {e}", exc_info=True)
         raise
-
-    if _pattern_orchestrator is None:
-        runtime = get_agent_runtime()
-        _pattern_orchestrator = PatternOrchestrator(
-            agent_runtime=runtime,
             db=db_pool,
             redis=None  # TODO: Add Redis when available
         )
