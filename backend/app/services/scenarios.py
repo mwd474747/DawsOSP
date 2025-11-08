@@ -987,3 +987,9 @@ class ScenarioService:
 
 # ============================================================================
 # Singleton
+# ============================================================================
+
+# Factory function for combined_server.py
+def get_scenario_service():
+    """Factory function to return ScenarioService instance."""
+    return ScenarioService()
