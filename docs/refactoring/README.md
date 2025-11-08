@@ -36,10 +36,17 @@ This directory contains documentation for the Technical Debt Removal Plan V3 ref
 - **`BROWSER_CACHE_MANAGEMENT.md`** - Browser cache management strategy
 
 ### External Documentation
-- **`REPLIT_VALIDATION_GUIDE.md`** - Validation guide for Replit testing
+- **`REPLIT_VALIDATION_GUIDE.md`** - Validation guide for Replit testing (temporary)
+
+### Remaining Work
+- **`REMAINING_REFACTOR_PLAN.md`** - Synthesized remaining work from all phases
+
+### Service Architecture
+- **`SERVICE_ARCHITECTURE.md`** - Service architecture documentation (consolidated)
+- **`SERVICE_DOCUMENTATION_STANDARD.md`** - Documentation standard for services
 
 ### Cleanup Documentation
-- **`DOCUMENTATION_CLEANUP_PLAN.md`** - Documentation cleanup plan (for reference)
+- **`DOCUMENTATION_CLEANUP.md`** - Documentation cleanup summary (consolidated)
 
 ---
 

@@ -39,9 +39,9 @@
 - ⚠️ **Kept:** `.archive/` folder (documentation archives - historical value)
 
 ### Deprecated Code
-- ⚠️ **Deprecated Services:** AlertService, RatingsService, OptimizerService, ReportService
-  - **Status:** Still in use by agents (migration in progress)
-  - **Action:** Keep until migration complete
+- ✅ **Services:** AlertService, RatingsService, OptimizerService, ReportService
+  - **Status:** Active implementation details of agents (deprecation warnings removed)
+  - **Action:** Services are essential, not deprecated
 
 - ⚠️ **Deprecated Functions:** Singleton factory functions (`get_*_service()`)
   - **Status:** Marked as DEPRECATED, still used in tests

@@ -153,15 +153,14 @@ This document provides a high-level overview of the DawsOS architecture after th
 - ✅ Duplicate code → BaseAgent helpers (100%)
 - ✅ Legacy code → Removed (100%)
 
-**In Progress:**
-- 🚧 AlertService → MacroHound agent
-- 🚧 RatingsService → FinancialAnalyst agent
-- 🚧 OptimizerService → FinancialAnalyst agent
-- 🚧 ReportService → DataHarvester agent
+**Services as Implementation Details:**
+- ✅ AlertService → Used by MacroHound agent (implementation detail)
+- ✅ RatingsService → Used by FinancialAnalyst agent (implementation detail)
+- ✅ OptimizerService → Used by FinancialAnalyst agent (implementation detail)
+- ✅ ReportService → Used by DataHarvester agent (implementation detail)
 
 **Deprecated (but still used):**
 - Singleton factory functions (marked DEPRECATED, will be removed after migration period)
-- AlertService, RatingsService, OptimizerService (still used by agents, migration in progress)
 
 ---
 
