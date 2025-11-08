@@ -19,6 +19,12 @@ This plan addresses the root cause of the Replit import failure and prevents sim
 5. ⚠️ Debug logging hardcoded to DEBUG level
 6. ⚠️ No None value validation in constructors
 
+**Architecture Context:**
+- **Database Patterns:** Services use helper functions (`execute_query`, etc.) OR accept `db_pool` parameter for DI
+- **RLS Pattern:** User-scoped data uses `get_db_connection_with_rls(user_id)` (agents, API routes)
+- **DI Container:** Services registered in `service_initializer.py`, initialized via `initialize_services()`
+- **Connection Pool:** Managed via `app.db.connection` module with cross-module storage
+
 ---
 
 ## Phase 1: Granular Import Error Handling (P1 - Critical)
@@ -551,18 +557,38 @@ if __name__ == "__main__":
 from backend.app.services.fred_transformation import get_transformation_service
 transformation_service = get_transformation_service()
 
-# NEW:
+# NEW (Option 1: Use DI container - preferred):
+from app.core.di_container import get_container
+from app.core.service_initializer import initialize_services
+container = get_container()
+if not container._initialized:
+    initialize_services(container, db_pool=db_pool)
+transformation_service = container.resolve("fred_transformation")
+
+# NEW (Option 2: Direct instantiation - acceptable for standalone usage):
 from app.services.fred_transformation import FREDTransformationService
-# Option 1: Use DI container
+transformation_service = FREDTransformationService()  # No parameters needed
+```
+
+**Note:** `FREDTransformationService` doesn't require `db_pool` - it's stateless. Use DI container if available, otherwise direct instantiation is fine.
+
+**For cycles.py:646 (get_config_manager):**
+```python
+# OLD:
+from app.services.indicator_config import get_config_manager
+self.config_manager = get_config_manager()
+
+# NEW (Option 1: Use DI container - preferred):
 from app.core.di_container import get_container
 container = get_container()
 if not container._initialized:
     from app.core.service_initializer import initialize_services
     initialize_services(container, db_pool=db_pool)
-transformation_service = container.resolve("fred_transformation")
+self.config_manager = container.resolve("indicator_config")
 
-# Option 2: Direct instantiation
-transformation_service = FREDTransformationService()
+# NEW (Option 2: Direct instantiation - acceptable):
+from app.services.indicator_config import IndicatorConfigManager
+self.config_manager = IndicatorConfigManager()  # No parameters needed
 ```
 
 ### Implementation Steps
@@ -570,20 +596,25 @@ transformation_service = FREDTransformationService()
 1. **Audit All Usages** (30 minutes)
    - Find all usages of remaining singleton factory functions
    - Document migration path for each
+   - Check if services are already registered in DI container
 
 2. **Migrate Usages** (1 hour)
-   - Update `combined_server.py:710`
-   - Update any other usages
+   - Update `combined_server.py:710` (get_transformation_service)
+   - Update `backend/app/services/cycles.py:646` (get_config_manager)
+   - Check for other usages in documentation/examples
    - Test each migration
+   - Ensure database connection patterns are preserved
 
 3. **Remove Function Definitions** (30 minutes)
    - Remove all singleton factory functions
-   - Add migration comments
    - Remove global singleton instances
+   - Add migration comments explaining DI container usage
+   - Update docstrings to show DI container examples
 
 4. **Update Documentation** (30 minutes)
    - Update Architecture.md
    - Update migration guides
+   - Update DATABASE.md if needed
    - Document completion
 
 ---
