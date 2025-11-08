@@ -30,28 +30,7 @@
       }
     }
   },
-  "outputs": {
-    "panels": [
-      {
-        "id": "rebalance_summary",
-        "title": "Rebalance Summary",
-        "type": "metrics_grid",
-        "refresh_ttl": 0
-      },
-      {
-        "id": "proposed_trades",
-        "title": "Proposed Trades",
-        "type": "table",
-        "refresh_ttl": 0
-      },
-      {
-        "id": "impact_analysis",
-        "title": "Impact Analysis",
-        "type": "comparison_grid",
-        "refresh_ttl": 0
-      }
-    ]
-  },
+  "outputs": ["rebalance_result", "impact"],
   "steps": [
     {
       "capability": "portfolio.get_valued_positions",

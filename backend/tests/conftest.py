@@ -44,8 +44,8 @@ async def auth_service():
 @pytest_asyncio.fixture
 async def reports_service():
     """Get reports service instance."""
-    from app.services.reports import get_reports_service
-    return get_reports_service()
+    from app.services.reports import ReportService
+    return ReportService()
 
 
 @pytest_asyncio.fixture

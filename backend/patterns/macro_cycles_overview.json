@@ -14,12 +14,7 @@
       "description": "Analysis date (defaults to ctx.asof_date)"
     }
   },
-  "outputs": {
-    "stdc": "Short-term debt cycle analysis",
-    "ltdc": "Long-term debt cycle analysis", 
-    "empire": "Empire cycle analysis",
-    "civil": "Civil/internal order cycle analysis"
-  },
+  "outputs": ["stdc", "ltdc", "empire", "civil"],
   "steps": [
     {
       "capability": "cycles.compute_short_term",

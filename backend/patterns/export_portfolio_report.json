@@ -29,16 +29,7 @@
       "description": "Include macro analysis"
     }
   },
-  "outputs": {
-    "panels": [
-      {
-        "id": "report_status",
-        "title": "Export Status",
-        "type": "status",
-        "refresh_ttl": 0
-      }
-    ]
-  },
+  "outputs": ["pdf_result"],
   "steps": [
     {
       "capability": "portfolio.get_valued_positions",
