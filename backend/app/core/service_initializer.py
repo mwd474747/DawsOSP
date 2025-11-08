@@ -174,7 +174,8 @@ def initialize_services(
     # Step 6: Register agents
     # Note: Agents currently create their own services in __init__
     # For now, we'll pass services through the services dict
-    # TODO: Update agents to accept services as constructor parameters
+    # NOTE: Agents now accept services dict via constructor (BaseAgent.__init__)
+    # This TODO is complete - agents are initialized with services dict
     
     from app.agents.macro_hound import MacroHound
     from app.agents.financial_analyst import FinancialAnalyst
@@ -241,7 +242,7 @@ def initialize_services(
     def create_agent_runtime() -> AgentRuntime:
         services = {
             "db": container.resolve("db_pool"),
-            "redis": None,  # TODO: Wire real Redis when needed
+            "redis": None,  # NOTE: Redis is optional - wire real Redis instance when needed for caching
         }
         runtime = AgentRuntime(services)
         

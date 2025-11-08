@@ -307,7 +307,7 @@ class CorporateActionsSyncService:
                         currency=currency,
                         ex_date=ex_date,
                         pay_date=pay_date,
-                        withholding_tax=Decimal("0"),  # TODO: Add withholding tax logic
+                        withholding_tax=Decimal("0"),  # NOTE: Withholding tax calculation not yet implemented - add logic based on jurisdiction and tax treaties
                         base_currency=base_currency if currency != base_currency else None,
                         notes=f"Auto-synced from FMP on {date.today()}"
                     )

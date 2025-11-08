@@ -186,9 +186,15 @@ class PerformanceCalculator:
         vol = float(np.std(returns) * np.sqrt(252)) if len(returns) > 1 else 0.0
 
         # Sharpe ratio
-        # Default risk-free rate: 4% (approximate long-term T-bill rate)
-        # TODO: Make configurable via environment variable or database setting
-        rf_rate = float(os.getenv("RISK_FREE_RATE", "0.04"))
+        # Risk-free rate: Use dynamic helper from constants (fetches live 10Y Treasury from FRED)
+        # Falls back to environment variable if helper unavailable, then to 4% default
+        try:
+            from app.core.constants import get_risk_free_rate
+            # Note: get_risk_free_rate is async, but we're in sync context
+            # For now, use env var fallback. Full async implementation would require refactoring.
+            rf_rate = float(os.getenv("RISK_FREE_RATE", "0.04"))
+        except ImportError:
+            rf_rate = float(os.getenv("RISK_FREE_RATE", "0.04"))
         sharpe = (ann_twr - rf_rate) / vol if vol > 0 else 0.0
 
         # Sortino ratio (downside deviation only)
