@@ -7,8 +7,8 @@ Priority: P0 (Critical for macro regime detection and factor analysis)
 
 Features:
     - Economic time series data (GDP, CPI, unemployment, yields, spreads)
-    - Rate limiting: 60 req/min (token bucket)
-    - Smart retry logic with exponential backoff (1s, 2s, 4s)
+    - Rate limiting: FRED_RATE_LIMIT_REQUESTS per minute (from constants)
+    - Smart retry logic with exponential backoff (configurable via constants)
     - Dead Letter Queue for failed requests
     - Rights: Allowed export, free attribution
 
@@ -36,6 +36,12 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 
+from app.core.constants.integration import (
+    FRED_RATE_LIMIT_REQUESTS,
+    FRED_RATE_LIMIT_WINDOW,
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_RETRY_DELAY,
+)
 from .base_provider import BaseProvider, ProviderConfig, ProviderError
 from .rate_limiter import rate_limit
 
@@ -104,9 +110,9 @@ class FREDProvider(BaseProvider):
         config = ProviderConfig(
             name="FRED",
             base_url=base_url,
-            rate_limit_rpm=60,  # 60 requests per minute (conservative)
-            max_retries=3,
-            retry_base_delay=1.0,
+            rate_limit_rpm=FRED_RATE_LIMIT_REQUESTS,  # From FRED API documentation
+            max_retries=DEFAULT_MAX_RETRIES,
+            retry_base_delay=DEFAULT_RETRY_DELAY,
             rights={
                 "export_pdf": True,  # Allowed (public data)
                 "export_csv": True,  # Allowed
@@ -153,7 +159,7 @@ class FREDProvider(BaseProvider):
     # Note: FRED uses shorter 10s timeout (government API is fast)
     # Call: await self._request("GET", url, params=params, timeout=10.0)
 
-    @rate_limit(requests_per_minute=60)
+    @rate_limit(requests_per_minute=FRED_RATE_LIMIT_REQUESTS)
     async def get_series(
         self,
         series_id: str,
@@ -233,7 +239,7 @@ class FREDProvider(BaseProvider):
 
         return series_data
 
-    @rate_limit(requests_per_minute=60)
+    @rate_limit(requests_per_minute=FRED_RATE_LIMIT_REQUESTS)
     async def get_series_info(self, series_id: str) -> Dict:
         """
         Get series metadata.
