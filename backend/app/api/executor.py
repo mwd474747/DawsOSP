@@ -46,6 +46,7 @@ from app.core.types import (
     PricingPackStaleError,
     PricingPackValidationError,
 )
+from app.core.exceptions import DatabaseError
 from app.db.pricing_pack_queries import get_pricing_pack_queries
 from app.services.pricing import get_pricing_service
 from app.core.pattern_orchestrator import PatternOrchestrator
@@ -247,9 +248,10 @@ class DBInitMiddleware(BaseHTTPMiddleware):
 
                         _db_initialized = True
                     except Exception as e:
+                        # Database initialization errors - re-raise as DatabaseError (critical)
                         logger.error(f"❌ Failed to initialize database pool: {e}")
                         print(f"❌ DATABASE POOL INITIALIZATION FAILED: {e}")
-                        raise
+                        raise DatabaseError(f"Failed to initialize database pool: {e}", retryable=True) from e
 
         response = await call_next(request)
         return response
@@ -293,9 +295,10 @@ async def startup_event():
         logger.info("✅ Pricing service initialized with database (freshness gate enabled)")
 
     except Exception as e:
+        # Database initialization errors - re-raise as DatabaseError (critical)
         logger.error(f"❌ Failed to initialize database pool: {e}", exc_info=True)
         print(f"❌ DATABASE POOL INITIALIZATION FAILED: {e}")
-        raise
+        raise DatabaseError(f"Failed to initialize database pool: {e}", retryable=True) from e
 
 
 @executor_app.on_event("shutdown")
@@ -310,7 +313,9 @@ async def shutdown_event():
         await close_db_pool()
         logger.info("Database connection pool closed successfully")
     except Exception as e:
+        # Database shutdown errors - log and continue (shutdown is best-effort)
         logger.error(f"Error closing database pool: {e}", exc_info=True)
+        # Don't raise DatabaseError here - shutdown is best-effort
 
 
 # ============================================================================
@@ -716,8 +721,9 @@ async def _execute_pattern_internal(
             except HTTPException:
                 raise
             except Exception as e:
+                # Database/service errors - fail closed (deny access on error)
                 logger.error(f"Portfolio access check failed: {e}")
-                # Fail closed - deny access on error
+                # Don't raise DatabaseError here - convert to HTTPException is intentional
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=ExecError(
@@ -915,6 +921,7 @@ async def _execute_pattern_internal(
     except Exception as e:
         # Catch-all for unexpected errors (service/database errors)
         logger.exception(f"Execute failed with unexpected error: {e}")
+        # Don't raise DatabaseError here - convert to HTTPException is intentional
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=ExecError(
@@ -1062,7 +1069,9 @@ async def health_pack():
         )
 
     except Exception as e:
+        # Database/service errors - return error response (graceful degradation)
         logger.exception(f"Health pack check failed: {e}")
+        # Don't raise DatabaseError here - return error response is intentional
         return JSONResponse(
             status_code=500,
             content={
