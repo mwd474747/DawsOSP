@@ -6,6 +6,9 @@
 (function(global) {
     'use strict';
     
+    // Get Logger if available
+    const Logger = global.DawsOS?.Logger;
+    
     // Expected namespaces
     const EXPECTED_NAMESPACES = [
         'DawsOS.APIClient',
@@ -139,14 +142,26 @@
         
         // Report results
         if (errors.length > 0) {
-            console.error('[NamespaceValidation] Errors:', errors);
+            if (Logger) {
+                Logger.error('[NamespaceValidation] Errors:', errors);
+            } else {
+                console.error('[NamespaceValidation] Errors:', errors);
+            }
         }
         if (warnings.length > 0) {
-            console.warn('[NamespaceValidation] Warnings:', warnings);
+            if (Logger) {
+                Logger.warn('[NamespaceValidation] Warnings:', warnings);
+            } else {
+                console.warn('[NamespaceValidation] Warnings:', warnings);
+            }
         }
         
         if (errors.length === 0 && warnings.length === 0) {
-            console.log('✅ [NamespaceValidation] All namespaces valid');
+            if (Logger) {
+                Logger.checkpoint('[NamespaceValidation] All namespaces valid');
+            } else {
+                console.log('✅ [NamespaceValidation] All namespaces valid');
+            }
         }
         
         return {

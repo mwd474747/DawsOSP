@@ -39,9 +39,10 @@ from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Query, Path, Body, Header, Depends
 from pydantic import BaseModel, Field, validator
 
-from app.services.macro import get_macro_service, Regime
-from app.services.scenarios import get_scenario_service, ShockType
-from app.services.risk import get_risk_service
+from app.services.macro import MacroService, Regime
+from app.services.scenarios import ScenarioService, ShockType
+from app.services.risk import RiskService
+from app.core.di_container import ensure_initialized
 from app.db.connection import get_db_connection_with_rls
 from app.middleware.auth_middleware import verify_token
 from app.services.auth import get_auth_service
@@ -383,8 +384,9 @@ async def get_current_regime(
         HTTPException 500: Error detecting regime
     """
     try:
-        # Get macro service
-        macro_service = get_macro_service()
+        # Get macro service from DI container
+        container = ensure_initialized()
+        macro_service = container.resolve("macro")
 
         # Detect regime
         if asof_date is None:
@@ -622,15 +624,17 @@ async def run_scenario(
     user_role = claims.get("role", "USER")
     
     # RBAC: Check permission to read analytics
-    auth_service = get_auth_service()
+    container = ensure_initialized()
+    auth_service = container.resolve("auth")
     if not auth_service.check_permission(user_role, "read_analytics"):
         raise HTTPException(
             status_code=403,
             detail="Insufficient permissions to run scenario analysis"
         )
     try:
-        # Get scenario service
-        scenario_service = get_scenario_service()
+        # Get scenario service from DI container
+        container = ensure_initialized()
+        scenario_service = container.resolve("scenarios")
 
         # Apply scenario
         result = await scenario_service.apply_scenario(
@@ -722,16 +726,18 @@ async def compute_dar(
     user_role = claims.get("role", "USER")
     
     # RBAC: Check permission to read analytics
-    auth_service = get_auth_service()
+    container = ensure_initialized()
+    auth_service = container.resolve("auth")
     if not auth_service.check_permission(user_role, "read_analytics"):
         raise HTTPException(
             status_code=403,
             detail="Insufficient permissions to compute risk analytics"
         )
     try:
-        # Get services
-        risk_service = get_risk_service()
-        macro_service = get_macro_service()
+        # Get services from DI container
+        container = ensure_initialized()
+        risk_service = container.resolve("risk")
+        macro_service = container.resolve("macro")
 
         # Determine regime (use specified or detect current)
         if request.regime is None:

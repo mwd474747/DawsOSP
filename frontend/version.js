@@ -29,10 +29,17 @@
         global.DawsOS = {};
     }
     
+    // Get Logger if available
+    const Logger = global.DawsOS?.Logger;
+    
     global.DawsOS.Version = VERSION;
     
     // Log version for debugging
-    console.log(`✅ DawsOS Version: ${VERSION.toString()} (build: ${VERSION.build})`);
+    if (Logger) {
+        Logger.checkpoint(`DawsOS Version: ${VERSION.toString()} (build: ${VERSION.build})`);
+    } else {
+        console.log(`✅ DawsOS Version: ${VERSION.toString()} (build: ${VERSION.build})`);
+    }
     
 })(window);
 

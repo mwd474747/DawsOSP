@@ -21,6 +21,9 @@
 (function(global) {
     'use strict';
 
+    // Get Logger if available
+    const Logger = global.DawsOS?.Logger;
+
     const CacheManager = (() => {
         // Cache storage
         const cache = new Map();
@@ -332,7 +335,11 @@
                     try {
                         callback(update);
                     } catch (error) {
-                        console.error('Error in cache subscriber:', error);
+                        if (Logger) {
+                            Logger.error('Error in cache subscriber:', error);
+                        } else {
+                            console.error('Error in cache subscriber:', error);
+                        }
                     }
                 });
             }
@@ -354,7 +361,11 @@
                     const data = await queryFn();
                     set(queryKey, data, options);
                 } catch (error) {
-                    console.error('Prefetch error:', error);
+                    if (Logger) {
+                        Logger.error('Prefetch error:', error);
+                    } else {
+                        console.error('Prefetch error:', error);
+                    }
                 }
             }
         };
@@ -426,6 +437,10 @@
     global.DawsOS = global.DawsOS || {};
     global.DawsOS.CacheManager = CacheManager;
 
-    console.log('[CacheManager] Module loaded successfully');
+    if (Logger) {
+        Logger.checkpoint('[CacheManager] Module loaded successfully');
+    } else {
+        console.log('[CacheManager] Module loaded successfully');
+    }
 
 })(window);

@@ -2586,18 +2586,15 @@ class DataHarvester(BaseAgent):
         # Get FMP provider
         api_key = os.getenv("FMP_API_KEY")
         if not api_key:
-            error_result = {
-                "dividends": [],
-                "count": 0,
-                "error": "FMP_API_KEY not configured"
-            }
-            metadata = self._create_metadata(
-                source="data_harvester:error",
-                asof=asof_date,
-                ttl=self.CACHE_TTL_NONE,
-                confidence=0.0
+            return self._create_error_result(
+                error_message="FMP_API_KEY not configured",
+                ctx=ctx,
+                source="data_harvester",
+                additional_fields={
+                    "dividends": [],
+                    "count": 0,
+                },
             )
-            return self._attach_metadata(error_result, metadata)
         
         try:
             provider = FMPProvider(api_key=api_key)
@@ -2665,18 +2662,15 @@ class DataHarvester(BaseAgent):
             
         except Exception as e:
             logger.error(f"Error fetching dividends from FMP: {e}", exc_info=True)
-            error_result = {
-                "dividends": [],
-                "count": 0,
-                "error": f"FMP error: {str(e)}"
-            }
-            metadata = self._create_metadata(
-                source="data_harvester:error",
-                asof=asof_date,
-                ttl=self.CACHE_TTL_NONE,  # Use BaseAgent constant
-                confidence=0.0
+            return self._create_error_result(
+                error_message=f"FMP error: {str(e)}",
+                ctx=ctx,
+                source="data_harvester",
+                additional_fields={
+                    "dividends": [],
+                    "count": 0,
+                },
             )
-            return self._attach_metadata(error_result, metadata)
     
     async def corporate_actions_splits(
         self,
@@ -2721,18 +2715,15 @@ class DataHarvester(BaseAgent):
         # Get FMP provider
         api_key = os.getenv("FMP_API_KEY")
         if not api_key:
-            error_result = {
-                "splits": [],
-                "count": 0,
-                "error": "FMP_API_KEY not configured"
-            }
-            metadata = self._create_metadata(
-                source="data_harvester:error",
-                asof=asof_date,
-                ttl=self.CACHE_TTL_NONE,
-                confidence=0.0
+            return self._create_error_result(
+                error_message="FMP_API_KEY not configured",
+                ctx=ctx,
+                source="data_harvester",
+                additional_fields={
+                    "splits": [],
+                    "count": 0,
+                },
             )
-            return self._attach_metadata(error_result, metadata)
         
         try:
             provider = FMPProvider(api_key=api_key)
@@ -2798,18 +2789,15 @@ class DataHarvester(BaseAgent):
             
         except Exception as e:
             logger.error(f"Error fetching splits from FMP: {e}", exc_info=True)
-            error_result = {
-                "splits": [],
-                "count": 0,
-                "error": f"FMP error: {str(e)}"
-            }
-            metadata = self._create_metadata(
-                source="data_harvester:error",
-                asof=asof_date,
-                ttl=self.CACHE_TTL_NONE,  # Use BaseAgent constant
-                confidence=0.0
+            return self._create_error_result(
+                error_message=f"FMP error: {str(e)}",
+                ctx=ctx,
+                source="data_harvester",
+                additional_fields={
+                    "splits": [],
+                    "count": 0,
+                },
             )
-            return self._attach_metadata(error_result, metadata)
     
     async def corporate_actions_earnings(
         self,
@@ -2979,9 +2967,9 @@ class DataHarvester(BaseAgent):
         """
         from datetime import date, timedelta, datetime
         
-        # Use BaseAgent helper for portfolio ID resolution
+        # Use BaseAgent helper for portfolio ID resolution (optional for this capability)
         if portfolio_id:
-            portfolio_uuid = self._to_uuid(portfolio_id, "portfolio_id")
+            portfolio_uuid = self._resolve_portfolio_id(portfolio_id, ctx, "corporate_actions.upcoming")
         else:
             portfolio_uuid = None
         

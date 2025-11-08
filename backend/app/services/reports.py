@@ -654,6 +654,8 @@ class ReportService:
         portfolio_id: Optional[str],
         allowed: bool,
         rights_check: ExportCheckResult,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
     ):
         """
         Log export attempt to audit table.
@@ -666,6 +668,8 @@ class ReportService:
             portfolio_id: Portfolio ID
             allowed: Whether export was allowed
             rights_check: Rights check result
+            ip_address: Optional client IP address (extracted from request if available)
+            user_agent: Optional client user agent (extracted from request if available)
         """
         try:
             from app.db.connection import execute_statement
@@ -684,6 +688,13 @@ class ReportService:
                 "timestamp": rights_check.timestamp
             }
             
+            # Use provided IP/user agent or fallback to defaults
+            # Callers should extract these from FastAPI request:
+            #   ip_address = request.client.host if request.client else None
+            #   user_agent = request.headers.get("user-agent", "Unknown")
+            final_ip_address = ip_address or "127.0.0.1"
+            final_user_agent = user_agent or "ReportService"
+            
             # Insert into audit_log table
             await execute_statement(
                 """
@@ -696,8 +707,8 @@ class ReportService:
                 f"export_type={export_type}, providers={providers}, title={title}, "
                 f"allowed={allowed}, environment={self.environment}, "
                 f"blocked_providers={rights_check.blocked_providers}",
-                "127.0.0.1",  # TODO: Get real IP from request context
-                "ReportService",  # TODO: Get real user agent
+                final_ip_address,
+                final_user_agent,
                 rights_check.timestamp
             )
             

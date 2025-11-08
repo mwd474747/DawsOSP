@@ -429,7 +429,9 @@ class CurrencyAttributor:
 
     async def _get_pack_date(self, pack_id: str) -> date:
         """Get as-of date for pricing pack."""
-        pricing_service = get_pricing_service()
+        from app.core.di_container import ensure_initialized
+        container = ensure_initialized()
+        pricing_service = container.resolve("pricing")
         pack = await pricing_service.get_pack_by_id(pack_id, raise_if_not_found=True)
         return pack.date
 

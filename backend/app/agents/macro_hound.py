@@ -594,23 +594,29 @@ class MacroHound(BaseAgent):
         except Exception as e:
             # Service/database errors - return error response
             logger.error(f"Error running scenario {scenario_id}: {e}", exc_info=True)
-            result = {
-                "scenario_id": scenario_id or "unknown",
-                "scenario_name": scenario_id.replace("_", " ").title() if scenario_id else "Unknown Scenario",
-                "portfolio_id": str(portfolio_id_uuid),
-                "pre_shock_nav": None,
-                "post_shock_nav": None,
-                "total_delta_pl": None,
-                "total_delta_pl_pct": None,
-                "factor_contributions": {},
-                "winners": [],
-                "losers": [],
-                "positions": [],
-                "error": f"Scenario execution error: {str(e)}",
-                "_is_stub": True,
-            }
+            result = self._create_error_result(
+                error_message=f"Scenario execution error: {str(e)}",
+                ctx=ctx,
+                source="scenario_service",
+                additional_fields={
+                    "scenario_id": scenario_id or "unknown",
+                    "scenario_name": scenario_id.replace("_", " ").title() if scenario_id else "Unknown Scenario",
+                    "portfolio_id": str(portfolio_id_uuid),
+                    "pre_shock_nav": None,
+                    "post_shock_nav": None,
+                    "total_delta_pl": None,
+                    "total_delta_pl_pct": None,
+                    "factor_contributions": {},
+                    "winners": [],
+                    "losers": [],
+                    "positions": [],
+                    "_is_stub": True,
+                },
+            )
+            # Error result already has metadata attached by _create_error_result()
+            return result
 
-        # Attach metadata
+        # Attach metadata for successful result
         metadata = self._create_metadata(
             source=f"scenario_service:{pack_id_str}",
             asof=ctx.asof_date,

@@ -17,6 +17,9 @@
 (function(global) {
     'use strict';
 
+    // Get Logger if available
+    const Logger = global.DawsOS?.Logger;
+
     const FormValidator = {
         /**
          * Validate email format
@@ -63,6 +66,10 @@
     global.DawsOS = global.DawsOS || {};
     global.DawsOS.FormValidator = FormValidator;
 
-    console.log('[FormValidator] Module loaded successfully');
+    if (Logger) {
+        Logger.checkpoint('[FormValidator] Module loaded successfully');
+    } else {
+        console.log('[FormValidator] Module loaded successfully');
+    }
 
 })(window);

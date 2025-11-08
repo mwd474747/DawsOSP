@@ -74,15 +74,19 @@ class BenchmarkService:
     - Hedged returns: Price return only (FX component stripped)
     """
 
-    def __init__(self, use_db: bool = True):
+    def __init__(self, use_db: bool = True, db_pool=None):
         """
         Initialize benchmark service.
 
         Args:
             use_db: Use database connection (default: True)
+            db_pool: Database connection pool (optional, will use DI container if not provided)
         """
         self.use_db = use_db
-        self.pricing_service = get_pricing_service(use_db=use_db)
+        # Get pricing service from DI container
+        from app.core.di_container import ensure_initialized
+        container = ensure_initialized()
+        self.pricing_service = container.resolve("pricing")
         logger.info(f"BenchmarkService initialized (use_db={use_db})")
 
     async def get_benchmark_returns(

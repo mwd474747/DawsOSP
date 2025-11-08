@@ -56,16 +56,26 @@
 
     // Define initialization function that can be called multiple times
     function initializePatternSystem() {
+        const Logger = global.DawsOS?.Logger;
+        
         // Check if React is available
         if (!global.React) {
-            console.log('[PatternSystem] React not available, will retry...');
+            if (Logger) {
+                Logger.debug('[PatternSystem] React not available, will retry...');
+            } else {
+                console.log('[PatternSystem] React not available, will retry...');
+            }
             setTimeout(initializePatternSystem, 100);
             return;
         }
         
         // Check if APIClient is available
         if (!global.DawsOS?.APIClient) {
-            console.log('[PatternSystem] APIClient not ready, will retry...');
+            if (Logger) {
+                Logger.debug('[PatternSystem] APIClient not ready, will retry...');
+            } else {
+                console.log('[PatternSystem] APIClient not ready, will retry...');
+            }
             setTimeout(initializePatternSystem, 100);
             return;
         }
@@ -75,7 +85,11 @@
             return;
         }
         
-        console.log('[PatternSystem] All dependencies ready, initializing...');
+        if (Logger) {
+            Logger.checkpoint('[PatternSystem] All dependencies ready, initializing...');
+        } else {
+            console.log('[PatternSystem] All dependencies ready, initializing...');
+        }
 
     // Import React hooks (now we know React is available)
     const { createElement: e, useState, useEffect } = global.React;
@@ -1035,6 +1049,36 @@
     };
 
         console.log('[PatternSystem] Module fully initialized');
+        
+        // Register module with validator when ready (with retry logic)
+        function registerPatternSystemModule() {
+            if (!global.DawsOS?.ModuleValidator) {
+                return false;
+            }
+            try {
+                global.DawsOS.ModuleValidator.validate('pattern-system.js');
+                console.log('[PatternSystem] Module validated');
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+        
+        // Retry validation until successful
+        let validationAttempts = 0;
+        const maxValidationAttempts = 20;
+        function tryRegisterPatternSystemModule() {
+            if (registerPatternSystemModule()) {
+                return; // Success
+            }
+            validationAttempts++;
+            if (validationAttempts < maxValidationAttempts) {
+                setTimeout(tryRegisterPatternSystemModule, 50);
+            } else {
+                console.warn('[PatternSystem] Failed to validate after', maxValidationAttempts, 'attempts');
+            }
+        }
+        tryRegisterPatternSystemModule();
     }
     
     // Start initialization process

@@ -71,9 +71,15 @@
     const PatternSystem = global.DawsOS?.PatternSystem || {};
     
     // Validate critical dependencies
+    const Logger = global.DawsOS?.Logger;
     if (!APIClient) {
-        console.error('[Pages] DawsOS.APIClient not loaded');
-        console.error('[Pages] Available namespaces:', Object.keys(global.DawsOS || {}));
+        if (Logger) {
+            Logger.error('[Pages] DawsOS.APIClient not loaded');
+            Logger.error('[Pages] Available namespaces:', Object.keys(global.DawsOS || {}));
+        } else {
+            console.error('[Pages] DawsOS.APIClient not loaded');
+            console.error('[Pages] Available namespaces:', Object.keys(global.DawsOS || {}));
+        }
         throw new Error('[Pages] Required dependency DawsOS.APIClient not found. Check script load order.');
     }
 
@@ -106,7 +112,11 @@
     
     // Validate TokenManager
     if (!TokenManager) {
-        console.error('[Pages] TokenManager not available from DawsOS.APIClient or global');
+        if (Logger) {
+            Logger.error('[Pages] TokenManager not available from DawsOS.APIClient or global');
+        } else {
+            console.error('[Pages] TokenManager not available from DawsOS.APIClient or global');
+        }
         throw new Error('[Pages] TokenManager is required but not found');
     }
 
@@ -184,7 +194,11 @@
                             onLogin(response.user);
                         }
                     } catch (error) {
-                        console.error('Login failed:', error);
+                        if (Logger) {
+                            Logger.error('Login failed:', error);
+                        } else {
+                            console.error('Login failed:', error);
+                        }
                         // Use ErrorHandler for better error classification
                         const errorInfo = ErrorHandler.classifyError(error);
                         setError(error);
@@ -286,7 +300,11 @@
                 
                 // Determine data source for provenance badge
                 const dataSource = getDataSourceFromResponse(data);
-                console.log('[PortfolioOverview] Data source:', dataSource, data);
+                if (Logger) {
+                    Logger.debug('[PortfolioOverview] Data source:', dataSource, data);
+                } else {
+                    console.log('[PortfolioOverview] Data source:', dataSource, data);
+                }
                 
                 return e('div', { className: 'stats-grid', style: { position: 'relative' } },
                     e(DataBadge, { source: dataSource, position: 'top-right' }),
@@ -422,7 +440,11 @@
                 useEffect(() => {
                     if (loading) {
                         const timeout = setTimeout(() => {
-                            console.warn('MacroCyclesPage: Pattern loading timeout');
+                            if (Logger) {
+                                Logger.warn('MacroCyclesPage: Pattern loading timeout');
+                            } else {
+                                console.warn('MacroCyclesPage: Pattern loading timeout');
+                            }
                             setLoading(false);
                             setError('Data loading timed out. Please try refreshing the page.');
                         }, 30000); // 30 second timeout
@@ -440,11 +462,19 @@
                 
                 // Handle pattern data from PatternRenderer
                 const handlePatternData = (data) => {
-                    console.log('MacroCyclesPage received pattern data:', data);
+                    if (Logger) {
+                        Logger.debug('MacroCyclesPage received pattern data:', data);
+                    } else {
+                        console.log('MacroCyclesPage received pattern data:', data);
+                    }
                     try {
                         // Check for error first
                         if (data?.error) {
-                            console.error('MacroCyclesPage: Pattern execution failed:', data.error);
+                            if (Logger) {
+                                Logger.error('MacroCyclesPage: Pattern execution failed:', data.error);
+                            } else {
+                                console.error('MacroCyclesPage: Pattern execution failed:', data.error);
+                            }
                             setError(data.error || 'Failed to load macro cycle data. Please try refreshing the page.');
                             setLoading(false);
                             return;
@@ -478,18 +508,30 @@
                                 regime_detection: result.regime_detection || {}
                             };
                             
-                            console.log('MacroCyclesPage: Valid macro cycles data received:', normalizedData);
+                            if (Logger) {
+                                Logger.debug('MacroCyclesPage: Valid macro cycles data received:', normalizedData);
+                            } else {
+                                console.log('MacroCyclesPage: Valid macro cycles data received:', normalizedData);
+                            }
                             setMacroData(normalizedData);
                             setError(null);
                             setLoading(false);
                         } else {
                             // Unexpected data structure - show error
-                            console.warn('MacroCyclesPage: Unexpected data structure. Received:', result);
+                            if (Logger) {
+                                Logger.warn('MacroCyclesPage: Unexpected data structure. Received:', result);
+                            } else {
+                                console.warn('MacroCyclesPage: Unexpected data structure. Received:', result);
+                            }
                             setError('Unexpected data format. Please try refreshing the page.');
                             setLoading(false);
                         }
                     } catch (err) {
-                        console.error('MacroCyclesPage: Error processing pattern data:', err);
+                        if (Logger) {
+                            Logger.error('MacroCyclesPage: Error processing pattern data:', err);
+                        } else {
+                            console.error('MacroCyclesPage: Error processing pattern data:', err);
+                        }
                         setError(err.message || 'Failed to process macro cycle data. Please try refreshing the page.');
                         setLoading(false);
                     }
@@ -909,7 +951,11 @@
                             // Data might be nested in response.data
                             const stdc = macroData.stdc || macroData.data?.stdc || macroData.short_term_cycle;
                             if (!stdc) {
-                                console.log('No short-term data found in macroData:', macroData);
+                                if (Logger) {
+                                    Logger.debug('No short-term data found in macroData:', macroData);
+                                } else {
+                                    console.log('No short-term data found in macroData:', macroData);
+                                }
                                 return null;
                             }
                             title = 'SHORT-TERM DEBT CYCLE INDICATORS';
@@ -1772,7 +1818,11 @@
                             setTransactions(mappedTxns);
                         })
                         .catch((error) => {
-                            console.error('Failed to load transactions:', error);
+                            if (Logger) {
+                                Logger.error('Failed to load transactions:', error);
+                            } else {
+                                console.error('Failed to load transactions:', error);
+                            }
                             setTransactions([]);
                             setError('Unable to load transaction data');
                         })
@@ -1895,7 +1945,11 @@
                         // Execute scenario analysis for each type
                         for (const scenario of scenarioTypes) {
                             try {
-                                console.log(`Executing scenario: ${scenario.id}`);
+                                if (Logger) {
+                                    Logger.debug(`Executing scenario: ${scenario.id}`);
+                                } else {
+                                    console.log(`Executing scenario: ${scenario.id}`);
+                                }
                                 const result = await apiClient.executePattern('portfolio_scenario_analysis', {
                                     portfolio_id: getCurrentPortfolioId(),
                                     scenario_id: scenario.id,
@@ -1921,7 +1975,11 @@
                                         rawData: result.data
                                     });
                                 } else {
-                                    console.warn(`Failed to get scenario ${scenario.id}:`, result.error);
+                                    if (Logger) {
+                                        Logger.warn(`Failed to get scenario ${scenario.id}:`, result.error);
+                                    } else {
+                                        console.warn(`Failed to get scenario ${scenario.id}:`, result.error);
+                                    }
                                     // Add with fallback values
                                     results.push({
                                         id: scenario.id,
@@ -1933,7 +1991,11 @@
                                     });
                                 }
                             } catch (err) {
-                                console.error(`Error executing scenario ${scenario.id}:`, err);
+                                if (Logger) {
+                                    Logger.error(`Error executing scenario ${scenario.id}:`, err);
+                                } else {
+                                    console.error(`Error executing scenario ${scenario.id}:`, err);
+                                }
                                 results.push({
                                     id: scenario.id,
                                     name: scenario.name,
@@ -1949,12 +2011,20 @@
                         
                         // If no results with data, show error
                         if (results.every(r => r.impact === null)) {
-                            console.warn('No scenario data available');
+                            if (Logger) {
+                                Logger.warn('No scenario data available');
+                            } else {
+                                console.warn('No scenario data available');
+                            }
                             setError('No scenario data available. Please try refreshing the page.');
                         }
                         
                     } catch (error) {
-                        console.error('Failed to fetch scenarios:', error);
+                        if (Logger) {
+                            Logger.error('Failed to fetch scenarios:', error);
+                        } else {
+                            console.error('Failed to fetch scenarios:', error);
+                        }
                         setError('Failed to load scenario analysis. Please try refreshing the page.');
                     } finally {
                         setLoading(false);
@@ -2145,7 +2215,11 @@
                 
                 // Callback when pattern data loads
                 const handleDataLoaded = (data) => {
-                    console.log('Optimizer data loaded:', data);
+                    if (Logger) {
+                        Logger.debug('Optimizer data loaded:', data);
+                    } else {
+                        console.log('Optimizer data loaded:', data);
+                    }
                     if (data) {
                         setOptimizationData(processOptimizationData(data));
                     }
@@ -2650,7 +2724,11 @@
                         
                         // Convert to array of unique securities
                         const uniqueSecurities = Object.values(aggregatedHoldings);
-                        console.log(`Aggregated ${holdingsList.length} lots into ${uniqueSecurities.length} unique securities`);
+                        if (Logger) {
+                            Logger.debug(`Aggregated ${holdingsList.length} lots into ${uniqueSecurities.length} unique securities`);
+                        } else {
+                            console.log(`Aggregated ${holdingsList.length} lots into ${uniqueSecurities.length} unique securities`);
+                        }
                         setHoldings(uniqueSecurities);
                         
                         // Now fetch ratings for each unique security in parallel for better performance
@@ -2663,7 +2741,11 @@
                             
                             if (securityId) {
                                 try {
-                                    console.log(`Fetching rating for ${symbol} with security_id: ${securityId}`);
+                                    if (Logger) {
+                                        Logger.debug(`Fetching rating for ${symbol} with security_id: ${securityId}`);
+                                    } else {
+                                        console.log(`Fetching rating for ${symbol} with security_id: ${securityId}`);
+                                    }
                                     const result = await apiClient.executePattern('buffett_checklist', {
                                         security_id: securityId
                                     });
@@ -2671,11 +2753,19 @@
                                     if (result.status === 'success' && result.data) {
                                         return { symbol, rating: parseBuffettResults(result.data, symbol) };
                                     } else {
-                                        console.warn(`Failed to get rating for ${symbol}:`, result.error || result);
+                                        if (Logger) {
+                                            Logger.warn(`Failed to get rating for ${symbol}:`, result.error || result);
+                                        } else {
+                                            console.warn(`Failed to get rating for ${symbol}:`, result.error || result);
+                                        }
                                         return { symbol, rating: null, error: result.error || 'Failed to fetch rating' };
                                     }
                                 } catch (err) {
-                                    console.error(`Error fetching rating for ${symbol}:`, err);
+                                    if (Logger) {
+                                        Logger.error(`Error fetching rating for ${symbol}:`, err);
+                                    } else {
+                                        console.error(`Error fetching rating for ${symbol}:`, err);
+                                    }
                                     return { symbol, rating: null, error: err.message };
                                 }
                             } else {
@@ -2702,7 +2792,11 @@
                             setRatings(ratingsData);
                         }
                     } catch (err) {
-                        console.error('Failed to fetch ratings:', err);
+                        if (Logger) {
+                            Logger.error('Failed to fetch ratings:', err);
+                        } else {
+                            console.error('Failed to fetch ratings:', err);
+                        }
                         setError('Failed to load ratings data. Please try refreshing the page.');
                     } finally {
                         setLoading(false);
@@ -2784,7 +2878,11 @@
                         setSelectedSecurityId(securityId);
                         setShowDetailView(true);
                     } else {
-                        console.warn(`No security_id found for symbol: ${symbol}`);
+                        if (Logger) {
+                            Logger.warn(`No security_id found for symbol: ${symbol}`);
+                        } else {
+                            console.warn(`No security_id found for symbol: ${symbol}`);
+                        }
                         // Fallback to showing cached rating if available
                         if (ratings[symbol]) {
                             setSelectedSymbol(symbol);
@@ -3035,7 +3133,11 @@
                             [patternId]: explanation.data?.response || explanation.response || 'Analysis in progress...'
                         }));
                     } catch (err) {
-                        console.error(`Failed to get AI explanation for ${patternName}:`, err);
+                        if (Logger) {
+                            Logger.error(`Failed to get AI explanation for ${patternName}:`, err);
+                        } else {
+                            console.error(`Failed to get AI explanation for ${patternName}:`, err);
+                        }
                         setExplanations(prev => ({
                             ...prev,
                             [patternId]: 'Unable to generate AI explanation. Please try refreshing.'
@@ -3290,7 +3392,11 @@
                             setMessages(prev => [...prev, aiMessage]);
                         }
                     } catch (error) {
-                        console.error('AI Assistant error:', error);
+                        if (Logger) {
+                            Logger.error('AI Assistant error:', error);
+                        } else {
+                            console.error('AI Assistant error:', error);
+                        }
                         setError('Unable to complete analysis. Please try again.');
                         
                         const errorResponse = { 
@@ -3551,7 +3657,11 @@
                         const result = await response.json();
                         setAlerts(result.data?.alerts || []);
                     } catch (err) {
-                        console.error('Error loading alerts:', err);
+                        if (Logger) {
+                            Logger.error('Error loading alerts:', err);
+                        } else {
+                            console.error('Error loading alerts:', err);
+                        }
                         setError('Failed to load alerts. Please try refreshing the page.');
                     } finally {
                         setLoading(false);
@@ -3594,7 +3704,11 @@
                         resetForm();
                         await loadAlerts();
                     } catch (err) {
-                        console.error('Error saving alert:', err);
+                        if (Logger) {
+                            Logger.error('Error saving alert:', err);
+                        } else {
+                            console.error('Error saving alert:', err);
+                        }
                         setError(editingAlert ? 'Failed to update alert' : 'Failed to create alert');
                     }
                 };
@@ -3620,7 +3734,11 @@
                         setSuccess('Alert deleted successfully!');
                         await loadAlerts();
                     } catch (err) {
-                        console.error('Error deleting alert:', err);
+                        if (Logger) {
+                            Logger.error('Error deleting alert:', err);
+                        } else {
+                            console.error('Error deleting alert:', err);
+                        }
                         setError('Failed to delete alert');
                     }
                 };
@@ -3950,7 +4068,11 @@
                         setReportHistory([newReport, ...reportHistory.slice(0, 4)]);
                         
                     } catch (error) {
-                        console.error('Error processing report:', error);
+                        if (Logger) {
+                            Logger.error('Error processing report:', error);
+                        } else {
+                            console.error('Error processing report:', error);
+                        }
                         setError(`Failed to process report: ${error.message}`);
                     } finally {
                         setGeneratingType(null);
@@ -3963,7 +4085,11 @@
                 };
                 
                 const handleReportError = (error) => {
-                    console.error('Error generating report:', error);
+                    if (Logger) {
+                        Logger.error('Error generating report:', error);
+                    } else {
+                        console.error('Error generating report:', error);
+                    }
                     setError(`Failed to generate report: ${error.message || 'Unknown error'}`);
                     setGeneratingType(null);
                     setTimeout(() => {
@@ -4570,7 +4696,50 @@
     global.DawsOS.Pages = Pages;
 
     // Log successful initialization
-    console.log('DawsOS Pages module loaded successfully');
-    console.log('Available pages:', Object.keys(Pages));
+    if (Logger) {
+        Logger.checkpoint('DawsOS Pages module loaded successfully');
+        Logger.debug('Available pages:', Object.keys(Pages));
+    } else {
+        console.log('DawsOS Pages module loaded successfully');
+        console.log('Available pages:', Object.keys(Pages));
+    }
+    
+    // Register module with validator when ready (with retry logic)
+    function registerModule() {
+        if (!global.DawsOS?.ModuleValidator) {
+            return false;
+        }
+        try {
+            global.DawsOS.ModuleValidator.validate('pages.js');
+            if (Logger) {
+                Logger.debug('[pages] Module validated');
+            } else {
+                console.log('[pages] Module validated');
+            }
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    
+    // Retry validation until successful
+    let validationAttempts = 0;
+    const maxValidationAttempts = 20;
+    function tryRegisterModule() {
+        if (registerModule()) {
+            return; // Success
+        }
+        validationAttempts++;
+        if (validationAttempts < maxValidationAttempts) {
+            setTimeout(tryRegisterModule, 50);
+            } else {
+                if (Logger) {
+                    Logger.warn('[pages] Failed to validate after', maxValidationAttempts, 'attempts');
+                } else {
+                    console.warn('[pages] Failed to validate after', maxValidationAttempts, 'attempts');
+                }
+            }
+    }
+    tryRegisterModule();
 
 })(window);

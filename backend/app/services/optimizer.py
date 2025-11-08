@@ -1611,10 +1611,17 @@ class OptimizerService:
 
     async def _get_pack_date(self, pricing_pack_id: str) -> date:
         """Get asof date from pricing pack."""
-        from app.services.pricing import get_pricing_service
         from app.core.types import PricingPackNotFoundError
+        from app.core.di_container import get_container
+        from app.core.service_initializer import initialize_services
+        from app.db.connection import get_db_pool
         
-        pricing_service = get_pricing_service()
+        # Get pricing service from DI container
+        container = get_container()
+        if not container._initialized:
+            db_pool = get_db_pool()
+            initialize_services(container, db_pool=db_pool)
+        pricing_service = container.resolve("pricing")
         pack = await pricing_service.get_pack_by_id(pricing_pack_id, raise_if_not_found=True)
         
         # Should not reach here if raise_if_not_found=True, but return for type safety

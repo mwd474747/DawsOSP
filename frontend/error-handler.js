@@ -17,6 +17,9 @@
 (function(global) {
     'use strict';
 
+    // Get Logger if available
+    const Logger = global.DawsOS?.Logger;
+
     const ErrorHandler = {
         /**
          * Map error codes to user-friendly messages
@@ -149,13 +152,24 @@
         logError: (error, context = {}) => {
             if (console.group) {
                 console.group('%c🔴 Error Details', 'color: #ef4444; font-weight: bold');
-                console.error('Error:', error);
-                console.log('Context:', context);
-                console.log('Stack:', error.stack);
-                console.log('Timestamp:', new Date().toISOString());
+                if (Logger) {
+                    Logger.error('Error:', error);
+                    Logger.debug('Context:', context);
+                    Logger.debug('Stack:', error.stack);
+                    Logger.debug('Timestamp:', new Date().toISOString());
+                } else {
+                    console.error('Error:', error);
+                    console.log('Context:', context);
+                    console.log('Stack:', error.stack);
+                    console.log('Timestamp:', new Date().toISOString());
+                }
                 console.groupEnd();
             } else {
-                console.error('Error occurred:', error, context);
+                if (Logger) {
+                    Logger.error('Error occurred:', error, context);
+                } else {
+                    console.error('Error occurred:', error, context);
+                }
             }
         }
     };
@@ -164,6 +178,10 @@
     global.DawsOS = global.DawsOS || {};
     global.DawsOS.ErrorHandler = ErrorHandler;
 
-    console.log('[ErrorHandler] Module loaded successfully');
+    if (Logger) {
+        Logger.checkpoint('[ErrorHandler] Module loaded successfully');
+    } else {
+        console.log('[ErrorHandler] Module loaded successfully');
+    }
 
 })(window);

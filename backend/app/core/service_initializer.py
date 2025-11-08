@@ -129,6 +129,7 @@ def initialize_services(
     from app.services.alerts import AlertService
     from app.services.cycles import CyclesService
     from app.services.reports import ReportService
+    from app.services.risk import RiskService
     
     container.register_service(
         "macro",
@@ -157,6 +158,8 @@ def initialize_services(
     container.register_service("cycles", CyclesService, db_pool="db_pool")
     # ReportService expects environment and optionally templates_dir
     container.register_service("reports", ReportService, environment="staging_env")
+    # RiskService expects no parameters
+    container.register_service("risk", RiskService)
     
     # Step 5: Register composite services
     from app.services.macro_aware_scenarios import MacroAwareScenarioService

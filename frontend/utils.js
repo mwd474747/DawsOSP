@@ -25,6 +25,9 @@
         global.DawsOS = {};
     }
 
+    // Get Logger if available
+    const Logger = global.DawsOS?.Logger;
+
     // Create Utils namespace
     const Utils = {};
 
@@ -131,7 +134,11 @@
         // Check for CacheManager dependency
         const CacheManager = global.DawsOS.CacheManager;
         if (!CacheManager) {
-            console.error('[Utils.useCachedQuery] CacheManager not loaded! Ensure cache-manager.js loads before utils.js');
+            if (Logger) {
+                Logger.error('[Utils.useCachedQuery] CacheManager not loaded! Ensure cache-manager.js loads before utils.js');
+            } else {
+                console.error('[Utils.useCachedQuery] CacheManager not loaded! Ensure cache-manager.js loads before utils.js');
+            }
             throw new Error('[Utils] CacheManager module not available. Check script load order.');
         }
         const [state, setState] = React.useState({
@@ -213,7 +220,11 @@
         // Check for CacheManager dependency
         const CacheManager = global.DawsOS.CacheManager;
         if (!CacheManager) {
-            console.error('[Utils.useCachedMutation] CacheManager not loaded!');
+            if (Logger) {
+                Logger.error('[Utils.useCachedMutation] CacheManager not loaded!');
+            } else {
+                console.error('[Utils.useCachedMutation] CacheManager not loaded!');
+            }
             throw new Error('[Utils] CacheManager module not available. Check script load order.');
         }
         const [state, setState] = React.useState({
@@ -360,7 +371,11 @@
 
         // Log when badge is rendered
         React.useEffect(() => {
-            console.log(`[DataBadge] Showing ${config.text} badge at ${position}`);
+            if (Logger) {
+                Logger.debug(`[DataBadge] Showing ${config.text} badge at ${position}`);
+            } else {
+                console.log(`[DataBadge] Showing ${config.text} badge at ${position}`);
+            }
         }, [source]);
 
         return React.createElement('div', {
@@ -396,7 +411,11 @@
                 // Determine data source based on props
                 const source = getDataSource(props);
                 setDataSource(source);
-                console.log(`[withDataProvenance] Data source determined: ${source}`, props);
+                if (Logger) {
+                    Logger.debug(`[withDataProvenance] Data source determined: ${source}`, props);
+                } else {
+                    console.log(`[withDataProvenance] Data source determined: ${source}`, props);
+                }
             }, [props]);
 
             return React.createElement('div', {
@@ -678,6 +697,49 @@
         NetworkStatusIndicator: Utils.NetworkStatusIndicator
     };
 
-    console.log('✅ Utils module loaded successfully (DawsOS.Utils.*, DawsOS.UI.Primitives)');
+    if (Logger) {
+        Logger.checkpoint('Utils module loaded successfully', 'DawsOS.Utils.*, DawsOS.UI.Primitives');
+    } else {
+        console.log('✅ Utils module loaded successfully (DawsOS.Utils.*, DawsOS.UI.Primitives)');
+    }
+    
+    // Register module with validator when ready (with retry logic)
+    const globalScope = typeof window !== 'undefined' ? window : global;
+    function registerModule() {
+        if (!globalScope.DawsOS?.ModuleValidator) {
+            return false;
+        }
+        try {
+            globalScope.DawsOS.ModuleValidator.validate('utils.js');
+            if (Logger) {
+                Logger.debug('[utils] Module validated');
+            } else {
+                console.log('[utils] Module validated');
+            }
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    
+    // Retry validation until successful
+    let validationAttempts = 0;
+    const maxValidationAttempts = 20;
+    function tryRegisterModule() {
+        if (registerModule()) {
+            return; // Success
+        }
+        validationAttempts++;
+        if (validationAttempts < maxValidationAttempts) {
+            setTimeout(tryRegisterModule, 50);
+            } else {
+                if (Logger) {
+                    Logger.warn('[utils] Failed to validate after', maxValidationAttempts, 'attempts');
+                } else {
+                    console.warn('[utils] Failed to validate after', maxValidationAttempts, 'attempts');
+                }
+            }
+    }
+    tryRegisterModule();
 
 })(typeof window !== 'undefined' ? window : global);

@@ -44,6 +44,9 @@
         global.DawsOS = {};
     }
 
+    // Get Logger if available
+    const Logger = global.DawsOS?.Logger;
+
     // Create Panels namespace
     const Panels = {};
 
@@ -903,5 +906,44 @@
     Panels.getColorClass = getColorClass;
 
     global.DawsOS.Panels = Panels;
+    
+    // Register module with validator when ready (with retry logic)
+    const globalScope = typeof window !== 'undefined' ? window : global;
+    function registerModule() {
+        if (!globalScope.DawsOS?.ModuleValidator) {
+            return false;
+        }
+        try {
+            globalScope.DawsOS.ModuleValidator.validate('panels.js');
+            if (Logger) {
+                Logger.debug('[panels] Module validated');
+            } else {
+                console.log('[panels] Module validated');
+            }
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    
+    // Retry validation until successful
+    let validationAttempts = 0;
+    const maxValidationAttempts = 20;
+    function tryRegisterModule() {
+        if (registerModule()) {
+            return; // Success
+        }
+        validationAttempts++;
+        if (validationAttempts < maxValidationAttempts) {
+            setTimeout(tryRegisterModule, 50);
+            } else {
+                if (Logger) {
+                    Logger.warn('[panels] Failed to validate after', maxValidationAttempts, 'attempts');
+                } else {
+                    console.warn('[panels] Failed to validate after', maxValidationAttempts, 'attempts');
+                }
+            }
+    }
+    tryRegisterModule();
 
 })(typeof window !== 'undefined' ? window : global);

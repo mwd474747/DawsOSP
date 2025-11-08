@@ -415,9 +415,10 @@ class NightlyJobScheduler:
         # Call macro agent to compute regime and cycles
         # This will be cached in database for fast UI retrieval
         try:
-            from app.services.macro import get_macro_service
-
-            macro_service = get_macro_service()
+            # Get macro service from DI container
+            from app.core.di_container import ensure_initialized
+            container = ensure_initialized()
+            macro_service = container.resolve("macro")
 
             # Compute regime for asof_date
             regime_result = await macro_service.detect_regime(asof_date)
@@ -464,11 +465,11 @@ class NightlyJobScheduler:
 
         logger.info(f"Pre-warming ratings for pack {pack_id}")
 
-        # Placeholder
+        # Placeholder - ratings pre-warm not yet implemented
         return {
             "num_securities": 0,
             "ratings_computed": ["quality", "moat", "balance_sheet", "management", "valuation"],
-            "status": "TODO",
+            "status": "not_implemented",
         }
 
     async def _job_mark_pack_fresh(self, pack_id: str) -> Dict[str, Any]:

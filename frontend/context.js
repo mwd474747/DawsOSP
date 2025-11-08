@@ -46,16 +46,26 @@
 
     // Define initialization function that can be called multiple times
     function initializeContext() {
+        const Logger = global.DawsOS?.Logger;
+        
         // Check if React is available
         if (!global.React) {
-            console.log('[Context] React not available, will retry...');
+            if (Logger) {
+                Logger.debug('[Context] React not available, will retry...');
+            } else {
+                console.log('[Context] React not available, will retry...');
+            }
             setTimeout(initializeContext, 100);
             return;
         }
         
         // Check if APIClient is available
         if (!global.DawsOS?.APIClient) {
-            console.log('[Context] APIClient not ready, will retry...');
+            if (Logger) {
+                Logger.debug('[Context] APIClient not ready, will retry...');
+            } else {
+                console.log('[Context] APIClient not ready, will retry...');
+            }
             setTimeout(initializeContext, 100);
             return;
         }
@@ -65,7 +75,11 @@
             return;
         }
         
-        console.log('[Context] All dependencies ready, initializing...');
+        if (Logger) {
+            Logger.checkpoint('[Context] All dependencies ready, initializing...');
+        } else {
+            console.log('[Context] All dependencies ready, initializing...');
+        }
         
         // Now we have all dependencies, do the real initialization
         const { createElement: e } = global.React;
@@ -84,23 +98,37 @@
      * This ensures we always have a valid portfolio ID
      */
     function getCurrentPortfolioId() {
+        const Logger = global.DawsOS?.Logger;
+        
         // 1. Check localStorage first for persisted selection
         const savedPortfolioId = localStorage.getItem('selectedPortfolioId');
         if (savedPortfolioId) {
-            console.log('Using saved portfolio ID from localStorage:', savedPortfolioId);
+            if (Logger) {
+                Logger.debug('Using saved portfolio ID from localStorage:', savedPortfolioId);
+            } else {
+                console.log('Using saved portfolio ID from localStorage:', savedPortfolioId);
+            }
             return savedPortfolioId;
         }
 
         // 2. Check if user has a portfolio ID in token storage
         const storedUser = TokenManager.getUser();
         if (storedUser && storedUser.default_portfolio_id) {
-            console.log('Using user portfolio ID:', storedUser.default_portfolio_id);
+            if (Logger) {
+                Logger.debug('Using user portfolio ID:', storedUser.default_portfolio_id);
+            } else {
+                console.log('Using user portfolio ID:', storedUser.default_portfolio_id);
+            }
             return storedUser.default_portfolio_id;
         }
 
         // 3. Use hardcoded fallback portfolio ID
         const fallbackPortfolioId = '64ff3be6-0ed1-4990-a32b-4ded17f0320c';
-        console.log('Using fallback portfolio ID:', fallbackPortfolioId);
+        if (Logger) {
+            Logger.debug('Using fallback portfolio ID:', fallbackPortfolioId);
+        } else {
+            console.log('Using fallback portfolio ID:', fallbackPortfolioId);
+        }
         return fallbackPortfolioId;
     }
 
@@ -131,7 +159,11 @@
                     detail: { portfolioId: newPortfolioId }
                 }));
 
-                console.log('Portfolio changed to:', newPortfolioId);
+                if (global.DawsOS?.Logger) {
+                    global.DawsOS.Logger.info('Portfolio changed to:', newPortfolioId);
+                } else {
+                    console.log('Portfolio changed to:', newPortfolioId);
+                }
             }
         }, [portfolioId]);
 
@@ -158,9 +190,17 @@
                 };
 
                 setPortfolios([portfolioData]);
-                console.log('Loaded portfolio:', portfolioData);
+                if (global.DawsOS?.Logger) {
+                    global.DawsOS.Logger.debug('Loaded portfolio:', portfolioData);
+                } else {
+                    console.log('Loaded portfolio:', portfolioData);
+                }
             } catch (error) {
-                console.error('Failed to load portfolios:', error);
+                if (global.DawsOS?.Logger) {
+                    global.DawsOS.Logger.error('Failed to load portfolios:', error);
+                } else {
+                    console.error('Failed to load portfolios:', error);
+                }
                 // Set a default portfolio structure if API fails
                 setPortfolios([{
                     id: portfolioId,
@@ -195,7 +235,11 @@
                     });
                 }
             } catch (error) {
-                console.error('Failed to load portfolio data:', error);
+                if (global.DawsOS?.Logger) {
+                    global.DawsOS.Logger.error('Failed to load portfolio data:', error);
+                } else {
+                    console.error('Failed to load portfolio data:', error);
+                }
             }
         }, [portfolioId, user]);
 
@@ -392,7 +436,49 @@
             isInitialized: true
         };
         
-        console.log('[Context] Module fully initialized');
+        if (global.DawsOS?.Logger) {
+            global.DawsOS.Logger.checkpoint('[Context] Module fully initialized');
+        } else {
+            console.log('[Context] Module fully initialized');
+        }
+        
+        // Register module with validator when ready (with retry logic)
+        function registerContextModule() {
+            if (!global.DawsOS?.ModuleValidator) {
+                return false;
+            }
+            try {
+                global.DawsOS.ModuleValidator.validate('context.js');
+                if (global.DawsOS?.Logger) {
+                    global.DawsOS.Logger.debug('[Context] Module validated');
+                } else {
+                    console.log('[Context] Module validated');
+                }
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+        
+        // Retry validation until successful
+        let validationAttempts = 0;
+        const maxValidationAttempts = 20;
+        function tryRegisterContextModule() {
+            if (registerContextModule()) {
+                return; // Success
+            }
+            validationAttempts++;
+            if (validationAttempts < maxValidationAttempts) {
+                setTimeout(tryRegisterContextModule, 50);
+            } else {
+                if (global.DawsOS?.Logger) {
+                    global.DawsOS.Logger.warn('[Context] Failed to validate after', maxValidationAttempts, 'attempts');
+                } else {
+                    console.warn('[Context] Failed to validate after', maxValidationAttempts, 'attempts');
+                }
+            }
+        }
+        tryRegisterContextModule();
     }
     
     // Start initialization process

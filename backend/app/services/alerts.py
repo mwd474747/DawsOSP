@@ -64,6 +64,13 @@ from app.core.constants.validation import (
     MOCK_DATA_RANDOM_MIN,
     MOCK_DATA_RANDOM_MAX,
 )
+from app.services.alert_validation import (
+    validate_portfolio_metric_name,
+    validate_rating_metric_name,
+    validate_price_metric_name,
+    validate_uuid,
+    validate_symbol,
+)
 
 logger = logging.getLogger("DawsOS.Alerts")
 
@@ -569,12 +576,21 @@ class AlertService:
         metric_name = condition.get("metric")  # twr_ytd, sharpe_1y, max_drawdown_1y, etc.
         asof_date = ctx.get("asof_date", date.today())
 
+        # Validate inputs to prevent SQL injection
         if not portfolio_id or not metric_name:
             logger.warning(f"Invalid metric condition: {condition}")
             return None
+        
+        if not validate_uuid(portfolio_id):
+            logger.warning(f"Invalid portfolio_id format: {portfolio_id}")
+            return None
+        
+        if not validate_portfolio_metric_name(metric_name):
+            logger.warning(f"Invalid metric name (potential SQL injection attempt): {metric_name}")
+            return None
 
         # Query portfolio_metrics table
-        # Use column name directly from condition
+        # Column name validated against whitelist to prevent SQL injection
         query = f"""
             SELECT {metric_name}
             FROM portfolio_metrics
@@ -642,12 +658,22 @@ class AlertService:
         metric_name = condition.get("metric")  # dividend_safety, quality_score, moat_score, etc.
         asof_date = ctx.get("asof_date", date.today())
 
+        # Validate inputs to prevent SQL injection
         if not symbol or not metric_name:
             logger.warning(f"Invalid rating condition: {condition}")
+            return None
+        
+        if not validate_symbol(symbol):
+            logger.warning(f"Invalid symbol format: {symbol}")
+            return None
+        
+        if not validate_rating_metric_name(metric_name):
+            logger.warning(f"Invalid rating metric name (potential SQL injection attempt): {metric_name}")
             return None
 
         # Query security_ratings table
         # TODO: Create security_ratings table in schema
+        # Column name validated against whitelist to prevent SQL injection
         query = f"""
             SELECT {metric_name}
             FROM security_ratings
@@ -743,9 +769,15 @@ class AlertService:
                 logger.warning(f"No pricing pack found for {asof_date}")
                 return None
 
-            # Validate pack_id using PricingService
-            from app.services.pricing import get_pricing_service
-            pricing_service = get_pricing_service()
+            # Validate pack_id using PricingService (from DI container)
+            from app.core.di_container import get_container
+            from app.core.service_initializer import initialize_services
+            from app.db.connection import get_db_pool
+            container = get_container()
+            if not container._initialized:
+                db_pool = get_db_pool()
+                initialize_services(container, db_pool=db_pool)
+            pricing_service = container.resolve("pricing")
             pack = await pricing_service.get_pack_by_id(pack_row["id"], raise_if_not_found=False)
             if not pack:
                 logger.warning(f"Pricing pack {pack_row['id']} not found or invalid")
@@ -774,7 +806,13 @@ class AlertService:
                 if row and row["change_pct"] is not None:
                     return Decimal(str(row["change_pct"]))
             else:
+                # Validate metric name to prevent SQL injection
+                if not validate_price_metric_name(metric_name):
+                    logger.warning(f"Invalid price metric name (potential SQL injection attempt): {metric_name}")
+                    return None
+                
                 # Get specific price field
+                # Column name validated against whitelist to prevent SQL injection
                 price_query = f"""
                     SELECT {metric_name}
                     FROM pricing_packs_prices
@@ -950,13 +988,17 @@ class AlertService:
             logger.error(f"Invalid DaR threshold: {e}")
             return False
 
-        # Compute DaR using scenarios service
+        # Compute DaR using scenarios service (from DI container)
         try:
-            from app.services.scenarios import get_scenario_service
-            from app.services.macro import get_macro_service
-
-            scenario_service = get_scenario_service()
-            macro_service = get_macro_service()
+            from app.core.di_container import get_container
+            from app.core.service_initializer import initialize_services
+            from app.db.connection import get_db_pool
+            container = get_container()
+            if not container._initialized:
+                db_pool = get_db_pool()
+                initialize_services(container, db_pool=db_pool)
+            scenario_service = container.resolve("scenarios")
+            macro_service = container.resolve("macro")
 
             # Detect current regime for conditioning
             asof_date = ctx.get("asof_date", date.today())
@@ -1117,7 +1159,15 @@ class AlertService:
         try:
             from app.services.macro import get_macro_service
 
-            macro_service = get_macro_service()
+            # Get macro service from DI container
+            from app.core.di_container import get_container
+            from app.core.service_initializer import initialize_services
+            from app.db.connection import get_db_pool
+            container = get_container()
+            if not container._initialized:
+                db_pool = get_db_pool()
+                initialize_services(container, db_pool=db_pool)
+            macro_service = container.resolve("macro")
             asof_date = ctx.get("asof_date", date.today())
 
             regime_classification = await macro_service.detect_current_regime(asof_date=asof_date)

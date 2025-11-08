@@ -265,3 +265,27 @@ def reset_container() -> None:
     global _container
     _container = None
 
+
+def ensure_initialized() -> DIContainer:
+    """
+    Ensure DI container is initialized.
+    
+    Helper function to get container and initialize if needed.
+    Useful for replacing singleton function calls.
+    
+    Returns:
+        Initialized DI container
+    """
+    container = get_container()
+    if not container._initialized:
+        from app.core.service_initializer import initialize_services
+        from app.db.connection import get_db_pool
+        try:
+            db_pool = get_db_pool()
+            initialize_services(container, db_pool=db_pool)
+            logger.info("Services initialized using DI container (via ensure_initialized)")
+        except Exception as e:
+            logger.error(f"Failed to initialize services: {e}", exc_info=True)
+            raise
+    return container
+

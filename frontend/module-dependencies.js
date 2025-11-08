@@ -60,7 +60,11 @@
         const missingDeps = module.dependencies.filter(dep => !loadedModules.has(dep));
         if (missingDeps.length > 0) {
             const error = `[ModuleValidation] ${cleanFilename} loaded before dependencies: ${missingDeps.join(', ')}`;
-            console.error(error);
+            if (global.DawsOS?.Logger) {
+                global.DawsOS.Logger.error(error);
+            } else {
+                console.error(error);
+            }
             moduleErrors.push({
                 module: cleanFilename,
                 type: 'dependency',
@@ -78,7 +82,11 @@
         
         if (!namespace) {
             const error = `[ModuleValidation] ${cleanFilename} namespace ${module.namespace} not found`;
-            console.error(error);
+            if (global.DawsOS?.Logger) {
+                global.DawsOS.Logger.error(error);
+            } else {
+                console.error(error);
+            }
             moduleErrors.push({
                 module: cleanFilename,
                 type: 'namespace',
@@ -91,48 +99,96 @@
         loadedModules.add(cleanFilename);
         
         if (missingDeps.length === 0 && namespace) {
-            console.log(`✅ [ModuleValidation] ${cleanFilename} loaded successfully`);
+            if (global.DawsOS?.Logger) {
+                global.DawsOS.Logger.checkpoint(`[ModuleValidation] ${cleanFilename} loaded successfully`);
+            } else {
+                console.log(`✅ [ModuleValidation] ${cleanFilename} loaded successfully`);
+            }
         }
     }
     
-    // Validate all modules after page load
+    // Validate all modules after page load (with retry logic)
     function validateAllModules() {
-        // Check all expected modules are loaded
         const expectedModules = Object.keys(MODULE_DEPENDENCIES);
-        const missingModules = expectedModules.filter(module => !loadedModules.has(module));
         
-        if (missingModules.length > 0) {
-            const error = `[ModuleValidation] Missing modules: ${missingModules.join(', ')}`;
-            console.error(error);
-            moduleErrors.push({
-                type: 'missing',
-                message: error,
-                missing: missingModules
-            });
-        }
-        
-        // Report results
-        if (moduleErrors.length > 0) {
-            console.error('[ModuleValidation] Module loading errors:', moduleErrors);
+        function checkModules(attempt = 0) {
+            const missingModules = expectedModules.filter(module => !loadedModules.has(module));
             
-            // Show error banner if in development
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                const errorDiv = document.createElement('div');
-                errorDiv.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #ff0000; color: white; padding: 1rem; z-index: 10000; font-family: monospace; font-size: 12px;';
-                errorDiv.innerHTML = `
-                    <strong>Module Loading Errors Detected</strong><br>
-                    Check console for details. Errors: ${moduleErrors.length}
-                `;
-                document.body.appendChild(errorDiv);
-                
-                // Auto-remove after 10 seconds
-                setTimeout(() => errorDiv.remove(), 10000);
+            if (missingModules.length === 0) {
+                if (global.DawsOS?.Logger) {
+                    global.DawsOS.Logger.checkpoint('[ModuleValidation] All modules loaded successfully');
+                } else {
+                    console.log('✅ [ModuleValidation] All modules loaded successfully');
+                }
+                // Report results
+                if (moduleErrors.length > 0) {
+                    if (global.DawsOS?.Logger) {
+                        global.DawsOS.Logger.error('[ModuleValidation] Module loading errors:', moduleErrors);
+                    } else {
+                        console.error('[ModuleValidation] Module loading errors:', moduleErrors);
+                    }
+                    
+                    // Show error banner if in development
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                        const errorDiv = document.createElement('div');
+                        errorDiv.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #ff0000; color: white; padding: 1rem; z-index: 10000; font-family: monospace; font-size: 12px;';
+                        errorDiv.innerHTML = `
+                            <strong>Module Loading Errors Detected</strong><br>
+                            Check console for details. Errors: ${moduleErrors.length}
+                        `;
+                        document.body.appendChild(errorDiv);
+                        setTimeout(() => errorDiv.remove(), 10000);
+                    }
+                } else if (moduleWarnings.length > 0) {
+                    if (global.DawsOS?.Logger) {
+                        global.DawsOS.Logger.warn('[ModuleValidation] Module loading warnings:', moduleWarnings);
+                    } else {
+                        console.warn('[ModuleValidation] Module loading warnings:', moduleWarnings);
+                    }
+                }
+                return;
             }
-        } else if (moduleWarnings.length > 0) {
-            console.warn('[ModuleValidation] Module loading warnings:', moduleWarnings);
-        } else {
-            console.log('✅ [ModuleValidation] All modules loaded successfully');
+            
+            // Retry if modules still missing
+            if (attempt < 20) { // 20 attempts × 100ms = 2 seconds max
+                setTimeout(() => checkModules(attempt + 1), 100);
+            } else {
+                // Give up and report errors
+                const error = `[ModuleValidation] Missing modules after 20 attempts: ${missingModules.join(', ')}`;
+                if (global.DawsOS?.Logger) {
+                    global.DawsOS.Logger.error(error);
+                } else {
+                    console.error(error);
+                }
+                moduleErrors.push({
+                    type: 'missing',
+                    message: error,
+                    missing: missingModules
+                });
+                
+                // Report results
+                if (global.DawsOS?.Logger) {
+                    global.DawsOS.Logger.error('[ModuleValidation] Module loading errors:', moduleErrors);
+                } else {
+                    console.error('[ModuleValidation] Module loading errors:', moduleErrors);
+                }
+                
+                // Show error banner if in development
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #ff0000; color: white; padding: 1rem; z-index: 10000; font-family: monospace; font-size: 12px;';
+                    errorDiv.innerHTML = `
+                        <strong>Module Loading Errors Detected</strong><br>
+                        Check console for details. Errors: ${moduleErrors.length}
+                    `;
+                    document.body.appendChild(errorDiv);
+                    setTimeout(() => errorDiv.remove(), 10000);
+                }
+            }
         }
+        
+        // Start checking after initial delay (increased to 200ms)
+        setTimeout(() => checkModules(0), 200);
     }
     
     // Override script loading to validate
@@ -147,7 +203,11 @@
             element.addEventListener('error', function() {
                 const filename = this.src.split('/').pop().split('?')[0];
                 const error = `[ModuleValidation] Failed to load module: ${filename}`;
-                console.error(error);
+                if (global.DawsOS?.Logger) {
+                    global.DawsOS.Logger.error(error);
+                } else {
+                    console.error(error);
+                }
                 moduleErrors.push({
                     module: filename,
                     type: 'load',
@@ -161,8 +221,9 @@
     
     // Validate after all modules loaded
     window.addEventListener('load', function() {
-        // Wait a bit for all scripts to execute
-        setTimeout(validateAllModules, 100);
+        // Increased delay to allow async modules to start initialization
+        // validateAllModules() now has its own retry logic, so this is just initial delay
+        setTimeout(validateAllModules, 200);
     });
     
     // Export validator

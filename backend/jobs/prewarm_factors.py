@@ -63,9 +63,10 @@ async def prewarm_factors(asof_date: date, pack_id: str) -> Dict[str, Any]:
     cycles_result = {}
 
     try:
-        from app.services.macro import get_macro_service
-
-        macro_service = get_macro_service()
+        # Get macro service from DI container
+        from app.core.di_container import ensure_initialized
+        container = ensure_initialized()
+        macro_service = container.resolve("macro")
 
         # 1. Detect regime
         logger.info("Detecting macro regime...")

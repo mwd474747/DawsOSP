@@ -41,7 +41,7 @@ from datetime import date, datetime, timedelta
 from typing import Optional
 
 from app.integrations.fred_provider import FREDProvider
-from app.services.macro import get_macro_service, Regime
+from app.services.macro import MacroService, Regime
 from app.services.fred_transformation import get_transformation_service
 from app.db.connection import get_db_pool
 
@@ -77,7 +77,14 @@ async def fetch_indicators_job(
         return
         
     fred_provider = FREDProvider(api_key=api_key)
-    macro_service = get_macro_service(fred_client=fred_provider)
+    # Create MacroService directly with FRED provider (for jobs that need custom FRED client)
+    from app.services.macro import MacroService
+    from app.db.connection import get_db_pool
+    try:
+        db_pool = get_db_pool()
+    except RuntimeError:
+        db_pool = None
+    macro_service = MacroService(fred_client=fred_provider, db_pool=db_pool)
 
     # Fetch indicators
     try:
@@ -146,8 +153,10 @@ async def detect_regime_job(
 
     logger.info(f"Detecting regime for {asof_date}")
 
-    # Get service
-    macro_service = get_macro_service()
+    # Get service from DI container
+    from app.core.di_container import ensure_initialized
+    container = ensure_initialized()
+    macro_service = container.resolve("macro")
 
     try:
         # Detect regime

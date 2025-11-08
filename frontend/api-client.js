@@ -66,10 +66,18 @@
                 
                 const { access_token } = response.data;
                 this.setToken(access_token);
-                console.log('Token refreshed successfully');
+                if (global.DawsOS?.Logger) {
+                    global.DawsOS.Logger.info('Token refreshed successfully');
+                } else {
+                    console.log('Token refreshed successfully');
+                }
                 return access_token;
             } catch (error) {
-                console.error('Token refresh failed:', error.response?.data || error.message);
+                if (global.DawsOS?.Logger) {
+                    global.DawsOS.Logger.error('Token refresh failed:', error.response?.data || error.message);
+                } else {
+                    console.error('Token refresh failed:', error.response?.data || error.message);
+                }
                 return null;
             }
         },
@@ -196,7 +204,11 @@
                     // Calculate delay for exponential backoff
                     const delay = retryConfig.getRetryDelay(originalRequest._retryCount);
                     
-                    console.log(`Retrying request (attempt ${originalRequest._retryCount}/${retryConfig.maxRetries}) after ${delay}ms`);
+                    if (global.DawsOS?.Logger) {
+                        global.DawsOS.Logger.debug(`Retrying request (attempt ${originalRequest._retryCount}/${retryConfig.maxRetries}) after ${delay}ms`);
+                    } else {
+                        console.log(`Retrying request (attempt ${originalRequest._retryCount}/${retryConfig.maxRetries}) after ${delay}ms`);
+                    }
                     
                     // Wait for the delay before retrying
                     await new Promise(resolve => setTimeout(resolve, delay));
@@ -403,7 +415,45 @@
     global.retryConfig = retryConfig;
     global.apiClient = apiClient;
     
-    // For debugging purposes
-    console.log('✅ API Client module loaded successfully (DawsOS.APIClient)');
+    // For debugging purposes (strategic checkpoint)
+    if (global.DawsOS?.Logger) {
+        global.DawsOS.Logger.checkpoint('API Client module loaded', 'DawsOS.APIClient');
+    } else {
+        console.log('✅ API Client module loaded successfully (DawsOS.APIClient)');
+    }
+    
+    // Register module with validator when ready (with retry logic)
+    function registerModule() {
+        if (!global.DawsOS?.ModuleValidator) {
+            return false;
+        }
+        try {
+            global.DawsOS.ModuleValidator.validate('api-client.js');
+            if (global.DawsOS?.Logger) {
+                global.DawsOS.Logger.debug('[api-client] Module validated');
+            } else {
+                console.log('[api-client] Module validated');
+            }
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    
+    // Retry validation until successful
+    let validationAttempts = 0;
+    const maxValidationAttempts = 20; // 20 attempts × 50ms = 1 second max
+    function tryRegisterModule() {
+        if (registerModule()) {
+            return; // Success
+        }
+        validationAttempts++;
+        if (validationAttempts < maxValidationAttempts) {
+            setTimeout(tryRegisterModule, 50);
+        } else {
+            console.warn('[api-client] Failed to validate after', maxValidationAttempts, 'attempts (ModuleValidator may not be available)');
+        }
+    }
+    tryRegisterModule();
     
 })(window);

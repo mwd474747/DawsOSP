@@ -48,12 +48,12 @@ from app.core.types import (
 )
 from app.core.exceptions import DatabaseError
 from app.db.pricing_pack_queries import get_pricing_pack_queries
-from app.services.pricing import get_pricing_service
 from app.core.pattern_orchestrator import PatternOrchestrator
 from app.core.agent_runtime import AgentRuntime
-from app.agents.financial_analyst import FinancialAnalyst
 from app.middleware.auth_middleware import verify_token
-from app.services.audit import get_audit_service
+from app.core.di_container import get_container
+from app.core.service_initializer import initialize_services
+from app.db.connection import get_db_pool
 from app.core.constants.http_status import (
     HTTP_400_BAD_REQUEST,
     HTTP_500_INTERNAL_SERVER_ERROR,
@@ -100,95 +100,48 @@ except ImportError:
 logger = logging.getLogger("DawsOS.Executor")
 
 # ============================================================================
-# Runtime Initialization (Singleton)
+# Runtime Initialization (Using DI Container)
 # ============================================================================
-
-_agent_runtime = None
-_pattern_orchestrator = None
-
 
 def get_agent_runtime(reinit_services: bool = False) -> AgentRuntime:
     """
-    Get or create singleton agent runtime.
+    Get agent runtime from DI container.
 
     Args:
-        reinit_services: If True, reinitialize services dict with current pool (for startup)
+        reinit_services: If True, reinitialize services (for startup)
     """
-    global _agent_runtime
-
-    # Get current database pool (may be None if not initialized yet)
-    from app.db.connection import get_db_pool
-
+    container = get_container()
+    if not container._initialized or reinit_services:
+        try:
+            db_pool = get_db_pool()
+            initialize_services(container, db_pool=db_pool)
+            logger.info("Services initialized using DI container")
+        except Exception as e:
+            logger.error(f"Failed to initialize services: {e}", exc_info=True)
+            raise
     try:
-        db_pool = get_db_pool()
-        logger.debug("✅ Retrieved database pool for agent runtime")
-    except RuntimeError:
-        logger.debug("⚠️ Database pool not initialized yet")
-        db_pool = None
-
-    services = {
-        "db": db_pool,
-        "redis": None,  # TODO: Wire real Redis when needed
-    }
-
-    # If runtime exists and reinit_services=True, update the services dict
-    if _agent_runtime is not None and reinit_services:
-        logger.info("Updating agent runtime with initialized database pool")
-        _agent_runtime.services = services
-        # Also update services on each registered agent
-        for agent_id, agent in _agent_runtime.agents.items():
-            agent.services = services
-        return _agent_runtime
-
-    if _agent_runtime is None:
-        # Create runtime
-        _agent_runtime = AgentRuntime(services)
-
-        # Register agents (4 total - Phase 3 consolidation complete)
-        # ✅ COMPLETE (2025-11-03): Phase 3 consolidation complete - 9 agents → 4 agents
-        # Legacy agents (OptimizerAgent, RatingsAgent, ChartsAgent, AlertsAgent, ReportsAgent) removed
-        # Capabilities consolidated into FinancialAnalyst, MacroHound, and DataHarvester
-
-        # 1. Financial Analyst - Portfolio analysis, metrics, pricing, optimization, ratings, charts
-        financial_analyst = FinancialAnalyst("financial_analyst", services)
-        _agent_runtime.register_agent(financial_analyst)
-
-        # 2. Macro Hound - Macro regime, cycles, scenarios, DaR, alerts
-        from app.agents.macro_hound import MacroHound
-        macro_hound = MacroHound("macro_hound", services)
-        _agent_runtime.register_agent(macro_hound)
-
-        # 3. Data Harvester - Provider integration (FMP, Polygon, FRED, NewsAPI), reports
-        from app.agents.data_harvester import DataHarvester
-        data_harvester = DataHarvester("data_harvester", services)
-        _agent_runtime.register_agent(data_harvester)
-
-        # 4. Claude Agent - AI explanations and analysis
-        from app.agents.claude_agent import ClaudeAgent
-        claude_agent = ClaudeAgent("claude", services)
-        _agent_runtime.register_agent(claude_agent)
-
-        logger.info(
-            "Agent runtime initialized with 4 agents: "
-            "financial_analyst, macro_hound, data_harvester, claude"
-        )
-
-    return _agent_runtime
+        return container.resolve("agent_runtime")
+    except (KeyError, RuntimeError) as e:
+        logger.error(f"Failed to resolve agent runtime: {e}", exc_info=True)
+        raise
 
 
 def get_pattern_orchestrator() -> PatternOrchestrator:
-    """Get or create singleton pattern orchestrator."""
-    global _pattern_orchestrator
-    if _pattern_orchestrator is None:
-        runtime = get_agent_runtime()
-        _pattern_orchestrator = PatternOrchestrator(
-            agent_runtime=runtime,
-            db=None,  # TODO: Wire real DB
-            redis=None,  # TODO: Wire real Redis
-        )
-        logger.info("Pattern orchestrator initialized")
-
-    return _pattern_orchestrator
+    """Get pattern orchestrator from DI container."""
+    container = get_container()
+    if not container._initialized:
+        try:
+            db_pool = get_db_pool()
+            initialize_services(container, db_pool=db_pool)
+            logger.info("Services initialized using DI container")
+        except Exception as e:
+            logger.error(f"Failed to initialize services: {e}", exc_info=True)
+            raise
+    try:
+        return container.resolve("pattern_orchestrator")
+    except (KeyError, RuntimeError) as e:
+        logger.error(f"Failed to resolve pattern orchestrator: {e}", exc_info=True)
+        raise
 
 
 logger = logging.getLogger("DawsOS.Executor")
@@ -290,14 +243,10 @@ async def startup_event():
         logger.info("✅ Database connection pool initialized successfully")
         print("✅ DATABASE POOL INITIALIZED")
 
-        # Update agent runtime with initialized pool
-        get_agent_runtime(reinit_services=True)
-        logger.info("✅ Agent runtime updated with database pool")
-
-        # GOVERNANCE FIX #1: Force pricing service to use database for freshness gate
-        from app.services.pricing import init_pricing_service
-        init_pricing_service(use_db=True, force=True)
-        logger.info("✅ Pricing service initialized with database (freshness gate enabled)")
+        # Initialize services using DI container
+        container = get_container()
+        initialize_services(container, db_pool=db_pool)
+        logger.info("✅ Services initialized using DI container")
 
     except Exception as e:
         # Database initialization errors - re-raise as DatabaseError (critical)
@@ -550,7 +499,12 @@ async def _execute_pattern_internal(
         # STEP 1: Get Latest Pricing Pack
         # ========================================
 
-        pricing_service = get_pricing_service()
+        # Get pricing service from DI container
+        container = get_container()
+        if not container._initialized:
+            db_pool = get_db_pool()
+            initialize_services(container, db_pool=db_pool)
+        pricing_service = container.resolve("pricing")
         try:
             pack_obj = await pricing_service.get_latest_pack(
                 require_fresh=False,  # Check freshness separately in Step 2
@@ -793,7 +747,12 @@ async def _execute_pattern_internal(
 
             # Log pattern execution for compliance and debugging
             try:
-                audit_service = get_audit_service()
+                # Get audit service from DI container
+                container = get_container()
+                if not container._initialized:
+                    db_pool = get_db_pool()
+                    initialize_services(container, db_pool=db_pool)
+                audit_service = container.resolve("audit")
                 await audit_service.log(
                     user_id=str(ctx.user_id),
                     action="execute_pattern",
@@ -984,7 +943,12 @@ async def health_pack():
         - 500: Pack error or not found
     """
     try:
-        pricing_service = get_pricing_service()
+        # Get pricing service from DI container
+        container = get_container()
+        if not container._initialized:
+            db_pool = get_db_pool()
+            initialize_services(container, db_pool=db_pool)
+        pricing_service = container.resolve("pricing")
         try:
             pack_obj = await pricing_service.get_latest_pack(
                 require_fresh=False,  # Don't require fresh for health check

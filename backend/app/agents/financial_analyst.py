@@ -417,9 +417,8 @@ class FinancialAnalyst(BaseAgent):
             - All valuations reference pricing_pack_id for reproducibility
             - FX rates are applied for non-base currency positions
         """
+        # Resolve pricing pack ID (helper already validates)
         pack_id = self._resolve_pricing_pack_id(pack_id, ctx)
-        if not pack_id:
-            raise ValueError("pricing_pack_id is required to value positions")
 
         logger.info(
             f"pricing.apply_pack: pack_id={pack_id}, positions_count={len(positions)}"
@@ -1130,11 +1129,10 @@ class FinancialAnalyst(BaseAgent):
         Returns:
             Dict with chart configurations for UI rendering
         """
-        portfolio_id = ctx.portfolio_id
-        if not portfolio_id:
-            raise ValueError("portfolio_id required for charts.overview")
+        # Resolve portfolio_id using BaseAgent helper
+        portfolio_uuid = self._resolve_portfolio_id(None, ctx, "charts.overview")
 
-        logger.info(f"charts.overview: portfolio_id={portfolio_id}, pack_id={ctx.pricing_pack_id}")
+        logger.info(f"charts.overview: portfolio_id={portfolio_uuid}, pack_id={ctx.pricing_pack_id}")
 
         charts = []
 
@@ -1346,17 +1344,16 @@ class FinancialAnalyst(BaseAgent):
                 exc_info=True
             )
             # Return error instead of stub data (Phase 3 requirement)
-            return {
-                "portfolio_id": str(portfolio_id_uuid),
-                "pack_id": str(pack) if pack else None,
-                "timestamp": str(ctx.asof_date) if ctx.asof_date else None,
-                "error": f"Factor analysis failed: {str(e)}",
-                "_provenance": {
-                    "type": "error",
-                    "source": "factor_analysis_service",
-                    "error": str(e),
+            return self._create_error_result(
+                error_message=f"Factor analysis failed: {str(e)}",
+                ctx=ctx,
+                source="factor_analysis_service",
+                additional_fields={
+                    "portfolio_id": str(portfolio_id_uuid),
+                    "pack_id": str(pack) if pack else None,
+                    "timestamp": str(ctx.asof_date) if ctx.asof_date else None,
                 },
-            }
+            )
 
         # Return result directly without metadata wrapping to avoid orchestrator resolution issues
         return result

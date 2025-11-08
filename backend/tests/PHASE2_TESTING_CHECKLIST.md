@@ -23,10 +23,10 @@
 
 ## 2. Agent Stability Checks
 
-### ChartsAgent Fix
-- [ ] Server starts without "charts.overview already registered" error
-- [ ] ChartsAgent only registers `charts.macro_overview` and `charts.scenario_deltas`
-- [ ] FinancialAnalyst successfully provides `charts.overview`
+### ChartsAgent Fix (ARCHIVED - REMOVED)
+- [x] ChartsAgent removed (consolidated into FinancialAnalyst)
+- [x] FinancialAnalyst successfully provides `charts.overview`
+- [x] No duplicate capability registration errors
 
 ### Import Cleanup
 - [ ] No import errors during server startup

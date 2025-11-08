@@ -404,6 +404,128 @@ class BaseAgent(ABC):
 
         return None
 
+    def _merge_policies_and_constraints(
+        self,
+        policies: Optional[Union[Dict, List]],
+        constraints: Optional[Dict],
+        default_policy: Optional[Dict] = None
+    ) -> Dict[str, Any]:
+        """
+        Merge policies and constraints into unified policy dict.
+
+        Handles multiple input formats:
+        - policies as dict: Use directly
+        - policies as list: Convert list of {type, value} to dict
+        - constraints as dict: Merge constraint keys (max_turnover_pct, etc.)
+        - default_policy: Apply if no policies provided
+
+        Args:
+            policies: Policy dict or list of policy objects
+            constraints: Constraints dict (max_turnover_pct, max_te_pct, min_lot_value)
+            default_policy: Default policy to use if no policies provided
+
+        Returns:
+            Merged policy dict with all constraints applied
+        """
+        from typing import Union
+        
+        merged_policy = {}
+
+        # Handle policies
+        if policies:
+            if isinstance(policies, list):
+                # Convert list of policies to dict format
+                for policy in policies:
+                    if isinstance(policy, dict) and 'type' in policy:
+                        policy_type = policy['type']
+                        value = policy.get('value', 0.0)
+
+                        if policy_type == 'min_quality_score':
+                            merged_policy['min_quality_score'] = value
+                        elif policy_type == 'max_single_position':
+                            merged_policy['max_single_position_pct'] = value
+                        elif policy_type == 'max_sector':
+                            merged_policy['max_sector_pct'] = value
+                        elif policy_type == 'target_allocation':
+                            category = policy.get('category', '')
+                            merged_policy[f'target_{category}'] = value
+            else:
+                # Use policies as base if it's a dict
+                merged_policy = policies.copy() if isinstance(policies, dict) else {}
+
+        # Merge constraints if provided
+        if constraints and isinstance(constraints, dict):
+            if 'max_turnover_pct' in constraints:
+                merged_policy['max_turnover_pct'] = constraints['max_turnover_pct']
+            if 'max_te_pct' in constraints:
+                merged_policy['max_tracking_error_pct'] = constraints['max_te_pct']
+            if 'min_lot_value' in constraints:
+                merged_policy['min_lot_value'] = constraints['min_lot_value']
+
+        # Apply default policy if provided and no policies merged
+        if not merged_policy and default_policy:
+            merged_policy = default_policy.copy()
+
+        # Apply standard defaults if still empty
+        if not merged_policy:
+            merged_policy = {
+                "min_quality_score": 0.0,
+                "max_single_position_pct": 20.0,
+                "max_sector_pct": 30.0,
+                "max_turnover_pct": 20.0,
+                "max_tracking_error_pct": 3.0,
+                "method": "mean_variance",
+            }
+
+        return merged_policy
+
+    def _create_error_result(
+        self,
+        error_message: str,
+        ctx: RequestCtx,
+        source: Optional[str] = None,
+        additional_fields: Optional[Dict[str, Any]] = None,
+        include_provenance: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Create standardized error result dict.
+
+        This helper standardizes error result creation across all agents,
+        ensuring consistent error format with metadata and provenance.
+
+        Args:
+            error_message: Error message string
+            ctx: Request context
+            source: Source identifier (e.g., "factor_analysis_service")
+            additional_fields: Additional fields to include in error result
+            include_provenance: Whether to include _provenance field
+
+        Returns:
+            Error result dict with error message and metadata
+        """
+        error_result = {
+            "error": error_message,
+        }
+        
+        if additional_fields:
+            error_result.update(additional_fields)
+        
+        if include_provenance:
+            error_result["_provenance"] = {
+                "type": "error",
+                "source": source or f"{self.name}_service",
+                "error": error_message,
+            }
+        
+        # Attach metadata
+        metadata = self._create_metadata(
+            source=f"{source or self.name}:error",
+            asof=self._resolve_asof_date(ctx),
+            ttl=self.CACHE_TTL_NONE,  # Don't cache errors
+        )
+        
+        return self._attach_metadata(error_result, metadata)
+
 
 # ============================================================================
 # Result Wrapper (for primitives)

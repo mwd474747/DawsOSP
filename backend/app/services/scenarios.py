@@ -769,10 +769,16 @@ class ScenarioService:
             as_of_date = date.today()
 
         if not pack_id:
-            # Get latest pricing pack from pricing service
-            from app.services.pricing import get_pricing_service
+            # Get latest pricing pack from pricing service (from DI container)
+            from app.core.di_container import get_container
+            from app.core.service_initializer import initialize_services
+            from app.db.connection import get_db_pool
             from app.core.types import PricingPackNotFoundError
-            pricing_service = get_pricing_service()
+            container = get_container()
+            if not container._initialized:
+                db_pool = get_db_pool()
+                initialize_services(container, db_pool=db_pool)
+            pricing_service = container.resolve("pricing")
             latest_pack = await pricing_service.get_latest_pack(
                 require_fresh=True,
                 raise_if_not_found=True
