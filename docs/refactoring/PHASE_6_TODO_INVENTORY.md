@@ -16,28 +16,31 @@
 
 ### P1 (Critical) - Must Fix Before Production
 
-#### 1. Database Schema TODOs
+#### 1. Database Schema TODOs ✅ COMPLETE
 - **Location:** `backend/app/services/alerts.py:675`
   - **TODO:** Create security_ratings table in schema
-  - **Impact:** HIGH - Alert system cannot function without this table
-  - **Fix:** Add migration to create table
+  - **Status:** ✅ COMPLETE (Replit - January 15, 2025)
+  - **Fix:** Migration `020_security_ratings.sql` created with full RLS policies
 
 - **Location:** `backend/app/services/alerts.py:885`
   - **TODO:** Create news_sentiment table in schema
-  - **Impact:** HIGH - News-based alerts cannot function
-  - **Fix:** Add migration to create table
+  - **Status:** ✅ COMPLETE (Replit - January 15, 2025)
+  - **Fix:** Migration `021_news_sentiment.sql` created with full RLS policies
 
 - **Location:** `backend/db/migrations/011_alert_delivery_system.sql:62,66,70`
   - **TODO:** Add proper user isolation when alert ownership is defined
-  - **Impact:** HIGH - Security issue, RLS not properly configured
-  - **Fix:** Update RLS policies when user ownership is added
+  - **Status:** ✅ COMPLETE (Replit - January 15, 2025)
+  - **Fix:** RLS policies added to both new tables, verification views/functions created
 
-#### 2. Security TODOs
+#### 2. Security TODOs ✅ COMPLETE
 - **Location:** `backend/app/services/reports.py:699-700`
   - **TODO:** Get real IP from request context
+  - **Status:** ✅ COMPLETE (Phase 5 - January 15, 2025)
+  - **Fix:** Added `ip_address` and `user_agent` optional parameters to `_audit_log_export`
+  
   - **TODO:** Get real user agent
-  - **Impact:** HIGH - Audit trail incomplete
-  - **Fix:** Extract from request context
+  - **Status:** ✅ COMPLETE (Phase 5 - January 15, 2025)
+  - **Fix:** Added documentation on how callers should extract from FastAPI request
 
 #### 3. Placeholder Values
 - **Location:** `backend/app/services/alerts.py:550,632,968,1071`

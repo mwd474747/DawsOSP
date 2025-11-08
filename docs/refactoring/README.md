@@ -36,7 +36,7 @@ This directory contains essential documentation for the Technical Debt Removal P
 
 ## Quick Status
 
-**Overall Progress:** ~70% complete (5.5 of 8 phases substantially complete)
+**Overall Progress:** ~72% complete (5.5 of 8 phases substantially complete, Phase 6 at 25%)
 
 **Completed Phases:**
 - ✅ Phase -1: Immediate Fixes (100%)
@@ -48,10 +48,10 @@ This directory contains essential documentation for the Technical Debt Removal P
 
 **In Progress:**
 - 🚧 Phase 5: Frontend Cleanup (85%)
-- 🚧 Phase 6: Fix TODOs (15%)
+- 🚧 Phase 6: Fix TODOs (25% - 5 P1 TODOs complete)
 - 🚧 Phase 7: Standardize Patterns (64%)
 
-**Remaining Work:** ~5-7 days (see `REMAINING_REFACTOR_PLAN.md`)
+**Remaining Work:** ~4-6 days (see `REMAINING_REFACTOR_PLAN.md`)
 
 ---
 

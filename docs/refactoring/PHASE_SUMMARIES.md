@@ -121,21 +121,25 @@
 
 ---
 
-## Phase 6: Fix TODOs 🚧 IN PROGRESS (15%)
+## Phase 6: Fix TODOs 🚧 IN PROGRESS (25%)
 
 **Duration:** 2-3 days  
 **Priority:** P1-P4 (Mixed)
 
 **Key Achievements:**
-- ✅ Fixed 2 P1 TODOs (IP/user agent extraction, scheduler status)
+- ✅ Fixed 5 P1 TODOs:
+  - ✅ Database migrations (3 tasks) - `security_ratings` and `news_sentiment` tables created
+  - ✅ RLS policies updated for user isolation
+  - ✅ Security TODOs (2 tasks) - IP/user agent extraction, scheduler status
+- ✅ Additional fixes: Python import error, circular dependency resolved
 
 **Remaining:**
-- ⏳ 11 P1 TODOs (database migrations, RLS policies)
+- ⏳ 8 P1 TODOs (placeholder values in docstrings - may be acceptable as examples)
 - ⏳ 12 P2 TODOs (type hints, docstrings, error messages)
 - ⏳ 17 P3 TODOs (future enhancements)
 - ⏳ 10 P4 TODOs (future enhancements)
 
-**Total Remaining:** 50 TODOs
+**Total Remaining:** 47 TODOs
 
 ---
 
