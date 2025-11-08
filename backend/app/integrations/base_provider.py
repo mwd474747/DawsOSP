@@ -34,7 +34,6 @@ from app.core.constants.integration import (
     DEFAULT_MAX_RETRIES,
     DEFAULT_RETRY_DELAY,
     DEFAULT_HTTP_TIMEOUT,
-    DEFAULT_REQUEST_TIMEOUT,
 )
 
 logger = logging.getLogger(__name__)
@@ -75,7 +74,7 @@ class ProviderRequest:
     params: Dict[str, Any]
     ctx: RequestCtx
     rights_check: Optional[str] = None  # e.g., "export_pdf"
-    timeout: float = DEFAULT_REQUEST_TIMEOUT
+    timeout: float = DEFAULT_HTTP_TIMEOUT
 
 
 @dataclass(frozen=True)
