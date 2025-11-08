@@ -10,11 +10,12 @@ Architecture:
 - macro.py: Macro regime detection, economic indicators
 - scenarios.py: Monte Carlo simulation, portfolio optimization
 - integration.py: External API configuration (timeouts, rate limits, retries)
-- validation.py: Data quality thresholds, bounds checking
 - time_periods.py: Reusable time period conversions
 - network.py: Port numbers, connection configuration
 - http_status.py: HTTP status codes with descriptions
 - versions.py: Version numbers, dependency compatibility
+
+Note: validation.py was deleted in Phase 4.1 (2025-11-07) - all constants were unused (0% utilization)
 
 Usage:
     from app.core.constants.financial import TRADING_DAYS_PER_YEAR

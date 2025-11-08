@@ -7,7 +7,7 @@ Identified by: Replit analysis + Constants audit 2025-11-07
 
 This module contains financial domain-specific constants used for:
 - Trading calendar calculations (252 trading days per year)
-- Period conversions
+- Period conversions (imported from canonical time_periods.py)
 
 Cleanup History:
 - 2025-11-07: Removed 22 unused constants (88% waste)
@@ -18,9 +18,18 @@ Cleanup History:
   - Removed: All MIN_RETURNS_* thresholds (unused)
   - Removed: All performance validation thresholds (unused)
   - Removed: All pricing thresholds (unused)
-  - Note: MONTHS_PER_YEAR, WEEKS_PER_YEAR are duplicates from time_periods.py
-    but kept here for domain-specific financial context
+- 2025-11-07 (Phase 4.1): Established proper import pattern
+  - Removed duplicate MONTHS_PER_YEAR, WEEKS_PER_YEAR definitions
+  - Now imports from time_periods.py (canonical source)
+  - Re-exports for financial domain convenience
 """
+
+# =============================================================================
+# IMPORTS FROM CANONICAL SOURCES
+# =============================================================================
+
+# Import period conversions from canonical time_periods module
+from app.core.constants.time_periods import MONTHS_PER_YEAR, WEEKS_PER_YEAR
 
 # =============================================================================
 # TRADING CALENDAR CONSTANTS
@@ -30,11 +39,6 @@ Cleanup History:
 # Source: Excludes weekends + major holidays (~104 weekend days + 9 holidays)
 # Used in: Volatility annualization, Sharpe ratio, return calculations
 TRADING_DAYS_PER_YEAR = 252
-
-# Period conversions (financial domain context)
-# Note: Also defined in time_periods.py as canonical source
-MONTHS_PER_YEAR = 12
-WEEKS_PER_YEAR = 52
 
 # =============================================================================
 # RISK-FREE RATE - REMOVED (Use Dynamic Data)
