@@ -96,9 +96,6 @@
 ### Placeholder Values (8 TODOs - mostly in docstrings)
 3-10. ⏳ Review placeholder values in docstrings (may be acceptable as examples)
 
-### Placeholder Values (8 TODOs - mostly in docstrings)
-4-11. ⏳ Review placeholder values in docstrings (may be acceptable as examples)
-
 ---
 
 ## Next Steps
