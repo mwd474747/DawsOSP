@@ -29,28 +29,7 @@
       "description": "Create alert if high-impact news detected"
     }
   },
-  "outputs": {
-    "panels": [
-      {
-        "id": "impact_summary",
-        "title": "Impact Summary",
-        "type": "metrics_grid",
-        "refresh_ttl": 300
-      },
-      {
-        "id": "news_items",
-        "title": "Relevant News",
-        "type": "news_list",
-        "refresh_ttl": 300
-      },
-      {
-        "id": "entity_mentions",
-        "title": "Entity Mentions",
-        "type": "bar_chart",
-        "refresh_ttl": 300
-      }
-    ]
-  },
+  "outputs": ["news_items", "impact_analysis", "alert_result"],
   "steps": [
     {
       "capability": "portfolio.get_valued_positions",
