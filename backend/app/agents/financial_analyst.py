@@ -2309,9 +2309,9 @@ class FinancialAnalyst(BaseAgent):
                     {
                         "transaction_date": str(t["transaction_date"]),
                         "transaction_type": t["transaction_type"],
-                        "quantity": float(t["quantity"]),
-                        "price": float(t["price"]),
-                        "total_value": float(t["total_value"]),
+                        "quantity": float(t["quantity"]) if t["quantity"] is not None else 0.0,
+                        "price": float(t["price"]) if t["price"] is not None else 0.0,
+                        "total_value": float(t["total_value"]) if t["total_value"] is not None else 0.0,
                         "commission": float(t["commission"]) if t["commission"] else 0.0,
                         "realized_pl": float(t["realized_pl"]) if t["realized_pl"] else None,
                     }
