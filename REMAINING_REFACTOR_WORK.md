@@ -15,7 +15,7 @@ This is the **single source of truth** for all remaining refactor work. It conso
 - Phase 6 TODO inventory
 - Architecture alignment issues
 
-**Completed Phases:** 6 of 8 (78%)  
+**Completed Phases:** 6 of 8 (80%)  
 **In Progress:** 2 phases  
 **Remaining Work:** ~4-5 days
 
@@ -227,16 +227,28 @@ This is the **single source of truth** for all remaining refactor work. It conso
 ### P3 (Medium Priority) - Nice to Have (~2-3 days)
 
 #### 5. Complete Magic Number Extraction
-**Status:** ⏳ PENDING  
-**Priority:** P3 (Medium)  
+**Status:** ✅ COMPLETE (Constants infrastructure done, migration is P4)  
+**Priority:** P3 (Medium) → P4 (Low)  
 **Estimated Time:** 1 day  
 **Impact:** LOW - Code maintainability
 
+**Status Update:**
+- ✅ **Constants Infrastructure:** COMPLETE (Phases 1-8 done, 88% complete)
+  - All constants modules created: `financial.py`, `risk.py`, `macro.py`, `scenarios.py`, `integration.py`, `time_periods.py`, `network.py`, `http_status.py`
+  - Key constants defined: `TRADING_DAYS_PER_YEAR = 252`, `CONFIDENCE_LEVEL_95 = 0.95`, etc.
+  - See: `CONSTANTS_EXTRACTION_SUMMARY.md`, `CONSTANTS_CODE_REVIEW.md`
+  
+- ⏳ **Code Migration:** P4 (Low Priority)
+  - Some services still use hardcoded values instead of importing constants
+  - Remaining work: Migrate code to USE existing constants (not create new ones)
+  - Estimated: ~70-80 instances to migrate
+  - See: `CONSTANTS_REMAINING_ANALYSIS.md` for detailed breakdown
+
 **Task:**
-- Extract remaining ~36% magic numbers (~73 instances)
-- Location: Multiple backend files
-- Prioritize frequently used values
-- Extract to constants modules
+- ✅ Constants modules created (COMPLETE)
+- ⏳ Migrate remaining code to use existing constants (P4 - Low Priority)
+- Location: Multiple backend files still using hardcoded `252`, `0.95`, `365`, etc.
+- Action: Replace hardcoded values with imports from `app.core.constants.*`
 
 #### 6. Fix Remaining TODOs (47 TODOs)
 **Status:** ⏳ PENDING  
@@ -294,7 +306,24 @@ This is the **single source of truth** for all remaining refactor work. It conso
 
 ### P4 (Low Priority) - Future Work (~3-4 days)
 
-#### 8. Update Architecture.md (NEW - Jan 15)
+#### 8. Migrate Code to Use Existing Constants (UPDATED - Jan 15)
+**Status:** ⏳ PENDING  
+**Priority:** P4 (Low)  
+**Estimated Time:** 1-2 days  
+**Impact:** LOW - Code maintainability
+
+**Note:** Constants infrastructure is complete (Phases 1-8, 88% done). This task is about migrating existing code to USE the constants that were already created.
+
+**Task:**
+- Replace hardcoded values with imports from `app.core.constants.*`
+- Examples:
+  - `252` → `from app.core.constants.financial import TRADING_DAYS_PER_YEAR`
+  - `0.95` → `from app.core.constants.risk import CONFIDENCE_LEVEL_95`
+  - `365` → `from app.core.constants.time_periods import DAYS_PER_YEAR`
+- Estimated: ~70-80 instances across backend services
+- See: `CONSTANTS_REMAINING_ANALYSIS.md` for detailed breakdown by domain
+
+#### 9. Update Architecture.md (NEW - Jan 15)
 **Status:** ⏳ PENDING  
 **Priority:** P4 (Low)  
 **Estimated Time:** 1-2 hours  
@@ -306,7 +335,7 @@ This is the **single source of truth** for all remaining refactor work. It conso
 3. Update service initialization section (document DI container usage)
 4. Verify all examples match actual implementation
 
-#### 9. Pattern Standardization
+#### 10. Pattern Standardization
 **Status:** ⏳ PENDING  
 **Priority:** P4 (Low)  
 **Estimated Time:** 3 hours  
@@ -316,7 +345,7 @@ This is the **single source of truth** for all remaining refactor work. It conso
 1. Migrate `macro_cycles_overview.json` pattern from Format 2 to Format 1 or Format 3
 2. Extract magic numbers from JSON pattern files (e.g., `"default": 252`)
 
-#### 10. Remove Deprecated Singleton Functions
+#### 11. Remove Deprecated Singleton Functions
 **Status:** ⏳ PENDING  
 **Priority:** P4 (Low)  
 **Estimated Time:** 2 hours  
@@ -327,7 +356,7 @@ This is the **single source of truth** for all remaining refactor work. It conso
 - After deprecation period
 - Document migration path
 
-#### 11. Add Comprehensive Tests
+#### 12. Add Comprehensive Tests
 **Status:** ⏳ PENDING  
 **Priority:** P4 (Low)  
 **Estimated Time:** 2-3 days  
@@ -384,7 +413,7 @@ This is the **single source of truth** for all remaining refactor work. It conso
 | **P2 (High)** | 4 tasks | ~10-11 hours | ✅ COMPLETE |
 | **P3 (Medium)** | 3 tasks | ~2-3 days | 🔄 IN PROGRESS (1 in progress) |
 | **P4 (Low)** | 5 tasks | ~3-4 days | ⏳ PENDING |
-| **Total** | 14 tasks | ~4-5 days | ~78% complete |
+| **Total** | 15 tasks | ~4-5 days | ~80% complete |
 
 ---
 
