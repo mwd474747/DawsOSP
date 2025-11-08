@@ -57,6 +57,7 @@ from uuid import UUID
 
 from app.services.notifications import NotificationService
 from app.services.alert_delivery import AlertDeliveryService
+from app.core.exceptions import DatabaseError, ExternalAPIError
 
 logger = logging.getLogger("DawsOS.Alerts")
 
@@ -125,12 +126,13 @@ class AlertService:
                 import os
                 if os.getenv("ENVIRONMENT") == "production":
                     logger.error(f"Failed to initialize database connections in production: {e}", exc_info=True)
-                    raise
+                    raise DatabaseError(f"Failed to initialize database connections in production: {e}", retryable=True) from e
                 # Only fall back to stub mode in development/testing
                 logger.warning(
                     f"Failed to initialize database connections: {e}. "
                     "Falling back to stub mode (development/testing only)."
                 )
+                # Don't raise DatabaseError here - graceful degradation is intentional
                 self.use_db = False
         else:
             import os
@@ -426,7 +428,7 @@ class AlertService:
         except Exception as e:
             # Service/API errors - push to DLQ for retry
             logger.error(f"Failed to deliver alert {alert_id}: {e}", exc_info=True)
-
+            # Don't raise exception here - push to DLQ is intentional
             await delivery_service.push_to_dlq(
                 alert_id=alert_id,
                 alert_data=alert_data,
@@ -516,6 +518,7 @@ class AlertService:
         except Exception as e:
             # Database or other service errors - log and return None (graceful degradation)
             logger.error(f"Failed to get macro value for {series_id}: {e}")
+            # Don't raise DatabaseError here - graceful degradation is intentional
             return None
 
     # ========================================================================
@@ -961,6 +964,7 @@ class AlertService:
             except Exception as e:
                 # Service errors - use fallback regime
                 logger.warning(f"Could not detect regime: {e}")
+                # Don't raise exception here - fallback regime is intentional
                 regime = "MID_EXPANSION"
 
             # Compute DaR
@@ -1000,6 +1004,7 @@ class AlertService:
         except Exception as e:
             # Service errors - log and return False (graceful degradation)
             logger.error(f"Failed to evaluate DaR breach condition: {e}", exc_info=True)
+            # Don't raise DatabaseError here - graceful degradation is intentional
             return False
 
     async def _evaluate_drawdown_limit_condition(
@@ -1288,6 +1293,7 @@ class AlertService:
         except Exception as e:
             # Database errors - log and return False (assume not duplicate)
             logger.error(f"Failed to check duplicate alert: {e}")
+            # Don't raise DatabaseError here - fail open is intentional
             return False
 
     async def _attempt_delivery(
@@ -1339,6 +1345,7 @@ class AlertService:
             except Exception as e:
                 # Service/API errors - log and continue with other methods
                 logger.error(f"Delivery method {method} failed: {e}")
+                # Don't raise exception here - continue with other methods is intentional
                 delivery_results.append({
                     "method": method,
                     "success": False,
@@ -1379,6 +1386,7 @@ class AlertService:
         except Exception as e:
             # Service/API errors - return error result
             logger.error(f"Email delivery failed: {e}")
+            # Don't raise ExternalAPIError here - return error result is intentional
             return {"success": False, "error": str(e)}
 
     async def _deliver_sms(self, alert_id: str, alert_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -1487,6 +1495,7 @@ Time: {context.get('timestamp', 'N/A')}
         except Exception as e:
             # Service errors - log and continue (retry scheduling is best-effort)
             logger.error(f"Failed to schedule retry for alert {alert_id}: {e}")
+            # Don't raise exception here - best-effort is intentional
 
     async def _move_to_dlq(
         self,
@@ -1513,7 +1522,9 @@ Time: {context.get('timestamp', 'N/A')}
                 logger.info(f"Alert {alert_id} moved to DLQ: {error_message}")
                 
         except Exception as e:
+            # Database/service errors - log and continue (DLQ is best-effort)
             logger.error(f"Failed to move alert {alert_id} to DLQ: {e}")
+            # Don't raise DatabaseError here - best-effort is intentional
 
     async def _log_delivery_success(
         self,
@@ -1546,7 +1557,9 @@ Time: {context.get('timestamp', 'N/A')}
                 logger.info(f"Alert {alert_id} delivered successfully")
                 
         except Exception as e:
+            # Database errors - log and continue (logging is best-effort)
             logger.error(f"Failed to log delivery success for alert {alert_id}: {e}")
+            # Don't raise DatabaseError here - best-effort is intentional
 
 
 # ============================================================================
