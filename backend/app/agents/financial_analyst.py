@@ -1206,7 +1206,7 @@ class FinancialAnalyst(BaseAgent):
             if "sharpe_30d" in metrics:
                 risk_data.append({"metric": "Sharpe (30d)", "value": float(metrics["sharpe_30d"])})
             if "max_drawdown_1y" in metrics:
-                risk_data.append({"metric": "Max DD (1y)", "value": float(metrics.get("max_drawdown_1y", 0)) * 100})
+                risk_data.append({"metric": "Max DD (1y)", "value": float(metrics.get("max_drawdown_1y", 0))})
 
             if risk_data:
                 charts.append({
