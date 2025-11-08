@@ -386,12 +386,6 @@ def get_pattern_orchestrator() -> PatternOrchestrator:
     except (KeyError, RuntimeError) as e:
         logger.error(f"Failed to resolve pattern orchestrator: {e}", exc_info=True)
         raise
-            db=db_pool,
-            redis=None  # TODO: Add Redis when available
-        )
-        logger.info("Pattern orchestrator initialized")
-
-    return _pattern_orchestrator
 
 async def execute_pattern_orchestrator(pattern_name: str, inputs: Dict[str, Any], user_id: str = None) -> Dict[str, Any]:
     """Execute a pattern through the orchestrator and return results."""
