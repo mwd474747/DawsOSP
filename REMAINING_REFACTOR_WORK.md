@@ -119,7 +119,7 @@ This is the **single source of truth** for all remaining refactor work. It conso
 
 ---
 
-### P2 (High Priority) - Should Fix Soon (~6 hours)
+### P2 (High Priority) - Should Fix Soon (~10-11 hours)
 
 #### 2. Complete Frontend Logging
 **Status:** ⏳ PENDING  
@@ -145,23 +145,50 @@ This is the **single source of truth** for all remaining refactor work. It conso
 - Ensure specific exceptions caught before broad `Exception`
 - Add proper error context and logging
 
-#### 4. Remove Singleton Factory Functions (NEW - Jan 15)
+#### 4. Remove Backwards Compatibility Code (NEW - Jan 15)
 **Status:** ⏳ PENDING  
 **Priority:** P2 (High)  
-**Estimated Time:** 1 hour  
-**Impact:** MEDIUM - Creates confusion, violates architecture
-
-**Issue:**
-- `get_claude_agent()` still exists in `claude_agent.py:774-788`
-- `get_data_harvester()` still exists in `data_harvester.py:3255-3269`
-- Architecture.md states "Singleton pattern has been removed"
+**Estimated Time:** 4-5 hours  
+**Impact:** MEDIUM - Reduces code complexity, removes dead code
 
 **Tasks:**
-1. Verify no usages (grep for function calls)
-2. If used, migrate to DI container
-3. Remove function definitions
-4. Remove global singleton instances
-5. Update documentation
+
+**4a. Remove Dual Registration Support** (1 hour)
+- **Location:** `backend/app/core/agent_runtime.py:89-91, 215-279`
+- **Issue:** Dual registration was for Phase 3 consolidation, which is complete
+- **Status:** Never used - `capability_registry` populated but never read
+- **Actions:**
+  1. Remove `capability_registry` dict
+  2. Remove `allow_dual_registration` parameter from `register_agent()`
+  3. Remove priority-based routing logic
+  4. Simplify `register_agent()` method
+  5. Verify no code depends on dual registration
+
+**4b. Migrate Patterns to Format 1** (2-3 hours)
+- **Location:** `backend/app/core/pattern_orchestrator.py:814-856`
+- **Issue:** 3 patterns still use legacy Format 2/3 (Format 1 is standard)
+- **Patterns to Migrate:**
+  - `macro_cycles_overview.json` (Format 2 → Format 1)
+  - `policy_rebalance.json` (Format 3 → Format 1)
+  - `export_portfolio_report.json` (Format 3 → Format 1)
+- **Actions:**
+  1. Migrate each pattern to Format 1 (list of keys)
+  2. Test pattern execution
+  3. Remove Format 2/3 support from orchestrator
+  4. Simplify output extraction logic
+
+**4c. Remove Singleton Factory Functions** (1-2 hours)
+- **Location:** Multiple service files
+- **Functions:** `get_alert_service()`, `get_reports_service()`, `get_optimizer_service()`, `get_ratings_service()`, `get_pricing_service()`, `get_scenario_service()`, `get_cycles_service()`, `get_macro_service()`, `get_claude_agent()`, `get_data_harvester()`, `init_pricing_service()`
+- **Status:** All deprecated, Phase 2 complete
+- **Actions:**
+  1. Verify no usages (grep for function calls)
+  2. If used, migrate to DI container
+  3. Remove function definitions
+  4. Remove global singleton instances
+  5. Update documentation
+
+**See:** `docs/refactoring/BACKWARDS_COMPATIBILITY_ANALYSIS.md` for detailed analysis
 
 ---
 
@@ -201,11 +228,37 @@ This is the **single source of truth** for all remaining refactor work. It conso
 
 **Total P3 Time:** ~2-3 days
 
+#### 7. Remove Additional Backwards Compatibility Code (NEW - Jan 15)
+**Status:** ⏳ PENDING  
+**Priority:** P3 (Medium)  
+**Estimated Time:** 1 hour  
+**Impact:** LOW - Dead code cleanup
+
+**Tasks:**
+
+**7a. Remove Legacy Alert Delivery Method** (30 minutes)
+- **Location:** `backend/app/services/alerts.py:1238-1280`
+- **Issue:** `_deliver_alert_legacy()` kept for backwards compatibility
+- **Actions:**
+  1. Verify no usages of `_deliver_alert_legacy()`
+  2. Remove method if unused
+  3. Update documentation
+
+**7b. Remove Deprecated Field Check** (30 minutes)
+- **Location:** `backend/app/schemas/pattern_responses.py:256-286`
+- **Issue:** `check_deprecated_fields()` may be unused
+- **Actions:**
+  1. Verify no usages of `check_deprecated_fields()`
+  2. Remove method if unused
+  3. Update documentation
+
+**See:** `docs/refactoring/BACKWARDS_COMPATIBILITY_ANALYSIS.md` for detailed analysis
+
 ---
 
 ### P4 (Low Priority) - Future Work (~3-4 days)
 
-#### 7. Update Architecture.md (NEW - Jan 15)
+#### 8. Update Architecture.md (NEW - Jan 15)
 **Status:** ⏳ PENDING  
 **Priority:** P4 (Low)  
 **Estimated Time:** 1-2 hours  
@@ -217,7 +270,7 @@ This is the **single source of truth** for all remaining refactor work. It conso
 3. Update service initialization section (document DI container usage)
 4. Verify all examples match actual implementation
 
-#### 8. Pattern Standardization
+#### 9. Pattern Standardization
 **Status:** ⏳ PENDING  
 **Priority:** P4 (Low)  
 **Estimated Time:** 3 hours  
@@ -227,7 +280,7 @@ This is the **single source of truth** for all remaining refactor work. It conso
 1. Migrate `macro_cycles_overview.json` pattern from Format 2 to Format 1 or Format 3
 2. Extract magic numbers from JSON pattern files (e.g., `"default": 252`)
 
-#### 9. Remove Deprecated Singleton Functions
+#### 10. Remove Deprecated Singleton Functions
 **Status:** ⏳ PENDING  
 **Priority:** P4 (Low)  
 **Estimated Time:** 2 hours  
@@ -238,7 +291,7 @@ This is the **single source of truth** for all remaining refactor work. It conso
 - After deprecation period
 - Document migration path
 
-#### 10. Add Comprehensive Tests
+#### 11. Add Comprehensive Tests
 **Status:** ⏳ PENDING  
 **Priority:** P4 (Low)  
 **Estimated Time:** 2-3 days  
@@ -266,17 +319,24 @@ This is the **single source of truth** for all remaining refactor work. It conso
 ### Short Term (P2 - High Priority)
 2. **Complete Frontend Logging** (~4 hours)
 3. **Review Exception Handlers** (~2 hours)
-4. **Remove Singleton Factory Functions** (~1 hour)
+4. **Remove Backwards Compatibility Code** (~4-5 hours)
+   - Remove dual registration support (1 hour)
+   - Migrate patterns to Format 1 (2-3 hours)
+   - Remove singleton factory functions (1-2 hours)
 
 ### Medium Term (P3 - Medium Priority)
 5. **Complete Magic Number Extraction** (~1 day)
 6. **Fix Remaining TODOs** (~2-3 days)
+7. **Remove Additional Backwards Compatibility Code** (~1 hour)
+   - Remove legacy alert delivery method (30 min)
+   - Remove deprecated field check (30 min)
 
 ### Long Term (P4 - Low Priority)
-7. **Update Architecture.md** (~1-2 hours)
-8. **Pattern Standardization** (~3 hours)
-9. **Remove Deprecated Singleton Functions** (~2 hours)
-10. **Add Comprehensive Tests** (~2-3 days)
+8. **Update Architecture.md** (~1-2 hours)
+9. **Pattern Standardization** (~3 hours)
+10. **Remove Deprecated Singleton Functions** (~2 hours)
+11. **Add Comprehensive Tests** (~2-3 days)
+12. **Remove Database Field** (~2-3 hours) - Requires migration
 
 ---
 
@@ -285,10 +345,10 @@ This is the **single source of truth** for all remaining refactor work. It conso
 | Priority | Tasks | Estimated Time | Status |
 |----------|-------|----------------|--------|
 | **P1 (Critical)** | 1 task | ~2-3 hours | ⏳ PENDING |
-| **P2 (High)** | 3 tasks | ~7 hours | ⏳ PENDING |
-| **P3 (Medium)** | 2 tasks | ~2-3 days | ⏳ PENDING |
-| **P4 (Low)** | 4 tasks | ~3-4 days | ⏳ PENDING |
-| **Total** | 10 tasks | ~4-6 days | ~25% complete |
+| **P2 (High)** | 4 tasks | ~10-11 hours | ⏳ PENDING |
+| **P3 (Medium)** | 3 tasks | ~2-3 days | ⏳ PENDING |
+| **P4 (Low)** | 5 tasks | ~3-4 days | ⏳ PENDING |
+| **Total** | 13 tasks | ~5-7 days | ~25% complete |
 
 ---
 
@@ -307,9 +367,9 @@ This is the **single source of truth** for all remaining refactor work. It conso
 ## Next Steps
 
 1. ⏳ **Fix Pattern Capability Naming** (P1 - ~2-3 hours) - **NEXT**
-2. ⏳ **Complete P2 tasks** (frontend logging, exception handlers, singleton functions) - ~7 hours
-3. ⏳ **Complete P3 tasks** (magic numbers, remaining TODOs) - ~2-3 days
-4. ⏳ **Complete P4 tasks** (documentation, cleanup, testing) - ~3-4 days
+2. ⏳ **Complete P2 tasks** (frontend logging, exception handlers, backwards compatibility removal) - ~10-11 hours
+3. ⏳ **Complete P3 tasks** (magic numbers, remaining TODOs, additional backwards compatibility) - ~2-3 days
+4. ⏳ **Complete P4 tasks** (documentation, cleanup, testing, database field removal) - ~3-4 days
 
 ---
 
@@ -324,5 +384,7 @@ This is the **single source of truth** for all remaining refactor work. It conso
 ---
 
 **Status:** 🚧 ~72% COMPLETE  
-**Remaining Work:** ~4-6 days  
+**Remaining Work:** ~5-7 days (updated with backwards compatibility cleanup)  
 **Last Updated:** January 15, 2025
+
+**Note:** Backwards compatibility analysis added - see `docs/refactoring/BACKWARDS_COMPATIBILITY_ANALYSIS.md` for details.
