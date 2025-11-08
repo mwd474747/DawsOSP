@@ -52,21 +52,50 @@ Based on codebase analysis and [DATABASE.md](DATABASE.md):
 
 ## Constants Architecture (Domain-Driven)
 
-### File Structure
+### Updated Scope: 200+ Magic Numbers (from Replit Analysis)
+
+Replit's comprehensive analysis identified **200+ magic numbers** across 12 categories. This plan now integrates all findings:
+
+**Categories from Replit**:
+1. Port numbers (8 instances) - Server, DB, API ports
+2. HTTP status codes (15+ instances) - 200, 201, 400, 401, 500, etc.
+3. Timeouts & delays (25+ instances) - API timeouts, retry delays
+4. Retry limits (12 instances) - Max retries, backoff factors
+5. Array/list limits (18 instances) - Batch sizes, pagination
+6. Percentage thresholds (35+ instances) - VaR levels, weights
+7. Financial constants (40+ instances) - Trading days, annualization
+8. UI/display numbers (50+ instances in full_ui.html) - Widths, fonts, opacity
+9. Cache durations (8 instances) - TTL variations by purpose
+10. Mathematical constants (15+ instances) - π, e, sqrt(2)
+11. Data ranges (30+ in FRED docs) - Valid data bounds
+12. Version numbers (5 instances) - Dependency versions
+
+**Total**: 200+ instances (doubled from initial estimate)
+
+### File Structure (Updated)
 
 ```
 backend/app/core/constants/
 ├── __init__.py                    # Public API
-├── financial.py                   # Portfolio valuation constants
-├── risk.py                        # Risk analytics constants
-├── macro.py                       # Macro regime constants
-├── scenarios.py                   # Scenario analysis constants
-├── integration.py                 # External API constants
-├── validation.py                  # Data quality thresholds
-└── time_periods.py                # Reusable time period constants
+├── financial.py                   # Portfolio valuation constants (40+)
+├── risk.py                        # Risk analytics constants (35+)
+├── macro.py                       # Macro regime constants (15+)
+├── scenarios.py                   # Scenario analysis constants (20+)
+├── integration.py                 # External API constants (25+ timeouts/retries)
+├── validation.py                  # Data quality thresholds (30+)
+├── time_periods.py                # Reusable time period constants (10+)
+├── network.py                     # Port numbers, connection config (8+)
+├── http_status.py                 # HTTP status codes with descriptions (15+)
+└── versions.py                    # Version numbers, compatibility (5+)
+
+frontend/constants/
+└── ui.py                          # UI dimensions, fonts, opacity (50+)
 ```
 
-**Rationale**: Domain-specific files make it clear which constants apply to which business logic.
+**Rationale**:
+- Domain-specific files make it clear which constants apply to which business logic
+- Separate frontend constants for UI-specific magic numbers
+- Network and HTTP status in dedicated modules for infrastructure concerns
 
 ---
 
@@ -546,18 +575,25 @@ NEWS_API_RATE_LIMIT_REQUESTS = 100
 NEWS_API_RATE_LIMIT_WINDOW = 86400  # Per day
 
 # =============================================================================
-# DATA CACHING
+# DATA CACHING (UPDATED from Replit - 8 instances)
 # =============================================================================
 
 # Cache TTL (time-to-live) in seconds
-CACHE_TTL_SHORT = 60        # 1 minute (for volatile data)
-CACHE_TTL_MEDIUM = 300      # 5 minutes (for market data)
-CACHE_TTL_LONG = 3600       # 1 hour (for reference data)
-CACHE_TTL_VERY_LONG = 86400  # 24 hours (for historical data)
+# Different purposes require different cache durations
+CACHE_TTL_REALTIME = 10      # 10 seconds (for live market data)
+CACHE_TTL_SHORT = 60         # 1 minute (for volatile data)
+CACHE_TTL_MEDIUM = 300       # 5 minutes (for market data)
+CACHE_TTL_LONG = 600         # 10 minutes (for derived metrics)
+CACHE_TTL_VERY_LONG = 3600   # 1 hour (for reference data)
+CACHE_TTL_HISTORICAL = 86400 # 24 hours (for historical data)
 
-# Stale data threshold (seconds)
-# After this, cached data is considered stale
-STALE_DATA_THRESHOLD = 86400  # 24 hours
+# Stale data thresholds by purpose
+STALE_DATA_THRESHOLD_MARKET = 300    # 5 minutes for market data
+STALE_DATA_THRESHOLD_PRICING = 3600  # 1 hour for pricing
+STALE_DATA_THRESHOLD_METRICS = 86400 # 24 hours for metrics
+
+# Cache garbage collection interval
+CACHE_GC_INTERVAL = 3600  # Run GC every hour
 
 # =============================================================================
 # BATCH PROCESSING
@@ -796,58 +832,420 @@ HOLIDAY_DAYS_PER_YEAR = 9      # NYSE holidays (approximate)
 
 ---
 
+### 8. Network Configuration Constants (`network.py`)
+
+```python
+"""
+Network & Infrastructure Configuration Constants
+
+Domain: Server ports, database connections, network timeouts
+Sources: Deployment configuration, infrastructure requirements
+Identified by: Replit analysis (8 port number instances)
+"""
+
+# =============================================================================
+# SERVER PORT CONFIGURATION
+# =============================================================================
+
+# Backend API server
+DEFAULT_API_PORT = 8000
+ALTERNATIVE_API_PORT = 5000
+
+# Database connections
+POSTGRES_DEFAULT_PORT = 5432
+
+# Redis cache (if used)
+REDIS_DEFAULT_PORT = 6379
+
+# Development ports
+DEV_FRONTEND_PORT = 3000
+DEV_BACKEND_PORT = 8000
+
+# =============================================================================
+# CONNECTION POOL CONFIGURATION
+# =============================================================================
+
+# Database connection pool sizes
+DB_POOL_MIN_SIZE = 5
+DB_POOL_MAX_SIZE = 20
+
+# Connection timeout (seconds)
+DB_CONNECTION_TIMEOUT = 30
+
+# =============================================================================
+# NETWORK TIMEOUTS
+# =============================================================================
+
+# TCP connection timeout
+TCP_CONNECT_TIMEOUT = 10
+
+# Socket read timeout
+SOCKET_READ_TIMEOUT = 30
+
+# Keep-alive timeout
+KEEP_ALIVE_TIMEOUT = 60
+```
+
+---
+
+### 9. HTTP Status Code Constants (`http_status.py`)
+
+```python
+"""
+HTTP Status Codes with Domain Context
+
+Domain: API error handling, client-server communication
+Sources: RFC 7231, HTTP specification
+Identified by: Replit analysis (15+ HTTP status code instances)
+"""
+
+# =============================================================================
+# SUCCESS RESPONSES (2xx)
+# =============================================================================
+
+HTTP_200_OK = 200
+HTTP_201_CREATED = 201
+HTTP_202_ACCEPTED = 202
+HTTP_204_NO_CONTENT = 204
+
+# =============================================================================
+# CLIENT ERRORS (4xx)
+# =============================================================================
+
+HTTP_400_BAD_REQUEST = 400
+HTTP_401_UNAUTHORIZED = 401
+HTTP_403_FORBIDDEN = 403
+HTTP_404_NOT_FOUND = 404
+HTTP_422_UNPROCESSABLE_ENTITY = 422
+HTTP_429_TOO_MANY_REQUESTS = 429
+
+# =============================================================================
+# SERVER ERRORS (5xx)
+# =============================================================================
+
+HTTP_500_INTERNAL_SERVER_ERROR = 500
+HTTP_502_BAD_GATEWAY = 502
+HTTP_503_SERVICE_UNAVAILABLE = 503
+HTTP_504_GATEWAY_TIMEOUT = 504
+
+# =============================================================================
+# STATUS CODE CATEGORIES
+# =============================================================================
+
+SUCCESS_STATUS_CODES = [200, 201, 202, 204]
+CLIENT_ERROR_STATUS_CODES = [400, 401, 403, 404, 422, 429]
+SERVER_ERROR_STATUS_CODES = [500, 502, 503, 504]
+RETRYABLE_STATUS_CODES = [429, 500, 502, 503, 504]
+
+# =============================================================================
+# HUMAN-READABLE DESCRIPTIONS
+# =============================================================================
+
+STATUS_CODE_DESCRIPTIONS = {
+    200: "Success",
+    201: "Resource created",
+    400: "Invalid request",
+    401: "Authentication required",
+    403: "Permission denied",
+    404: "Resource not found",
+    500: "Server error",
+    503: "Service temporarily unavailable",
+}
+```
+
+**Usage Example**:
+```python
+# Before (executor.py, routes)
+return JSONResponse(status_code=400, content={"error": "Invalid request"})
+return JSONResponse(status_code=503, content={"error": "Service unavailable"})
+
+# After
+from app.core.constants.http_status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_503_SERVICE_UNAVAILABLE,
+)
+
+return JSONResponse(
+    status_code=HTTP_400_BAD_REQUEST,
+    content={"error": "Invalid request"}
+)
+```
+
+---
+
+### 10. Version Configuration Constants (`versions.py`)
+
+```python
+"""
+Version Numbers & Dependency Compatibility
+
+Domain: Dependency management, API versioning
+Identified by: Replit analysis (5 version number instances)
+"""
+
+# =============================================================================
+# API VERSIONING
+# =============================================================================
+
+API_VERSION = "0.1.0"
+API_VERSION_PREFIX = "/api/v1"
+
+# =============================================================================
+# DEPENDENCY VERSIONS (for compatibility checks)
+# =============================================================================
+
+# Frontend dependencies
+REACT_VERSION = "18.2.0"
+CHART_JS_VERSION = "4.4.1"
+AXIOS_VERSION = "1.6.5"
+
+# Python dependencies (minimum required)
+MIN_PYTHON_VERSION = "3.11"
+MIN_POSTGRES_VERSION = "14.0"
+
+# =============================================================================
+# FEATURE FLAGS BY VERSION
+# =============================================================================
+
+# Version-gated features
+FEATURES_V1 = ["basic_portfolio", "holdings", "transactions"]
+FEATURES_V1_1 = FEATURES_V1 + ["risk_metrics", "scenarios"]
+FEATURES_V2 = FEATURES_V1_1 + ["ai_insights", "macro_regimes"]
+```
+
+---
+
+### 11. UI Constants (`frontend/constants/ui.py`)
+
+```python
+"""
+UI Layout & Styling Constants
+
+Domain: Frontend display, responsive design
+Sources: Design system, UI/UX specifications
+Identified by: Replit analysis (50+ UI magic numbers in full_ui.html)
+
+Note: JavaScript/Frontend module
+"""
+
+// =============================================================================
+// LAYOUT DIMENSIONS
+// =============================================================================
+
+// Container widths
+const CONTAINER_MAX_WIDTH = 1200;  // px
+const SIDEBAR_WIDTH = 250;         // px
+const COLLAPSED_SIDEBAR_WIDTH = 60; // px
+
+// Spacing
+const SPACING_UNIT = 8;            // Base spacing unit (px)
+const SPACING_XS = SPACING_UNIT * 0.5;   // 4px
+const SPACING_SM = SPACING_UNIT;         // 8px
+const SPACING_MD = SPACING_UNIT * 2;     // 16px
+const SPACING_LG = SPACING_UNIT * 3;     // 24px
+const SPACING_XL = SPACING_UNIT * 4;     // 32px
+
+// =============================================================================
+// TYPOGRAPHY
+// =============================================================================
+
+// Font sizes
+const FONT_SIZE_XS = 12;  // px
+const FONT_SIZE_SM = 14;  // px
+const FONT_SIZE_MD = 16;  // px (base)
+const FONT_SIZE_LG = 18;  // px
+const FONT_SIZE_XL = 24;  // px
+const FONT_SIZE_XXL = 32; // px
+
+// Line heights
+const LINE_HEIGHT_TIGHT = 1.2;
+const LINE_HEIGHT_NORMAL = 1.5;
+const LINE_HEIGHT_RELAXED = 1.8;
+
+// Font weights
+const FONT_WEIGHT_NORMAL = 400;
+const FONT_WEIGHT_MEDIUM = 500;
+const FONT_WEIGHT_SEMIBOLD = 600;
+const FONT_WEIGHT_BOLD = 700;
+
+// =============================================================================
+// OPACITY & TRANSPARENCY
+// =============================================================================
+
+const OPACITY_DISABLED = 0.4;
+const OPACITY_HOVER = 0.8;
+const OPACITY_OVERLAY = 0.9;
+const OPACITY_TRANSPARENT = 0.0;
+const OPACITY_OPAQUE = 1.0;
+
+// =============================================================================
+// Z-INDEX LAYERS
+// =============================================================================
+
+const Z_INDEX_BASE = 0;
+const Z_INDEX_DROPDOWN = 1000;
+const Z_INDEX_MODAL = 2000;
+const Z_INDEX_TOOLTIP = 3000;
+const Z_INDEX_NOTIFICATION = 4000;
+
+// =============================================================================
+// ANIMATION DURATIONS (ms)
+// =============================================================================
+
+const ANIMATION_FAST = 150;
+const ANIMATION_NORMAL = 300;
+const ANIMATION_SLOW = 500;
+
+// =============================================================================
+// BREAKPOINTS (responsive design)
+// =============================================================================
+
+const BREAKPOINT_XS = 480;   // px
+const BREAKPOINT_SM = 768;   // px
+const BREAKPOINT_MD = 1024;  // px
+const BREAKPOINT_LG = 1280;  // px
+const BREAKPOINT_XL = 1536;  // px
+
+// =============================================================================
+// CHART DIMENSIONS
+// =============================================================================
+
+const CHART_DEFAULT_HEIGHT = 400;  // px
+const CHART_MINI_HEIGHT = 150;     // px
+const CHART_FULL_HEIGHT = 600;     // px
+
+// Chart margins
+const CHART_MARGIN_TOP = 20;
+const CHART_MARGIN_RIGHT = 30;
+const CHART_MARGIN_BOTTOM = 40;
+const CHART_MARGIN_LEFT = 60;
+
+// =============================================================================
+// EXPORT
+// =============================================================================
+
+export const UIConstants = {
+    // Layout
+    CONTAINER_MAX_WIDTH,
+    SIDEBAR_WIDTH,
+    COLLAPSED_SIDEBAR_WIDTH,
+
+    // Spacing
+    SPACING_XS, SPACING_SM, SPACING_MD, SPACING_LG, SPACING_XL,
+
+    // Typography
+    FONT_SIZE_XS, FONT_SIZE_SM, FONT_SIZE_MD, FONT_SIZE_LG, FONT_SIZE_XL, FONT_SIZE_XXL,
+    LINE_HEIGHT_TIGHT, LINE_HEIGHT_NORMAL, LINE_HEIGHT_RELAXED,
+    FONT_WEIGHT_NORMAL, FONT_WEIGHT_MEDIUM, FONT_WEIGHT_SEMIBOLD, FONT_WEIGHT_BOLD,
+
+    // Opacity
+    OPACITY_DISABLED, OPACITY_HOVER, OPACITY_OVERLAY, OPACITY_TRANSPARENT, OPACITY_OPAQUE,
+
+    // Z-index
+    Z_INDEX_BASE, Z_INDEX_DROPDOWN, Z_INDEX_MODAL, Z_INDEX_TOOLTIP, Z_INDEX_NOTIFICATION,
+
+    // Animation
+    ANIMATION_FAST, ANIMATION_NORMAL, ANIMATION_SLOW,
+
+    // Breakpoints
+    BREAKPOINT_XS, BREAKPOINT_SM, BREAKPOINT_MD, BREAKPOINT_LG, BREAKPOINT_XL,
+
+    // Charts
+    CHART_DEFAULT_HEIGHT, CHART_MINI_HEIGHT, CHART_FULL_HEIGHT,
+    CHART_MARGIN_TOP, CHART_MARGIN_RIGHT, CHART_MARGIN_BOTTOM, CHART_MARGIN_LEFT,
+};
+```
+
+**Usage Example**:
+```javascript
+// Before (full_ui.html)
+<div style={{ fontSize: '14px', padding: '16px', opacity: 0.8 }}>
+
+// After
+import { UIConstants } from './constants/ui.js';
+
+<div style={{
+    fontSize: UIConstants.FONT_SIZE_SM,
+    padding: UIConstants.SPACING_MD,
+    opacity: UIConstants.OPACITY_HOVER
+}}>
+```
+
+---
+
 ## Implementation Strategy
 
-### Phase 1: Infrastructure (Week 1)
+### Phase 1: Infrastructure (Week 1) - UPDATED
 
 **Tasks**:
 1. ✅ Create `backend/app/core/constants/` directory
-2. ✅ Create `__init__.py` with public API
-3. ✅ Create all 7 domain-specific modules
-4. ✅ Add docstrings with domain context and sources
-5. ✅ Run syntax validation (`python -m py_compile`)
+2. ✅ Create `frontend/constants/` directory (NEW)
+3. ✅ Create `__init__.py` with public API
+4. ✅ Create all 11 constants modules:
+   - Backend: financial, risk, macro, scenarios, integration, validation, time_periods
+   - Infrastructure: network, http_status, versions (NEW)
+   - Frontend: ui (NEW)
+5. ✅ Add docstrings with domain context and sources
+6. ✅ Run syntax validation (`python -m py_compile` for Python, `node -c` for JS)
 
-**Time**: 4 hours
+**Time**: 6 hours (up from 4 due to 4 new modules)
 
-### Phase 2: High-Value Migration (Week 1-2)
+### Phase 2: High-Value Migration (Week 1-2) - UPDATED
 
-**Priority Order** (based on domain impact):
+**Priority Order** (based on Replit's 200+ findings):
 
-1. **Financial Domain** (8-10 hours)
+1. **Financial Domain** (8-10 hours) - **40+ instances**
    - `services/metrics.py` - Most magic numbers (252, 365, 0.95, etc.)
    - `services/pricing.py` - Pricing calculations
    - `db/metrics_queries.py` - SQL queries with hardcoded periods
 
-2. **Risk Domain** (4-6 hours)
+2. **Risk Domain** (4-6 hours) - **35+ instances**
    - `services/risk_metrics.py` - VaR/CVaR calculations
    - `services/currency_attribution.py` - Attribution logic
    - `services/factor_analysis.py` - Factor loadings
 
-3. **Integration Domain** (3-4 hours)
+3. **Integration Domain** (4-6 hours) - **25+ instances** (UP from 3-4 hours)
    - `integrations/rate_limiter.py` - Rate limits
-   - `integrations/fred_provider.py` - FRED API
-   - `integrations/fmp_provider.py` - FMP API
-   - `integrations/polygon_provider.py` - Polygon API
+   - `integrations/fred_provider.py` - FRED API (timeouts, retries)
+   - `integrations/fmp_provider.py` - FMP API (timeouts, retries)
+   - `integrations/polygon_provider.py` - Polygon API (timeouts, retries)
+   - `integrations/base_provider.py` - Base timeout/retry logic
 
-**Time**: 15-20 hours total
+4. **Infrastructure (NEW)** (3-4 hours) - **23+ instances**
+   - `backend/app/api/routes/*.py` - HTTP status codes (15+ instances)
+   - `combined_server.py` - Port numbers (8 instances)
+   - Network configuration files
 
-### Phase 3: Complete Migration (Week 3)
+**Time**: 19-26 hours total (up from 15-20)
 
-4. **Macro Domain** (2-3 hours)
+### Phase 3: Complete Backend Migration (Week 2-3) - UPDATED
+
+5. **Macro Domain** (2-3 hours) - **15+ instances**
    - `services/cycles.py` - Regime detection
    - `services/macro.py` - Indicator weighting
 
-5. **Scenarios Domain** (2-3 hours)
+6. **Scenarios Domain** (2-3 hours) - **20+ instances**
    - `services/scenarios.py` - Monte Carlo
    - `services/optimizer.py` - Portfolio optimization
 
-6. **Validation Everywhere** (4-6 hours)
+7. **Validation Everywhere** (4-6 hours) - **30+ instances**
    - Add validation using constants from `validation.py`
    - Replace hardcoded bounds with named constants
+   - Data ranges from FRED documentation
 
 **Time**: 8-12 hours
 
-**Total Implementation Time**: 27-36 hours over 3 weeks
+### Phase 4: Frontend Migration (Week 3) - NEW
+
+8. **UI Constants** (6-8 hours) - **50+ instances**
+   - Extract magic numbers from `frontend/full_ui.html`
+   - Create `frontend/constants/ui.js` module
+   - Update inline styles to use constants
+   - Update component styling
+
+**Time**: 6-8 hours (NEW)
+
+**Total Implementation Time**: 39-52 hours over 3-4 weeks (up from 27-36 hours)
 
 ---
 
@@ -1104,11 +1502,20 @@ git push origin constants-extraction
 
 ---
 
-**Status**: 🎯 READY FOR IMPLEMENTATION
-**Estimated Duration**: 27-36 hours over 3 weeks
+**Status**: 🎯 READY FOR IMPLEMENTATION (UPDATED with Replit Analysis)
+**Scope**: 200+ magic numbers (up from ~100 initial estimate)
+**Estimated Duration**: 39-52 hours over 3-4 weeks (up from 27-36 hours)
 **Risk Level**: LOW (no logic changes)
-**Value**: HIGH (domain clarity, validation support)
+**Value**: HIGH (domain clarity, validation support, UI consistency)
 **Alignment**: Phase 7 of TECHNICAL_DEBT_REMOVAL_PLAN_V3.md
+
+**Key Updates from Replit Analysis**:
+- ✅ Added 4 new constants modules (network, http_status, versions, frontend/ui)
+- ✅ Expanded integration.py with 25+ timeout/retry instances
+- ✅ Added 50+ UI constants for frontend consistency
+- ✅ Added 15+ HTTP status codes for better error handling
+- ✅ Expanded cache configuration with purpose-specific TTLs
+- ✅ Updated implementation timeline to 39-52 hours (reflects 200+ scope)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 

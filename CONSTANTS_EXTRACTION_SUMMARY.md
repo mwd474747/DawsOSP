@@ -1,7 +1,8 @@
 # Constants Extraction - Executive Summary
 
-**Status**: 🎯 READY TO START IN PARALLEL WITH PHASE 2
+**Status**: 🎯 READY TO START IN PARALLEL WITH PHASE 2 (UPDATED)
 **Plan**: [DOMAIN_DRIVEN_CONSTANTS_PLAN.md](DOMAIN_DRIVEN_CONSTANTS_PLAN.md)
+**Scope**: **200+ magic numbers** (from Replit comprehensive analysis)
 
 ---
 
@@ -12,8 +13,8 @@
 - Focus: Service initialization, singleton removal
 
 **Constants Extraction** (This Agent): Domain-driven constants
-- Files: `services/*.py`, `integrations/*.py`, creating `core/constants/`
-- Focus: Extracting magic numbers to named constants
+- Files: `services/*.py`, `integrations/*.py`, `frontend/full_ui.html`, creating `core/constants/`
+- Focus: Extracting 200+ magic numbers to named constants (backend + frontend)
 
 **Zero Overlap** - Different files, different concerns
 
@@ -28,23 +29,38 @@ TRADING_DAYS = 252
 CONFIDENCE_95 = 0.95
 ```
 
-### ✅ Domain-Driven Architecture (DawsOS)
+### ✅ Domain-Driven Architecture (DawsOS) - UPDATED
+
+**Backend Constants** (Python):
 ```python
-# core/constants/
-├── financial.py      # Portfolio valuation (252, 365, annualization)
-├── risk.py          # VaR/CVaR (0.95, 0.05, factor thresholds)
-├── macro.py         # Regime detection (z-scores, weights)
-├── scenarios.py     # Monte Carlo (paths, tolerances)
-├── integration.py   # API limits (timeouts, retries, rate limits)
-├── validation.py    # Data quality (bounds, freshness)
-└── time_periods.py  # Reusable conversions
+# backend/app/core/constants/
+├── financial.py      # Portfolio valuation (40+ instances: 252, 365, annualization)
+├── risk.py          # VaR/CVaR (35+ instances: 0.95, 0.05, factor thresholds)
+├── macro.py         # Regime detection (15+ instances: z-scores, weights)
+├── scenarios.py     # Monte Carlo (20+ instances: paths, tolerances)
+├── integration.py   # API limits (25+ instances: timeouts, retries, rate limits)
+├── validation.py    # Data quality (30+ instances: bounds, freshness)
+├── time_periods.py  # Reusable conversions (10+ instances)
+├── network.py       # Port numbers, connection config (8+ instances)
+├── http_status.py   # HTTP status codes with descriptions (15+ instances)
+└── versions.py      # Version numbers, compatibility (5+ instances)
 ```
+
+**Frontend Constants** (JavaScript):
+```javascript
+# frontend/constants/
+└── ui.js            # UI dimensions, fonts, opacity (50+ instances)
+```
+
+**Total**: 200+ magic numbers organized into 11 domain-specific modules
 
 **Why Better**:
 - ✅ Domain experts can find and update relevant constants
 - ✅ Constants map to business concepts (not just numbers)
 - ✅ Supports data validation and contracts
 - ✅ Aligns with DawsOS architecture (5 core domains)
+- ✅ Includes infrastructure concerns (network, HTTP, versions)
+- ✅ Covers frontend UI consistency (NEW)
 
 ---
 
@@ -142,25 +158,31 @@ PORTFOLIO_VALUE_CONTRACT = {
 
 ---
 
-## Implementation Timeline
+## Implementation Timeline - UPDATED
 
-### Week 1: High-Value Domains (15-20 hours)
-1. Create constants infrastructure
-2. Migrate Financial domain (`services/metrics.py`, `services/pricing.py`)
-3. Migrate Risk domain (`services/risk_metrics.py`)
-4. Migrate Integration domain (`integrations/*_provider.py`)
+### Week 1: High-Value Domains + Infrastructure (25-32 hours)
+1. Create constants infrastructure (backend + frontend)
+2. Migrate Financial domain (40+ instances: `services/metrics.py`, `services/pricing.py`)
+3. Migrate Risk domain (35+ instances: `services/risk_metrics.py`)
+4. Migrate Integration domain (25+ instances: `integrations/*_provider.py`)
+5. Migrate Infrastructure (23+ instances: HTTP status, ports, network)
 
-### Week 2: Complete Migration (8-12 hours)
-5. Migrate Macro domain (`services/cycles.py`)
-6. Migrate Scenarios domain (`services/scenarios.py`, `services/optimizer.py`)
-7. Add validation using constants
+### Week 2-3: Complete Backend Migration (8-12 hours)
+6. Migrate Macro domain (15+ instances: `services/cycles.py`)
+7. Migrate Scenarios domain (20+ instances: `services/scenarios.py`, `services/optimizer.py`)
+8. Add validation using constants (30+ instances)
 
-### Week 3: Finalize (4-6 hours)
-8. Code review with domain experts
-9. Integration testing
-10. Merge to main
+### Week 3: Frontend Migration (6-8 hours) - NEW
+9. Create `frontend/constants/ui.js` (50+ instances)
+10. Migrate UI magic numbers from `full_ui.html`
+11. Update component styling to use constants
 
-**Total**: 27-36 hours spread over 3 weeks
+### Week 4: Finalize (4-6 hours)
+12. Code review with domain experts
+13. Integration testing (backend + frontend)
+14. Merge to main
+
+**Total**: 39-52 hours spread over 3-4 weeks (up from 27-36 hours)
 
 ---
 
@@ -233,9 +255,24 @@ See [DOMAIN_DRIVEN_CONSTANTS_PLAN.md](DOMAIN_DRIVEN_CONSTANTS_PLAN.md) for compl
 
 ---
 
-**Status**: 🎯 AWAITING APPROVAL TO START
+**Status**: 🎯 READY TO START (UPDATED with Replit Analysis)
+**Scope**: 200+ magic numbers (doubled from initial estimate)
 **Alignment**: Phase 7 of TECHNICAL_DEBT_REMOVAL_PLAN_V3.md
 **Can Work in Parallel**: YES ✅
+
+**Key Updates from Replit Analysis**:
+- ✅ Identified 200+ instances (up from ~100 initial estimate)
+- ✅ Added 4 new constants modules (network, http_status, versions, frontend/ui)
+- ✅ Expanded timeline to 39-52 hours (reflects 200+ scope)
+- ✅ Added Phase 4 for frontend UI constants migration
+- ✅ Enhanced cache configuration with purpose-specific TTLs
+- ✅ Comprehensive HTTP status code coverage for better error handling
+
+**Next Steps**:
+1. Get user approval to proceed
+2. Create backend constants infrastructure (10 modules)
+3. Create frontend constants infrastructure (1 module)
+4. Begin Phase 1 migration (Financial domain)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
