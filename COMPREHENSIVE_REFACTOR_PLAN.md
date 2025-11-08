@@ -500,7 +500,95 @@ if __name__ == "__main__":
 
 ---
 
-## Phase 5: Service Usage Pattern Updates (P2 - High)
+## Phase 5: Remove Remaining Singleton Factory Functions (P1 - Critical)
+
+### Problem
+
+**Remaining Singleton Factory Functions Found:**
+1. `get_macro_hound()` - `backend/app/agents/macro_hound.py:1715`
+2. `get_transformation_service()` - `backend/app/services/fred_transformation.py:413`
+3. `get_macro_aware_scenario_service()` - `backend/app/services/macro_aware_scenarios.py:1073`
+4. `get_audit_service()` - `backend/app/services/audit.py:362`
+5. `get_config_manager()` - `backend/app/services/indicator_config.py:461`
+
+**Usages Found:**
+- `combined_server.py:710` - Uses `get_transformation_service()`
+- Potentially other files using these functions
+
+**Issues:**
+- ❌ Contradicts Phase 2 singleton removal
+- ❌ Creates architectural inconsistency
+- ❌ Makes DI container migration incomplete
+
+### Solution
+
+**Remove All Singleton Factory Functions:**
+
+1. **Remove `get_macro_hound()`**
+   - Already registered in DI container as "macro_hound"
+   - Use `container.resolve("macro_hound")` or direct instantiation
+
+2. **Remove `get_transformation_service()`**
+   - Already registered in DI container as "fred_transformation"
+   - Use `container.resolve("fred_transformation")` or direct instantiation
+
+3. **Remove `get_macro_aware_scenario_service()`**
+   - Already registered in DI container as "macro_aware_scenarios"
+   - Use `container.resolve("macro_aware_scenarios")` or direct instantiation
+
+4. **Remove `get_audit_service()`**
+   - Already registered in DI container as "audit"
+   - Use `container.resolve("audit")` or direct instantiation
+
+5. **Remove `get_config_manager()`**
+   - Already registered in DI container as "indicator_config"
+   - Use `container.resolve("indicator_config")` or direct instantiation
+
+**Update Usages:**
+
+```python
+# OLD (combined_server.py:710):
+from backend.app.services.fred_transformation import get_transformation_service
+transformation_service = get_transformation_service()
+
+# NEW:
+from app.services.fred_transformation import FREDTransformationService
+# Option 1: Use DI container
+from app.core.di_container import get_container
+container = get_container()
+if not container._initialized:
+    from app.core.service_initializer import initialize_services
+    initialize_services(container, db_pool=db_pool)
+transformation_service = container.resolve("fred_transformation")
+
+# Option 2: Direct instantiation
+transformation_service = FREDTransformationService()
+```
+
+### Implementation Steps
+
+1. **Audit All Usages** (30 minutes)
+   - Find all usages of remaining singleton factory functions
+   - Document migration path for each
+
+2. **Migrate Usages** (1 hour)
+   - Update `combined_server.py:710`
+   - Update any other usages
+   - Test each migration
+
+3. **Remove Function Definitions** (30 minutes)
+   - Remove all singleton factory functions
+   - Add migration comments
+   - Remove global singleton instances
+
+4. **Update Documentation** (30 minutes)
+   - Update Architecture.md
+   - Update migration guides
+   - Document completion
+
+---
+
+## Phase 6: Service Usage Pattern Updates (P2 - High)
 
 ### Problem
 
@@ -572,24 +660,30 @@ else:
    - Add availability flags
    - Update usage checks
 
+2. **Phase 5: Remove Remaining Singleton Factory Functions** (2.5 hours)
+   - Audit all usages
+   - Migrate usages to DI container or direct instantiation
+   - Remove function definitions
+   - Update documentation
+
 ### Short Term (P2 - High Priority)
-2. **Phase 2: Configurable Debug Logging** (1 hour)
+3. **Phase 2: Configurable Debug Logging** (1 hour)
    - Make logging configurable
    - Update constructor logging
    - Update documentation
 
-3. **Phase 5: Service Usage Pattern Updates** (2 hours)
+4. **Phase 6: Service Usage Pattern Updates** (2 hours)
    - Add availability checks
    - Update error handling
    - Test service availability
 
-4. **Phase 3: None Value Validation** (2 hours)
+5. **Phase 3: None Value Validation** (2 hours)
    - Add validation to constructors
    - Test validation
    - Update error messages
 
 ### Medium Term (P3 - Medium Priority)
-5. **Phase 4: Architecture Validation** (2 hours)
+6. **Phase 4: Architecture Validation** (2 hours)
    - Create validator
    - Add to CI/CD
    - Test validation
@@ -634,12 +728,13 @@ else:
 ## Estimated Time
 
 - **Phase 1:** 2 hours (P1 - Critical)
+- **Phase 5:** 2.5 hours (P1 - Critical)
 - **Phase 2:** 1 hour (P2 - High)
+- **Phase 6:** 2 hours (P2 - High)
 - **Phase 3:** 2 hours (P2 - High)
 - **Phase 4:** 2 hours (P3 - Medium)
-- **Phase 5:** 2 hours (P2 - High)
 - **Testing:** 2 hours
-- **Total:** ~11 hours (~1.5 days)
+- **Total:** ~13.5 hours (~2 days)
 
 ---
 
