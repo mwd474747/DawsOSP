@@ -768,11 +768,10 @@ function RequestInspector({ request }) {
    - Essential for testing and debugging
 8. **Phase 3.1**: Test All Pages (4-6 hours)
    - Critical user flows must work
-
-### P1 (High Priority) - Do Next
-4. **Phase 3.2-3.3**: Test Patterns & Endpoints (4-6 hours)
+9. **Phase 3.2-3.3**: Test Patterns & Endpoints (4-6 hours)
    - Important for system reliability
-5. **Phase 4.2**: Fix Broken Features (4-6 hours)
+10. **Phase 4.2**: Fix Broken Features (4-6 hours)
+   - Prioritize critical issues
    - Must fix critical issues
 
 ### P2 (Medium Priority) - Nice to Have
