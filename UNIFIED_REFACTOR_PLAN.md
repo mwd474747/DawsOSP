@@ -16,6 +16,13 @@ This unified plan synthesizes:
 - **User Testing & Feature Alignment** from USER_TESTING_AND_FEATURE_ALIGNMENT_PLAN.md
 - **Architecture Patterns** from ARCHITECTURE.md and DATABASE.md
 - **Anti-Patterns & Lessons Learned** from REPLIT_CHANGES_ANALYSIS.md and ANTI_PATTERN_ANALYSIS.md
+- **Knowledge Base** from REFACTOR_KNOWLEDGE_BASE.md (complete context, guardrails, and patterns)
+
+**Reference Documentation**:
+- **Knowledge Base**: `REFACTOR_KNOWLEDGE_BASE.md` - Complete context, guardrails, and patterns
+- **Architecture**: `ARCHITECTURE.md` - System architecture and patterns
+- **Database**: `DATABASE.md` - Database schema and field names
+- **Console Log Issues**: `CONSOLE_LOG_ISSUES_ANALYSIS.md` - Detailed issue analysis
 
 **Root Cause Analysis**: All issues stem from 4 fundamental problems:
 1. **Field Name Mismatches** - Code doesn't match database schema/data structures
@@ -73,80 +80,158 @@ This unified plan synthesizes:
 
 ### 0.1 Fix Field Name Inconsistencies (2-3 hours)
 
+**Reference**: `REFACTOR_KNOWLEDGE_BASE.md` - Database Field Name Reference section
+
 **Problem**: Code uses incorrect database field names causing 500 errors.
+
+**Root Cause**: Code not updated to match database schema after migrations. Field names assumed without verification.
 
 **Issues**:
 1. **`trade_date` vs `transaction_date`** (CRITICAL)
-   - **Location**: `backend/app/agents/financial_analyst.py:2289`
-   - **Impact**: `holding_deep_dive` pattern fails (500 error)
+   - **Location**: `backend/app/agents/financial_analyst.py:2289` (SQL query)
+   - **Schema Reference**: `backend/db/schema/001_portfolios_lots_transactions.sql:119` - `transaction_date DATE NOT NULL`
+   - **Impact**: `holding_deep_dive` pattern fails (500 error: column 'trade_date' does not exist)
    - **Fix**: Update SQL query to use `transaction_date`
-   - **Also Fix**: `backend/patterns/holding_deep_dive.json:296-336` (presentation config)
+   - **Also Fix**: `backend/patterns/holding_deep_dive.json:296` (presentation config field name)
 
 2. **`action` vs `transaction_type`** (CRITICAL)
-   - **Location**: `backend/app/agents/financial_analyst.py:2290`
+   - **Location**: `backend/app/agents/financial_analyst.py:2290` (SQL query)
+   - **Schema Reference**: `backend/db/schema/001_portfolios_lots_transactions.sql:110` - `transaction_type TEXT NOT NULL`
    - **Impact**: `holding_deep_dive` pattern fails
    - **Fix**: Update SQL query to use `transaction_type`
+   - **Also Fix**: `backend/patterns/holding_deep_dive.json:302` (presentation config field name)
 
 3. **`realized_pnl` vs `realized_pl`** (CRITICAL)
-   - **Location**: `backend/app/agents/financial_analyst.py:2295`
+   - **Location**: `backend/app/agents/financial_analyst.py:2295` (SQL query)
+   - **Schema Reference**: `backend/db/migrations/017_add_realized_pl_field.sql:14` - `realized_pl NUMERIC(20, 2)`
    - **Impact**: `holding_deep_dive` pattern fails
    - **Fix**: Update SQL query to use `realized_pl`
+   - **Also Fix**: `backend/patterns/holding_deep_dive.json:331` (presentation config field name)
 
 4. **`trade_date` vs `flow_date`** (CRITICAL)
-   - **Location**: `backend/app/services/metrics.py:274`
-   - **Impact**: MWR calculation fails
+   - **Location**: `backend/app/services/metrics.py:274` (SQL query)
+   - **Schema Reference**: `backend/db/schema/portfolio_cash_flows.sql:9` - `flow_date DATE NOT NULL`
+   - **Impact**: MWR calculation fails (column 'trade_date' does not exist)
    - **Fix**: Update SQL query to use `flow_date`
 
 5. **`debt_to_equity` vs `debt_equity_ratio`** (CRITICAL)
-   - **Location**: `backend/app/services/ratings.py:493`
-   - **Impact**: `buffett_checklist` pattern fails for all securities
+   - **Location**: `backend/app/services/ratings.py:493` (code expects `debt_to_equity`)
+   - **Data Source**: `backend/app/services/fundamentals_transformer.py:158` - provides `debt_equity_ratio`
+   - **Impact**: `buffett_checklist` pattern fails for all securities (9 failures in console log)
    - **Fix**: Update to use `debt_equity_ratio`
-   - **Also Fix**: `backend/patterns/buffett_checklist.json:177`
+   - **Also Fix**: `backend/patterns/buffett_checklist.json:177` (presentation config field name)
 
 **Implementation Steps**:
+
 1. **Verify Schema** (15 minutes)
-   - Read `backend/db/schema/001_portfolios_lots_transactions.sql` (verify `transaction_date`, `transaction_type`, `realized_pl`)
-   - Read `backend/db/schema/portfolio_cash_flows.sql` (verify `flow_date`)
-   - Read `backend/db/migrations/017_add_realized_pl_field.sql` (verify `realized_pl`)
+   - ✅ Read `backend/db/schema/001_portfolios_lots_transactions.sql:110,119` - Verify `transaction_type`, `transaction_date`
+   - ✅ Read `backend/db/migrations/017_add_realized_pl_field.sql:14` - Verify `realized_pl` (NOT `realized_pnl`)
+   - ✅ Read `backend/db/schema/portfolio_cash_flows.sql:9` - Verify `flow_date` (NOT `trade_date`)
+   - ✅ Read `backend/app/services/fundamentals_transformer.py:158` - Verify `debt_equity_ratio` (NOT `debt_to_equity`)
 
 2. **Fix financial_analyst.py** (30 minutes)
-   - Update SQL query: `trade_date` → `transaction_date`
-   - Update SQL query: `action` → `transaction_type`
-   - Update SQL query: `realized_pnl` → `realized_pl`
-   - Update result dictionary field names to match
+   - **File**: `backend/app/agents/financial_analyst.py:2286-2316`
+   - **Current Code** (Lines 2288-2295):
+     ```python
+     SELECT
+         trade_date,        # ❌ WRONG - should be transaction_date
+         action,            # ❌ WRONG - should be transaction_type
+         quantity,
+         price,
+         (quantity * price) as total_value,
+         commission,
+         realized_pnl      # ❌ WRONG - should be realized_pl
+     FROM transactions
+     ```
+   - **Fix**:
+     ```python
+     SELECT
+         transaction_date,  # ✅ CORRECT
+         transaction_type,  # ✅ CORRECT
+         quantity,
+         price,
+         (quantity * price) as total_value,
+         commission,
+         realized_pl      # ✅ CORRECT
+     FROM transactions
+     ```
+   - **Update Result Dictionary** (Lines 2310-2316):
+     ```python
+     {
+         "transaction_date": str(t["transaction_date"]),  # ✅ CORRECT
+         "transaction_type": t["transaction_type"],        # ✅ CORRECT
+         "quantity": float(t["quantity"]),
+         "price": float(t["price"]),
+         "total_value": float(t["total_value"]),
+         "commission": float(t["commission"]) if t["commission"] else 0.0,
+         "realized_pl": float(t["realized_pl"]) if t["realized_pl"] else None,  # ✅ CORRECT
+     }
+     ```
 
 3. **Fix metrics.py** (15 minutes)
-   - Update SQL query: `trade_date` → `flow_date`
-   - Update variable names in MWR calculation
+   - **File**: `backend/app/services/metrics.py:274-277`
+   - **Current Code**:
+     ```python
+     SELECT trade_date, amount  # ❌ WRONG - should be flow_date
+     FROM portfolio_cash_flows
+     WHERE portfolio_id = $1 AND trade_date BETWEEN $2 AND $3  # ❌ WRONG
+     ORDER BY trade_date  # ❌ WRONG
+     ```
+   - **Fix**:
+     ```python
+     SELECT flow_date, amount  # ✅ CORRECT
+     FROM portfolio_cash_flows
+     WHERE portfolio_id = $1 AND flow_date BETWEEN $2 AND $3  # ✅ CORRECT
+     ORDER BY flow_date  # ✅ CORRECT
+     ```
+   - **Update Variable Names**: Change `trade_date` → `flow_date` in MWR calculation loop
 
 4. **Fix ratings.py** (15 minutes)
-   - Update: `debt_to_equity` → `debt_equity_ratio`
+   - **File**: `backend/app/services/ratings.py:493`
+   - **Current Code**:
+     ```python
+     debt_equity = Decimal(str(fundamentals.get("debt_to_equity", 0)))  # ❌ WRONG
+     ```
+   - **Fix**:
+     ```python
+     debt_equity = Decimal(str(fundamentals.get("debt_equity_ratio", 0)))  # ✅ CORRECT
+     ```
 
 5. **Fix Pattern JSON Files** (30 minutes)
-   - Update `holding_deep_dive.json`: `trade_date` → `transaction_date`, `action` → `transaction_type`, `realized_pnl` → `realized_pl`
-   - Update `buffett_checklist.json`: `debt_to_equity` → `debt_equity_ratio`
+   - **File**: `backend/patterns/holding_deep_dive.json:296-336`
+     - Line 296: `"field": "trade_date"` → `"field": "transaction_date"`
+     - Line 302: `"field": "action"` → `"field": "transaction_type"`
+     - Line 331: `"field": "realized_pnl"` → `"field": "realized_pl"`
+   - **File**: `backend/patterns/buffett_checklist.json:177`
+     - Line 177: `"value": "{{fundamentals.debt_to_equity}}"` → `"value": "{{fundamentals.debt_equity_ratio}}"`
 
 6. **Search for Other References** (15 minutes)
-   - Search codebase for any other references to old field names
-   - Check API response models
-   - Check frontend code (if any)
+   - Search codebase: `grep -r "trade_date" backend/` (exclude schema files)
+   - Search codebase: `grep -r "action" backend/app/agents/financial_analyst.py` (check for transaction-related)
+   - Search codebase: `grep -r "realized_pnl" backend/` (exclude migration files)
+   - Search codebase: `grep -r "debt_to_equity" backend/` (exclude comments)
+   - Check API response models for field name consistency
+   - Check frontend code (if any references to these fields)
 
 7. **Test & Verify** (30 minutes)
-   - Test holdings page deep dive
-   - Test transaction history
-   - Test MWR calculation
-   - Test buffett_checklist pattern
-   - Verify no regressions
+   - ✅ Test holdings page deep dive (verify transaction history displays)
+   - ✅ Test transaction history retrieval (verify all fields present)
+   - ✅ Test MWR calculation (verify no SQL errors)
+   - ✅ Test buffett_checklist pattern (verify resilience calculation works)
+   - ✅ Verify no regressions (test other patterns that use these fields)
 
-**Guardrails**:
-- ✅ **Verify against actual schema files** - Use schema files as source of truth
+**Guardrails** (from `REFACTOR_KNOWLEDGE_BASE.md`):
+- ✅ **Verify against actual schema files** - Use schema files as source of truth (NOT code)
 - ✅ **Check all SQL queries** - Search for any other references to old field names
 - ✅ **Update pattern JSON files** - Ensure presentation configs match database fields
 - ✅ **Test thoroughly** - Verify all affected patterns work after fix
+- ✅ **Never assume field names** - Always verify against schema files
 
 ---
 
 ### 0.2 Fix Missing Capability: `metrics.unrealized_pl` (1-2 hours)
+
+**Reference**: `REFACTOR_KNOWLEDGE_BASE.md` - Capability Naming Convention section
 
 **Problem**: Pattern references capability that doesn't exist.
 
@@ -155,12 +240,22 @@ This unified plan synthesizes:
 - **Location**: `backend/patterns/tax_harvesting_opportunities.json:45`
 - **Impact**: `tax_harvesting_opportunities` pattern completely broken
 
-**Root Cause**: Unrealized P&L is calculated in `pricing.apply_pack` but not exposed as separate capability.
+**Root Cause**: Unrealized P&L is calculated in `pricing.apply_pack` (line 524-526) but not exposed as separate capability.
+
+**Current Implementation**:
+- **File**: `backend/app/agents/financial_analyst.py:524-526`
+- **Code**: Unrealized P&L calculated in `pricing_apply_pack()` method:
+  ```python
+  # Calculate unrealized P&L
+  cost_basis = pos.get("cost_basis", Decimal("0"))
+  unrealized_pnl = value_base - cost_basis if cost_basis else Decimal("0")
+  ```
+- **Result**: Included in `valued_positions` but not exposed as standalone capability
 
 **Solution Options**:
 1. **Option 1 (Recommended)**: Create `metrics.unrealized_pl` capability
-   - Add to `FinancialAnalyst.get_capabilities()`
-   - Implement `metrics_unrealized_pl()` method
+   - Add to `FinancialAnalyst.get_capabilities()` list (line 120)
+   - Implement `async def metrics_unrealized_pl()` method
    - Extract unrealized P&L from `pricing.apply_pack` result or calculate directly
 
 2. **Option 2**: Update pattern to use `pricing.apply_pack` and extract unrealized P&L
@@ -168,27 +263,94 @@ This unified plan synthesizes:
    - Extract unrealized P&L from `pricing.apply_pack` result
 
 **Implementation Steps** (Option 1):
+
 1. **Add Capability to FinancialAnalyst** (30 minutes)
-   - Add `"metrics.unrealized_pl"` to `get_capabilities()` list
-   - Implement `async def metrics_unrealized_pl()` method
-   - Calculate unrealized P&L from positions and pricing data
+   - **File**: `backend/app/agents/financial_analyst.py:120` (get_capabilities method)
+   - **Add to list**: `"metrics.unrealized_pl"` (after `metrics.compute_sharpe`)
+   - **Implement method** (after `metrics_compute_sharpe` method, around line 882):
+     ```python
+     @capability(
+         name="metrics.unrealized_pl",
+         inputs={"positions": list},
+         outputs={
+             "unrealized_pl": float,
+             "unrealized_pl_by_position": list,
+             "_provenance": dict,
+         },
+         fetches_positions=False,
+         implementation_status="real",
+         description="Calculate unrealized profit/loss for positions",
+         dependencies=["pricing.apply_pack"],
+     )
+     async def metrics_unrealized_pl(
+         self,
+         ctx: RequestCtx,
+         state: Dict[str, Any],
+         positions: List[Dict[str, Any]],
+     ) -> Dict[str, Any]:
+         """
+         Calculate unrealized P&L for positions.
+         
+         Args:
+             positions: List of positions with cost_basis and market_value
+             
+         Returns:
+             Dict with total unrealized P&L and per-position breakdown
+         """
+         total_unrealized_pl = Decimal("0")
+         unrealized_pl_by_position = []
+         
+         for pos in positions:
+             cost_basis = Decimal(str(pos.get("cost_basis", 0)))
+             market_value = Decimal(str(pos.get("market_value", 0)))
+             unrealized_pl = market_value - cost_basis
+             
+             total_unrealized_pl += unrealized_pl
+             
+             unrealized_pl_by_position.append({
+                 "symbol": pos.get("symbol"),
+                 "security_id": pos.get("security_id"),
+                 "cost_basis": float(cost_basis),
+                 "market_value": float(market_value),
+                 "unrealized_pl": float(unrealized_pl),
+                 "unrealized_pl_pct": float((unrealized_pl / cost_basis) * 100) if cost_basis > 0 else 0.0,
+             })
+         
+         result = {
+             "unrealized_pl": float(total_unrealized_pl),
+             "unrealized_pl_by_position": unrealized_pl_by_position,
+         }
+         
+         metadata = self._create_metadata(
+             source="financial_analyst:metrics_unrealized_pl",
+             asof=self._resolve_asof_date(ctx),
+             ttl=self.CACHE_TTL_NONE,
+         )
+         
+         return self._attach_metadata(result, metadata)
+     ```
 
 2. **Register in AgentRuntime** (15 minutes)
-   - Verify capability is registered correctly
-   - Test capability routing
+   - **Verify**: Capability automatically registered via `@capability` decorator
+   - **Test**: Check `get_capabilities()` includes `"metrics.unrealized_pl"`
+   - **Test**: Verify capability routing works (pattern execution)
 
 3. **Test Pattern** (15 minutes)
-   - Test `tax_harvesting_opportunities` pattern execution
-   - Verify unrealized P&L is returned correctly
+   - **Test**: Execute `tax_harvesting_opportunities` pattern
+   - **Verify**: Unrealized P&L is returned correctly
+   - **Verify**: Pattern completes without errors
 
-**Guardrails**:
+**Guardrails** (from `REFACTOR_KNOWLEDGE_BASE.md`):
 - ✅ **Verify capability exists** - Check `get_capabilities()` includes new capability
 - ✅ **Test pattern execution** - Verify pattern works after fix
 - ✅ **Check other patterns** - Ensure no other patterns need this capability
+- ✅ **Use category-based naming** - `metrics.unrealized_pl` (NOT `financial_analyst.unrealized_pl`)
 
 ---
 
 ### 0.3 Fix Pattern Dependency Issues (1-2 hours)
+
+**Reference**: `REFACTOR_KNOWLEDGE_BASE.md` - Pattern Step Result Structure section
 
 **Problem**: Step result structures don't match pattern expectations.
 
@@ -196,16 +358,18 @@ This unified plan synthesizes:
 1. **`policy_rebalance` Pattern** (1 hour)
    - **Error**: "proposed_trades required for financial_analyst.analyze_impact. Run financial_analyst.propose_trades first."
    - **Location**: `backend/patterns/policy_rebalance.json:63`
+   - **Error Location**: `backend/app/agents/financial_analyst.py:3437-3439`
    - **Root Cause**: 
      - Error message uses old agent-prefixed naming (`financial_analyst.analyze_impact`)
-     - Step result structure may not match expectations
+     - Pattern uses category-based naming (`optimizer.analyze_impact`)
      - Pattern step 3: `optimizer.propose_trades` → `as: "rebalance_result"`
      - Pattern step 4: `optimizer.analyze_impact` expects `{{rebalance_result.trades}}`
-     - Code checks: `state.get("proposed_trades")` OR `rebalance_result.get("trades")`
+     - Code checks: `state.get("proposed_trades")` OR `rebalance_result.get("trades")` (line 3432-3435)
+     - Code already checks for `rebalance_result.trades` but error message is wrong
    - **Fix**:
      - Update error message to use category-based naming (`optimizer.analyze_impact`)
-     - Verify `optimizer.propose_trades` returns `{"trades": [...]}` not `{"proposed_trades": [...]}`
-     - Update code to check for `rebalance_result.trades` first, then `proposed_trades`
+     - Verify `optimizer.propose_trades` returns `{"trades": [...]}` (verified: line 2881 in optimizer_propose_trades)
+     - Code already checks for `rebalance_result.trades` first (line 3433-3435) - this is correct
 
 2. **`macro_trend_monitor` Pattern** (1 hour)
    - **Error**: "Pattern execution 'macro_trend_monitor' failed:"
@@ -222,27 +386,49 @@ This unified plan synthesizes:
      - Verify field names match expectations
 
 **Implementation Steps**:
+
 1. **Fix policy_rebalance** (1 hour)
-   - Update error message in `financial_analyst.py:3438` to use `optimizer.analyze_impact`
-   - Verify `optimizer.propose_trades` returns correct structure
-   - Update code to check for `rebalance_result.trades` first
-   - Test pattern execution
+   - **File**: `backend/app/agents/financial_analyst.py:3437-3439`
+   - **Current Code**:
+     ```python
+     raise ValueError(
+         "proposed_trades required for financial_analyst.analyze_impact. "  # ❌ WRONG - old naming
+         "Run financial_analyst.propose_trades first."
+     )
+     ```
+   - **Fix**:
+     ```python
+     raise ValueError(
+         "proposed_trades required for optimizer.analyze_impact. "  # ✅ CORRECT - category-based naming
+         "Run optimizer.propose_trades first."
+     )
+     ```
+   - **Verify**: `optimizer.propose_trades` returns `{"trades": [...]}` (line 2881 in optimizer_propose_trades)
+   - **Verify**: Code already checks for `rebalance_result.trades` first (line 3433-3435) - this is correct
+   - **Test**: Execute `policy_rebalance` pattern and verify it works
 
 2. **Diagnose macro_trend_monitor** (1 hour)
-   - Get full error message/traceback
-   - Verify all capabilities exist (✅ verified: all exist)
-   - Check database for regime history data
-   - Verify step result structures match expectations
-   - Fix root cause once identified
+   - **Get Full Error Message**: Execute pattern and capture full traceback
+   - **Verify Capabilities**: All capabilities exist (✅ verified: all exist)
+     - `macro.get_regime_history` ✅
+     - `risk.get_factor_exposure_history` ✅
+     - `macro.detect_trend_shifts` ✅
+     - `alerts.suggest_presets` ✅
+   - **Check Database**: Verify regime history data exists
+   - **Check Step Result Structures**: Verify step results match pattern expectations
+   - **Fix Root Cause**: Once identified, fix the issue
 
-**Guardrails**:
+**Guardrails** (from `REFACTOR_KNOWLEDGE_BASE.md`):
 - ✅ **Verify step result structures** - Ensure step results match pattern expectations
-- ✅ **Update error messages** - Use category-based naming consistently
+- ✅ **Update error messages** - Use category-based naming consistently (NOT agent-prefixed)
 - ✅ **Test pattern execution** - Verify patterns work after fix
+- ✅ **Check pattern JSON files** - Verify step result references match actual structure
 
 ---
 
 ### 0.4 Fix Missing Function Import: `formatDate` (30 minutes)
+
+**Reference**: `REFACTOR_KNOWLEDGE_BASE.md` - Frontend Function Imports section
 
 **Problem**: Function not imported after module extraction.
 
@@ -251,29 +437,43 @@ This unified plan synthesizes:
 - **Location**: `frontend/pages.js:1864` and `frontend/pages.js:4275`
 - **Impact**: `TransactionsPage` completely broken (ReferenceError)
 
-**Root Cause**: `formatDate` is defined in `frontend/utils.js` as `Utils.formatDate` but used directly as `formatDate` without prefix.
+**Root Cause**: `formatDate` is defined in `frontend/utils.js:74` as `Utils.formatDate` but used directly as `formatDate` without prefix in `pages.js`.
+
+**Current Implementation**:
+- **File**: `frontend/utils.js:74-86`
+- **Code**: `Utils.formatDate = function(dateString) { ... }`
+- **Usage**: `frontend/pages.js:1864` - `e('td', null, formatDate(tx.date))` ❌ WRONG
 
 **Fix**:
+
 1. **Import formatDate from Utils** (15 minutes)
-   ```javascript
-   // At top of pages.js, add:
-   const formatDate = Utils.formatDate || ((dateString) => dateString || '-');
-   ```
+   - **File**: `frontend/pages.js` (at top, after other imports)
+   - **Add**:
+     ```javascript
+     // Import format functions from Utils namespace
+     const formatDate = Utils.formatDate || ((dateString) => dateString || '-');
+     ```
+   - **Verify**: `formatCurrency` is already imported (used at line 1868) ✅
+   - **Verify**: `formatPercentage` is already imported (if used) ✅
+   - **Verify**: `formatNumber` is already imported (if used) ✅
 
 2. **Verify Other Format Functions** (5 minutes)
-   - Check `formatCurrency` is imported (used at line 1868) ✅ Already imported
-   - Check `formatPercentage` is imported (if used) ✅ Already imported
-   - Check `formatNumber` is imported (if used) ✅ Already imported
+   - **Check**: `formatCurrency` is imported (used at line 1868) ✅ Already imported
+   - **Check**: `formatPercentage` is imported (if used) ✅ Already imported
+   - **Check**: `formatNumber` is imported (if used) ✅ Already imported
+   - **Search**: `grep -n "formatDate\|formatCurrency\|formatPercentage" frontend/pages.js` - Verify all are imported
 
 3. **Test TransactionsPage** (10 minutes)
-   - Verify page loads without errors
-   - Verify transaction table displays correctly
-   - Verify date formatting works
+   - **Test**: Load TransactionsPage and verify no ReferenceError
+   - **Test**: Verify transaction table displays correctly
+   - **Test**: Verify date formatting works (dates display in correct format)
+   - **Test**: Check other pages for similar issues (search for `formatDate` usage)
 
-**Guardrails**:
+**Guardrails** (from `REFACTOR_KNOWLEDGE_BASE.md`):
 - ✅ **Verify all format functions** - Ensure all format functions are imported
 - ✅ **Test page rendering** - Verify TransactionsPage works after fix
 - ✅ **Check other pages** - Ensure no other pages have similar issues
+- ✅ **Use Utils namespace** - All format functions are in `Utils` namespace after module extraction
 
 ---
 
@@ -667,14 +867,15 @@ This unified plan synthesizes:
 
 ## Related Documents
 
-- **Console Log Issues**: `CONSOLE_LOG_ISSUES_ANALYSIS.md`
-- **Remaining Refactor Work**: `REMAINING_REFACTOR_WORK.md`
-- **Pattern System Optimization**: `PATTERN_SYSTEM_OPTIMIZATION_PLAN.md`
-- **User Testing Plan**: `USER_TESTING_AND_FEATURE_ALIGNMENT_PLAN.md`
-- **Architecture**: `ARCHITECTURE.md`
-- **Database**: `DATABASE.md`
-- **Anti-Patterns**: `ANTI_PATTERN_ANALYSIS.md`
-- **Replit Changes**: `REPLIT_CHANGES_ANALYSIS.md`
+- **Knowledge Base**: `REFACTOR_KNOWLEDGE_BASE.md` - Complete context, guardrails, and patterns
+- **Console Log Issues**: `CONSOLE_LOG_ISSUES_ANALYSIS.md` - Detailed issue analysis
+- **Remaining Refactor Work**: `REMAINING_REFACTOR_WORK.md` - Remaining technical debt
+- **Pattern System Optimization**: `PATTERN_SYSTEM_OPTIMIZATION_PLAN.md` - Pattern system improvements
+- **User Testing Plan**: `USER_TESTING_AND_FEATURE_ALIGNMENT_PLAN.md` - User testing strategy
+- **Architecture**: `ARCHITECTURE.md` - System architecture and patterns
+- **Database**: `DATABASE.md` - Database schema and field names
+- **Anti-Patterns**: `ANTI_PATTERN_ANALYSIS.md` - Anti-patterns to avoid
+- **Replit Changes**: `REPLIT_CHANGES_ANALYSIS.md` - Past errors and lessons learned
 
 ---
 

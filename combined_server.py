@@ -814,12 +814,12 @@ async def get_portfolio_data(user_email: str) -> Optional[List[asyncpg.Record]]:
 async def get_user_transactions(user_email: str) -> Optional[List[asyncpg.Record]]:
     """Fetch transactions from database with proper error handling"""
     query = """
-        SELECT 
+        SELECT
             t.transaction_type as type,
             t.quantity,
             t.price,
             t.amount,
-            t.transaction_date as trade_date,
+            t.transaction_date,
             t.symbol,
             s.name as security_name
         FROM transactions t
