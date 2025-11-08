@@ -63,7 +63,7 @@
             if (Logger) {
                 Logger.debug('[PatternSystem] React not available, will retry...');
             } else {
-                console.log('[PatternSystem] React not available, will retry...');
+                (global.DawsOS?.Logger || console).debug('[PatternSystem] React not available, will retry...');
             }
             setTimeout(initializePatternSystem, 100);
             return;
@@ -74,7 +74,7 @@
             if (Logger) {
                 Logger.debug('[PatternSystem] APIClient not ready, will retry...');
             } else {
-                console.log('[PatternSystem] APIClient not ready, will retry...');
+                (global.DawsOS?.Logger || console).debug('[PatternSystem] APIClient not ready, will retry...');
             }
             setTimeout(initializePatternSystem, 100);
             return;
@@ -85,7 +85,7 @@
             if (Logger) {
                 Logger.debug('[PatternSystem] Panels not ready, will retry...');
             } else {
-                console.log('[PatternSystem] Panels not ready, will retry...');
+                (global.DawsOS?.Logger || console).debug('[PatternSystem] Panels not ready, will retry...');
             }
             setTimeout(initializePatternSystem, 100);
             return;
@@ -99,7 +99,7 @@
         if (Logger) {
             Logger.checkpoint('[PatternSystem] All dependencies ready, initializing...');
         } else {
-            console.log('[PatternSystem] All dependencies ready, initializing...');
+            (global.DawsOS?.Logger || console).checkpoint('[PatternSystem] All dependencies ready, initializing...');
         }
 
     // Import React hooks (now we know React is available)
@@ -153,7 +153,7 @@
         if (Logger) {
             Logger.warn('[PatternSystem] Missing panel components:', missingPanels);
         } else {
-            console.warn('[PatternSystem] Missing panel components:', missingPanels);
+            (global.DawsOS?.Logger || console).warn('[PatternSystem] Missing panel components:', missingPanels);
         }
     }
 

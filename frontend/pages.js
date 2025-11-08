@@ -77,8 +77,8 @@
             Logger.error('[Pages] DawsOS.APIClient not loaded');
             Logger.error('[Pages] Available namespaces:', Object.keys(global.DawsOS || {}));
         } else {
-            console.error('[Pages] DawsOS.APIClient not loaded');
-            console.error('[Pages] Available namespaces:', Object.keys(global.DawsOS || {}));
+            (global.DawsOS?.Logger || console).error('[Pages] DawsOS.APIClient not loaded');
+            (global.DawsOS?.Logger || console).error('[Pages] Available namespaces:', Object.keys(global.DawsOS || {}));
         }
         throw new Error('[Pages] Required dependency DawsOS.APIClient not found. Check script load order.');
     }
@@ -115,7 +115,7 @@
         if (Logger) {
             Logger.error('[Pages] TokenManager not available from DawsOS.APIClient or global');
         } else {
-            console.error('[Pages] TokenManager not available from DawsOS.APIClient or global');
+            (global.DawsOS?.Logger || console).error('[Pages] TokenManager not available from DawsOS.APIClient or global');
         }
         throw new Error('[Pages] TokenManager is required but not found');
     }
@@ -197,7 +197,7 @@
                         if (Logger) {
                             Logger.error('Login failed:', error);
                         } else {
-                            console.error('Login failed:', error);
+                            (global.DawsOS?.Logger || console).error('Login failed:', error);
                         }
                         // Use ErrorHandler for better error classification
                         const errorInfo = ErrorHandler.classifyError(error);
@@ -303,7 +303,7 @@
                 if (Logger) {
                     Logger.debug('[PortfolioOverview] Data source:', dataSource, data);
                 } else {
-                    console.log('[PortfolioOverview] Data source:', dataSource, data);
+                    (global.DawsOS?.Logger || console).debug('[PortfolioOverview] Data source:', dataSource, data);
                 }
                 
                 return e('div', { className: 'stats-grid', style: { position: 'relative' } },
@@ -368,7 +368,7 @@
                 if (Logger) {
                     Logger.debug('[HoldingsTable] Data source:', dataSource, holdings);
                 } else {
-                    console.log('[HoldingsTable] Data source:', dataSource, holdings);
+                    (global.DawsOS?.Logger || console).debug('[HoldingsTable] Data source:', dataSource, holdings);
                 }
                 
                 return e('div', { className: 'card', style: { position: 'relative' } },
@@ -447,7 +447,7 @@
                             if (Logger) {
                                 Logger.warn('MacroCyclesPage: Pattern loading timeout');
                             } else {
-                                console.warn('MacroCyclesPage: Pattern loading timeout');
+                                (global.DawsOS?.Logger || console).warn('MacroCyclesPage: Pattern loading timeout');
                             }
                             setLoading(false);
                             setError('Data loading timed out. Please try refreshing the page.');
@@ -469,7 +469,7 @@
                     if (Logger) {
                         Logger.debug('MacroCyclesPage received pattern data:', data);
                     } else {
-                        console.log('MacroCyclesPage received pattern data:', data);
+                        (global.DawsOS?.Logger || console).debug('MacroCyclesPage received pattern data:', data);
                     }
                     try {
                         // Check for error first
@@ -477,7 +477,7 @@
                             if (Logger) {
                                 Logger.error('MacroCyclesPage: Pattern execution failed:', data.error);
                             } else {
-                                console.error('MacroCyclesPage: Pattern execution failed:', data.error);
+                                (global.DawsOS?.Logger || console).error('MacroCyclesPage: Pattern execution failed:', data.error);
                             }
                             setError(data.error || 'Failed to load macro cycle data. Please try refreshing the page.');
                             setLoading(false);

@@ -320,14 +320,18 @@ class PatternOrchestrator:
                 logger.debug(f"Loaded pattern: {pattern_id} from {pattern_file}")
 
             except json.JSONDecodeError as e:
+                # JSON parsing errors - log and continue (non-critical)
                 logger.error(f"Failed to parse pattern {pattern_file}: {e}")
             except (ValueError, TypeError, KeyError, AttributeError) as e:
                 # Programming errors - should not happen, log and re-raise
                 logger.error(f"Programming error loading pattern {pattern_file}: {e}", exc_info=True)
                 raise
+            except (OSError, IOError, PermissionError) as e:
+                # File I/O errors - log and continue (non-critical)
+                logger.error(f"File I/O error loading pattern {pattern_file}: {e}")
             except Exception as e:
-                # File I/O or other errors - log and continue
-                logger.error(f"Failed to load pattern {pattern_file}: {e}")
+                # Unexpected errors - log with full context and continue
+                logger.error(f"Unexpected error loading pattern {pattern_file}: {e}", exc_info=True)
 
         logger.info(f"Loaded {pattern_count} patterns from {patterns_dir}")
 
@@ -579,8 +583,18 @@ class PatternOrchestrator:
                                                 f"Step {step_idx} ({capability}): "
                                                 f"programming error validating template '{arg_value}': {e}"
                                             )
-                                        except Exception as e:
+                                        except (AttributeError, NameError) as e:
                                             # Template validation errors - log and continue
+                                            warnings.append(
+                                                f"Step {step_idx} ({capability}): "
+                                                f"could not validate template '{arg_value}': {e}"
+                                            )
+                                        except Exception as e:
+                                            # Unexpected template errors - log with context
+                                            logger.warning(
+                                                f"Unexpected error validating template '{arg_value}' "
+                                                f"for {capability}: {e}"
+                                            )
                                             warnings.append(
                                                 f"Step {step_idx} ({capability}): "
                                                 f"could not validate template '{arg_value}': {e}"
@@ -590,8 +604,14 @@ class PatternOrchestrator:
                             warnings.append(
                                 f"Could not inspect signature for {capability} (programming error): {e}"
                             )
-                        except Exception as e:
+                        except (AttributeError, NameError) as e:
                             # Inspection errors - log and continue
+                            warnings.append(
+                                f"Could not inspect signature for {capability}: {e}"
+                            )
+                        except Exception as e:
+                            # Unexpected inspection errors - log with context
+                            logger.warning(f"Unexpected error inspecting signature for {capability}: {e}")
                             warnings.append(
                                 f"Could not inspect signature for {capability}: {e}"
                             )
