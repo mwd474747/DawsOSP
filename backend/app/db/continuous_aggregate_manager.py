@@ -195,7 +195,12 @@ class ContinuousAggregateManager:
                 "row_count": row["row_count"] if row else 0,
                 "total_bytes": row["total_bytes"] if row else 0,
             }
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and return None
+            logger.warning(f"Programming error getting size for {view_name}: {e}")
+            return {"row_count": None, "total_bytes": None}
         except Exception as e:
+            # Database errors - log and return None
             logger.warning(f"Failed to get size for {view_name}: {e}")
             return {"row_count": None, "total_bytes": None}
 
@@ -257,7 +262,12 @@ class ContinuousAggregateManager:
 
             return True
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(f"Programming error refreshing {view_name}: {e}", exc_info=True)
+            raise
         except Exception as e:
+            # Database errors - log and return False
             logger.error(f"Failed to refresh {view_name}: {e}", exc_info=True)
             return False
 

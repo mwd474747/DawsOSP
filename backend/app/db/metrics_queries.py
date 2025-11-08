@@ -215,7 +215,15 @@ class MetricsQueries:
             )
             return True
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(
+                f"Programming error inserting metrics for portfolio {portfolio_id}: {e}",
+                exc_info=True,
+            )
+            raise
         except Exception as e:
+            # Database errors - log and return False
             logger.error(
                 f"Failed to insert metrics for portfolio {portfolio_id}: {e}",
                 exc_info=True,
@@ -416,7 +424,15 @@ class MetricsQueries:
             )
             return True
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(
+                f"Programming error inserting currency attribution for portfolio {portfolio_id}: {e}",
+                exc_info=True,
+            )
+            raise
         except Exception as e:
+            # Database errors - log and return False
             logger.error(
                 f"Failed to insert currency attribution for portfolio {portfolio_id}: {e}",
                 exc_info=True,
@@ -557,7 +573,15 @@ class MetricsQueries:
             )
             return True
 
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            # Programming errors - should not happen, log and re-raise
+            logger.error(
+                f"Programming error inserting factor exposures for portfolio {portfolio_id}: {e}",
+                exc_info=True,
+            )
+            raise
         except Exception as e:
+            # Database errors - log and return False
             logger.error(
                 f"Failed to insert factor exposures for portfolio {portfolio_id}: {e}",
                 exc_info=True,

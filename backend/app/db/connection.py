@@ -141,7 +141,12 @@ async def init_db_pool(
         
         return pool
 
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and re-raise
+        logger.error(f"Programming error initializing database pool: {e}", exc_info=True)
+        raise
     except Exception as e:
+        # Connection/configuration errors - log and re-raise
         logger.error(f"Failed to initialize database pool: {e}", exc_info=True)
         raise
 
@@ -177,7 +182,11 @@ def get_db_pool() -> asyncpg.Pool:
                 # Also register it for future use
                 register_external_pool(combined_server.db_pool)
                 return combined_server.db_pool
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and continue (fallback mechanism)
+        logger.debug(f"Programming error accessing combined_server.db_pool: {e}")
     except Exception as e:
+        # Connection/import errors - log and continue (fallback mechanism)
         logger.debug(f"Could not access combined_server.db_pool: {e}")
 
     # Pool not initialized - this is an error
@@ -206,7 +215,11 @@ async def close_db_pool():
         await storage.pool.close()
         storage.pool = None
         logger.info("Database connection pool closed")
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and continue
+        logger.error(f"Programming error closing database pool: {e}", exc_info=True)
     except Exception as e:
+        # Connection errors - log and continue (cleanup should not fail)
         logger.error(f"Error closing database pool: {e}", exc_info=True)
 
 # ============================================================================
@@ -295,7 +308,15 @@ async def check_db_health() -> dict:
             "pool_in_use": pool_size - pool_free,
         }
 
+    except (ValueError, TypeError, KeyError, AttributeError) as e:
+        # Programming errors - should not happen, log and return unhealthy
+        logger.error(f"Programming error in database health check: {e}", exc_info=True)
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+        }
     except Exception as e:
+        # Database/connection errors - log and return unhealthy
         logger.error(f"Database health check failed: {e}", exc_info=True)
         return {
             "status": "unhealthy",
