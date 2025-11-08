@@ -134,8 +134,9 @@
     // This ensures components are always fresh, even if they load after pattern-system.js
 
     // Import global utilities (these remain in full_ui.html)
-    // Use TokenManager from DawsOS.APIClient if available, otherwise fallback to global
-    const { ErrorHandler, CacheManager, ProvenanceWarningBanner } = global;
+    // NOTE: DO NOT destructure these components during initialization - they may not be loaded yet
+    // Instead, use dynamic lookup at usage time: global.ErrorHandler, global.CacheManager, etc.
+    // This prevents the same race condition that affected panel components
     const TokenManager = TokenManagerFromAPI || global.TokenManager;
     
     // Validate TokenManager
@@ -861,9 +862,19 @@
             ? panels.filter(panel => config.showPanels.includes(panel.id))
             : panels;
 
+        // DYNAMIC LOOKUP: Get ProvenanceWarningBanner at render time, not initialization time
+        // This fixes the race condition where the component may not be loaded yet during initialization
+        const ProvenanceWarningBanner = global.ProvenanceWarningBanner;
+        
+        // Defensive check - if component is not available, just skip rendering it
+        // This prevents React Error #130 when the component is undefined
+        const provenanceBannerElement = ProvenanceWarningBanner 
+            ? e(ProvenanceWarningBanner, { warnings: provenanceWarnings })
+            : null;
+        
         return e('div', { className: 'pattern-content' },
-            // PHASE 1 FIX: Display provenance warnings
-            e(ProvenanceWarningBanner, { warnings: provenanceWarnings }),
+            // PHASE 1 FIX: Display provenance warnings (only if component is available)
+            provenanceBannerElement,
             filteredPanels.map(panel =>
                 e(PanelRenderer, {
                     key: panel.id,
@@ -1012,6 +1023,18 @@
          * @param {object} options - Cache options
          */
         executePattern: async (pattern, inputs = {}, options = {}) => {
+            // DYNAMIC LOOKUP: Get CacheManager at usage time, not initialization time
+            const CacheManager = global.CacheManager;
+            if (!CacheManager) {
+                const Logger = global.DawsOS?.Logger;
+                if (Logger) {
+                    Logger.warn('[PatternSystem] CacheManager not available, executing pattern without cache');
+                } else {
+                    console.warn('[PatternSystem] CacheManager not available, executing pattern without cache');
+                }
+                return apiClient.executePattern(pattern, inputs);
+            }
+
             const queryKey = queryKeys.pattern(pattern, inputs);
 
             // Different cache times for different patterns
@@ -1033,6 +1056,21 @@
          * @param {object} options - Cache options
          */
         getPortfolioOverview: async (portfolioId, options = {}) => {
+            // DYNAMIC LOOKUP: Get CacheManager at usage time
+            const CacheManager = global.CacheManager;
+            if (!CacheManager) {
+                const Logger = global.DawsOS?.Logger;
+                if (Logger) {
+                    Logger.warn('[PatternSystem] CacheManager not available, executing without cache');
+                } else {
+                    console.warn('[PatternSystem] CacheManager not available, executing without cache');
+                }
+                return apiClient.executePattern('portfolio_overview', {
+                    portfolio_id: portfolioId,
+                    lookback_days: 252
+                });
+            }
+
             const queryKey = queryKeys.portfolio(portfolioId);
 
             return CacheManager.get(
@@ -1050,6 +1088,18 @@
          * @param {object} options - Cache options
          */
         getMacroDashboard: async (options = {}) => {
+            // DYNAMIC LOOKUP: Get CacheManager at usage time
+            const CacheManager = global.CacheManager;
+            if (!CacheManager) {
+                const Logger = global.DawsOS?.Logger;
+                if (Logger) {
+                    Logger.warn('[PatternSystem] CacheManager not available, executing without cache');
+                } else {
+                    console.warn('[PatternSystem] CacheManager not available, executing without cache');
+                }
+                return apiClient.executePattern('macro_cycles_overview', {});
+            }
+
             const queryKey = queryKeys.macro();
 
             return CacheManager.get(
@@ -1065,6 +1115,18 @@
          * @param {object} options - Cache options
          */
         getHoldings: async (portfolioId, options = {}) => {
+            // DYNAMIC LOOKUP: Get CacheManager at usage time
+            const CacheManager = global.CacheManager;
+            if (!CacheManager) {
+                const Logger = global.DawsOS?.Logger;
+                if (Logger) {
+                    Logger.warn('[PatternSystem] CacheManager not available, executing without cache');
+                } else {
+                    console.warn('[PatternSystem] CacheManager not available, executing without cache');
+                }
+                return apiClient.getHoldings(portfolioId);
+            }
+
             const queryKey = queryKeys.holdings(portfolioId);
 
             return CacheManager.get(
@@ -1080,6 +1142,20 @@
          * @param {object} options - Cache options
          */
         getAlerts: async (portfolioId, options = {}) => {
+            // DYNAMIC LOOKUP: Get CacheManager at usage time
+            const CacheManager = global.CacheManager;
+            if (!CacheManager) {
+                const Logger = global.DawsOS?.Logger;
+                if (Logger) {
+                    Logger.warn('[PatternSystem] CacheManager not available, executing without cache');
+                } else {
+                    console.warn('[PatternSystem] CacheManager not available, executing without cache');
+                }
+                return apiClient.executePattern('macro_trend_monitor', {
+                    portfolio_id: portfolioId
+                });
+            }
+
             const queryKey = queryKeys.alerts(portfolioId);
 
             return CacheManager.get(
@@ -1096,6 +1172,18 @@
          * @param {string} portfolioId - Portfolio ID
          */
         invalidatePortfolio: (portfolioId) => {
+            // DYNAMIC LOOKUP: Get CacheManager at usage time
+            const CacheManager = global.CacheManager;
+            if (!CacheManager) {
+                const Logger = global.DawsOS?.Logger;
+                if (Logger) {
+                    Logger.warn('[PatternSystem] CacheManager not available, skipping cache invalidation');
+                } else {
+                    console.warn('[PatternSystem] CacheManager not available, skipping cache invalidation');
+                }
+                return;
+            }
+
             CacheManager.invalidate(queryKeys.portfolio(portfolioId));
             CacheManager.invalidate(queryKeys.holdings(portfolioId));
             CacheManager.invalidate(queryKeys.scenarios(portfolioId));
@@ -1107,6 +1195,18 @@
          * Invalidate all caches
          */
         invalidateAll: () => {
+            // DYNAMIC LOOKUP: Get CacheManager at usage time
+            const CacheManager = global.CacheManager;
+            if (!CacheManager) {
+                const Logger = global.DawsOS?.Logger;
+                if (Logger) {
+                    Logger.warn('[PatternSystem] CacheManager not available, skipping cache clear');
+                } else {
+                    console.warn('[PatternSystem] CacheManager not available, skipping cache clear');
+                }
+                return;
+            }
+
             CacheManager.clear();
         },
 
@@ -1115,6 +1215,18 @@
          * @param {string} portfolioId - Portfolio ID
          */
         prefetchPortfolio: async (portfolioId) => {
+            // DYNAMIC LOOKUP: Get CacheManager at usage time
+            const CacheManager = global.CacheManager;
+            if (!CacheManager) {
+                const Logger = global.DawsOS?.Logger;
+                if (Logger) {
+                    Logger.warn('[PatternSystem] CacheManager not available, skipping prefetch');
+                } else {
+                    console.warn('[PatternSystem] CacheManager not available, skipping prefetch');
+                }
+                return;
+            }
+
             await CacheManager.prefetch(
                 queryKeys.portfolio(portfolioId),
                 () => apiClient.executePattern('portfolio_overview', {
