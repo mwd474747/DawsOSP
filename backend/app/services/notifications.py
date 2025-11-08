@@ -51,6 +51,9 @@ from email.mime.multipart import MIMEMultipart
 from typing import Dict, Any, Optional, List
 from uuid import UUID
 
+from app.db.connection import execute_query, execute_statement, execute_query_one
+from app.core.exceptions import DatabaseError, ExternalAPIError
+
 logger = logging.getLogger("DawsOS.Notifications")
 
 
