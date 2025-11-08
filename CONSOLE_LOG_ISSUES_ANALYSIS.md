@@ -261,7 +261,63 @@ column "trade_date" does not exist
 
 ## P2 (Medium Priority) - Code Quality Issues
 
-### Issue 9: Browser Deprecation Warnings
+### Issue 9: Flash of Unstyled Content (FOUC) ⚠️
+
+**Observation**:
+```
+Layout was forced before the page was fully loaded. 
+If stylesheets are not yet loaded this may cause a flash of unstyled content.
+```
+
+**Root Cause**:
+- Layout is forced (React rendering) before stylesheets are fully loaded
+- Stylesheets loaded asynchronously or after initial render
+- No blocking mechanism to wait for stylesheets
+
+**Impact**:
+- ⚠️ Flash of unstyled content (FOUC) - poor UX
+- ⚠️ Layout shift when stylesheets load - poor UX
+- ⚠️ Inconsistent visual appearance during page load
+
+**Files Affected**:
+- `full_ui.html` - Stylesheet loading order
+- `frontend/pages.js` - React rendering before stylesheets ready
+- Any CSS files loaded asynchronously
+
+**Fix**:
+1. **Option 1 (Recommended)**: Block rendering until stylesheets loaded:
+   ```javascript
+   // Wait for stylesheets to load before rendering
+   document.addEventListener('DOMContentLoaded', () => {
+       const stylesheets = document.querySelectorAll('link[rel="stylesheet"]');
+       const loadPromises = Array.from(stylesheets).map(link => {
+           if (link.sheet) return Promise.resolve();
+           return new Promise((resolve) => {
+               link.onload = resolve;
+               link.onerror = resolve; // Don't block on errors
+           });
+       });
+       Promise.all(loadPromises).then(() => {
+           // Now render React app
+           ReactDOM.render(...);
+       });
+   });
+   ```
+
+2. **Option 2**: Preload critical stylesheets:
+   ```html
+   <link rel="preload" href="styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+   ```
+
+3. **Option 3**: Inline critical CSS:
+   - Inline critical CSS in `<head>` to prevent FOUC
+   - Load non-critical CSS asynchronously
+
+**Anti-Pattern**: Rendering before stylesheets are loaded
+
+---
+
+### Issue 10: Browser Deprecation Warnings ⚠️
 
 **Observation**:
 ```
@@ -272,23 +328,50 @@ onmozfullscreenerror is deprecated.
 ```
 
 **Root Cause**:
-- `namespace-validator.js:131` uses deprecated browser APIs
+- `namespace-validator.js:131` checks for deprecated browser APIs
 - Code not updated to use modern browser APIs
+- Namespace validator checks for old Mozilla-specific APIs
 
 **Impact**:
 - ⚠️ Future browser compatibility issues
 - ⚠️ Warnings in console (not critical but should be fixed)
+- ⚠️ Code will break when browsers remove deprecated APIs
+
+**Files Affected**:
+- `frontend/namespace-validator.js:131` - Checks for deprecated APIs
 
 **Fix**:
-1. Update `namespace-validator.js` to use modern browser APIs
-2. Remove deprecated API checks
-3. Use feature detection instead of deprecated APIs
+1. **Update namespace-validator.js** to remove deprecated API checks:
+   ```javascript
+   // Remove checks for:
+   // - window.fullScreen (deprecated)
+   // - window.InstallTrigger (deprecated)
+   // - onmozfullscreenchange (deprecated)
+   // - onmozfullscreenerror (deprecated)
+   
+   // Use modern APIs instead:
+   // - document.fullscreenElement (modern)
+   // - Feature detection instead of property checks
+   ```
 
-**Anti-Pattern**: Using deprecated browser APIs
+2. **Use Feature Detection**:
+   ```javascript
+   // Instead of checking for deprecated properties:
+   if ('fullscreenElement' in document) {
+       // Use modern API
+   }
+   ```
+
+3. **Remove Mozilla-Specific Checks**:
+   - Remove `InstallTrigger` check (Firefox-specific, deprecated)
+   - Remove `onmozfullscreenchange` check (Mozilla-specific, deprecated)
+   - Use standard fullscreen API instead
+
+**Anti-Pattern**: Using deprecated browser APIs, checking for browser-specific deprecated properties
 
 ---
 
-### Issue 10: Page Count Mismatch
+### Issue 11: Page Count Mismatch ⚠️
 
 **Observation**:
 - Console shows **23 pages loaded** but documentation says **20 pages**
@@ -313,7 +396,7 @@ onmozfullscreenerror is deprecated.
 
 ---
 
-### Issue 11: Error Message Inconsistency
+### Issue 12: Error Message Inconsistency
 
 **Observation**:
 - Error messages reference old agent-prefixed naming (`financial_analyst.analyze_impact`)
@@ -337,15 +420,67 @@ onmozfullscreenerror is deprecated.
 
 ---
 
+### Issue 13: Missing Function Import - `formatDate` ❌
+
+**Error Message**:
+```
+ReferenceError: formatDate is not defined
+TransactionsPage https://.../frontend/pages.js?v=20250115:1864
+```
+
+**Root Cause**:
+- `formatDate` is defined in `frontend/utils.js` as `Utils.formatDate`
+- `frontend/pages.js:1864` uses `formatDate` without `Utils.` prefix
+- Function not imported/aliased in `pages.js`
+
+**Impact**:
+- ❌ `TransactionsPage` completely broken (ReferenceError)
+- ❌ Page cannot render transaction table
+- ❌ User cannot view transaction history
+
+**Files Affected**:
+- `frontend/pages.js:1864` - Uses `formatDate(tx.date)` without prefix
+- `frontend/pages.js:4275` - Also uses `formatDate(report.date)` without prefix
+- `frontend/utils.js:74` - Defines `Utils.formatDate`
+
+**Fix**:
+1. **Option 1 (Recommended)**: Import `formatDate` from Utils namespace:
+   ```javascript
+   // At top of pages.js, add:
+   const formatDate = Utils.formatDate || ((dateString) => dateString);
+   ```
+
+2. **Option 2**: Use `Utils.formatDate` directly:
+   ```javascript
+   // Change from:
+   e('td', null, formatDate(tx.date))
+   
+   // To:
+   e('td', null, Utils.formatDate(tx.date))
+   ```
+
+3. **Option 3**: Add to destructured imports (if using destructuring):
+   ```javascript
+   const { formatDate, formatCurrency, formatPercentage } = Utils;
+   ```
+
+**Also Check**:
+- `frontend/pages.js:1868` - Uses `formatCurrency` (verify it's imported)
+- `frontend/pages.js:4275` - Uses `formatDate` (same issue)
+
+**Anti-Pattern**: Missing function import after module extraction/refactoring
+
+---
+
 ## Summary of Issues
 
 ### By Priority
 
 | Priority | Count | Issues |
 |----------|-------|--------|
-| **P0 (CRITICAL)** | 4 | Field name mismatches (2), Missing capability (1), Pattern dependency (1) |
+| **P0 (CRITICAL)** | 5 | Field name mismatches (2), Missing capability (1), Pattern dependency (1), Missing function import (1) |
 | **P1 (High)** | 4 | Multiple executions, Fallback portfolio, Timeout, Excessive retries |
-| **P2 (Medium)** | 3 | Browser deprecations, Page count mismatch, Error message inconsistency |
+| **P2 (Medium)** | 4 | FOUC, Browser deprecations, Page count mismatch, Error message inconsistency |
 
 ### By Type
 
@@ -353,19 +488,22 @@ onmozfullscreenerror is deprecated.
 |------|-------|--------|
 | **Field Name Mismatch** | 2 | `debt_to_equity` vs `debt_equity_ratio`, `trade_date` vs `transaction_date` |
 | **Missing Capability** | 1 | `metrics.unrealized_pl` doesn't exist |
+| **Missing Function Import** | 1 | `formatDate` not imported in `pages.js` |
 | **Pattern Dependency** | 1 | `policy_rebalance` step result structure mismatch |
 | **Performance** | 2 | Multiple executions, Excessive retries |
 | **Context/State** | 2 | Fallback portfolio, Timeout |
+| **UX/Rendering** | 1 | FOUC (Flash of Unstyled Content) |
 | **Code Quality** | 3 | Browser deprecations, Documentation, Error messages |
 
 ### By Impact
 
-| Impact | Count | Patterns Affected |
-|--------|-------|-------------------|
+| Impact | Count | Patterns/Pages Affected |
+|--------|-------|-------------------------|
 | **Pattern Broken** | 4 | `holding_deep_dive`, `buffett_checklist`, `policy_rebalance`, `tax_harvesting_opportunities` |
+| **Page Broken** | 1 | `TransactionsPage` (formatDate not defined) |
 | **Performance** | 2 | All patterns (multiple executions, retries) |
-| **UX** | 2 | All pages (timeout, fallback portfolio) |
-| **Code Quality** | 3 | All code (deprecations, documentation, error messages) |
+| **UX** | 3 | All pages (timeout, fallback portfolio, FOUC) |
+| **Code Quality** | 4 | All code (deprecations, documentation, error messages, FOUC) |
 
 ---
 
@@ -379,19 +517,31 @@ onmozfullscreenerror is deprecated.
    - **Example**: `metrics.unrealized_pl` not registered
    - **Prevention**: Validate pattern capabilities against registered capabilities
 
-3. **Error Message Inconsistency** - Error messages use old naming after refactoring
+3. **Missing Function Import** - Function not imported after module extraction
+   - **Example**: `formatDate` not imported in `pages.js`
+   - **Prevention**: Verify all function imports after module extraction/refactoring
+
+4. **Error Message Inconsistency** - Error messages use old naming after refactoring
    - **Example**: `financial_analyst.analyze_impact` in error message
    - **Prevention**: Update all error messages during refactoring
 
-4. **Missing Memoization** - Components re-render unnecessarily
+5. **Missing Memoization** - Components re-render unnecessarily
    - **Example**: `PatternRenderer` executes same pattern multiple times
    - **Prevention**: Use React `memo()` for expensive components
 
-5. **Context Not Initialized** - Context not properly set before use
+6. **Context Not Initialized** - Context not properly set before use
    - **Example**: Fallback portfolio ID used multiple times
    - **Prevention**: Ensure context is initialized before use
 
-6. **Documentation Not Updated** - Documentation doesn't match code
+7. **Rendering Before Stylesheets** - Layout forced before stylesheets loaded
+   - **Example**: FOUC (Flash of Unstyled Content)
+   - **Prevention**: Wait for stylesheets to load before rendering
+
+8. **Using Deprecated APIs** - Code uses deprecated browser APIs
+   - **Example**: `Window.fullScreen`, `InstallTrigger`, `onmozfullscreenchange`
+   - **Prevention**: Use modern browser APIs, feature detection instead of property checks
+
+9. **Documentation Not Updated** - Documentation doesn't match code
    - **Example**: 20 pages documented but 23 pages loaded
    - **Prevention**: Keep documentation in sync with code
 
@@ -494,8 +644,8 @@ onmozfullscreenerror is deprecated.
 ---
 
 **Status**: 📋 **ANALYSIS COMPLETE**  
-**Total Issues**: 11 (4 P0, 4 P1, 3 P2)  
-**Estimated Fix Time**: 8-12 hours (P0 + P1)  
+**Total Issues**: 13 (5 P0, 4 P1, 4 P2)  
+**Estimated Fix Time**: 9-13 hours (P0 + P1)  
 **Risk Level**: **LOW** (all fixes are straightforward)  
-**Impact Level**: **HIGH** (fixes 4 broken patterns, improves performance)
+**Impact Level**: **HIGH** (fixes 4 broken patterns + 1 broken page, improves performance and UX)
 

@@ -84,24 +84,45 @@
 
 ### P2 (Medium Priority) - Code Quality Issues
 
-9. **Browser Deprecation Warnings** ⚠️
-   - **Issue**: "Window.fullScreen attribute is deprecated", "InstallTrigger is deprecated", etc.
-   - **Location**: `namespace-validator.js:131`
-   - **Impact**: Future browser compatibility issues
-   - **Root Cause**: Using deprecated browser APIs
-   - **Fix**: Update to use modern browser APIs
+9. **Flash of Unstyled Content (FOUC)** ⚠️
+   - **Issue**: "Layout was forced before the page was fully loaded"
+   - **Location**: React rendering before stylesheets loaded
+   - **Impact**: Flash of unstyled content, poor UX, layout shift
+   - **Root Cause**: No blocking mechanism to wait for stylesheets
+   - **Fix**: Block rendering until stylesheets loaded, or preload/inline critical CSS
 
-10. **Page Count Mismatch** ⚠️
+10. **Browser Deprecation Warnings** ⚠️
+    - **Issue**: "Window.fullScreen attribute is deprecated", "InstallTrigger is deprecated", etc.
+    - **Location**: `namespace-validator.js:131`
+    - **Impact**: Future browser compatibility issues
+    - **Root Cause**: Using deprecated browser APIs
+    - **Fix**: Update to use modern browser APIs
+
+11. **Page Count Mismatch** ⚠️
     - **Issue**: Console shows 23 pages loaded but documentation says 20
     - **Impact**: Documentation inconsistency
     - **Root Cause**: Extra pages not documented or legacy pages counted
     - **Fix**: Verify actual page count and update documentation
 
-11. **Error Message Inconsistency** ⚠️
+12. **Error Message Inconsistency** ⚠️
     - **Issue**: Error messages reference old agent-prefixed naming (`financial_analyst.analyze_impact`)
     - **Impact**: Confusion, inconsistent with architecture
     - **Root Cause**: Error messages not updated after capability naming migration
     - **Fix**: Update all error messages to use category-based naming
+
+12. **Missing Function Import: `formatDate`** ❌
+    - **Error**: "ReferenceError: formatDate is not defined"
+    - **Location**: `frontend/pages.js:1864` uses `formatDate` without `Utils.` prefix
+    - **Impact**: `TransactionsPage` completely broken (ReferenceError)
+    - **Root Cause**: Function not imported after module extraction
+    - **Fix**: Import `formatDate` from `Utils` namespace or use `Utils.formatDate`
+
+13. **Flash of Unstyled Content (FOUC)** ⚠️
+    - **Issue**: "Layout was forced before the page was fully loaded"
+    - **Location**: React rendering before stylesheets loaded
+    - **Impact**: Flash of unstyled content, poor UX, layout shift
+    - **Root Cause**: No blocking mechanism to wait for stylesheets
+    - **Fix**: Block rendering until stylesheets loaded, or preload/inline critical CSS
 
 ---
 
@@ -116,7 +137,7 @@
 | 3 | DashboardPage | `portfolio_overview` | `/api/portfolio`, `/api/patterns/execute` | ❓ | Main dashboard |
 | 4 | DashboardPageLegacy | None | `/api/portfolio` | ⚠️ | Legacy - should remove? |
 | 5 | HoldingsPage | `holding_deep_dive` | `/api/holdings`, `/api/portfolio/holdings` | ❓ | **Known issue: 500 error on deep dive** |
-| 6 | TransactionsPage | None | `/api/transactions`, `/api/portfolio/transactions` | ❓ | Needs testing |
+| 6 | TransactionsPage | None | `/api/transactions`, `/api/portfolio/transactions` | ❌ | **Broken (formatDate not defined)** |
 | 7 | PerformancePage | `portfolio_overview` | `/api/metrics/{portfolio_id}` | ❓ | Needs testing |
 | 8 | ScenariosPage | `portfolio_scenario_analysis` | `/api/scenario`, `/api/scenarios` | ❓ | Needs testing |
 | 9 | ScenariosPageLegacy | None | `/api/scenario` | ⚠️ | Legacy - should remove? |
@@ -756,9 +777,12 @@ function RequestInspector({ request }) {
 3. **Phase 0.3**: Fix Pattern Dependency Issue (1 hour)
    - 🔴 **CRITICAL** - Fixes `policy_rebalance` pattern
    - Must fix before user testing
-4. **Phase 0.4**: Fix Multiple Pattern Executions (1 hour)
+4. **Phase 0.4**: Fix Missing Function Import: `formatDate` (30 minutes)
+   - 🔴 **CRITICAL** - Fixes `TransactionsPage` (completely broken)
+   - Must fix before user testing
+5. **Phase 0.5**: Fix Multiple Pattern Executions (1 hour)
    - ⚠️ **HIGH** - Performance issue, causes unnecessary API calls
-5. **Phase 0.5**: Fix Fallback Portfolio ID Usage (30 minutes)
+6. **Phase 0.6**: Fix Fallback Portfolio ID Usage (30 minutes)
    - ⚠️ **HIGH** - May cause wrong portfolio to be used
 
 ### P1 (High Priority) - Do Next
@@ -841,14 +865,14 @@ function RequestInspector({ request }) {
 ---
 
 **Status**: 📋 **PLAN UPDATED WITH CONSOLE LOG ISSUES**  
-**Estimated Total Time**: 32-48 hours (added 4-6 hours for critical bug fixes)  
+**Estimated Total Time**: 33-49 hours (added 5-7 hours for critical bug fixes)  
 **Risk Level**: **LOW** (testing and cleanup, no breaking changes)  
 **Impact Level**: **HIGH** (ensures all features work before refactoring)
 
 **Critical Issues from Console Log**:
-- ❌ **4 patterns broken** (must fix before testing)
+- ❌ **5 production bugs** (4 patterns + 1 page broken - must fix before testing)
 - ⚠️ **4 performance/UX issues** (should fix before testing)
-- ⚠️ **3 code quality issues** (nice to have)
+- ⚠️ **4 code quality issues** (FOUC, deprecations, documentation, error messages)
 
 **Next Steps**:
 1. **IMMEDIATE**: Fix Phase 0 critical bugs (4-6 hours)
