@@ -92,7 +92,24 @@
         }
         
         // Don't re-initialize if already done
-        if (global.DawsOS.PatternSystem.isInitialized) {
+        if (global.DawsOS.PatternSystem?.isInitialized) {
+            return;
+        }
+        
+        // Validate that panel components are available before marking as initialized
+        // This prevents race conditions where pattern-system.js loads before panels.js
+        const PanelsNamespace = global.DawsOS?.Panels || {};
+        const requiredPanels = ['MetricsGridPanel', 'TablePanel', 'LineChartPanel', 'PieChartPanel', 'DonutChartPanel', 'BarChartPanel', 'ActionCardsPanel', 'CycleCardPanel', 'ScorecardPanel', 'DualListPanel', 'NewsListPanel', 'ReportViewerPanel'];
+        const missingPanels = requiredPanels.filter(name => !PanelsNamespace[name]);
+        
+        if (missingPanels.length > 0) {
+            if (Logger) {
+                Logger.warn(`[PatternSystem] Missing panel components: ${missingPanels.join(', ')}. Retrying in 100ms...`);
+            } else {
+                console.warn(`[PatternSystem] Missing panel components: ${missingPanels.join(', ')}. Retrying in 100ms...`);
+            }
+            // Retry initialization after a short delay
+            setTimeout(initializePatternSystem, 100);
             return;
         }
         
@@ -872,78 +889,79 @@
      */
     function PanelRenderer({ panel, data, fullData }) {
         const { type, title, config } = panel;
+        const Logger = global.DawsOS?.Logger;
 
-        // Get panel component with validation
-        let PanelComponent = null;
-        switch (type) {
-            case 'metrics_grid':
-                PanelComponent = MetricsGridPanel;
-                break;
-            case 'table':
-                PanelComponent = TablePanel;
-                break;
-            case 'line_chart':
-                PanelComponent = LineChartPanel;
-                break;
-            case 'pie_chart':
-                PanelComponent = PieChartPanel;
-                break;
-            case 'donut_chart':
-                PanelComponent = DonutChartPanel;
-                break;
-            case 'bar_chart':
-                PanelComponent = BarChartPanel;
-                break;
-            case 'action_cards':
-                PanelComponent = ActionCardsPanel;
-                break;
-            case 'cycle_card':
-                PanelComponent = CycleCardPanel;
-                break;
-            case 'scorecard':
-                PanelComponent = ScorecardPanel;
-                break;
-            case 'dual_list':
-                PanelComponent = DualListPanel;
-                break;
-            case 'news_list':
-                PanelComponent = NewsListPanel;
-                break;
-            case 'report_viewer':
-                PanelComponent = ReportViewerPanel;
-                break;
-            default:
-                return e('div', { className: 'card' },
-                    e('div', { className: 'card-header' },
-                        e('h3', { className: 'card-title' }, title || 'Panel')
-                    ),
-                    e('p', null, `Unsupported panel type: ${type}`)
-                );
+        // DYNAMIC LOOKUP: Get panel component at render time, not initialization time
+        // This fixes the race condition where panels.js may not be loaded yet during initialization
+        const PanelsNamespace = global.DawsOS?.Panels || {};
+        
+        // Map panel type to component name
+        const typeToComponentMap = {
+            'metrics_grid': 'MetricsGridPanel',
+            'table': 'TablePanel',
+            'line_chart': 'LineChartPanel',
+            'pie_chart': 'PieChartPanel',
+            'donut_chart': 'DonutChartPanel',
+            'bar_chart': 'BarChartPanel',
+            'action_cards': 'ActionCardsPanel',
+            'cycle_card': 'CycleCardPanel',
+            'scorecard': 'ScorecardPanel',
+            'dual_list': 'DualListPanel',
+            'news_list': 'NewsListPanel',
+            'report_viewer': 'ReportViewerPanel'
+        };
+        
+        // Dynamically lookup component from Panels namespace
+        const componentName = typeToComponentMap[type];
+        let PanelComponent = componentName ? PanelsNamespace[componentName] : null;
+        
+        // If component not found, try to wait and retry (for race conditions)
+        if (!PanelComponent && componentName) {
+            // Log warning but don't block - component may load later
+            if (Logger) {
+                Logger.warn(`[PanelRenderer] Panel component "${componentName}" not yet available for type "${type}". Panels namespace may not be loaded yet.`);
+            } else {
+                console.warn(`[PanelRenderer] Panel component "${componentName}" not yet available for type "${type}". Panels namespace may not be loaded yet.`);
+            }
+            
+            // Return loading state instead of error - component may load on next render
+            return e('div', { className: 'card' },
+                e('div', { className: 'card-header' },
+                    e('h3', { className: 'card-title' }, title || 'Panel')
+                ),
+                e('div', { className: 'card-body', style: { padding: '2rem', textAlign: 'center', color: '#94a3b8' } },
+                    e('div', { className: 'loading-spinner', style: { margin: '0 auto 1rem' } }),
+                    e('p', null, `Loading panel component "${componentName}"...`)
+                )
+            );
         }
         
         // Validate component exists before rendering
         if (!PanelComponent) {
             if (Logger) {
-                Logger.error(`[PanelRenderer] Panel component not available for type: ${type}`);
+                Logger.error(`[PanelRenderer] Panel component not available for type: ${type}. Available components: ${Object.keys(PanelsNamespace).join(', ')}`);
             } else {
-                console.error(`[PanelRenderer] Panel component not available for type: ${type}`);
+                console.error(`[PanelRenderer] Panel component not available for type: ${type}. Available components: ${Object.keys(PanelsNamespace).join(', ')}`);
             }
             return e('div', { className: 'card' },
                 e('div', { className: 'card-header' },
                     e('h3', { className: 'card-title' }, title || 'Panel')
                 ),
-                e('p', { style: { color: '#ef4444' } }, 
-                    `Panel component "${type}" not loaded. Please refresh the page.`
+                e('div', { className: 'card-body', style: { padding: '2rem', textAlign: 'center', color: '#94a3b8' } },
+                    e('p', null, `Panel type "${type}" is not available. Please check that all panel components are loaded.`),
+                    e('p', { style: { fontSize: '0.875rem', marginTop: '0.5rem', color: '#64748b' } }, 
+                        `Available components: ${Object.keys(PanelsNamespace).length > 0 ? Object.keys(PanelsNamespace).join(', ') : 'None loaded'}`
+                    )
                 )
             );
         }
-        
-        // Render the panel component
+
+        // Wrap in error boundary to catch rendering errors
         try {
-            return e(PanelComponent, { title, data, config });
+            return e(PanelComponent, { title, data, config, fullData });
         } catch (error) {
             if (Logger) {
-                Logger.error(`[PanelRenderer] Error rendering panel ${type}:`, error);
+                Logger.error(`[PanelRenderer] Error rendering panel ${type}:`, error, { stack: error.stack });
             } else {
                 console.error(`[PanelRenderer] Error rendering panel ${type}:`, error);
             }
@@ -951,8 +969,10 @@
                 e('div', { className: 'card-header' },
                     e('h3', { className: 'card-title' }, title || 'Panel')
                 ),
-                e('p', { style: { color: '#ef4444' } }, 
-                    `Error rendering panel: ${error.message}`
+                e('div', { className: 'card-body', style: { padding: '2rem', textAlign: 'center', color: '#ef4444' } },
+                    e('p', { style: { fontWeight: '600', marginBottom: '0.5rem' } }, 'Error rendering panel'),
+                    e('p', { style: { fontSize: '0.875rem', color: '#94a3b8' } }, error.message || 'Unknown error'),
+                    e('p', { style: { fontSize: '0.75rem', marginTop: '1rem', color: '#64748b' } }, 'Please refresh the page or contact support if the issue persists.')
                 )
             );
         }
