@@ -716,42 +716,50 @@ class CyclesService:
             "Data Quality Score": "data_quality_score",
         }
 
-        # Process database values with scaling
+        # Process database values
+        # NOTE: Database stores values already transformed by FREDTransformationService
+        # Values are in decimal format (0.0408 = 4.08%), use as-is
+        # Fixed: Removed hardcoded scaling that caused double conversion bugs (SCALE-BUG-001 through SCALE-BUG-006)
         db_indicators = {}
         for row in rows:
             db_name = row["indicator_name"]
             if db_name in name_mapping:
                 code_key = name_mapping[db_name]
                 raw_value = float(row["value"])
-                
-                # Apply scaling based on configuration rules
-                scaling_rule = self.config_manager.get_scaling_rule(code_key)
-                if scaling_rule:
-                    # Apply the scaling transformation
-                    if code_key == "inflation":
-                        db_indicators[code_key] = raw_value / 10000.0
-                    elif code_key == "gdp_growth":
-                        db_indicators[code_key] = raw_value / 100.0
-                    elif code_key == "unemployment":
-                        db_indicators[code_key] = raw_value / 100.0
-                    elif code_key == "interest_rate":
-                        db_indicators[code_key] = raw_value / 100.0
-                    elif code_key == "credit_growth":
-                        db_indicators[code_key] = raw_value / 1000000.0
-                    elif code_key == "debt_service_ratio":
-                        db_indicators[code_key] = raw_value / 10000000.0
-                    elif code_key == "debt_to_gdp":
-                        db_indicators[code_key] = raw_value / 27436999
-                    else:
-                        # Check if needs percentage conversion
-                        if raw_value > 1 and code_key in ["yield_curve", "fiscal_deficit", "productivity_growth"]:
-                            db_indicators[code_key] = raw_value / 100.0
-                        else:
-                            db_indicators[code_key] = raw_value
+
+                # Database stores transformed values from FREDTransformationService
+                # Exception: If value > 10, it may be untransformed legacy data
+                # In that case, apply percentage conversion
+                if raw_value > 10 and code_key in ["gdp_growth", "unemployment", "interest_rate", "yield_curve", "fiscal_deficit", "productivity_growth"]:
+                    logger.warning(
+                        f"Indicator {code_key} value {raw_value} appears untransformed (>10), "
+                        f"applying percentage conversion. This should not happen with current data pipeline."
+                    )
+                    db_indicators[code_key] = raw_value / 100.0
                 else:
-                    # No scaling rule, use as-is
+                    # Use transformed value as-is
                     db_indicators[code_key] = raw_value
-                    
+
+                # Validate indicator values are in reasonable ranges
+                expected_ranges = {
+                    "gdp_growth": (-0.10, 0.10),      # -10% to +10%
+                    "unemployment": (0.02, 0.15),      # 2% to 15%
+                    "interest_rate": (0.0, 0.10),      # 0% to 10%
+                    "inflation": (-0.05, 0.15),        # -5% to +15%
+                    "yield_curve": (-0.03, 0.03),      # -3% to +3%
+                    "credit_growth": (-0.50, 0.50),    # -50% to +50%
+                    "debt_service_ratio": (0.0, 0.30), # 0% to 30%
+                    "debt_to_gdp": (0.0, 2.0),         # 0% to 200%
+                }
+
+                if code_key in expected_ranges:
+                    min_val, max_val = expected_ranges[code_key]
+                    if not (min_val <= db_indicators[code_key] <= max_val):
+                        logger.error(
+                            f"Indicator {code_key}={db_indicators[code_key]:.6f} outside expected range "
+                            f"[{min_val}, {max_val}]. Check transformation pipeline."
+                        )
+
                 # Special case for Manufacturing PMI
                 if code_key == "manufacturing_pmi" and db_indicators[code_key] > 1000:
                     # Use configured default if value seems wrong
