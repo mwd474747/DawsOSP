@@ -129,7 +129,52 @@ Run financial_analyst.propose_trades first.
 
 ---
 
-### Issue 4: Field Name Inconsistency - `trade_date` vs `transaction_date` (Already Identified)
+### Issue 4: Pattern Execution Failure - `macro_trend_monitor` ❌
+
+**Error Message**:
+```
+Pattern execution 'macro_trend_monitor' failed:
+```
+
+**Root Cause** (Potential):
+1. **Missing Data**: No regime history in database (pattern requires historical data)
+2. **Step Dependency Issue**: Step 3 (`macro.detect_trend_shifts`) depends on Steps 1 & 2 results
+3. **Field Name Mismatch**: Data structure from Steps 1 & 2 may not match Step 3 expectations
+4. **Missing Capability**: One of the capabilities may not be properly registered
+   - `macro.get_regime_history` (Step 1) - ✅ Exists in MacroHound
+   - `risk.get_factor_exposure_history` (Step 2) - ✅ Exists in FinancialAnalyst
+   - `macro.detect_trend_shifts` (Step 3) - ✅ Exists in MacroHound
+   - `alerts.suggest_presets` (Step 4) - ✅ Exists in MacroHound
+
+**Impact**:
+- ❌ `macro_trend_monitor` pattern fails
+- MacroCyclesPage cannot display trend monitoring
+- Alert suggestions not available
+
+**Files Affected**:
+- `backend/patterns/macro_trend_monitor.json` - Pattern definition
+- `backend/app/agents/macro_hound.py` - Capabilities implementation
+- `backend/app/agents/financial_analyst.py` - `risk.get_factor_exposure_history` implementation
+- `frontend/pages.js:3852` - Uses pattern in MacroCyclesPage
+
+**Fix** (Requires Full Error Message):
+1. **Get Full Error Message**: Need complete error traceback to diagnose root cause
+2. **Check Data Availability**: Verify regime history exists in database
+3. **Verify Step Result Structure**: Ensure Steps 1 & 2 return data in format expected by Step 3
+4. **Check Field Names**: Verify data structure field names match pattern expectations
+5. **Add Error Handling**: Improve error messages to identify specific failure point
+
+**Note**: Full error message needed to determine exact root cause. Could be:
+- Missing database data (regime_history table empty)
+- Step result structure mismatch
+- Field name inconsistency
+- Capability execution error
+
+**Anti-Pattern**: Pattern execution failure without clear error message, missing data validation
+
+---
+
+### Issue 5: Field Name Inconsistency - `trade_date` vs `transaction_date` (Already Identified)
 
 **Error Message**:
 ```
