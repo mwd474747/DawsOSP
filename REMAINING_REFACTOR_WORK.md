@@ -469,7 +469,7 @@ This is the **single source of truth** for all remaining refactor work. It conso
 | **P2 (High)** | 4 tasks | ~10-11 hours | ✅ COMPLETE |
 | **P3 (Medium)** | 3 tasks | ~2-3 days | ✅ COMPLETE |
 | **P4 (Low)** | 5 tasks | ~3-4 days | ⏳ PENDING |
-| **Total** | 15 tasks | ~4-5 days | ~85% complete |
+| **Total** | 15 tasks | ~4-5 days | ~87% complete |
 
 ---
 
@@ -538,8 +538,8 @@ All remaining tasks are low priority and can be done incrementally. Estimated 3-
 
 ---
 
-**Status:** 🚧 ~85% COMPLETE  
-**Remaining Work:** ~3-4 days  
+**Status:** 🚧 ~87% COMPLETE  
+**Remaining Work:** ~2-3 days  
 **Last Updated:** January 15, 2025
 
 **Recent Completions (Jan 15):**
@@ -549,5 +549,6 @@ All remaining tasks are low priority and can be done incrementally. Estimated 3-
 - ✅ P2: Frontend logging (114 statements replaced)
 - ✅ P2: Exception handlers (improved specificity)
 - ✅ P3: Remove additional backwards compatibility code (legacy alert method verified deleted, deprecated field check kept as useful)
+- ✅ P4: Remove deprecated singleton functions - Migrated 5 code usages to direct instantiation (in progress)
 
 **Note:** Backwards compatibility analysis added - see `docs/refactoring/BACKWARDS_COMPATIBILITY_ANALYSIS.md` for details.
