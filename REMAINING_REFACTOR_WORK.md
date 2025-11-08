@@ -343,16 +343,23 @@ This is the **single source of truth** for all remaining refactor work. It conso
 - See: `CONSTANTS_REMAINING_ANALYSIS.md` for detailed breakdown by domain
 
 #### 9. Update Architecture.md (NEW - Jan 15)
-**Status:** ⏳ PENDING  
+**Status:** ✅ COMPLETE  
 **Priority:** P4 (Low)  
 **Estimated Time:** 1-2 hours  
 **Impact:** LOW - Documentation accuracy
 
 **Tasks:**
-1. Update capability naming section (document category-based as standard)
-2. Update agent capability counts (verify from `get_capabilities()` methods)
-3. Update service initialization section (document DI container usage)
-4. Verify all examples match actual implementation
+1. ✅ Update capability naming section (document category-based as standard)
+2. ✅ Update agent capability counts (verified: 30 + 19 + 16 + 7 = 72 capabilities)
+3. ✅ Update service initialization section (document DI container usage)
+4. ✅ Verify all examples match actual implementation
+
+**Completed:**
+- ✅ Documented category-based naming convention (ratings.*, optimizer.*, charts.*, alerts.*)
+- ✅ Updated capability counts: FinancialAnalyst (30), MacroHound (19), DataHarvester (16), ClaudeAgent (7)
+- ✅ Updated service initialization section with DI container examples
+- ✅ Documented migration from singleton pattern to DI container/direct instantiation
+- ✅ Updated example pattern to show category-based naming
 
 #### 10. Pattern Standardization
 **Status:** ⏳ PENDING  
@@ -476,8 +483,8 @@ This is the **single source of truth** for all remaining refactor work. It conso
 | **P1 (Critical)** | 2 tasks | ~6-9 hours | ✅ COMPLETE |
 | **P2 (High)** | 4 tasks | ~10-11 hours | ✅ COMPLETE |
 | **P3 (Medium)** | 3 tasks | ~2-3 days | ✅ COMPLETE |
-| **P4 (Low)** | 5 tasks | ~3-4 days | 🔄 IN PROGRESS (1 complete) |
-| **Total** | 15 tasks | ~4-5 days | ~90% complete |
+| **P4 (Low)** | 5 tasks | ~3-4 days | 🔄 IN PROGRESS (2 complete) |
+| **Total** | 15 tasks | ~4-5 days | ~92% complete |
 
 ---
 
@@ -546,8 +553,8 @@ All remaining tasks are low priority and can be done incrementally. Estimated 3-
 
 ---
 
-**Status:** 🚧 ~90% COMPLETE  
-**Remaining Work:** ~2-3 days  
+**Status:** 🚧 ~92% COMPLETE  
+**Remaining Work:** ~1-2 days  
 **Last Updated:** January 15, 2025
 
 **Recent Completions (Jan 15):**
@@ -558,5 +565,6 @@ All remaining tasks are low priority and can be done incrementally. Estimated 3-
 - ✅ P2: Exception handlers (improved specificity)
 - ✅ P3: Remove additional backwards compatibility code (legacy alert method verified deleted, deprecated field check kept as useful)
 - ✅ P4: Remove deprecated singleton functions - COMPLETE (7 services cleaned up, all function definitions removed)
+- ✅ P4: Update Architecture.md - COMPLETE (capability naming, counts, service initialization documented)
 
 **Note:** Backwards compatibility analysis added - see `docs/refactoring/BACKWARDS_COMPATIBILITY_ANALYSIS.md` for details.
