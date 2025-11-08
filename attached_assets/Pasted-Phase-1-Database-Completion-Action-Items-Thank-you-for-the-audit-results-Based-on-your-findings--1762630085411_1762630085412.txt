@@ -1,0 +1,177 @@
+Phase -1 Database Completion - Action Items
+Thank you for the audit results! Based on your findings, here's exactly what needs to be done:
+🔴 IMMEDIATE: Apply Migration 010 (audit_log)
+The migration file exists but hasn't been applied yet. Run this command:
+# Navigate to project root
+cd /home/runner/DawsOSP
+
+# Apply the migration
+psql $DATABASE_URL -f migrations/010_restore_audit_log.sql
+Expected Output:
+CREATE TABLE
+CREATE INDEX (5 times)
+CREATE POLICY (2 times)
+NOTICE: ✅ Audit log table restored
+   - Rows: 0
+   - Immutable audit trail enabled
+   - RLS policies active
+Verify it worked:
+# Should return the audit_log table
+psql $DATABASE_URL -c "\dt audit_log"
+
+# Should show 9 columns
+psql $DATABASE_URL -c "\d audit_log"
+🔴 CRITICAL: Remaining trade_date Error
+You found this error in today's logs:
+column "trade_date" does not exist
+The holding_deep_dive pattern still has issues
+This is puzzling because we fixed all the code references. Let me investigate:
+Possibility 1: Cached Pattern Definition
+The pattern might be cached in Replit's memory. Try:
+# Restart the server to clear any cached patterns
+pkill -f combined_server.py
+python combined_server.py
+Possibility 2: Database-Stored Pattern Definition
+Check if patterns are stored in the database:
+psql $DATABASE_URL -c "SELECT table_name FROM information_schema.tables WHERE table_name LIKE '%pattern%';"
+If there's a patterns or pattern_definitions table, check for trade_date:
+psql $DATABASE_URL -c "SELECT id, definition FROM patterns WHERE definition LIKE '%trade_date%';" 
+Possibility 3: Old Code Not Pulled
+Verify you have the latest code:
+git status
+git log --oneline -5
+
+# Should show:
+# 1e49b4c docs: Phase -1 Completion Summary
+# 009f7f4 docs: Update ARCHITECTURE.md
+# a1d6a26 fix: Phase -1.2 Database Reconciliation
+If not up to date:
+git pull origin main
+# Then restart server
+Help Me Find It
+Can you run this to find where trade_date is still referenced?
+# Search all Python files
+grep -r "trade_date" backend/ --include="*.py" -n
+
+# Search all JSON files  
+grep -r "trade_date" backend/patterns/ --include="*.json" -n
+
+# Search full_ui.html
+grep -n "trade_date" full_ui.html
+
+# Search frontend JS files
+grep -r "trade_date" frontend/ --include="*.js" -n
+Report back: Where does it find trade_date? This will help me identify what we missed.
+📊 Database Statistics Analysis
+Your findings show:
+65 transactions in database
+31 cash flows recorded
+17 active lots (all open, none closed)
+4 users in system
+Questions:
+All lots open (none closed): Is this expected?
+psql $DATABASE_URL -c "SELECT symbol, quantity_open, acquisition_date FROM lots ORDER BY acquisition_date LIMIT 10;"
+Are these test positions?
+Should any be closed (quantity_open = 0)?
+Cash flows vs transactions: You have 65 transactions but only 31 cash flows
+psql $DATABASE_URL -c "SELECT transaction_type, COUNT(*) FROM transactions GROUP BY transaction_type;"
+What types of transactions exist?
+Should each transaction generate a cash flow?
+4 users: Are these:
+psql $DATABASE_URL -c "SELECT id, email, role, is_active FROM users;"
+The default admin/user accounts?
+Or real user accounts?
+✅ Verification Checklist
+After applying migration 010, run these to confirm everything works:
+Test 1: Audit Log Works
+# Login via UI (or API), then check:
+psql $DATABASE_URL -c "SELECT COUNT(*) FROM audit_log;"
+
+# Should show > 0 after login
+Test 2: Holdings View Works
+# Via API (replace <token> and <portfolio_id>):
+curl -X POST http://localhost:5000/api/patterns/execute \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+    "pattern_id": "portfolio_overview",
+    "inputs": {"portfolio_id": "<portfolio_id>"}
+  }'
+
+# Should NOT see "trade_date does not exist" error
+Test 3: No More Errors in Logs
+# Wait 1 hour after applying migration, then:
+tail -1000 /var/log/*.log | grep -i "does not exist" | wc -l
+
+# Should be 0 (or very close to 0)
+📋 Phase 0 Planning Questions
+To help me plan Phase 0 (Critical Production Bugs), please answer:
+Pattern Execution Status
+Run each pattern and tell me which succeed/fail:
+# Test all 15 patterns
+patterns=(
+  "portfolio_overview"
+  "holding_deep_dive"  # We know this fails
+  "portfolio_scenario_analysis"
+  "portfolio_cycle_risk"
+  "macro_cycles_overview"
+  "macro_trend_monitor"
+  "buffett_checklist"
+  "policy_rebalance"
+  "news_impact_analysis"
+  "corporate_actions_upcoming"
+  "export_portfolio_report"
+  "portfolio_tax_report"
+  "tax_harvesting_opportunities"
+  "portfolio_macro_overview"
+  "cycle_deleveraging_scenarios"
+)
+
+for pattern in "${patterns[@]}"; do
+  echo "Testing: $pattern"
+  # Execute pattern via API and check for errors
+done
+Which patterns:
+✅ Execute successfully?
+⚠️ Execute but return stub data?
+❌ Fail with errors?
+Stub Data Detection
+Check these capabilities for stub data:
+# Test factor exposures
+curl -X POST http://localhost:5000/api/patterns/execute \
+  -H "Authorization: Bearer <token>" \
+  -d '{"pattern_id": "portfolio_cycle_risk", "inputs": {"portfolio_id": "<id>"}}'
+
+# Look for: "_provenance": {"type": "stub"}
+Questions:
+Do you see stub data in portfolio_cycle_risk pattern?
+Do you see stub data in macro_cycles_overview pattern?
+Do you see provenance warnings in the UI?
+Performance Baselines
+After fixes are applied, what are response times?
+# Time pattern execution
+time curl -X POST http://localhost:5000/api/patterns/execute \
+  -H "Authorization: Bearer <token>" \
+  -d '{"pattern_id": "portfolio_overview", "inputs": {"portfolio_id": "<id>"}}'
+Report:
+Portfolio overview: ? seconds
+Holdings deep dive: ? seconds (if working)
+Scenario analysis: ? seconds
+🎯 Summary
+To Complete Phase -1:
+✅ Apply migration 010 (command above)
+🔍 Find remaining trade_date reference (help me search)
+✅ Verify no more "does not exist" errors
+📊 Answer planning questions for Phase 0
+Expected Outcome:
+audit_log table exists and working
+Authentication logging functional
+Holdings view loads without errors
+All field name errors resolved
+Once complete, we'll move to Phase 0 with a clear understanding of which patterns need stub data replacement and which queries need optimization.
+Please run the commands above and report back with:
+Migration 010 output
+Where you find "trade_date" references
+Answers to the planning questions
+Any new errors encountered
+This will help me create a precise Phase 0 plan!

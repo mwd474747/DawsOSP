@@ -91,7 +91,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 # Import backend services for pattern orchestration
-from backend.app.services.macro_data_agent import enhance_macro_data
+# NOTE: macro_data_agent module removed - functionality moved elsewhere
 
 # Import these conditionally to handle module path issues
 try:
