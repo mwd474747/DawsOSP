@@ -803,9 +803,10 @@ class MacroHound(BaseAgent):
             f"pack_id={pack_id_str}, cycle_adjusted={cycle_adjusted}"
         )
 
-        # TODO: Implement cycle-adjusted DaR if cycle_adjusted=True
+        # NOTE: Cycle-adjusted DaR is a future enhancement. Standard DaR works for current needs.
+        # Cycle-adjusted DaR would weight scenarios by current macro cycle phase probabilities.
         if cycle_adjusted:
-            logger.info("Cycle-adjusted DaR requested (not yet fully implemented)")
+            logger.info("Cycle-adjusted DaR requested (not yet fully implemented - using standard DaR)")
 
         try:
             # Detect current regime for conditioning

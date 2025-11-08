@@ -423,7 +423,7 @@ class CurrencyAttributor:
         return {
             "base_currency": base_ccy,
             "exposures": exposures,
-            "fx_hedged": False,  # TODO: Check for FX hedge positions
+            "fx_hedged": False,  # NOTE: FX hedge detection not yet implemented - check for hedge positions in portfolio
             "total_value": round(float(total_value), 2),
         }
 

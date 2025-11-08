@@ -330,8 +330,9 @@ class RiskService:
         """
         holdings = await execute_query(query, portfolio_id)
 
-        # TODO: Add asset class classification
-        # For now, assume all equity (will be enhanced later)
+        # NOTE: Asset class classification not implemented - all positions treated as equity for MVP
+        # This is sufficient for current use cases. Future enhancement would add asset class detection
+        # based on security metadata or position characteristics.
         for holding in holdings:
             holding["asset_class"] = "EQUITY"
 

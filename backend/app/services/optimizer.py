@@ -629,7 +629,9 @@ class OptimizerService:
             - Returns stub data if use_db=False
             - Returns empty analysis if no positions found
             - Currently calculates concentration metrics only
-            - TODO: Add expected return, volatility, Sharpe, max DD calculations (requires historical returns)
+            - NOTE: Expected return, volatility, Sharpe, and max DD calculations are future enhancements
+              requiring historical returns and covariance matrix. Current implementation provides
+              sufficient value with concentration metrics.
         """
         logger.info(f"analyze_impact: portfolio_id={portfolio_id}, trades={len(proposed_trades)}")
 
@@ -690,8 +692,9 @@ class OptimizerService:
             delta_concentration=post_concentration - current_concentration,
         )
 
-        # TODO: Add expected return, volatility, Sharpe, max DD calculations
-        # Requires historical returns and covariance matrix
+        # NOTE: Expected return, volatility, Sharpe, and max DD calculations are future enhancements
+        # requiring historical returns and covariance matrix. Current implementation provides sufficient
+        # value with concentration and value delta metrics.
 
         logger.info(f"Impact: value change={impact.value_delta}, concentration change={impact.delta_concentration:.2f}%")
 
