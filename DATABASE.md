@@ -1,7 +1,7 @@
 # DawsOS Database Documentation
 
-**Version:** 4.0 (Replit-Optimized Documentation)  
-**Last Updated:** November 7, 2025  
+**Version:** 5.0 (With Field Scaling & Format Conventions)  
+**Last Updated:** January 15, 2025  
 **Database:** PostgreSQL 14+ with TimescaleDB Extension (Neon-backed on Replit)  
 **Status:** ✅ PRODUCTION READY (32 Active Tables, 19 Migrations Executed)
 
@@ -54,6 +54,134 @@ pool = await create_pool(
 from backend.app.db.connection import register_external_pool
 register_external_pool(pool)
 ```
+
+---
+
+## 📊 FIELD SCALING & FORMAT CONVENTIONS
+
+### ⚠️ CRITICAL: All Percentages Stored as Decimals
+
+**Universal Rule:** All percentage values in the database are stored as **decimal values** where 1.0 = 100%
+
+| Value Type | Database Storage | Backend Returns | Frontend Expects | Display Format |
+|------------|-----------------|-----------------|------------------|----------------|
+| **Percentage** | 0.1450 | 0.1450 | 0.1450 | "14.50%" |
+| **Currency** | 125000.00 | 125000.00 | 125000.00 | "$125.0K" |
+| **Ratio** | 1.5000 | 1.5000 | 1.5000 | "1.50" |
+| **Count** | 100 | 100 | 100 | "100" |
+
+### 1. Percentage Fields (ALWAYS as Decimals)
+
+All percentage-based metrics use **decimal format** (0.15 = 15%, NOT 15.0):
+
+| Field | Table | Database Type | Example | Meaning | Frontend Display |
+|-------|-------|--------------|---------|---------|------------------|
+| `twr_1d` | portfolio_metrics | NUMERIC(12,8) | 0.0235 | 2.35% daily return | "2.35%" |
+| `twr_ytd` | portfolio_metrics | NUMERIC(12,8) | 0.1450 | 14.50% YTD return | "14.50%" |
+| `twr_1y` | portfolio_metrics | NUMERIC(12,8) | 0.2150 | 21.50% annual return | "21.50%" |
+| `volatility_1y` | portfolio_metrics | NUMERIC(12,8) | 0.1500 | 15% volatility | "15.00%" |
+| `max_drawdown_1y` | portfolio_metrics | NUMERIC(12,8) | -0.2500 | -25% max drawdown | "-25.00%" |
+| `sharpe_ratio` | portfolio_metrics | NUMERIC(12,8) | 1.5000 | Sharpe of 1.5 | "1.50" |
+| `win_rate_1y` | portfolio_metrics | NUMERIC(5,4) | 0.6500 | 65% win rate | "65.00%" |
+
+**Backend Example:**
+```python
+# ✅ CORRECT - Return as decimal
+return {
+    "twr_1y": 0.2150,        # 21.50% as decimal
+    "volatility": 0.1500,    # 15% as decimal
+    "max_drawdown": -0.2500  # -25% as decimal
+}
+
+# ❌ WRONG - Never multiply by 100
+return {
+    "twr_1y": 21.50,         # WRONG!
+    "volatility": 15.00      # WRONG!
+}
+```
+
+**Frontend Example:**
+```javascript
+// ✅ CORRECT - Pass decimal directly to formatPercentage
+formatPercentage(data.twr_1y);  // 0.2150 → "21.50%"
+
+// ❌ WRONG - Don't divide by 100 (current bug!)
+formatPercentage(data.twr_1y / 100);  // WRONG!
+```
+
+### 2. Currency Fields (Absolute Values)
+
+Currency stored in base units with 2 decimal places:
+
+| Field | Table | Type | Example | Display |
+|-------|-------|------|---------|---------|
+| `portfolio_value_base` | portfolio_metrics | NUMERIC(20,2) | 125000.00 | "$125.0K" |
+| `market_value` | valued_positions | NUMERIC(20,2) | 15625.50 | "$15,625.50" |
+| `unrealized_pnl` | valued_positions | NUMERIC(20,2) | -2500.00 | "-$2,500.00" |
+
+### 3. Ratio Fields (Unitless)
+
+Stored as plain numbers without percentage scaling:
+
+| Field | Table | Type | Example | Meaning |
+|-------|-------|------|---------|---------|
+| `sharpe_1y` | portfolio_metrics | NUMERIC(12,8) | 1.5000 | Sharpe ratio 1.5 |
+| `beta_1y` | portfolio_metrics | NUMERIC(12,8) | 1.2000 | Beta of 1.2 |
+| `pe_ratio` | security_fundamentals | NUMERIC(12,4) | 18.5000 | P/E of 18.5 |
+
+### 4. Frontend Format Functions
+
+```javascript
+// formatPercentage - Expects DECIMAL input (multiplies by 100)
+Utils.formatPercentage = function(value, decimals = 2) {
+    // Input: 0.1450 (decimal)
+    // Output: "14.50%" (multiplies by 100 internally)
+    return (value * 100).toFixed(decimals) + '%';
+};
+
+// formatCurrency - Expects absolute value
+Utils.formatCurrency = function(value, decimals = 2) {
+    // Input: 125000.00
+    // Output: "$125.0K" (with abbreviation)
+    // Handles B/M/K abbreviations automatically
+};
+
+// formatNumber - Expects raw number
+Utils.formatNumber = function(value, decimals = 2) {
+    // Input: 1.5000
+    // Output: "1.50"
+};
+```
+
+### 5. Complete Data Flow Example
+
+```sql
+-- Database stores decimal
+SELECT twr_ytd FROM portfolio_metrics;
+-- Returns: 0.1450
+```
+
+```python
+# Backend returns decimal (NO multiplication)
+async def metrics_compute_twr():
+    return {"twr_ytd": 0.1450}  # ✅ CORRECT
+```
+
+```javascript
+// Frontend formats correctly (NO division)
+const ytdReturn = formatPercentage(data.twr_ytd);  // ✅ CORRECT
+// Result: "14.50%"
+```
+
+### 6. Known Scaling Issues (TO BE FIXED)
+
+| File | Line | Current (Bug) | Should Be |
+|------|------|---------------|-----------|
+| `frontend/pages.js` | 317 | `formatPercentage(data.change_pct / 100)` | `formatPercentage(data.change_pct)` |
+| `frontend/pages.js` | 326 | `formatPercentage(data.ytd_return / 100)` | `formatPercentage(data.ytd_return)` |
+| `frontend/pages.js` | 404 | `formatPercentage(holding.weight / 100)` | `formatPercentage(holding.weight)` |
+| `frontend/pages.js` | 406 | `formatPercentage(holding.return_pct / 100)` | `formatPercentage(holding.return_pct)` |
+| `financial_analyst.py` | 1209 | `metrics.get("max_drawdown_1y", 0) * 100` | `metrics.get("max_drawdown_1y", 0)` |
 
 ---
 

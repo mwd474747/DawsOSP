@@ -119,6 +119,7 @@ Originally had 9 agents with overlapping responsibilities. Consolidated to 4 foc
 - Tax harvesting features archived (deferred implementation)
 - No real-time updates (manual refresh required)
 - Limited caching (redundant pattern executions)
+- Field scaling inconsistencies (see DATABASE.md Section 63: Field Scaling & Format Conventions)
 
 **Refactoring status** (as of January 2025):
 - Phase 0-3: Complete (zombie code removal, field standardization, agent consolidation)
