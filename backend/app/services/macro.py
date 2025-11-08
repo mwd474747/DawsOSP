@@ -61,6 +61,21 @@ import statistics
 from app.db.connection import execute_query, execute_statement, execute_query_one
 from app.integrations.fred_provider import FREDProvider
 from app.services.fred_transformation import FREDTransformationService
+from app.core.constants.macro import (
+    DEFAULT_MACRO_LOOKBACK_DAYS,
+    ZSCORE_VERY_LOW,
+    ZSCORE_LOW,
+    ZSCORE_BELOW_AVERAGE,
+    ZSCORE_SLIGHTLY_BELOW,
+    ZSCORE_AVERAGE,
+    ZSCORE_SLIGHTLY_ABOVE,
+    ZSCORE_ABOVE_AVERAGE,
+    ZSCORE_HIGH,
+    ZSCORE_VERY_HIGH,
+    ZSCORE_EXTREME,
+    MIN_REGIME_PROBABILITY,
+    MAX_REGIME_PROBABILITY,
+)
 
 logger = logging.getLogger("DawsOS.MacroService")
 
@@ -131,34 +146,34 @@ class RegimeDetector:
     # Each rule maps indicator → (min_zscore, max_zscore, weight)
     REGIME_RULES = {
         Regime.EARLY_EXPANSION: {
-            "T10Y2Y": (0.5, None, 2.0),  # Yield curve steep (above average)
-            "UNRATE": (None, -0.5, 1.5),  # Unemployment falling (below average)
-            "CPIAUCSL": (None, 0.0, 1.0),  # Inflation low/stable
-            "BAA10Y": (None, 0.0, 1.0),  # Credit spreads normal/tight
+            "T10Y2Y": (ZSCORE_SLIGHTLY_ABOVE, None, 2.0),  # Yield curve steep (above average)
+            "UNRATE": (None, ZSCORE_SLIGHTLY_BELOW, 1.5),  # Unemployment falling (below average)
+            "CPIAUCSL": (None, ZSCORE_AVERAGE, 1.0),  # Inflation low/stable
+            "BAA10Y": (None, ZSCORE_AVERAGE, 1.0),  # Credit spreads normal/tight
         },
         Regime.MID_EXPANSION: {
-            "T10Y2Y": (0.0, 1.5, 1.5),  # Yield curve positive
-            "UNRATE": (-1.5, 0.0, 1.5),  # Unemployment low
-            "CPIAUCSL": (-0.5, 0.5, 1.0),  # Inflation moderate
-            "BAA10Y": (-0.5, 0.5, 1.0),  # Credit spreads normal
+            "T10Y2Y": (ZSCORE_AVERAGE, ZSCORE_HIGH, 1.5),  # Yield curve positive
+            "UNRATE": (ZSCORE_LOW, ZSCORE_AVERAGE, 1.5),  # Unemployment low
+            "CPIAUCSL": (ZSCORE_SLIGHTLY_BELOW, ZSCORE_SLIGHTLY_ABOVE, 1.0),  # Inflation moderate
+            "BAA10Y": (ZSCORE_SLIGHTLY_BELOW, ZSCORE_SLIGHTLY_ABOVE, 1.0),  # Credit spreads normal
         },
         Regime.LATE_EXPANSION: {
-            "T10Y2Y": (-1.0, 0.5, 2.0),  # Yield curve flattening
-            "UNRATE": (-2.0, -0.5, 1.5),  # Unemployment very low
-            "CPIAUCSL": (0.5, None, 2.0),  # Inflation high/rising
-            "BAA10Y": (0.0, 1.0, 1.0),  # Credit spreads widening slightly
+            "T10Y2Y": (ZSCORE_BELOW_AVERAGE, ZSCORE_SLIGHTLY_ABOVE, 2.0),  # Yield curve flattening
+            "UNRATE": (ZSCORE_VERY_LOW, ZSCORE_SLIGHTLY_BELOW, 1.5),  # Unemployment very low
+            "CPIAUCSL": (ZSCORE_SLIGHTLY_ABOVE, None, 2.0),  # Inflation high/rising
+            "BAA10Y": (ZSCORE_AVERAGE, ZSCORE_ABOVE_AVERAGE, 1.0),  # Credit spreads widening slightly
         },
         Regime.EARLY_CONTRACTION: {
-            "T10Y2Y": (None, -0.5, 2.5),  # Yield curve inverted
-            "UNRATE": (0.0, 1.0, 1.5),  # Unemployment rising
-            "CPIAUCSL": (None, 1.0, 0.5),  # Inflation peaking/falling
-            "BAA10Y": (0.5, None, 2.0),  # Credit spreads widening
+            "T10Y2Y": (None, ZSCORE_SLIGHTLY_BELOW, 2.5),  # Yield curve inverted
+            "UNRATE": (ZSCORE_AVERAGE, ZSCORE_ABOVE_AVERAGE, 1.5),  # Unemployment rising
+            "CPIAUCSL": (None, ZSCORE_ABOVE_AVERAGE, 0.5),  # Inflation peaking/falling
+            "BAA10Y": (ZSCORE_SLIGHTLY_ABOVE, None, 2.0),  # Credit spreads widening
         },
         Regime.DEEP_CONTRACTION: {
-            "T10Y2Y": (0.5, None, 1.0),  # Yield curve steep (flight to safety)
-            "UNRATE": (1.0, None, 2.5),  # Unemployment high/rising
-            "CPIAUCSL": (None, 0.0, 1.0),  # Inflation low (demand shock)
-            "BAA10Y": (1.5, None, 2.5),  # Credit spreads very wide
+            "T10Y2Y": (ZSCORE_SLIGHTLY_ABOVE, None, 1.0),  # Yield curve steep (flight to safety)
+            "UNRATE": (ZSCORE_ABOVE_AVERAGE, None, 2.5),  # Unemployment high/rising
+            "CPIAUCSL": (None, ZSCORE_AVERAGE, 1.0),  # Inflation low (demand shock)
+            "BAA10Y": (ZSCORE_HIGH, None, 2.5),  # Credit spreads very wide
         },
     }
 
@@ -171,12 +186,12 @@ class RegimeDetector:
         Regime.DEEP_CONTRACTION: "Deep Contraction",
     }
 
-    def __init__(self, lookback_days: int = 252):
+    def __init__(self, lookback_days: int = DEFAULT_MACRO_LOOKBACK_DAYS):
         """
         Initialize regime detector.
 
         Args:
-            lookback_days: Lookback window for z-score (default: 252 trading days = 1 year)
+            lookback_days: Lookback window for z-score (default: DEFAULT_MACRO_LOOKBACK_DAYS = 1 year)
         """
         self.lookback_days = lookback_days
 

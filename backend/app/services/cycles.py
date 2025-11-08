@@ -55,6 +55,30 @@ import json as json_module
 
 from app.db.connection import execute_query, execute_statement, execute_query_one
 from app.services.indicator_config import get_config_manager
+from app.core.constants.macro import (
+    EARLY_RECOVERY_YIELD_CURVE_WEIGHT,
+    EARLY_RECOVERY_UNEMPLOYMENT_WEIGHT,
+    EARLY_RECOVERY_INDPRO_WEIGHT,
+    EARLY_RECOVERY_CREDIT_WEIGHT,
+    MID_EXPANSION_GDP_WEIGHT,
+    MID_EXPANSION_PAYEMS_WEIGHT,
+    MID_EXPANSION_CREDIT_WEIGHT,
+    MID_EXPANSION_YIELD_CURVE_WEIGHT,
+    LATE_EXPANSION_INFLATION_WEIGHT,
+    LATE_EXPANSION_YIELD_CURVE_WEIGHT,
+    LATE_EXPANSION_CREDIT_WEIGHT,
+    LATE_EXPANSION_UNEMPLOYMENT_WEIGHT,
+    EARLY_RECESSION_YIELD_CURVE_WEIGHT,
+    EARLY_RECESSION_GDP_WEIGHT,
+    EARLY_RECESSION_INDPRO_WEIGHT,
+    EARLY_RECESSION_CREDIT_WEIGHT,
+    DEEP_RECESSION_UNEMPLOYMENT_WEIGHT,
+    DEEP_RECESSION_GDP_WEIGHT,
+    DEEP_RECESSION_CREDIT_WEIGHT,
+    DEEP_RECESSION_PAYEMS_WEIGHT,
+    MIN_REGIME_PROBABILITY,
+    MAX_REGIME_PROBABILITY,
+)
 
 logger = logging.getLogger("DawsOS.CyclesService")
 
@@ -132,34 +156,34 @@ class STDCDetector:
     # Indicator weights for STDC phases
     PHASE_WEIGHTS = {
         "Early Recovery": {
-            "T10Y2Y": 2.5,  # Yield curve steepening (strong signal)
-            "UNRATE_change": 1.5,  # Unemployment falling
-            "INDPRO_change": 1.0,  # Industrial production rising
-            "credit_growth": 0.5,  # Credit starting to grow
+            "T10Y2Y": EARLY_RECOVERY_YIELD_CURVE_WEIGHT,  # Yield curve steepening (strong signal)
+            "UNRATE_change": EARLY_RECOVERY_UNEMPLOYMENT_WEIGHT,  # Unemployment falling
+            "INDPRO_change": EARLY_RECOVERY_INDPRO_WEIGHT,  # Industrial production rising
+            "credit_growth": EARLY_RECOVERY_CREDIT_WEIGHT,  # Credit starting to grow
         },
         "Mid Expansion": {
-            "GDP_growth": 2.0,  # Strong GDP growth
-            "PAYEMS_change": 1.5,  # Job growth strong
-            "credit_growth": 1.0,  # Credit accelerating
-            "T10Y2Y": 1.0,  # Yield curve positive
+            "GDP_growth": MID_EXPANSION_GDP_WEIGHT,  # Strong GDP growth
+            "PAYEMS_change": MID_EXPANSION_PAYEMS_WEIGHT,  # Job growth strong
+            "credit_growth": MID_EXPANSION_CREDIT_WEIGHT,  # Credit accelerating
+            "T10Y2Y": MID_EXPANSION_YIELD_CURVE_WEIGHT,  # Yield curve positive
         },
         "Late Expansion / Boom": {
-            "CPIAUCSL_yoy": 2.0,  # Inflation rising
-            "T10Y2Y": -2.0,  # Yield curve flattening/inverting (negative weight)
-            "credit_growth": 1.5,  # Credit growth peaking
-            "UNRATE": -1.0,  # Unemployment very low (negative = tight labor)
+            "CPIAUCSL_yoy": LATE_EXPANSION_INFLATION_WEIGHT,  # Inflation rising
+            "T10Y2Y": LATE_EXPANSION_YIELD_CURVE_WEIGHT,  # Yield curve flattening/inverting (negative weight)
+            "credit_growth": LATE_EXPANSION_CREDIT_WEIGHT,  # Credit growth peaking
+            "UNRATE": LATE_EXPANSION_UNEMPLOYMENT_WEIGHT,  # Unemployment very low (negative = tight labor)
         },
         "Early Recession": {
-            "T10Y2Y": -2.5,  # Yield curve inverted (strong signal)
-            "GDP_growth": -1.5,  # GDP growth slowing (negative)
-            "INDPRO_change": -1.0,  # Industrial production falling
-            "credit_growth": -0.5,  # Credit contracting
+            "T10Y2Y": EARLY_RECESSION_YIELD_CURVE_WEIGHT,  # Yield curve inverted (strong signal)
+            "GDP_growth": EARLY_RECESSION_GDP_WEIGHT,  # GDP growth slowing (negative)
+            "INDPRO_change": EARLY_RECESSION_INDPRO_WEIGHT,  # Industrial production falling
+            "credit_growth": EARLY_RECESSION_CREDIT_WEIGHT,  # Credit contracting
         },
         "Deep Recession": {
-            "UNRATE_change": 2.5,  # Unemployment rising sharply
-            "GDP_growth": -2.0,  # GDP contracting (negative)
-            "credit_growth": -2.0,  # Credit contracting sharply
-            "PAYEMS_change": -1.5,  # Job losses
+            "UNRATE_change": DEEP_RECESSION_UNEMPLOYMENT_WEIGHT,  # Unemployment rising sharply
+            "GDP_growth": DEEP_RECESSION_GDP_WEIGHT,  # GDP contracting (negative)
+            "credit_growth": DEEP_RECESSION_CREDIT_WEIGHT,  # Credit contracting sharply
+            "PAYEMS_change": DEEP_RECESSION_PAYEMS_WEIGHT,  # Job losses
         },
     }
 
@@ -199,8 +223,8 @@ class STDCDetector:
         # Normalize to 0-1 (consistent with macro regime confidence scores)
         if total_weight > 0:
             normalized = (total_score / total_weight) / 100
-            return max(0.0, min(1.0, normalized))  # Clamp to 0-1
-        return 0.0
+            return max(MIN_REGIME_PROBABILITY, min(MAX_REGIME_PROBABILITY, normalized))  # Clamp to 0-1
+        return MIN_REGIME_PROBABILITY
 
     def detect_phase(self, indicators: Dict[str, float], as_of_date: date) -> CyclePhase:
         """
@@ -306,8 +330,8 @@ class LTDCDetector:
 
         if total_weight > 0:
             normalized = (total_score / total_weight) / 100
-            return max(0.0, min(1.0, normalized))
-        return 0.0
+            return max(MIN_REGIME_PROBABILITY, min(MAX_REGIME_PROBABILITY, normalized))
+        return MIN_REGIME_PROBABILITY
 
     def detect_phase(self, indicators: Dict[str, float], as_of_date: date) -> CyclePhase:
         """Detect current LTDC phase."""
@@ -391,8 +415,8 @@ class EmpireDetector:
 
         if total_weight > 0:
             normalized = (total_score / total_weight) / 100
-            return max(0.0, min(1.0, normalized))
-        return 0.0
+            return max(MIN_REGIME_PROBABILITY, min(MAX_REGIME_PROBABILITY, normalized))
+        return MIN_REGIME_PROBABILITY
 
     def detect_phase(self, indicators: Dict[str, float], as_of_date: date) -> CyclePhase:
         """Detect current Empire phase."""
