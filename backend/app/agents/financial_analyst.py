@@ -2012,8 +2012,8 @@ class FinancialAnalyst(BaseAgent):
             data = await conn.fetch(
                 """
                 SELECT
-                    pp.asof_date,
-                    p.price as local_price,
+                    p.asof_date,
+                    p.close as local_price,
                     COALESCE(fx.rate, 1.0) as fx_rate
                 FROM prices p
                 JOIN pricing_packs pp ON p.pricing_pack_id = pp.id
@@ -2021,9 +2021,9 @@ class FinancialAnalyst(BaseAgent):
                     AND fx.base_ccy = $4
                     AND fx.quote_ccy = $5
                 WHERE p.security_id = $1
-                  AND pp.asof_date <= (SELECT asof_date FROM pricing_packs WHERE id = $2)
-                  AND pp.asof_date >= (SELECT asof_date FROM pricing_packs WHERE id = $2) - INTERVAL '1 day' * $3
-                ORDER BY pp.asof_date ASC
+                  AND p.asof_date <= (SELECT date FROM pricing_packs WHERE id = $2)
+                  AND p.asof_date >= (SELECT date FROM pricing_packs WHERE id = $2) - INTERVAL '1 day' * $3
+                ORDER BY p.asof_date ASC
                 """,
                 security_uuid,
                 pack,
@@ -2120,13 +2120,13 @@ class FinancialAnalyst(BaseAgent):
             # Get position returns
             position_data = await conn.fetch(
                 """
-                SELECT pp.asof_date, p.price
+                SELECT p.asof_date, p.close as price
                 FROM prices p
                 JOIN pricing_packs pp ON p.pricing_pack_id = pp.id
                 WHERE p.security_id = $1
-                  AND pp.asof_date <= (SELECT asof_date FROM pricing_packs WHERE id = $2)
-                  AND pp.asof_date >= (SELECT asof_date FROM pricing_packs WHERE id = $2) - INTERVAL '1 day' * $3
-                ORDER BY pp.asof_date ASC
+                  AND p.asof_date <= (SELECT date FROM pricing_packs WHERE id = $2)
+                  AND p.asof_date >= (SELECT date FROM pricing_packs WHERE id = $2) - INTERVAL '1 day' * $3
+                ORDER BY p.asof_date ASC
                 """,
                 security_uuid,
                 pack,
