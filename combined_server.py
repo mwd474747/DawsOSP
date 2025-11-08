@@ -839,11 +839,13 @@ async def store_macro_indicators(indicators: Dict[str, Any], apply_transformatio
         return False
     
     # Import transformation service
-    from backend.app.services.fred_transformation import get_transformation_service
+    # Guardrail: Use DI container or direct instantiation (no singleton factory functions)
+    from app.services.fred_transformation import FREDTransformationService
     
     # Apply transformations if needed
     if apply_transformation:
-        transformation_service = get_transformation_service()
+        # Use direct instantiation (stateless service, no dependencies)
+        transformation_service = FREDTransformationService()
         transformed_indicators = {}
         
         # Map common indicator names to their FRED series IDs

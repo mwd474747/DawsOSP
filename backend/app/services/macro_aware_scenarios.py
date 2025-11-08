@@ -1067,12 +1067,15 @@ class MacroAwareScenarioService:
         return hedges
 
 
-# Singleton instance for easy access
-_macro_aware_service = None
-
-def get_macro_aware_scenario_service(use_db: bool = True) -> MacroAwareScenarioService:
-    """Get or create singleton instance of MacroAwareScenarioService."""
-    global _macro_aware_service
-    if _macro_aware_service is None:
-        _macro_aware_service = MacroAwareScenarioService(use_db=use_db)
-    return _macro_aware_service
+# ============================================================================
+# Singleton Pattern - REMOVED
+# ============================================================================
+#
+# DEPRECATED: Singleton pattern removed as part of Phase 2 refactoring.
+# Use MacroAwareScenarioService(use_db=...) directly instead.
+#
+# Migration:
+#     OLD: service = get_macro_aware_scenario_service(use_db=True)
+#     NEW: service = MacroAwareScenarioService(use_db=use_db)
+#     OR:  service = container.resolve("macro_aware_scenarios")
+#

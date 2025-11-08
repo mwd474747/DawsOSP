@@ -25,9 +25,9 @@ Database Schema:
     );
 
 Usage:
-    from app.services.audit import get_audit_service
+    from app.services.audit import AuditService
 
-    audit = get_audit_service()
+    audit = AuditService(db_pool=db_pool)
 
     # Log pattern execution
     await audit.log(
@@ -353,30 +353,19 @@ class AuditService:
 
 
 # ============================================================================
-# Service Singleton
+# Singleton Pattern - REMOVED
 # ============================================================================
-
-_audit_service = None
-
-
-def get_audit_service(db_pool: Optional[asyncpg.Pool] = None) -> AuditService:
-    """
-    Get singleton audit service instance.
-
-    Args:
-        db_pool: Optional database pool (uses connection module if not provided)
-
-    Returns:
-        AuditService instance
-
-    Example:
-        >>> from app.services.audit import get_audit_service
-        >>> audit = get_audit_service()
-        >>> await audit.log(user_id, "execute_pattern", "pattern", pattern_id)
-    """
-    global _audit_service
-
-    if _audit_service is None:
-        _audit_service = AuditService(db_pool)
-
-    return _audit_service
+#
+# DEPRECATED: Singleton pattern removed as part of Phase 2 refactoring.
+# Use AuditService(db_pool=...) directly instead.
+#
+# Migration:
+#     OLD: audit = get_audit_service(db_pool=db_pool)
+#     NEW: audit = AuditService(db_pool=db_pool)
+#     OR:  audit = container.resolve("audit")
+#
+# Example:
+#     from app.services.audit import AuditService
+#     audit = AuditService(db_pool=db_pool)
+#     await audit.log(user_id, "execute_pattern", "pattern", pattern_id)
+#

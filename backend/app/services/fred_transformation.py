@@ -406,14 +406,15 @@ class FREDTransformationService:
         return transformed
 
 
-# Singleton instance
-_transformation_service = None
-
-
-def get_transformation_service() -> FREDTransformationService:
-    """Get or create singleton transformation service"""
-    global _transformation_service
-    if _transformation_service is None:
-        _transformation_service = FREDTransformationService()
-        logger.info("FRED Transformation Service initialized")
-    return _transformation_service
+# ============================================================================
+# Singleton Pattern - REMOVED
+# ============================================================================
+#
+# DEPRECATED: Singleton pattern removed as part of Phase 2 refactoring.
+# Use FREDTransformationService() directly instead.
+#
+# Migration:
+#     OLD: service = get_transformation_service()
+#     NEW: service = FREDTransformationService()  # Stateless, no parameters needed
+#     OR:  service = container.resolve("fred_transformation")
+#

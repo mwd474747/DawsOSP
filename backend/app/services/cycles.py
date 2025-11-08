@@ -643,7 +643,10 @@ class CyclesService:
         self.ltdc_detector = LTDCDetector()
         self.empire_detector = EmpireDetector()
         self.civil_detector = CivilOrderDetector()
-        self.config_manager = get_config_manager()
+        # Guardrail: Use direct instantiation (no singleton factory functions)
+        # Note: Could use DI container here, but CyclesService is initialized via DI container
+        # and IndicatorConfigManager is stateless, so direct instantiation is acceptable
+        self.config_manager = IndicatorConfigManager()
 
     async def get_latest_indicators(self) -> Dict[str, float]:
         """

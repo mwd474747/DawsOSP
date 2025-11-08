@@ -1706,24 +1706,14 @@ class MacroHound(BaseAgent):
 
 
 # ============================================================================
-# Singleton Pattern
+# Singleton Pattern - REMOVED
 # ============================================================================
-
-_macro_hound_instance = None
-
-
-def get_macro_hound(services: Optional[Dict[str, Any]] = None) -> MacroHound:
-    """
-    Get or create singleton MacroHound agent.
-
-    Args:
-        services: Services dict (optional)
-
-    Returns:
-        MacroHound instance
-    """
-    global _macro_hound_instance
-    if _macro_hound_instance is None:
-        _macro_hound_instance = MacroHound("macro_hound", services or {})
-        logger.info("MacroHound agent initialized")
-    return _macro_hound_instance
+#
+# DEPRECATED: Singleton pattern removed as part of Phase 2 refactoring.
+# Use MacroHound(name=..., services=...) directly instead.
+#
+# Migration:
+#     OLD: agent = get_macro_hound(services)
+#     NEW: agent = MacroHound(name="macro_hound", services=services)
+#     OR:  agent = container.resolve("macro_hound")
+#

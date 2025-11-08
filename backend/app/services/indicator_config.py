@@ -454,18 +454,15 @@ class IndicatorConfigManager:
         return summary
 
 
-# Singleton instance
-_config_manager: Optional[IndicatorConfigManager] = None
-
-
-def get_config_manager() -> IndicatorConfigManager:
-    """
-    Get configuration manager singleton.
-    
-    Returns:
-        IndicatorConfigManager singleton
-    """
-    global _config_manager
-    if _config_manager is None:
-        _config_manager = IndicatorConfigManager()
-    return _config_manager
+# ============================================================================
+# Singleton Pattern - REMOVED
+# ============================================================================
+#
+# DEPRECATED: Singleton pattern removed as part of Phase 2 refactoring.
+# Use IndicatorConfigManager() directly instead.
+#
+# Migration:
+#     OLD: manager = get_config_manager()
+#     NEW: manager = IndicatorConfigManager()  # Stateless, no parameters needed
+#     OR:  manager = container.resolve("indicator_config")
+#
