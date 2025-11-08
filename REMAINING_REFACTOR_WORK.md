@@ -483,8 +483,8 @@ This is the **single source of truth** for all remaining refactor work. It conso
 | **P1 (Critical)** | 2 tasks | ~6-9 hours | ✅ COMPLETE |
 | **P2 (High)** | 4 tasks | ~10-11 hours | ✅ COMPLETE |
 | **P3 (Medium)** | 3 tasks | ~2-3 days | ✅ COMPLETE |
-| **P4 (Low)** | 5 tasks | ~3-4 days | 🔄 IN PROGRESS (2 complete) |
-| **Total** | 15 tasks | ~4-5 days | ~92% complete |
+| **P4 (Low)** | 5 tasks | ~3-4 days | 🔄 IN PROGRESS (3 complete) |
+| **Total** | 15 tasks | ~4-5 days | ~95% complete |
 
 ---
 
@@ -553,8 +553,8 @@ All remaining tasks are low priority and can be done incrementally. Estimated 3-
 
 ---
 
-**Status:** 🚧 ~92% COMPLETE  
-**Remaining Work:** ~1-2 days  
+**Status:** 🚧 ~95% COMPLETE  
+**Remaining Work:** ~1 day  
 **Last Updated:** January 15, 2025
 
 **Recent Completions (Jan 15):**
@@ -566,5 +566,6 @@ All remaining tasks are low priority and can be done incrementally. Estimated 3-
 - ✅ P3: Remove additional backwards compatibility code (legacy alert method verified deleted, deprecated field check kept as useful)
 - ✅ P4: Remove deprecated singleton functions - COMPLETE (7 services cleaned up, all function definitions removed)
 - ✅ P4: Update Architecture.md - COMPLETE (capability naming, counts, service initialization documented)
+- ✅ P4: Pattern Standardization - COMPLETE (news_impact_analysis.json migrated to Format 1)
 
 **Note:** Backwards compatibility analysis added - see `docs/refactoring/BACKWARDS_COMPATIBILITY_ANALYSIS.md` for details.
