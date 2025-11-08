@@ -388,9 +388,9 @@ class PricingService:
             logger.error(f"Programming error in get_price for {security_id}: {e}", exc_info=True)
             raise
         except Exception as e:
-            # Database/service errors - re-raise (critical operation)
+            # Database/service errors - re-raise as DatabaseError (critical operation)
             logger.error(f"Failed to get price for {security_id}: {e}", exc_info=True)
-            raise
+            raise DatabaseError(f"Failed to get price for {security_id}: {e}", retryable=True) from e
 
     async def get_prices_for_securities(
         self,
@@ -468,9 +468,9 @@ class PricingService:
             logger.error(f"Programming error in get_prices_for_securities: {e}", exc_info=True)
             raise
         except Exception as e:
-            # Database/service errors - re-raise (critical operation)
+            # Database/service errors - re-raise as DatabaseError (critical operation)
             logger.error(f"Failed to get prices for securities: {e}", exc_info=True)
-            raise
+            raise DatabaseError(f"Failed to get prices for securities: {e}", retryable=True) from e
 
     async def get_prices_as_decimals(
         self,
@@ -526,9 +526,9 @@ class PricingService:
             logger.error(f"Programming error in get_prices_as_decimals: {e}", exc_info=True)
             raise
         except Exception as e:
-            # Database/service errors - re-raise (critical operation)
+            # Database/service errors - re-raise as DatabaseError (critical operation)
             logger.error(f"Failed to get prices as decimals: {e}", exc_info=True)
-            raise
+            raise DatabaseError(f"Failed to get prices as decimals: {e}", retryable=True) from e
 
     async def get_all_prices(self, pack_id: str) -> List[SecurityPrice]:
         """
@@ -591,9 +591,9 @@ class PricingService:
             logger.error(f"Programming error in get_all_prices for pack {pack_id}: {e}", exc_info=True)
             raise
         except Exception as e:
-            # Database/service errors - re-raise (critical operation)
+            # Database/service errors - re-raise as DatabaseError (critical operation)
             logger.error(f"Failed to get all prices for pack {pack_id}: {e}", exc_info=True)
-            raise
+            raise DatabaseError(f"Failed to get all prices for pack {pack_id}: {e}", retryable=True) from e
 
     # ========================================================================
     # FX Rate Queries
@@ -676,9 +676,9 @@ class PricingService:
             logger.error(f"Programming error in get_fx_rate for {base_ccy}/{quote_ccy}: {e}", exc_info=True)
             raise
         except Exception as e:
-            # Database/service errors - re-raise (critical operation)
+            # Database/service errors - re-raise as DatabaseError (critical operation)
             logger.error(f"Failed to get FX rate {base_ccy}/{quote_ccy}: {e}", exc_info=True)
-            raise
+            raise DatabaseError(f"Failed to get FX rate {base_ccy}/{quote_ccy}: {e}", retryable=True) from e
 
     async def get_all_fx_rates(self, pack_id: str) -> List[FXRate]:
         """
@@ -735,9 +735,9 @@ class PricingService:
             logger.error(f"Programming error in get_all_fx_rates for pack {pack_id}: {e}", exc_info=True)
             raise
         except Exception as e:
-            # Database/service errors - re-raise (critical operation)
+            # Database/service errors - re-raise as DatabaseError (critical operation)
             logger.error(f"Failed to get all FX rates for pack {pack_id}: {e}", exc_info=True)
-            raise
+            raise DatabaseError(f"Failed to get all FX rates for pack {pack_id}: {e}", retryable=True) from e
 
     # ========================================================================
     # Currency Conversion
