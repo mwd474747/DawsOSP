@@ -113,6 +113,7 @@ except ImportError as e:
     PatternOrchestrator = None
     RequestCtx = None
     PerformanceCalculator = None
+    ScenarioService = None
     ShockType = None
     FinancialAnalyst = None
     MacroHound = None
