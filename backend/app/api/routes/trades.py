@@ -30,7 +30,7 @@ from app.services.trade_execution import (
     InvalidTradeError
 )
 from app.middleware.auth_middleware import verify_token
-from app.services.auth import get_auth_service
+from app.core.di_container import ensure_initialized
 
 logger = logging.getLogger(__name__)
 
@@ -252,7 +252,8 @@ async def execute_trade(
     user_role = claims.get("role", "USER")
     
     # RBAC: Check permission to write trades
-    auth_service = get_auth_service()
+    container = ensure_initialized()
+    auth_service = container.resolve("auth")
     if not auth_service.check_permission(user_role, "write_trades"):
         raise HTTPException(
             status_code=403,

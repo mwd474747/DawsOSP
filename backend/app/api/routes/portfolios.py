@@ -30,8 +30,8 @@ import io
 
 from app.db.connection import get_db_connection_with_rls
 from app.middleware.auth_middleware import verify_token
-from app.services.auth import get_auth_service
 from app.services.trade_execution import TradeExecutionService
+from app.core.di_container import ensure_initialized
 from app.core.exceptions import DatabaseError
 
 logger = logging.getLogger("DawsOS.API.Portfolios")
@@ -145,7 +145,8 @@ async def create_portfolio(
     user_role = claims.get("role", "USER")
     
     # RBAC: Check permission to manage portfolios
-    auth_service = get_auth_service()
+    container = ensure_initialized()
+    auth_service = container.resolve("auth")
     if not auth_service.check_permission(user_role, "manage_portfolios"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -390,7 +391,8 @@ async def update_portfolio(
     user_role = claims.get("role", "USER")
     
     # RBAC: Check permission to manage portfolios
-    auth_service = get_auth_service()
+    container = ensure_initialized()
+    auth_service = container.resolve("auth")
     if not auth_service.check_permission(user_role, "manage_portfolios"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -503,7 +505,8 @@ async def delete_portfolio(
     user_role = claims.get("role", "USER")
     
     # RBAC: Check permission to manage portfolios
-    auth_service = get_auth_service()
+    container = ensure_initialized()
+    auth_service = container.resolve("auth")
     if not auth_service.check_permission(user_role, "manage_portfolios"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

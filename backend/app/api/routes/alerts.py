@@ -46,6 +46,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header, status, Query
 from pydantic import BaseModel, Field
 
 from app.db.connection import get_db_connection_with_rls, execute_query_one
+from app.core.di_container import ensure_initialized
 from app.core.alert_validators import (
     validate_alert_condition,
     validate_cooldown_hours,
@@ -53,7 +54,6 @@ from app.core.alert_validators import (
 )
 from app.services.alerts import AlertService
 from app.middleware.auth_middleware import verify_token
-from app.services.auth import get_auth_service
 
 logger = logging.getLogger("DawsOS.API.Alerts")
 
@@ -188,7 +188,8 @@ async def create_alert(
     user_role = claims.get("role", "USER")
     
     # RBAC: Check permission to manage alerts
-    auth_service = get_auth_service()
+    container = ensure_initialized()
+    auth_service = container.resolve("auth")
     if not auth_service.check_permission(user_role, "manage_alerts"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -501,7 +502,8 @@ async def update_alert(
     user_role = claims.get("role", "USER")
     
     # RBAC: Check permission to manage alerts
-    auth_service = get_auth_service()
+    container = ensure_initialized()
+    auth_service = container.resolve("auth")
     if not auth_service.check_permission(user_role, "manage_alerts"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -648,7 +650,8 @@ async def delete_alert(
     user_role = claims.get("role", "USER")
     
     # RBAC: Check permission to manage alerts
-    auth_service = get_auth_service()
+    container = ensure_initialized()
+    auth_service = container.resolve("auth")
     if not auth_service.check_permission(user_role, "manage_alerts"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

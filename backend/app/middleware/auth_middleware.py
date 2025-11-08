@@ -46,7 +46,8 @@ from typing import Dict, Optional
 from fastapi import Depends, HTTPException, Header, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from app.services.auth import get_auth_service, AuthenticationError, AuthorizationError
+from app.services.auth import AuthenticationError, AuthorizationError
+from app.core.di_container import ensure_initialized
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +113,8 @@ async def verify_token(
         )
 
     # Verify token
-    auth_service = get_auth_service()
+    container = ensure_initialized()
+    auth_service = container.resolve("auth")
 
     try:
         claims = auth_service.verify_jwt(token)
@@ -168,7 +170,8 @@ async def optional_auth(
     if not token:
         return None
 
-    auth_service = get_auth_service()
+    container = ensure_initialized()
+    auth_service = container.resolve("auth")
 
     try:
         claims = auth_service.verify_jwt(token)
@@ -222,7 +225,8 @@ def require_permission(permission: str):
         Raises:
             HTTPException 403: If user lacks permission
         """
-        auth_service = get_auth_service()
+        container = ensure_initialized()
+        auth_service = container.resolve("auth")
         user_role = claims.get("role")
 
         if not user_role:

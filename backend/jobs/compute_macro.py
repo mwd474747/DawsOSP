@@ -42,7 +42,7 @@ from typing import Optional
 
 from app.integrations.fred_provider import FREDProvider
 from app.services.macro import MacroService, Regime
-from app.services.fred_transformation import get_transformation_service
+from app.core.di_container import ensure_initialized
 from app.db.connection import get_db_pool
 
 logger = logging.getLogger("DawsOS.MacroJob")
@@ -97,7 +97,8 @@ async def fetch_indicators_job(
         logger.info(f"Fetched {total_fetched} total observations across all indicators")
 
         # Apply transformations to the fetched data
-        transformation_service = get_transformation_service()
+        container = ensure_initialized()
+        transformation_service = container.resolve("fred_transformation")
         logger.info("Applying FRED data transformations...")
         
         # Transform and store the data with proper scaling
@@ -204,7 +205,8 @@ async def check_regime_transition(
     """
     logger.info(f"Checking for regime transition on {asof_date}")
 
-    macro_service = get_macro_service()
+    container = ensure_initialized()
+    macro_service = container.resolve("macro")
 
     try:
         # Get current regime
@@ -271,7 +273,10 @@ async def backfill_historical_data(
         return
         
     fred_provider = FREDProvider(api_key=api_key)
-    macro_service = get_macro_service(fred_client=fred_provider)
+    # Use DI container but override fred_client for backfill
+    container = ensure_initialized()
+    db_pool = container.resolve("db_pool")
+    macro_service = MacroService(fred_client=fred_provider, db_pool=db_pool)
 
     # Fetch historical indicators
     logger.info("Step 1: Fetching historical indicators")
@@ -332,7 +337,8 @@ async def compute_macro_regime(
             logger.info("Step 1: Skipping FRED fetch (using DB data)")
             # Still compute derived indicators even if skipping FRED fetch
             logger.info("Computing derived indicators from existing data...")
-            macro_service = get_macro_service()
+            container = ensure_initialized()
+            macro_service = container.resolve("macro")
             await macro_service.compute_derived_indicators(asof_date=asof_date)
 
         # Step 2: Detect regime
@@ -409,7 +415,7 @@ async def main():
     )
 
     # Initialize DB connection pool
-    await get_connection_pool()
+    await get_db_pool()
 
     try:
         if args.backfill:

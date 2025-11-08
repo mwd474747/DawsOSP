@@ -48,9 +48,10 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from starlette.requests import Request
 from pydantic import BaseModel, EmailStr, Field
 
-from app.services.auth import get_auth_service, AuthenticationError
+from app.services.auth import AuthenticationError, ROLES
 from app.middleware.auth_middleware import verify_token, require_role
 from app.db.connection import get_db_pool
+from app.core.di_container import ensure_initialized
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +151,9 @@ async def login(
         >>> token = response.access_token
     """
     try:
-        auth_service = get_auth_service()
+        # Get auth service from DI container
+        container = ensure_initialized()
+        auth_service = container.resolve("auth")
         
         # Extract IP address from request (handles proxies via X-Forwarded-For)
         client_ip = http_request.client.host if http_request.client else None
@@ -230,7 +233,9 @@ async def get_current_user(claims: Dict = Depends(verify_token)):
         >>> response = await get_current_user()
         >>> print(response.permissions)
     """
-    auth_service = get_auth_service()
+    # Get auth service from DI container
+    container = ensure_initialized()
+    auth_service = container.resolve("auth")
 
     user_id = claims["user_id"]
     email = claims["email"]
@@ -266,7 +271,9 @@ async def get_user_permissions(claims: Dict = Depends(verify_token)) -> List[str
         >>> print(permissions)
         ['read_portfolio', 'read_metrics', 'execute_patterns']
     """
-    auth_service = get_auth_service()
+    # Get auth service from DI container
+    container = ensure_initialized()
+    auth_service = container.resolve("auth")
     role = claims["role"]
 
     permissions = auth_service.get_user_permissions(role)
@@ -292,7 +299,9 @@ async def refresh_token(claims: Dict = Depends(verify_token)):
         >>> response = await refresh_token()
         >>> new_token = response.access_token
     """
-    auth_service = get_auth_service()
+    # Get auth service from DI container
+    container = ensure_initialized()
+    auth_service = container.resolve("auth")
 
     user_id = claims["user_id"]
     email = claims["email"]
@@ -402,7 +411,9 @@ async def create_user(
         ... )
     """
     try:
-        auth_service = get_auth_service()
+        # Get auth service from DI container
+        container = ensure_initialized()
+        auth_service = container.resolve("auth")
         
         # Extract IP address from request (handles proxies via X-Forwarded-For)
         client_ip = None

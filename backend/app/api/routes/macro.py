@@ -45,7 +45,6 @@ from app.services.risk import RiskService
 from app.core.di_container import ensure_initialized
 from app.db.connection import get_db_connection_with_rls
 from app.middleware.auth_middleware import verify_token
-from app.services.auth import get_auth_service
 from app.core.constants.http_status import (
     HTTP_401_UNAUTHORIZED,
     HTTP_500_INTERNAL_SERVER_ERROR,
@@ -456,8 +455,9 @@ async def get_regime_history(
         HTTPException 500: Error fetching regime history
     """
     try:
-        # Get macro service
-        macro_service = get_macro_service()
+        # Get macro service from DI container
+        container = ensure_initialized()
+        macro_service = container.resolve("macro")
 
         # Fetch history
         if end_date is None:
@@ -546,8 +546,9 @@ async def get_indicators(
         HTTPException 500: Error fetching indicators
     """
     try:
-        # Get macro service
-        macro_service = get_macro_service()
+        # Get macro service from DI container
+        container = ensure_initialized()
+        macro_service = container.resolve("macro")
 
         # Fetch indicators
         if asof_date is None:
