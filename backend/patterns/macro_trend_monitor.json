@@ -45,7 +45,7 @@
       "as": "trend_analysis"
     },
     {
-      "capability": "macro_hound.suggest_alert_presets",
+      "capability": "alerts.suggest_presets",
       "args": {
         "trend_analysis": "{{trend_analysis}}",
         "portfolio_id": "{{inputs.portfolio_id}}"

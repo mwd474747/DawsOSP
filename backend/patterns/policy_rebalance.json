@@ -62,14 +62,14 @@
       "as": "valued"
     },
     {
-      "capability": "financial_analyst.aggregate_ratings",
+      "capability": "ratings.aggregate",
       "args": {
         "positions": "{{valued.positions}}"
       },
       "as": "ratings"
     },
     {
-      "capability": "financial_analyst.propose_trades",
+      "capability": "optimizer.propose_trades",
       "args": {
         "portfolio_id": "{{inputs.portfolio_id}}",
         "positions": "{{valued.positions}}",
@@ -81,7 +81,7 @@
       "as": "rebalance_result"
     },
     {
-      "capability": "financial_analyst.analyze_impact",
+      "capability": "optimizer.analyze_impact",
       "args": {
         "current_positions": "{{valued.positions}}",
         "proposed_trades": "{{rebalance_result.trades}}",

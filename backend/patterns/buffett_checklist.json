@@ -25,7 +25,7 @@
       "as": "fundamentals"
     },
     {
-      "capability": "financial_analyst.dividend_safety",
+      "capability": "ratings.dividend_safety",
       "args": {
         "security_id": "{{inputs.security_id}}",
         "fundamentals": "{{fundamentals}}"
@@ -33,7 +33,7 @@
       "as": "dividend_safety"
     },
     {
-      "capability": "financial_analyst.moat_strength",
+      "capability": "ratings.moat_strength",
       "args": {
         "security_id": "{{inputs.security_id}}",
         "fundamentals": "{{fundamentals}}"
@@ -41,7 +41,7 @@
       "as": "moat_strength"
     },
     {
-      "capability": "financial_analyst.resilience",
+      "capability": "ratings.resilience",
       "args": {
         "security_id": "{{inputs.security_id}}",
         "fundamentals": "{{fundamentals}}"
@@ -49,7 +49,7 @@
       "as": "resilience"
     },
     {
-      "capability": "financial_analyst.aggregate_ratings",
+      "capability": "ratings.aggregate",
       "args": {
         "security_id": "{{inputs.security_id}}",
         "fundamentals": "{{fundamentals}}"

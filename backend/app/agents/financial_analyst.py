@@ -146,24 +146,24 @@ class FinancialAnalyst(BaseAgent):
         
         # Optimization capabilities
         optimization_capabilities = [
-            "financial_analyst.propose_trades",
-            "financial_analyst.analyze_impact",
-            "financial_analyst.suggest_hedges",
-            "financial_analyst.suggest_deleveraging_hedges",
+            "optimizer.propose_trades",
+            "optimizer.analyze_impact",
+            "optimizer.suggest_hedges",
+            "optimizer.suggest_deleveraging_hedges",
         ]
         
         # Security ratings capabilities
         ratings_capabilities = [
-            "financial_analyst.dividend_safety",
-            "financial_analyst.moat_strength",
-            "financial_analyst.resilience",
-            "financial_analyst.aggregate_ratings",
+            "ratings.dividend_safety",
+            "ratings.moat_strength",
+            "ratings.resilience",
+            "ratings.aggregate",
         ]
         
         # Charting capabilities
         charting_capabilities = [
-            "financial_analyst.macro_overview_charts",
-            "financial_analyst.scenario_charts",
+            "charts.macro_overview",
+            "charts.scenario",
         ]
         
         capabilities.extend(optimization_capabilities)
@@ -2778,7 +2778,7 @@ class FinancialAnalyst(BaseAgent):
     # Portfolio Optimization Capabilities
     # ============================================================================
 
-    async def financial_analyst_propose_trades(
+    async def optimizer_propose_trades(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
@@ -2899,7 +2899,7 @@ class FinancialAnalyst(BaseAgent):
     # Security Ratings Capabilities
     # ========================================================================
 
-    async def financial_analyst_dividend_safety(
+    async def ratings_dividend_safety(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
@@ -2944,7 +2944,7 @@ class FinancialAnalyst(BaseAgent):
                 rating_type="dividend_safety"
             )
 
-    async def financial_analyst_moat_strength(
+    async def ratings_moat_strength(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
@@ -2990,7 +2990,7 @@ class FinancialAnalyst(BaseAgent):
                 rating_type="moat_strength"
             )
 
-    async def financial_analyst_resilience(
+    async def ratings_resilience(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
@@ -3041,7 +3041,7 @@ class FinancialAnalyst(BaseAgent):
                 rating_type="resilience"
             )
 
-    async def financial_analyst_aggregate_ratings(
+    async def ratings_aggregate(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
@@ -3373,7 +3373,7 @@ class FinancialAnalyst(BaseAgent):
         else:
             return "F"
 
-    async def financial_analyst_analyze_impact(
+    async def optimizer_analyze_impact(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
@@ -3479,7 +3479,7 @@ class FinancialAnalyst(BaseAgent):
             )
             return self._attach_metadata(error_result, metadata)
 
-    async def financial_analyst_suggest_hedges(
+    async def optimizer_suggest_hedges(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
@@ -3577,7 +3577,7 @@ class FinancialAnalyst(BaseAgent):
             )
             return self._attach_metadata(error_result, metadata)
 
-    async def financial_analyst_suggest_deleveraging_hedges(
+    async def optimizer_suggest_deleveraging_hedges(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
@@ -3708,7 +3708,7 @@ class FinancialAnalyst(BaseAgent):
     # Charting and Visualization Capabilities
     # ============================================================================
     
-    async def financial_analyst_macro_overview_charts(
+    async def charts_macro_overview(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
@@ -3842,7 +3842,7 @@ class FinancialAnalyst(BaseAgent):
 
         return self._attach_metadata(result, metadata)
 
-    async def financial_analyst_scenario_charts(
+    async def charts_scenario(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],

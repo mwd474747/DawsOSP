@@ -127,8 +127,8 @@ class MacroHound(BaseAgent):
             "scenarios.deleveraging_money_printing",
             "scenarios.macro_aware_apply",  # NEW: Macro-aware scenario application
             "scenarios.macro_aware_rank",  # NEW: Regime-weighted scenario ranking
-            "macro_hound.suggest_alert_presets",  # NEW: AlertsAgent consolidation
-            "macro_hound.create_alert_if_threshold",  # NEW: AlertsAgent consolidation
+            "alerts.suggest_presets",  # NEW: AlertsAgent consolidation
+            "alerts.create_if_threshold",  # NEW: AlertsAgent consolidation
         ]
 
     async def macro_detect_regime(
@@ -1470,7 +1470,7 @@ class MacroHound(BaseAgent):
 
         return self._attach_metadata(result, metadata)
 
-    async def macro_hound_suggest_alert_presets(
+    async def alerts_suggest_presets(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
@@ -1606,7 +1606,7 @@ class MacroHound(BaseAgent):
 
         return self._attach_metadata(result, metadata)
 
-    async def macro_hound_create_alert_if_threshold(
+    async def alerts_create_if_threshold(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],

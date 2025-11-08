@@ -95,8 +95,8 @@ class DataHarvester(BaseAgent):
             "fundamentals.load",  # Alias for buffett_checklist pattern compatibility
             "news.search",  # Pattern compatibility for news_impact_analysis
             "news.compute_portfolio_impact",  # Pattern compatibility for news_impact_analysis
-            "data_harvester.render_pdf",  # Week 5: PDF export with safety features
-            "data_harvester.export_csv",  # Week 5: CSV export with safety features
+            "reports.render_pdf",  # Week 5: PDF export with safety features
+            "reports.export_csv",  # Week 5: CSV export with safety features
             "data_harvester.export_excel",  # Week 5: Excel export (not yet implemented)
             "corporate_actions.dividends",  # FMP Pro: Dividend calendar
             "corporate_actions.splits",  # FMP Pro: Stock split calendar
@@ -2087,7 +2087,7 @@ class DataHarvester(BaseAgent):
     # Report Export Methods (Week 5 Consolidation with Safety Features)
     # ========================================================================
     
-    async def data_harvester_render_pdf(
+    async def reports_render_pdf(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
@@ -2264,7 +2264,7 @@ class DataHarvester(BaseAgent):
                 "pdf_base64": None,
             }
     
-    async def data_harvester_export_csv(
+    async def reports_export_csv(
         self,
         ctx: RequestCtx,
         state: Dict[str, Any],
