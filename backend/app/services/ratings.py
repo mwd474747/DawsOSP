@@ -42,8 +42,7 @@ from uuid import UUID
 
 logger = logging.getLogger("DawsOS.RatingsService")
 
-# Singleton instance
-_ratings_service = None
+# Singleton instance - REMOVED (Phase 2 refactoring)
 
 
 class RatingsService:
@@ -686,21 +685,14 @@ class RatingsService:
             return "F"
 
 
-def get_ratings_service(use_db: bool = True, db_pool=None) -> RatingsService:
-    """
-    DEPRECATED: Use RatingsService(db_pool=...) directly instead.
-
-    Migration:
-        OLD: ratings_service = get_ratings_service()
-        NEW: ratings_service = RatingsService(db_pool=db_pool)
-    """
-    import warnings
-    warnings.warn(
-        "get_ratings_service() is deprecated. Use RatingsService(db_pool=...) directly.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-    global _ratings_service
-    if _ratings_service is None:
-        _ratings_service = RatingsService(use_db=use_db, db_pool=db_pool)
-    return _ratings_service
+# ============================================================================
+# Singleton Instance - REMOVED
+# ============================================================================
+# 
+# DEPRECATED: Singleton pattern removed as part of Phase 2 refactoring.
+# Use RatingsService(db_pool=...) directly instead.
+# 
+# Migration:
+#     OLD: ratings_service = get_ratings_service()
+#     NEW: ratings_service = RatingsService(db_pool=db_pool)
+#

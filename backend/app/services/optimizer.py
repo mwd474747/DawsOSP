@@ -1748,27 +1748,13 @@ class OptimizerService:
 
 
 # ============================================================================
-# Singleton Instance
+# Singleton Instance - REMOVED
 # ============================================================================
-
-_optimizer_service: Optional[OptimizerService] = None
-
-
-def get_optimizer_service(use_db: bool = True, db_pool=None) -> OptimizerService:
-    """
-    DEPRECATED: Use OptimizerService(db_pool=...) directly instead.
-
-    Migration:
-        OLD: optimizer_service = get_optimizer_service()
-        NEW: optimizer_service = OptimizerService(db_pool=db_pool)
-    """
-    import warnings
-    warnings.warn(
-        "get_optimizer_service() is deprecated. Use OptimizerService(db_pool=...) directly.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-    global _optimizer_service
-    if _optimizer_service is None:
-        _optimizer_service = OptimizerService(use_db=use_db, db_pool=db_pool)
-    return _optimizer_service
+# 
+# DEPRECATED: Singleton pattern removed as part of Phase 2 refactoring.
+# Use OptimizerService(db_pool=...) directly instead.
+# 
+# Migration:
+#     OLD: optimizer_service = get_optimizer_service()
+#     NEW: optimizer_service = OptimizerService(db_pool=db_pool)
+#

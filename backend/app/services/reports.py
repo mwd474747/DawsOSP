@@ -793,34 +793,19 @@ async def example_usage():
 
 
 # ============================================================================
-# Service Singleton
+# Service Singleton - REMOVED
 # ============================================================================
-
-_reports_service = None
-
-
-def get_reports_service() -> ReportService:
-    """
-    Get singleton reports service instance.
-    
-    **DEPRECATED:** Use `ReportService(environment=...)` directly instead of this singleton function.
-    This function is deprecated as part of the singleton pattern removal (Phase 2).
-    
-    **Architecture Note:** ReportService itself is an implementation detail of the DataHarvester agent.
-    Patterns should use `data_harvester` agent capabilities, not this service directly.
-    """
-    import warnings
-    warnings.warn(
-        "get_reports_service() is deprecated. Use ReportService(environment=...) directly instead.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-    global _reports_service
-
-    if _reports_service is None:
-        _reports_service = ReportService()
-
-    return _reports_service
+# 
+# DEPRECATED: Singleton pattern removed as part of Phase 2 refactoring.
+# Use ReportService(environment=...) directly instead.
+# 
+# Migration:
+#     OLD: reports_service = get_reports_service()
+#     NEW: reports_service = ReportService(environment=...)
+# 
+# Architecture Note: ReportService itself is an implementation detail of the DataHarvester agent.
+# Patterns should use `data_harvester` agent capabilities, not this service directly.
+#
 
 
 if __name__ == "__main__":

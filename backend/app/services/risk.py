@@ -620,21 +620,13 @@ class RiskService:
 
 
 # ============================================================================
-# Singleton
+# Singleton - REMOVED
 # ============================================================================
-
-
-_risk_service: Optional[RiskService] = None
-
-
-def get_risk_service() -> RiskService:
-    """
-    Get risk service singleton.
-
-    Returns:
-        RiskService singleton
-    """
-    global _risk_service
-    if _risk_service is None:
-        _risk_service = RiskService()
-    return _risk_service
+# 
+# DEPRECATED: Singleton pattern removed as part of Phase 2 refactoring.
+# Use RiskService(db_pool=...) directly instead.
+# 
+# Migration:
+#     OLD: risk_service = get_risk_service()
+#     NEW: risk_service = RiskService(db_pool=db_pool)
+#

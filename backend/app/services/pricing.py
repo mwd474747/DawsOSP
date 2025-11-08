@@ -790,13 +790,32 @@ class PricingService:
 
 
 # ============================================================================
-# Global Instance
+# Global Instance - REMOVED
 # ============================================================================
+# 
+# DEPRECATED: Singleton pattern removed as part of Phase 2 refactoring.
+# Use PricingService(db_pool=...) directly instead.
+# 
+# Migration:
+#     OLD: pricing_service = get_pricing_service()
+#     NEW: pricing_service = PricingService(db_pool=db_pool)
+#
+# Example:
+#     # Old pattern (deprecated)
+#     pricing_service = get_pricing_service()
+#
+#     # New pattern (dependency injection)
+#     db_pool = services.get("db")
+#     pricing_service = PricingService(db_pool=db_pool)
+#
 
-# Singleton instance
-_pricing_service: Optional[PricingService] = None
 
-
+# ============================================================================
+# get_pricing_service - REMOVED
+# ============================================================================
+# 
+# DEPRECATED: Use PricingService(db_pool=...) directly instead.
+# 
 def get_pricing_service(use_db: bool = True, db_pool=None) -> PricingService:
     """
     DEPRECATED: Use PricingService(db_pool=...) directly instead.

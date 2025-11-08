@@ -399,38 +399,13 @@ class BenchmarkService:
 
 
 # ============================================================================
-# Singleton Instance
+# Singleton Instance - REMOVED
 # ============================================================================
-
-_benchmark_service: Optional[BenchmarkService] = None
-
-
-def get_benchmark_service(use_db: bool = True) -> BenchmarkService:
-    """
-    Get singleton BenchmarkService instance.
-
-    Args:
-        use_db: Use database connection (default: True)
-
-    Returns:
-        BenchmarkService instance
-    """
-    global _benchmark_service
-    if _benchmark_service is None:
-        _benchmark_service = BenchmarkService(use_db=use_db)
-    return _benchmark_service
-
-
-def init_benchmark_service(use_db: bool = True) -> BenchmarkService:
-    """
-    Initialize BenchmarkService.
-
-    Args:
-        use_db: Use database connection (default: True)
-
-    Returns:
-        BenchmarkService instance
-    """
-    global _benchmark_service
-    _benchmark_service = BenchmarkService(use_db=use_db)
-    return _benchmark_service
+# 
+# DEPRECATED: Singleton pattern removed as part of Phase 2 refactoring.
+# Use BenchmarkService(use_db=..., db_pool=...) directly instead.
+# 
+# Migration:
+#     OLD: benchmark_service = get_benchmark_service()
+#     NEW: benchmark_service = BenchmarkService(use_db=use_db, db_pool=db_pool)
+#

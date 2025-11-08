@@ -737,24 +737,25 @@ class AuthService:
 # Singleton Instance
 # ============================================================================
 
-_auth_service = None
-
-
-def get_auth_service() -> AuthService:
-    """
-    Get singleton auth service instance.
-
-    Returns:
-        AuthService instance
-
-    Example:
-        >>> from app.services.auth import get_auth_service
-        >>> auth = get_auth_service()
-        >>> token = auth.generate_jwt(user_id, email, role)
-    """
-    global _auth_service
-
-    if _auth_service is None:
-        _auth_service = AuthService()
-
-    return _auth_service
+# ============================================================================
+# Singleton Instance - REMOVED
+# ============================================================================
+# 
+# DEPRECATED: Singleton pattern removed as part of Phase 2 refactoring.
+# Use AuthService() directly instead.
+# 
+# Migration:
+#     OLD: auth_service = get_auth_service()
+#     NEW: auth_service = AuthService()
+# 
+# Example:
+#     # Old pattern (deprecated)
+#     from app.services.auth import get_auth_service
+#     auth = get_auth_service()
+#     token = auth.generate_jwt(user_id, email, role)
+# 
+#     # New pattern (direct instantiation)
+#     from app.services.auth import AuthService
+#     auth = AuthService()
+#     token = auth.generate_jwt(user_id, email, role)
+#
