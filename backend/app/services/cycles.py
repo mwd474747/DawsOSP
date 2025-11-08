@@ -54,7 +54,7 @@ from dataclasses import dataclass
 import json as json_module
 
 from app.db.connection import execute_query, execute_statement, execute_query_one
-from app.services.indicator_config import get_config_manager
+from app.services.indicator_config import IndicatorConfigManager
 from app.core.constants.macro import (
     EARLY_RECOVERY_YIELD_CURVE_WEIGHT,
     EARLY_RECOVERY_UNEMPLOYMENT_WEIGHT,
