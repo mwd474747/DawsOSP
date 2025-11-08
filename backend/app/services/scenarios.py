@@ -50,6 +50,33 @@ from app.core.types import (
     PricingPackValidationError,
     PricingPackStaleError,
 )
+from app.core.constants.scenarios import (
+    DEFAULT_SHOCK_BPS,
+    DEFAULT_SHOCK_PCT,
+    MIN_SCENARIO_PROBABILITY,
+    MONEY_PRINTING_REAL_RATES_BPS,
+    MONEY_PRINTING_INFLATION_BPS,
+    MONEY_PRINTING_CREDIT_SPREAD_BPS,
+    MONEY_PRINTING_USD_PCT,
+    MONEY_PRINTING_EQUITY_PCT,
+    MONEY_PRINTING_PROBABILITY,
+    AUSTERITY_REAL_RATES_BPS,
+    AUSTERITY_INFLATION_BPS,
+    AUSTERITY_CREDIT_SPREAD_BPS,
+    AUSTERITY_USD_PCT,
+    AUSTERITY_EQUITY_PCT,
+    AUSTERITY_PROBABILITY,
+    DEFAULT_REAL_RATES_BPS,
+    DEFAULT_INFLATION_BPS,
+    DEFAULT_CREDIT_SPREAD_BPS,
+    DEFAULT_USD_PCT,
+    DEFAULT_EQUITY_PCT,
+    DEFAULT_PROBABILITY,
+    RATES_UP_100BP,
+    SEVERITY_MODERATE,
+    SEVERITY_HIGH,
+    SEVERITY_EXTREME,
+)
 
 logger = logging.getLogger("DawsOS.ScenarioService")
 
@@ -82,15 +109,15 @@ class Shock:
     description: str
 
     # Factor shocks (in decimal, e.g., 0.01 = 1% or 100bp)
-    real_rates_bps: float = 0.0  # Basis points (100 = 1%)
-    inflation_bps: float = 0.0  # Basis points
-    credit_spread_bps: float = 0.0  # Basis points
-    usd_pct: float = 0.0  # Percent (0.05 = 5%)
-    equity_pct: float = 0.0  # Percent
+    real_rates_bps: float = DEFAULT_SHOCK_BPS  # Basis points (100 = 1%)
+    inflation_bps: float = DEFAULT_SHOCK_BPS  # Basis points
+    credit_spread_bps: float = DEFAULT_SHOCK_BPS  # Basis points
+    usd_pct: float = DEFAULT_SHOCK_PCT  # Percent (0.05 = 5%)
+    equity_pct: float = DEFAULT_SHOCK_PCT  # Percent
 
     # Metadata
-    probability: float = 0.0  # 0-1
-    severity: str = "moderate"  # low, moderate, high, extreme
+    probability: float = MIN_SCENARIO_PROBABILITY  # 0-1
+    severity: str = SEVERITY_MODERATE  # low, moderate, high, extreme
 
 
 @dataclass
@@ -152,37 +179,37 @@ DALIO_DELEVERAGING_SCENARIOS = {
         shock_type=ShockType.CPI_SURPRISE,
         name="Money Printing Deleveraging (Inflationary)",
         description="Central bank monetization: inflate away debt via currency debasement",
-        real_rates_bps=25.0,
-        inflation_bps=150.0,
-        credit_spread_bps=-50.0,
-        usd_pct=-0.12,
-        equity_pct=0.05,
-        probability=0.25,
-        severity="moderate",
+        real_rates_bps=MONEY_PRINTING_REAL_RATES_BPS,
+        inflation_bps=MONEY_PRINTING_INFLATION_BPS,
+        credit_spread_bps=MONEY_PRINTING_CREDIT_SPREAD_BPS,
+        usd_pct=MONEY_PRINTING_USD_PCT,
+        equity_pct=MONEY_PRINTING_EQUITY_PCT,
+        probability=MONEY_PRINTING_PROBABILITY,
+        severity=SEVERITY_MODERATE,
     ),
     "dalio_austerity_deleveraging": Shock(
         shock_type=ShockType.RATES_UP,
         name="Austerity Deleveraging (Deflationary)",
         description="Fiscal cuts + tax increases: deflationary spiral risk",
-        real_rates_bps=-75.0,
-        inflation_bps=-50.0,
-        credit_spread_bps=100.0,
-        usd_pct=0.08,
-        equity_pct=-0.20,
-        probability=0.15,
-        severity="high",
+        real_rates_bps=AUSTERITY_REAL_RATES_BPS,
+        inflation_bps=AUSTERITY_INFLATION_BPS,
+        credit_spread_bps=AUSTERITY_CREDIT_SPREAD_BPS,
+        usd_pct=AUSTERITY_USD_PCT,
+        equity_pct=AUSTERITY_EQUITY_PCT,
+        probability=AUSTERITY_PROBABILITY,
+        severity=SEVERITY_HIGH,
     ),
     "dalio_default_deleveraging": Shock(
         shock_type=ShockType.CREDIT_SPREAD_WIDENING,
         name="Default/Restructuring Deleveraging (Deep Deflation)",
         description="Debt defaults, bankruptcies: deepest deleveraging form",
-        real_rates_bps=-150.0,
-        inflation_bps=-100.0,
-        credit_spread_bps=300.0,
-        usd_pct=0.15,
-        equity_pct=-0.40,
-        probability=0.05,
-        severity="extreme",
+        real_rates_bps=DEFAULT_REAL_RATES_BPS,
+        inflation_bps=DEFAULT_INFLATION_BPS,
+        credit_spread_bps=DEFAULT_CREDIT_SPREAD_BPS,
+        usd_pct=DEFAULT_USD_PCT,
+        equity_pct=DEFAULT_EQUITY_PCT,
+        probability=DEFAULT_PROBABILITY,
+        severity=SEVERITY_EXTREME,
     ),
 }
 
@@ -191,11 +218,11 @@ SCENARIO_LIBRARY = {
         shock_type=ShockType.RATES_UP,
         name="Rates Up +100bp",
         description="10Y Treasury yield rises 100bp (1%), bond prices fall, equity multiple compression",
-        real_rates_bps=100.0,
+        real_rates_bps=RATES_UP_100BP,
         usd_pct=0.02,  # USD strengthens 2%
         equity_pct=-0.05,  # Equity down 5% (P/E compression)
         probability=0.10,
-        severity="moderate",
+        severity=SEVERITY_MODERATE,
     ),
     ShockType.RATES_DOWN: Shock(
         shock_type=ShockType.RATES_DOWN,

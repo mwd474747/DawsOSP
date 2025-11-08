@@ -82,6 +82,17 @@ except ImportError:
     logging.warning("Riskfolio-Lib not installed. Optimizer will return stub data.")
 
 from app.db.connection import get_db_pool
+from app.core.constants.scenarios import (
+    MIN_QUALITY_SCORE,
+    DEFAULT_MAX_SINGLE_POSITION_PCT,
+    DEFAULT_MIN_POSITION_PCT,
+    DEFAULT_MAX_SECTOR_PCT,
+    DEFAULT_MAX_TRACKING_ERROR_PCT,
+    DEFAULT_MAX_TURNOVER_PCT,
+    DEFAULT_OPTIMIZATION_RISK_FREE_RATE,
+    DEFAULT_OPTIMIZATION_LOOKBACK_DAYS,
+    METHOD_MEAN_VARIANCE,
+)
 
 logger = logging.getLogger("DawsOS.OptimizerService")
 
@@ -96,30 +107,30 @@ class PolicyConstraints:
     """Portfolio optimization policy constraints."""
 
     # Quality filters
-    min_quality_score: float = 0.0  # Minimum aggregate quality rating (0-10)
+    min_quality_score: float = MIN_QUALITY_SCORE  # Minimum aggregate quality rating (0-10)
 
     # Position limits
-    max_single_position_pct: float = 20.0  # Maximum weight per position (%)
-    min_position_pct: float = 0.5  # Minimum weight to avoid dust positions (%)
+    max_single_position_pct: float = DEFAULT_MAX_SINGLE_POSITION_PCT  # Maximum weight per position (%)
+    min_position_pct: float = DEFAULT_MIN_POSITION_PCT  # Minimum weight to avoid dust positions (%)
 
     # Sector limits
-    max_sector_pct: float = 30.0  # Maximum sector concentration (%)
+    max_sector_pct: float = DEFAULT_MAX_SECTOR_PCT  # Maximum sector concentration (%)
 
     # Risk constraints
-    max_tracking_error_pct: float = 5.0  # Maximum tracking error vs benchmark (%)
+    max_tracking_error_pct: float = DEFAULT_MAX_TRACKING_ERROR_PCT  # Maximum tracking error vs benchmark (%)
     target_volatility_pct: Optional[float] = None  # Target portfolio volatility (%)
 
     # Turnover and costs
-    max_turnover_pct: float = 30.0  # Maximum turnover per rebalance (%)
+    max_turnover_pct: float = DEFAULT_MAX_TURNOVER_PCT  # Maximum turnover per rebalance (%)
     commission_per_trade: float = 5.00  # Flat commission per trade (USD)
     market_impact_bps: float = 15.0  # Market impact (basis points)
 
     # Optimization method
-    method: str = "mean_variance"  # mean_variance, risk_parity, max_sharpe, cvar
-    risk_free_rate: float = 0.02  # Risk-free rate (annual)
+    method: str = METHOD_MEAN_VARIANCE  # mean_variance, risk_parity, max_sharpe, cvar
+    risk_free_rate: float = DEFAULT_OPTIMIZATION_RISK_FREE_RATE  # Risk-free rate (annual)
 
     # Historical lookback
-    lookback_days: int = 252  # Trading days for covariance estimation
+    lookback_days: int = DEFAULT_OPTIMIZATION_LOOKBACK_DAYS  # Trading days for covariance estimation
 
 
 @dataclass
