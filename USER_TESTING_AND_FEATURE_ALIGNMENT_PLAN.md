@@ -117,7 +117,7 @@
     - **Root Cause**: Function not imported after module extraction
     - **Fix**: Import `formatDate` from `Utils` namespace or use `Utils.formatDate`
 
-13. **Flash of Unstyled Content (FOUC)** ⚠️
+14. **Flash of Unstyled Content (FOUC)** ⚠️
     - **Issue**: "Layout was forced before the page was fully loaded"
     - **Location**: React rendering before stylesheets loaded
     - **Impact**: Flash of unstyled content, poor UX, layout shift
